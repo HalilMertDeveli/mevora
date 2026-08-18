@@ -25,6 +25,7 @@ class FakeAuthRepository implements AuthRepository {
   Result<AuthUser>? verifyResult;
   Duration sendDelay;
   String? lastSmsCode;
+  String? lastE164Phone;
   final _controller = StreamController<AuthUser?>.broadcast();
   String? lastResetEmail;
   String? lastEmail;
@@ -37,6 +38,8 @@ class FakeAuthRepository implements AuthRepository {
   bool signedOut = false;
   AuthProviderId? lastLinkedProvider;
   Failure? nextFailure;
+  Duration googleDelay = Duration.zero;
+  AuthUser? googleUser;
 
   void emit(AuthUser? value) {
     user = value;
@@ -106,9 +109,19 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<AuthUser>> signInWithGoogle() {
+  Future<Result<AuthUser>> signInWithGoogle() async {
     googleCalled = true;
-    return _complete(const AuthUser(id: 'google-1', email: 'ada@mevora.app'));
+    if (googleDelay > Duration.zero) {
+      await Future<void>.delayed(googleDelay);
+    }
+    return _complete(
+      googleUser ??
+          const AuthUser(
+            id: 'google-1',
+            email: 'ada@mevora.app',
+            authProviders: AuthProviders(google: true),
+          ),
+    );
   }
 
   @override
@@ -134,6 +147,7 @@ class FakeAuthRepository implements AuthRepository {
   Future<Result<PhoneChallenge>> sendPhoneVerificationCode(
     String e164Phone,
   ) async {
+    lastE164Phone = e164Phone;
     if (sendDelay > Duration.zero) {
       await Future<void>.delayed(sendDelay);
     }
@@ -152,11 +166,38 @@ class FakeAuthRepository implements AuthRepository {
   @override
   Future<Result<PhoneChallenge>> resendPhoneVerificationCode(
     PhoneChallenge challenge,
-  ) {
+  ) async {
     if (sendResult != null) {
-      return Future.value(sendResult);
+      return sendResult!;
     }
-    return _unsupported();
+    if (nextFailure != null) {
+      return Err(nextFailure!);
+    }
+    return Success(
+      PhoneChallenge(
+        verificationId: 'vid-resend-${challenge.resendAttempt + 1}',
+        e164Phone: challenge.e164Phone,
+        maskedPhone: challenge.maskedPhone,
+        resendToken: challenge.resendToken ?? 1,
+        resendAttempt: challenge.resendAttempt + 1,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<AuthUser>> completePhoneAutoVerification() {
+    if (verifyResult != null) {
+      return Future.value(verifyResult);
+    }
+    return _complete(
+      AuthUser(
+        id: 'phone-auto-1',
+        phoneNumber: user?.phoneNumber,
+        onboardingCompleted: true,
+        profileCompleted: true,
+        authProviders: const AuthProviders(phone: true),
+      ),
+    );
   }
 
   @override
@@ -167,6 +208,9 @@ class FakeAuthRepository implements AuthRepository {
     lastSmsCode = smsCode;
     if (verifyResult != null) {
       return Future.value(verifyResult);
+    }
+    if (nextFailure != null) {
+      return Future.value(Err(nextFailure!));
     }
     if (smsCode != '123456') {
       return Future.value(
@@ -184,13 +228,9 @@ class FakeAuthRepository implements AuthRepository {
         phoneNumber: challenge.e164Phone,
         onboardingCompleted: true,
         profileCompleted: true,
+        authProviders: const AuthProviders(phone: true),
       ),
     );
-  }
-
-  @override
-  Future<Result<AuthUser>> completePhoneAutoVerification() {
-    return _unsupported();
   }
 
   @override

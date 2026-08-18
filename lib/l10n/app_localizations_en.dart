@@ -374,6 +374,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authGoogleFailed => 'Google Sign-In could not be completed.';
 
   @override
+  String get googleSignInCancelled => 'Google Sign-In was cancelled.';
+
+  @override
+  String get googleSignInFailed => 'Google Sign-In could not be completed.';
+
+  @override
   String get authAppleFailed => 'Apple Sign-In could not be completed.';
 
   @override

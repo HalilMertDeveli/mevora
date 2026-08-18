@@ -139,6 +139,8 @@
   "authEmailInUse": "Bu e-posta ile zaten bir hesap var.",
   "authGeneric": "İsteğin tamamlanamadı. Lütfen tekrar dene.",
   "authGoogleFailed": "Google ile giriş tamamlanamadı.",
+  "googleSignInCancelled": "Google ile giriş iptal edildi.",
+  "googleSignInFailed": "Google ile giriş tamamlanamadı.",
   "authAppleFailed": "Apple ile giriş tamamlanamadı.",
   "onboardingTitle": "Birkaç adım kaldı",
   "onboardingMessage": "Mevora'nın sana uyumlu insanları önerebilmesi için profilini tamamla.",

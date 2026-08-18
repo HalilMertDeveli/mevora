@@ -139,6 +139,8 @@
   "authEmailInUse": "An account already exists for that email.",
   "authGeneric": "We could not complete that request. Please try again.",
   "authGoogleFailed": "Google Sign-In could not be completed.",
+  "googleSignInCancelled": "Google Sign-In was cancelled.",
+  "googleSignInFailed": "Google Sign-In could not be completed.",
   "authAppleFailed": "Apple Sign-In could not be completed.",
   "onboardingTitle": "A few more steps",
   "onboardingMessage": "Complete your profile so Mevora can introduce compatible people.",

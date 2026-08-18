@@ -20,6 +20,7 @@ class PhoneAuthService implements FirebaseAuthDataSource {
   final FirebaseAuth _firebaseAuth;
   int _sendCount = 0;
   PhoneAuthCredential? _autoCredential;
+  Completer<PhoneChallenge>? _inFlightSend;
 
   @override
   Future<PhoneChallenge> sendCode(
@@ -39,8 +40,16 @@ class PhoneAuthService implements FirebaseAuthDataSource {
         kind: AuthErrorKind.tooManyAttempts,
       );
     }
+    final existing = _inFlightSend;
+    if (existing != null && !existing.isCompleted) {
+      throw const AuthException(
+        AuthMessages.smsFailed,
+        kind: AuthErrorKind.smsFailed,
+      );
+    }
 
     final completer = Completer<PhoneChallenge>();
+    _inFlightSend = completer;
 
     try {
       await _firebaseAuth.verifyPhoneNumber(
@@ -98,6 +107,10 @@ class PhoneAuthService implements FirebaseAuthDataSource {
       rethrow;
     } on Object catch (error) {
       throw AuthErrorMapper.map(error);
+    } finally {
+      if (identical(_inFlightSend, completer)) {
+        _inFlightSend = null;
+      }
     }
   }
 

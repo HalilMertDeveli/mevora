@@ -55,7 +55,8 @@ abstract final class AuthErrorMapper {
       'missing-verification-code' ||
       'missing-verification-id' =>
         AuthErrorKind.invalidOtp,
-      'session-expired' || 'code-expired' => AuthErrorKind.expiredOtp,
+      'code-expired' => AuthErrorKind.expiredOtp,
+      'session-expired' => AuthErrorKind.sessionExpired,
       'quota-exceeded' => AuthErrorKind.smsQuota,
       'too-many-requests' ||
       'resource-exhausted' =>
@@ -99,6 +100,7 @@ abstract final class AuthErrorMapper {
       AuthErrorKind.smsFailed => AuthMessages.smsFailed,
       AuthErrorKind.invalidOtp => AuthMessages.invalidOtp,
       AuthErrorKind.expiredOtp => AuthMessages.expiredOtp,
+      AuthErrorKind.sessionExpired => AuthMessages.sessionExpired,
       AuthErrorKind.tooManyAttempts => AuthMessages.tooManyAttempts,
       AuthErrorKind.smsQuota => AuthMessages.smsQuota,
       AuthErrorKind.firebaseUnavailable => AuthMessages.firebaseUnavailable,

@@ -48,13 +48,13 @@ void main() {
       expect(result.e164, '+905551112233');
     });
 
-    test('accepts a number pasted with the country dial code', () {
+    test('accepts 05321234567 as +905321234567', () {
       final result = PhoneNumberValidator.validate(
         country: CountryCodes.turkey,
-        nationalNumber: '90 555 111 22 33',
+        nationalNumber: '05321234567',
       );
       expect(result.isValid, isTrue);
-      expect(result.e164, '+905551112233');
+      expect(result.e164, '+905321234567');
     });
   });
 

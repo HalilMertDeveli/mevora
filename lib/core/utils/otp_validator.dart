@@ -1,7 +1,9 @@
+import 'package:mevora/features/authentication/domain/auth_messages.dart';
+
 /// OTP helpers used by the phone verification flow and unit tests.
 abstract final class OtpValidator {
   static const int length = 6;
-  static const int resendSeconds = 60;
+  static const int resendSeconds = 30;
   static const int maxResendAttempts = 3;
 
   static bool isComplete(String code) => RegExp(r'^\d{6}$').hasMatch(code);
@@ -12,10 +14,10 @@ abstract final class OtpValidator {
   static String? validate(String code) {
     final digits = digitsOnly(code);
     if (digits.isEmpty) {
-      return 'Doğrulama kodunu gir.';
+      return AuthMessages.invalidOtp;
     }
     if (digits.length != length || !isComplete(digits)) {
-      return 'Doğrulama kodu geçersiz.';
+      return AuthMessages.invalidOtp;
     }
     return null;
   }

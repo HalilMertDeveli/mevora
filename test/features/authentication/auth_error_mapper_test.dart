@@ -52,5 +52,37 @@ void main() {
       AuthErrorMapper.fromCode('invalid-app-credential').message,
       AuthMessages.smsFailed,
     );
+    expect(
+      AuthErrorMapper.fromCode('invalid-phone-number').kind,
+      AuthErrorKind.invalidPhone,
+    );
+    expect(
+      AuthErrorMapper.fromCode('invalid-verification-code').kind,
+      AuthErrorKind.invalidOtp,
+    );
+    expect(
+      AuthErrorMapper.fromCode('session-expired').kind,
+      AuthErrorKind.sessionExpired,
+    );
+    expect(
+      AuthErrorMapper.fromCode('session-expired').message,
+      AuthMessages.sessionExpired,
+    );
+    expect(
+      AuthErrorMapper.fromCode('too-many-requests').kind,
+      AuthErrorKind.tooManyAttempts,
+    );
+    expect(
+      AuthErrorMapper.fromCode('quota-exceeded').kind,
+      AuthErrorKind.smsQuota,
+    );
+    expect(
+      AuthErrorMapper.fromCode('network-request-failed').kind,
+      AuthErrorKind.network,
+    );
+    expect(
+      AuthErrorMapper.fromCode('user-disabled').kind,
+      AuthErrorKind.disabled,
+    );
   });
 }

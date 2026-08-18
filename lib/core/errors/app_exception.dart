@@ -30,6 +30,7 @@ enum AuthErrorKind {
   smsFailed,
   invalidOtp,
   expiredOtp,
+  sessionExpired,
   tooManyAttempts,
   smsQuota,
   firebaseUnavailable,

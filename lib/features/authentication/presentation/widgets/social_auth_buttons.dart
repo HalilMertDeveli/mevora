@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
@@ -26,11 +27,10 @@ class SocialAuthButtons extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Column(
       children: [
-        _button(
+        _GoogleContinueButton(
           label: l10n.continueWithGoogle,
-          icon: Icons.g_mobiledata_rounded,
-          onPressed: onGoogle,
-          provider: 'google',
+          isLoading: busyProvider == 'google',
+          onPressed: enabled && busyProvider != 'google' ? onGoogle : null,
         ),
         const SizedBox(height: AppSpacing.sm),
         _button(
@@ -74,6 +74,72 @@ class SocialAuthButtons extends StatelessWidget {
       icon: icon,
       isLoading: loading,
       onPressed: enabled && !loading ? onPressed : null,
+    );
+  }
+}
+
+/// Light outlined Google continue control — Mevora styling with Google-appropriate
+/// contrast (no custom logo asset; "G" mark is typographic).
+class _GoogleContinueButton extends StatelessWidget {
+  const _GoogleContinueButton({
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final enabled = onPressed != null && !isLoading;
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: enabled ? onPressed : null,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: theme.colorScheme.surface,
+          foregroundColor: theme.colorScheme.onSurface,
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+        ),
+        child: isLoading
+            ? SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.onSurface,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'G',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF4285F4),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

@@ -70,6 +70,9 @@ class PhoneAuthController extends ChangeNotifier {
   }
 
   Future<bool> sendCode() async {
+    if (_isBusy) {
+      return false;
+    }
     final validation = PhoneNumberValidator.validate(
       country: _country,
       nationalNumber: _nationalNumber,
@@ -114,9 +117,12 @@ class PhoneAuthController extends ChangeNotifier {
   }
 
   Future<bool> verify(String smsCode) async {
+    if (_isBusy) {
+      return false;
+    }
     final challenge = _challengeOf(_state);
     if (challenge == null || challenge.verificationId.isEmpty) {
-      _state = const PhoneNumberEntering(kind: AuthErrorKind.expiredOtp);
+      _state = const PhoneNumberEntering(kind: AuthErrorKind.sessionExpired);
       notifyListeners();
       return false;
     }

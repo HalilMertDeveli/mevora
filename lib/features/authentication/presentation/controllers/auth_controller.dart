@@ -11,6 +11,8 @@ import 'package:mevora/features/authentication/domain/entities/auth_snapshot.dar
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/domain/entities/phone_challenge.dart';
+import 'package:mevora/features/authentication/domain/entities/phone_auth_state.dart';
+import 'package:mevora/features/authentication/data/services/auth_analytics.dart';
 import 'package:mevora/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:mevora/features/authentication/domain/repositories/user_document_repository.dart';
 import 'package:mevora/features/authentication/domain/usecases/auth_usecases.dart';
@@ -21,9 +23,11 @@ class AuthController extends ChangeNotifier {
     required AuthRepository authRepository,
     required UserDocumentRepository userDocumentRepository,
     required AppLogger logger,
+    AuthAnalytics? analytics,
   }) : _authRepository = authRepository,
        _userDocumentRepository = userDocumentRepository,
-       _logger = logger {
+       _logger = logger,
+       _analytics = analytics ?? const NoOpAuthAnalytics() {
     phoneAuth = PhoneAuthController(
       sendPhoneVerificationCode: SendPhoneVerificationCode(_authRepository),
       verifyPhoneCode: VerifyPhoneCode(_authRepository),
@@ -32,13 +36,15 @@ class AuthController extends ChangeNotifier {
       ),
       authRepository: _authRepository,
       logger: _logger,
+      analytics: _analytics,
     );
-    phoneAuth.addListener(notifyListeners);
+    phoneAuth.addListener(_onPhoneAuthChanged);
   }
 
   final AuthRepository _authRepository;
   final UserDocumentRepository _userDocumentRepository;
   final AppLogger _logger;
+  final AuthAnalytics _analytics;
   late final PhoneAuthController phoneAuth;
 
   StreamSubscription<AuthSnapshot>? _subscription;
@@ -197,8 +203,24 @@ class AuthController extends ChangeNotifier {
     return result;
   }
 
-  Future<Result<void>> signInWithGoogle() {
-    return _run(_authRepository.signInWithGoogle, provider: 'google');
+  Future<Result<void>> signInWithGoogle() async {
+    await _analytics.googleLoginStarted();
+    final result = await _run(
+      _authRepository.signInWithGoogle,
+      provider: 'google',
+    );
+    switch (result) {
+      case Success<void>():
+        await _analytics.googleLoginSuccess();
+      case Err<void>(:final failure):
+        if (failure is AuthFailure &&
+            (failure.isCancelled || failure.kind == AuthErrorKind.cancelled)) {
+          await _analytics.googleLoginCancelled();
+        } else {
+          await _analytics.googleLoginFailed();
+        }
+    }
+    return result;
   }
 
   Future<Result<void>> signInWithApple() {
@@ -439,9 +461,61 @@ class AuthController extends ChangeNotifier {
     });
   }
 
+  /// Keeps [AuthStatus] / redirect rules aligned with [PhoneAuthController]
+  /// so OTP success is not bounced back to `/phone` before the auth stream
+  /// emits a profile-ready snapshot.
+  void _onPhoneAuthChanged() {
+    switch (phoneAuth.state) {
+      case SendingOtp():
+        if (status is Unauthenticated ||
+            status is AuthenticationError ||
+            status is PhoneCodeSent) {
+          status = const Authenticating(provider: 'phone');
+        }
+      case OtpSent(:final challenge):
+        final sameChallenge =
+            phoneChallenge?.verificationId == challenge.verificationId &&
+            phoneChallenge?.resendAttempt == challenge.resendAttempt &&
+            status is PhoneCodeSent;
+        phoneChallenge = challenge;
+        if (!sameChallenge &&
+            (status is Unauthenticated ||
+                status is AuthenticationError ||
+                status is Authenticating ||
+                status is PhoneCodeSent ||
+                status is PhoneVerificationRequired)) {
+          status = PhoneCodeSent(challenge);
+          _startResendTimer();
+        }
+      case VerifyingOtp(:final challenge):
+        phoneChallenge = challenge;
+        if (status is! PhoneVerificationRequired) {
+          status = PhoneVerificationRequired(challenge);
+        }
+      case PhoneAuthenticated(:final user):
+        if (status is! Authenticated && status is! NeedsOnboarding) {
+          _applyAuthenticatedUser(user);
+        }
+      case PhoneNumberEntering() || SmsSendError() || TooManyAttempts():
+        if (status is PhoneCodeSent ||
+            status is PhoneVerificationRequired ||
+            (status is Authenticating &&
+                (status as Authenticating).provider == 'phone')) {
+          phoneChallenge = null;
+          _resendTimer?.cancel();
+          resendSeconds = 0;
+          status = const Unauthenticated();
+        }
+      case OtpError(:final challenge):
+        phoneChallenge = challenge;
+        status = PhoneVerificationRequired(challenge);
+    }
+    notifyListeners();
+  }
+
   @override
   void dispose() {
-    phoneAuth.removeListener(notifyListeners);
+    phoneAuth.removeListener(_onPhoneAuthChanged);
     phoneAuth.dispose();
     _resendTimer?.cancel();
     unawaited(_subscription?.cancel());

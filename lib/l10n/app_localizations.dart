@@ -776,6 +776,18 @@ abstract class AppLocalizations {
   /// **'Google Sign-In could not be completed.'**
   String get authGoogleFailed;
 
+  /// No description provided for @googleSignInCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Sign-In was cancelled.'**
+  String get googleSignInCancelled;
+
+  /// No description provided for @googleSignInFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Sign-In could not be completed.'**
+  String get googleSignInFailed;
+
   /// No description provided for @authAppleFailed.
   ///
   /// In en, this message translates to:

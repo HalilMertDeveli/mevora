@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Mevora (development)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_development.dart"
+    },
+    {
+      "name": "Mevora (staging)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_staging.dart"
+    },
+    {
+      "name": "Mevora (production)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_production.dart"
+    }
+  ]
+}

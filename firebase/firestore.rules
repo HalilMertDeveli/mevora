@@ -1,0 +1,34 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Phase 2 keeps all client access denied. Later phases will add
+// ownership rules for these collections:
+//
+// Collection: users/{userId}
+// Collection: likes/{likeId}
+// Collection: matches/{matchId}
+// Collection: conversations/{conversationId}/messages/{messageId}
+// Collection: reports/{reportId}
+// Collection: blocks/{blockId}
+//
+// Matches and likes must never be creatable by an arbitrary client.
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

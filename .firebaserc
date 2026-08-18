@@ -1,0 +1,10 @@
+{
+  "projects": {
+    "default": "mevora-dev",
+    "development": "mevora-dev",
+    "staging": "mevora-staging",
+    "production": "mevora-production"
+  },
+  "targets": {},
+  "etags": {}
+}

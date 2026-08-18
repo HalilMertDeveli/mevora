@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "795522345315",
+    "project_id": "mevora-production",
+    "storage_bucket": "mevora-production.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795522345315:android:4c94d1ef039d5eeb89cb56",
+        "android_client_info": {
+          "package_name": "com.mevora.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmzqA726MdPHumO8Otb1rP4KkfF_BwhIE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -27,7 +27,7 @@ class AppConfig {
   };
 
   String get firebaseProjectId => switch (environment) {
-    AppEnvironment.development => 'mevora-dev',
+    AppEnvironment.development => 'mevora-d6ed0',
     AppEnvironment.staging => 'mevora-staging',
     AppEnvironment.production => 'mevora-production',
   };
@@ -38,7 +38,7 @@ class AppConfig {
 
   /// Development talks to the Emulator Suite for Firestore, Functions, and
   /// Storage. Pass `--dart-define=USE_EMULATORS=false` on a physical device
-  /// so the whole stack uses live `mevora-dev` (10.0.2.2 is unreachable there).
+  /// so the whole stack uses live `mevora-d6ed0` (10.0.2.2 is unreachable there).
   bool get useEmulators {
     if (!environment.isDevelopment) {
       return false;
@@ -47,7 +47,7 @@ class AppConfig {
   }
 
   /// Auth emulator never sends SMS. Off by default so Phone Auth uses live
-  /// `mevora-dev`. Opt in with `--dart-define=USE_AUTH_EMULATOR=true` for
+  /// `mevora-d6ed0`. Opt in with `--dart-define=USE_AUTH_EMULATOR=true` for
   /// local test numbers only.
   bool get useAuthEmulator {
     if (!useEmulators) {

@@ -11,6 +11,7 @@ import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/firebase/firebase_options_resolver.dart';
 import 'package:mevora/core/services/app_logger.dart';
+import 'package:mevora/firebase_options.dart';
 
 /// Initializes Firebase products. UI and feature modules must not call
 /// Firebase APIs directly.
@@ -20,9 +21,12 @@ class FirebaseBootstrap {
   final AppLogger logger;
 
   Future<void> initialize(AppConfig config) async {
-    final options = FirebaseOptionsResolver.resolve(config.environment);
     if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(options: options);
+      await Firebase.initializeApp(
+        options: config.environment.isDevelopment
+            ? DefaultFirebaseOptions.currentPlatform
+            : FirebaseOptionsResolver.resolve(config.environment),
+      );
     }
     // Auth, Firestore, Storage, and Messaging are used only after this.
 

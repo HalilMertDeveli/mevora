@@ -1,0 +1,8 @@
+{
+  "minimumAge": 18,
+  "maxDiscoveryDistance": 100,
+  "maxDailyLikes": 100,
+  "videoCallEnabled": false,
+  "premiumEnabled": false,
+  "maintenanceMode": false
+}

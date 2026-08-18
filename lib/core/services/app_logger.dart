@@ -2,6 +2,8 @@ import 'dart:developer' as developer;
 
 import 'package:mevora/core/config/app_environment.dart';
 
+/// Application logger. Never log passwords, full phone numbers, exact GPS,
+/// or auth tokens.
 class AppLogger {
   const AppLogger({required this.environment});
 
@@ -32,10 +34,29 @@ class AppLogger {
     StackTrace? stackTrace,
   }) {
     developer.log(
-      message,
+      _redact(message),
       name: 'mevora.$level',
-      error: error,
+      error: error == null ? null : _redact('$error'),
       stackTrace: stackTrace,
     );
+  }
+
+  static String _redact(String input) {
+    return input
+        .replaceAll(RegExp(r'\+[1-9]\d{6,14}'), '[phone]')
+        .replaceAll(
+          RegExp(
+            r'(otp|smsCode|sms_code|idToken|accessToken|refreshToken|purchaseToken|receiptData|signedTransaction|serverVerificationData)\s*[:=]\s*\S+',
+            caseSensitive: false,
+          ),
+          '[redacted]',
+        )
+        .replaceAll(
+          RegExp(
+            r'(lat(itude)?|lng|lon(gitude)?)\s*[:=]\s*-?\d+(\.\d+)?',
+            caseSensitive: false,
+          ),
+          '[coord]',
+        );
   }
 }

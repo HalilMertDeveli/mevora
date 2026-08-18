@@ -13,6 +13,29 @@ abstract final class FailureMapper {
     if (error is ValidationException) {
       return ValidationFailure(error.message);
     }
+    if (error is AuthException) {
+      return AuthFailure(
+        error.message,
+        kind: error.kind,
+        isCancelled:
+            error.isCancelled || error.kind == AuthErrorKind.cancelled,
+      );
+    }
+    if (error is AuthzException) {
+      return AuthzFailure(error.message);
+    }
+    if (error is PermissionException) {
+      return PermissionFailure(error.message);
+    }
+    if (error is NotFoundException) {
+      return NotFoundFailure(error.message);
+    }
+    if (error is LocationException) {
+      return LocationFailure(error.message, kind: error.kind);
+    }
+    if (error is PurchaseException) {
+      return PurchaseFailure(error.message, kind: error.kind);
+    }
     if (error is AppException) {
       return UnexpectedFailure(error.message);
     }

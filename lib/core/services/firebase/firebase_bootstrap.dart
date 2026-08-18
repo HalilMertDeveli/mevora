@@ -5,9 +5,10 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:mevora/core/config/app_config.dart';
+import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/firebase/firebase_options_resolver.dart';
 import 'package:mevora/core/services/app_logger.dart';
 
@@ -23,9 +24,14 @@ class FirebaseBootstrap {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(options: options);
     }
+    // Auth, Firestore, Storage, and Messaging are used only after this.
+
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+    );
 
     if (config.useEmulators) {
-      _connectEmulators(config);
+      await _connectEmulators(config);
     }
 
     await _configureAppCheck(config);
@@ -35,20 +41,27 @@ class FirebaseBootstrap {
     await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(
       !config.environment.isDevelopment,
     );
+    if (!config.environment.isDevelopment) {
+      await FirebaseAnalytics.instance.logAppOpen();
+    }
+    await FirebaseMessaging.instance.setAutoInitEnabled(true);
 
     logger.info(
       'Firebase ready (${config.firebaseProjectId}, emulators=${config.useEmulators})',
     );
   }
 
-  void _connectEmulators(AppConfig config) {
+  Future<void> _connectEmulators(AppConfig config) async {
     final emulators = config.emulatorConfig;
-    FirebaseAuth.instance.useAuthEmulator(emulators.host, emulators.authPort);
+    await FirebaseAuth.instance.useAuthEmulator(
+      emulators.host,
+      emulators.authPort,
+    );
     FirebaseFirestore.instance.useFirestoreEmulator(
       emulators.host,
       emulators.firestorePort,
     );
-    FirebaseStorage.instance.useStorageEmulator(
+    await FirebaseStorage.instance.useStorageEmulator(
       emulators.host,
       emulators.storagePort,
     );
@@ -62,12 +75,12 @@ class FirebaseBootstrap {
   Future<void> _configureAppCheck(AppConfig config) async {
     try {
       await FirebaseAppCheck.instance.activate(
-        androidProvider: config.environment.isProduction
-            ? AndroidProvider.playIntegrity
-            : AndroidProvider.debug,
-        appleProvider: config.environment.isProduction
-            ? AppleProvider.deviceCheck
-            : AppleProvider.debug,
+        providerAndroid: config.environment.isProduction
+            ? const AndroidPlayIntegrityProvider()
+            : const AndroidDebugProvider(),
+        providerApple: config.environment.isProduction
+            ? const AppleAppAttestProvider()
+            : const AppleDebugProvider(),
       );
     } on Object catch (error, stackTrace) {
       logger.warning(

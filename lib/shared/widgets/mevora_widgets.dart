@@ -6,5 +6,6 @@ export 'mevora_chip.dart';
 export 'mevora_dialog.dart';
 export 'mevora_empty_state.dart';
 export 'mevora_error_view.dart';
+export 'feature_placeholder_page.dart';
 export 'mevora_loading.dart';
 export 'mevora_text_field.dart';

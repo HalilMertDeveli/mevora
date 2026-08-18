@@ -14,6 +14,12 @@ void main() {
       FailureMapper.from(const ValidationException('invalid')),
       isA<ValidationFailure>(),
     );
+    expect(
+      FailureMapper.from(
+        const AuthException('nope', kind: AuthErrorKind.wrongPassword),
+      ),
+      isA<AuthFailure>(),
+    );
   });
 
   test('maps unknown errors to UnexpectedFailure', () {

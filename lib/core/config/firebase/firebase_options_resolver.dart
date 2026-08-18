@@ -4,8 +4,13 @@ import 'package:mevora/core/config/app_environment.dart';
 
 /// Firebase options for each Mevora environment and platform.
 ///
-/// Values come from the Firebase console SDK configs. They are client
-/// identifiers, not secrets.
+/// There is no generated `lib/firebase_options.dart`. These values are the
+/// existing FlutterFire SDK configs and must stay aligned with:
+/// - `android/app/src/{flavor}/google-services.json`
+/// - `ios/flavors/{flavor}/GoogleService-Info.plist`
+///
+/// Do not regenerate, overwrite, or copy API keys into other Dart files.
+/// [resolve] is the flavor equivalent of `DefaultFirebaseOptions.currentPlatform`.
 abstract final class FirebaseOptionsResolver {
   static FirebaseOptions resolve(AppEnvironment environment) {
     return switch (environment) {

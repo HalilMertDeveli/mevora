@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/constants/app_strings.dart';
+import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
 abstract final class MevoraDialog {
@@ -8,12 +8,15 @@ abstract final class MevoraDialog {
     BuildContext context, {
     required String title,
     required String message,
-    String confirmLabel = AppStrings.confirm,
-    String cancelLabel = AppStrings.cancel,
+    String? confirmLabel,
+    String? cancelLabel,
     bool showCancel = true,
     bool barrierDismissible = true,
     MevoraButtonVariant confirmVariant = MevoraButtonVariant.primary,
   }) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    final resolvedConfirm = confirmLabel ?? l10n?.confirm ?? 'Confirm';
+    final resolvedCancel = cancelLabel ?? l10n?.cancel ?? 'Cancel';
     return showDialog<bool>(
       context: context,
       barrierDismissible: barrierDismissible,
@@ -30,13 +33,13 @@ abstract final class MevoraDialog {
           actions: [
             if (showCancel)
               MevoraButton(
-                label: cancelLabel,
+                label: resolvedCancel,
                 variant: MevoraButtonVariant.ghost,
                 isExpanded: false,
                 onPressed: () => Navigator.of(dialogContext).pop(false),
               ),
             MevoraButton(
-              label: confirmLabel,
+              label: resolvedConfirm,
               variant: confirmVariant,
               isExpanded: false,
               onPressed: () => Navigator.of(dialogContext).pop(true),

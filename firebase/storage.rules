@@ -1,7 +1,57 @@
 rules_version = '2';
 
+// users/{uid}/profile/{imageId} — owner upload/delete
+// Pending uploads stay private until moderation publishes them.
+// jpg / jpeg / png / webp, max 5 MB.
+
 service firebase.storage {
   match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/jpeg')
+        || request.resource.contentType.matches('image/jpg')
+        || request.resource.contentType.matches('image/png')
+        || request.resource.contentType.matches('image/webp');
+    }
+
+    function isSmallEnough() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    function isMatchParticipant(matchId) {
+      return isAuthenticated()
+        && firestore.exists(/databases/(default)/documents/matches/$(matchId))
+        && request.auth.uid in firestore.get(/databases/(default)/documents/matches/$(matchId)).data.userIds;
+    }
+
+    match /users/{userId}/profile/pending/{imageId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
+    }
+
+    match /users/{userId}/profile/thumbs/{imageId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();
+    }
+
+    match /users/{userId}/profile/{imageId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();
+    }
+
+    match /users/{userId}/chat/{matchId}/{messageId} {
+      allow read: if isOwner(userId) || isMatchParticipant(matchId);
+      allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
+      allow delete: if isOwner(userId);
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

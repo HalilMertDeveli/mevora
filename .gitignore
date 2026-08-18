@@ -44,7 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Secrets — never commit private keys or service accounts
+# Secrets — never commit private keys, OAuth secrets, or service accounts
+.env
+.env.*
+!.env.example
+!**/.env.example
 *.jks
 *.keystore
 key.properties
@@ -52,8 +56,9 @@ key.properties
 **/*-service-account.json
 *.p8
 *.p12
-.env
-.env.*
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
+LIVEKIT_URL=
 
 # Firebase emulator / debug output
 firebase-debug.log
@@ -65,4 +70,5 @@ database-debug.log
 storage-debug.log
 .firebase/
 firebase-export/
+**/node_modules/
 

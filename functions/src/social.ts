@@ -1,0 +1,373 @@
+import {getApps, initializeApp} from "firebase-admin/app";
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {HttpsError, onCall} from "firebase-functions/v2/https";
+import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {defineSecret} from "firebase-functions/params";
+import {AccessToken} from "livekit-server-sdk";
+import {blockId, canonicalMatchId, likeId, previewText} from "./ids.js";
+import {FcmTypes, sendUserPush} from "./notifications.js";
+
+if (getApps().length === 0) {
+  initializeApp();
+}
+
+const db = getFirestore();
+const livekitApiKey = defineSecret("LIVEKIT_API_KEY");
+const livekitApiSecret = defineSecret("LIVEKIT_API_SECRET");
+const livekitUrl = defineSecret("LIVEKIT_URL");
+const socialCallable = {region: "europe-west1" as const};
+
+function requireUid(uid: string | undefined): string {
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "unauthenticated");
+  }
+  return uid;
+}
+
+async function isBlocked(a: string, b: string): Promise<boolean> {
+  const [first, second, subA, subB] = await Promise.all([
+    db.doc(`blocks/${blockId(a, b)}`).get(),
+    db.doc(`blocks/${blockId(b, a)}`).get(),
+    db.doc(`users/${a}/blockedUsers/${b}`).get(),
+    db.doc(`users/${b}/blockedUsers/${a}`).get(),
+  ]);
+  return first.exists || second.exists || subA.exists || subB.exists;
+}
+
+async function profilePreview(uid: string): Promise<{name: string; photoUrl?: string}> {
+  const snap = await db.doc(`profiles/${uid}`).get();
+  const data = snap.data() ?? {};
+  const userSnap = snap.exists ? snap : await db.doc(`users/${uid}`).get();
+  const merged = userSnap.data() ?? data;
+  return {
+    name: String(merged.displayName ?? merged.name ?? "Mevora"),
+    photoUrl: merged.photoUrl as string | undefined,
+  };
+}
+
+export const recordSwipe = onCall(socialCallable, async (request) => {
+  const uid = requireUid(request.auth?.uid);
+  const targetUserId = String(request.data?.targetUserId ?? "");
+  const action = String(request.data?.action ?? "like");
+  if (!targetUserId || targetUserId === uid) {
+    throw new HttpsError("invalid-argument", "self");
+  }
+  if (await isBlocked(uid, targetUserId)) {
+    throw new HttpsError("failed-precondition", "blocked");
+  }
+  const forwardId = likeId(uid, targetUserId);
+  const reverseId = likeId(targetUserId, uid);
+  const matchId = canonicalMatchId(uid, targetUserId);
+  return db.runTransaction(async (tx) => {
+    const forwardRef = db.doc(`likes/${forwardId}`);
+    const existing = await tx.get(forwardRef);
+    if (existing.exists) {
+      throw new HttpsError("already-exists", "already-swiped");
+    }
+    tx.set(forwardRef, {
+      fromUserId: uid,
+      toUserId: targetUserId,
+      action,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    if (action === "pass") {
+      return {matched: false};
+    }
+    const reverse = await tx.get(db.doc(`likes/${reverseId}`));
+    const reverseAction = reverse.data()?.action as string | undefined;
+    const positive = reverse.exists && reverseAction !== "pass";
+    if (!positive) {
+      return {matched: false};
+    }
+    const matchRef = db.doc(`matches/${matchId}`);
+    const matchSnap = await tx.get(matchRef);
+    if (matchSnap.exists && matchSnap.data()?.isActive === true) {
+      return {matched: true, matchId};
+    }
+    const actor = await profilePreview(uid);
+    const other = await profilePreview(targetUserId);
+    tx.set(matchRef, {
+      userIds: [uid, targetUserId].sort(),
+      createdAt: FieldValue.serverTimestamp(),
+      lastMessage: null,
+      lastMessageAt: FieldValue.serverTimestamp(),
+      isActive: true,
+      unmatchedBy: null,
+      unmatchedAt: null,
+      unreadCounts: {[uid]: 0, [targetUserId]: 0},
+      isNewFor: {[uid]: true, [targetUserId]: true},
+      participantNames: {[uid]: actor.name, [targetUserId]: other.name},
+      participantPhotos: {
+        ...(actor.photoUrl ? {[uid]: actor.photoUrl} : {}),
+        ...(other.photoUrl ? {[targetUserId]: other.photoUrl} : {}),
+      },
+    });
+    return {matched: true, matchId};
+  });
+});
+
+export const unmatchUser = onCall(socialCallable, async (request) => {
+  const uid = requireUid(request.auth?.uid);
+  const matchId = String(request.data?.matchId ?? "");
+  const ref = db.doc(`matches/${matchId}`);
+  const snap = await ref.get();
+  if (!snap.exists || !((snap.data()?.userIds as string[]) ?? []).includes(uid)) {
+    throw new HttpsError("permission-denied", "not-matched");
+  }
+  await ref.update({
+    isActive: false,
+    unmatchedBy: uid,
+    unmatchedAt: FieldValue.serverTimestamp(),
+  });
+  return {ok: true};
+});
+
+export const blockUser = onCall(socialCallable, async (request) => {
+  const uid = requireUid(request.auth?.uid);
+  const userId = String(request.data?.userId ?? "");
+  if (!userId || userId === uid) {
+    throw new HttpsError("invalid-argument", "self");
+  }
+  await db.doc(`blocks/${blockId(uid, userId)}`).set({
+    blockerId: uid,
+    blockedUserId: userId,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  await db.doc(`users/${uid}/blockedUsers/${userId}`).set({
+    blockedUserId: userId,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  const matchId = canonicalMatchId(uid, userId);
+  const matchRef = db.doc(`matches/${matchId}`);
+  const match = await matchRef.get();
+  if (match.exists) {
+    await matchRef.update({
+      isActive: false,
+      unmatchedBy: uid,
+      unmatchedAt: FieldValue.serverTimestamp(),
+    });
+  }
+  const ringing = await db
+    .collection("calls")
+    .where("matchId", "==", matchId)
+    .where("status", "in", ["ringing", "calling", "connecting", "connected"])
+    .get();
+  const batch = db.batch();
+  ringing.docs.forEach((doc) => batch.update(doc.ref, {status: "ended"}));
+  await batch.commit();
+  return {ok: true};
+});
+
+export const reportUser = onCall(socialCallable, async (request) => {
+  const uid = requireUid(request.auth?.uid);
+  const userId = String(request.data?.userId ?? "");
+  const reason = String(request.data?.reason ?? "other");
+  await db.collection("reports").add({
+    reporterId: uid,
+    reportedUserId: userId,
+    matchId: request.data?.matchId ?? null,
+    messageId: request.data?.messageId ?? null,
+    reason,
+    description: request.data?.description ?? null,
+    createdAt: FieldValue.serverTimestamp(),
+    status: "open",
+  });
+  return {ok: true};
+});
+
+async function mintLivekitToken(identity: string, roomName: string): Promise<{token: string; url: string}> {
+  const key = livekitApiKey.value();
+  const secret = livekitApiSecret.value();
+  const url = livekitUrl.value();
+  if (!key || !secret || !url) {
+    throw new HttpsError("failed-precondition", "not-configured");
+  }
+  const token = new AccessToken(key, secret, {identity, ttl: "2m"});
+  token.addGrant({roomJoin: true, room: roomName, canPublish: true, canSubscribe: true});
+  return {token: await token.toJwt(), url};
+}
+
+export const createVideoCall = onCall(
+  {region: "europe-west1", secrets: [livekitApiKey, livekitApiSecret, livekitUrl]},
+  async (request) => {
+    const uid = requireUid(request.auth?.uid);
+    const matchId = String(request.data?.matchId ?? "");
+    const receiverId = String(request.data?.receiverId ?? "");
+    const match = await db.doc(`matches/${matchId}`).get();
+    const userIds = (match.data()?.userIds as string[]) ?? [];
+    if (!match.exists || match.data()?.isActive !== true || !userIds.includes(uid) || !userIds.includes(receiverId)) {
+      throw new HttpsError("permission-denied", "not-matched");
+    }
+    if (await isBlocked(uid, receiverId)) {
+      throw new HttpsError("failed-precondition", "blocked");
+    }
+    const busy = await db
+      .collection("calls")
+      .where("receiverId", "==", receiverId)
+      .where("status", "in", ["ringing", "connecting", "connected"])
+      .limit(1)
+      .get();
+    if (!busy.empty) {
+      throw new HttpsError("failed-precondition", "busy");
+    }
+    const callRef = db.collection("calls").doc();
+    const roomName = `call_${callRef.id}`;
+    const minted = await mintLivekitToken(uid, roomName);
+    const actor = await profilePreview(uid);
+    await callRef.set({
+      callerId: uid,
+      receiverId,
+      matchId,
+      participantIds: [uid, receiverId],
+      type: "video",
+      status: "ringing",
+      roomName,
+      createdAt: FieldValue.serverTimestamp(),
+      remoteName: actor.name,
+      remotePhotoUrl: actor.photoUrl ?? null,
+    });
+    return {callId: callRef.id, token: minted.token, url: minted.url, roomName};
+  },
+);
+
+export const respondToVideoCall = onCall(
+  {region: "europe-west1", secrets: [livekitApiKey, livekitApiSecret, livekitUrl]},
+  async (request) => {
+    const uid = requireUid(request.auth?.uid);
+    const callId = String(request.data?.callId ?? "");
+    const accept = request.data?.accept === true;
+    const ref = db.doc(`calls/${callId}`);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data()?.receiverId !== uid) {
+      throw new HttpsError("permission-denied", "not-found");
+    }
+    if (!accept) {
+      await ref.update({status: "declined", endedAt: FieldValue.serverTimestamp()});
+      await db.doc(`callHistory/${callId}`).set({
+        callerId: snap.data()?.callerId,
+        receiverId: snap.data()?.receiverId,
+        participantIds: [snap.data()?.callerId, snap.data()?.receiverId],
+        matchId: snap.data()?.matchId,
+        type: "video",
+        status: "declined",
+        endedAt: FieldValue.serverTimestamp(),
+        duration: 0,
+      });
+      return {ok: true};
+    }
+    const roomName = String(snap.data()?.roomName ?? `call_${callId}`);
+    const minted = await mintLivekitToken(uid, roomName);
+    await ref.update({status: "connecting"});
+    return {
+      token: minted.token,
+      url: minted.url,
+      roomName,
+      matchId: snap.data()?.matchId,
+      callerId: snap.data()?.callerId,
+    };
+  },
+);
+
+export const endVideoCall = onCall(socialCallable, async (request) => {
+  const uid = requireUid(request.auth?.uid);
+  const callId = String(request.data?.callId ?? "");
+  const ref = db.doc(`calls/${callId}`);
+  const snap = await ref.get();
+  const data = snap.data();
+  if (!snap.exists || (data?.callerId !== uid && data?.receiverId !== uid)) {
+    throw new HttpsError("permission-denied", "not-found");
+  }
+  await ref.update({status: "ended", endedAt: FieldValue.serverTimestamp()});
+  await db.doc(`callHistory/${callId}`).set({
+    callerId: data?.callerId,
+    receiverId: data?.receiverId,
+    participantIds: [data?.callerId, data?.receiverId],
+    matchId: data?.matchId,
+    type: "video",
+    status: "completed",
+    startedAt: data?.createdAt ?? FieldValue.serverTimestamp(),
+    endedAt: FieldValue.serverTimestamp(),
+    duration: 0,
+  });
+  return {ok: true};
+});
+
+export const expireVideoCall = onCall(socialCallable, async (request) => {
+  const uid = requireUid(request.auth?.uid);
+  const callId = String(request.data?.callId ?? "");
+  const ref = db.doc(`calls/${callId}`);
+  const snap = await ref.get();
+  const data = snap.data();
+  if (!snap.exists || (data?.callerId !== uid && data?.receiverId !== uid)) {
+    throw new HttpsError("permission-denied", "not-found");
+  }
+  if (data?.status !== "ringing" && data?.status !== "calling") {
+    return {ok: true};
+  }
+  await ref.update({status: "missed", endedAt: FieldValue.serverTimestamp()});
+  await db.doc(`callHistory/${callId}`).set({
+    callerId: data.callerId,
+    receiverId: data.receiverId,
+    participantIds: [data.callerId, data.receiverId],
+    matchId: data.matchId,
+    type: "video",
+    status: "missed",
+    startedAt: data.createdAt,
+    endedAt: FieldValue.serverTimestamp(),
+    duration: 0,
+  });
+  return {ok: true};
+});
+
+export const sendMessageNotification = onDocumentCreated(
+  {
+    document: "matches/{matchId}/messages/{messageId}",
+    region: "europe-west1",
+  },
+  async (event) => {
+    const data = event.data?.data();
+    const matchId = event.params.matchId;
+    if (!data) {
+      return;
+    }
+    const senderId = String(data.senderId ?? "");
+    const receiverId = String(data.receiverId ?? "");
+    if (await isBlocked(senderId, receiverId)) {
+      return;
+    }
+    const matchRef = db.doc(`matches/${matchId}`);
+    await matchRef.update({
+      lastMessage: previewText(String(data.text ?? "")),
+      lastMessageAt: FieldValue.serverTimestamp(),
+      [`unreadCounts.${receiverId}`]: FieldValue.increment(1),
+      [`isNewFor.${receiverId}`]: false,
+    });
+    const preview = previewText(String(data.text ?? ""));
+    await sendUserPush({
+      uid: receiverId,
+      type: FcmTypes.newMessage,
+      data: {matchId},
+      prefKey: "messageNotifications",
+      bodyOverride: preview,
+    });
+  },
+);
+
+export const sendMatchNotification = onDocumentCreated(
+  {
+    document: "matches/{matchId}",
+    region: "europe-west1",
+  },
+  async (event) => {
+    const data = event.data?.data();
+    const userIds = (data?.userIds as string[]) ?? [];
+    for (const uid of userIds) {
+      await sendUserPush({
+        uid,
+        type: FcmTypes.newMatch,
+        data: {matchId: event.params.matchId},
+        prefKey: "matchNotifications",
+      });
+    }
+  },
+);

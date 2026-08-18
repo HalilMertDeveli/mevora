@@ -1,0 +1,39 @@
+{
+  "identifier" : "MevoraBoost",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "29.99",
+      "familyShareable" : false,
+      "internalID" : "BOOST30",
+      "localizations" : [
+        {
+          "description" : "Show your profile to more people for 30 minutes.",
+          "displayName" : "Mevora Boost",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Profilini 30 dakika boyunca daha fazla kişiye göster.",
+          "displayName" : "Mevora Boost",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "com.mevora.app.boost",
+      "referenceName" : "Boost 30 min",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "mevora",
+    "_developerTeamID" : "REPLACE_ME"
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

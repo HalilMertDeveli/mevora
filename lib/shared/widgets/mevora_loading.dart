@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/constants/app_strings.dart';
+import 'package:mevora/l10n/app_localizations.dart';
 
 enum MevoraLoadingStyle { inline, page }
 
@@ -21,6 +21,8 @@ class MevoraLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    final resolved = message ?? l10n?.loading ?? 'Loading';
     final indicator = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -34,18 +36,22 @@ class MevoraLoading extends StatelessWidget {
         ),
         if (message != null) ...[
           const SizedBox(height: AppSpacing.md),
-          Text(message!, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            message!,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ],
       ],
     );
 
     if (style == MevoraLoadingStyle.page) {
       return Semantics(
-        label: message ?? AppStrings.loading,
+        label: resolved,
         child: Center(child: indicator),
       );
     }
 
-    return Semantics(label: message ?? AppStrings.loading, child: indicator);
+    return Semantics(label: resolved, child: indicator);
   }
 }

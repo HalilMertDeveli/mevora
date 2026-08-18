@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/shared/animations/mevora_press_scale.dart';
 
 enum MevoraButtonVariant { primary, secondary, ghost, destructive }
 
@@ -67,7 +68,15 @@ class MevoraButton extends StatelessWidget {
                   Icon(icon, size: iconSize),
                   const SizedBox(width: 8),
                 ],
-                Text(label),
+                Flexible(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
+                  ),
+                ),
               ],
             ),
     );
@@ -77,7 +86,7 @@ class MevoraButton extends StatelessWidget {
         Size(isExpanded ? double.infinity : 0, height),
       ),
       padding: WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: horizontalPadding),
+        EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
       ),
       elevation: const WidgetStatePropertyAll(0),
       shape: WidgetStatePropertyAll(
@@ -91,7 +100,9 @@ class MevoraButton extends StatelessWidget {
       button: true,
       enabled: enabled,
       label: label,
-      child: switch (variant) {
+      child: MevoraPressScale(
+        enabled: enabled,
+        child: switch (variant) {
         MevoraButtonVariant.primary => FilledButton(
           onPressed: enabled ? onPressed : null,
           style: style,
@@ -115,7 +126,8 @@ class MevoraButton extends StatelessWidget {
           ),
           child: child,
         ),
-      },
+        },
+      ),
     );
   }
 

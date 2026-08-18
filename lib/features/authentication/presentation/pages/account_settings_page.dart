@@ -1,0 +1,136 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:mevora/core/config/auth_scope.dart';
+import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/features/authentication/domain/entities/auth_provider_id.dart';
+import 'package:mevora/features/authentication/presentation/auth_error_text.dart';
+import 'package:mevora/features/settings/presentation/widgets/language_settings_section.dart';
+import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_dialog.dart';
+
+class AccountSettingsPage extends StatelessWidget {
+  const AccountSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthScope.of(context);
+    final l10n = AppLocalizations.of(context);
+    final user = auth.user;
+    final providers = user?.authProviders;
+    final error = localizeAuthError(l10n, auth);
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.account)),
+      body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        children: [
+          const LanguageSettingsSection(),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            l10n.linkedAccounts,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _linkTile(
+            context,
+            label: l10n.continueWithGoogle,
+            linked: providers?.google ?? false,
+            linkedLabel: l10n.linked,
+            linkLabel: l10n.link,
+            onLink: () => unawaited(
+              auth.linkProvider(AuthProviderId.google),
+            ),
+          ),
+          _linkTile(
+            context,
+            label: l10n.continueWithApple,
+            linked: providers?.apple ?? false,
+            linkedLabel: l10n.linked,
+            linkLabel: l10n.link,
+            onLink: () => unawaited(
+              auth.linkProvider(AuthProviderId.apple),
+            ),
+          ),
+          _linkTile(
+            context,
+            label: l10n.continueWithSpotify,
+            linked: providers?.spotify ?? false,
+            linkedLabel: l10n.linked,
+            linkLabel: l10n.link,
+            onLink: () => unawaited(
+              auth.linkProvider(AuthProviderId.spotify),
+            ),
+          ),
+          _linkTile(
+            context,
+            label: l10n.continueWithPhone,
+            linked: providers?.phone ?? false,
+            linkedLabel: l10n.linked,
+            linkLabel: l10n.link,
+            onLink: null,
+          ),
+          if (error != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              error,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.xl),
+          MevoraButton(
+            label: l10n.logOut,
+            variant: MevoraButtonVariant.secondary,
+            onPressed: auth.isBusy ? null : () => unawaited(auth.signOut()),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          MevoraButton(
+            label: l10n.deleteAccount,
+            variant: MevoraButtonVariant.destructive,
+            onPressed: auth.isBusy
+                ? null
+                : () => unawaited(_confirmDelete(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _linkTile(
+    BuildContext context, {
+    required String label,
+    required bool linked,
+    required String linkedLabel,
+    required String linkLabel,
+    required VoidCallback? onLink,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(label, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: linked
+          ? Text(linkedLabel)
+          : MevoraButton(
+              label: linkLabel,
+              variant: MevoraButtonVariant.ghost,
+              isExpanded: false,
+              onPressed: onLink,
+            ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await MevoraDialog.show(
+      context,
+      title: l10n.deleteAccountTitle,
+      message: l10n.deleteAccountBody,
+      confirmLabel: l10n.deleteConfirm,
+      confirmVariant: MevoraButtonVariant.destructive,
+    );
+    if (confirmed == true && context.mounted) {
+      await AuthScope.of(context).deleteAccount();
+    }
+  }
+}

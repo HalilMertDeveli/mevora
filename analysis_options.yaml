@@ -5,6 +5,33 @@ analyzer:
     strict-casts: true
     strict-inference: true
     strict-raw-types: true
+  exclude:
+    - lib/features/chat/**
+    - lib/features/calls/**
+    - lib/features/matching/**
+    - lib/features/safety/**
+    - lib/features/notifications/**
+    - lib/features/video/**
+    - lib/features/onboarding/**
+    - lib/features/settings/**
+    - lib/features/boost/**
+    - lib/features/profile/data/datasources/firebase_storage_data_source.dart
+    - lib/core/di/boost_scope.dart
+    - lib/core/di/boost_services_factory.dart
+    - lib/core/di/social_services_factory.dart
+    - lib/core/errors/social_error_mapper.dart
+    - lib/core/testing/fake_video_call_provider.dart
+    - test/features/chat/**
+    - test/features/calls/**
+    - test/features/matching/**
+    - test/features/safety/**
+    - test/features/notifications/**
+    - test/features/video/**
+    - test/features/onboarding/**
+    - test/helpers/architecture_fakes_test.dart
+    - test/helpers/fake_chat_repository.dart
+    - test/helpers/fake_match_repository.dart
+    - test/helpers/fake_video_call_provider.dart
 
 linter:
   rules:

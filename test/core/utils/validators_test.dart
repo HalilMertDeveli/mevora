@@ -22,6 +22,15 @@ void main() {
       );
       expect(Validators.minLength('abcdefgh', 8, field: 'Password'), isNull);
     });
+
+    test('password and confirmPassword validate together', () {
+      expect(Validators.password('short'), 'Password must be at least 8 characters');
+      expect(
+        Validators.confirmPassword('password1', 'password2'),
+        'Passwords do not match',
+      );
+      expect(Validators.confirmPassword('password1', 'password1'), isNull);
+    });
   });
 
   group('StringX', () {

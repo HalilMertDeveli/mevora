@@ -1,21 +1,12 @@
 rules_version = '2';
 
-// ===============================================================
-// Assumed Data Model
-// ===============================================================
-//
-// Phase 2 keeps all client access denied. Later phases will add
-// ownership rules for these collections:
-//
-// Collection: users/{userId}
-// Collection: likes/{likeId}
-// Collection: matches/{matchId}
-// Collection: conversations/{conversationId}/messages/{messageId}
-// Collection: reports/{reportId}
-// Collection: blocks/{blockId}
-//
-// Matches and likes must never be creatable by an arbitrary client.
-// ===============================================================
+// users/{uid}                  ACCOUNT ONLY (private). May contain
+//   location: { latitude, longitude, updatedAt } readable by the owner only.
+// userLocation/{uid}           OWNER READ/WRITE ONLY (lat, lng, geohash)
+// Other clients never read exact GPS. Discovery receives distanceLabel from
+// Cloud Functions (getDiscoveryCandidates / getDistanceLabel).
+// Open-database rules are forbidden. Unknown paths are denied.
+// Identity is request.auth.uid. Clients cannot spoof another uid.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -25,6 +16,236 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isMatchParticipant(matchId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/matches/$(matchId))
+        && request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.userIds;
+    }
+
+    function isBlockedPair(a, b) {
+      return exists(/databases/$(database)/documents/users/$(a)/blockedUsers/$(b))
+        || exists(/databases/$(database)/documents/users/$(b)/blockedUsers/$(a));
+    }
+
+    function unchanged(key) {
+      return request.resource.data[key] == resource.data[key];
+    }
+
+    // -----------------------------------------------------------
+    // users/{uid} — private account. Spec + prototype fields.
+    // -----------------------------------------------------------
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && (request.resource.data.id == userId || request.resource.data.uid == userId)
+        && request.resource.data.get('isBanned', false) == false
+        && request.resource.data.get('isVerified', false) == false
+        && request.resource.data.get('phoneVerified', false) == false
+        && request.resource.data.get('accountStatus', 'active') != 'banned';
+
+      allow update: if isOwner(userId)
+        && (request.resource.data.id == userId || request.resource.data.uid == userId)
+        && request.resource.data.get('isBanned', resource.data.get('isBanned', false))
+          == resource.data.get('isBanned', false)
+        && request.resource.data.get('isVerified', resource.data.get('isVerified', false))
+          == resource.data.get('isVerified', false)
+        && request.resource.data.get('phoneVerified', resource.data.get('phoneVerified', false))
+          == resource.data.get('phoneVerified', false)
+        && request.resource.data.get('accountStatus', resource.data.get('accountStatus', 'active'))
+          == resource.data.get('accountStatus', 'active');
+
+      allow delete: if false;
+
+      match /devices/{deviceId} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && request.resource.data.token is string
+          && request.resource.data.token.size() <= 4096;
+      }
+
+      match /fcmTokens/{tokenId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /passedUsers/{passedUserId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /blockedUsers/{blockedUserId} {
+        allow get: if isOwner(userId) || request.auth.uid == blockedUserId;
+        allow list: if isOwner(userId);
+        allow create, delete: if isOwner(userId) && blockedUserId != userId;
+        allow update: if false;
+      }
+
+      match /settings/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /presence/current {
+        allow write: if isOwner(userId);
+        allow read: if isOwner(userId)
+          || (
+            isAuthenticated()
+            && get(/databases/$(database)/documents/userPrivacy/$(userId)).data.get('showOnlineStatus', false) == true
+          );
+      }
+
+      match /boosts/{boostId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+    }
+
+    // -----------------------------------------------------------
+    // profiles/{uid} — public dating card. No auth secrets or GPS.
+    // -----------------------------------------------------------
+    match /profiles/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId)
+        && (request.resource.data.get('uid', userId) == userId)
+        && !request.resource.data.keys().hasAny([
+          'email',
+          'phoneNumber',
+          'password',
+          'authProviders',
+          'phoneVerified',
+          'latitude',
+          'longitude',
+          'geohash',
+          'location',
+          'fcmToken',
+          'token'
+        ]);
+      allow delete: if false;
+    }
+
+    match /userPreferences/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && request.resource.data.get('minAge', 18) >= 18
+        && request.resource.data.get('maxAge', 99) >= request.resource.data.get('minAge', 18)
+        && request.resource.data.get('maxDistance', 50) >= 1
+        && request.resource.data.get('maxDistance', 50) <= 500;
+    }
+
+    function languageCodeValid() {
+      return !('languageCode' in request.resource.data)
+        || request.resource.data.languageCode in ['tr', 'en'];
+    }
+
+    match /userSettings/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && languageCodeValid();
+      allow delete: if isOwner(userId);
+    }
+
+    match /userPrivacy/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /userLocation/{userId} {
+      allow read, delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.latitude is number
+        && request.resource.data.longitude is number
+        && request.resource.data.latitude >= -90
+        && request.resource.data.latitude <= 90
+        && request.resource.data.longitude >= -180
+        && request.resource.data.longitude <= 180
+        && request.resource.data.geohash is string
+        && request.resource.data.geohash.size() >= 1
+        && request.resource.data.geohash.size() <= 12;
+    }
+
+    match /likes/{likeId} {
+      allow read: if isAuthenticated() && resource.data.fromUserId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /matches/{matchId} {
+      allow read: if isMatchParticipant(matchId);
+      allow create, delete: if false;
+      allow update: if isMatchParticipant(matchId)
+        && unchanged('userIds')
+        && unchanged('createdAt')
+        && request.resource.data.isActive == resource.data.isActive
+        && request.resource.data.get('unmatchedBy', null)
+          == resource.data.get('unmatchedBy', null);
+
+      match /messages/{messageId} {
+        allow read: if isMatchParticipant(matchId);
+        allow create: if isMatchParticipant(matchId)
+          && get(/databases/$(database)/documents/matches/$(matchId)).data.isActive == true
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.receiverId != request.auth.uid
+          && request.resource.data.receiverId in get(/databases/$(database)/documents/matches/$(matchId)).data.userIds
+          && !isBlockedPair(request.auth.uid, request.resource.data.receiverId)
+          && (!('text' in request.resource.data)
+            || (request.resource.data.text is string && request.resource.data.text.size() <= 2000));
+        allow update: if isMatchParticipant(matchId)
+          && unchanged('senderId')
+          && unchanged('receiverId');
+        allow delete: if false;
+      }
+
+      match /meta/{docId} {
+        allow read, write: if isMatchParticipant(matchId);
+      }
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
+    }
+
+    match /reports/{reportId} {
+      allow read: if isAuthenticated() && resource.data.reporterId == request.auth.uid;
+      allow create: if isAuthenticated()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reportedUserId != request.auth.uid
+        && request.resource.data.status == 'open';
+      allow update, delete: if false;
+    }
+
+    match /calls/{callId} {
+      allow read: if isAuthenticated()
+        && (request.auth.uid == resource.data.callerId
+          || request.auth.uid == resource.data.receiverId
+          || (resource.data.keys().hasAny(['participantIds'])
+            && request.auth.uid in resource.data.participantIds));
+      allow create, update, delete: if false;
+    }
+
+    match /callHistory/{historyId} {
+      allow read: if isAuthenticated()
+        && (request.auth.uid == resource.data.callerId
+          || request.auth.uid == resource.data.receiverId
+          || (resource.data.keys().hasAny(['participantIds'])
+            && request.auth.uid in resource.data.participantIds));
+      allow write: if false;
+    }
+
+    match /blocks/{blockId} {
+      allow read: if isAuthenticated()
+        && (resource.data.blockerId == request.auth.uid
+          || resource.data.blockedUserId == request.auth.uid);
+      allow create, delete: if isAuthenticated()
+        && request.resource.data.blockerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /purchases/{purchaseId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if false;
     }
 
     match /{document=**} {

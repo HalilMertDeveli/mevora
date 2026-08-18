@@ -20,6 +20,7 @@ import 'package:mevora/core/presentation/pages/firebase_unavailable_app.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/core/services/firebase/firebase_bootstrap.dart';
 import 'package:mevora/core/services/firebase/firebase_crash_reporter.dart';
+import 'package:mevora/core/services/permissions/permission_handler_permission_service.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/data/auth_composition.dart';
 import 'package:mevora/features/location/data/location_analytics.dart';
@@ -62,7 +63,11 @@ Future<void> bootstrap(AppEnvironment environment) async {
   };
 
   final authController = createAuthController(config: config, logger: logger);
-  final locationServices = createLocationServices(logger: logger);
+  const permissionService = PermissionHandlerPermissionService();
+  final locationServices = createLocationServices(
+    logger: logger,
+    permissions: permissionService,
+  );
   final discoveryServices = createDiscoveryServices();
   final socialServices = createFirebaseSocialServices();
   final analytics = environment.isProduction
@@ -103,6 +108,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       purchaseRepository: boostServices.purchaseRepository,
       analytics: analytics,
       languageController: languageController,
+      permissionService: permissionService,
     ),
   );
 }

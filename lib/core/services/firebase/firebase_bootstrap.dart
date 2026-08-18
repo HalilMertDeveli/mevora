@@ -32,6 +32,8 @@ class FirebaseBootstrap {
 
     if (config.useEmulators) {
       await _connectEmulators(config);
+    } else {
+      await _configureLivePhoneAuth();
     }
 
     await _configureAppCheck(config);
@@ -47,16 +49,29 @@ class FirebaseBootstrap {
     await FirebaseMessaging.instance.setAutoInitEnabled(true);
 
     logger.info(
-      'Firebase ready (${config.firebaseProjectId}, emulators=${config.useEmulators})',
+      'Firebase ready (${config.firebaseProjectId}, emulators=${config.useEmulators}, authEmulator=${config.useAuthEmulator})',
     );
   }
 
   Future<void> _connectEmulators(AppConfig config) async {
     final emulators = config.emulatorConfig;
-    await FirebaseAuth.instance.useAuthEmulator(
-      emulators.host,
-      emulators.authPort,
-    );
+    if (config.useAuthEmulator) {
+      await FirebaseAuth.instance.useAuthEmulator(
+        emulators.host,
+        emulators.authPort,
+      );
+      await FirebaseAuth.instance.setSettings(
+        appVerificationDisabledForTesting: true,
+      );
+      logger.info(
+        'Auth emulator at ${emulators.host}:${emulators.authPort} (no real SMS)',
+      );
+    } else {
+      await _configureLivePhoneAuth();
+      logger.info(
+        'Auth uses live ${config.firebaseProjectId} for Phone Auth SMS',
+      );
+    }
     FirebaseFirestore.instance.useFirestoreEmulator(
       emulators.host,
       emulators.firestorePort,
@@ -69,7 +84,25 @@ class FirebaseBootstrap {
       emulators.host,
       emulators.functionsPort,
     );
-    logger.info('Connected Firebase SDKs to emulators at ${emulators.host}');
+    logger.info(
+      'Connected Firestore/Functions/Storage emulators at ${emulators.host}',
+    );
+  }
+
+  /// Live Phone Auth needs Play Integrity / reCAPTCHA. Never disable
+  /// verification against production or staging.
+  Future<void> _configureLivePhoneAuth() async {
+    try {
+      await FirebaseAuth.instance.setSettings(
+        appVerificationDisabledForTesting: false,
+      );
+    } on Object catch (error, stackTrace) {
+      logger.warning(
+        'Auth phone verification settings were not applied',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<void> _configureAppCheck(AppConfig config) async {

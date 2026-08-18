@@ -138,7 +138,7 @@ is the auth-specific sanitizer.
 | Crashlytics | `CrashReporter` |
 | Video SDK | `VideoCallProvider` in `features/calls` |
 
-Environments: development (emulators, `mevora-dev`), staging, production.
+Environments: development (`mevora-dev`, Firestore emulator; live Phone Auth unless `USE_AUTH_EMULATOR=true`), staging, production.
 Secrets stay in `--dart-define` / CI. Spotify client **id** may ship; the
 secret must not.
 

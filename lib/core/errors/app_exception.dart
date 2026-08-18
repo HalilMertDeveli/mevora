@@ -45,6 +45,7 @@ enum AuthErrorKind {
   weakPassword,
   userNotFound,
   wrongPassword,
+  emailInUse,
 }
 
 final class AuthException extends AppException {

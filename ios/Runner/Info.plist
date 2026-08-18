@@ -3,11 +3,15 @@
 <plist version="1.0">
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Mevora, yakındaki eşleşmeleri göstermek için konumunuzu kullanır.</string>
+	<string>Mevora uses your location to improve distance and nearby discovery.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Görüntülü arama için kamera izni gerekir.</string>
+	<string>Mevora uses your camera to take profile photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Görüntülü arama için mikrofon izni gerekir.</string>
+	<string>Mevora uses your microphone for voice and audio features.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Mevora needs access to your photos so you can add profile pictures.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Mevora needs access to your photos so you can add profile pictures.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleURLTypes</key>

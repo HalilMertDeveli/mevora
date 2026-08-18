@@ -15,6 +15,17 @@ void main() {
     expect(L10nErrors.auth(tr, AuthErrorKind.invalidOtp), 'Doğrulama kodu geçersiz.');
   });
 
+  test('email-in-use is localized for EN and TR', () {
+    expect(
+      L10nErrors.auth(en, AuthErrorKind.emailInUse),
+      'An account already exists for that email.',
+    );
+    expect(
+      L10nErrors.auth(tr, AuthErrorKind.emailInUse),
+      'Bu e-posta ile zaten bir hesap var.',
+    );
+  });
+
   test('distance uses locale decimal separators and dating copy', () {
     expect(L10nFormat.distance(en, 2), '2 km away');
     expect(L10nFormat.distance(tr, 2), '2 km uzakta');

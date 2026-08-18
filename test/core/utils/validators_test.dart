@@ -25,6 +25,8 @@ void main() {
 
     test('password and confirmPassword validate together', () {
       expect(Validators.password('short'), 'Password must be at least 8 characters');
+      expect(Validators.password(''), 'Password is required');
+      expect(Validators.password('password1'), isNull);
       expect(
         Validators.confirmPassword('password1', 'password2'),
         'Passwords do not match',

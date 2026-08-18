@@ -43,6 +43,11 @@ abstract class AuthRepository {
 
   Future<Result<AuthUser>> linkProvider(AuthProviderId provider);
 
+  Future<Result<AuthUser>> linkEmail({
+    required String email,
+    required String password,
+  });
+
   Future<Result<PhoneChallenge>> sendPhoneLinkCode(String e164Phone);
 
   Future<Result<AuthUser>> verifyPhoneLinkCode({

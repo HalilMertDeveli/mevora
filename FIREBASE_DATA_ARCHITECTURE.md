@@ -23,7 +23,7 @@ This document describes the Firebase-centric data layer for Mevora. It is the so
 | Analytics | Product events only. No phone, GPS, OTP, or message body. |
 | Crashlytics | Enabled outside development |
 | Remote Config | Product switches. **Not security.** Rules and functions stay authoritative. |
-| Emulator Suite | Development only (`auth 9099`, `firestore 8080`, `functions 5001`, `storage 9199`) |
+| Emulator Suite | Development Firestore/Functions/Storage; Auth emulator opt-in (`9099`) |
 
 ---
 
@@ -230,4 +230,4 @@ Firebase SDKs are imported only in `*DataSource` classes:
 
 Repositories (`ProfileRepository`, `MatchRepository`, `ChatRepository`, `LocationRepository`, `StorageRepository`) depend on those datasources. Domain entities and use cases do not import `cloud_firestore` or `firebase_auth`.
 
-Development always uses emulators via `AppConfig.useEmulators`.
+Development uses Firestore / Functions / Storage emulators via `AppConfig.useEmulators`. Auth emulator is opt-in (`useAuthEmulator`) so Phone Auth can send real SMS.

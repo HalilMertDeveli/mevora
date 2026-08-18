@@ -6,9 +6,16 @@ import 'package:mevora/core/services/location/geo_position.dart';
 import 'package:mevora/core/services/location/location_accuracy_kind.dart';
 import 'package:mevora/core/services/location/location_device.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
+import 'package:mevora/core/services/permissions/location_permission_bridge.dart';
+import 'package:mevora/core/services/permissions/permission_handler_permission_service.dart';
+import 'package:mevora/core/services/permissions/permission_service.dart';
+import 'package:mevora/core/services/permissions/permission_type.dart';
 
 class GeolocatorLocationDevice implements LocationDevice {
-  const GeolocatorLocationDevice();
+  GeolocatorLocationDevice({PermissionService? permissions})
+    : _permissions = permissions ?? const PermissionHandlerPermissionService();
+
+  final PermissionService _permissions;
 
   @override
   Future<bool> isLocationServiceEnabled() {
@@ -17,17 +24,15 @@ class GeolocatorLocationDevice implements LocationDevice {
 
   @override
   Future<LocationPermissionStatus> checkPermission() async {
-    return _mapPermission(
-      await Geolocator.checkPermission(),
-      afterRequest: false,
+    return toLocationPermissionStatus(
+      await _permissions.check(PermissionType.location),
     );
   }
 
   @override
   Future<LocationPermissionStatus> requestPermission() async {
-    return _mapPermission(
-      await Geolocator.requestPermission(),
-      afterRequest: true,
+    return toLocationPermissionStatus(
+      await _permissions.request(PermissionType.location),
     );
   }
 
@@ -75,7 +80,7 @@ class GeolocatorLocationDevice implements LocationDevice {
   }
 
   @override
-  Future<bool> openAppSettings() => Geolocator.openAppSettings();
+  Future<bool> openAppSettings() => _permissions.openSettings();
 
   @override
   Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
@@ -89,24 +94,8 @@ class GeolocatorLocationDevice implements LocationDevice {
         LocationAccuracyStatus.reduced => LocationAccuracyKind.reduced,
         _ => LocationAccuracyKind.unknown,
       };
-    } on Object {
+    }     on Object {
       return LocationAccuracyKind.unknown;
     }
-  }
-
-  LocationPermissionStatus _mapPermission(
-    LocationPermission permission, {
-    required bool afterRequest,
-  }) {
-    return switch (permission) {
-      LocationPermission.always || LocationPermission.whileInUse =>
-        LocationPermissionStatus.granted,
-      LocationPermission.denied => afterRequest
-          ? LocationPermissionStatus.denied
-          : LocationPermissionStatus.notDetermined,
-      LocationPermission.deniedForever =>
-        LocationPermissionStatus.permanentlyDenied,
-      LocationPermission.unableToDetermine => LocationPermissionStatus.unknown,
-    };
   }
 }

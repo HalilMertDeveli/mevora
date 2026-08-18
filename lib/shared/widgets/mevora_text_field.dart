@@ -25,6 +25,8 @@ class MevoraTextField extends StatelessWidget {
     this.autofillHints,
     this.inputFormatters,
     this.textCapitalization = TextCapitalization.none,
+    this.autocorrect = true,
+    this.enableSuggestions = true,
   });
 
   final TextEditingController? controller;
@@ -48,6 +50,8 @@ class MevoraTextField extends StatelessWidget {
   final Iterable<String>? autofillHints;
   final List<TextInputFormatter>? inputFormatters;
   final TextCapitalization textCapitalization;
+  final bool autocorrect;
+  final bool enableSuggestions;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +71,8 @@ class MevoraTextField extends StatelessWidget {
       autofillHints: autofillHints,
       inputFormatters: inputFormatters,
       textCapitalization: textCapitalization,
+      autocorrect: autocorrect,
+      enableSuggestions: enableSuggestions,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,

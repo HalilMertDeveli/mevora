@@ -136,6 +136,80 @@ void main() {
     expect(authRepository.user?.authProviders.google, isTrue);
   });
 
+  test('register with email succeeds for a new account', () async {
+    controller.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    final result = await controller.register(
+      email: ' ada@mevora.app ',
+      password: 'password1',
+    );
+
+    expect(result, isA<Success<void>>());
+    expect(authRepository.registerCalls, 1);
+    expect(authRepository.lastEmail, 'ada@mevora.app');
+    expect(authRepository.passwordSubmitted, isTrue);
+  });
+
+  test('register surfaces email-already-in-use without raw firebase text', () async {
+    controller.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    authRepository.nextFailure = const AuthFailure(
+      'An account already exists for that email.',
+      kind: AuthErrorKind.emailInUse,
+    );
+
+    final result = await controller.register(
+      email: 'ada@mevora.app',
+      password: 'password1',
+    );
+
+    expect(result, isA<Err<void>>());
+    expect(controller.errorKind, AuthErrorKind.emailInUse);
+    expect(controller.errorMessage?.toLowerCase().contains('firebase'), isFalse);
+  });
+
+  test('password reset hides whether the email exists', () async {
+    controller.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    authRepository.nextFailure = const AuthFailure(
+      'No account found for that email.',
+      kind: AuthErrorKind.userNotFound,
+    );
+
+    final result = await controller.sendPasswordReset('ada@mevora.app');
+
+    expect(result, isA<Success<void>>());
+    expect(controller.errorKind, isNull);
+    expect(controller.errorMessage, isNull);
+    expect(authRepository.lastResetEmail, 'ada@mevora.app');
+  });
+
+  test('link email records the provider on the current account', () async {
+    authRepository.user = const AuthUser(
+      id: 'user-1',
+      onboardingCompleted: true,
+      profileCompleted: true,
+    );
+    documents.complete = true;
+    controller.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    final result = await controller.linkEmail(
+      email: 'ada@mevora.app',
+      password: 'password1',
+    );
+
+    expect(result, isA<Success<void>>());
+    expect(authRepository.lastLinkedProvider, AuthProviderId.email);
+    expect(authRepository.user?.authProviders.email, isTrue);
+    expect(controller.status, isA<Authenticated>());
+  });
+
   test('invalid otp stays on verification with a Turkish error', () async {
     controller.start();
     await Future<void>.delayed(Duration.zero);

@@ -13,6 +13,11 @@ void main() {
     expect(config.packageName, 'com.mevora.app.dev');
     expect(config.firebaseProjectId, 'mevora-dev');
     expect(config.useEmulators, isTrue);
+    expect(
+      config.useAuthEmulator,
+      isFalse,
+      reason: 'Auth emulator blocks real SMS; it is opt-in only',
+    );
     expect(config.showDebugBanner, isTrue);
   });
 
@@ -23,6 +28,7 @@ void main() {
     expect(config.packageName, 'com.mevora.app.staging');
     expect(config.firebaseProjectId, 'mevora-staging');
     expect(config.useEmulators, isFalse);
+    expect(config.useAuthEmulator, isFalse);
   });
 
   test('production config uses the production Firebase project', () {
@@ -32,6 +38,7 @@ void main() {
     expect(config.packageName, 'com.mevora.app');
     expect(config.firebaseProjectId, 'mevora-production');
     expect(config.useEmulators, isFalse);
+    expect(config.useAuthEmulator, isFalse);
     expect(config.showDebugBanner, isFalse);
     expect(config.enableVerboseLogging, isFalse);
   });

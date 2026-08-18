@@ -27,7 +27,8 @@ class FcmPushBinder {
       return;
     }
     _attached = true;
-    await _messaging.requestPermission();
+    // Never request OS notification permission on launch. Request it from
+    // PermissionService when the user opens a notifications feature.
     await _registerCurrentToken();
     _tokenSub = _messaging.watchTokenRefresh().listen(_registerToken);
     _openedSub = _messaging.watchOpenedApp().listen(_open);
@@ -42,6 +43,8 @@ class FcmPushBinder {
       _open(initial);
     }
   }
+
+  Future<void> registerCurrentToken() => _registerCurrentToken();
 
   Future<void> _registerCurrentToken() async {
     final result = await _messaging.getToken();

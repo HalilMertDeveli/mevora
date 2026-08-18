@@ -49,7 +49,7 @@ flutter run --flavor staging -t lib/main_staging.dart
 flutter run --flavor production -t lib/main_production.dart
 ```
 
-Development (`AppConfig.useEmulators`) talks only to the Emulator Suite (`auth 9099`, `firestore 8080`, `functions 5001`, `storage 9199`). Android emulator host is `10.0.2.2`; iOS/desktop host is `127.0.0.1`.
+Development (`AppConfig.useEmulators`) talks to the Emulator Suite for Firestore `8080`, Functions `5001`, and Storage `9199`. **Auth emulator is off by default** so Firebase Phone Auth can send real SMS via `mevora-dev`. Opt in with `--dart-define=USE_AUTH_EMULATOR=true` (Auth `9099`, no SMS). Android emulator host is `10.0.2.2`; iOS/desktop host is `127.0.0.1`; override with `FIREBASE_EMULATOR_HOST`. Physical devices should pass `--dart-define=USE_EMULATORS=false`.
 
 VS Code / Cursor launches are in `.vscode/launch.json`.
 

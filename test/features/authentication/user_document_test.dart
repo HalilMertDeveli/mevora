@@ -45,8 +45,22 @@ void main() {
 
     final entity = document.toEntity();
     expect(entity.id, 'user-1');
+    expect(entity.email, 'a@mevora.app');
     expect(entity.isBanned, isTrue);
     expect(entity.profileCompleted, isTrue);
+  });
+
+  test('email is read from the private account, not the public profile', () {
+    final document = UserDocument.fromAccountAndProfile(
+      uid: 'user-1',
+      account: {'email': 'private@mevora.app'},
+      profile: {
+        'email': 'leaked@mevora.app',
+        'displayName': 'Ada',
+      },
+    );
+
+    expect(document.email, 'private@mevora.app');
   });
 
   test('storage profile paths stay under the owner uid', () {

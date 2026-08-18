@@ -9,6 +9,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
+import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/language_controller.dart';
 import 'package:mevora/core/localization/language_repository.dart';
@@ -16,6 +17,8 @@ import 'package:mevora/core/localization/language_scope.dart';
 import 'package:mevora/core/localization/local_language_data_source.dart';
 import 'package:mevora/core/routing/app_router.dart';
 import 'package:mevora/core/services/app_logger.dart';
+import 'package:mevora/core/services/permissions/permission_handler_permission_service.dart';
+import 'package:mevora/core/services/permissions/permission_service.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
@@ -23,6 +26,7 @@ import 'package:mevora/features/discovery/domain/repositories/discovery_reposito
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
+import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 class MevoraApp extends StatefulWidget {
@@ -39,6 +43,8 @@ class MevoraApp extends StatefulWidget {
     this.purchaseRepository,
     this.analytics,
     this.languageController,
+    this.permissionService,
+    this.permissionController,
   });
 
   final AppConfig config;
@@ -52,6 +58,8 @@ class MevoraApp extends StatefulWidget {
   final PurchaseRepository? purchaseRepository;
   final AnalyticsProvider? analytics;
   final LanguageController? languageController;
+  final PermissionService? permissionService;
+  final PermissionController? permissionController;
 
   @override
   State<MevoraApp> createState() => _MevoraAppState();
@@ -64,6 +72,9 @@ class _MevoraAppState extends State<MevoraApp> {
   FcmPushBinder? _pushBinder;
   late final LanguageController _languageController;
   bool _ownsLanguageController = false;
+  late final PermissionService _permissionService;
+  late final PermissionController _permissionController;
+  bool _ownsPermissionController = false;
 
   @override
   void initState() {
@@ -95,6 +106,20 @@ class _MevoraAppState extends State<MevoraApp> {
     widget.authController.addListener(_syncLanguageUser);
     _syncLocationGate();
     _syncLanguageUser();
+    _permissionService =
+        widget.permissionService ?? const PermissionHandlerPermissionService();
+    final providedPermissions = widget.permissionController;
+    if (providedPermissions != null) {
+      _permissionController = providedPermissions;
+    } else {
+      _permissionController = PermissionController(
+        service: _permissionService,
+        onNotificationsGranted: () async {
+          await _pushBinder?.registerCurrentToken();
+        },
+      );
+      _ownsPermissionController = true;
+    }
     _router =
         widget.router ??
         createAppRouter(
@@ -148,6 +173,12 @@ class _MevoraAppState extends State<MevoraApp> {
 
     child = LanguageScope(controller: _languageController, child: child);
 
+    child = PermissionScope(
+      service: _permissionService,
+      controller: _permissionController,
+      child: child,
+    );
+
     final social = widget.socialServices;
     if (social != null) {
       child = SocialScope(services: social, child: child);
@@ -195,6 +226,9 @@ class _MevoraAppState extends State<MevoraApp> {
     }
     if (_ownsLanguageController) {
       _languageController.dispose();
+    }
+    if (_ownsPermissionController) {
+      _permissionController.dispose();
     }
     _router.dispose();
     super.dispose();

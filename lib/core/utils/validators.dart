@@ -51,10 +51,10 @@ abstract final class Validators {
   }
 
   static String? password(String? value, [AppLocalizations? l10n]) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || value.isEmpty) {
       return l10n?.passwordRequired ?? 'Password is required';
     }
-    if (value.trim().length < 8) {
+    if (value.length < 8) {
       return l10n?.passwordMinLength(8) ??
           'Password must be at least 8 characters';
     }

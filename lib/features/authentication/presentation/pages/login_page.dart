@@ -9,6 +9,7 @@ import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/utils/validators.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/authentication/presentation/auth_error_text.dart';
+import 'package:mevora/features/authentication/presentation/widgets/auth_error_banner.dart';
 import 'package:mevora/features/authentication/presentation/widgets/auth_layout.dart';
 import 'package:mevora/features/authentication/presentation/widgets/auth_legal_footer.dart';
 import 'package:mevora/features/authentication/presentation/widgets/social_auth_buttons.dart';
@@ -28,7 +29,6 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _showEmail = false;
   String? _emailError;
   String? _passwordError;
 
@@ -53,42 +53,36 @@ class _LoginPageState extends State<LoginPage> {
     return AuthLayout(
       title: l10n.appName,
       subtitle: l10n.connectTagline,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (error != null) ...[
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.error,
+      child: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (error != null) ...[
+              AuthErrorBanner(message: error),
+              const SizedBox(height: AppSpacing.md),
+            ],
+            SocialAuthButtons(
+              enabled: !auth.isBusy,
+              busyProvider: busyProvider,
+              onGoogle: () => unawaited(auth.signInWithGoogle()),
+              onApple: () => unawaited(auth.signInWithApple()),
+              onSpotify: () => unawaited(auth.signInWithSpotify()),
+              onPhone: () => context.push(AppRoutes.phone),
+            ),
+            AuthLegalFooter(
+              onTerms: () => unawaited(
+                launchUrl(Uri.parse(config.termsOfServiceUrl)),
+              ),
+              onPrivacy: () => unawaited(
+                launchUrl(Uri.parse(config.privacyPolicyUrl)),
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          SocialAuthButtons(
-            enabled: !auth.isBusy,
-            busyProvider: busyProvider,
-            onGoogle: () => unawaited(auth.signInWithGoogle()),
-            onApple: () => unawaited(auth.signInWithApple()),
-            onSpotify: () => unawaited(auth.signInWithSpotify()),
-            onPhone: () => context.push(AppRoutes.phone),
-          ),
-          AuthLegalFooter(
-            onTerms: () => unawaited(
-              launchUrl(Uri.parse(config.termsOfServiceUrl)),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              l10n.signInWithEmail,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleSmall,
             ),
-            onPrivacy: () => unawaited(
-              launchUrl(Uri.parse(config.privacyPolicyUrl)),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          MevoraButton(
-            label: l10n.signInWithEmail,
-            variant: MevoraButtonVariant.ghost,
-            onPressed: () => setState(() => _showEmail = !_showEmail),
-          ),
-          if (_showEmail) ...[
             const SizedBox(height: AppSpacing.md),
             MevoraTextField(
               controller: _emailController,
@@ -98,6 +92,9 @@ class _LoginPageState extends State<LoginPage> {
               textInputAction: TextInputAction.next,
               prefixIcon: Icons.mail_outline_rounded,
               errorText: _emailError,
+              enabled: !auth.isBusy,
+              autocorrect: false,
+              enableSuggestions: false,
               autofillHints: const [AutofillHints.email],
               onChanged: (_) {
                 auth.clearError();
@@ -114,9 +111,14 @@ class _LoginPageState extends State<LoginPage> {
               textInputAction: TextInputAction.done,
               prefixIcon: Icons.lock_outline_rounded,
               errorText: _passwordError,
+              enabled: !auth.isBusy,
+              autocorrect: false,
+              enableSuggestions: false,
               autofillHints: const [AutofillHints.password],
               suffixIcon: IconButton(
-                tooltip: _obscurePassword ? l10n.showPassword : l10n.hidePassword,
+                tooltip: _obscurePassword
+                    ? l10n.showPassword
+                    : l10n.hidePassword,
                 onPressed: () {
                   setState(() => _obscurePassword = !_obscurePassword);
                 },
@@ -163,7 +165,7 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
           ],
-        ],
+        ),
       ),
     );
   }

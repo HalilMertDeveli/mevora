@@ -36,11 +36,34 @@ class AppConfig {
 
   bool get enableVerboseLogging => !environment.isProduction;
 
-  /// Development talks only to the Emulator Suite.
-  bool get useEmulators => environment.isDevelopment;
+  /// Development talks to the Emulator Suite for Firestore, Functions, and
+  /// Storage. Pass `--dart-define=USE_EMULATORS=false` on a physical device
+  /// so the whole stack uses live `mevora-dev` (10.0.2.2 is unreachable there).
+  bool get useEmulators {
+    if (!environment.isDevelopment) {
+      return false;
+    }
+    return const bool.fromEnvironment('USE_EMULATORS', defaultValue: true);
+  }
+
+  /// Auth emulator never sends SMS. Off by default so Phone Auth uses live
+  /// `mevora-dev`. Opt in with `--dart-define=USE_AUTH_EMULATOR=true` for
+  /// local test numbers only.
+  bool get useAuthEmulator {
+    if (!useEmulators) {
+      return false;
+    }
+    return const bool.fromEnvironment(
+      'USE_AUTH_EMULATOR',
+      defaultValue: false,
+    );
+  }
 
   FirebaseEmulatorConfig get emulatorConfig {
-    final host = defaultTargetPlatform == TargetPlatform.android
+    const fromEnv = String.fromEnvironment('FIREBASE_EMULATOR_HOST');
+    final host = fromEnv.isNotEmpty
+        ? fromEnv
+        : defaultTargetPlatform == TargetPlatform.android
         ? '10.0.2.2'
         : '127.0.0.1';
     return FirebaseEmulatorConfig(host: host);

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
+import 'package:mevora/features/permissions/presentation/widgets/notification_permission_gate.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 class NotificationSettingsPage extends StatelessWidget {
@@ -30,6 +31,7 @@ class NotificationSettingsPage extends StatelessWidget {
           ),
           body: ListView(
             children: [
+              const NotificationPermissionGate(),
               SwitchListTile(
                 title: Text(l10n.messageNotifications),
                 value: prefs.messageNotifications,

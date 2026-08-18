@@ -19,6 +19,7 @@ class EmailAuthService {
         email: email.trim(),
         password: password,
       );
+      await _sendVerificationBestEffort(result.user);
       return _sessionFrom(result);
     } on FirebaseAuthException catch (error) {
       throw AuthErrorMapper.fromCode(error.code, cause: error);
@@ -52,10 +53,54 @@ class EmailAuthService {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
     } on FirebaseAuthException catch (error) {
+      if (_isUnknownAccount(error.code)) {
+        return;
+      }
       throw AuthErrorMapper.fromCode(error.code, cause: error);
     } on Object catch (error) {
       throw AuthErrorMapper.map(error);
     }
+  }
+
+  Future<AuthSession> link({
+    required String email,
+    required String password,
+  }) async {
+    final current = _firebaseAuth.currentUser;
+    if (current == null) {
+      throw AuthErrorMapper.fromCode('unknown');
+    }
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email.trim(),
+        password: password,
+      );
+      final result = await current.linkWithCredential(credential);
+      await _sendVerificationBestEffort(result.user);
+      return _sessionFrom(result);
+    } on FirebaseAuthException catch (error) {
+      throw AuthErrorMapper.fromCode(error.code, cause: error);
+    } on AuthException {
+      rethrow;
+    } on Object catch (error) {
+      throw AuthErrorMapper.map(error);
+    }
+  }
+
+  Future<void> _sendVerificationBestEffort(User? user) async {
+    if (user == null || user.emailVerified) {
+      return;
+    }
+    try {
+      await user.sendEmailVerification();
+    } on Object {
+      // Registration / linking still succeeds; verification is not a gate.
+    }
+  }
+
+  static bool _isUnknownAccount(String code) {
+    final normalized = code.toLowerCase().replaceAll('_', '-');
+    return normalized == 'user-not-found';
   }
 
   AuthSession _sessionFrom(UserCredential result) {

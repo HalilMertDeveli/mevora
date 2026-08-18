@@ -7,7 +7,7 @@ void main() {
   test('maps email auth codes to user-facing exceptions', () {
     expect(
       AuthErrorMapper.fromCode('email-already-in-use').kind,
-      AuthErrorKind.accountExists,
+      AuthErrorKind.emailInUse,
     );
     expect(
       AuthErrorMapper.fromCode('wrong-password').message,
@@ -33,5 +33,24 @@ void main() {
     final exception = AuthErrorMapper.fromCode('totally-unknown-code');
     expect(exception.message.contains('firebase'), isFalse);
     expect(exception.message, AuthMessages.unknown);
+  });
+
+  test('maps phone-auth send failures without exposing Firebase codes', () {
+    expect(
+      AuthErrorMapper.fromCode('operation-not-allowed').kind,
+      AuthErrorKind.notConfigured,
+    );
+    expect(
+      AuthErrorMapper.fromCode('firebase_auth/invalid-app-credential').kind,
+      AuthErrorKind.smsFailed,
+    );
+    expect(
+      AuthErrorMapper.fromCode('sms-region-restricted').kind,
+      AuthErrorKind.smsFailed,
+    );
+    expect(
+      AuthErrorMapper.fromCode('invalid-app-credential').message,
+      AuthMessages.smsFailed,
+    );
   });
 }

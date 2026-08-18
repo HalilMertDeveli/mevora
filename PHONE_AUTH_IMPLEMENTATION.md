@@ -58,6 +58,20 @@ Firebase Console → Authentication → Sign-in method → **Phone** → Enable,
 
 Test phone numbers belong only in the Firebase Console (or emulator config), never in app source.
 
+### Real SMS vs Auth emulator
+
+The Auth emulator **never sends SMS**. Development therefore uses **live Phone Auth on `mevora-dev`** unless you opt in:
+
+| Goal | Command |
+| --- | --- |
+| Real SMS (default `flutter run` development) | Live Auth. Firestore emulator still used unless `USE_EMULATORS=false`. |
+| Physical device (recommended for SMS) | `flutter run --flavor development -t lib/main_development.dart --dart-define=USE_EMULATORS=false` |
+| Auth emulator / no SMS | `--dart-define=USE_AUTH_EMULATOR=true` and start the Auth emulator |
+
+Android `10.0.2.2` only reaches the host from the **Android emulator**. On a real phone it is a black hole — use `USE_EMULATORS=false` or `--dart-define=FIREBASE_EMULATOR_HOST=127.0.0.1` plus `adb reverse`.
+
+Real SMS also requires Console steps: Phone provider enabled, SMS region allows TR (already set on `mevora-dev`), and **Blaze billing**. Spark cannot send SMS to real numbers.
+
 ### Android SHA certificates
 
 Phone Auth requires the app’s SHA-1 and SHA-256 on the Android app in Firebase.
@@ -107,6 +121,9 @@ The 60-second resend countdown is UX only. Firebase abuse protection and quota a
 - [x] Debug SHA-1 and SHA-256 on Android apps for dev, staging, and production
 - [ ] Play App Signing SHA-1 and SHA-256 on production Android
 - [ ] Phone provider enabled on dev, staging, production (Console only; MCP has no Phone field)
+- [ ] Blaze billing on each project that must send real SMS
+- [x] SMS region allow-list includes TR (and the in-app country catalog) on `mevora-dev`
+- [ ] Same SMS region policy on staging and production
 - [ ] iOS APNs configured
 - [x] No test numbers in source
 - [ ] `syncAuthAccount` deployed

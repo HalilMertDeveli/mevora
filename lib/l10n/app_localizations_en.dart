@@ -832,6 +832,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linked => 'Linked';
 
   @override
+  String get linkEmailTitle => 'Link email and password';
+
+  @override
+  String get linkEmailSubtitle =>
+      'This adds email sign-in to your current account. It does not merge another Mevora account.';
+
+  @override
   String get deleteAccount => 'Delete account';
 
   @override
@@ -963,4 +970,96 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get startupUnavailable =>
       'Mevora could not start. Check your connection and try again.';
+
+  @override
+  String get permissionCameraTitle => 'Camera';
+
+  @override
+  String get permissionCameraDescription =>
+      'Mevora uses your camera to take profile photos.';
+
+  @override
+  String get permissionMicrophoneTitle => 'Microphone';
+
+  @override
+  String get permissionMicrophoneDescription =>
+      'Mevora uses your microphone for voice and audio features.';
+
+  @override
+  String get permissionPhotosTitle => 'Photos';
+
+  @override
+  String get permissionPhotosDescription =>
+      'Mevora needs access to your photos so you can add profile pictures.';
+
+  @override
+  String get permissionLocationTitle => 'Location';
+
+  @override
+  String get permissionLocationDescription =>
+      'Mevora uses your location to improve distance and nearby discovery.';
+
+  @override
+  String get permissionNotificationsTitle => 'Notifications';
+
+  @override
+  String get permissionNotificationsDescription =>
+      'Notifications help you know when you receive a match or message.';
+
+  @override
+  String get permissionAllow => 'Continue';
+
+  @override
+  String get permissionDeniedTitle => 'Permission needed';
+
+  @override
+  String get permissionDeniedBody =>
+      'This feature works better with permission. You can try again, or continue without it.';
+
+  @override
+  String get permissionPermanentlyDeniedBody =>
+      'Permission is turned off. You can enable it in device settings.';
+
+  @override
+  String get permissionContinueWithout => 'Continue without permission';
+
+  @override
+  String get permissionStatusGranted => 'Allowed';
+
+  @override
+  String get permissionStatusDenied => 'Not allowed';
+
+  @override
+  String get permissionStatusRestricted => 'Restricted';
+
+  @override
+  String get permissionStatusLimited => 'Limited access';
+
+  @override
+  String get permissionStatusPermanentlyDenied => 'Off — open device settings';
+
+  @override
+  String get permissionStatusUnknown => 'Unknown';
+
+  @override
+  String get privacyPermissionsTitle => 'Privacy & Permissions';
+
+  @override
+  String get privacyPermissionsSubtitle =>
+      'Mevora asks for each permission only when a feature needs it. You can use the app without granting optional access.';
+
+  @override
+  String get privacyOpenDeviceSettings => 'Open device settings';
+
+  @override
+  String get selectCityInstead => 'Choose a city instead';
+
+  @override
+  String get addPhotoCamera => 'Take photo';
+
+  @override
+  String get addPhotoGallery => 'Choose from gallery';
+
+  @override
+  String get enableDeviceNotifications => 'Enable notifications';
 }

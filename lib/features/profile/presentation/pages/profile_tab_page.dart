@@ -23,6 +23,11 @@ class ProfileTabPage extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(AppRoutes.notificationSettings),
           ),
+          ListTile(
+            title: Text(l10n.privacyPermissionsTitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.privacyPermissions),
+          ),
         ],
       ),
     );

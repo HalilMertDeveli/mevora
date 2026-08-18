@@ -831,6 +831,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get linked => 'Bağlı';
 
   @override
+  String get linkEmailTitle => 'E-posta ve şifre bağla';
+
+  @override
+  String get linkEmailSubtitle =>
+      'Bu, mevcut hesabına e-posta ile girişi ekler. Başka bir Mevora hesabını birleştirmez.';
+
+  @override
   String get deleteAccount => 'Hesabı sil';
 
   @override
@@ -962,4 +969,97 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get startupUnavailable =>
       'Mevora başlatılamadı. Bağlantını kontrol et ve tekrar dene.';
+
+  @override
+  String get permissionCameraTitle => 'Kamera';
+
+  @override
+  String get permissionCameraDescription =>
+      'Mevora, profil fotoğrafı çekmek için kameranı kullanır.';
+
+  @override
+  String get permissionMicrophoneTitle => 'Mikrofon';
+
+  @override
+  String get permissionMicrophoneDescription =>
+      'Mevora, ses ve sesli özellikler için mikrofonunu kullanır.';
+
+  @override
+  String get permissionPhotosTitle => 'Fotoğraflar';
+
+  @override
+  String get permissionPhotosDescription =>
+      'Profil fotoğrafı ekleyebilmen için Mevora\'nın fotoğraflarına erişmesi gerekir.';
+
+  @override
+  String get permissionLocationTitle => 'Konum';
+
+  @override
+  String get permissionLocationDescription =>
+      'Mevora, mesafe ve yakındaki keşfi iyileştirmek için konumunu kullanır.';
+
+  @override
+  String get permissionNotificationsTitle => 'Bildirimler';
+
+  @override
+  String get permissionNotificationsDescription =>
+      'Bildirimler, eşleşme veya mesaj aldığında haberin olmasını sağlar.';
+
+  @override
+  String get permissionAllow => 'Devam et';
+
+  @override
+  String get permissionDeniedTitle => 'İzin gerekli';
+
+  @override
+  String get permissionDeniedBody =>
+      'Bu özellik izinle daha iyi çalışır. Tekrar deneyebilir veya izinsiz devam edebilirsin.';
+
+  @override
+  String get permissionPermanentlyDeniedBody =>
+      'İzin kapalı. Cihaz ayarlarından açabilirsin.';
+
+  @override
+  String get permissionContinueWithout => 'İzinsiz devam et';
+
+  @override
+  String get permissionStatusGranted => 'İzin verildi';
+
+  @override
+  String get permissionStatusDenied => 'İzin verilmedi';
+
+  @override
+  String get permissionStatusRestricted => 'Kısıtlı';
+
+  @override
+  String get permissionStatusLimited => 'Sınırlı erişim';
+
+  @override
+  String get permissionStatusPermanentlyDenied =>
+      'Kapalı — cihaz ayarlarını aç';
+
+  @override
+  String get permissionStatusUnknown => 'Bilinmiyor';
+
+  @override
+  String get privacyPermissionsTitle => 'Gizlilik ve izinler';
+
+  @override
+  String get privacyPermissionsSubtitle =>
+      'Mevora her izni yalnızca ilgili özellik gerektiğinde ister. İsteğe bağlı izinler olmadan da uygulamayı kullanabilirsin.';
+
+  @override
+  String get privacyOpenDeviceSettings => 'Cihaz ayarlarını aç';
+
+  @override
+  String get selectCityInstead => 'Bunun yerine şehir seç';
+
+  @override
+  String get addPhotoCamera => 'Fotoğraf çek';
+
+  @override
+  String get addPhotoGallery => 'Galeriden seç';
+
+  @override
+  String get enableDeviceNotifications => 'Bildirimleri aç';
 }

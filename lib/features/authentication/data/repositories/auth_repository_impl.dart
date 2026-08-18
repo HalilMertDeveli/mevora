@@ -69,7 +69,9 @@ class AuthRepositoryImpl implements AuthRepository {
         if (doc == null) {
           return AuthProfilePending(firebaseUser.uid);
         }
-        return AuthProfileReady(doc.toEntity());
+        return AuthProfileReady(
+          doc.toEntity().copyWith(emailVerified: firebaseUser.emailVerified),
+        );
       });
     });
   }
@@ -190,6 +192,20 @@ class AuthRepositoryImpl implements AuthRepository {
         AuthProviderId.phone => throw AuthErrorMapper.fromCode('invalid-phone'),
         AuthProviderId.email => throw AuthErrorMapper.fromCode('not-configured'),
       };
+      return _userRemoteDataSource.upsertFromSession(session);
+    });
+  }
+
+  @override
+  Future<Result<AuthUser>> linkEmail({
+    required String email,
+    required String password,
+  }) {
+    return _run(() async {
+      final session = await _emailAuthService.link(
+        email: email,
+        password: password,
+      );
       return _userRemoteDataSource.upsertFromSession(session);
     });
   }

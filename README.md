@@ -39,7 +39,7 @@ See **[ARCHITECTURE.md](ARCHITECTURE.md)** for dependency rules, DI (`InheritedW
 | staging | `lib/main_staging.dart` | `com.mevora.app.staging` | `mevora-staging` |
 | production | `lib/main_production.dart` | `com.mevora.app` | `mevora-production` |
 
-Development talks **only** to the Firebase Emulator Suite. It must never read or write staging or production data.
+Development talks to the Emulator Suite for **Firestore / Functions / Storage**. Phone Auth uses **live `mevora-dev`** by default because the Auth emulator cannot send SMS. Pass `--dart-define=USE_AUTH_EMULATOR=true` only for local test numbers.
 
 ---
 
@@ -47,8 +47,21 @@ Development talks **only** to the Firebase Emulator Suite. It must never read or
 
 ```bash
 flutter pub get
-npx.cmd -y firebase-tools@latest emulators:start --only auth,firestore --project mevora-dev
+npx.cmd -y firebase-tools@latest emulators:start --only firestore --project mevora-dev
 flutter run --flavor development -t lib/main_development.dart
+```
+
+Real SMS on a **physical device** (recommended). `10.0.2.2` is only reachable from the Android emulator:
+
+```bash
+flutter run --flavor development -t lib/main_development.dart --dart-define=USE_EMULATORS=false
+```
+
+Auth emulator (no SMS; Console/emulator test numbers only):
+
+```bash
+npx.cmd -y firebase-tools@latest emulators:start --only auth,firestore --project mevora-dev
+flutter run --flavor development -t lib/main_development.dart --dart-define=USE_AUTH_EMULATOR=true
 ```
 
 Other flavors:

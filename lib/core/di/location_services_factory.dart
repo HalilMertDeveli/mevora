@@ -6,6 +6,7 @@ import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/core/services/location/geolocator_location_device.dart';
 import 'package:mevora/core/services/location/location_device.dart';
 import 'package:mevora/core/services/location_service.dart';
+import 'package:mevora/core/services/permissions/permission_service.dart';
 import 'package:mevora/features/location/data/datasources/firebase_location_data_source.dart';
 import 'package:mevora/features/location/data/repositories/location_repository_impl.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
@@ -22,12 +23,15 @@ class LocationServices {
 
 LocationServices createLocationServices({
   LocationDevice? device,
+  PermissionService? permissions,
   AppLogger? logger,
   AuthUidSource? uidSource,
   FirebaseLocationDataSource? locationDataSource,
 }) {
   final locationService = LocationService(
-    device: device ?? const GeolocatorLocationDevice(),
+    device:
+        device ??
+        GeolocatorLocationDevice(permissions: permissions),
     logger: logger ?? const AppLogger(environment: AppEnvironment.development),
   );
   return LocationServices(

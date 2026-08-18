@@ -18,6 +18,7 @@ abstract final class AppRoutes {
   static const String phoneOtp = '/phone/otp';
   static const String settings = '/settings';
   static const String notificationSettings = '/settings/notifications';
+  static const String privacyPermissions = '/settings/privacy';
   static const String boost = '/boost';
 
   static String chatPath(String matchId) => '/chat/$matchId';

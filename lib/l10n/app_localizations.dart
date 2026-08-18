@@ -1634,6 +1634,18 @@ abstract class AppLocalizations {
   /// **'Linked'**
   String get linked;
 
+  /// No description provided for @linkEmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link email and password'**
+  String get linkEmailTitle;
+
+  /// No description provided for @linkEmailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This adds email sign-in to your current account. It does not merge another Mevora account.'**
+  String get linkEmailSubtitle;
+
   /// No description provided for @deleteAccount.
   ///
   /// In en, this message translates to:
@@ -1873,6 +1885,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mevora could not start. Check your connection and try again.'**
   String get startupUnavailable;
+
+  /// No description provided for @permissionCameraTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get permissionCameraTitle;
+
+  /// No description provided for @permissionCameraDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora uses your camera to take profile photos.'**
+  String get permissionCameraDescription;
+
+  /// No description provided for @permissionMicrophoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get permissionMicrophoneTitle;
+
+  /// No description provided for @permissionMicrophoneDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora uses your microphone for voice and audio features.'**
+  String get permissionMicrophoneDescription;
+
+  /// No description provided for @permissionPhotosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get permissionPhotosTitle;
+
+  /// No description provided for @permissionPhotosDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora needs access to your photos so you can add profile pictures.'**
+  String get permissionPhotosDescription;
+
+  /// No description provided for @permissionLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get permissionLocationTitle;
+
+  /// No description provided for @permissionLocationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora uses your location to improve distance and nearby discovery.'**
+  String get permissionLocationDescription;
+
+  /// No description provided for @permissionNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get permissionNotificationsTitle;
+
+  /// No description provided for @permissionNotificationsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications help you know when you receive a match or message.'**
+  String get permissionNotificationsDescription;
+
+  /// No description provided for @permissionAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get permissionAllow;
+
+  /// No description provided for @permissionDeniedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission needed'**
+  String get permissionDeniedTitle;
+
+  /// No description provided for @permissionDeniedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature works better with permission. You can try again, or continue without it.'**
+  String get permissionDeniedBody;
+
+  /// No description provided for @permissionPermanentlyDeniedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission is turned off. You can enable it in device settings.'**
+  String get permissionPermanentlyDeniedBody;
+
+  /// No description provided for @permissionContinueWithout.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue without permission'**
+  String get permissionContinueWithout;
+
+  /// No description provided for @permissionStatusGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get permissionStatusGranted;
+
+  /// No description provided for @permissionStatusDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Not allowed'**
+  String get permissionStatusDenied;
+
+  /// No description provided for @permissionStatusRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted'**
+  String get permissionStatusRestricted;
+
+  /// No description provided for @permissionStatusLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited access'**
+  String get permissionStatusLimited;
+
+  /// No description provided for @permissionStatusPermanentlyDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Off — open device settings'**
+  String get permissionStatusPermanentlyDenied;
+
+  /// No description provided for @permissionStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get permissionStatusUnknown;
+
+  /// No description provided for @privacyPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Permissions'**
+  String get privacyPermissionsTitle;
+
+  /// No description provided for @privacyPermissionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora asks for each permission only when a feature needs it. You can use the app without granting optional access.'**
+  String get privacyPermissionsSubtitle;
+
+  /// No description provided for @privacyOpenDeviceSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open device settings'**
+  String get privacyOpenDeviceSettings;
+
+  /// No description provided for @selectCityInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a city instead'**
+  String get selectCityInstead;
+
+  /// No description provided for @addPhotoCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get addPhotoCamera;
+
+  /// No description provided for @addPhotoGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get addPhotoGallery;
+
+  /// No description provided for @enableDeviceNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable notifications'**
+  String get enableDeviceNotifications;
 }
 
 class _AppLocalizationsDelegate

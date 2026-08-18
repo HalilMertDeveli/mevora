@@ -6,17 +6,26 @@ abstract final class E164Formatter {
   static String digitsOnly(String input) =>
       input.replaceAll(RegExp(r'\D'), '');
 
-  static String toE164(CountryCode country, String nationalNumber) {
+  /// Trunk `0` and an accidental country dial prefix are stripped so the
+  /// national length check matches what Firebase Phone Auth expects.
+  static String normalizedNationalDigits(
+    CountryCode country,
+    String nationalNumber,
+  ) {
     var digits = digitsOnly(nationalNumber);
     final dial = country.dialCode;
     if (digits.startsWith(dial) &&
-        digits.length > country.minNationalLength) {
+        digits.length - dial.length >= country.minNationalLength) {
       digits = digits.substring(dial.length);
     }
     if (digits.startsWith('0')) {
       digits = digits.substring(1);
     }
-    return '+$dial$digits';
+    return digits;
+  }
+
+  static String toE164(CountryCode country, String nationalNumber) {
+    return '+${country.dialCode}${normalizedNationalDigits(country, nationalNumber)}';
   }
 
   static bool isValidE164(String value) => PhoneMask.isValidE164(value);

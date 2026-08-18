@@ -42,6 +42,7 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
 
   LocationScreenState screen = LocationScreenState.prompt;
   String? errorMessage;
+  String? selectedCity;
   bool onboardingNeeded = false;
   bool isResolved = false;
   bool reducedAccuracy = false;
@@ -193,6 +194,11 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
       isBusy = false;
       notifyListeners();
     }
+  }
+
+  Future<void> continueWithCity(String city) async {
+    selectedCity = city.trim();
+    await skip();
   }
 
   Future<void> openAppSettings() async {

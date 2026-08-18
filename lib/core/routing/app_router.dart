@@ -22,6 +22,7 @@ import 'package:mevora/features/location/presentation/pages/location_permission_
 import 'package:mevora/features/matching/presentation/pages/app_shell.dart';
 import 'package:mevora/features/matching/presentation/pages/matches_page.dart';
 import 'package:mevora/features/notifications/presentation/pages/notification_settings_page.dart';
+import 'package:mevora/features/permissions/presentation/pages/privacy_permissions_page.dart';
 import 'package:mevora/features/profile/presentation/pages/profile_tab_page.dart';
 import 'package:mevora/features/safety/presentation/pages/report_page.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
@@ -202,6 +203,13 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const NotificationSettingsPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.privacyPermissions,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const PrivacyPermissionsPage(),
         ),
       ),
       GoRoute(

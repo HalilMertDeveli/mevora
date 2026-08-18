@@ -5,6 +5,7 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/utils/phone_mask.dart';
 import 'package:mevora/features/authentication/domain/auth_messages.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_provider_id.dart';
+import 'package:mevora/features/authentication/domain/entities/auth_providers.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_snapshot.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/domain/entities/phone_challenge.dart';
@@ -26,6 +27,10 @@ class FakeAuthRepository implements AuthRepository {
   String? lastSmsCode;
   final _controller = StreamController<AuthUser?>.broadcast();
   String? lastResetEmail;
+  String? lastEmail;
+  bool passwordSubmitted = false;
+  int signInCalls = 0;
+  int registerCalls = 0;
   bool googleCalled = false;
   bool appleCalled = false;
   bool spotifyCalled = false;
@@ -62,7 +67,16 @@ class FakeAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) {
-    return _complete(AuthUser(id: 'user-1', email: email.trim()));
+    lastEmail = email.trim();
+    passwordSubmitted = password.isNotEmpty;
+    registerCalls += 1;
+    return _complete(
+      AuthUser(
+        id: 'user-1',
+        email: email.trim(),
+        authProviders: const AuthProviders(email: true),
+      ),
+    );
   }
 
   @override
@@ -70,7 +84,16 @@ class FakeAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) {
-    return _complete(AuthUser(id: 'user-1', email: email.trim()));
+    lastEmail = email.trim();
+    passwordSubmitted = password.isNotEmpty;
+    signInCalls += 1;
+    return _complete(
+      AuthUser(
+        id: 'user-1',
+        email: email.trim(),
+        authProviders: const AuthProviders(email: true),
+      ),
+    );
   }
 
   @override
@@ -179,6 +202,26 @@ class FakeAuthRepository implements AuthRepository {
     }
     return _complete(
       current.copyWith(authProviders: current.authProviders.withProvider(provider)),
+    );
+  }
+
+  @override
+  Future<Result<AuthUser>> linkEmail({
+    required String email,
+    required String password,
+  }) {
+    lastEmail = email.trim();
+    passwordSubmitted = password.isNotEmpty;
+    lastLinkedProvider = AuthProviderId.email;
+    final current = user;
+    if (current == null) {
+      return _unsupported();
+    }
+    return _complete(
+      current.copyWith(
+        email: email.trim(),
+        authProviders: current.authProviders.withProvider(AuthProviderId.email),
+      ),
     );
   }
 

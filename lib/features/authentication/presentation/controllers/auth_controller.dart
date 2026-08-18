@@ -178,8 +178,23 @@ class AuthController extends ChangeNotifier {
     );
   }
 
-  Future<Result<void>> sendPasswordReset(String email) {
-    return _run(() => _authRepository.sendPasswordResetEmail(email));
+  Future<Result<void>> sendPasswordReset(String email) async {
+    final result = await _run(
+      () => _authRepository.sendPasswordResetEmail(email),
+    );
+    if (result case Err<void>(:final failure)) {
+      if (failure is AuthFailure &&
+          failure.kind == AuthErrorKind.userNotFound) {
+        errorMessage = null;
+        errorKind = null;
+        if (status is AuthenticationError) {
+          status = const Unauthenticated();
+        }
+        notifyListeners();
+        return const Success<void>(null);
+      }
+    }
+    return result;
   }
 
   Future<Result<void>> signInWithGoogle() {
@@ -299,6 +314,15 @@ class AuthController extends ChangeNotifier {
     return _run(() => _authRepository.linkProvider(provider));
   }
 
+  Future<Result<void>> linkEmail({
+    required String email,
+    required String password,
+  }) {
+    return _run(
+      () => _authRepository.linkEmail(email: email, password: password),
+    );
+  }
+
   Future<Result<void>> signOut() {
     return _run(_authRepository.signOut, afterSuccess: _resetToLoggedOut);
   }
@@ -390,7 +414,10 @@ class AuthController extends ChangeNotifier {
   void _setFailure(Failure failure) {
     errorKind = failure is AuthFailure ? failure.kind : null;
     errorMessage = failure.message;
-    if (status is PhoneCodeSent || status is PhoneVerificationRequired) {
+    if (status is PhoneCodeSent ||
+        status is PhoneVerificationRequired ||
+        status is Authenticated ||
+        status is NeedsOnboarding) {
       notifyListeners();
       return;
     }

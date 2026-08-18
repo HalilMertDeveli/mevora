@@ -1,7 +1,8 @@
 /// Local Firebase Emulator Suite host and ports.
 ///
-/// Development always targets emulators so it never touches staging or
-/// production data.
+/// Development targets Firestore / Functions / Storage emulators so it never
+/// touches staging or production data. Auth emulator is opt-in via
+/// `--dart-define=USE_AUTH_EMULATOR=true` because it cannot send real SMS.
 class FirebaseEmulatorConfig {
   const FirebaseEmulatorConfig({
     required this.host,

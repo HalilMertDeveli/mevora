@@ -60,7 +60,7 @@ abstract final class PhoneNumberValidator {
       );
     }
 
-    final digits = E164Formatter.digitsOnly(trimmed);
+    final digits = E164Formatter.normalizedNationalDigits(country, trimmed);
     if (digits.isEmpty) {
       return const PhoneValidationResult.invalid(
         PhoneValidationIssue.invalidChars,
@@ -73,7 +73,7 @@ abstract final class PhoneNumberValidator {
       );
     }
 
-    final e164 = E164Formatter.toE164(country, digits);
+    final e164 = E164Formatter.toE164(country, trimmed);
     if (!E164Formatter.isValidE164(e164)) {
       return const PhoneValidationResult.invalid(
         PhoneValidationIssue.invalidE164,

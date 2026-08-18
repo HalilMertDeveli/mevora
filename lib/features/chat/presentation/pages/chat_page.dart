@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/core/services/permissions/permission_status.dart';
+import 'package:mevora/core/services/permissions/permission_type.dart';
 import 'package:mevora/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:mevora/features/chat/presentation/widgets/chat_widgets.dart';
 import 'package:mevora/features/matching/domain/models/presence_status.dart';
@@ -168,6 +171,45 @@ class _ChatPageState extends State<ChatPage> {
     );
     if (allowed != true || !mounted) {
       return;
+    }
+    final permissions = PermissionScope.maybeOf(context)?.controller;
+    if (permissions != null) {
+      final camera = await permissions.request(PermissionType.camera);
+      if (!mounted) {
+        return;
+      }
+      if (!camera.isUsable) {
+        if (camera.isPermanentlyDenied) {
+          final open = await MevoraDialog.show(
+            context,
+            title: l10n.permissionDeniedTitle,
+            message: l10n.permissionPermanentlyDeniedBody,
+            confirmLabel: l10n.openSettings,
+          );
+          if (open == true) {
+            await permissions.openSettings();
+          }
+        }
+        return;
+      }
+      final mic = await permissions.request(PermissionType.microphone);
+      if (!mounted) {
+        return;
+      }
+      if (!mic.isUsable) {
+        if (mic.isPermanentlyDenied) {
+          final open = await MevoraDialog.show(
+            context,
+            title: l10n.permissionDeniedTitle,
+            message: l10n.permissionPermanentlyDeniedBody,
+            confirmLabel: l10n.openSettings,
+          );
+          if (open == true) {
+            await permissions.openSettings();
+          }
+        }
+        return;
+      }
     }
     final social = SocialScope.of(context);
     await social.callController.startCall(

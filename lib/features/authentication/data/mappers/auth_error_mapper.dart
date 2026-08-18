@@ -14,7 +14,12 @@ abstract final class AuthErrorMapper {
   }
 
   static AuthException fromCode(String? code, {Object? cause}) {
-    final normalized = (code ?? '').toLowerCase().replaceAll('_', '-');
+    var normalized = (code ?? '').toLowerCase().replaceAll('_', '-');
+    for (final prefix in const ['firebase-auth/', 'auth/']) {
+      if (normalized.startsWith(prefix)) {
+        normalized = normalized.substring(prefix.length);
+      }
+    }
     final kind = kindFor(normalized);
     return AuthException(
       _messageFor(kind),
@@ -41,7 +46,9 @@ abstract final class AuthErrorMapper {
       'captcha-check-failed' ||
       'missing-client-identifier' ||
       'invalid-app-credential' ||
-      'app-not-authorized' =>
+      'app-not-authorized' ||
+      'sms-region-restricted' ||
+      'sms-region-restriction' =>
         AuthErrorKind.smsFailed,
       'invalid-verification-code' ||
       'invalid-verification-id' ||
@@ -63,17 +70,17 @@ abstract final class AuthErrorMapper {
       'user-banned' || 'banned' => AuthErrorKind.banned,
       'account-exists-with-different-credential' ||
       'credential-already-in-use' ||
-      'email-already-in-use' ||
       'already-exists' ||
       'failed-precondition' ||
       'provider-already-linked' =>
         AuthErrorKind.accountExists,
+      'email-already-in-use' => AuthErrorKind.emailInUse,
       'linking-blocked' => AuthErrorKind.linkingBlocked,
+      'user-mismatch' || 'no-such-provider' => AuthErrorKind.oauth,
       'operation-not-allowed' ||
-      'user-mismatch' ||
-      'no-such-provider' =>
-        AuthErrorKind.oauth,
-      'not-configured' => AuthErrorKind.notConfigured,
+      'billing-not-enabled' ||
+      'not-configured' =>
+        AuthErrorKind.notConfigured,
       'invalid-email' => AuthErrorKind.invalidEmail,
       'weak-password' => AuthErrorKind.weakPassword,
       'user-not-found' => AuthErrorKind.userNotFound,
@@ -107,6 +114,7 @@ abstract final class AuthErrorMapper {
       AuthErrorKind.weakPassword => AuthMessages.weakPassword,
       AuthErrorKind.userNotFound => AuthMessages.userNotFound,
       AuthErrorKind.wrongPassword => AuthMessages.wrongPassword,
+      AuthErrorKind.emailInUse => AuthMessages.emailInUse,
     };
   }
 

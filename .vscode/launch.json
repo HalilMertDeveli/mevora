@@ -9,6 +9,20 @@
       "args": ["--flavor", "development"]
     },
     {
+      "name": "Mevora (development · physical SMS)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_development.dart",
+      "args": ["--flavor", "development", "--dart-define=USE_EMULATORS=false"]
+    },
+    {
+      "name": "Mevora (development · auth emulator)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_development.dart",
+      "args": ["--flavor", "development", "--dart-define=USE_AUTH_EMULATOR=true"]
+    },
+    {
       "name": "Mevora (staging)",
       "request": "launch",
       "type": "dart",

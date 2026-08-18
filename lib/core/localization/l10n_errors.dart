@@ -28,6 +28,7 @@ abstract final class L10nErrors {
       AuthErrorKind.weakPassword => l10n.authWeakPassword,
       AuthErrorKind.userNotFound => l10n.authUserNotFound,
       AuthErrorKind.wrongPassword => l10n.authWrongPassword,
+      AuthErrorKind.emailInUse => l10n.authEmailInUse,
     };
   }
 

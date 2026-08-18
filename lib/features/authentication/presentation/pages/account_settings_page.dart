@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_provider_id.dart';
 import 'package:mevora/features/authentication/presentation/auth_error_text.dart';
+import 'package:mevora/features/authentication/presentation/widgets/auth_error_banner.dart';
+import 'package:mevora/features/authentication/presentation/widgets/link_email_dialog.dart';
 import 'package:mevora/features/settings/presentation/widgets/language_settings_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
@@ -27,11 +31,26 @@ class AccountSettingsPage extends StatelessWidget {
         children: [
           const LanguageSettingsSection(),
           const SizedBox(height: AppSpacing.xl),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.privacyPermissionsTitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.privacyPermissions),
+          ),
+          const SizedBox(height: AppSpacing.xl),
           Text(
             l10n.linkedAccounts,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: AppSpacing.md),
+          _linkTile(
+            context,
+            label: l10n.email,
+            linked: providers?.email ?? false,
+            linkedLabel: l10n.linked,
+            linkLabel: l10n.link,
+            onLink: () => unawaited(showLinkEmailDialog(context)),
+          ),
           _linkTile(
             context,
             label: l10n.continueWithGoogle,
@@ -72,12 +91,7 @@ class AccountSettingsPage extends StatelessWidget {
           ),
           if (error != null) ...[
             const SizedBox(height: AppSpacing.md),
-            Text(
-              error,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
+            AuthErrorBanner(message: error),
           ],
           const SizedBox(height: AppSpacing.xl),
           MevoraButton(

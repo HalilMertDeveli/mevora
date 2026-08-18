@@ -8,6 +8,7 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/utils/validators.dart';
 import 'package:mevora/features/authentication/presentation/auth_error_text.dart';
+import 'package:mevora/features/authentication/presentation/widgets/auth_error_banner.dart';
 import 'package:mevora/features/authentication/presentation/widgets/auth_layout.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
@@ -48,50 +49,52 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
               actionLabel: l10n.backToSignIn,
               onAction: () => context.go(AppRoutes.login),
             )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                MevoraTextField(
-                  controller: _emailController,
-                  label: l10n.email,
-                  hint: l10n.emailHint,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.done,
-                  prefixIcon: Icons.mail_outline_rounded,
-                  errorText: _emailError,
-                  autofillHints: const [AutofillHints.email],
-                  onChanged: (_) {
-                    auth.clearError();
-                    if (_emailError != null) {
-                      setState(() => _emailError = null);
-                    }
-                  },
-                  onSubmitted: (_) => unawaited(_submit()),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (error != null) ...[
-                  Text(
-                    error,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+          : AutofillGroup(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  MevoraTextField(
+                    controller: _emailController,
+                    label: l10n.email,
+                    hint: l10n.emailHint,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    prefixIcon: Icons.mail_outline_rounded,
+                    errorText: _emailError,
+                    enabled: !auth.isBusy,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    autofillHints: const [AutofillHints.email],
+                    onChanged: (_) {
+                      auth.clearError();
+                      if (_emailError != null) {
+                        setState(() => _emailError = null);
+                      }
+                    },
+                    onSubmitted: (_) => unawaited(_submit()),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  if (error != null) ...[
+                    AuthErrorBanner(message: error),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                  MevoraButton(
+                    label: l10n.sendResetLink,
+                    isLoading: auth.isBusy,
+                    onPressed: auth.isBusy
+                        ? null
+                        : () => unawaited(_submit()),
                   ),
                   const SizedBox(height: AppSpacing.sm),
+                  MevoraButton(
+                    label: l10n.backToSignIn,
+                    variant: MevoraButtonVariant.ghost,
+                    onPressed: auth.isBusy
+                        ? null
+                        : () => context.go(AppRoutes.login),
+                  ),
                 ],
-                MevoraButton(
-                  label: l10n.sendResetLink,
-                  isLoading: auth.isBusy,
-                  onPressed: auth.isBusy ? null : () => unawaited(_submit()),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                MevoraButton(
-                  label: l10n.backToSignIn,
-                  variant: MevoraButtonVariant.ghost,
-                  onPressed: auth.isBusy
-                      ? null
-                      : () => context.go(AppRoutes.login),
-                ),
-              ],
+              ),
             ),
     );
   }

@@ -46,7 +46,7 @@ class PhoneAuthService implements FirebaseAuthDataSource {
       await _firebaseAuth.verifyPhoneNumber(
         phoneNumber: e164Phone,
         forceResendingToken: forceResendingToken,
-        timeout: const Duration(seconds: 60),
+        timeout: const Duration(seconds: 120),
         verificationCompleted: (credential) {
           _autoCredential = credential;
           if (!completer.isCompleted) {
@@ -86,7 +86,7 @@ class PhoneAuthService implements FirebaseAuthDataSource {
         },
       );
       return await completer.future.timeout(
-        const Duration(seconds: 90),
+        const Duration(seconds: 120),
         onTimeout: () {
           throw const AuthException(
             AuthMessages.smsFailed,

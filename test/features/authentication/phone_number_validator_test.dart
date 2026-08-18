@@ -38,6 +38,24 @@ void main() {
       expect(result.isValid, isTrue);
       expect(result.e164, '+905551112233');
     });
+
+    test('accepts a Turkish number typed with a leading trunk 0', () {
+      final result = PhoneNumberValidator.validate(
+        country: CountryCodes.turkey,
+        nationalNumber: '0555 111 22 33',
+      );
+      expect(result.isValid, isTrue);
+      expect(result.e164, '+905551112233');
+    });
+
+    test('accepts a number pasted with the country dial code', () {
+      final result = PhoneNumberValidator.validate(
+        country: CountryCodes.turkey,
+        nationalNumber: '90 555 111 22 33',
+      );
+      expect(result.isValid, isTrue);
+      expect(result.e164, '+905551112233');
+    });
   });
 
   group('E164Formatter', () {

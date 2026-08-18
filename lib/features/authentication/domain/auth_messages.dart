@@ -65,12 +65,12 @@ abstract final class AuthMessages {
       'Hesaplar yalnızca sen onayladığında bağlanır. E-posta eşleşmesi yeterli değildir.';
   static const String notConfigured =
       'Bu giriş yöntemi henüz yapılandırılmadı.';
-  static const String invalidEmail = 'Enter a valid email address.';
+  static const String invalidEmail = 'Geçerli bir e-posta adresi gir.';
   static const String weakPassword =
-      'Choose a stronger password with at least 8 characters.';
-  static const String userNotFound = 'No account found for that email.';
-  static const String wrongPassword =
-      'That email and password combination does not match.';
+      'En az 8 karakterlik daha güçlü bir şifre seç.';
+  static const String userNotFound = 'Bu e-posta ile hesap bulunamadı.';
+  static const String wrongPassword = 'E-posta ve şifre eşleşmiyor.';
+  static const String emailInUse = 'Bu e-posta ile zaten bir hesap var.';
   static const String spotifyCallbackExpired =
       'Spotify oturumu zaman aşımına uğradı. Lütfen tekrar dene.';
 

@@ -17,7 +17,7 @@ void main() {
     expect(
       plist,
       contains(
-        'Mevora, yakındaki eşleşmeleri göstermek için konumunuzu kullanır.',
+        'Mevora uses your location to improve distance and nearby discovery.',
       ),
     );
     expect(plist, isNot(contains('NSLocationAlwaysAndWhenInUseUsageDescription')));

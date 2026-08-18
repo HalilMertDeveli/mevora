@@ -1,0 +1,5 @@
+"NSCameraUsageDescription" = "Mevora uses your camera to take profile photos.";
+"NSMicrophoneUsageDescription" = "Mevora uses your microphone for voice and audio features.";
+"NSPhotoLibraryUsageDescription" = "Mevora needs access to your photos so you can add profile pictures.";
+"NSPhotoLibraryAddUsageDescription" = "Mevora needs access to your photos so you can add profile pictures.";
+"NSLocationWhenInUseUsageDescription" = "Mevora uses your location to improve distance and nearby discovery.";

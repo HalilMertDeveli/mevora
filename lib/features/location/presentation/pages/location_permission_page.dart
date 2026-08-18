@@ -5,6 +5,7 @@ import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/features/location/domain/entities/location_screen_state.dart';
+import 'package:mevora/features/location/presentation/widgets/manual_city_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
@@ -76,8 +77,12 @@ class LocationPermissionPage extends StatelessWidget {
         onPrimary: controller.isBusy
             ? null
             : () => unawaited(controller.retryDenied()),
-        secondaryLabel: l10n.notNow,
+        secondaryLabel: l10n.selectCityInstead,
         onSecondary: controller.isBusy
+            ? null
+            : () => unawaited(_chooseCity(context)),
+        tertiaryLabel: l10n.notNow,
+        onTertiary: controller.isBusy
             ? null
             : () => unawaited(controller.skip()),
         hint: l10n.locationSkipHint,
@@ -92,8 +97,12 @@ class LocationPermissionPage extends StatelessWidget {
         onPrimary: controller.isBusy
             ? null
             : () => unawaited(controller.openAppSettings()),
-        secondaryLabel: l10n.notNow,
+        secondaryLabel: l10n.selectCityInstead,
         onSecondary: controller.isBusy
+            ? null
+            : () => unawaited(_chooseCity(context)),
+        tertiaryLabel: l10n.notNow,
+        onTertiary: controller.isBusy
             ? null
             : () => unawaited(controller.skip()),
         hint: l10n.locationSkipHint,
@@ -130,6 +139,14 @@ class LocationPermissionPage extends StatelessWidget {
         isPrimaryLoading: controller.isBusy,
       ),
     };
+  }
+
+  Future<void> _chooseCity(BuildContext context) async {
+    final city = await ManualCitySheet.show(context);
+    if (!context.mounted || city == null || city.isEmpty) {
+      return;
+    }
+    await LocationScope.of(context).controller.continueWithCity(city);
   }
 }
 
@@ -190,6 +207,8 @@ class _ActionCopy extends StatelessWidget {
     this.detail,
     this.secondaryLabel,
     this.onSecondary,
+    this.tertiaryLabel,
+    this.onTertiary,
     this.hint,
     this.isPrimaryLoading = false,
   });
@@ -202,6 +221,8 @@ class _ActionCopy extends StatelessWidget {
   final VoidCallback? onPrimary;
   final String? secondaryLabel;
   final VoidCallback? onSecondary;
+  final String? tertiaryLabel;
+  final VoidCallback? onTertiary;
   final String? hint;
   final bool isPrimaryLoading;
 
@@ -252,6 +273,14 @@ class _ActionCopy extends StatelessWidget {
           MevoraButton(
             label: secondaryLabel!,
             onPressed: onSecondary,
+            variant: MevoraButtonVariant.ghost,
+          ),
+        ],
+        if (tertiaryLabel != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          MevoraButton(
+            label: tertiaryLabel!,
+            onPressed: onTertiary,
             variant: MevoraButtonVariant.ghost,
           ),
         ],

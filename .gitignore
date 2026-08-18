@@ -55,3 +55,14 @@ key.properties
 .env
 .env.*
 
+# Firebase emulator / debug output
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+firestore-debug.log
+pubsub-debug.log
+database-debug.log
+storage-debug.log
+.firebase/
+firebase-export/
+

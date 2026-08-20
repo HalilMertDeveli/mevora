@@ -50,10 +50,18 @@ SocialServices createFirebaseSocialServices({
     chatRepository: demoHub == null
         ? chat
         : OverlayChatRepository(remote: chat, hub: demoHub),
-    safetyRepository: FirebaseSafetyRepository(
-      callable: callable,
-      uidSource: uid,
-    ),
+    safetyRepository: demoHub == null
+        ? FirebaseSafetyRepository(
+            callable: callable,
+            uidSource: uid,
+          )
+        : OverlaySafetyRepository(
+            remote: FirebaseSafetyRepository(
+              callable: callable,
+              uidSource: uid,
+            ),
+            hub: demoHub,
+          ),
     presenceRepository: FirebasePresenceRepository(),
     callRepository: calls,
     videoCallService: VideoCallServiceImpl(calls),

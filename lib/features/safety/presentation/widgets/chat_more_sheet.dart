@@ -15,6 +15,7 @@ Future<void> showChatMoreSheet(
   required ChatController controller,
 }) {
   final l10n = AppLocalizations.of(context);
+  final pageContext = context;
   return MevoraBottomSheet.show<void>(
     context,
     title: l10n.more,
@@ -26,7 +27,7 @@ Future<void> showChatMoreSheet(
           title: Text(l10n.unmatch),
           onTap: () {
             Navigator.pop(context);
-            unawaited(_unmatch(context, controller));
+            unawaited(_unmatch(pageContext, controller));
           },
         ),
         ListTile(
@@ -34,7 +35,7 @@ Future<void> showChatMoreSheet(
           title: Text(l10n.block),
           onTap: () {
             Navigator.pop(context);
-            unawaited(_block(context, controller));
+            unawaited(_block(pageContext, controller));
           },
         ),
         ListTile(
@@ -42,7 +43,7 @@ Future<void> showChatMoreSheet(
           title: Text(l10n.report),
           onTap: () {
             Navigator.pop(context);
-            context.push(
+            pageContext.push(
               '${AppRoutes.report}?userId=${controller.otherUid}&matchId=${controller.matchId}',
             );
           },
@@ -53,20 +54,32 @@ Future<void> showChatMoreSheet(
 }
 
 Future<void> _unmatch(BuildContext context, ChatController controller) async {
-  final l10n = AppLocalizations.of(context);
-  final ok = await MevoraDialog.show(
-    context,
-    title: l10n.unmatchConfirmTitle,
-    message: l10n.unmatchConfirmMessage,
-    confirmLabel: l10n.unmatch,
-    confirmVariant: MevoraButtonVariant.destructive,
-  );
-  if (ok == true && context.mounted) {
-    final social = SocialScope.of(context);
-    await social.safetyRepository.unmatch(matchId: controller.matchId);
-    await social.retentionPolicy.scheduleAfterUnmatch(
-      matchId: controller.matchId,
+  if (!context.mounted) {
+    return;
+  }
+  try {
+    final l10n = AppLocalizations.of(context);
+    final ok = await MevoraDialog.show(
+      context,
+      title: l10n.unmatchConfirmTitle,
+      message: l10n.unmatchConfirmMessage,
+      confirmLabel: l10n.unmatch,
+      confirmVariant: MevoraButtonVariant.destructive,
     );
+    if (ok == true && context.mounted) {
+      final social = SocialScope.of(context);
+      await social.safetyRepository.unmatch(matchId: controller.matchId);
+      await social.retentionPolicy.scheduleAfterUnmatch(
+        matchId: controller.matchId,
+      );
+    }
+  } on Object {
+    if (context.mounted) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.somethingWentWrong)),
+      );
+    }
   }
 }
 

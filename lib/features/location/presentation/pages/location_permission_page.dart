@@ -5,10 +5,10 @@ import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/features/location/domain/entities/location_screen_state.dart';
-import 'package:mevora/features/location/presentation/widgets/manual_city_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
+import 'package:mevora/shared/widgets/turkish_province_picker.dart';
 
 class LocationPermissionPage extends StatelessWidget {
   const LocationPermissionPage({super.key});
@@ -142,7 +142,7 @@ class LocationPermissionPage extends StatelessWidget {
   }
 
   Future<void> _chooseCity(BuildContext context) async {
-    final city = await ManualCitySheet.show(context);
+    final city = await showTurkishProvincePicker(context);
     if (!context.mounted || city == null || city.isEmpty) {
       return;
     }

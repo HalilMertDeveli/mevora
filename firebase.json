@@ -1,1 +1,80 @@
-{"firestore":{"database":"(default)","location":"eur3","rules":"firebase/firestore.rules","indexes":"firebase/firestore.indexes.json"},"storage":{"rules":"firebase/storage.rules"},"functions":[{"source":"functions","codebase":"default","ignore":["node_modules",".git","firebase-debug.log","firebase-debug.*.log","*.local"]}],"emulators":{"auth":{"port":9099},"functions":{"port":5001},"firestore":{"port":8080},"storage":{"port":9199},"ui":{"enabled":true,"port":4000},"singleProjectMode":true},"auth":{"providers":{"emailPassword":true,"googleSignIn":{"oAuthBrandDisplayName":"Mevora","supportEmail":"halilmertdeveliii@gmail.com"}}},"flutter":{"platforms":{"android":{"default":{"projectId":"mevora-d6ed0","appId":"1:821220262229:android:1a12a39a06a7516f702fdc","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"mevora-d6ed0","configurations":{"android":"1:821220262229:android:1a12a39a06a7516f702fdc","ios":"1:821220262229:ios:634b8b3284cc59fc702fdc"}}}}}}
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "eur3",
+    "rules": "firebase/firestore.rules",
+    "indexes": "firebase/firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "firebase/storage.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ],
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Mevora",
+        "supportEmail": "halilmertdeveliii@gmail.com"
+      }
+    }
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "mevora-d6ed0",
+          "appId": "1:821220262229:android:1a12a39a06a7516f702fdc",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "mevora-d6ed0",
+          "appId": "1:821220262229:ios:634b8b3284cc59fc702fdc",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "mevora-d6ed0",
+          "configurations": {
+            "android": "1:821220262229:android:1a12a39a06a7516f702fdc",
+            "ios": "1:821220262229:ios:634b8b3284cc59fc702fdc"
+          }
+        }
+      }
+    }
+  }
+}

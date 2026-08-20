@@ -6,6 +6,7 @@ class UserSettings {
     this.notificationsEnabled = true,
     this.messageNotifications = true,
     this.matchNotifications = true,
+    this.superLikeNotifications = true,
     this.callNotifications = true,
     this.locationEnabled = false,
     this.locationOnboardingCompleted = false,
@@ -24,6 +25,7 @@ class UserSettings {
   final bool notificationsEnabled;
   final bool messageNotifications;
   final bool matchNotifications;
+  final bool superLikeNotifications;
   final bool callNotifications;
   final bool locationEnabled;
   final bool locationOnboardingCompleted;
@@ -37,6 +39,7 @@ class UserSettings {
     bool? notificationsEnabled,
     bool? messageNotifications,
     bool? matchNotifications,
+    bool? superLikeNotifications,
     bool? callNotifications,
     bool? locationEnabled,
     bool? locationOnboardingCompleted,
@@ -50,6 +53,8 @@ class UserSettings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       messageNotifications: messageNotifications ?? this.messageNotifications,
       matchNotifications: matchNotifications ?? this.matchNotifications,
+      superLikeNotifications:
+          superLikeNotifications ?? this.superLikeNotifications,
       callNotifications: callNotifications ?? this.callNotifications,
       locationEnabled: locationEnabled ?? this.locationEnabled,
       locationOnboardingCompleted:
@@ -66,6 +71,7 @@ class UserPrivacy {
     this.showOnlineStatus = true,
     this.showDistance = true,
     this.showAge = true,
+    this.showActivity = true,
     this.allowNotifications = true,
     this.allowCalls = true,
     this.allowMessages = true,
@@ -75,6 +81,7 @@ class UserPrivacy {
   final bool showOnlineStatus;
   final bool showDistance;
   final bool showAge;
+  final bool showActivity;
   final bool allowNotifications;
   final bool allowCalls;
   final bool allowMessages;

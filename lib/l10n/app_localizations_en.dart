@@ -18,6 +18,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectTagline => 'Connect with people who match you.';
 
   @override
+  String get loginSlogan =>
+      'Don\'t just meet people.\nMeet someone compatible.';
+
+  @override
+  String get continueWithEmail => 'Continue with email';
+
+  @override
   String get somethingWentWrong => 'Something went wrong';
 
   @override
@@ -185,6 +192,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueWithGoogle => 'Continue with Google';
 
   @override
+  String get signingIn => 'Signing in...';
+
+  @override
   String get continueWithApple => 'Continue with Apple';
 
   @override
@@ -346,6 +356,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authNotConfigured => 'This sign-in method is not set up yet.';
 
   @override
+  String get authBillingNotEnabled =>
+      'Firebase billing (Blaze) is required to send SMS verification codes.';
+
+  @override
   String get authInvalidEmail => 'Enter a valid email address.';
 
   @override
@@ -421,6 +435,196 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingMustBeAdult => 'You must be 18 or older to use Mevora.';
+
+  @override
+  String onboardingStepProgress(int current, int total) {
+    return 'Step $current of $total';
+  }
+
+  @override
+  String get onboardingBack => 'Back';
+
+  @override
+  String get onboardingContinue => 'Continue';
+
+  @override
+  String get onboardingEducation => 'Education';
+
+  @override
+  String get onboardingLifestyle => 'Lifestyle';
+
+  @override
+  String get onboardingSmoking => 'Smoking';
+
+  @override
+  String get onboardingDrinking => 'Drinking';
+
+  @override
+  String get onboardingExercise => 'Exercise';
+
+  @override
+  String get onboardingPets => 'Pets';
+
+  @override
+  String get onboardingInterestsHint =>
+      'Pick at least 3 interests so Mevora can find compatible people.';
+
+  @override
+  String get onboardingBioHint => 'Share a little about yourself.';
+
+  @override
+  String get onboardingPhotosHint =>
+      'Add at least 3 photos. Drag to reorder — your first photo is your main one.';
+
+  @override
+  String get onboardingPrimaryPhoto => 'Main photo';
+
+  @override
+  String onboardingPhotoNumber(int number) {
+    return 'Photo $number';
+  }
+
+  @override
+  String get onboardingCompleteTitle => 'You\'re all set';
+
+  @override
+  String get onboardingCompleteMessage =>
+      'Your profile is ready. Mevora will start introducing compatible people.';
+
+  @override
+  String get onboardingStartDiscovering => 'Start discovering';
+
+  @override
+  String get onboardingGenderMan => 'Man';
+
+  @override
+  String get onboardingGenderWoman => 'Woman';
+
+  @override
+  String get onboardingGenderNonBinary => 'Non-binary';
+
+  @override
+  String get onboardingInterestedMen => 'Men';
+
+  @override
+  String get onboardingInterestedWomen => 'Women';
+
+  @override
+  String get onboardingInterestedEveryone => 'Everyone';
+
+  @override
+  String get onboardingEducationHighSchool => 'High school';
+
+  @override
+  String get onboardingEducationSomeCollege => 'Some college';
+
+  @override
+  String get onboardingEducationBachelors => 'Bachelor\'s degree';
+
+  @override
+  String get onboardingEducationMasters => 'Master\'s degree';
+
+  @override
+  String get onboardingEducationPhd => 'PhD';
+
+  @override
+  String get onboardingEducationPreferNotToSay => 'Prefer not to say';
+
+  @override
+  String get onboardingRelationshipLongTerm => 'Long-term relationship';
+
+  @override
+  String get onboardingRelationshipShortTerm => 'Short-term connection';
+
+  @override
+  String get onboardingRelationshipFriendship => 'New friends';
+
+  @override
+  String get onboardingRelationshipNotSure => 'Still figuring it out';
+
+  @override
+  String get onboardingRelationshipPreferNotToSay => 'Prefer not to say';
+
+  @override
+  String get onboardingLifestyleNever => 'Never';
+
+  @override
+  String get onboardingLifestyleSometimes => 'Sometimes';
+
+  @override
+  String get onboardingLifestyleRegularly => 'Regularly';
+
+  @override
+  String get onboardingLifestyleDaily => 'Daily';
+
+  @override
+  String get onboardingLifestyleNone => 'None';
+
+  @override
+  String get onboardingLifestyleCat => 'Cat';
+
+  @override
+  String get onboardingLifestyleDog => 'Dog';
+
+  @override
+  String get onboardingLifestyleBoth => 'Both';
+
+  @override
+  String get onboardingLifestyleOther => 'Other';
+
+  @override
+  String get interestMusic => 'Music';
+
+  @override
+  String get interestTravel => 'Travel';
+
+  @override
+  String get interestFitness => 'Fitness';
+
+  @override
+  String get interestFood => 'Food';
+
+  @override
+  String get interestArt => 'Art';
+
+  @override
+  String get interestMovies => 'Movies';
+
+  @override
+  String get interestBooks => 'Books';
+
+  @override
+  String get interestGaming => 'Gaming';
+
+  @override
+  String get interestNature => 'Nature';
+
+  @override
+  String get interestPhotography => 'Photography';
+
+  @override
+  String get interestCoffee => 'Coffee';
+
+  @override
+  String get interestDancing => 'Dancing';
+
+  @override
+  String get interestYoga => 'Yoga';
+
+  @override
+  String get interestTech => 'Tech';
+
+  @override
+  String get interestFashion => 'Fashion';
+
+  @override
+  String get interestPets => 'Pets';
+
+  @override
+  String get interestSports => 'Sports';
+
+  @override
+  String get interestCooking => 'Cooking';
 
   @override
   String get locationPermissionTitle => 'Discover people nearby';
@@ -510,6 +714,76 @@ class AppLocalizationsEn extends AppLocalizations {
       'Widen your distance or check back a little later.';
 
   @override
+  String get discoverySeenEveryoneTitle => 'You\'ve seen everyone for now';
+
+  @override
+  String get discoverySeenEveryoneMessage =>
+      'Check back later for new people, or restart the demo to explore again.';
+
+  @override
+  String get exploreAgain => 'Explore again';
+
+  @override
+  String get restartDemo => 'Restart demo';
+
+  @override
+  String get discoveryFiltersTitle => 'Discovery filters';
+
+  @override
+  String get discoveryFiltersHint =>
+      'Filters are saved locally. Server-side filtering arrives in a later update.';
+
+  @override
+  String get applyFilters => 'Apply filters';
+
+  @override
+  String get filterAge => 'Age range';
+
+  @override
+  String get filterDistance => 'Maximum distance';
+
+  @override
+  String get filterGender => 'Show me';
+
+  @override
+  String get filterRelationshipGoal => 'Relationship goal';
+
+  @override
+  String get genderWoman => 'Women';
+
+  @override
+  String get genderMan => 'Men';
+
+  @override
+  String get genderNonBinary => 'Non-binary';
+
+  @override
+  String get relationshipGoalLongTerm => 'Long-term';
+
+  @override
+  String get relationshipGoalCasual => 'Casual';
+
+  @override
+  String get relationshipGoalFiguringOut => 'Still figuring it out';
+
+  @override
+  String get compatibilityReasonsHeading => 'Why you\'re compatible';
+
+  @override
+  String get whyYoureSeeingThis => 'Why you\'re seeing this person';
+
+  @override
+  String get sharedInterests => 'Shared interests';
+
+  @override
+  String get profileDetailsTitle => 'Profile';
+
+  @override
+  String photoCounter(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
   String get tabDiscovery => 'Discover';
 
   @override
@@ -548,6 +822,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get itsAMatch => 'It\'s a match';
+
+  @override
+  String get youLikedEachOther => 'You liked each other!';
+
+  @override
+  String get sendMessage => 'Send message';
 
   @override
   String get startChat => 'Say hello';
@@ -627,6 +907,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatHint => 'Write a message...';
+
+  @override
+  String get chatEmptyTitle => 'No messages yet';
+
+  @override
+  String get chatEmptyMessage => 'Send the first message.';
 
   @override
   String get send => 'Send';
@@ -1067,5 +1353,205 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addPhotoGallery => 'Choose from gallery';
 
   @override
+  String get photoEmptyHint => 'Add your first photo to continue.';
+
+  @override
+  String get photoMinRequired => 'You must add at least 3 photos.';
+
+  @override
+  String photoUploadingPercent(int percent) {
+    return 'Uploading photo... $percent%';
+  }
+
+  @override
+  String get photoUploadFailed =>
+      'Photo could not be uploaded. Please try again.';
+
+  @override
+  String get photoUploaded => 'Photo uploaded';
+
+  @override
+  String get photoSelected => 'Photo selected';
+
+  @override
+  String get photoRetry => 'Try again';
+
+  @override
   String get enableDeviceNotifications => 'Enable notifications';
+
+  @override
+  String get settingsChangePassword => 'Change password';
+
+  @override
+  String get settingsEmailUnavailable => 'No email on file';
+
+  @override
+  String get settingsReadOnly => 'Read-only';
+
+  @override
+  String get settingsPrivacySafety => 'Privacy & Safety';
+
+  @override
+  String get settingsPrivacyControls => 'Privacy';
+
+  @override
+  String get settingsLocation => 'Location';
+
+  @override
+  String get settingsSupport => 'Support';
+
+  @override
+  String get settingsLogoutTitle => 'Log out?';
+
+  @override
+  String get settingsLogoutBody =>
+      'You will need to sign in again to use Mevora.';
+
+  @override
+  String get settingsDeleteConfirmTitle => 'This is permanent';
+
+  @override
+  String get settingsDeleteConfirmBody =>
+      'All matches, messages, and profile data will be deleted forever.';
+
+  @override
+  String get settingsReauthTitle => 'Confirm your identity';
+
+  @override
+  String get settingsCurrentPasswordRequired => 'Enter your current password.';
+
+  @override
+  String get settingsNewPasswordRequired => 'Enter a new password.';
+
+  @override
+  String get settingsConfirmPasswordRequired => 'Confirm your new password.';
+
+  @override
+  String get settingsPasswordsDoNotMatch => 'Passwords do not match.';
+
+  @override
+  String get settingsPhotoMinRequired => 'Keep at least 3 profile photos.';
+
+  @override
+  String get settingsPhotoMaxExceeded => 'You can add up to 6 photos.';
+
+  @override
+  String get settingsPhotoPrimaryDeleteBlocked =>
+      'Set another photo as primary before deleting this one.';
+
+  @override
+  String get settingsPhotoPrimaryRequired => 'Choose a primary photo.';
+
+  @override
+  String get settingsFirstNameRequired => 'First name is required.';
+
+  @override
+  String get settingsFirstNameTooLong => 'First name is too long.';
+
+  @override
+  String get settingsBioTooLong => 'Bio is too long.';
+
+  @override
+  String get settingsInterestsTooMany => 'Choose fewer interests.';
+
+  @override
+  String get settingsMinAgeInvalid => 'Minimum age must be at least 18.';
+
+  @override
+  String get settingsMaxAgeInvalid => 'Maximum age is too high.';
+
+  @override
+  String get settingsAgeRangeInvalid =>
+      'Maximum age must be greater than minimum age.';
+
+  @override
+  String get settingsDistanceInvalid =>
+      'Distance must be between 1 and 500 km.';
+
+  @override
+  String get settingsGooglePasswordMessage =>
+      'Your account uses Google Sign-In. Password changes are managed by Google.';
+
+  @override
+  String get settingsBirthDateLocked =>
+      'Birthday cannot be changed after onboarding. Age is calculated from your birthday.';
+
+  @override
+  String get settingsSaveProfile => 'Save profile';
+
+  @override
+  String get settingsUnblock => 'Unblock';
+
+  @override
+  String get settingsBlockedEmptyTitle => 'No blocked users';
+
+  @override
+  String get settingsBlockedEmptyMessage =>
+      'People you block will appear here.';
+
+  @override
+  String get settingsShowOnlineStatus => 'Show online status';
+
+  @override
+  String get settingsShowDistance => 'Show distance';
+
+  @override
+  String get settingsShowActivity => 'Show activity status';
+
+  @override
+  String get settingsPushNotifications => 'Push notifications';
+
+  @override
+  String get settingsSuperLikeNotifications => 'Super Like notifications';
+
+  @override
+  String get settingsSetPrimaryPhoto => 'Set as primary';
+
+  @override
+  String get settingsDeletePhoto => 'Remove photo';
+
+  @override
+  String get settingsAddPhoto => 'Add photo';
+
+  @override
+  String get settingsEducation => 'Education';
+
+  @override
+  String get settingsLifestyle => 'Lifestyle';
+
+  @override
+  String get settingsInterestedIn => 'Interested in';
+
+  @override
+  String get settingsRelationshipGoal => 'Relationship goal';
+
+  @override
+  String get settingsCity => 'City';
+
+  @override
+  String get settingsGender => 'Gender';
+
+  @override
+  String get settingsNewPassword => 'New password';
+
+  @override
+  String get settingsCurrentPassword => 'Current password';
+
+  @override
+  String get settingsConfirmPassword => 'Confirm password';
+
+  @override
+  String get settingsPasswordChanged => 'Password updated.';
+
+  @override
+  String get settingsProfileSaved => 'Profile saved.';
+
+  @override
+  String get citySelectTitle => 'Select City';
+
+  @override
+  String get citySelectSearch => 'Search province…';
+
+  @override
+  String get citySelectNone => 'No province found';
 }

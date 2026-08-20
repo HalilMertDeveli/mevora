@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_rive_animation.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
 class MevoraErrorView extends StatelessWidget {
@@ -36,7 +38,16 @@ class MevoraErrorView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 40, color: theme.colorScheme.error),
+              MevoraRiveAnimation(
+                asset: MevoraRiveAssets.error,
+                width: 72,
+                height: 72,
+                fallback: Icon(
+                  icon,
+                  size: 40,
+                  color: theme.colorScheme.error,
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 resolvedTitle,

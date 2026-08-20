@@ -12,7 +12,20 @@
           "package_name": "com.mevora.app.staging"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "905717896949-bk13c5d85o8nm66n6b6p0pvsbk1re38o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mevora.app.staging",
+            "certificate_hash": "9ca2e5841a550c564ba34d0a5731a524af23cc9f"
+          }
+        },
+        {
+          "client_id": "905717896949-ed8egc0uc4nng7tae5p52qs0ogrnc6vh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC7dWuaKZmX1c5q4QyQPLUKBPhRvNSqaW0"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "905717896949-ed8egc0uc4nng7tae5p52qs0ogrnc6vh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "905717896949-cm5m9e58nfk2p4otjcekmc9t737qn0ga.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mevora.app.staging"
+              }
+            }
+          ]
         }
       }
     }

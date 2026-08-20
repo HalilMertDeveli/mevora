@@ -14,7 +14,9 @@ import 'package:mevora/features/chat/presentation/widgets/chat_widgets.dart';
 import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/safety/presentation/widgets/chat_more_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_dialog.dart';
+import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 
@@ -127,7 +129,14 @@ class _ChatPageState extends State<ChatPage> {
                   message: L10nErrors.message(l10n, controller.error),
                 ),
               Expanded(
-                child: ListView.builder(
+                child: controller.messages.isEmpty
+                    ? MevoraEmptyState(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        riveAsset: MevoraRiveAssets.chatEmpty,
+                        title: l10n.chatEmptyTitle,
+                        message: l10n.chatEmptyMessage,
+                      )
+                    : ListView.builder(
                   controller: _scroll,
                   reverse: true,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),

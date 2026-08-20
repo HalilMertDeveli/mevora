@@ -17,6 +17,12 @@ abstract final class AppRoutes {
   static const String phone = '/phone';
   static const String phoneOtp = '/phone/otp';
   static const String settings = '/settings';
+  static const String editProfile = '/settings/edit-profile';
+  static const String changePassword = '/settings/change-password';
+  static const String discoveryPreferences = '/settings/discovery-preferences';
+  static const String locationSettings = '/settings/location';
+  static const String privacySettings = '/settings/privacy-controls';
+  static const String blockedUsers = '/settings/blocked-users';
   static const String notificationSettings = '/settings/notifications';
   static const String privacyPermissions = '/settings/privacy';
   static const String boost = '/boost';

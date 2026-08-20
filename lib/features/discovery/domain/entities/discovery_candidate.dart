@@ -4,7 +4,7 @@ class DiscoveryCandidate {
     required this.uid,
     required this.displayName,
     required this.age,
-    this.photoUrl,
+    this.photos = const [],
     this.distanceLabel,
     this.distanceKm,
     this.compatibilityScore = 0,
@@ -13,12 +13,17 @@ class DiscoveryCandidate {
     this.compatibilityReasons = const [],
     this.bio,
     this.city,
+    this.gender,
+    this.relationshipGoal,
   });
 
   final String uid;
   final String displayName;
   final int age;
-  final String? photoUrl;
+  final List<String> photos;
+
+  /// Primary photo for card thumbnails.
+  String? get photoUrl => photos.isEmpty ? null : photos.first;
 
   /// Derived server label such as "3.8 km away".
   final String? distanceLabel;
@@ -31,4 +36,6 @@ class DiscoveryCandidate {
   final List<String> compatibilityReasons;
   final String? bio;
   final String? city;
+  final String? gender;
+  final String? relationshipGoal;
 }

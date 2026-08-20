@@ -18,6 +18,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get connectTagline => 'Sana uyan insanlarla tanış.';
 
   @override
+  String get loginSlogan =>
+      'Sadece insanları değil,\nsana uygun insanları keşfet.';
+
+  @override
+  String get continueWithEmail => 'E-posta ile devam et';
+
+  @override
   String get somethingWentWrong => 'Bir şeyler ters gitti';
 
   @override
@@ -185,6 +192,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get continueWithGoogle => 'Google ile devam et';
 
   @override
+  String get signingIn => 'Giriş yapılıyor...';
+
+  @override
   String get continueWithApple => 'Apple ile devam et';
 
   @override
@@ -346,6 +356,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authNotConfigured => 'Bu giriş yöntemi henüz yapılandırılmadı.';
 
   @override
+  String get authBillingNotEnabled =>
+      'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.';
+
+  @override
   String get authInvalidEmail => 'Geçerli bir e-posta adresi gir.';
 
   @override
@@ -420,6 +434,196 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get onboardingMustBeAdult =>
       'Mevora\'yı kullanmak için 18 yaşında veya daha büyük olmalısın.';
+
+  @override
+  String onboardingStepProgress(int current, int total) {
+    return 'Adım $current / $total';
+  }
+
+  @override
+  String get onboardingBack => 'Geri';
+
+  @override
+  String get onboardingContinue => 'Devam Et';
+
+  @override
+  String get onboardingEducation => 'Eğitim';
+
+  @override
+  String get onboardingLifestyle => 'Yaşam tarzı';
+
+  @override
+  String get onboardingSmoking => 'Sigara';
+
+  @override
+  String get onboardingDrinking => 'Alkol';
+
+  @override
+  String get onboardingExercise => 'Egzersiz';
+
+  @override
+  String get onboardingPets => 'Evcil hayvan';
+
+  @override
+  String get onboardingInterestsHint =>
+      'Uyumlu kişileri bulabilmemiz için en az 3 ilgi alanı seç.';
+
+  @override
+  String get onboardingBioHint => 'Kendinden biraz bahset.';
+
+  @override
+  String get onboardingPhotosHint =>
+      'En az 3 fotoğraf ekle. Sıralamak için sürükle — ilk fotoğraf ana fotoğrafındır.';
+
+  @override
+  String get onboardingPrimaryPhoto => 'Ana fotoğraf';
+
+  @override
+  String onboardingPhotoNumber(int number) {
+    return 'Fotoğraf $number';
+  }
+
+  @override
+  String get onboardingCompleteTitle => 'Hazırsın';
+
+  @override
+  String get onboardingCompleteMessage =>
+      'Profilin hazır. Mevora uyumlu kişilerle tanıştırmaya başlayacak.';
+
+  @override
+  String get onboardingStartDiscovering => 'Keşfetmeye başla';
+
+  @override
+  String get onboardingGenderMan => 'Erkek';
+
+  @override
+  String get onboardingGenderWoman => 'Kadın';
+
+  @override
+  String get onboardingGenderNonBinary => 'Non-binary';
+
+  @override
+  String get onboardingInterestedMen => 'Erkekler';
+
+  @override
+  String get onboardingInterestedWomen => 'Kadınlar';
+
+  @override
+  String get onboardingInterestedEveryone => 'Herkes';
+
+  @override
+  String get onboardingEducationHighSchool => 'Lise';
+
+  @override
+  String get onboardingEducationSomeCollege => 'Üniversite (devam)';
+
+  @override
+  String get onboardingEducationBachelors => 'Lisans';
+
+  @override
+  String get onboardingEducationMasters => 'Yüksek lisans';
+
+  @override
+  String get onboardingEducationPhd => 'Doktora';
+
+  @override
+  String get onboardingEducationPreferNotToSay => 'Belirtmek istemiyorum';
+
+  @override
+  String get onboardingRelationshipLongTerm => 'Uzun süreli ilişki';
+
+  @override
+  String get onboardingRelationshipShortTerm => 'Kısa süreli bağ';
+
+  @override
+  String get onboardingRelationshipFriendship => 'Yeni arkadaşlar';
+
+  @override
+  String get onboardingRelationshipNotSure => 'Henüz emin değilim';
+
+  @override
+  String get onboardingRelationshipPreferNotToSay => 'Belirtmek istemiyorum';
+
+  @override
+  String get onboardingLifestyleNever => 'Asla';
+
+  @override
+  String get onboardingLifestyleSometimes => 'Bazen';
+
+  @override
+  String get onboardingLifestyleRegularly => 'Düzenli';
+
+  @override
+  String get onboardingLifestyleDaily => 'Her gün';
+
+  @override
+  String get onboardingLifestyleNone => 'Yok';
+
+  @override
+  String get onboardingLifestyleCat => 'Kedi';
+
+  @override
+  String get onboardingLifestyleDog => 'Köpek';
+
+  @override
+  String get onboardingLifestyleBoth => 'İkisi de';
+
+  @override
+  String get onboardingLifestyleOther => 'Diğer';
+
+  @override
+  String get interestMusic => 'Müzik';
+
+  @override
+  String get interestTravel => 'Seyahat';
+
+  @override
+  String get interestFitness => 'Fitness';
+
+  @override
+  String get interestFood => 'Yemek';
+
+  @override
+  String get interestArt => 'Sanat';
+
+  @override
+  String get interestMovies => 'Filmler';
+
+  @override
+  String get interestBooks => 'Kitaplar';
+
+  @override
+  String get interestGaming => 'Oyun';
+
+  @override
+  String get interestNature => 'Doğa';
+
+  @override
+  String get interestPhotography => 'Fotoğraf';
+
+  @override
+  String get interestCoffee => 'Kahve';
+
+  @override
+  String get interestDancing => 'Dans';
+
+  @override
+  String get interestYoga => 'Yoga';
+
+  @override
+  String get interestTech => 'Teknoloji';
+
+  @override
+  String get interestFashion => 'Moda';
+
+  @override
+  String get interestPets => 'Evcil hayvan';
+
+  @override
+  String get interestSports => 'Spor';
+
+  @override
+  String get interestCooking => 'Yemek yapma';
 
   @override
   String get locationPermissionTitle => 'Yakınındaki insanları keşfet';
@@ -509,6 +713,76 @@ class AppLocalizationsTr extends AppLocalizations {
       'Mesafeyi genişlet veya biraz sonra tekrar bak.';
 
   @override
+  String get discoverySeenEveryoneTitle => 'Şimdilik burada herkes bu kadar.';
+
+  @override
+  String get discoverySeenEveryoneMessage =>
+      'Yeni kişiler için daha sonra tekrar bak veya demoyu yeniden başlat.';
+
+  @override
+  String get exploreAgain => 'Tekrar keşfet';
+
+  @override
+  String get restartDemo => 'Demoyu yeniden başlat';
+
+  @override
+  String get discoveryFiltersTitle => 'Keşif filtreleri';
+
+  @override
+  String get discoveryFiltersHint =>
+      'Filtreler yerel olarak kaydedilir. Sunucu tarafı filtreleme sonraki güncellemede gelecek.';
+
+  @override
+  String get applyFilters => 'Filtreleri uygula';
+
+  @override
+  String get filterAge => 'Yaş aralığı';
+
+  @override
+  String get filterDistance => 'Maksimum mesafe';
+
+  @override
+  String get filterGender => 'Göster';
+
+  @override
+  String get filterRelationshipGoal => 'İlişki hedefi';
+
+  @override
+  String get genderWoman => 'Kadın';
+
+  @override
+  String get genderMan => 'Erkek';
+
+  @override
+  String get genderNonBinary => 'Non-binary';
+
+  @override
+  String get relationshipGoalLongTerm => 'Uzun vadeli';
+
+  @override
+  String get relationshipGoalCasual => 'Gündelik';
+
+  @override
+  String get relationshipGoalFiguringOut => 'Henüz kararsızım';
+
+  @override
+  String get compatibilityReasonsHeading => 'Neden uyumlusunuz';
+
+  @override
+  String get whyYoureSeeingThis => 'Bu kişiyi neden görüyorsun';
+
+  @override
+  String get sharedInterests => 'Ortak ilgi alanları';
+
+  @override
+  String get profileDetailsTitle => 'Profil';
+
+  @override
+  String photoCounter(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
   String get tabDiscovery => 'Keşfet';
 
   @override
@@ -547,6 +821,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get itsAMatch => 'Eşleştiniz';
+
+  @override
+  String get youLikedEachOther => 'Birbirinizi beğendiniz!';
+
+  @override
+  String get sendMessage => 'Mesaj gönder';
 
   @override
   String get startChat => 'Merhaba de';
@@ -626,6 +906,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get chatHint => 'Mesaj yaz...';
+
+  @override
+  String get chatEmptyTitle => 'Henüz mesaj yok';
+
+  @override
+  String get chatEmptyMessage => 'İlk mesajı sen gönder.';
 
   @override
   String get send => 'Gönder';
@@ -1067,5 +1353,204 @@ class AppLocalizationsTr extends AppLocalizations {
   String get addPhotoGallery => 'Galeriden seç';
 
   @override
+  String get photoEmptyHint => 'Devam etmek için ilk fotoğrafını ekle.';
+
+  @override
+  String get photoMinRequired => 'En az 3 fotoğraf eklemelisin.';
+
+  @override
+  String photoUploadingPercent(int percent) {
+    return 'Fotoğraf yükleniyor... %$percent';
+  }
+
+  @override
+  String get photoUploadFailed =>
+      'Fotoğraf yüklenirken bir hata oluştu. Lütfen tekrar deneyin.';
+
+  @override
+  String get photoUploaded => 'Fotoğraf yüklendi';
+
+  @override
+  String get photoSelected => 'Fotoğraf seçildi';
+
+  @override
+  String get photoRetry => 'Tekrar Dene';
+
+  @override
   String get enableDeviceNotifications => 'Bildirimleri aç';
+
+  @override
+  String get settingsChangePassword => 'Şifreyi değiştir';
+
+  @override
+  String get settingsEmailUnavailable => 'Kayıtlı e-posta yok';
+
+  @override
+  String get settingsReadOnly => 'Salt okunur';
+
+  @override
+  String get settingsPrivacySafety => 'Gizlilik ve güvenlik';
+
+  @override
+  String get settingsPrivacyControls => 'Gizlilik';
+
+  @override
+  String get settingsLocation => 'Konum';
+
+  @override
+  String get settingsSupport => 'Destek';
+
+  @override
+  String get settingsLogoutTitle => 'Çıkış yapılsın mı?';
+
+  @override
+  String get settingsLogoutBody =>
+      'Mevora\'yı kullanmak için tekrar giriş yapman gerekecek.';
+
+  @override
+  String get settingsDeleteConfirmTitle => 'Bu kalıcıdır';
+
+  @override
+  String get settingsDeleteConfirmBody =>
+      'Tüm eşleşmeler, mesajlar ve profil verilerin kalıcı olarak silinir.';
+
+  @override
+  String get settingsReauthTitle => 'Kimliğini doğrula';
+
+  @override
+  String get settingsCurrentPasswordRequired => 'Mevcut şifreni gir.';
+
+  @override
+  String get settingsNewPasswordRequired => 'Yeni bir şifre gir.';
+
+  @override
+  String get settingsConfirmPasswordRequired => 'Yeni şifreni onayla.';
+
+  @override
+  String get settingsPasswordsDoNotMatch => 'Şifreler eşleşmiyor.';
+
+  @override
+  String get settingsPhotoMinRequired => 'En az 3 profil fotoğrafı bırak.';
+
+  @override
+  String get settingsPhotoMaxExceeded => 'En fazla 6 fotoğraf ekleyebilirsin.';
+
+  @override
+  String get settingsPhotoPrimaryDeleteBlocked =>
+      'Bunu silmeden önce başka bir fotoğrafı birincil yap.';
+
+  @override
+  String get settingsPhotoPrimaryRequired => 'Bir birincil fotoğraf seç.';
+
+  @override
+  String get settingsFirstNameRequired => 'Ad gerekli.';
+
+  @override
+  String get settingsFirstNameTooLong => 'Ad çok uzun.';
+
+  @override
+  String get settingsBioTooLong => 'Hakkında metni çok uzun.';
+
+  @override
+  String get settingsInterestsTooMany => 'Daha az ilgi alanı seç.';
+
+  @override
+  String get settingsMinAgeInvalid => 'Minimum yaş en az 18 olmalı.';
+
+  @override
+  String get settingsMaxAgeInvalid => 'Maksimum yaş çok yüksek.';
+
+  @override
+  String get settingsAgeRangeInvalid =>
+      'Maksimum yaş, minimum yaştan büyük olmalı.';
+
+  @override
+  String get settingsDistanceInvalid => 'Mesafe 1 ile 500 km arasında olmalı.';
+
+  @override
+  String get settingsGooglePasswordMessage =>
+      'Hesabın Google ile giriş kullanıyor. Şifre değişiklikleri Google üzerinden yapılır.';
+
+  @override
+  String get settingsBirthDateLocked =>
+      'Doğum günü onboarding sonrası değiştirilemez. Yaş yalnızca doğum gününden hesaplanır.';
+
+  @override
+  String get settingsSaveProfile => 'Profili kaydet';
+
+  @override
+  String get settingsUnblock => 'Engeli kaldır';
+
+  @override
+  String get settingsBlockedEmptyTitle => 'Engellenen yok';
+
+  @override
+  String get settingsBlockedEmptyMessage =>
+      'Engellediğin kişiler burada görünür.';
+
+  @override
+  String get settingsShowOnlineStatus => 'Çevrimiçi durumunu göster';
+
+  @override
+  String get settingsShowDistance => 'Mesafeyi göster';
+
+  @override
+  String get settingsShowActivity => 'Aktivite durumunu göster';
+
+  @override
+  String get settingsPushNotifications => 'Anlık bildirimler';
+
+  @override
+  String get settingsSuperLikeNotifications => 'Super Like bildirimleri';
+
+  @override
+  String get settingsSetPrimaryPhoto => 'Birincil yap';
+
+  @override
+  String get settingsDeletePhoto => 'Fotoğrafı kaldır';
+
+  @override
+  String get settingsAddPhoto => 'Fotoğraf ekle';
+
+  @override
+  String get settingsEducation => 'Eğitim';
+
+  @override
+  String get settingsLifestyle => 'Yaşam tarzı';
+
+  @override
+  String get settingsInterestedIn => 'İlgilendiğim';
+
+  @override
+  String get settingsRelationshipGoal => 'İlişki hedefi';
+
+  @override
+  String get settingsCity => 'Şehir';
+
+  @override
+  String get settingsGender => 'Cinsiyet';
+
+  @override
+  String get settingsNewPassword => 'Yeni şifre';
+
+  @override
+  String get settingsCurrentPassword => 'Mevcut şifre';
+
+  @override
+  String get settingsConfirmPassword => 'Şifreyi onayla';
+
+  @override
+  String get settingsPasswordChanged => 'Şifre güncellendi.';
+
+  @override
+  String get settingsProfileSaved => 'Profil kaydedildi.';
+
+  @override
+  String get citySelectTitle => 'Şehir Seç';
+
+  @override
+  String get citySelectSearch => 'İl ara…';
+
+  @override
+  String get citySelectNone => 'İl bulunamadı';
 }

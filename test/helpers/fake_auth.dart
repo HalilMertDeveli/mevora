@@ -296,6 +296,18 @@ class FakeAuthRepository implements AuthRepository {
     return signOut();
   }
 
+  @override
+  Future<Result<void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    passwordSubmitted = currentPassword.isNotEmpty && newPassword.isNotEmpty;
+    if (nextFailure != null) {
+      return Err(nextFailure!);
+    }
+    return const Success(null);
+  }
+
   Future<Result<AuthUser>> _complete(AuthUser next) async {
     if (nextFailure != null) {
       return Err(nextFailure!);

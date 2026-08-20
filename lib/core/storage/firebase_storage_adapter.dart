@@ -17,6 +17,7 @@ class FirebaseStorageAdapter implements StorageProvider {
     required String path,
     required List<int> bytes,
     String contentType = 'image/jpeg',
+    void Function(double progress)? onProgress,
   }) async {
     try {
       final ref = _storage.ref(path);

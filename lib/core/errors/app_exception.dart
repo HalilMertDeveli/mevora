@@ -42,6 +42,7 @@ enum AuthErrorKind {
   accountExists,
   linkingBlocked,
   notConfigured,
+  billingNotEnabled,
   invalidEmail,
   weakPassword,
   userNotFound,

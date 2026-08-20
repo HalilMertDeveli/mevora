@@ -6,7 +6,9 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
+import 'package:mevora/features/discovery/data/repositories/mock_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
+import 'package:mevora/features/discovery/domain/entities/discovery_filters.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/location/domain/entities/location_flags.dart';
@@ -27,29 +29,39 @@ class DiscoveryFeedState {
     this.phase = LocationPromptPhase.explanation,
     this.candidates = const [],
     this.radius = DiscoveryRadius.km25,
+    this.filters = const DiscoveryFilters(),
     this.isLoading = false,
     this.errorMessage,
     this.showLikeBurst = false,
     this.matchedCandidate,
     this.activeBoost,
+    this.hasSeenEveryone = false,
+    this.isMockMode = false,
   });
 
   final LocationPromptPhase phase;
   final List<DiscoveryCandidate> candidates;
   final DiscoveryRadius radius;
+  final DiscoveryFilters filters;
   final bool isLoading;
   final String? errorMessage;
   final bool showLikeBurst;
   final DiscoveryCandidate? matchedCandidate;
   final Boost? activeBoost;
+  final bool hasSeenEveryone;
+  final bool isMockMode;
 
   DiscoveryCandidate? get current =>
       candidates.isEmpty ? null : candidates.first;
+
+  List<DiscoveryCandidate> get stackCandidates =>
+      candidates.length <= 3 ? candidates : candidates.take(3).toList();
 
   DiscoveryFeedState copyWith({
     LocationPromptPhase? phase,
     List<DiscoveryCandidate>? candidates,
     DiscoveryRadius? radius,
+    DiscoveryFilters? filters,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
@@ -58,11 +70,14 @@ class DiscoveryFeedState {
     bool clearMatch = false,
     Boost? activeBoost,
     bool clearBoost = false,
+    bool? hasSeenEveryone,
+    bool? isMockMode,
   }) {
     return DiscoveryFeedState(
       phase: phase ?? this.phase,
       candidates: candidates ?? this.candidates,
       radius: radius ?? this.radius,
+      filters: filters ?? this.filters,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       showLikeBurst: showLikeBurst ?? this.showLikeBurst,
@@ -70,6 +85,8 @@ class DiscoveryFeedState {
           ? null
           : (matchedCandidate ?? this.matchedCandidate),
       activeBoost: clearBoost ? null : (activeBoost ?? this.activeBoost),
+      hasSeenEveryone: hasSeenEveryone ?? this.hasSeenEveryone,
+      isMockMode: isMockMode ?? this.isMockMode,
     );
   }
 }
@@ -83,11 +100,16 @@ class DiscoveryController extends ChangeNotifier {
     PurchaseRepository? purchaseRepository,
     LocationSyncCoordinator? locationSync,
     bool skipExplanationIfAlreadyGranted = true,
+    this.swipeThreshold = 120,
   }) : _locationRepository = locationRepository,
        _discoveryRepository = discoveryRepository,
        _purchaseRepository = purchaseRepository,
        _locationSync = locationSync ?? LocationSyncCoordinator(),
-       _skipExplanationIfAlreadyGranted = skipExplanationIfAlreadyGranted;
+       _skipExplanationIfAlreadyGranted = skipExplanationIfAlreadyGranted {
+    state = state.copyWith(
+      isMockMode: discoveryRepository is MockDiscoveryRepository,
+    );
+  }
 
   final String uid;
   final LocationRepository _locationRepository;
@@ -96,10 +118,19 @@ class DiscoveryController extends ChangeNotifier {
   final LocationSyncCoordinator _locationSync;
   final bool _skipExplanationIfAlreadyGranted;
 
+  /// Minimum drag distance (px) before a swipe action fires.
+  final double swipeThreshold;
+
   PurchaseRepository? get purchaseRepository => _purchaseRepository;
+  DiscoveryRepository get discoveryRepository => _discoveryRepository;
 
   DiscoveryFeedState state = const DiscoveryFeedState();
   bool declinedLocation = false;
+
+  final Set<String> _actedUserIds = <String>{};
+  bool _isProcessingAction = false;
+
+  bool get isProcessingAction => _isProcessingAction;
 
   Future<void> start() async {
     unawaited(refreshBoost());
@@ -199,6 +230,11 @@ class DiscoveryController extends ChangeNotifier {
     await loadCandidates();
   }
 
+  void setFilters(DiscoveryFilters filters) {
+    state = state.copyWith(filters: filters);
+    notifyListeners();
+  }
+
   Future<void> refresh() async {
     if (!declinedLocation) {
       final permission = await _locationRepository.checkPermission();
@@ -209,6 +245,23 @@ class DiscoveryController extends ChangeNotifier {
     await loadCandidates();
   }
 
+  Future<void> exploreAgain() async {
+    state = state.copyWith(hasSeenEveryone: false);
+    notifyListeners();
+    await loadCandidates();
+  }
+
+  Future<void> restartDemo() async {
+    final repo = _discoveryRepository;
+    if (repo is MockDiscoveryRepository) {
+      repo.restartDemo();
+      _actedUserIds.clear();
+      state = state.copyWith(hasSeenEveryone: false, candidates: const []);
+      notifyListeners();
+      await loadCandidates();
+    }
+  }
+
   Future<void> loadCandidates() async {
     state = state.copyWith(isLoading: true, clearError: true);
     notifyListeners();
@@ -217,9 +270,15 @@ class DiscoveryController extends ChangeNotifier {
     );
     switch (result) {
       case Success(:final value):
+        final repo = _discoveryRepository;
+        final seenEveryone =
+            value.candidates.isEmpty &&
+            repo is MockDiscoveryRepository &&
+            repo.isExhaustedForRadius(state.radius.kilometers);
         state = state.copyWith(
           candidates: value.candidates,
           isLoading: false,
+          hasSeenEveryone: seenEveryone,
           phase: state.phase == LocationPromptPhase.explanation
               ? LocationPromptPhase.ready
               : state.phase,
@@ -234,20 +293,55 @@ class DiscoveryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> onLike(String userId) =>
+      _performAction(userId, DiscoveryDecision.like);
+
+  Future<void> onPass(String userId) =>
+      _performAction(userId, DiscoveryDecision.pass);
+
+  Future<void> onSuperLike(String userId) =>
+      _performAction(userId, DiscoveryDecision.superLike);
+
   Future<void> decide(DiscoveryDecision decision) async {
     final current = state.current;
     if (current == null) {
       return;
     }
+    await _performAction(current.uid, decision);
+  }
+
+  Future<void> _performAction(
+    String userId,
+    DiscoveryDecision decision,
+  ) async {
+    if (_isProcessingAction) {
+      return;
+    }
+    if (userId == uid) {
+      return;
+    }
+    if (_actedUserIds.contains(userId)) {
+      return;
+    }
+    final current = state.current;
+    if (current == null || current.uid != userId) {
+      return;
+    }
+
+    _isProcessingAction = true;
+    _actedUserIds.add(userId);
+
     if (decision == DiscoveryDecision.like ||
         decision == DiscoveryDecision.superLike) {
       state = state.copyWith(showLikeBurst: true);
       notifyListeners();
     }
+
     final result = await _discoveryRepository.recordDecision(
-      candidateUid: current.uid,
+      candidateUid: userId,
       decision: decision,
     );
+
     final remaining = state.candidates.skip(1).toList();
     final matched = result.valueOrNull?.matched == true ? current : null;
     state = state.copyWith(
@@ -257,9 +351,13 @@ class DiscoveryController extends ChangeNotifier {
       clearMatch: matched == null,
     );
     notifyListeners();
+
+    _isProcessingAction = false;
+
     if (remaining.isEmpty) {
       await loadCandidates();
     }
+    notifyListeners();
   }
 
   void clearMatch() {

@@ -110,6 +110,14 @@ class FirebaseBootstrap {
   }
 
   Future<void> _configureAppCheck(AppConfig config) async {
+    // Development: skip activation so missing debug tokens / disabled App Check
+    // API cannot block Phone Auth. Firebase still may use a placeholder token.
+    if (config.environment.isDevelopment) {
+      logger.info(
+        'App Check skipped in development (non-blocking for Phone Auth)',
+      );
+      return;
+    }
     try {
       await FirebaseAppCheck.instance.activate(
         providerAndroid: config.environment.isProduction
@@ -120,8 +128,10 @@ class FirebaseBootstrap {
             : const AppleDebugProvider(),
       );
     } on Object catch (error, stackTrace) {
+      // Non-blocking: Phone Auth and other Firebase calls continue without a
+      // valid App Check token when activation fails.
       logger.warning(
-        'App Check was not activated',
+        'App Check was not activated; continuing without enforcement',
         error: error,
         stackTrace: stackTrace,
       );

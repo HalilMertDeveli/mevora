@@ -25,6 +25,9 @@ class _RecordingAnalytics implements AuthAnalytics {
   final events = <String>[];
 
   @override
+  Future<void> loginScreenViewed() async => events.add('login_screen_viewed');
+
+  @override
   Future<void> phoneAuthStarted() async => events.add('phone_auth_started');
 
   @override
@@ -118,6 +121,9 @@ void main() {
 
       final network = AuthErrorMapper.fromCode('network-request-failed');
       expect(network.kind, AuthErrorKind.network);
+
+      final clientConfig = AuthErrorMapper.fromCode('clientConfigurationError');
+      expect(clientConfig.kind, AuthErrorKind.oauth);
     });
 
     test('provider detection records Google on linked accounts', () {

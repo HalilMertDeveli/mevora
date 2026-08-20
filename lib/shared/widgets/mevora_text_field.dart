@@ -27,6 +27,7 @@ class MevoraTextField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.autocorrect = true,
     this.enableSuggestions = true,
+    this.onTap,
   });
 
   final TextEditingController? controller;
@@ -52,6 +53,7 @@ class MevoraTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final bool autocorrect;
   final bool enableSuggestions;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +67,7 @@ class MevoraTextField extends StatelessWidget {
       onSubmitted: onSubmitted,
       enabled: enabled,
       readOnly: readOnly,
+      onTap: onTap,
       maxLines: obscureText ? 1 : maxLines,
       minLines: obscureText ? 1 : minLines,
       maxLength: maxLength,

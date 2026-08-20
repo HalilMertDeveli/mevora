@@ -39,7 +39,7 @@ void main() {
     await tester.tap(find.text(l10n.selectCityInstead));
     await tester.pump();
     await tester.pump();
-    expect(find.text(l10n.onboardingCity), findsWidgets);
+    expect(find.text(l10n.citySelectTitle), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }

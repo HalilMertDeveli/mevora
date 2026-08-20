@@ -7,6 +7,7 @@ import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 
@@ -113,6 +114,7 @@ class MatchesPage extends StatelessWidget {
               : controller.items.isEmpty
               ? MevoraEmptyState(
                   icon: Icons.favorite_outline,
+                  riveAsset: MevoraRiveAssets.emptyMatches,
                   title: l10n.matchesEmptyTitle,
                   message: l10n.matchesEmptyMessage,
                 )

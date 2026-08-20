@@ -85,23 +85,31 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     raw.remove('longitude');
     raw.remove('geohash');
 
-    final photos = profile['photos'];
-    String? photoUrl;
-    if (photos is List && photos.isNotEmpty) {
-      final first = photos.first;
-      if (first is String) {
-        photoUrl = first;
-      } else if (first is Map) {
-        photoUrl =
-            first['downloadUrl'] as String? ?? first['thumbUrl'] as String?;
+    final photosRaw = profile['photos'];
+    final photoUrls = <String>[];
+    if (photosRaw is List) {
+      for (final item in photosRaw) {
+        if (item is String) {
+          photoUrls.add(item);
+        } else if (item is Map) {
+          final url =
+              item['downloadUrl'] as String? ?? item['thumbUrl'] as String?;
+          if (url != null) {
+            photoUrls.add(url);
+          }
+        }
       }
+    }
+    final legacyPhoto = profile['photoUrl'] as String?;
+    if (photoUrls.isEmpty && legacyPhoto != null) {
+      photoUrls.add(legacyPhoto);
     }
 
     return DiscoveryCandidate(
       uid: uid,
       displayName: (profile['displayName'] as String?) ?? '',
       age: firestoreInt(profile['age'], 0),
-      photoUrl: photoUrl ?? profile['photoUrl'] as String?,
+      photos: photoUrls,
       distanceLabel: raw['distanceLabel'] as String?,
       distanceKm: firestoreDouble(raw['distanceKm']),
       compatibilityScore: firestoreInt(raw['compatibilityScore'], 0),

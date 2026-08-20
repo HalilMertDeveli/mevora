@@ -36,6 +36,11 @@ service firebase.storage {
       allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
     }
 
+    match /users/{userId}/profile/photos/{imageId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();
+    }
+
     match /users/{userId}/profile/thumbs/{imageId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();

@@ -3,9 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_rive_animation.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
 
-/// Premium, one-shot match moment: two portraits meet, then MATCH appears.
+/// Match moment: portraits meet, then copy and actions stay on screen.
 class MevoraMatchCelebration extends StatefulWidget {
   const MevoraMatchCelebration({
     super.key,
@@ -14,6 +18,8 @@ class MevoraMatchCelebration extends StatefulWidget {
     this.leftImage,
     this.rightImage,
     this.onCompleted,
+    this.onSendMessage,
+    this.onKeepExploring,
   });
 
   final String leftName;
@@ -21,6 +27,8 @@ class MevoraMatchCelebration extends StatefulWidget {
   final ImageProvider? leftImage;
   final ImageProvider? rightImage;
   final VoidCallback? onCompleted;
+  final VoidCallback? onSendMessage;
+  final VoidCallback? onKeepExploring;
 
   @override
   State<MevoraMatchCelebration> createState() => _MevoraMatchCelebrationState();
@@ -47,11 +55,7 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
       parent: _controller,
       curve: const Interval(0.5, 1, curve: Curves.easeOut),
     );
-    unawaited(
-      _controller.forward().whenComplete(() {
-        widget.onCompleted?.call();
-      }),
-    );
+    unawaited(_controller.forward());
   }
 
   @override
@@ -63,41 +67,87 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
         final gap = 48 - (_approach.value * 20);
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                MevoraAvatar(
-                  name: widget.leftName,
-                  image: widget.leftImage,
-                  size: 88,
-                ),
-                SizedBox(width: gap),
-                MevoraAvatar(
-                  name: widget.rightName,
-                  image: widget.rightImage,
-                  size: 88,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Opacity(
-              opacity: _labelOpacity.value,
-              child: Text(
-                'MATCH',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  letterSpacing: 6,
+        return Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              MevoraRiveAnimation(
+                asset: MevoraRiveAssets.match,
+                width: 160,
+                height: 120,
+                semanticsLabel: l10n.itsAMatch,
+                fallback: Icon(
+                  Icons.favorite_rounded,
+                  size: 56,
                   color: theme.colorScheme.primary,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  MevoraAvatar(
+                    name: widget.leftName,
+                    image: widget.leftImage,
+                    size: 88,
+                  ),
+                  SizedBox(width: gap),
+                  MevoraAvatar(
+                    name: widget.rightName,
+                    image: widget.rightImage,
+                    size: 88,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Opacity(
+                opacity: _labelOpacity.value,
+                child: Column(
+                  children: [
+                    Text(
+                      'MATCH',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        letterSpacing: 6,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      l10n.itsAMatch,
+                      style: theme.textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      l10n.youLikedEachOther,
+                      style: theme.textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              if (widget.onSendMessage != null)
+                MevoraButton(
+                  label: l10n.sendMessage,
+                  onPressed: widget.onSendMessage,
+                ),
+              if (widget.onKeepExploring != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                MevoraButton(
+                  label: l10n.keepSwiping,
+                  variant: MevoraButtonVariant.ghost,
+                  onPressed: widget.onKeepExploring,
+                ),
+              ],
+            ],
+          ),
         );
       },
     );

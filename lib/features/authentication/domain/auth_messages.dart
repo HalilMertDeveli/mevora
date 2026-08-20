@@ -65,6 +65,8 @@ abstract final class AuthMessages {
       'Hesaplar yalnızca sen onayladığında bağlanır. E-posta eşleşmesi yeterli değildir.';
   static const String notConfigured =
       'Bu giriş yöntemi henüz yapılandırılmadı.';
+  static const String billingNotEnabled =
+      'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.';
   static const String invalidEmail = 'Geçerli bir e-posta adresi gir.';
   static const String weakPassword =
       'En az 8 karakterlik daha güçlü bir şifre seç.';

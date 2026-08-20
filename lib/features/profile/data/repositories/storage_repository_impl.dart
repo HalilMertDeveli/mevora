@@ -13,11 +13,13 @@ class StorageRepositoryImpl implements StorageRepository {
     required String path,
     required List<int> bytes,
     String contentType = 'image/jpeg',
+    void Function(double progress)? onProgress,
   }) {
     return _dataSource.uploadBytes(
       path: path,
       bytes: bytes,
       contentType: contentType,
+      onProgress: onProgress,
     );
   }
 
@@ -31,6 +33,7 @@ class StorageRepositoryImpl implements StorageRepository {
     required List<int> bytes,
     required String contentType,
     bool thumbnail = false,
+    void Function(double progress)? onProgress,
   }) {
     return _dataSource.uploadProfileImage(
       ownerUid: ownerUid,
@@ -38,6 +41,7 @@ class StorageRepositoryImpl implements StorageRepository {
       bytes: bytes,
       contentType: contentType,
       thumbnail: thumbnail,
+      onProgress: onProgress,
     );
   }
 

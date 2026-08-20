@@ -1,4 +1,6 @@
 # Miscellaneous
+nul
+.cursor/
 *.class
 *.log
 *.pyc

@@ -49,6 +49,15 @@ class GoogleAuthService {
     } on AuthException {
       rethrow;
     } on GoogleSignInException catch (error) {
+      // CredMan often reports misconfigured package/SHA as "canceled".
+      assert(() {
+        // ignore: avoid_print
+        print(
+          'GoogleSignInException code=${error.code} '
+          'description=${error.description} details=${error.details}',
+        );
+        return true;
+      }());
       if (error.code == GoogleSignInExceptionCode.canceled) {
         throw const AuthException(
           AuthMessages.cancelled,
@@ -101,6 +110,45 @@ class GoogleAuthService {
     }
   }
 
+  /// Reauthenticates the current Firebase user with Google (delete account, etc.).
+  Future<void> reauthenticate() async {
+    final current = _firebaseAuth.currentUser;
+    if (current == null) {
+      throw const AuthException(
+        AuthMessages.unknown,
+        kind: AuthErrorKind.unknown,
+      );
+    }
+    try {
+      await _ensureInitialized();
+      final account = await _googleSignIn.authenticate(
+        scopeHint: const ['email', 'profile'],
+      );
+      final idToken = account.authentication.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw const AuthException(
+          AuthMessages.oauth,
+          kind: AuthErrorKind.oauth,
+        );
+      }
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      await current.reauthenticateWithCredential(credential);
+    } on AuthException {
+      rethrow;
+    } on GoogleSignInException catch (error) {
+      if (error.code == GoogleSignInExceptionCode.canceled) {
+        throw const AuthException(
+          AuthMessages.cancelled,
+          kind: AuthErrorKind.cancelled,
+          isCancelled: true,
+        );
+      }
+      throw AuthErrorMapper.map(error);
+    } on Object catch (error) {
+      throw AuthErrorMapper.map(error);
+    }
+  }
+
   AuthSession _sessionFrom(
     UserCredential result,
     GoogleSignInAccount account,
@@ -112,15 +160,18 @@ class GoogleAuthService {
         kind: AuthErrorKind.oauth,
       );
     }
+    // Prefill identity hints for onboarding only — never auto-complete dating
+    // profile fields (photos, interests, etc.).
+    final isNewUser = result.additionalUserInfo?.isNewUser ?? false;
     return AuthSession(
       uid: user.uid,
       provider: AuthProviderId.google,
       email: account.email,
       displayName: account.displayName ?? user.displayName,
       photoUrl: account.photoUrl ?? user.photoURL,
-      persistDisplayName: true,
+      persistDisplayName: isNewUser,
       persistEmail: true,
-      isNewUser: result.additionalUserInfo?.isNewUser ?? false,
+      isNewUser: isNewUser,
     );
   }
 }

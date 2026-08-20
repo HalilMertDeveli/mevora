@@ -6,7 +6,10 @@ import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/calls/domain/models/call_session.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_rive_animation.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
@@ -190,6 +193,70 @@ class VideoCallPage extends StatelessWidget {
                     L10nErrors.message(l10n, controller.error),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              if (controller.lifecycle == CallLifecycle.connecting ||
+                  controller.lifecycle == CallLifecycle.calling ||
+                  controller.lifecycle == CallLifecycle.reconnecting)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: ColoredBox(
+                      color: Colors.black54,
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            MevoraRiveAnimation(
+                              asset: MevoraRiveAssets.callConnecting,
+                              width: 72,
+                              height: 72,
+                              fallback: const SizedBox(
+                                width: 36,
+                                height: 36,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              controller.lifecycle ==
+                                      CallLifecycle.reconnecting
+                                  ? l10n.reconnecting
+                                  : l10n.connecting,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              if (controller.lifecycle == CallLifecycle.ended)
+                Positioned(
+                  top: 120,
+                  left: 0,
+                  right: 0,
+                  child: Column(
+                    children: [
+                      MevoraRiveAnimation(
+                        asset: MevoraRiveAssets.success,
+                        width: 64,
+                        height: 64,
+                        fallback: const Icon(
+                          Icons.call_end,
+                          color: Colors.white70,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.callEnded,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ],
                   ),
                 ),
               Positioned(

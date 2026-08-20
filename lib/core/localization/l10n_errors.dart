@@ -25,6 +25,7 @@ abstract final class L10nErrors {
       AuthErrorKind.accountExists => l10n.authAccountExists,
       AuthErrorKind.linkingBlocked => l10n.authLinkingBlocked,
       AuthErrorKind.notConfigured => l10n.authNotConfigured,
+      AuthErrorKind.billingNotEnabled => l10n.authBillingNotEnabled,
       AuthErrorKind.invalidEmail => l10n.authInvalidEmail,
       AuthErrorKind.weakPassword => l10n.authWeakPassword,
       AuthErrorKind.userNotFound => l10n.authUserNotFound,

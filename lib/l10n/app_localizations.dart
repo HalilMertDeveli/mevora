@@ -116,6 +116,18 @@ abstract class AppLocalizations {
   /// **'Connect with people who match you.'**
   String get connectTagline;
 
+  /// Welcome/login hero slogan. Keep the line break.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t just meet people.\nMeet someone compatible.'**
+  String get loginSlogan;
+
+  /// No description provided for @continueWithEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with email'**
+  String get continueWithEmail;
+
   /// No description provided for @somethingWentWrong.
   ///
   /// In en, this message translates to:
@@ -428,6 +440,12 @@ abstract class AppLocalizations {
   /// **'Continue with Google'**
   String get continueWithGoogle;
 
+  /// No description provided for @signingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in...'**
+  String get signingIn;
+
   /// No description provided for @continueWithApple.
   ///
   /// In en, this message translates to:
@@ -728,6 +746,12 @@ abstract class AppLocalizations {
   /// **'This sign-in method is not set up yet.'**
   String get authNotConfigured;
 
+  /// No description provided for @authBillingNotEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Firebase billing (Blaze) is required to send SMS verification codes.'**
+  String get authBillingNotEnabled;
+
   /// No description provided for @authInvalidEmail.
   ///
   /// In en, this message translates to:
@@ -871,6 +895,372 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You must be 18 or older to use Mevora.'**
   String get onboardingMustBeAdult;
+
+  /// No description provided for @onboardingStepProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String onboardingStepProgress(int current, int total);
+
+  /// No description provided for @onboardingBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get onboardingBack;
+
+  /// No description provided for @onboardingContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onboardingContinue;
+
+  /// No description provided for @onboardingEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get onboardingEducation;
+
+  /// No description provided for @onboardingLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get onboardingLifestyle;
+
+  /// No description provided for @onboardingSmoking.
+  ///
+  /// In en, this message translates to:
+  /// **'Smoking'**
+  String get onboardingSmoking;
+
+  /// No description provided for @onboardingDrinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Drinking'**
+  String get onboardingDrinking;
+
+  /// No description provided for @onboardingExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise'**
+  String get onboardingExercise;
+
+  /// No description provided for @onboardingPets.
+  ///
+  /// In en, this message translates to:
+  /// **'Pets'**
+  String get onboardingPets;
+
+  /// No description provided for @onboardingInterestsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick at least 3 interests so Mevora can find compatible people.'**
+  String get onboardingInterestsHint;
+
+  /// No description provided for @onboardingBioHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a little about yourself.'**
+  String get onboardingBioHint;
+
+  /// No description provided for @onboardingPhotosHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least 3 photos. Drag to reorder — your first photo is your main one.'**
+  String get onboardingPhotosHint;
+
+  /// No description provided for @onboardingPrimaryPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Main photo'**
+  String get onboardingPrimaryPhoto;
+
+  /// No description provided for @onboardingPhotoNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo {number}'**
+  String onboardingPhotoNumber(int number);
+
+  /// No description provided for @onboardingCompleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set'**
+  String get onboardingCompleteTitle;
+
+  /// No description provided for @onboardingCompleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is ready. Mevora will start introducing compatible people.'**
+  String get onboardingCompleteMessage;
+
+  /// No description provided for @onboardingStartDiscovering.
+  ///
+  /// In en, this message translates to:
+  /// **'Start discovering'**
+  String get onboardingStartDiscovering;
+
+  /// No description provided for @onboardingGenderMan.
+  ///
+  /// In en, this message translates to:
+  /// **'Man'**
+  String get onboardingGenderMan;
+
+  /// No description provided for @onboardingGenderWoman.
+  ///
+  /// In en, this message translates to:
+  /// **'Woman'**
+  String get onboardingGenderWoman;
+
+  /// No description provided for @onboardingGenderNonBinary.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-binary'**
+  String get onboardingGenderNonBinary;
+
+  /// No description provided for @onboardingInterestedMen.
+  ///
+  /// In en, this message translates to:
+  /// **'Men'**
+  String get onboardingInterestedMen;
+
+  /// No description provided for @onboardingInterestedWomen.
+  ///
+  /// In en, this message translates to:
+  /// **'Women'**
+  String get onboardingInterestedWomen;
+
+  /// No description provided for @onboardingInterestedEveryone.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone'**
+  String get onboardingInterestedEveryone;
+
+  /// No description provided for @onboardingEducationHighSchool.
+  ///
+  /// In en, this message translates to:
+  /// **'High school'**
+  String get onboardingEducationHighSchool;
+
+  /// No description provided for @onboardingEducationSomeCollege.
+  ///
+  /// In en, this message translates to:
+  /// **'Some college'**
+  String get onboardingEducationSomeCollege;
+
+  /// No description provided for @onboardingEducationBachelors.
+  ///
+  /// In en, this message translates to:
+  /// **'Bachelor\'s degree'**
+  String get onboardingEducationBachelors;
+
+  /// No description provided for @onboardingEducationMasters.
+  ///
+  /// In en, this message translates to:
+  /// **'Master\'s degree'**
+  String get onboardingEducationMasters;
+
+  /// No description provided for @onboardingEducationPhd.
+  ///
+  /// In en, this message translates to:
+  /// **'PhD'**
+  String get onboardingEducationPhd;
+
+  /// No description provided for @onboardingEducationPreferNotToSay.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer not to say'**
+  String get onboardingEducationPreferNotToSay;
+
+  /// No description provided for @onboardingRelationshipLongTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-term relationship'**
+  String get onboardingRelationshipLongTerm;
+
+  /// No description provided for @onboardingRelationshipShortTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Short-term connection'**
+  String get onboardingRelationshipShortTerm;
+
+  /// No description provided for @onboardingRelationshipFriendship.
+  ///
+  /// In en, this message translates to:
+  /// **'New friends'**
+  String get onboardingRelationshipFriendship;
+
+  /// No description provided for @onboardingRelationshipNotSure.
+  ///
+  /// In en, this message translates to:
+  /// **'Still figuring it out'**
+  String get onboardingRelationshipNotSure;
+
+  /// No description provided for @onboardingRelationshipPreferNotToSay.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer not to say'**
+  String get onboardingRelationshipPreferNotToSay;
+
+  /// No description provided for @onboardingLifestyleNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get onboardingLifestyleNever;
+
+  /// No description provided for @onboardingLifestyleSometimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Sometimes'**
+  String get onboardingLifestyleSometimes;
+
+  /// No description provided for @onboardingLifestyleRegularly.
+  ///
+  /// In en, this message translates to:
+  /// **'Regularly'**
+  String get onboardingLifestyleRegularly;
+
+  /// No description provided for @onboardingLifestyleDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get onboardingLifestyleDaily;
+
+  /// No description provided for @onboardingLifestyleNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get onboardingLifestyleNone;
+
+  /// No description provided for @onboardingLifestyleCat.
+  ///
+  /// In en, this message translates to:
+  /// **'Cat'**
+  String get onboardingLifestyleCat;
+
+  /// No description provided for @onboardingLifestyleDog.
+  ///
+  /// In en, this message translates to:
+  /// **'Dog'**
+  String get onboardingLifestyleDog;
+
+  /// No description provided for @onboardingLifestyleBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get onboardingLifestyleBoth;
+
+  /// No description provided for @onboardingLifestyleOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get onboardingLifestyleOther;
+
+  /// No description provided for @interestMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get interestMusic;
+
+  /// No description provided for @interestTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get interestTravel;
+
+  /// No description provided for @interestFitness.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness'**
+  String get interestFitness;
+
+  /// No description provided for @interestFood.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get interestFood;
+
+  /// No description provided for @interestArt.
+  ///
+  /// In en, this message translates to:
+  /// **'Art'**
+  String get interestArt;
+
+  /// No description provided for @interestMovies.
+  ///
+  /// In en, this message translates to:
+  /// **'Movies'**
+  String get interestMovies;
+
+  /// No description provided for @interestBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Books'**
+  String get interestBooks;
+
+  /// No description provided for @interestGaming.
+  ///
+  /// In en, this message translates to:
+  /// **'Gaming'**
+  String get interestGaming;
+
+  /// No description provided for @interestNature.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature'**
+  String get interestNature;
+
+  /// No description provided for @interestPhotography.
+  ///
+  /// In en, this message translates to:
+  /// **'Photography'**
+  String get interestPhotography;
+
+  /// No description provided for @interestCoffee.
+  ///
+  /// In en, this message translates to:
+  /// **'Coffee'**
+  String get interestCoffee;
+
+  /// No description provided for @interestDancing.
+  ///
+  /// In en, this message translates to:
+  /// **'Dancing'**
+  String get interestDancing;
+
+  /// No description provided for @interestYoga.
+  ///
+  /// In en, this message translates to:
+  /// **'Yoga'**
+  String get interestYoga;
+
+  /// No description provided for @interestTech.
+  ///
+  /// In en, this message translates to:
+  /// **'Tech'**
+  String get interestTech;
+
+  /// No description provided for @interestFashion.
+  ///
+  /// In en, this message translates to:
+  /// **'Fashion'**
+  String get interestFashion;
+
+  /// No description provided for @interestPets.
+  ///
+  /// In en, this message translates to:
+  /// **'Pets'**
+  String get interestPets;
+
+  /// No description provided for @interestSports.
+  ///
+  /// In en, this message translates to:
+  /// **'Sports'**
+  String get interestSports;
+
+  /// No description provided for @interestCooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooking'**
+  String get interestCooking;
 
   /// No description provided for @locationPermissionTitle.
   ///
@@ -1022,6 +1412,138 @@ abstract class AppLocalizations {
   /// **'Widen your distance or check back a little later.'**
   String get discoveryEmptyMessage;
 
+  /// No description provided for @discoverySeenEveryoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve seen everyone for now'**
+  String get discoverySeenEveryoneTitle;
+
+  /// No description provided for @discoverySeenEveryoneMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back later for new people, or restart the demo to explore again.'**
+  String get discoverySeenEveryoneMessage;
+
+  /// No description provided for @exploreAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore again'**
+  String get exploreAgain;
+
+  /// No description provided for @restartDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart demo'**
+  String get restartDemo;
+
+  /// No description provided for @discoveryFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery filters'**
+  String get discoveryFiltersTitle;
+
+  /// No description provided for @discoveryFiltersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters are saved locally. Server-side filtering arrives in a later update.'**
+  String get discoveryFiltersHint;
+
+  /// No description provided for @applyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get applyFilters;
+
+  /// No description provided for @filterAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Age range'**
+  String get filterAge;
+
+  /// No description provided for @filterDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum distance'**
+  String get filterDistance;
+
+  /// No description provided for @filterGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Show me'**
+  String get filterGender;
+
+  /// No description provided for @filterRelationshipGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship goal'**
+  String get filterRelationshipGoal;
+
+  /// No description provided for @genderWoman.
+  ///
+  /// In en, this message translates to:
+  /// **'Women'**
+  String get genderWoman;
+
+  /// No description provided for @genderMan.
+  ///
+  /// In en, this message translates to:
+  /// **'Men'**
+  String get genderMan;
+
+  /// No description provided for @genderNonBinary.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-binary'**
+  String get genderNonBinary;
+
+  /// No description provided for @relationshipGoalLongTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-term'**
+  String get relationshipGoalLongTerm;
+
+  /// No description provided for @relationshipGoalCasual.
+  ///
+  /// In en, this message translates to:
+  /// **'Casual'**
+  String get relationshipGoalCasual;
+
+  /// No description provided for @relationshipGoalFiguringOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Still figuring it out'**
+  String get relationshipGoalFiguringOut;
+
+  /// No description provided for @compatibilityReasonsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Why you\'re compatible'**
+  String get compatibilityReasonsHeading;
+
+  /// No description provided for @whyYoureSeeingThis.
+  ///
+  /// In en, this message translates to:
+  /// **'Why you\'re seeing this person'**
+  String get whyYoureSeeingThis;
+
+  /// No description provided for @sharedInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared interests'**
+  String get sharedInterests;
+
+  /// No description provided for @profileDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileDetailsTitle;
+
+  /// No description provided for @photoCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total}'**
+  String photoCounter(int current, int total);
+
   /// No description provided for @tabDiscovery.
   ///
   /// In en, this message translates to:
@@ -1093,6 +1615,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'It\'s a match'**
   String get itsAMatch;
+
+  /// No description provided for @youLikedEachOther.
+  ///
+  /// In en, this message translates to:
+  /// **'You liked each other!'**
+  String get youLikedEachOther;
+
+  /// No description provided for @sendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get sendMessage;
 
   /// No description provided for @startChat.
   ///
@@ -1249,6 +1783,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Write a message...'**
   String get chatHint;
+
+  /// No description provided for @chatEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get chatEmptyTitle;
+
+  /// No description provided for @chatEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the first message.'**
+  String get chatEmptyMessage;
 
   /// No description provided for @send.
   ///
@@ -2060,11 +2606,389 @@ abstract class AppLocalizations {
   /// **'Choose from gallery'**
   String get addPhotoGallery;
 
+  /// No description provided for @photoEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first photo to continue.'**
+  String get photoEmptyHint;
+
+  /// No description provided for @photoMinRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'You must add at least 3 photos.'**
+  String get photoMinRequired;
+
+  /// No description provided for @photoUploadingPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading photo... {percent}%'**
+  String photoUploadingPercent(int percent);
+
+  /// No description provided for @photoUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo could not be uploaded. Please try again.'**
+  String get photoUploadFailed;
+
+  /// No description provided for @photoUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo uploaded'**
+  String get photoUploaded;
+
+  /// No description provided for @photoSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo selected'**
+  String get photoSelected;
+
+  /// No description provided for @photoRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get photoRetry;
+
   /// No description provided for @enableDeviceNotifications.
   ///
   /// In en, this message translates to:
   /// **'Enable notifications'**
   String get enableDeviceNotifications;
+
+  /// No description provided for @settingsChangePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change password'**
+  String get settingsChangePassword;
+
+  /// No description provided for @settingsEmailUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No email on file'**
+  String get settingsEmailUnavailable;
+
+  /// No description provided for @settingsReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get settingsReadOnly;
+
+  /// No description provided for @settingsPrivacySafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Safety'**
+  String get settingsPrivacySafety;
+
+  /// No description provided for @settingsPrivacyControls.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get settingsPrivacyControls;
+
+  /// No description provided for @settingsLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get settingsLocation;
+
+  /// No description provided for @settingsSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get settingsSupport;
+
+  /// No description provided for @settingsLogoutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out?'**
+  String get settingsLogoutTitle;
+
+  /// No description provided for @settingsLogoutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You will need to sign in again to use Mevora.'**
+  String get settingsLogoutBody;
+
+  /// No description provided for @settingsDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This is permanent'**
+  String get settingsDeleteConfirmTitle;
+
+  /// No description provided for @settingsDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'All matches, messages, and profile data will be deleted forever.'**
+  String get settingsDeleteConfirmBody;
+
+  /// No description provided for @settingsReauthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your identity'**
+  String get settingsReauthTitle;
+
+  /// No description provided for @settingsCurrentPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password.'**
+  String get settingsCurrentPasswordRequired;
+
+  /// No description provided for @settingsNewPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a new password.'**
+  String get settingsNewPasswordRequired;
+
+  /// No description provided for @settingsConfirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your new password.'**
+  String get settingsConfirmPasswordRequired;
+
+  /// No description provided for @settingsPasswordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get settingsPasswordsDoNotMatch;
+
+  /// No description provided for @settingsPhotoMinRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep at least 3 profile photos.'**
+  String get settingsPhotoMinRequired;
+
+  /// No description provided for @settingsPhotoMaxExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to 6 photos.'**
+  String get settingsPhotoMaxExceeded;
+
+  /// No description provided for @settingsPhotoPrimaryDeleteBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Set another photo as primary before deleting this one.'**
+  String get settingsPhotoPrimaryDeleteBlocked;
+
+  /// No description provided for @settingsPhotoPrimaryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a primary photo.'**
+  String get settingsPhotoPrimaryRequired;
+
+  /// No description provided for @settingsFirstNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'First name is required.'**
+  String get settingsFirstNameRequired;
+
+  /// No description provided for @settingsFirstNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'First name is too long.'**
+  String get settingsFirstNameTooLong;
+
+  /// No description provided for @settingsBioTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio is too long.'**
+  String get settingsBioTooLong;
+
+  /// No description provided for @settingsInterestsTooMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose fewer interests.'**
+  String get settingsInterestsTooMany;
+
+  /// No description provided for @settingsMinAgeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum age must be at least 18.'**
+  String get settingsMinAgeInvalid;
+
+  /// No description provided for @settingsMaxAgeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum age is too high.'**
+  String get settingsMaxAgeInvalid;
+
+  /// No description provided for @settingsAgeRangeInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum age must be greater than minimum age.'**
+  String get settingsAgeRangeInvalid;
+
+  /// No description provided for @settingsDistanceInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance must be between 1 and 500 km.'**
+  String get settingsDistanceInvalid;
+
+  /// No description provided for @settingsGooglePasswordMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account uses Google Sign-In. Password changes are managed by Google.'**
+  String get settingsGooglePasswordMessage;
+
+  /// No description provided for @settingsBirthDateLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday cannot be changed after onboarding. Age is calculated from your birthday.'**
+  String get settingsBirthDateLocked;
+
+  /// No description provided for @settingsSaveProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save profile'**
+  String get settingsSaveProfile;
+
+  /// No description provided for @settingsUnblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get settingsUnblock;
+
+  /// No description provided for @settingsBlockedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocked users'**
+  String get settingsBlockedEmptyTitle;
+
+  /// No description provided for @settingsBlockedEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'People you block will appear here.'**
+  String get settingsBlockedEmptyMessage;
+
+  /// No description provided for @settingsShowOnlineStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Show online status'**
+  String get settingsShowOnlineStatus;
+
+  /// No description provided for @settingsShowDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Show distance'**
+  String get settingsShowDistance;
+
+  /// No description provided for @settingsShowActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Show activity status'**
+  String get settingsShowActivity;
+
+  /// No description provided for @settingsPushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications'**
+  String get settingsPushNotifications;
+
+  /// No description provided for @settingsSuperLikeNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Super Like notifications'**
+  String get settingsSuperLikeNotifications;
+
+  /// No description provided for @settingsSetPrimaryPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Set as primary'**
+  String get settingsSetPrimaryPhoto;
+
+  /// No description provided for @settingsDeletePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get settingsDeletePhoto;
+
+  /// No description provided for @settingsAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get settingsAddPhoto;
+
+  /// No description provided for @settingsEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get settingsEducation;
+
+  /// No description provided for @settingsLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get settingsLifestyle;
+
+  /// No description provided for @settingsInterestedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Interested in'**
+  String get settingsInterestedIn;
+
+  /// No description provided for @settingsRelationshipGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship goal'**
+  String get settingsRelationshipGoal;
+
+  /// No description provided for @settingsCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get settingsCity;
+
+  /// No description provided for @settingsGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get settingsGender;
+
+  /// No description provided for @settingsNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get settingsNewPassword;
+
+  /// No description provided for @settingsCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get settingsCurrentPassword;
+
+  /// No description provided for @settingsConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get settingsConfirmPassword;
+
+  /// No description provided for @settingsPasswordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated.'**
+  String get settingsPasswordChanged;
+
+  /// No description provided for @settingsProfileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile saved.'**
+  String get settingsProfileSaved;
+
+  /// No description provided for @citySelectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select City'**
+  String get citySelectTitle;
+
+  /// No description provided for @citySelectSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search province…'**
+  String get citySelectSearch;
+
+  /// No description provided for @citySelectNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No province found'**
+  String get citySelectNone;
 }
 
 class _AppLocalizationsDelegate

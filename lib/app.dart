@@ -9,7 +9,11 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
+import 'package:mevora/core/di/onboarding_scope.dart';
+import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
+import 'package:mevora/core/di/settings_scope.dart';
+import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/language_controller.dart';
 import 'package:mevora/core/localization/language_repository.dart';
@@ -45,6 +49,8 @@ class MevoraApp extends StatefulWidget {
     this.languageController,
     this.permissionService,
     this.permissionController,
+    this.onboardingServices,
+    this.settingsServices,
   });
 
   final AppConfig config;
@@ -60,6 +66,8 @@ class MevoraApp extends StatefulWidget {
   final LanguageController? languageController;
   final PermissionService? permissionService;
   final PermissionController? permissionController;
+  final SettingsServices? settingsServices;
+  final OnboardingServices? onboardingServices;
 
   @override
   State<MevoraApp> createState() => _MevoraAppState();
@@ -75,6 +83,8 @@ class _MevoraAppState extends State<MevoraApp> {
   late final PermissionService _permissionService;
   late final PermissionController _permissionController;
   bool _ownsPermissionController = false;
+  late final OnboardingServices _onboardingServices;
+  bool _ownsOnboardingServices = false;
 
   @override
   void initState() {
@@ -119,6 +129,13 @@ class _MevoraAppState extends State<MevoraApp> {
         },
       );
       _ownsPermissionController = true;
+    }
+    final providedOnboarding = widget.onboardingServices;
+    if (providedOnboarding != null) {
+      _onboardingServices = providedOnboarding;
+    } else {
+      _onboardingServices = createOnboardingServices();
+      _ownsOnboardingServices = true;
     }
     _router =
         widget.router ??
@@ -179,6 +196,19 @@ class _MevoraAppState extends State<MevoraApp> {
       child: child,
     );
 
+    child = OnboardingScope(
+      repository: _onboardingServices.onboardingRepository,
+      storage: _onboardingServices.storageRepository,
+      photoPicker: _onboardingServices.photoPicker,
+      controller: _onboardingServices.controller,
+      child: child,
+    );
+
+    final settingsServices = widget.settingsServices;
+    if (settingsServices != null) {
+      child = SettingsScope(services: settingsServices, child: child);
+    }
+
     final social = widget.socialServices;
     if (social != null) {
       child = SocialScope(services: social, child: child);
@@ -229,6 +259,9 @@ class _MevoraAppState extends State<MevoraApp> {
     }
     if (_ownsPermissionController) {
       _permissionController.dispose();
+    }
+    if (_ownsOnboardingServices) {
+      _onboardingServices.controller.dispose();
     }
     _router.dispose();
     super.dispose();

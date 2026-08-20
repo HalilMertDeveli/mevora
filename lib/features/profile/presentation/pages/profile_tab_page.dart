@@ -14,7 +14,12 @@ class ProfileTabPage extends StatelessWidget {
       body: ListView(
         children: [
           ListTile(
-            title: Text(l10n.account),
+            title: Text(l10n.editProfile),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.editProfile),
+          ),
+          ListTile(
+            title: Text(l10n.settings),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push(AppRoutes.settings),
           ),

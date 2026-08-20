@@ -5,3 +5,5 @@ export 'mevora_page_transitions.dart';
 export 'mevora_pass_motion.dart';
 export 'mevora_photo_fade.dart';
 export 'mevora_press_scale.dart';
+export 'mevora_rive_animation.dart';
+export 'mevora_rive_assets.dart';

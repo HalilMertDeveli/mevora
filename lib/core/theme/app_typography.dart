@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 
-/// Editorial, restrained type scale. Avoid display fonts that feel like
-/// dating-app clichés.
+/// Mevora type scale — Manrope for UI, Fraunces for display/brand moments.
 abstract final class AppTypography {
-  static const String fontFamily = 'Roboto';
+  static const String fontFamily = 'Manrope';
+  static const String displayFontFamily = 'Fraunces';
 
   static TextTheme textTheme(Brightness brightness) {
     final color = brightness == Brightness.dark
@@ -16,7 +16,7 @@ abstract final class AppTypography {
 
     return TextTheme(
       displayLarge: TextStyle(
-        fontFamily: fontFamily,
+        fontFamily: displayFontFamily,
         fontSize: 40,
         fontWeight: FontWeight.w600,
         letterSpacing: 2.4,
@@ -24,7 +24,7 @@ abstract final class AppTypography {
         color: color,
       ),
       displayMedium: TextStyle(
-        fontFamily: fontFamily,
+        fontFamily: displayFontFamily,
         fontSize: 34,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.4,
@@ -32,7 +32,7 @@ abstract final class AppTypography {
         color: color,
       ),
       headlineMedium: TextStyle(
-        fontFamily: fontFamily,
+        fontFamily: displayFontFamily,
         fontSize: 28,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.2,

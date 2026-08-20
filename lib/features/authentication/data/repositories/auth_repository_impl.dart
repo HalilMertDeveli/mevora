@@ -244,6 +244,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    return _run(
+      () => _emailAuthService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      ),
+    );
+  }
+
+  @override
   Future<void> restorePendingOAuth() {
     return _spotifyAuthService.handleInitialUri();
   }

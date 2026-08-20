@@ -5,9 +5,15 @@ import 'package:mevora/core/presentation/pages/design_system_page.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/routing/auth_redirector.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
-import 'package:mevora/features/authentication/presentation/pages/account_settings_page.dart';
+import 'package:mevora/features/settings/presentation/pages/blocked_users_page.dart';
+import 'package:mevora/features/settings/presentation/pages/change_password_page.dart';
+import 'package:mevora/features/settings/presentation/pages/discovery_preferences_page.dart';
+import 'package:mevora/features/settings/presentation/pages/edit_profile_page.dart';
+import 'package:mevora/features/settings/presentation/pages/location_settings_page.dart';
+import 'package:mevora/features/settings/presentation/pages/privacy_settings_page.dart';
+import 'package:mevora/features/settings/presentation/pages/settings_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/login_page.dart';
-import 'package:mevora/features/authentication/presentation/pages/onboarding_placeholder_page.dart';
+import 'package:mevora/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/password_reset_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/register_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/splash_page.dart';
@@ -104,7 +110,7 @@ GoRouter createAppRouter({
         path: AppRoutes.onboarding,
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const OnboardingPlaceholderPage(),
+          child: const OnboardingPage(),
         ),
       ),
       StatefulShellRoute.indexedStack(
@@ -195,8 +201,52 @@ GoRouter createAppRouter({
         path: AppRoutes.settings,
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const AccountSettingsPage(),
+          child: const SettingsPage(),
         ),
+        routes: [
+          GoRoute(
+            path: 'edit-profile',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const EditProfilePage(),
+            ),
+          ),
+          GoRoute(
+            path: 'change-password',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const ChangePasswordPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'discovery-preferences',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const DiscoveryPreferencesPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'location',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const LocationSettingsPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'privacy-controls',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const PrivacySettingsPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'blocked-users',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const BlockedUsersPage(),
+            ),
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.notificationSettings,

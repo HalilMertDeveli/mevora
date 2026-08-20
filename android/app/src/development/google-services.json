@@ -1,26 +1,87 @@
 {
   "project_info": {
-    "project_number": "462386294396",
-    "project_id": "mevora-dev",
-    "storage_bucket": "mevora-dev.firebasestorage.app"
+    "project_number": "821220262229",
+    "project_id": "mevora-d6ed0",
+    "storage_bucket": "mevora-d6ed0.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:462386294396:android:aff3c8aa15f4041ac963f9",
+        "mobilesdk_app_id": "1:821220262229:android:1a12a39a06a7516f702fdc",
         "android_client_info": {
-          "package_name": "com.mevora.app.dev"
+          "package_name": "com.mevora.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "821220262229-81tm13081o10ti0402nth6t38g9h6853.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mevora.app",
+            "certificate_hash": "9ca2e5841a550c564ba34d0a5731a524af23cc9f"
+          }
+        },
+        {
+          "client_id": "821220262229-7nkoi3c1sacopqnjesvrkk464cup6b84.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCtct0Q2aI_h_YgBESu_0qG8kPppil_PSQ"
+          "current_key": "AIzaSyCZsTpmLcAwQwdZ3cZ7mnP-sG4N3MKbYPw"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "821220262229-7nkoi3c1sacopqnjesvrkk464cup6b84.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "821220262229-3k5o6ap34uc7etomb4mn72lrsmbhc72n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mevora.app"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:821220262229:android:b6ce5727b1717c1c702fdc",
+        "android_client_info": {
+          "package_name": "com.mevora.app.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "821220262229-7nkoi3c1sacopqnjesvrkk464cup6b84.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZsTpmLcAwQwdZ3cZ7mnP-sG4N3MKbYPw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "821220262229-7nkoi3c1sacopqnjesvrkk464cup6b84.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "821220262229-3k5o6ap34uc7etomb4mn72lrsmbhc72n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mevora.app"
+              }
+            }
+          ]
         }
       }
     }

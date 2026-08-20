@@ -91,6 +91,13 @@ abstract final class StoragePaths {
     required String imageId,
   }) => 'users/$ownerUid/profile/pending/$imageId';
 
+  /// Canonical client upload path. Unique [imageId] so photos are never overwritten.
+  static String profilePhoto({
+    required String ownerUid,
+    required String imageId,
+    String extension = 'jpg',
+  }) => 'users/$ownerUid/profile/photos/$imageId.$extension';
+
   static String profileApproved({
     required String ownerUid,
     required String imageId,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_rive_animation.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 
 enum MevoraLoadingStyle { inline, page }
 
@@ -26,12 +28,18 @@ class MevoraLoading extends StatelessWidget {
     final indicator = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
+        MevoraRiveAnimation(
+          asset: MevoraRiveAssets.loading,
           width: size,
           height: size,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.5,
-            color: Theme.of(context).colorScheme.primary,
+          semanticsLabel: resolved,
+          fallback: SizedBox(
+            width: size,
+            height: size,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
         if (message != null) ...[

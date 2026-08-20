@@ -38,7 +38,7 @@ class FakeUserSettingsRepository implements UserSettingsRepository {
 }
 
 void main() {
-  test('device Turkish becomes tr; any other device language becomes en', () {
+  test('device Turkish becomes tr; English becomes en; any other becomes tr', () {
     expect(
       AppLanguage.fromDeviceLocale(const Locale('tr')),
       AppLanguage.turkish,
@@ -53,20 +53,20 @@ void main() {
     );
     expect(
       AppLanguage.fromDeviceLocale(const Locale('de')),
-      AppLanguage.english,
+      AppLanguage.turkish,
     );
     expect(
       AppLanguage.fromDeviceLocale(const Locale('fr', 'FR')),
-      AppLanguage.english,
+      AppLanguage.turkish,
     );
   });
 
-  test('fromCode only accepts tr and en', () {
+  test('fromCode only accepts tr and en; unknown falls back to Turkish', () {
     expect(AppLanguage.fromCode('tr'), AppLanguage.turkish);
     expect(AppLanguage.fromCode('TR'), AppLanguage.turkish);
     expect(AppLanguage.fromCode('en-US'), AppLanguage.english);
-    expect(AppLanguage.fromCode('de'), AppLanguage.english);
-    expect(AppLanguage.fromCode(null), AppLanguage.english);
+    expect(AppLanguage.fromCode('de'), AppLanguage.turkish);
+    expect(AppLanguage.fromCode(null), AppLanguage.turkish);
   });
 
   test('first launch with no saved preference uses device then persists', () async {
@@ -80,13 +80,13 @@ void main() {
     expect(await local.readLanguageCode(), 'tr');
   });
 
-  test('German device with no saved preference becomes English', () async {
+  test('German device with no saved preference becomes Turkish (default)', () async {
     final controller = LanguageController(
       repository: LanguageRepository(local: MemoryLanguageDataSource()),
       deviceLocale: const Locale('de'),
     );
     await controller.load();
-    expect(controller.languageCode, 'en');
+    expect(controller.languageCode, 'tr');
   });
 
   test('saved preference wins over device language', () async {

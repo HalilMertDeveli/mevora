@@ -356,6 +356,18 @@ class AuthController extends ChangeNotifier {
     );
   }
 
+  Future<Result<void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    return _run(
+      () => _authRepository.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      ),
+    );
+  }
+
   void returnToLogin() {
     phoneChallenge = null;
     _resendTimer?.cancel();
@@ -382,6 +394,10 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reportLoginScreenViewed() {
+    return _analytics.loginScreenViewed();
+  }
+
   void _resetToLoggedOut() {
     user = null;
     phoneChallenge = null;
@@ -396,6 +412,20 @@ class AuthController extends ChangeNotifier {
     errorMessage = null;
     errorKind = null;
     status = next.shouldOnboard ? NeedsOnboarding(next) : Authenticated(next);
+  }
+
+  /// Keeps redirect rules in sync immediately after onboarding completes.
+  void applyOnboardingComplete() {
+    final current = user;
+    if (current == null) {
+      return;
+    }
+    _applyAuthenticatedUser(
+      current.copyWith(
+        profileCompleted: true,
+        onboardingCompleted: true,
+      ),
+    );
   }
 
   Future<Result<void>> _run<T>(

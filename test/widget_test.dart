@@ -11,6 +11,7 @@ import 'package:mevora/features/authentication/presentation/controllers/auth_con
 import 'package:mevora/l10n/app_localizations.dart';
 
 import 'helpers/fake_auth.dart';
+import 'helpers/fake_onboarding_services.dart';
 
 void main() {
   testWidgets('app boots and reaches the login gate', (tester) async {
@@ -36,6 +37,7 @@ void main() {
         logger: logger,
         authController: authController,
         languageController: language,
+        onboardingServices: createFakeOnboardingServices(),
       ),
     );
     await tester.pump();

@@ -9,12 +9,13 @@ import 'package:mevora/features/location/domain/entities/stored_user_location.da
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/swipe_action.dart';
 import 'package:mevora/features/onboarding/domain/usecases/complete_onboarding.dart';
+import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/video/domain/usecases/video_call_use_cases.dart';
 
+import 'fake_onboarding_services.dart';
 import 'fake_chat_repository.dart';
 import 'fake_match_repository.dart';
-import 'fake_profile_repository.dart';
 
 void main() {
   test('FakeChatRepository send, paginate, read, and typing', () async {
@@ -123,26 +124,41 @@ void main() {
     expect(allowed.isSuccess, isTrue);
   });
 
-  test('CompleteOnboarding requires age, name, and a photo', () async {
-    final profiles = FakeProfileRepository();
-    final useCase = CompleteOnboarding(profiles);
-    final young = await useCase(
-      const UserProfile(uid: 'u1', displayName: 'Ada', age: 16),
+  test('CompleteOnboarding validates and marks profile complete', () async {
+    final onboarding = FakeOnboardingRepository();
+    final useCase = CompleteOnboarding(onboarding);
+    final incomplete = await useCase(
+      const UserProfile(uid: 'u1', displayName: 'Ada'),
     );
-    expect(young.isError, isTrue);
+    expect(incomplete.isError, isTrue);
 
     final ready = await useCase(
-      const UserProfile(
+      UserProfile(
         uid: 'u1',
         displayName: 'Ada',
-        age: 24,
-        photos: [
-          ProfilePhoto(id: 'p1', storagePath: 'users/u1/photos/p1.jpg'),
+        birthDate: DateTime(1998, 1, 1),
+        gender: 'woman',
+        interestedIn: 'men',
+        city: 'Istanbul',
+        interests: const ['music', 'travel', 'food'],
+        education: 'bachelors',
+        relationshipGoal: 'long_term',
+        lifestyleProfile: const ProfileLifestyle(
+          smoking: 'never',
+          drinking: 'sometimes',
+          exercise: 'regularly',
+          pets: 'cat',
+        ),
+        bio: 'Coffee and long walks.',
+        photos: const [
+          ProfilePhoto(id: 'p1', storagePath: 'users/u1/profile/p1'),
+          ProfilePhoto(id: 'p2', storagePath: 'users/u1/profile/p2'),
+          ProfilePhoto(id: 'p3', storagePath: 'users/u1/profile/p3'),
         ],
       ),
     );
     expect(ready.isSuccess, isTrue);
-    expect(profiles.profiles['u1']?.profileCompleted, isTrue);
-    expect(profiles.profiles['u1']?.onboardingCompleted, isTrue);
+    expect(onboarding.saved?.profileCompleted, isTrue);
+    expect(onboarding.saved?.onboardingCompleted, isTrue);
   });
 }

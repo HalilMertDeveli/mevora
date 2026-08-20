@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
+import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
@@ -14,18 +15,21 @@ import 'package:mevora/features/boost/presentation/pages/boost_screen.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_button.dart';
 import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
+import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
-import 'package:mevora/features/discovery/presentation/widgets/discovery_profile_card.dart';
+import 'package:mevora/features/discovery/presentation/pages/discovery_profile_details_page.dart';
+import 'package:mevora/features/discovery/presentation/widgets/discovery_action_buttons.dart';
+import 'package:mevora/features/discovery/presentation/widgets/discovery_card_stack.dart';
+import 'package:mevora/features/discovery/presentation/widgets/discovery_filters_sheet.dart';
 import 'package:mevora/features/location/presentation/screens/location_permission_screen.dart';
+import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
-import 'package:mevora/shared/animations/mevora_like_burst.dart';
 import 'package:mevora/shared/animations/mevora_match_celebration.dart';
-import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
-import 'package:mevora/l10n/app_localizations.dart';
 
 class DiscoveryPage extends StatefulWidget {
   const DiscoveryPage({super.key, this.controller});
@@ -39,6 +43,8 @@ class DiscoveryPage extends StatefulWidget {
 class _DiscoveryPageState extends State<DiscoveryPage> {
   DiscoveryController? _owned;
   Offset _drag = Offset.zero;
+  DiscoverySwipeDirection _swipeDirection = DiscoverySwipeDirection.none;
+  bool _animateOut = false;
 
   DiscoveryController? get _controller => widget.controller ?? _owned;
 
@@ -65,7 +71,16 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
   void _onController() {
     if (mounted) {
       setState(() {});
+      _prefetchPhotos();
     }
+  }
+
+  void _prefetchPhotos() {
+    final controller = _controller;
+    if (controller == null) {
+      return;
+    }
+    prefetchDiscoveryPhotos(controller.state.stackCandidates);
   }
 
   @override
@@ -96,6 +111,11 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       appBar: AppBar(
         title: Text(l10n.appName),
         actions: [
+          IconButton(
+            tooltip: l10n.discoveryFiltersTitle,
+            onPressed: state.isLoading ? null : () => _openFilters(controller),
+            icon: const Icon(Icons.tune_rounded),
+          ),
           BoostButton(
             isActive: state.activeBoost != null,
             onPressed: () => unawaited(_openBoost(controller)),
@@ -111,6 +131,16 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       ),
       body: SafeArea(child: _body(controller, state)),
     );
+  }
+
+  Future<void> _openFilters(DiscoveryController controller) async {
+    final filters = await DiscoveryFiltersSheet.show(
+      context,
+      initial: controller.state.filters,
+    );
+    if (filters != null) {
+      controller.setFilters(filters);
+    }
   }
 
   Future<void> _openBoost(DiscoveryController controller) async {
@@ -141,7 +171,12 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       return MevoraMatchCelebration(
         leftName: l10n.you,
         rightName: match.displayName,
-        onCompleted: controller.clearMatch,
+        rightImage: match.photoUrl == null ? null : NetworkImage(match.photoUrl!),
+        onSendMessage: () {
+          controller.clearMatch();
+          context.go(AppRoutes.matches);
+        },
+        onKeepExploring: controller.clearMatch,
       );
     }
 
@@ -223,8 +258,24 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     }
     final current = state.current;
     if (current == null) {
+      if (state.hasSeenEveryone) {
+        return MevoraEmptyState(
+          icon: Icons.explore_outlined,
+          riveAsset: MevoraRiveAssets.emptyProfiles,
+          title: l10n.discoverySeenEveryoneTitle,
+          message: l10n.discoverySeenEveryoneMessage,
+          actionLabel: l10n.exploreAgain,
+          onAction: () => unawaited(controller.exploreAgain()),
+          secondaryActionLabel:
+              state.isMockMode ? l10n.restartDemo : null,
+          onSecondaryAction: state.isMockMode
+              ? () => unawaited(controller.restartDemo())
+              : null,
+        );
+      }
       return MevoraEmptyState(
         icon: Icons.favorite_outline_rounded,
+        riveAsset: MevoraRiveAssets.emptyProfiles,
         title: l10n.discoveryEmptyTitle,
         message: l10n.discoveryEmptyMessage,
         actionLabel: l10n.retry,
@@ -232,80 +283,135 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       );
     }
 
+    final busy = controller.isProcessingAction || _animateOut;
+
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
           Expanded(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                GestureDetector(
-                  onHorizontalDragUpdate: (details) {
-                    setState(() => _drag += details.delta);
-                  },
-                  onVerticalDragUpdate: (details) {
-                    setState(() => _drag += details.delta);
-                  },
-                  onHorizontalDragEnd: (_) => unawaited(_finishDrag(controller)),
-                  onVerticalDragEnd: (_) => unawaited(_finishDrag(controller)),
-                  child: MevoraDiscoveryCardMotion(
-                    dragOffset: _drag,
-                    child: DiscoveryProfileCard(candidate: current),
-                  ),
-                ),
-                MevoraLikeBurst(play: state.showLikeBurst),
-              ],
+            child: DiscoveryCardStack(
+              candidates: state.stackCandidates,
+              dragOffset: _drag,
+              swipeDirection: _swipeDirection,
+              animateOut: _animateOut,
+              showLikeBurst: state.showLikeBurst,
+              swipeThreshold: controller.swipeThreshold,
+              onDragUpdate: (delta) {
+                setState(() => _drag += delta);
+              },
+              onDragEnd: () => unawaited(_finishDrag(controller)),
+              onCardTap: (candidate) => _openProfileDetails(candidate),
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: MevoraButton(
-                  label: l10n.pass,
-                  variant: MevoraButtonVariant.ghost,
-                  onPressed: () => unawaited(
-                    controller.decide(DiscoveryDecision.pass),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: MevoraButton(
-                  label: l10n.superLike,
-                  variant: MevoraButtonVariant.secondary,
-                  onPressed: () => unawaited(
-                    controller.decide(DiscoveryDecision.superLike),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: MevoraButton(
-                  label: l10n.like,
-                  onPressed: () => unawaited(
-                    controller.decide(DiscoveryDecision.like),
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: AppSpacing.lg),
+          DiscoveryActionButtons(
+            enabled: !busy,
+            onPass: () => unawaited(_triggerAction(
+              controller,
+              DiscoveryDecision.pass,
+            )),
+            onSuperLike: () => unawaited(_triggerAction(
+              controller,
+              DiscoveryDecision.superLike,
+            )),
+            onLike: () => unawaited(_triggerAction(
+              controller,
+              DiscoveryDecision.like,
+            )),
           ),
         ],
       ),
     );
   }
 
+  Future<void> _openProfileDetails(DiscoveryCandidate candidate) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => DiscoveryProfileDetailsPage(candidate: candidate),
+      ),
+    );
+  }
+
+  Future<void> _triggerAction(
+    DiscoveryController controller,
+    DiscoveryDecision decision,
+  ) async {
+    final current = controller.state.current;
+    if (current == null || controller.isProcessingAction) {
+      return;
+    }
+    final direction = switch (decision) {
+      DiscoveryDecision.like => DiscoverySwipeDirection.like,
+      DiscoveryDecision.pass => DiscoverySwipeDirection.pass,
+      DiscoveryDecision.superLike => DiscoverySwipeDirection.superLike,
+    };
+    setState(() {
+      _swipeDirection = direction;
+      _animateOut = true;
+    });
+    await Future<void>.delayed(AppDurations.discoveryCard);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _drag = Offset.zero;
+      _swipeDirection = DiscoverySwipeDirection.none;
+      _animateOut = false;
+    });
+    await switch (decision) {
+      DiscoveryDecision.like => controller.onLike(current.uid),
+      DiscoveryDecision.pass => controller.onPass(current.uid),
+      DiscoveryDecision.superLike => controller.onSuperLike(current.uid),
+    };
+  }
+
   Future<void> _finishDrag(DiscoveryController controller) async {
     final dx = _drag.dx;
     final dy = _drag.dy;
-    setState(() => _drag = Offset.zero);
-    if (dy < -120) {
-      await controller.decide(DiscoveryDecision.superLike);
-    } else if (dx > 120) {
-      await controller.decide(DiscoveryDecision.like);
-    } else if (dx < -120) {
-      await controller.decide(DiscoveryDecision.pass);
+    final threshold = controller.swipeThreshold;
+    DiscoveryDecision? decision;
+    DiscoverySwipeDirection direction = DiscoverySwipeDirection.none;
+
+    if (dy < -threshold && dy.abs() > dx.abs()) {
+      decision = DiscoveryDecision.superLike;
+      direction = DiscoverySwipeDirection.superLike;
+    } else if (dx > threshold) {
+      decision = DiscoveryDecision.like;
+      direction = DiscoverySwipeDirection.like;
+    } else if (dx < -threshold) {
+      decision = DiscoveryDecision.pass;
+      direction = DiscoverySwipeDirection.pass;
     }
+
+    if (decision == null) {
+      setState(() => _drag = Offset.zero);
+      return;
+    }
+
+    final current = controller.state.current;
+    if (current == null) {
+      setState(() => _drag = Offset.zero);
+      return;
+    }
+
+    setState(() {
+      _swipeDirection = direction;
+      _animateOut = true;
+    });
+    await Future<void>.delayed(AppDurations.discoveryCard);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _drag = Offset.zero;
+      _swipeDirection = DiscoverySwipeDirection.none;
+      _animateOut = false;
+    });
+    await switch (decision) {
+      DiscoveryDecision.like => controller.onLike(current.uid),
+      DiscoveryDecision.pass => controller.onPass(current.uid),
+      DiscoveryDecision.superLike => controller.onSuperLike(current.uid),
+    };
   }
 }

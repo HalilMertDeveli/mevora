@@ -9,6 +9,7 @@ abstract class StorageRepository implements StorageProvider {
     required List<int> bytes,
     required String contentType,
     bool thumbnail = false,
+    void Function(double progress)? onProgress,
   });
 
   Future<Result<void>> deleteProfileImage({

@@ -123,10 +123,14 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
       if (!profileSnap.exists) {
         transaction.set(profileRef, _newProfileStub(session, now));
       } else if (session.persistDisplayName && _isPresent(session.displayName)) {
-        transaction.update(profileRef, {
-          'displayName': session.displayName,
-          'updatedAt': now,
-        });
+        final profile = profileSnap.data() ?? const <String, dynamic>{};
+        // Prefill empty onboarding fields only; never overwrite completed profile copy.
+        if (!_isPresent(profile['displayName'])) {
+          transaction.update(profileRef, {
+            'displayName': session.displayName,
+            'updatedAt': now,
+          });
+        }
       }
     });
 
@@ -185,10 +189,12 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
     } else if (!_isPresent(existing['email']) && _isPresent(session.email)) {
       updates['email'] = session.email;
     }
-    if (session.persistDisplayName && _isPresent(session.displayName)) {
+    if (session.persistDisplayName &&
+        _isPresent(session.displayName) &&
+        !_isPresent(existing['displayName'])) {
       updates['displayName'] = session.displayName;
     }
-    if (_isPresent(session.photoUrl)) {
+    if (_isPresent(session.photoUrl) && !_isPresent(existing['photoUrl'])) {
       updates['photoUrl'] = session.photoUrl;
     }
     if (_isPresent(session.phoneNumber)) {

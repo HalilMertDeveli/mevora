@@ -2,6 +2,8 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 
 /// Product analytics for auth. Events never include phone, email, OTP, or tokens.
 abstract class AuthAnalytics {
+  Future<void> loginScreenViewed();
+
   Future<void> phoneAuthStarted();
   Future<void> otpSent();
   Future<void> otpVerified();
@@ -17,6 +19,9 @@ abstract class AuthAnalytics {
 
 class NoOpAuthAnalytics implements AuthAnalytics {
   const NoOpAuthAnalytics();
+
+  @override
+  Future<void> loginScreenViewed() async {}
 
   @override
   Future<void> phoneAuthStarted() async {}
@@ -58,6 +63,9 @@ class FirebaseAuthAnalytics implements AuthAnalytics {
   Future<void> _log(String name) {
     return _analytics.logEvent(name: name);
   }
+
+  @override
+  Future<void> loginScreenViewed() => _log('login_screen_viewed');
 
   @override
   Future<void> phoneAuthStarted() => _log('phone_auth_started');

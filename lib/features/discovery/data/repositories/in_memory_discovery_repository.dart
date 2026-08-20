@@ -64,9 +64,10 @@ class InMemoryDiscoveryRepository implements DiscoveryRepository {
         uid: seed.uid,
         displayName: seed.profile.displayName,
         age: seed.profile.resolvedAge,
-        photoUrl: seed.profile.photos.isEmpty
-            ? null
-            : seed.profile.photos.first.downloadUrl,
+        photos: seed.profile.photos
+            .map((photo) => photo.downloadUrl)
+            .whereType<String>()
+            .toList(),
         distanceLabel: seed.distanceLabel,
         distanceKm: seed.distanceKm,
         compatibilityScore: result.score,

@@ -112,10 +112,16 @@ class _StackedCard extends StatelessWidget {
       );
     }
 
+    if (depth == 0) {
+      return card;
+    }
+
     return Transform.translate(
       offset: Offset(0, yOffset),
+      filterQuality: FilterQuality.high,
       child: Transform.scale(
         scale: scale,
+        filterQuality: FilterQuality.high,
         child: Opacity(
           opacity: opacity.clamp(0.0, 1.0),
           child: card,

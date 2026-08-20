@@ -14,7 +14,7 @@ class MevoraLoading extends StatelessWidget {
     this.size = 28,
   });
 
-  const MevoraLoading.page({super.key, this.message, this.size = 32})
+  const MevoraLoading.page({super.key, this.message, this.size = 72})
     : style = MevoraLoadingStyle.page;
 
   final String? message;

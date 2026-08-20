@@ -14,14 +14,22 @@ import 'package:mevora/shared/widgets/mevora_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Main settings hub: account, discovery, privacy, notifications, support.
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool _logoutInFlight = false;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final auth = AuthScope.of(context);
     final user = auth.user;
+    final logoutLocked = auth.isBusy || _logoutInFlight;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
       body: SafeArea(
@@ -113,7 +121,9 @@ class SettingsPage extends StatelessWidget {
                   title: l10n.logOut,
                   destructive: true,
                   trailing: const SizedBox.shrink(),
-                  onTap: auth.isBusy ? null : () => unawaited(_confirmLogout(context)),
+                  onTap: logoutLocked
+                      ? null
+                      : () => unawaited(_confirmLogout()),
                 ),
                 SettingsNavTile(
                   title: l10n.deleteAccount,
@@ -138,7 +148,11 @@ class SettingsPage extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmLogout(BuildContext context) async {
+  Future<void> _confirmLogout() async {
+    if (_logoutInFlight || AuthScope.of(context).isBusy) {
+      return;
+    }
+    setState(() => _logoutInFlight = true);
     final l10n = AppLocalizations.of(context);
     final confirmed = await MevoraDialog.show(
       context,
@@ -146,9 +160,33 @@ class SettingsPage extends StatelessWidget {
       message: l10n.settingsLogoutBody,
       confirmLabel: l10n.logOut,
     );
-    if (confirmed == true && context.mounted) {
-      await AuthScope.of(context).signOut();
+    if (!mounted) {
+      return;
     }
+    if (confirmed != true) {
+      setState(() => _logoutInFlight = false);
+      return;
+    }
+    final auth = AuthScope.of(context);
+    final result = await auth.signOut();
+    if (!mounted) {
+      return;
+    }
+    if (result.isSuccess) {
+      context.go(AppRoutes.login);
+      return;
+    }
+    setState(() => _logoutInFlight = false);
+    final message = result.failureOrNull?.message;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          (message != null && message.trim().isNotEmpty)
+              ? message
+              : l10n.authGeneric,
+        ),
+      ),
+    );
   }
 
   Future<void> _confirmDelete(BuildContext context) async {

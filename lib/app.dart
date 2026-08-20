@@ -175,7 +175,7 @@ class _MevoraAppState extends State<MevoraApp> {
           title: widget.config.appName,
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.dark,
           locale: _languageController.locale,
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,

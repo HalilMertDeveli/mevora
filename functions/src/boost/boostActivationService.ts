@@ -3,7 +3,8 @@ import type {ActiveBoostSnapshot} from "./types.js";
 
 export type ActivationDecision =
   | {shouldActivate: true; startedAt: Date; expiresAt: Date}
-  | {shouldActivate: false; alreadyActive: true};
+  | {shouldActivate: false; alreadyActive: true}
+  | {shouldActivate: false; insufficientBalance: true};
 
 export class BoostActivationService {
   constructor(
@@ -30,9 +31,16 @@ export class BoostActivationService {
     return boost.expiresAt.getTime() > now.getTime();
   }
 
-  decide(params: {now: Date; currentActive: ActiveBoostSnapshot | null}): ActivationDecision {
+  decide(params: {
+    now: Date;
+    currentActive: ActiveBoostSnapshot | null;
+    balance?: number;
+  }): ActivationDecision {
     if (params.currentActive && this.isActive(params.currentActive, params.now) && !this.allowStacking) {
       return {shouldActivate: false, alreadyActive: true};
+    }
+    if ((params.balance ?? 1) < 1) {
+      return {shouldActivate: false, insufficientBalance: true};
     }
     const startedAt = params.now;
     return {

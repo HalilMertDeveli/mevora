@@ -6,7 +6,6 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
-import 'package:mevora/features/discovery/data/repositories/mock_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_filters.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
@@ -34,9 +33,11 @@ class DiscoveryFeedState {
     this.errorMessage,
     this.showLikeBurst = false,
     this.matchedCandidate,
+    this.matchedMatchId,
     this.activeBoost,
     this.hasSeenEveryone = false,
     this.isMockMode = false,
+    this.hasDiscoveryError = false,
   });
 
   final LocationPromptPhase phase;
@@ -47,9 +48,11 @@ class DiscoveryFeedState {
   final String? errorMessage;
   final bool showLikeBurst;
   final DiscoveryCandidate? matchedCandidate;
+  final String? matchedMatchId;
   final Boost? activeBoost;
   final bool hasSeenEveryone;
   final bool isMockMode;
+  final bool hasDiscoveryError;
 
   DiscoveryCandidate? get current =>
       candidates.isEmpty ? null : candidates.first;
@@ -68,10 +71,12 @@ class DiscoveryFeedState {
     bool? showLikeBurst,
     DiscoveryCandidate? matchedCandidate,
     bool clearMatch = false,
+    String? matchedMatchId,
     Boost? activeBoost,
     bool clearBoost = false,
     bool? hasSeenEveryone,
     bool? isMockMode,
+    bool? hasDiscoveryError,
   }) {
     return DiscoveryFeedState(
       phase: phase ?? this.phase,
@@ -84,9 +89,13 @@ class DiscoveryFeedState {
       matchedCandidate: clearMatch
           ? null
           : (matchedCandidate ?? this.matchedCandidate),
+      matchedMatchId: clearMatch
+          ? null
+          : (matchedMatchId ?? this.matchedMatchId),
       activeBoost: clearBoost ? null : (activeBoost ?? this.activeBoost),
       hasSeenEveryone: hasSeenEveryone ?? this.hasSeenEveryone,
       isMockMode: isMockMode ?? this.isMockMode,
+      hasDiscoveryError: hasDiscoveryError ?? this.hasDiscoveryError,
     );
   }
 }
@@ -107,7 +116,8 @@ class DiscoveryController extends ChangeNotifier {
        _locationSync = locationSync ?? LocationSyncCoordinator(),
        _skipExplanationIfAlreadyGranted = skipExplanationIfAlreadyGranted {
     state = state.copyWith(
-      isMockMode: discoveryRepository is MockDiscoveryRepository,
+      isMockMode: discoveryRepository is DemoDiscoverySupport &&
+          (discoveryRepository as DemoDiscoverySupport).supportsDemoRestart,
     );
   }
 
@@ -230,9 +240,13 @@ class DiscoveryController extends ChangeNotifier {
     await loadCandidates();
   }
 
-  void setFilters(DiscoveryFilters filters) {
-    state = state.copyWith(filters: filters);
+  Future<void> setFilters(DiscoveryFilters filters) async {
+    state = state.copyWith(
+      filters: filters,
+      radius: DiscoveryRadius.closest(filters.maxDistanceKm),
+    );
     notifyListeners();
+    await loadCandidates();
   }
 
   Future<void> refresh() async {
@@ -252,14 +266,15 @@ class DiscoveryController extends ChangeNotifier {
   }
 
   Future<void> restartDemo() async {
-    final repo = _discoveryRepository;
-    if (repo is MockDiscoveryRepository) {
-      repo.restartDemo();
-      _actedUserIds.clear();
-      state = state.copyWith(hasSeenEveryone: false, candidates: const []);
-      notifyListeners();
-      await loadCandidates();
+    final demo = _asDemo(_discoveryRepository);
+    if (demo == null || !demo.supportsDemoRestart) {
+      return;
     }
+    demo.restartDemo();
+    _actedUserIds.clear();
+    state = state.copyWith(hasSeenEveryone: false, candidates: const []);
+    notifyListeners();
+    await loadCandidates();
   }
 
   Future<void> loadCandidates() async {
@@ -270,15 +285,18 @@ class DiscoveryController extends ChangeNotifier {
     );
     switch (result) {
       case Success(:final value):
-        final repo = _discoveryRepository;
+        final filtered = _applyFilters(value.candidates);
+        final demo = _asDemo(_discoveryRepository);
         final seenEveryone =
-            value.candidates.isEmpty &&
-            repo is MockDiscoveryRepository &&
-            repo.isExhaustedForRadius(state.radius.kilometers);
+            filtered.isEmpty &&
+            demo != null &&
+            demo.isExhaustedForRadius(state.radius.kilometers);
         state = state.copyWith(
-          candidates: value.candidates,
+          candidates: filtered,
           isLoading: false,
           hasSeenEveryone: seenEveryone,
+          hasDiscoveryError: false,
+          clearError: true,
           phase: state.phase == LocationPromptPhase.explanation
               ? LocationPromptPhase.ready
               : state.phase,
@@ -287,7 +305,7 @@ class DiscoveryController extends ChangeNotifier {
         state = state.copyWith(
           isLoading: false,
           errorMessage: failure.message,
-          phase: LocationPromptPhase.error,
+          hasDiscoveryError: true,
         );
     }
     notifyListeners();
@@ -348,6 +366,7 @@ class DiscoveryController extends ChangeNotifier {
       candidates: remaining,
       showLikeBurst: false,
       matchedCandidate: matched,
+      matchedMatchId: result.valueOrNull?.matchId,
       clearMatch: matched == null,
     );
     notifyListeners();
@@ -411,6 +430,31 @@ class DiscoveryController extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<DiscoveryCandidate> _applyFilters(List<DiscoveryCandidate> items) {
+    final filters = state.filters;
+    return items.where((candidate) {
+      if (candidate.age > 0 &&
+          (candidate.age < filters.minAge || candidate.age > filters.maxAge)) {
+        return false;
+      }
+      if (candidate.distanceKm != null &&
+          candidate.distanceKm! > filters.maxDistanceKm) {
+        return false;
+      }
+      if (filters.gender != null &&
+          candidate.gender != null &&
+          candidate.gender != filters.gender) {
+        return false;
+      }
+      if (filters.relationshipGoal != null &&
+          candidate.relationshipGoal != null &&
+          candidate.relationshipGoal != filters.relationshipGoal) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
   LocationPromptPhase _phaseFor(LocationErrorKind kind) {
     return switch (kind) {
       LocationErrorKind.gpsDisabled => LocationPromptPhase.gpsDisabled,
@@ -424,4 +468,27 @@ class DiscoveryController extends ChangeNotifier {
       LocationErrorKind.permissionDenied => LocationPromptPhase.ready,
     };
   }
+
+  bool _closed = false;
+
+  @override
+  void notifyListeners() {
+    if (_closed) {
+      return;
+    }
+    super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _closed = true;
+    super.dispose();
+  }
+}
+
+DemoDiscoverySupport? _asDemo(DiscoveryRepository repository) {
+  if (repository is DemoDiscoverySupport) {
+    return repository as DemoDiscoverySupport;
+  }
+  return null;
 }

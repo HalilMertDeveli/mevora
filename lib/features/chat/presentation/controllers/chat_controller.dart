@@ -85,29 +85,43 @@ class ChatController extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    match = await _matches.getMatch(matchId);
-    blocked = await _safety.isBlockedPair(current, otherUid);
-    await _matches.markOpened(matchId, current);
+    try {
+      match = await _matches.getMatch(matchId);
+    } on Object {
+      match = null;
+    }
+    try {
+      if (match != null) {
+        blocked = await _safety.isBlockedPair(current, otherUid);
+      }
+    } on Object {
+      blocked = false;
+    }
+    try {
+      await _matches.markOpened(matchId, current);
+    } on Object {
+      // Demo matches and offline clients still open the thread.
+    }
     _messageSub = _chat.watchLatest(matchId).listen((value) {
       messages
         ..clear()
         ..addAll(value);
       unawaited(_acknowledge(value));
       notifyListeners();
-    });
+    }, onError: (_) {});
     _typingSub = _chat.watchTyping(matchId).listen((value) {
       final other = otherUid;
       final at = value[other];
       typingUid = ChatPolicy.isTypingFresh(at) ? other : null;
       notifyListeners();
-    });
+    }, onError: (_) {});
     _presenceSub = _presence.watch(otherUid).listen((value) {
       presence = PresenceStatusX.fromUpdatedAt(
         updatedAt: value.updatedAt,
         hideOnlineStatus: value.hideOnlineStatus,
       );
       notifyListeners();
-    });
+    }, onError: (_) {});
     notifyListeners();
   }
 

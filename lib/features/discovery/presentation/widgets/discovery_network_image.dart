@@ -37,6 +37,7 @@ class DiscoveryNetworkImage extends StatelessWidget {
       child: Image.network(
         url,
         fit: fit,
+        filterQuality: FilterQuality.high,
         loadingBuilder: (context, child, progress) {
           if (progress == null) {
             return child;
@@ -69,23 +70,50 @@ class _MockIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final parts = url.replaceFirst('mock://', '').split('/');
+    final seed = parts.isEmpty ? 'mevora' : parts.first;
     final variant = parts.length > 1 ? int.tryParse(parts.last) ?? 0 : 0;
-    final palette = [
-      theme.colorScheme.primaryContainer,
-      theme.colorScheme.secondaryContainer,
-      theme.colorScheme.tertiaryContainer,
+    const palettes = [
+      [Color(0xFF3D1844), Color(0xFF5C2E62), Color(0xFFD4A8DC)],
+      [Color(0xFF3B2410), Color(0xFFC47B3A), Color(0xFFF6E1CC)],
+      [Color(0xFF083828), Color(0xFF2F6F56), Color(0xFF7FCBAD)],
     ];
-    final color = palette[variant % palette.length];
-    return ColoredBox(
-      color: color,
-      child: Center(
-        child: Icon(
-          Icons.face_retouching_natural_outlined,
-          size: 88,
-          color: theme.colorScheme.onPrimaryContainer,
+    final colors = palettes[variant % palettes.length];
+    final initial = seed.replaceAll('mock-', '').isEmpty
+        ? 'M'
+        : seed.replaceAll('mock-', '')[0].toUpperCase();
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
         ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Icon(
+                Icons.auto_awesome,
+                size: 48,
+                color: Colors.white.withValues(alpha: 0.18),
+              ),
+            ),
+          ),
+          Center(
+            child: Text(
+              initial,
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                color: Colors.white.withValues(alpha: 0.92),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

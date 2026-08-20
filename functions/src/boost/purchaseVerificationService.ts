@@ -1,4 +1,5 @@
-import {isAllowedProduct, purchaseDocId} from "./config.js";
+import {purchaseDocId} from "./config.js";
+import type {BoostPack} from "./catalog.js";
 import type {ApplePurchaseVerifier} from "./applePurchaseVerifier.js";
 import type {GooglePurchaseVerifier} from "./googlePurchaseVerifier.js";
 import type {
@@ -27,9 +28,10 @@ export class PurchaseVerificationService {
   async verify(params: {
     uid: string;
     request: VerifyBoostRequest;
+    pack?: BoostPack | null;
     existing?: PurchaseLedger | null;
   }): Promise<VerificationDecision> {
-    const {uid, request, existing} = params;
+    const {uid, request, existing, pack} = params;
     if (!uid.trim()) {
       return {outcome: "invalidUid"};
     }
@@ -37,7 +39,7 @@ export class PurchaseVerificationService {
       return {outcome: "invalidTransaction"};
     }
     const platform: StorePlatform = request.platform === "ios" ? "ios" : "android";
-    if (!isAllowedProduct(request.productId, platform)) {
+    if (!pack || pack.productId !== request.productId || pack.boostCount < 1) {
       return {outcome: "invalidProduct"};
     }
 

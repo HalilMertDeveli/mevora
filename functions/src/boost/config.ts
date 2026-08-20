@@ -15,10 +15,12 @@ export function productIdFor(platform: "ios" | "android"): string {
   return platform === "ios" ? BOOST_PRODUCTS.iosProductId : BOOST_PRODUCTS.androidProductId;
 }
 
-export function isAllowedProduct(productId: string, platform: "ios" | "android"): boolean {
-  return productId === productIdFor(platform);
-}
+export {isAllowedProduct} from "./catalog.js";
 
 export function purchaseDocId(platform: "ios" | "android", transactionId: string): string {
   return `${platform}_${transactionId}`;
+}
+
+export function walletDocPath(uid: string): string {
+  return `users/${uid}/boostWallet/current`;
 }

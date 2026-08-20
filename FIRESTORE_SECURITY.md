@@ -153,14 +153,14 @@ Create/delete by `blockerId == auth.uid`. Read by either party. Preferred path i
 
 ---
 
-## `purchases/{purchaseId}` / `users/{userId}/boosts/{boostId}`
+## `purchases/{purchaseId}` / `users/{userId}/boosts/{boostId}` / `users/{userId}/boostWallet/current` / `boostProducts/{sku}`
 
 | Action | Who |
 | --- | --- |
-| read | owner only (`userId == auth.uid`) |
-| write | **none** (Cloud Function `verifyBoostPurchase`) |
+| read | owner only for purchases, boosts, wallet; authenticated for `boostProducts` |
+| write | **none** (`verifyBoostPurchase` credits, `activateBoost` activates, `expireBoost` expires) |
 
-Other users cannot read purchases or boosts. Clients cannot set `status`, `expiresAt`, `verifiedAt`, `purchaseId`, or `transactionId`.
+Other users cannot read purchases, boosts, or wallet. Clients cannot set `status`, `expiresAt`, `verifiedAt`, `purchaseId`, `transactionId`, or `balance`.
 
 ---
 

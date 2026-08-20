@@ -61,13 +61,18 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.byType(BoostScreen), findsOneWidget);
-    expect(find.text('₺29,99'), findsOneWidget);
+    expect(find.text('₺49,99'), findsOneWidget);
+
+    await tester.tap(find.text(_l10n.boostPackOne));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text(_l10n.boostCreditedTitle), findsWidgets);
+    expect(purchases.verifyCalled, isTrue);
 
     await tester.tap(find.text(_l10n.boostActivate));
     await tester.pump();
     await tester.pump();
     expect(find.text(_l10n.boostSuccessTitle), findsOneWidget);
-    expect(purchases.verifyCalled, isTrue);
     expect(purchases.activeBoost?.status.name, 'active');
 
     await tester.tap(find.text(_l10n.boostBackToDiscovery));

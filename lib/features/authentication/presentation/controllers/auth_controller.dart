@@ -50,6 +50,8 @@ class AuthController extends ChangeNotifier {
   StreamSubscription<AuthSnapshot>? _subscription;
   Timer? _resendTimer;
   bool _actionInFlight = false;
+  bool _signingOut = false;
+  bool _disposed = false;
   int _generation = 0;
 
   AuthStatus status = const AuthInitializing();
@@ -92,30 +94,42 @@ class AuthController extends ChangeNotifier {
     final generation = ++_generation;
     switch (snapshot) {
       case AuthSignedOut():
-        if (_actionInFlight ||
-            status is PhoneCodeSent ||
-            status is PhoneVerificationRequired) {
+        if (!_signingOut &&
+            (_actionInFlight ||
+                status is PhoneCodeSent ||
+                status is PhoneVerificationRequired)) {
           return;
         }
         user = null;
         status = const Unauthenticated();
       case AuthProfilePending(:final uid):
-        if (status is Unauthenticated || status is AuthInitializing) {
-          status = const Authenticating();
+        if (_signingOut) {
+          return;
         }
-        try {
-          await _userDocumentRepository.ensureUserDocument(AuthUser(id: uid));
-          if (generation != _generation) {
-            return;
+        if (_actionInFlight) {
+          // Sign-in flows already upsert the user document.
+          status = const Authenticating();
+        } else {
+          if (status is Unauthenticated || status is AuthInitializing) {
+            status = const Authenticating();
           }
-        } on Object catch (error, stackTrace) {
-          _logger.error(
-            'Failed to resolve pending profile',
-            error: error,
-            stackTrace: stackTrace,
-          );
+          try {
+            await _userDocumentRepository.ensureUserDocument(AuthUser(id: uid));
+            if (generation != _generation) {
+              return;
+            }
+          } on Object catch (error, stackTrace) {
+            _logger.error(
+              'Failed to resolve pending profile',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          }
         }
       case AuthProfileReady(:final user):
+        if (_signingOut) {
+          return;
+        }
         if (user.isBanned || !user.isActive) {
           unawaited(_handleBanned());
           return;
@@ -125,25 +139,11 @@ class AuthController extends ChangeNotifier {
         errorKind = null;
         _actionInFlight = false;
         phoneChallenge = null;
-        try {
-          await _userDocumentRepository.ensureUserDocument(user);
-          if (generation != _generation) {
-            return;
-          }
-          status = user.shouldOnboard
-              ? NeedsOnboarding(user)
-              : Authenticated(user);
-        } on Object catch (error, stackTrace) {
-          _logger.error(
-            'Failed to resolve profile completeness',
-            error: error,
-            stackTrace: stackTrace,
-          );
-          if (generation != _generation) {
-            return;
-          }
-          status = NeedsOnboarding(user);
-        }
+        // Document already exists (Ready). Do not upsert here — writing
+        // lastLoginAt would re-trigger users/{uid} snapshots in a loop.
+        status = user.shouldOnboard
+            ? NeedsOnboarding(user)
+            : Authenticated(user);
     }
     notifyListeners();
   }
@@ -345,15 +345,42 @@ class AuthController extends ChangeNotifier {
     );
   }
 
-  Future<Result<void>> signOut() {
-    return _run(_authRepository.signOut, afterSuccess: _resetToLoggedOut);
+  Future<Result<void>> signOut() async {
+    if (_disposed) {
+      return const Success<void>(null);
+    }
+    if (_actionInFlight) {
+      return const Success<void>(null);
+    }
+    if (user == null && status is Unauthenticated) {
+      return const Success<void>(null);
+    }
+    _signingOut = true;
+    _generation += 1;
+    final result = await _run(
+      _authRepository.signOut,
+      afterSuccess: _resetToLoggedOut,
+    );
+    if (result is Err<void>) {
+      _signingOut = false;
+    }
+    return result;
   }
 
-  Future<Result<void>> deleteAccount() {
-    return _run(
+  Future<Result<void>> deleteAccount() async {
+    if (_disposed || _actionInFlight) {
+      return const Success<void>(null);
+    }
+    _signingOut = true;
+    _generation += 1;
+    final result = await _run(
       _authRepository.deleteAccount,
       afterSuccess: _resetToLoggedOut,
     );
+    if (result is Err<void>) {
+      _signingOut = false;
+    }
+    return result;
   }
 
   Future<Result<void>> changePassword({
@@ -433,6 +460,9 @@ class AuthController extends ChangeNotifier {
     String? provider,
     VoidCallback? afterSuccess,
   }) async {
+    if (provider != null) {
+      _signingOut = false;
+    }
     _actionInFlight = true;
     errorMessage = null;
     errorKind = null;
@@ -442,6 +472,12 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
     final result = await action();
     _actionInFlight = false;
+    if (_disposed) {
+      return result.when(
+        success: (_) => const Success<void>(null),
+        err: (failure) => Err<void>(failure),
+      );
+    }
     switch (result) {
       case Success<T>():
         afterSuccess?.call();
@@ -544,7 +580,16 @@ class AuthController extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_disposed) {
+      return;
+    }
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     phoneAuth.removeListener(_onPhoneAuthChanged);
     phoneAuth.dispose();
     _resendTimer?.cancel();

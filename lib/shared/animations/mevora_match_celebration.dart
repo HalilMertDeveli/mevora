@@ -79,12 +79,13 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
             children: [
               MevoraRiveAnimation(
                 asset: MevoraRiveAssets.match,
-                width: 160,
-                height: 120,
-                semanticsLabel: l10n.itsAMatch,
+                width: 260,
+                height: 200,
+                fit: BoxFit.contain,
+                semanticsLabel: l10n.itsAMatchHeadline,
                 fallback: Icon(
                   Icons.favorite_rounded,
-                  size: 56,
+                  size: 88,
                   color: theme.colorScheme.primary,
                 ),
               ),
@@ -111,11 +112,13 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
                 child: Column(
                   children: [
                     Text(
-                      'MATCH',
+                      l10n.itsAMatchHeadline,
                       style: theme.textTheme.headlineMedium?.copyWith(
-                        letterSpacing: 6,
+                        letterSpacing: 1.2,
                         color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(

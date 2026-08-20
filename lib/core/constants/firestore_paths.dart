@@ -15,6 +15,8 @@ abstract final class FirestorePaths {
   static const String blocks = 'blocks';
   static const String purchases = 'purchases';
   static const String boosts = 'boosts';
+  static const String boostWallet = 'boostWallet';
+  static const String boostProducts = 'boostProducts';
 
   static const String devices = 'devices';
   static const String blockedUsers = 'blockedUsers';
@@ -74,6 +76,11 @@ abstract final class FirestorePaths {
 
   static String userBoost(String uid, String boostId) =>
       '$users/$uid/$boosts/$boostId';
+
+  static String userBoostWallet(String uid) =>
+      '$users/$uid/$boostWallet/current';
+
+  static String boostProduct(String productId) => '$boostProducts/$productId';
 }
 
 abstract final class StoragePaths {

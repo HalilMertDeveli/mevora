@@ -8,6 +8,7 @@ import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/features/boost/data/datasources/store_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/services/apple_purchase_service.dart';
 import 'package:mevora/features/boost/data/services/google_purchase_service.dart';
+import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/config/boost_product_config.dart';
 import 'package:mevora/features/boost/domain/entities/boost_product.dart';
 import 'package:mevora/features/boost/domain/entities/store_transaction.dart';
@@ -112,7 +113,54 @@ class InAppStorePurchaseDataSource implements StorePurchaseDataSource {
         available: true,
         duration: config.duration,
         displayOrder: config.displayOrder,
+        boostCount: BoostPackCatalog.boostCountFor(details.id),
       );
+    } on PurchaseException {
+      rethrow;
+    } on Object catch (error, stackTrace) {
+      _logger?.warning(
+        'Store product query failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw const PurchaseException(
+        AppStrings.boostStoreDown,
+        kind: PurchaseErrorKind.storeDown,
+      );
+    }
+  }
+
+  @override
+  Future<List<BoostProduct>> loadProducts(BoostProductConfig config) async {
+    final available = await isStoreAvailable();
+    if (!available) {
+      throw const PurchaseException(
+        AppStrings.boostStoreUnavailable,
+        kind: PurchaseErrorKind.unavailable,
+      );
+    }
+    try {
+      final response = await _store.queryProductDetails(config.allProductIds);
+      if (response.error != null && response.productDetails.isEmpty) {
+        throw const PurchaseException(
+          AppStrings.boostStoreDown,
+          kind: PurchaseErrorKind.storeDown,
+        );
+      }
+      return response.productDetails.map((details) {
+        final pack = BoostPackCatalog.packFor(details.id);
+        return BoostProduct(
+          productId: details.id,
+          title: details.title,
+          description: details.description,
+          localizedPrice: details.price,
+          currency: details.currencyCode,
+          available: true,
+          duration: pack?.duration ?? config.duration,
+          displayOrder: pack?.displayOrder ?? config.displayOrder,
+          boostCount: pack?.boostCount ?? 1,
+        );
+      }).toList();
     } on PurchaseException {
       rethrow;
     } on Object catch (error, stackTrace) {

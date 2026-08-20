@@ -1,7 +1,10 @@
+import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
+
 /// Store product identifiers and Boost duration. Prices are never stored here.
 ///
-/// Replace the placeholder IDs in App Store Connect and Play Console, then
-/// override with `--dart-define` if they differ per environment.
+/// Pack SKUs live in [BoostPackCatalog] / Firestore `boostProducts`. Create them
+/// in App Store Connect and Play Console, then override with `--dart-define`
+/// if they differ per environment.
 class BoostProductConfig {
   const BoostProductConfig({
     this.iosProductId = defaultIosProductId,
@@ -10,20 +13,20 @@ class BoostProductConfig {
     this.displayOrder = 0,
   });
 
-  static const String defaultIosProductId = 'com.mevora.app.boost';
-  static const String defaultAndroidProductId = 'com.mevora.app.boost';
+  static const String defaultIosProductId = BoostPackCatalog.legacyProductId;
+  static const String defaultAndroidProductId = BoostPackCatalog.legacyProductId;
   static const Duration defaultDuration = Duration(minutes: 30);
 
-  /// Placeholder App Store product id. Create this as a Consumable in App Store Connect.
+  /// Legacy single-SKU placeholder. Still accepted as a 1-Boost pack.
   final String iosProductId;
 
-  /// Placeholder Play Billing product id. Create this as an in-app product (consumable).
+  /// Legacy single-SKU placeholder. Still accepted as a 1-Boost pack.
   final String androidProductId;
 
   /// How long an activated Boost lasts. Server uses the same value.
   final Duration duration;
 
-  /// Sort key if more Boost SKUs are added later. MVP has one product.
+  /// Sort key kept for compatibility with the original single product.
   final int displayOrder;
 
   /// Reads IDs from dart-define without baking store prices into the binary.
@@ -56,11 +59,21 @@ class BoostProductConfig {
     };
   }
 
-  bool isAllowedProductId(String productId, PurchasePlatform platform) {
+  bool isAllowedProductId(String productId, [PurchasePlatform? platform]) {
+    if (BoostPackCatalog.isAllowed(productId)) {
+      return true;
+    }
+    if (platform == null) {
+      return productId == iosProductId || productId == androidProductId;
+    }
     return productId == productIdFor(platform);
   }
 
-  Set<String> get allProductIds => {iosProductId, androidProductId};
+  Set<String> get allProductIds => {
+    iosProductId,
+    androidProductId,
+    ...BoostPackCatalog.skus,
+  };
 }
 
 enum PurchasePlatform { ios, android }

@@ -807,7 +807,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String compatibilityPercent(int percent) {
-    return '%$percent uyum';
+    return '$percent% Uyumlu';
   }
 
   @override
@@ -895,7 +895,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get matchesTitle => 'Eşleşmeler';
 
   @override
-  String get matchesEmptyTitle => 'Henüz eşleşme yok';
+  String get matchesEmptyTitle => 'Henüz bir eşleşmen yok.';
 
   @override
   String get matchesEmptyMessage =>
@@ -1239,6 +1239,63 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get boostSpotlight => 'Öne Çıkar';
+
+  @override
+  String get boostPackOne => '1 Boost';
+
+  @override
+  String get boostPackFive => '5 Boost';
+
+  @override
+  String get boostPackTen => '10 Boost';
+
+  @override
+  String boostPackCount(int count) {
+    return '$count Boost';
+  }
+
+  @override
+  String boostBalance(int count) {
+    return '$count Boost';
+  }
+
+  @override
+  String get boostBuyPack => 'Satın al';
+
+  @override
+  String get boostCreditedTitle => 'Boost hesabına eklendi';
+
+  @override
+  String boostCreditedMessage(int count) {
+    return '$count Boost hesabına tanımlandı. Hazır olduğunda aktif et.';
+  }
+
+  @override
+  String get boostInsufficientBalance => 'Aktif etmek için Boost bakiyen yok.';
+
+  @override
+  String get boostHistoryTitle => 'Boost geçmişi';
+
+  @override
+  String get boostHistoryEmpty => 'Henüz Boost işlemin yok.';
+
+  @override
+  String get boostHistoryPurchase => 'Satın alma';
+
+  @override
+  String get boostHistoryActivation => 'Aktivasyon';
+
+  @override
+  String get boostActiveBadge => 'Boost aktif';
+
+  @override
+  String get boostActivating => 'Boost aktif ediliyor...';
+
+  @override
+  String get boostNoBalance => 'Boost aktif etmek için bir paket satın al.';
+
+  @override
   String radiusKm(int km) {
     return '$km km';
   }
@@ -1553,4 +1610,32 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get citySelectNone => 'İl bulunamadı';
+
+  @override
+  String get discoveryLoading => 'Uyumlu kişileri buluyoruz...';
+
+  @override
+  String get discoveryLoadErrorTitle =>
+      'Profilleri yüklerken bir sorun oluştu.';
+
+  @override
+  String get discoveryLoadErrorMessage =>
+      'Bağlantını kontrol et ve tekrar dene.';
+
+  @override
+  String get discoveryChangePreferences => 'Keşfetme tercihlerini değiştir';
+
+  @override
+  String get itsAMatchHeadline => 'BİR EŞLEŞMENİZ VAR!';
+
+  @override
+  String get demoProfileBadge => 'Örnek';
+
+  @override
+  String sharedHobbiesCount(int count) {
+    return '$count ortak hobi';
+  }
+
+  @override
+  String get tabSettings => 'Ayarlar';
 }

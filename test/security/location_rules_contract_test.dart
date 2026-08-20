@@ -42,6 +42,8 @@ void main() {
     final rules = File('firebase/firestore.rules').readAsStringSync();
     expect(rules.contains('match /purchases/{purchaseId}'), isTrue);
     expect(rules.contains('match /boosts/{boostId}'), isTrue);
+    expect(rules.contains('match /boostWallet/{docId}'), isTrue);
+    expect(rules.contains('match /boostProducts/{productId}'), isTrue);
     expect(rules.contains('allow create, update, delete: if false;'), isTrue);
   });
 

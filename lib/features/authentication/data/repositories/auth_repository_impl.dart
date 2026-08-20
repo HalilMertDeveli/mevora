@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
@@ -29,6 +31,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required AccountDeletionService accountDeletionService,
     FirebaseAuth? firebaseAuth,
     BackendCallable? accountSync,
+    Future<void> Function(String uid)? onBeforeSignOut,
+    Future<void> Function()? onAfterSignOut,
   }) : _emailAuthService = emailAuthService,
        _googleAuthService = googleAuthService,
        _appleAuthService = appleAuthService,
@@ -37,7 +41,9 @@ class AuthRepositoryImpl implements AuthRepository {
        _userRemoteDataSource = userRemoteDataSource,
        _accountDeletionService = accountDeletionService,
        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-       _accountSync = accountSync;
+       _accountSync = accountSync,
+       _onBeforeSignOut = onBeforeSignOut,
+       _onAfterSignOut = onAfterSignOut;
 
   final EmailAuthService _emailAuthService;
   final GoogleAuthService _googleAuthService;
@@ -48,6 +54,8 @@ class AuthRepositoryImpl implements AuthRepository {
   final AccountDeletionService _accountDeletionService;
   final FirebaseAuth _firebaseAuth;
   final BackendCallable? _accountSync;
+  final Future<void> Function(String uid)? _onBeforeSignOut;
+  final Future<void> Function()? _onAfterSignOut;
 
   @override
   Stream<AuthUser?> watchAuthState() {
@@ -61,18 +69,59 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Stream<AuthSnapshot> watchAuth() {
-    return _firebaseAuth.authStateChanges().asyncExpand((firebaseUser) {
-      if (firebaseUser == null) {
-        return Stream<AuthSnapshot>.value(const AuthSignedOut());
-      }
-      return _userRemoteDataSource.watchUser(firebaseUser.uid).map((doc) {
-        if (doc == null) {
-          return AuthProfilePending(firebaseUser.uid);
-        }
-        return AuthProfileReady(
-          doc.toEntity().copyWith(emailVerified: firebaseUser.emailVerified),
+    // switchMap: cancel the previous users/{uid} listener when auth changes.
+    // asyncExpand would concatenate and never process sign-out while watchUser
+    // is still open, then permission-denied crashes after logout.
+    return Stream<AuthSnapshot>.multi((listener) {
+      StreamSubscription<User?>? authSub;
+      StreamSubscription<AuthSnapshot>? innerSub;
+
+      Future<void> listenInner(Stream<AuthSnapshot> stream) async {
+        await innerSub?.cancel();
+        innerSub = stream.listen(
+          listener.add,
+          onError: (Object error, StackTrace stackTrace) {
+            if (_isAuthSessionGone(error)) {
+              listener.add(const AuthSignedOut());
+              return;
+            }
+            listener.addError(error, stackTrace);
+          },
         );
-      });
+      }
+
+      authSub = _firebaseAuth.authStateChanges().listen(
+        (firebaseUser) {
+          if (firebaseUser == null) {
+            unawaited(
+              listenInner(
+                Stream<AuthSnapshot>.value(const AuthSignedOut()),
+              ),
+            );
+            return;
+          }
+          unawaited(
+            listenInner(
+              _userRemoteDataSource.watchUser(firebaseUser.uid).map((doc) {
+                if (doc == null) {
+                  return AuthProfilePending(firebaseUser.uid);
+                }
+                return AuthProfileReady(
+                  doc.toEntity().copyWith(
+                    emailVerified: firebaseUser.emailVerified,
+                  ),
+                );
+              }),
+            ),
+          );
+        },
+        onError: listener.addError,
+      );
+
+      listener.onCancel = () async {
+        await innerSub?.cancel();
+        await authSub?.cancel();
+      };
     });
   }
 
@@ -232,9 +281,38 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<void>> signOut() {
     return _run(() async {
-      await _googleAuthService.signOut();
-      await _firebaseAuth.signOut();
-      _phoneAuthService.resetSendCount();
+      final uid = _firebaseAuth.currentUser?.uid;
+      if (uid != null) {
+        try {
+          await _onBeforeSignOut?.call(uid);
+        } on Object {
+          // FCM unregister is best-effort and must not block session close.
+        }
+      }
+      try {
+        await _googleAuthService.signOut();
+      } on Object {
+        // Google session cleanup is best-effort.
+      }
+      try {
+        if (_firebaseAuth.currentUser != null) {
+          await _firebaseAuth.signOut();
+        }
+      } on Object {
+        if (_firebaseAuth.currentUser != null) {
+          rethrow;
+        }
+      }
+      try {
+        _phoneAuthService.resetSendCount();
+      } on Object {
+        // Local OTP counters are best-effort.
+      }
+      try {
+        await _onAfterSignOut?.call();
+      } on Object {
+        // Firestore cache wipe is best-effort.
+      }
     });
   }
 
@@ -280,5 +358,12 @@ class AuthRepositoryImpl implements AuthRepository {
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
     }
+  }
+
+  static bool _isAuthSessionGone(Object error) {
+    final message = error.toString();
+    return message.contains('permission-denied') ||
+        message.contains('PERMISSION_DENIED') ||
+        message.contains('unauthenticated');
   }
 }

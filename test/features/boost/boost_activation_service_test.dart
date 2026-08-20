@@ -47,4 +47,10 @@ void main() {
     final decision = stacking.decide(now: now, currentActive: boost());
     expect(decision.shouldActivate, isTrue);
   });
+
+  test('zero balance cannot activate', () {
+    final decision = service.decide(now: now, currentActive: null, balance: 0);
+    expect(decision.shouldActivate, isFalse);
+    expect(decision.insufficientBalance, isTrue);
+  });
 }

@@ -1,3 +1,4 @@
+import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/identity/firebase_auth_uid_source.dart';
@@ -7,6 +8,7 @@ import 'package:mevora/features/calls/data/services/video_call_service_impl.dart
 import 'package:mevora/features/matching/data/firebase/firebase_social_data.dart';
 import 'package:mevora/features/matching/data/memory/graph_repositories.dart';
 import 'package:mevora/features/matching/data/memory/in_memory_social_graph.dart';
+import 'package:mevora/features/matching/data/overlay/overlay_social_repositories.dart';
 
 SocialServices createGraphSocialServices({
   required InMemorySocialGraph graph,
@@ -30,16 +32,24 @@ SocialServices createGraphSocialServices({
   );
 }
 
-SocialServices createFirebaseSocialServices({AuthUidSource? uidSource}) {
-  final uid = uidSource ?? FirebaseAuthUidSource();
+SocialServices createFirebaseSocialServices({
+  AuthUidSource? uidSource,
+  DemoSocialHub? demoHub,
+}) {
+  final uid = uidSource ?? demoHub?.uidSource ?? FirebaseAuthUidSource();
   final callable = FirebaseFunctionsCallable();
   final matches = FirebaseMatchRepository(callable: callable, uidSource: uid);
+  final chat = FirebaseChatRepository(uidSource: uid);
   final calls = FirebaseCallRepository(callable: callable, uidSource: uid);
   return SocialServices(
     uidSource: uid,
-    matchRepository: matches,
+    matchRepository: demoHub == null
+        ? matches
+        : OverlayMatchRepository(remote: matches, hub: demoHub),
     likeRepository: matches,
-    chatRepository: FirebaseChatRepository(uidSource: uid),
+    chatRepository: demoHub == null
+        ? chat
+        : OverlayChatRepository(remote: chat, hub: demoHub),
     safetyRepository: FirebaseSafetyRepository(
       callable: callable,
       uidSource: uid,

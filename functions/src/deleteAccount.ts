@@ -54,7 +54,7 @@ export const deleteUserAccount = onCall(
     const userSnap = await db.doc(`users/${uid}`).get();
     const spotifyId = userSnap.data()?.spotifyId as string | undefined;
 
-    const [devices, tokens, blocked, notifs, likesFrom, likesTo, boosts] = await Promise.all([
+    const [devices, tokens, blocked, notifs, likesFrom, likesTo, boosts, wallet] = await Promise.all([
       db.collection(`users/${uid}/devices`).get(),
       db.collection(`users/${uid}/fcmTokens`).get(),
       db.collection(`users/${uid}/blockedUsers`).get(),
@@ -62,6 +62,7 @@ export const deleteUserAccount = onCall(
       db.collection("likes").where("fromUserId", "==", uid).get(),
       db.collection("likes").where("toUserId", "==", uid).get(),
       db.collection(`users/${uid}/boosts`).get(),
+      db.collection(`users/${uid}/boostWallet`).get(),
     ]);
     await batchDelete([
       ...devices.docs.map((d) => d.ref),
@@ -71,6 +72,7 @@ export const deleteUserAccount = onCall(
       ...likesFrom.docs.map((d) => d.ref),
       ...likesTo.docs.map((d) => d.ref),
       ...boosts.docs.map((d) => d.ref),
+      ...wallet.docs.map((d) => d.ref),
     ]);
 
     const matches = await db.collection("matches").where("userIds", "array-contains", uid).get();

@@ -25,6 +25,8 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+  static final Map<String, Future<AuthUser>> _upsertInFlight =
+      <String, Future<AuthUser>>{};
 
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection(FirestorePaths.users);
@@ -80,7 +82,22 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
   }
 
   @override
-  Future<AuthUser> upsertFromSession(AuthSession session) async {
+  Future<AuthUser> upsertFromSession(AuthSession session) {
+    final uid = session.uid;
+    // Coalesce concurrent upserts for the same uid (e.g. sign-in + auth snapshot).
+    return _upsertInFlight[uid] ??= _runUpsert(session); // ignore: unawaited_futures
+  }
+
+  Future<AuthUser> _runUpsert(AuthSession session) async {
+    final uid = session.uid;
+    try {
+      return await _upsertFromSessionLocked(session);
+    } finally {
+      _upsertInFlight.remove(uid); // ignore: unawaited_futures
+    }
+  }
+
+  Future<AuthUser> _upsertFromSessionLocked(AuthSession session) async {
     final uid = session.uid;
     final accountRef = _users.doc(uid);
     final profileRef = _profiles.doc(uid);
@@ -95,46 +112,51 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
         .doc(uid);
     final now = FieldValue.serverTimestamp();
 
-    await _firestore.runTransaction((transaction) async {
-      final snap = await transaction.get(accountRef);
-      if (!snap.exists) {
-        transaction.set(accountRef, _newAccount(session, now));
-        transaction.set(profileRef, _newProfileStub(session, now));
-        transaction.set(prefsRef, _defaultPreferences(now));
-        transaction.set(settingsRef, _defaultSettings(now));
-        transaction.set(privacyRef, _defaultPrivacy(now));
-        return;
-      }
+    // Avoid runTransaction: Flutter's MethodChannel completer double-fires on
+    // cancel/abort (Bad state: Future already completed). Read then WriteBatch.
+    final accountSnap = await accountRef.get();
+    final profileSnap = await profileRef.get();
 
-      final existing = snap.data() ?? const <String, dynamic>{};
-      final banned =
-          existing['accountStatus'] == AccountStatus.banned.firestoreValue ||
-          existing['isBanned'] == true;
-      if (banned) {
+    if (accountSnap.exists) {
+      final existing = accountSnap.data() ?? const <String, dynamic>{};
+      if (_isBanned(existing)) {
         throw const AuthException(
           AuthMessages.banned,
           kind: AuthErrorKind.banned,
         );
       }
 
-      transaction.update(accountRef, _accountUpdates(session, existing, now));
+      final batch = _firestore.batch();
+      batch.update(accountRef, _accountUpdates(session, existing, now));
 
-      final profileSnap = await transaction.get(profileRef);
       if (!profileSnap.exists) {
-        transaction.set(profileRef, _newProfileStub(session, now));
+        batch.set(profileRef, _newProfileStub(session, now));
       } else if (session.persistDisplayName && _isPresent(session.displayName)) {
         final profile = profileSnap.data() ?? const <String, dynamic>{};
-        // Prefill empty onboarding fields only; never overwrite completed profile copy.
         if (!_isPresent(profile['displayName'])) {
-          transaction.update(profileRef, {
+          batch.update(profileRef, {
             'displayName': session.displayName,
             'updatedAt': now,
           });
         }
       }
-    });
+      await batch.commit();
+    } else {
+      final batch = _firestore.batch();
+      batch.set(accountRef, _newAccount(session, now));
+      batch.set(profileRef, _newProfileStub(session, now));
+      batch.set(prefsRef, _defaultPreferences(now));
+      batch.set(settingsRef, _defaultSettings(now));
+      batch.set(privacyRef, _defaultPrivacy(now));
+      await batch.commit();
+    }
 
     return fetchUser(uid);
+  }
+
+  static bool _isBanned(Map<String, dynamic> existing) {
+    return existing['accountStatus'] == AccountStatus.banned.firestoreValue ||
+        existing['isBanned'] == true;
   }
 
   Map<String, dynamic> _newAccount(AuthSession session, FieldValue now) {

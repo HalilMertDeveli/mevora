@@ -31,6 +31,8 @@ abstract final class FailureMessages {
           AppStrings.boostVerificationFailed,
         PurchaseErrorKind.alreadyProcessed => AppStrings.boostAlreadyProcessed,
         PurchaseErrorKind.alreadyActive => AppStrings.boostAlreadyActive,
+        PurchaseErrorKind.insufficientBalance =>
+          AppStrings.boostInsufficientBalance,
       },
       NotFoundFailure() => AppStrings.notFound,
       NetworkFailure() => AppStrings.networkError,

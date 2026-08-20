@@ -64,17 +64,18 @@ class _LoginHeroBackgroundState extends State<LoginHeroBackground>
               return _LoginPhoto(scale: scale);
             },
           ),
+        // People/dating accent in the upper hero — never intercepts taps.
         const IgnorePointer(
           child: Align(
-            alignment: Alignment.topCenter,
+            alignment: Alignment(0, -0.72),
             child: Opacity(
-              opacity: 0.28,
+              opacity: 0.88,
               child: SizedBox(
-                height: 280,
-                width: double.infinity,
+                width: 220,
+                height: 180,
                 child: MevoraRiveAnimation(
                   asset: MevoraRiveAssets.loginAmbient,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   fallback: SizedBox.shrink(),
                 ),
               ),

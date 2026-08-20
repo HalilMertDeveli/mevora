@@ -1,3 +1,4 @@
+import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/discovery/data/datasources/mock_discovery_data_source.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
@@ -6,25 +7,40 @@ import 'package:mevora/features/discovery/domain/repositories/discovery_reposito
 import 'package:mevora/features/discovery/domain/services/discovery_candidate_filter.dart';
 
 /// Mock discovery for development and tests. Never touches Firestore.
-class MockDiscoveryRepository implements DiscoveryRepository {
+class MockDiscoveryRepository
+    implements DiscoveryRepository, DemoDiscoverySupport {
   MockDiscoveryRepository({
     this.selfUid = 'self',
     List<MockDiscoveryProfile>? profiles,
+    this.demoHub,
+    String Function()? currentUid,
+    Set<String>? boostedUids,
   }) : _profiles = List<MockDiscoveryProfile>.from(
          profiles ?? MockDiscoveryDataSource.profiles(),
-       );
+       ),
+       _currentUid = currentUid,
+       boostedUids = boostedUids ?? <String>{};
 
   final String selfUid;
+  final DemoSocialHub? demoHub;
+  final String Function()? _currentUid;
   final List<MockDiscoveryProfile> _profiles;
   final Set<String> blocked = <String>{};
   final Set<String> liked = <String>{};
   final Set<String> passed = <String>{};
   final Set<String> superLiked = <String>{};
+  final Set<String> boostedUids;
 
+  String get _actorUid => _currentUid?.call() ?? selfUid;
+
+  @override
+  bool get supportsDemoRestart => true;
+
+  @override
   bool isExhaustedForRadius(int radiusKm) =>
       DiscoveryCandidateFilter.apply(
         seeds: _profiles,
-        selfUid: selfUid,
+        selfUid: _actorUid,
         blocked: blocked,
         liked: liked,
         passed: passed,
@@ -33,6 +49,7 @@ class MockDiscoveryRepository implements DiscoveryRepository {
         distanceKmOf: (seed) => seed.distanceKm,
       ).isEmpty;
 
+  @override
   void restartDemo() {
     liked.clear();
     passed.clear();
@@ -47,7 +64,7 @@ class MockDiscoveryRepository implements DiscoveryRepository {
   }) async {
     final visible = DiscoveryCandidateFilter.apply(
       seeds: _profiles,
-      selfUid: selfUid,
+      selfUid: _actorUid,
       blocked: blocked,
       liked: liked,
       passed: passed,
@@ -55,6 +72,16 @@ class MockDiscoveryRepository implements DiscoveryRepository {
       uidOf: (seed) => seed.uid,
       distanceKmOf: (seed) => seed.distanceKm,
     );
+    if (boostedUids.isNotEmpty) {
+      visible.sort((a, b) {
+        final aBoost = boostedUids.contains(a.uid) ? 1 : 0;
+        final bBoost = boostedUids.contains(b.uid) ? 1 : 0;
+        if (aBoost != bBoost) {
+          return bBoost - aBoost;
+        }
+        return b.compatibilityScore.compareTo(a.compatibilityScore);
+      });
+    }
     final start = cursor == null
         ? 0
         : visible.indexWhere((seed) => seed.uid == cursor) + 1;
@@ -73,7 +100,8 @@ class MockDiscoveryRepository implements DiscoveryRepository {
     required String candidateUid,
     required DiscoveryDecision decision,
   }) async {
-    if (candidateUid == selfUid) {
+    final actor = _actorUid;
+    if (candidateUid == actor) {
       return const Success(DiscoveryDecisionResult());
     }
     if (liked.contains(candidateUid) ||
@@ -90,7 +118,30 @@ class MockDiscoveryRepository implements DiscoveryRepository {
         superLiked.add(candidateUid);
         liked.add(candidateUid);
     }
-    return const Success(DiscoveryDecisionResult());
+
+    if (decision == DiscoveryDecision.pass) {
+      return const Success(DiscoveryDecisionResult());
+    }
+
+    MockDiscoveryProfile? seed;
+    for (final profile in _profiles) {
+      if (profile.uid == candidateUid) {
+        seed = profile;
+        break;
+      }
+    }
+    if (seed == null || !seed.likesYou) {
+      return const Success(DiscoveryDecisionResult());
+    }
+
+    final matchId = demoHub?.createMutualMatch(
+      selfUid: actor,
+      candidate: _toCandidate(seed),
+      action: decision.name,
+    );
+    return Success(
+      DiscoveryDecisionResult(matched: matchId != null, matchId: matchId),
+    );
   }
 
   DiscoveryCandidate _toCandidate(MockDiscoveryProfile seed) {
@@ -113,6 +164,7 @@ class MockDiscoveryRepository implements DiscoveryRepository {
       city: profile.city,
       gender: profile.gender,
       relationshipGoal: profile.relationshipGoal,
+      isDemo: true,
     );
   }
 }

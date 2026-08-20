@@ -15,6 +15,7 @@ class DiscoveryCandidate {
     this.city,
     this.gender,
     this.relationshipGoal,
+    this.isDemo = false,
   });
 
   final String uid;
@@ -38,4 +39,7 @@ class DiscoveryCandidate {
   final String? city;
   final String? gender;
   final String? relationshipGoal;
+
+  /// Local seed profile. Never persisted to production Firestore.
+  final bool isDemo;
 }

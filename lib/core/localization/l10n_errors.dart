@@ -58,6 +58,7 @@ abstract final class L10nErrors {
       PurchaseErrorKind.verificationFailed => l10n.boostVerificationFailed,
       PurchaseErrorKind.alreadyProcessed => l10n.boostAlreadyProcessed,
       PurchaseErrorKind.alreadyActive => l10n.boostAlreadyActive,
+      PurchaseErrorKind.insufficientBalance => l10n.boostInsufficientBalance,
     };
   }
 

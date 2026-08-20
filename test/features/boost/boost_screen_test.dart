@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/theme/app_theme.dart';
+import 'package:mevora/features/boost/domain/entities/boost.dart';
+import 'package:mevora/features/boost/domain/entities/boost_history_entry.dart';
 import 'package:mevora/features/boost/domain/entities/purchase_flow_state.dart';
 import 'package:mevora/features/boost/domain/usecases/get_active_boost.dart';
 import 'package:mevora/features/boost/domain/usecases/get_boost_product.dart';
@@ -9,7 +11,10 @@ import 'package:mevora/features/boost/domain/usecases/purchase_boost.dart';
 import 'package:mevora/features/boost/domain/usecases/verify_boost_purchase.dart';
 import 'package:mevora/features/boost/presentation/controllers/purchase_controller.dart';
 import 'package:mevora/features/boost/presentation/pages/boost_screen.dart';
+import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_button.dart';
+import 'package:mevora/features/boost/presentation/widgets/boost_history_list.dart';
+import 'package:mevora/features/boost/presentation/widgets/boost_pack_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 import '../../helpers/fake_purchase_repository.dart';
@@ -49,9 +54,10 @@ void main() {
     await tester.pump();
     expect(find.text(_l10n.boostTitle), findsWidgets);
     expect(find.text(_l10n.boostSubtitle), findsOneWidget);
-    expect(find.text(_l10n.boostDuration), findsOneWidget);
-    expect(find.text('₺29,99'), findsOneWidget);
+    expect(find.text(_l10n.boostDuration), findsWidgets);
+    expect(find.text('₺49,99'), findsOneWidget);
     expect(find.text(_l10n.boostActivate), findsOneWidget);
+    expect(find.text(_l10n.boostPackOne), findsOneWidget);
     expect(find.text(_l10n.boostSuccessTitle), findsNothing);
   });
 
@@ -66,6 +72,79 @@ void main() {
       ),
     );
     expect(find.byType(BoostButton), findsOneWidget);
+  });
+
+  testWidgets('pack sheet lists configurable packs', (tester) async {
+    final repository = FakePurchaseRepository();
+    await tester.pumpWidget(
+      wrap(
+        Scaffold(
+          body: BoostPackSheet(products: repository.product == null ? [] : [
+            repository.product!,
+            ...?repository.products,
+          ]),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(BoostPackTile), findsWidgets);
+    expect(find.text(_l10n.boostPackOne), findsOneWidget);
+  });
+
+  testWidgets('history lists purchases and activations', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        Scaffold(
+          body: BoostHistoryList(
+            entries: [
+              BoostHistoryEntry(
+                id: 'p1',
+                type: BoostHistoryType.purchase,
+                productId: 'com.mevora.app.boost.5',
+                boostCount: 5,
+                createdAt: DateTime.utc(2026, 8, 18),
+                status: 'verified',
+              ),
+              BoostHistoryEntry(
+                id: 'b1',
+                type: BoostHistoryType.activation,
+                productId: 'activate',
+                createdAt: DateTime.utc(2026, 8, 18, 13),
+                status: 'active',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(find.text(_l10n.boostHistoryTitle), findsOneWidget);
+    expect(find.text(_l10n.boostHistoryPurchase), findsOneWidget);
+    expect(find.text(_l10n.boostHistoryActivation), findsOneWidget);
+  });
+
+  testWidgets('active badge is visible while boost is live', (tester) async {
+    final now = DateTime.utc(2026, 8, 18, 12);
+    await tester.pumpWidget(
+      wrap(
+        Scaffold(
+          body: BoostActiveBadge(
+            now: now,
+            boost: Boost(
+              boostId: 'b1',
+              userId: 'u1',
+              productId: 'activate',
+              purchaseId: '',
+              status: BoostStatus.active,
+              createdAt: now,
+              startedAt: now,
+              expiresAt: now.add(const Duration(minutes: 30)),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(BoostActiveBadge), findsOneWidget);
+    expect(find.textContaining(_l10n.boostActiveBadge), findsOneWidget);
   });
 
   testWidgets('purchasing then verifying shows loading copy', (tester) async {
@@ -88,19 +167,24 @@ void main() {
     expect(find.text(_l10n.boostVerifying), findsOneWidget);
   });
 
-  testWidgets('success copy appears only after verify', (tester) async {
+  testWidgets('success copy appears only after activate', (tester) async {
     final repository = FakePurchaseRepository();
     final controller = controllerFor(repository);
     addTearDown(controller.dispose);
     await tester.pumpWidget(wrap(BoostScreen(controller: controller)));
     await tester.pump();
     await tester.pump();
+    await tester.tap(find.text(_l10n.boostPackOne));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text(_l10n.boostCreditedTitle), findsWidgets);
+    expect(repository.verifyCalled, isTrue);
+    expect(find.text(_l10n.boostSuccessTitle), findsNothing);
     await tester.tap(find.text(_l10n.boostActivate));
     await tester.pump();
     await tester.pump();
     expect(find.text(_l10n.boostSuccessTitle), findsOneWidget);
     expect(find.text(_l10n.boostSuccessMessage), findsOneWidget);
-    expect(repository.verifyCalled, isTrue);
   });
 
   testWidgets('error state is human and has retry', (tester) async {

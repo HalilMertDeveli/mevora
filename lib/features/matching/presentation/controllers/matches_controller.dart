@@ -32,7 +32,7 @@ class MatchesController extends ChangeNotifier {
 
   void start() {
     final current = uid;
-    _subscription?.cancel();
+    unawaited(_subscription?.cancel());
     if (current == null) {
       items = const [];
       loading = false;
@@ -52,7 +52,18 @@ class MatchesController extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_closed) {
+      return;
+    }
+    super.notifyListeners();
+  }
+
+  bool _closed = false;
+
+  @override
   void dispose() {
+    _closed = true;
     unawaited(_subscription?.cancel());
     super.dispose();
   }

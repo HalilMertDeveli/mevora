@@ -8,6 +8,7 @@ import 'package:mevora/core/cache/image_cache_policy.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/di/boost_services_factory.dart';
+import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/di/discovery_services_factory.dart';
 import 'package:mevora/core/di/location_services_factory.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
@@ -82,8 +83,17 @@ Future<void> bootstrap(AppEnvironment environment) async {
     logger: logger,
     permissions: permissionService,
   );
-  final discoveryServices = createDiscoveryServices(config: config);
-  final socialServices = createFirebaseSocialServices();
+  final uidSource = FirebaseAuthUidSource();
+  final demoHub = DemoSocialHub(uidSource: uidSource);
+  final discoveryServices = createDiscoveryServices(
+    config: config,
+    demoHub: demoHub,
+    currentUid: () => uidSource.currentUid ?? 'self',
+  );
+  final socialServices = createFirebaseSocialServices(
+    uidSource: uidSource,
+    demoHub: demoHub,
+  );
   final analytics = environment.isProduction
       ? FirebaseAnalyticsAdapter()
       : NoopAnalyticsProvider(logger: logger);

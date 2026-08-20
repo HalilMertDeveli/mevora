@@ -26,20 +26,29 @@ class MevoraAvatar extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          CircleAvatar(
-            radius: size / 2,
-            backgroundColor: colors.primaryContainer,
-            foregroundColor: colors.onPrimaryContainer,
-            backgroundImage: image,
-            child: image == null
-                ? Text(
-                    initials.isEmpty ? '?' : initials,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: size * 0.32,
+          ClipOval(
+            child: ColoredBox(
+              color: colors.primaryContainer,
+              child: image == null
+                  ? Center(
+                      child: Text(
+                        initials.isEmpty ? '?' : initials,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: size * 0.32,
+                          color: colors.onPrimaryContainer,
+                        ),
+                      ),
+                    )
+                  : Image(
+                      image: image!,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.high,
+                      gaplessPlayback: true,
                     ),
-                  )
-                : null,
+            ),
           ),
           if (isVerified)
             Positioned(

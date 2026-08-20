@@ -1240,6 +1240,64 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get boostSpotlight => 'Boost Profile';
+
+  @override
+  String get boostPackOne => '1 Boost';
+
+  @override
+  String get boostPackFive => '5 Boost';
+
+  @override
+  String get boostPackTen => '10 Boost';
+
+  @override
+  String boostPackCount(int count) {
+    return '$count Boost';
+  }
+
+  @override
+  String boostBalance(int count) {
+    return '$count Boost';
+  }
+
+  @override
+  String get boostBuyPack => 'Buy';
+
+  @override
+  String get boostCreditedTitle => 'Boosts added to your account';
+
+  @override
+  String boostCreditedMessage(int count) {
+    return '$count Boost added. Activate when you are ready.';
+  }
+
+  @override
+  String get boostInsufficientBalance =>
+      'You need a Boost before you can go live.';
+
+  @override
+  String get boostHistoryTitle => 'Boost history';
+
+  @override
+  String get boostHistoryEmpty => 'No Boost activity yet.';
+
+  @override
+  String get boostHistoryPurchase => 'Purchase';
+
+  @override
+  String get boostHistoryActivation => 'Activation';
+
+  @override
+  String get boostActiveBadge => 'Boost on';
+
+  @override
+  String get boostActivating => 'Turning Boost on...';
+
+  @override
+  String get boostNoBalance => 'Buy a pack to activate Boost.';
+
+  @override
   String radiusKm(int km) {
     return '$km km';
   }
@@ -1554,4 +1612,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get citySelectNone => 'No province found';
+
+  @override
+  String get discoveryLoading => 'Finding compatible people...';
+
+  @override
+  String get discoveryLoadErrorTitle => 'Couldn\'t load profiles';
+
+  @override
+  String get discoveryLoadErrorMessage =>
+      'Something went wrong while loading profiles.';
+
+  @override
+  String get discoveryChangePreferences => 'Change discovery preferences';
+
+  @override
+  String get itsAMatchHeadline => 'IT\'S A MATCH';
+
+  @override
+  String get demoProfileBadge => 'Sample';
+
+  @override
+  String sharedHobbiesCount(int count) {
+    return '$count shared interests';
+  }
+
+  @override
+  String get tabSettings => 'Settings';
 }

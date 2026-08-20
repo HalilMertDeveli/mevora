@@ -9,9 +9,14 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/boost/data/datasources/firebase_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/datasources/store_purchase_data_source.dart';
+import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/config/boost_product_config.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
+import 'package:mevora/features/boost/domain/entities/boost_credit_result.dart';
+import 'package:mevora/features/boost/domain/entities/boost_history_entry.dart';
+import 'package:mevora/features/boost/domain/entities/boost_pack.dart';
 import 'package:mevora/features/boost/domain/entities/boost_product.dart';
+import 'package:mevora/features/boost/domain/entities/boost_wallet.dart';
 import 'package:mevora/features/boost/domain/entities/store_transaction.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
 import 'package:mevora/features/boost/domain/services/purchase_verification_service.dart';
@@ -51,6 +56,46 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
     }
+  }
+
+  @override
+  Future<Result<List<BoostProduct>>> getBoostProducts() async {
+    try {
+      final catalog = await _remote.loadCatalog();
+      final packs = catalog.isEmpty
+          ? BoostPackCatalog.storefrontPacks
+          : catalog;
+      List<BoostProduct> storeItems = const [];
+      try {
+        storeItems = await _store.loadProducts(_config);
+      } on PurchaseException catch (error) {
+        if (error.kind != PurchaseErrorKind.unavailable &&
+            error.kind != PurchaseErrorKind.storeDown) {
+          return Err(FailureMapper.from(error));
+        }
+      }
+      final byId = {for (final item in storeItems) item.productId: item};
+      final merged = packs.map((pack) => _mergePack(pack, byId[pack.productId])).toList()
+        ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+      return Success(merged);
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  BoostProduct _mergePack(BoostPack pack, BoostProduct? store) {
+    return BoostProduct(
+      productId: pack.productId,
+      title: (store?.title.isNotEmpty ?? false) ? store!.title : pack.title,
+      description: store?.description ?? '',
+      localizedPrice: store?.localizedPrice ?? '',
+      currency: store?.currency ?? pack.fallbackCurrency,
+      available: store?.available ?? false,
+      duration: pack.duration,
+      displayOrder: pack.displayOrder,
+      boostCount: pack.boostCount,
+      fallbackPrice: pack.fallbackPriceLabel,
+    );
   }
 
   @override
@@ -98,7 +143,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
   }
 
   @override
-  Future<Result<Boost>> verifyBoostPurchase({
+  Future<Result<BoostCreditResult>> verifyBoostPurchase({
     required String userId,
     required StoreTransaction transaction,
   }) async {
@@ -128,10 +173,29 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
           ),
         );
       }
-      final boost = await _remote.verifyPurchase(
+      final credited = await _remote.verifyPurchase(
         userId: userId,
         transaction: transaction,
       );
+      return Success(credited);
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  @override
+  Future<Result<Boost>> activateBoost(String userId) async {
+    try {
+      final expectedUid = _uidSource.currentUid;
+      if (expectedUid == null || expectedUid != userId) {
+        return const Err(
+          PurchaseFailure(
+            AppStrings.boostVerificationFailed,
+            kind: PurchaseErrorKind.verificationFailed,
+          ),
+        );
+      }
+      final boost = await _remote.activateBoost(userId);
       _cache.set(_cacheKeyFor(userId), _CachedBoost(boost));
       return Success(boost);
     } on Object catch (error) {
@@ -154,6 +218,24 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
       final active = boost != null && boost.isActiveAt(_clock()) ? boost : null;
       _cache.set(_cacheKeyFor(userId), _CachedBoost(active));
       return Success(active);
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  @override
+  Future<Result<BoostWallet>> getWallet(String userId) async {
+    try {
+      return Success(await _remote.loadWallet(userId));
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  @override
+  Future<Result<List<BoostHistoryEntry>>> getHistory(String userId) async {
+    try {
+      return Success(await _remote.loadHistory(userId));
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
     }

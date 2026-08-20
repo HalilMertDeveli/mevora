@@ -108,6 +108,7 @@ enum PurchaseErrorKind {
   verificationFailed,
   alreadyProcessed,
   alreadyActive,
+  insufficientBalance,
 }
 
 final class PurchaseException extends AppException {

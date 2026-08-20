@@ -23,6 +23,8 @@ abstract class StorePurchaseDataSource {
 
   Future<BoostProduct> loadProduct(BoostProductConfig config);
 
+  Future<List<BoostProduct>> loadProducts(BoostProductConfig config);
+
   Stream<StorePurchaseEvent> get purchaseEvents;
 
   Future<void> buy(BoostProduct product);

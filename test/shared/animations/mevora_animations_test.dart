@@ -48,7 +48,7 @@ void main() {
 
     expect(find.byType(MevoraAvatar), findsNWidgets(2));
     await tester.pump(AppDurations.match);
-    expect(find.text('MATCH'), findsOneWidget);
+    expect(find.text('IT\'S A MATCH'), findsOneWidget);
   });
 
   testWidgets('like burst and pass motion render without looping', (

@@ -2402,6 +2402,108 @@ abstract class AppLocalizations {
   /// **'{minutes} min'**
   String boostRemainingMinutes(int minutes);
 
+  /// No description provided for @boostSpotlight.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost Profile'**
+  String get boostSpotlight;
+
+  /// No description provided for @boostPackOne.
+  ///
+  /// In en, this message translates to:
+  /// **'1 Boost'**
+  String get boostPackOne;
+
+  /// No description provided for @boostPackFive.
+  ///
+  /// In en, this message translates to:
+  /// **'5 Boost'**
+  String get boostPackFive;
+
+  /// No description provided for @boostPackTen.
+  ///
+  /// In en, this message translates to:
+  /// **'10 Boost'**
+  String get boostPackTen;
+
+  /// No description provided for @boostPackCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Boost'**
+  String boostPackCount(int count);
+
+  /// No description provided for @boostBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Boost'**
+  String boostBalance(int count);
+
+  /// No description provided for @boostBuyPack.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy'**
+  String get boostBuyPack;
+
+  /// No description provided for @boostCreditedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boosts added to your account'**
+  String get boostCreditedTitle;
+
+  /// No description provided for @boostCreditedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Boost added. Activate when you are ready.'**
+  String boostCreditedMessage(int count);
+
+  /// No description provided for @boostInsufficientBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'You need a Boost before you can go live.'**
+  String get boostInsufficientBalance;
+
+  /// No description provided for @boostHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost history'**
+  String get boostHistoryTitle;
+
+  /// No description provided for @boostHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No Boost activity yet.'**
+  String get boostHistoryEmpty;
+
+  /// No description provided for @boostHistoryPurchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase'**
+  String get boostHistoryPurchase;
+
+  /// No description provided for @boostHistoryActivation.
+  ///
+  /// In en, this message translates to:
+  /// **'Activation'**
+  String get boostHistoryActivation;
+
+  /// No description provided for @boostActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost on'**
+  String get boostActiveBadge;
+
+  /// No description provided for @boostActivating.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning Boost on...'**
+  String get boostActivating;
+
+  /// No description provided for @boostNoBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy a pack to activate Boost.'**
+  String get boostNoBalance;
+
   /// No description provided for @radiusKm.
   ///
   /// In en, this message translates to:
@@ -2989,6 +3091,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No province found'**
   String get citySelectNone;
+
+  /// No description provided for @discoveryLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding compatible people...'**
+  String get discoveryLoading;
+
+  /// No description provided for @discoveryLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load profiles'**
+  String get discoveryLoadErrorTitle;
+
+  /// No description provided for @discoveryLoadErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while loading profiles.'**
+  String get discoveryLoadErrorMessage;
+
+  /// No description provided for @discoveryChangePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Change discovery preferences'**
+  String get discoveryChangePreferences;
+
+  /// No description provided for @itsAMatchHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'IT\'S A MATCH'**
+  String get itsAMatchHeadline;
+
+  /// No description provided for @demoProfileBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample'**
+  String get demoProfileBadge;
+
+  /// No description provided for @sharedHobbiesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} shared interests'**
+  String sharedHobbiesCount(int count);
+
+  /// No description provided for @tabSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get tabSettings;
 }
 
 class _AppLocalizationsDelegate

@@ -460,6 +460,38 @@
       "minutes": {"type": "int"}
     }
   },
+  "boostSpotlight": "Boost Profile",
+  "boostPackOne": "1 Boost",
+  "boostPackFive": "5 Boost",
+  "boostPackTen": "10 Boost",
+  "boostPackCount": "{count} Boost",
+  "@boostPackCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "boostBalance": "{count} Boost",
+  "@boostBalance": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "boostBuyPack": "Buy",
+  "boostCreditedTitle": "Boosts added to your account",
+  "boostCreditedMessage": "{count} Boost added. Activate when you are ready.",
+  "@boostCreditedMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "boostInsufficientBalance": "You need a Boost before you can go live.",
+  "boostHistoryTitle": "Boost history",
+  "boostHistoryEmpty": "No Boost activity yet.",
+  "boostHistoryPurchase": "Purchase",
+  "boostHistoryActivation": "Activation",
+  "boostActiveBadge": "Boost on",
+  "boostActivating": "Turning Boost on...",
+  "boostNoBalance": "Buy a pack to activate Boost.",
   "radiusKm": "{km} km",
   "@radiusKm": {
     "placeholders": {
@@ -567,5 +599,18 @@
   "settingsProfileSaved": "Profile saved.",
   "citySelectTitle": "Select City",
   "citySelectSearch": "Search province…",
-  "citySelectNone": "No province found"
+  "citySelectNone": "No province found",
+  "discoveryLoading": "Finding compatible people...",
+  "discoveryLoadErrorTitle": "Couldn't load profiles",
+  "discoveryLoadErrorMessage": "Something went wrong while loading profiles.",
+  "discoveryChangePreferences": "Change discovery preferences",
+  "itsAMatchHeadline": "IT'S A MATCH",
+  "demoProfileBadge": "Sample",
+  "sharedHobbiesCount": "{count} shared interests",
+  "@sharedHobbiesCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "tabSettings": "Settings"
 }

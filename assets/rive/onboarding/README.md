@@ -1,1 +1,1 @@
-Place `complete.riv` and `photo_upload.riv` here.
+Place `complete.riv`, `photo_upload.riv`, and `location.riv` here.

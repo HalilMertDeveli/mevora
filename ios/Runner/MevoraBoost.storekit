@@ -5,7 +5,67 @@
   ],
   "products" : [
     {
-      "displayPrice" : "29.99",
+      "displayPrice" : "49.99",
+      "familyShareable" : false,
+      "internalID" : "BOOST1",
+      "localizations" : [
+        {
+          "description" : "One Boost: extra Discovery visibility for 30 minutes.",
+          "displayName" : "1 Boost",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "1 Boost: profilini 30 dakika boyunca daha fazla kişiye göster.",
+          "displayName" : "1 Boost",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "com.mevora.app.boost.1",
+      "referenceName" : "Boost x1",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "199.99",
+      "familyShareable" : false,
+      "internalID" : "BOOST5",
+      "localizations" : [
+        {
+          "description" : "Five Boosts. Each lasts 30 minutes.",
+          "displayName" : "5 Boost",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "5 Boost. Her biri 30 dakika sürer.",
+          "displayName" : "5 Boost",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "com.mevora.app.boost.5",
+      "referenceName" : "Boost x5",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "349.99",
+      "familyShareable" : false,
+      "internalID" : "BOOST10",
+      "localizations" : [
+        {
+          "description" : "Ten Boosts. Each lasts 30 minutes.",
+          "displayName" : "10 Boost",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "10 Boost. Her biri 30 dakika sürer.",
+          "displayName" : "10 Boost",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "com.mevora.app.boost.10",
+      "referenceName" : "Boost x10",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "49.99",
       "familyShareable" : false,
       "internalID" : "BOOST30",
       "localizations" : [
@@ -21,7 +81,7 @@
         }
       ],
       "productID" : "com.mevora.app.boost",
-      "referenceName" : "Boost 30 min",
+      "referenceName" : "Boost 30 min (legacy)",
       "type" : "Consumable"
     }
   ],

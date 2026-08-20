@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
 
 /// Directional stamp shown while dragging or exiting a discovery card.
@@ -22,11 +23,12 @@ class DiscoverySwipeOverlay extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final l10n = AppLocalizations.of(context);
     final progress = _progressFor(direction);
     final label = switch (direction) {
-      DiscoverySwipeDirection.like => 'LIKE',
-      DiscoverySwipeDirection.pass => 'PASS',
-      DiscoverySwipeDirection.superLike => 'SUPER LIKE',
+      DiscoverySwipeDirection.like => l10n.like.toUpperCase(),
+      DiscoverySwipeDirection.pass => l10n.pass.toUpperCase(),
+      DiscoverySwipeDirection.superLike => l10n.superLike.toUpperCase(),
       DiscoverySwipeDirection.none => '',
     };
 
@@ -37,9 +39,16 @@ class DiscoverySwipeOverlay extends StatelessWidget {
       DiscoverySwipeDirection.none => AppColors.mutedInk,
     };
 
+    final icon = switch (direction) {
+      DiscoverySwipeDirection.like => Icons.favorite_rounded,
+      DiscoverySwipeDirection.pass => Icons.close_rounded,
+      DiscoverySwipeDirection.superLike => Icons.star_rounded,
+      DiscoverySwipeDirection.none => Icons.circle_outlined,
+    };
+
     final alignment = switch (direction) {
-      DiscoverySwipeDirection.like => Alignment.centerLeft,
-      DiscoverySwipeDirection.pass => Alignment.centerRight,
+      DiscoverySwipeDirection.like => Alignment.topLeft,
+      DiscoverySwipeDirection.pass => Alignment.topRight,
       DiscoverySwipeDirection.superLike => Alignment.topCenter,
       DiscoverySwipeDirection.none => Alignment.center,
     };
@@ -50,7 +59,7 @@ class DiscoverySwipeOverlay extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Opacity(
-            opacity: (0.35 + progress * 0.65).clamp(0.0, 1.0),
+            opacity: (0.4 + progress * 0.6).clamp(0.0, 1.0),
             child: Transform.rotate(
               angle: switch (direction) {
                 DiscoverySwipeDirection.like => -0.18,
@@ -60,6 +69,7 @@ class DiscoverySwipeOverlay extends StatelessWidget {
               },
               child: DecoratedBox(
                 decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.16),
                   border: Border.all(color: color, width: 3),
                   borderRadius: BorderRadius.circular(AppRadii.md),
                 ),
@@ -68,13 +78,20 @@ class DiscoverySwipeOverlay extends StatelessWidget {
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.sm,
                   ),
-                  child: Text(
-                    label,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.4,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, color: color, size: 22),
+                      const SizedBox(width: 8),
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

@@ -14,7 +14,6 @@ import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/features/boost/presentation/pages/boost_screen.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_button.dart';
 import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
-import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
@@ -101,7 +100,6 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
-    final auth = AuthScope.maybeOf(context);
     final l10n = AppLocalizations.of(context);
     if (controller == null) {
       return const Scaffold(body: MevoraLoading.page());
@@ -121,11 +119,9 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
             onPressed: () => unawaited(_openBoost(controller)),
           ),
           IconButton(
-            tooltip: l10n.logOut,
-            onPressed: auth == null || auth.isBusy
-                ? null
-                : () => unawaited(auth.signOut()),
-            icon: const Icon(Icons.logout),
+            tooltip: l10n.settings,
+            onPressed: () => context.push(AppRoutes.settings),
+            icon: const Icon(Icons.settings_outlined),
           ),
         ],
       ),
@@ -139,7 +135,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       initial: controller.state.filters,
     );
     if (filters != null) {
-      controller.setFilters(filters);
+      unawaited(controller.setFilters(filters));
     }
   }
 
@@ -173,8 +169,13 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
         rightName: match.displayName,
         rightImage: match.photoUrl == null ? null : NetworkImage(match.photoUrl!),
         onSendMessage: () {
+          final matchId = controller.state.matchedMatchId;
           controller.clearMatch();
-          context.go(AppRoutes.matches);
+          if (matchId != null && matchId.isNotEmpty) {
+            unawaited(context.push(AppRoutes.chatPath(matchId)));
+          } else {
+            context.go(AppRoutes.matches);
+          }
         },
         onKeepExploring: controller.clearMatch,
       );
@@ -208,6 +209,16 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       );
     }
 
+    if (state.hasDiscoveryError && state.current == null) {
+      return MevoraErrorView(
+        title: l10n.discoveryLoadErrorTitle,
+        message: state.errorMessage == null
+            ? l10n.discoveryLoadErrorMessage
+            : L10nErrors.message(l10n, state.errorMessage),
+        onRetry: () => unawaited(controller.refresh()),
+      );
+    }
+
     if (state.phase == LocationPromptPhase.error && state.current == null) {
       return MevoraErrorView(
         title: l10n.locationUnavailableTitle,
@@ -218,60 +229,35 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       );
     }
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          child: Row(
-            children: [
-              Text(l10n.radius, style: Theme.of(context).textTheme.labelLarge),
-              const Spacer(),
-              DropdownButton<DiscoveryRadius>(
-                value: state.radius,
-                onChanged: state.isLoading
-                    ? null
-                    : (value) {
-                        if (value != null) {
-                          unawaited(controller.setRadius(value));
-                        }
-                      },
-                items: [
-                  for (final radius in DiscoveryRadius.selectable)
-                    DropdownMenuItem(
-                      value: radius,
-                      child: Text(l10n.radiusKm(radius.kilometers)),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Expanded(child: _deck(controller, state)),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: _deck(controller, state),
     );
   }
 
   Widget _deck(DiscoveryController controller, DiscoveryFeedState state) {
     final l10n = AppLocalizations.of(context);
     if (state.isLoading && state.current == null) {
-      return const MevoraLoading.page();
+      return MevoraLoading.page(
+        message: l10n.discoveryLoading,
+        size: 96,
+      );
     }
     final current = state.current;
     if (current == null) {
       if (state.hasSeenEveryone) {
-        return MevoraEmptyState(
-          icon: Icons.explore_outlined,
-          riveAsset: MevoraRiveAssets.emptyProfiles,
-          title: l10n.discoverySeenEveryoneTitle,
-          message: l10n.discoverySeenEveryoneMessage,
-          actionLabel: l10n.exploreAgain,
-          onAction: () => unawaited(controller.exploreAgain()),
-          secondaryActionLabel:
-              state.isMockMode ? l10n.restartDemo : null,
-          onSecondaryAction: state.isMockMode
-              ? () => unawaited(controller.restartDemo())
-              : null,
-        );
+      return MevoraEmptyState(
+        icon: Icons.explore_outlined,
+        riveAsset: MevoraRiveAssets.emptyProfiles,
+        title: l10n.discoverySeenEveryoneTitle,
+        message: l10n.discoverySeenEveryoneMessage,
+        actionLabel: state.isMockMode ? l10n.restartDemo : l10n.exploreAgain,
+        onAction: () => unawaited(
+          state.isMockMode ? controller.restartDemo() : controller.exploreAgain(),
+        ),
+        secondaryActionLabel: l10n.discoveryChangePreferences,
+        onSecondaryAction: () => unawaited(_openFilters(controller)),
+      );
       }
       return MevoraEmptyState(
         icon: Icons.favorite_outline_rounded,

@@ -5,6 +5,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/features/settings/domain/entities/blocked_user_entry.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 
 class BlockedUsersPage extends StatelessWidget {
@@ -27,6 +28,7 @@ class BlockedUsersPage extends StatelessWidget {
           if (entries.isEmpty) {
             return MevoraEmptyState(
               icon: Icons.block_outlined,
+              riveAsset: MevoraRiveAssets.empty,
               title: l10n.settingsBlockedEmptyTitle,
               message: l10n.settingsBlockedEmptyMessage,
             );

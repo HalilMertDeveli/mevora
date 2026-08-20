@@ -45,11 +45,12 @@ class MevoraEmptyState extends StatelessWidget {
               if (riveAsset != null)
                 MevoraRiveAnimation(
                   asset: riveAsset!,
-                  width: 96,
-                  height: 96,
+                  width: 160,
+                  height: 160,
+                  fit: BoxFit.contain,
                   fallback: Icon(
                     icon,
-                    size: 40,
+                    size: 48,
                     color: theme.colorScheme.primary,
                   ),
                 )

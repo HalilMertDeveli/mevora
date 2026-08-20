@@ -36,6 +36,8 @@ class FakeAuthRepository implements AuthRepository {
   bool appleCalled = false;
   bool spotifyCalled = false;
   bool signedOut = false;
+  int signOutCalls = 0;
+  Duration signOutDelay = Duration.zero;
   AuthProviderId? lastLinkedProvider;
   Failure? nextFailure;
   Duration googleDelay = Duration.zero;
@@ -283,6 +285,10 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<Result<void>> signOut() async {
+    signOutCalls += 1;
+    if (signOutDelay > Duration.zero) {
+      await Future<void>.delayed(signOutDelay);
+    }
     if (nextFailure != null) {
       return Err(nextFailure!);
     }

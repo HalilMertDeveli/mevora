@@ -18,4 +18,12 @@ enum DiscoveryRadius {
       orElse: () => DiscoveryRadius.km25,
     );
   }
+
+  static DiscoveryRadius closest(num kilometers) {
+    return selectable.reduce((best, next) {
+      final bestDelta = (best.kilometers - kilometers).abs();
+      final nextDelta = (next.kilometers - kilometers).abs();
+      return nextDelta < bestDelta ? next : best;
+    });
+  }
 }

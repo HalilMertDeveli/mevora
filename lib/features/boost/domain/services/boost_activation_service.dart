@@ -4,6 +4,7 @@ class BoostActivationDecision {
   const BoostActivationDecision._({
     required this.shouldActivate,
     this.alreadyActive = false,
+    this.insufficientBalance = false,
     this.startedAt,
     this.expiresAt,
   });
@@ -26,13 +27,21 @@ class BoostActivationDecision {
     );
   }
 
+  factory BoostActivationDecision.insufficientBalance() {
+    return const BoostActivationDecision._(
+      shouldActivate: false,
+      insufficientBalance: true,
+    );
+  }
+
   final bool shouldActivate;
   final bool alreadyActive;
+  final bool insufficientBalance;
   final DateTime? startedAt;
   final DateTime? expiresAt;
 }
 
-/// Server-side policy for turning a verified purchase into a Boost.
+/// Server-side policy for consuming one Boost from wallet.
 /// [allowStacking] is false for MVP; keep the flag so duration stacking can
 /// be enabled later without rewriting callers.
 class BoostActivationService {
@@ -59,11 +68,15 @@ class BoostActivationService {
   BoostActivationDecision decide({
     required DateTime now,
     Boost? currentActive,
+    int balance = 1,
   }) {
     if (currentActive != null &&
         currentActive.isActiveAt(now) &&
         !allowStacking) {
       return BoostActivationDecision.alreadyActive();
+    }
+    if (balance < 1) {
+      return BoostActivationDecision.insufficientBalance();
     }
     return BoostActivationDecision.activate(
       startedAt: now,

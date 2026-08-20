@@ -1,11 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/di/demo_social_hub.dart';
+import 'package:mevora/core/identity/auth_uid_source.dart';
+import 'package:mevora/core/services/location/location_permission_status.dart';
+import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/features/discovery/data/datasources/mock_discovery_data_source.dart';
 import 'package:mevora/features/discovery/data/repositories/mock_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
-import 'package:mevora/core/services/location/location_permission_status.dart';
-import 'package:mevora/core/testing/fake_location_repository.dart';
+
+class _FixedUid implements AuthUidSource {
+  const _FixedUid(this.currentUid);
+
+  @override
+  final String? currentUid;
+
+  @override
+  Stream<String?> watchUid() => Stream.value(currentUid);
+}
 
 void main() {
   group('MockDiscoveryRepository', () {
@@ -25,6 +37,40 @@ void main() {
       final result = await repo.getCandidates(radius: DiscoveryRadius.km50);
       final uids = result.valueOrNull!.candidates.map((c) => c.uid);
       expect(uids, isNot(contains('mock-01')));
+    });
+
+    test('like on a user who already likes you creates a demo match', () async {
+      const uid = _FixedUid('user-1');
+      final hub = DemoSocialHub(uidSource: uid);
+      final repo = MockDiscoveryRepository(
+        selfUid: 'user-1',
+        demoHub: hub,
+        currentUid: () => 'user-1',
+      );
+      final first = await repo.getCandidates(radius: DiscoveryRadius.km50);
+      final elif = first.valueOrNull!.candidates.firstWhere(
+        (candidate) => candidate.uid == 'mock-01',
+      );
+      final result = await repo.recordDecision(
+        candidateUid: elif.uid,
+        decision: DiscoveryDecision.like,
+      );
+      expect(result.valueOrNull?.matched, isTrue);
+      expect(result.valueOrNull?.matchId, isNotNull);
+      final matches = await hub.matches.watchMatches('user-1').first;
+      expect(matches, isNotEmpty);
+      expect(matches.first.otherUserId, 'mock-01');
+    });
+
+    test('pass never creates a match', () async {
+      final repo = MockDiscoveryRepository();
+      final first = await repo.getCandidates(radius: DiscoveryRadius.km50);
+      final uid = first.valueOrNull!.candidates.first.uid;
+      final result = await repo.recordDecision(
+        candidateUid: uid,
+        decision: DiscoveryDecision.pass,
+      );
+      expect(result.valueOrNull?.matched, isFalse);
     });
 
     test('restartDemo restores full stack', () async {

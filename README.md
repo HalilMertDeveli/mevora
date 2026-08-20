@@ -18,7 +18,7 @@ Mevora is a dating app for iOS and Android that helps people find connections th
 - **Matches** — Like / Pass / Super Like; a match is created when both people like each other
 - **Chat** — messaging between matched users
 - **1:1 video** — LiveKit-ready call path (feature-flagged; media SDK is swappable)
-- **Boost IAP only** — a one-time consumable that boosts Discovery visibility. No subscriptions, no coin wallet
+- **Boost IAP only** — consumable packs (1 / 5 / 10) that credit a Boost balance, then 30-minute Discovery visibility. No subscriptions, Stripe, or generic coins
 - **Localization** — Turkish (`tr`) and English (`en`)
 
 ---

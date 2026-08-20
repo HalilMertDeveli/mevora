@@ -28,6 +28,15 @@ abstract class DiscoveryRepository {
   });
 }
 
+/// Optional development-only deck reset. Production repositories omit this.
+abstract class DemoDiscoverySupport {
+  bool get supportsDemoRestart;
+
+  void restartDemo();
+
+  bool isExhaustedForRadius(int radiusKm);
+}
+
 class DiscoveryDecisionResult {
   const DiscoveryDecisionResult({this.matched = false, this.matchId});
 

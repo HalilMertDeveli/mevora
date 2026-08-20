@@ -299,7 +299,7 @@
   },
   "distanceLessThanOne": "1 km'den yakın",
   "distanceFar": "100+ km uzakta",
-  "compatibilityPercent": "%{percent} uyum",
+  "compatibilityPercent": "{percent}% Uyumlu",
   "@compatibilityPercent": {
     "placeholders": {
       "percent": {"type": "int"}
@@ -333,7 +333,7 @@
   "maxAge": "En yüksek yaş",
   "maxDistance": "En fazla mesafe",
   "matchesTitle": "Eşleşmeler",
-  "matchesEmptyTitle": "Henüz eşleşme yok",
+  "matchesEmptyTitle": "Henüz bir eşleşmen yok.",
   "matchesEmptyMessage": "Karşılıklı beğeniler burada sohbet olarak görünür.",
   "newMatch": "Yeni eşleşme",
   "chatHint": "Mesaj yaz...",
@@ -460,6 +460,38 @@
       "minutes": {"type": "int"}
     }
   },
+  "boostSpotlight": "Öne Çıkar",
+  "boostPackOne": "1 Boost",
+  "boostPackFive": "5 Boost",
+  "boostPackTen": "10 Boost",
+  "boostPackCount": "{count} Boost",
+  "@boostPackCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "boostBalance": "{count} Boost",
+  "@boostBalance": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "boostBuyPack": "Satın al",
+  "boostCreditedTitle": "Boost hesabına eklendi",
+  "boostCreditedMessage": "{count} Boost hesabına tanımlandı. Hazır olduğunda aktif et.",
+  "@boostCreditedMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "boostInsufficientBalance": "Aktif etmek için Boost bakiyen yok.",
+  "boostHistoryTitle": "Boost geçmişi",
+  "boostHistoryEmpty": "Henüz Boost işlemin yok.",
+  "boostHistoryPurchase": "Satın alma",
+  "boostHistoryActivation": "Aktivasyon",
+  "boostActiveBadge": "Boost aktif",
+  "boostActivating": "Boost aktif ediliyor...",
+  "boostNoBalance": "Boost aktif etmek için bir paket satın al.",
   "radiusKm": "{km} km",
   "@radiusKm": {
     "placeholders": {
@@ -567,5 +599,18 @@
   "settingsProfileSaved": "Profil kaydedildi.",
   "citySelectTitle": "Şehir Seç",
   "citySelectSearch": "İl ara…",
-  "citySelectNone": "İl bulunamadı"
+  "citySelectNone": "İl bulunamadı",
+  "discoveryLoading": "Uyumlu kişileri buluyoruz...",
+  "discoveryLoadErrorTitle": "Profilleri yüklerken bir sorun oluştu.",
+  "discoveryLoadErrorMessage": "Bağlantını kontrol et ve tekrar dene.",
+  "discoveryChangePreferences": "Keşfetme tercihlerini değiştir",
+  "itsAMatchHeadline": "BİR EŞLEŞMENİZ VAR!",
+  "demoProfileBadge": "Örnek",
+  "sharedHobbiesCount": "{count} ortak hobi",
+  "@sharedHobbiesCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "tabSettings": "Ayarlar"
 }

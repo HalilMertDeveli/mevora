@@ -26,6 +26,12 @@ class FirebaseCrashReporter implements CrashReporter {
   static bool _isOptionalAssetFailure(Object error) {
     final message = error.toString();
     return message.contains('RiveFileLoaderException') ||
-        message.contains('Unable to load asset: "assets/rive/');
+        message.contains('Unable to load asset: "assets/rive/') ||
+        // Firestore MethodChannel race on cancelled transactions (non-fatal).
+        message.contains('Future already completed') ||
+        (message.contains('MissingPluginException') &&
+            message.contains('firebase_firestore/transaction')) ||
+        message.contains('permission-denied') ||
+        message.contains('PERMISSION_DENIED');
   }
 }

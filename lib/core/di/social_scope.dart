@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/calls/domain/services/video_call_provider.dart';
@@ -65,6 +67,7 @@ class SocialScope extends StatefulWidget {
 class SocialScopeState extends State<SocialScope> {
   late final MatchesController matchesController;
   late final CallController callController;
+  StreamSubscription<String?>? _uidSub;
 
   MatchRepository get matchRepository => widget.services.matchRepository;
   LikeRepository get likeRepository => widget.services.likeRepository;
@@ -88,6 +91,17 @@ class SocialScopeState extends State<SocialScope> {
       service: widget.services.videoCallService,
       provider: widget.services.videoCallProvider,
     );
+    _uidSub = widget.services.uidSource.watchUid().listen((uid) {
+      matchesController.start();
+      if (uid != null) {
+        callController.watchIncoming(uid);
+      } else {
+        callController.stopIncoming();
+      }
+    }, onError: (_) {
+      matchesController.start();
+      callController.stopIncoming();
+    });
     final uid = widget.services.uidSource.currentUid;
     if (uid != null) {
       callController.watchIncoming(uid);
@@ -96,6 +110,7 @@ class SocialScopeState extends State<SocialScope> {
 
   @override
   void dispose() {
+    unawaited(_uidSub?.cancel());
     matchesController.dispose();
     callController.dispose();
     super.dispose();

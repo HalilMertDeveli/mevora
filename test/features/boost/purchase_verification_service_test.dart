@@ -94,4 +94,15 @@ void main() {
     expect(decision.outcome, VerificationOutcome.proceed);
     expect(decision.purchaseId, 'ios_1000000123');
   });
+
+  test('pack SKUs are allowed and map to a stable purchase id', () {
+    final decision = service.decide(
+      uid: 'u1',
+      productId: 'com.mevora.app.boost.5',
+      transactionId: 'GPA.pack5',
+      platform: PurchasePlatform.android,
+    );
+    expect(decision.outcome, VerificationOutcome.proceed);
+    expect(decision.purchaseId, 'android_GPA.pack5');
+  });
 }

@@ -9,6 +9,7 @@ abstract final class RemoteConfigKeys {
   static const String videoCallEnabled = 'videoCallEnabled';
   static const String premiumEnabled = 'premiumEnabled';
   static const String maintenanceMode = 'maintenanceMode';
+  static const String boostCatalogJson = 'boostCatalogJson';
 }
 
 class MevoraRemoteConfig {
@@ -19,6 +20,7 @@ class MevoraRemoteConfig {
     this.videoCallEnabled = false,
     this.premiumEnabled = false,
     this.maintenanceMode = false,
+    this.boostCatalogJson = defaultBoostCatalogJson,
   });
 
   final int minimumAge;
@@ -27,6 +29,17 @@ class MevoraRemoteConfig {
   final bool videoCallEnabled;
   final bool premiumEnabled;
   final bool maintenanceMode;
+
+  /// JSON array of Boost packs. Firestore `boostProducts` is authoritative;
+  /// this is an offline/default overlay, never a price charged to the user.
+  final String boostCatalogJson;
+
+  static const String defaultBoostCatalogJson =
+      '['
+      '{"productId":"com.mevora.app.boost.1","boostCount":1,"displayOrder":0,"fallbackPriceAmount":49.99,"fallbackCurrency":"TRY","durationMinutes":30},'
+      '{"productId":"com.mevora.app.boost.5","boostCount":5,"displayOrder":1,"fallbackPriceAmount":199.99,"fallbackCurrency":"TRY","durationMinutes":30},'
+      '{"productId":"com.mevora.app.boost.10","boostCount":10,"displayOrder":2,"fallbackPriceAmount":349.99,"fallbackCurrency":"TRY","durationMinutes":30}'
+      ']';
 
   static const MevoraRemoteConfig defaults = MevoraRemoteConfig();
 

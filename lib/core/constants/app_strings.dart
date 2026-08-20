@@ -142,6 +142,9 @@ abstract final class AppStrings {
       'Satın alma doğrulanamadı. Biraz sonra tekrar dene.';
   static const String boostAlreadyProcessed =
       'Bu satın alma zaten işlendi.';
+  static const String boostInsufficientBalance =
+      'Aktif etmek için Boost bakiyen yok.';
+  static const String boostCreditedTitle = 'Boost hesabına eklendi';
   static const String boostLoadingProduct = 'Mağaza bilgileri yükleniyor...';
   static const String boostBackToDiscovery = 'Keşfe dön';
   static const String boostButtonTooltip = 'Boost';

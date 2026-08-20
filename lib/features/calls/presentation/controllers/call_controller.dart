@@ -8,8 +8,6 @@ import 'package:mevora/features/calls/domain/call_state_machine.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
 import 'package:mevora/features/calls/domain/services/video_call_provider.dart';
 import 'package:mevora/features/calls/presentation/call_strings.dart';
-import 'package:mevora/features/chat/presentation/chat_strings.dart';
-import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/safety/presentation/safety_strings.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_dialog.dart';
@@ -40,7 +38,7 @@ class CallController extends ChangeNotifier {
   Timer? _ringTimer;
 
   void watchIncoming(String uid) {
-    _incomingSub?.cancel();
+    unawaited(_incomingSub?.cancel());
     _incomingSub = _service.watchIncoming(uid).listen((incoming) {
       session = incoming;
       lifecycle = CallStateMachine.transition(
@@ -48,7 +46,14 @@ class CallController extends ChangeNotifier {
         CallEvent.receiveIncoming,
       );
       notifyListeners();
+    }, onError: (_) {
+      // Permission-denied after logout must not crash the app.
     });
+  }
+
+  void stopIncoming() {
+    unawaited(_incomingSub?.cancel());
+    _incomingSub = null;
   }
 
   Future<void> startCall({
@@ -176,8 +181,19 @@ class CallController extends ChangeNotifier {
     });
   }
 
+  bool _closed = false;
+
+  @override
+  void notifyListeners() {
+    if (_closed) {
+      return;
+    }
+    super.notifyListeners();
+  }
+
   @override
   void dispose() {
+    _closed = true;
     _ringTimer?.cancel();
     unawaited(_incomingSub?.cancel());
     unawaited(_mediaSub?.cancel());

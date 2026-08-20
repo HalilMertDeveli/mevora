@@ -44,7 +44,13 @@ service cloud.firestore {
         && request.resource.data.get('isBanned', false) == false
         && request.resource.data.get('isVerified', false) == false
         && request.resource.data.get('phoneVerified', false) == false
-        && request.resource.data.get('accountStatus', 'active') != 'banned';
+        && request.resource.data.get('accountStatus', 'active') != 'banned'
+        && !request.resource.data.keys().hasAny([
+          'boostBalance',
+          'boostStatus',
+          'boostExpiresAt',
+          'boostActive'
+        ]);
 
       allow update: if isOwner(userId)
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
@@ -55,7 +61,13 @@ service cloud.firestore {
         && request.resource.data.get('phoneVerified', resource.data.get('phoneVerified', false))
           == resource.data.get('phoneVerified', false)
         && request.resource.data.get('accountStatus', resource.data.get('accountStatus', 'active'))
-          == resource.data.get('accountStatus', 'active');
+          == resource.data.get('accountStatus', 'active')
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'boostBalance',
+          'boostStatus',
+          'boostExpiresAt',
+          'boostActive'
+        ]);
 
       allow delete: if false;
 
@@ -95,6 +107,11 @@ service cloud.firestore {
       }
 
       match /boosts/{boostId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /boostWallet/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
@@ -248,6 +265,11 @@ service cloud.firestore {
 
     match /purchases/{purchaseId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    match /boostProducts/{productId} {
+      allow read: if isAuthenticated();
       allow create, update, delete: if false;
     }
 

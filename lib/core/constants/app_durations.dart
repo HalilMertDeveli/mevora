@@ -12,4 +12,5 @@ abstract final class AppDurations {
   static const Duration pass = Duration(milliseconds: 240);
   static const Duration long = Duration(milliseconds: 400);
   static const Duration match = Duration(milliseconds: 800);
+  static const Duration relationshipPrompt = Duration(minutes: 30);
 }

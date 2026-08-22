@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/images/login-hero.jpg" alt="Mevora" width="720" />
+  <img src="docs/images/mevora-hero.png" alt="Mevora login hero" width="850" />
 </p>
 
-<h1 align="center">Mevora</h1>
+<h1 align="center">💜 Mevora</h1>
 
 <p align="center">
   <strong>Discover people. Understand compatibility. Start something meaningful.</strong>
@@ -70,10 +70,34 @@
 
 ## Screenshots & visuals
 
-Repository visuals are **project assets** (login hero + discovery mock portraits). They are not full UI screenshots of every screen yet.
+Captured from the **development flavor** on Android emulator plus in-app portrait assets used on Discover cards. Paths are relative so images render on GitHub.
+
+### App screens (live UI captures)
 
 <p align="center">
-  <img src="docs/images/login-hero.jpg" alt="Login hero" width="220" />
+  <img src="docs/images/mevora-login.png" alt="Login welcome" width="220" />
+  <img src="docs/images/mevora-register.png" alt="Create account" width="220" />
+  <img src="docs/images/mevora-login-email.png" alt="Email sign-in" width="220" />
+</p>
+
+<p align="center">
+  <img src="docs/images/mevora-phone.png" alt="Phone sign-in" width="220" />
+  <img src="docs/images/mevora-discover-sample.png" alt="Discover card photo sample" width="220" />
+  <img src="docs/images/mevora-profile-sample.png" alt="Profile photo sample" width="220" />
+</p>
+
+| Screen | File | Notes |
+| --- | --- | --- |
+| Login / welcome | `docs/images/mevora-login.png` | Google · Apple · email · phone entry |
+| Register | `docs/images/mevora-register.png` | Account creation flow |
+| Email sign-in | `docs/images/mevora-login-email.png` | Email + password form |
+| Phone sign-in | `docs/images/mevora-phone.png` | OTP entry screen |
+| Hero banner | `docs/images/mevora-hero.png` | Login hero asset (`login_background.jpg`) |
+| Discover portraits | `docs/images/portrait-0N.jpg` | Mock portraits used on Discover cards |
+
+### Discovery portrait samples (in-app assets)
+
+<p align="center">
   <img src="docs/images/portrait-01.jpg" alt="Portrait sample" width="120" />
   <img src="docs/images/portrait-02.jpg" alt="Portrait sample" width="120" />
   <img src="docs/images/portrait-03.jpg" alt="Portrait sample" width="120" />
@@ -93,7 +117,7 @@ Repository visuals are **project assets** (login hero + discovery mock portraits
 | Music tab | Spotify-linked taste UI | Implemented |
 | Boost / IAP | consumable packs | Implemented |
 | Video calls | LiveKit provider | Implemented, **feature flag off by default** |
-| Full UI screenshot set | — | **Not checked in yet** |
+| Full authenticated UI screenshot set | Discover · Match · Chat tabs | **Partial** — auth screens captured; main tabs need signed-in device run |
 
 ### Screen coverage map
 
@@ -594,6 +618,8 @@ Public client IDs may be passed via `--dart-define` (e.g. `SPOTIFY_CLIENT_ID`). 
 
 | Commit | Summary |
 | --- | --- |
+| `docs` | Visual README PNG assets + live auth screen captures |
+| `4853442` | README screen map + production smoke flow |
 | `901fafd` | Comprehensive visual README with verified project analysis |
 | `8946ffb` | Production hardening, photo moderation pipeline, smoke tests, compliance tests |
 | `11fbba3` | Relationship survey timing tuning |

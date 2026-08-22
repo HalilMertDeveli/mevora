@@ -1,193 +1,407 @@
-# Mevora
+<p align="center">
+  <img src="docs/images/login-hero.jpg" alt="Mevora" width="720" />
+</p>
 
-**Mevora** is a Flutter dating and social discovery app for iOS and Android. It helps people find connections they are likely to click with — through shared interests, music taste, relationship views, and a dedicated compatibility engine — not simply whoever happens to be nearby.
-
-| | |
-| --- | --- |
-| **Package** | `com.mevora.app` |
-| **Platforms** | iOS · Android |
-| **Stack** | Flutter · Firebase · Cloud Functions · LiveKit (video) |
-| **Locales** | Turkish (`tr`) · English (`en`) |
-| **Status** | Private / proprietary |
+<h1 align="center">Mevora</h1>
 
 <p align="center">
-  <img src="docs/images/login-hero.jpg" alt="Mevora login hero" width="720" />
+  <strong>Discover people. Understand compatibility. Start something meaningful.</strong>
 </p>
 
 <p align="center">
-  <img src="docs/images/portrait-01.jpg" alt="Discovery portrait sample" width="140" />
-  <img src="docs/images/portrait-02.jpg" alt="Discovery portrait sample" width="140" />
-  <img src="docs/images/portrait-03.jpg" alt="Discovery portrait sample" width="140" />
-  <img src="docs/images/portrait-04.jpg" alt="Discovery portrait sample" width="140" />
-  <img src="docs/images/portrait-05.jpg" alt="Discovery portrait sample" width="140" />
+  Mevora is a Flutter + Firebase dating app for iOS and Android. It combines swipe discovery with interest matching, music taste signals, relationship-view questions, and server-enforced safety — without exposing exact GPS to other users.
 </p>
 
-> Visuals above are **project assets** used by the app (login hero and discovery mock portraits). Full UI screenshots are not checked into this repository yet.
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white" alt="Flutter" />
+  <img src="https://img.shields.io/badge/Dart-3.11+-0175C2?logo=dart&logoColor=white" alt="Dart" />
+  <img src="https://img.shields.io/badge/Firebase-Backend-FFCA28?logo=firebase&logoColor=black" alt="Firebase" />
+  <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android-lightgrey" alt="Platform" />
+  <img src="https://img.shields.io/badge/Locale-EN%20%7C%20TR-blue" alt="Locales" />
+  <img src="https://img.shields.io/badge/Status-Private%20%2F%20Active%20Development-orange" alt="Status" />
+</p>
+
+<p align="center">
+  <code>com.mevora.app</code> · production Firebase project: <code>mevora-production</code>
+</p>
 
 ---
 
 ## Table of contents
 
-- [Highlights](#highlights)
-- [Product features](#product-features)
+- [At a glance](#at-a-glance)
+- [Screenshots & visuals](#screenshots--visuals)
+- [What is Mevora?](#what-is-mevora)
+- [How it works](#how-it-works)
+- [Compatibility engine](#compatibility-engine)
+- [Relationship question system](#relationship-question-system)
+- [Safety & trust](#safety--trust)
+- [Photo moderation](#photo-moderation)
+- [Feature matrix](#feature-matrix)
+- [Tech stack](#tech-stack)
 - [Architecture](#architecture)
+- [Firebase architecture](#firebase-architecture)
 - [Project structure](#project-structure)
-- [Firebase & backend](#firebase--backend)
-- [Environments](#environments)
-- [Getting started](#getting-started)
+- [Security](#security)
 - [Testing](#testing)
-- [Localization](#localization)
-- [Animations (Rive)](#animations-rive)
-- [Security & privacy](#security--privacy)
+- [Getting started](#getting-started)
+- [Environments & secrets](#environments--secrets)
+- [Recent development](#recent-development)
+- [Roadmap](#roadmap)
 - [Documentation map](#documentation-map)
-- [Secrets](#secrets)
 - [License](#license)
 
 ---
 
-## Highlights
+## At a glance
 
-- **Multi-provider auth** — email/password, Google, Apple, phone OTP, and Spotify (OAuth + custom token)
-- **Discovery with compatibility** — swipe feed (Like / Pass / Super Like) scored by a pluggable compatibility engine
-- **Music match** — Spotify taste sync, same-taste profiles, weekly music stats
-- **Relationship match** — timed relationship Q&A prompts and view-based compatibility suggestions
-- **Match Score** — server-side score seeding, match bonuses, and post-match feedback
-- **Chat** — text, photo, GIF, and voice messages between matched users
-- **1:1 video** — signaling via Cloud Functions; media through LiveKit (feature-flagged) with a mock provider for demos
-- **Boost IAP** — consumable boost packs only (no subscriptions in production path)
-- **Location-aware ranking** — distance labels from the backend; **exact GPS is never exposed to other clients**
-- **TR / EN** localization via Flutter gen-l10n
-- **Compact Rive motion** — loading, empty, match celebration, and micro page accents (never full-screen blockers)
+| | |
+| --- | --- |
+| **Type** | 18+ dating & social discovery |
+| **Architecture** | Feature-first Clean Architecture |
+| **State** | `ChangeNotifier` controllers + `InheritedWidget` scopes |
+| **Routing** | `go_router` with tab shell |
+| **Backend** | Firebase Auth, Firestore, Storage, Cloud Functions, FCM |
+| **Locales** | English · Turkish (`gen-l10n`) |
+| **Store status** | Private repository — not a public store release claim |
 
 ---
 
-## Product features
+## Screenshots & visuals
 
-### Authentication
+Repository visuals are **project assets** (login hero + discovery mock portraits). They are not full UI screenshots of every screen yet.
 
-| Method | Notes |
+<p align="center">
+  <img src="docs/images/login-hero.jpg" alt="Login hero" width="220" />
+  <img src="docs/images/portrait-01.jpg" alt="Portrait sample" width="120" />
+  <img src="docs/images/portrait-02.jpg" alt="Portrait sample" width="120" />
+  <img src="docs/images/portrait-03.jpg" alt="Portrait sample" width="120" />
+  <img src="docs/images/portrait-04.jpg" alt="Portrait sample" width="120" />
+  <img src="docs/images/portrait-05.jpg" alt="Portrait sample" width="120" />
+  <img src="docs/images/portrait-06.jpg" alt="Portrait sample" width="120" />
+</p>
+
+| Area | In app | Status |
+| --- | --- | --- |
+| Login / welcome | `authentication` feature | Implemented |
+| Phone OTP | `/phone` flow | Implemented |
+| Onboarding & profile | multi-step wizard | Implemented |
+| Discover / swipe | card stack + actions | Implemented |
+| Match celebration | Rive accent | Implemented |
+| Chat | text, image, GIF, voice | Implemented |
+| Music tab | Spotify-linked taste UI | Implemented |
+| Boost / IAP | consumable packs | Implemented |
+| Video calls | LiveKit provider | Implemented, **feature flag off by default** |
+| Full UI screenshot set | — | **Not checked in yet** |
+
+---
+
+## What is Mevora?
+
+Mevora helps people find connections they are likely to click with through:
+
+- **Personalized discovery** — server-side candidate feed with filters (age, distance, gender prefs, activity window)
+- **Compatibility signals** — shared interests, relationship goals, music taste, relationship Q&A alignment
+- **Match Score** — server-side scoring and post-match feedback prompts
+- **Safety tooling** — 18+ gate, report, block, unmatch, account deletion, photo moderation pipeline
+- **Privacy-first location** — distance labels from Cloud Functions; other users never receive raw coordinates
+
+Mevora is **not** marketed here as “AI-powered matching” or “guaranteed matches.” Signals are rule-based and server-validated.
+
+---
+
+## How it works
+
+```mermaid
+flowchart TD
+    A[Sign in] --> B[Onboarding & profile]
+    B --> C[Upload photos]
+    C --> D[Server moderation]
+    D --> E[Discover feed]
+    E --> F{Like / Pass / Super Like}
+    F -->|Mutual like| G[Match]
+    G --> H[Chat]
+    H --> I[Block / Report / Unmatch]
+    I --> J[Account deletion optional]
+```
+
+**Typical user path**
+
+1. Authenticate (email, Google, Apple, phone, optional Spotify when enabled)
+2. Complete onboarding (18+, bio, interests, lifestyle, min **3** photos)
+3. `completeOnboarding` callable validates age + approved photos server-side
+4. Discovery loads via `getDiscoveryCandidates` / `getDiscoveryFeed`
+5. Mutual likes create matches (`recordSwipe` / `recordDiscoveryDecision`)
+6. Chat writes to `matches/{id}/messages` under Firestore rules
+7. Safety actions call `blockUser`, `reportUser`, `unmatchUser`
+8. `deleteUserAccount` removes Auth + Firestore + Storage data
+
+---
+
+## Compatibility engine
+
+Discovery ranking combines several **independent signals**. Values below are taken from the current Cloud Functions / domain code.
+
+### Profile compatibility score (`compatibilityScore`)
+
+Used in `getDiscoveryCandidates` (`functions/src/backend.ts`):
+
+| Signal | Rule | Max contribution |
+| --- | --- | --- |
+| Shared interests | `min(25, sharedCount × 5)` | **25** |
+| Same relationship goal | `+20` if goals match | **20** |
+| **Total** | rounded integer | **45** |
+
+This score is **not** a percentage and does not alone create a match.
+
+### Music compatibility (separate field)
+
+Client calculator (`music_compatibility.dart`):
+
+| Component | Weight |
 | --- | --- |
-| Email / password | Register, sign-in, password reset |
-| Google Sign-In | `google_sign_in` + Firebase Auth |
-| Sign in with Apple | Native Apple credential flow |
-| Phone OTP | Firebase Phone Auth (+ SMS); screens under `/phone` |
-| Spotify | OAuth deep link → Cloud Function `spotifyCompleteAuth` → custom Firebase token. Gated by `FeatureFlags.spotifyLoginEnabled` (default off until configured). |
+| Shared tracks | 40% |
+| Shared artists | 30% |
+| Shared genres | 20% |
+| Recent listening habits | 10% |
 
-Composition lives in `lib/features/authentication/data/auth_composition.dart`.
+Backend also applies a **ranking bonus** (`musicRankingBonus`) — music never replaces dating compatibility or auto-creates matches.
 
-### Onboarding & profile
+### Relationship compatibility (separate field)
 
-Multi-step onboarding (basics, interests, education, relationship goal, lifestyle, bio, photos). Profile photos upload through Firebase Storage. Settings cover edit profile, discovery preferences, privacy, blocked users, notifications, language, and account controls.
+When both users answered the same relationship questions:
 
-### Discovery & matching
+```text
+score = round(alignedCount / sharedQuestionCount × 100)
+```
 
-- Card stack with swipe gestures and action buttons
-- Filters (age, distance, relationship goal, and related preferences)
-- Mutual likes create a match (server-authoritative `recordSwipe`)
-- Match celebration UI with compact Rive accent
-- Bottom shell tabs: **Discovery · Matches · Music · Profile**
+Relationship suggestions from `getRelationshipMatches` are **not** automatic mutual swipe matches.
 
-### Match Score
+### Other discovery filters (server-side)
 
-Feature module `lib/features/match_score/` with Cloud Functions for seeding on user create, awarding bonuses on match, and collecting / dismissing feedback prompts.
+- Self, blocked, liked, passed, active match partners excluded
+- 90-day activity window on `users.lastActiveAt`
+- Gender preference mutual check
+- Min **3 approved** photos, 18+, account eligibility
+- Radius presets: 5 / 10 / 25 / 50 / 100 km
+- Boost visibility sorting (`sortByBoostVisibility`)
 
-### Music Match
+---
 
-- Link Spotify account and sync taste
-- Same-taste discovery list
-- Weekly music stats UI
-- Client talks to Functions (`spotifyLinkMusic`, sync / disconnect helpers); music compatibility helpers also feed discovery ranking on the backend
+## Relationship question system
 
-### Relationship Match
+Implemented in `lib/features/relationship/` with **110+ catalog questions**, each with **3 answer options**, presented in fixed **3-question sessions** so two users can share answer keys.
 
-- Periodic in-app relationship questions (`RelationshipPromptHost`)
-- Answers stored via `saveRelationshipAnswer`
-- Suggestions via `getRelationshipMatches`
-- Compatibility badges on discovery profile details when scores exist
+### Topics in catalog (`RelationshipTopic`)
 
-### Chat
-
-| Type | Support |
+| Topic | Examples of theme |
 | --- | --- |
-| Text | Yes |
-| Image / photo | Yes (Storage-backed) |
-| GIF | Message type present |
-| Voice | Record + playback (`record`, `audioplayers`) |
-| Presence / typing | Yes |
+| `jealousy` | Boundaries around jealousy |
+| `trust` | Trust expectations |
+| `loyalty` | Commitment signals |
+| `communication` | How you talk through conflict |
+| `boundaries` | Personal limits |
+| `socialLife` | Nights out, social energy |
+| `friendship` | Friend vs partner balance |
+| `personalSpace` | Alone time |
+| `futurePlans` | Long-term direction |
+| `money` | Financial habits |
+| `flirting` | Flirting boundaries |
+| `exes` | Past relationships |
+| `expectations` | What you expect from a partner |
 
-Unmatch, block, and report flows hang off chat / safety UI.
+Prompts and answers are localized (**EN / TR**). Cloud Functions: `saveRelationshipAnswer`, `getRelationshipAnswered`, `getRelationshipMatches`, `completeRelationshipTest`.
 
-### Video calls
+```mermaid
+flowchart LR
+    Q[3-question session] --> A[User answers]
+    A --> S[Stored per user]
+    S --> C[Compatibility key]
+    C --> R[Discovery / suggestion signals]
+```
 
-- Domain state machine + `VideoCallProvider` abstraction
-- **LiveKit** provider for Firebase-backed social graph
-- **Mock** provider for in-memory / demo graphs
-- Cloud Functions: `createVideoCall`, `respondToVideoCall`, `endVideoCall`, `expireVideoCall`
-- Gated by `FeatureFlags.videoCallsEnabled` (default **off** until configured)
+---
 
-### Boost (payments)
+## Safety & trust
 
-Consumable in-app purchases only (`in_app_purchase`):
+| Feature | Status | Notes |
+| --- | --- | --- |
+| 18+ age gate | Implemented | Client validators + `completeOnboarding` + `profileSafety.ts` |
+| Server-side onboarding flags | Implemented | Clients cannot set `isDiscoverable` directly |
+| Report user | Implemented | Whitelist reasons, 20/day limit |
+| Block user | Implemented | `blocks/` + `users/.../blockedUsers/` |
+| Unmatch | Implemented | Deactivates match server-side |
+| Message rate limit | Implemented | 20/min per match, 60/min global |
+| Discovery safety sheet | Implemented | Hide / block / report from profile |
+| Account deletion | Implemented | `deleteUserAccount` callable |
+| Location privacy | Implemented | GPS owner-only; others get distance labels |
+| Photo moderation | Implemented | Technical pipeline, no AI (see below) |
+| Profile read enumeration hardening | In progress | `profiles` still readable to authenticated users |
+| AI content moderation | Planned | Architecture allows future provider |
 
-- Packs such as `com.mevora.app.boost.1` / `.5` / `.10`
-- Server verification: `verifyBoostPurchase`, `activateBoost`, `expireBoost`
-- Temporary Discovery visibility boost (owner-only documents)
+---
 
-Subscriptions exist only as a **disabled placeholder** (`DisabledSubscriptionRepository`) — not a live product path.
+## Photo moderation
 
-### Location
+Current implementation is **server-controlled** and does **not** use AI/ML image classification.
 
-Permission + capture via `geolocator` / `permission_handler`. Coarse location is written for ranking; clients receive **distance labels** from Functions, not raw coordinates of other users.
+```mermaid
+stateDiagram-v2
+    [*] --> pending: Client upload to Storage pending/
+    pending --> processing: onProfilePhotoUploaded
+    processing --> approved: Technical checks pass
+    processing --> manual_review: Dimensions unverified
+    processing --> rejected: Invalid type/size/corrupt
+    manual_review --> approved: Manual ops (future UI)
+    reportUser --> manual_review: Report pipeline
+    approved --> [*]: Visible in discovery
+    rejected --> [*]: Hidden from discovery
+```
 
-### Safety & notifications
+| Stage | Owner |
+| --- | --- |
+| Upload | Client → `users/{uid}/profile/pending/` |
+| Publish to `photos/` | Cloud Functions only |
+| Status fields | `moderationStatus`, `moderatedBy`, `moderationReason` |
+| Client escalation guard | `enforceProfilePhotoModeration` trigger |
 
-- Report / block
-- FCM push routing (`firebase_messaging`)
-- Crashlytics + Analytics + App Check wired in bootstrap
+Details: [docs/PHOTO_MODERATION.md](docs/PHOTO_MODERATION.md)
+
+---
+
+## Feature matrix
+
+| Feature | Status |
+| --- | --- |
+| Email / password auth | Implemented |
+| Google Sign-In | Implemented |
+| Sign in with Apple | Implemented |
+| Phone OTP | Implemented |
+| Spotify login | Implemented, **off by default** (`FeatureFlags.spotifyLoginEnabled`) |
+| Multi-step onboarding | Implemented |
+| Profile edit & settings | Implemented |
+| Photo upload (min 3, max 6) | Implemented |
+| Discover / swipe | Implemented |
+| Like / pass / super like | Implemented |
+| Mutual match creation | Implemented (server authoritative) |
+| Compatibility scoring | Implemented |
+| Relationship questions | Implemented |
+| Music match / Spotify taste | Implemented |
+| Match Score & feedback | Implemented |
+| Text / image / GIF / voice chat | Implemented |
+| Push notifications (FCM) | Implemented |
+| Block / report / unmatch | Implemented |
+| Boost IAP (consumable) | Implemented |
+| Subscriptions | **Disabled placeholder** only |
+| Video calls (LiveKit) | Implemented, **feature flag off by default** |
+| Photo moderation pipeline | Implemented (technical, no AI) |
+| Firebase App Check | Implemented |
+| Crashlytics & Analytics | Implemented |
+| Firebase Remote Config SDK | **Not wired** — local defaults via `MevoraRemoteConfig` |
+| Automated device E2E | Partial (`integration_test/`, needs device) |
+| Backend production smoke harness | Implemented (`tools/smoke/`) |
+| CI workflow | Implemented (`.github/workflows/smoke.yml`) |
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Mobile | Flutter |
+| Language | Dart `^3.11.5` |
+| Navigation | `go_router` |
+| State / DI | `ChangeNotifier` + scope widgets |
+| Auth | Firebase Auth |
+| Database | Cloud Firestore |
+| Files | Firebase Storage |
+| Logic | Cloud Functions (Node 20, TypeScript) |
+| Push | Firebase Cloud Messaging |
+| Crashes | Firebase Crashlytics |
+| Analytics | Firebase Analytics |
+| Attestation | Firebase App Check |
+| Maps / location | `geolocator`, server-side distance |
+| Purchases | `in_app_purchase` (Boost packs) |
+| Motion | Rive |
+| Video | LiveKit (`livekit_client`) |
+| Voice chat media | `record`, `audioplayers` |
 
 ---
 
 ## Architecture
 
-Mevora uses **feature-first Clean Architecture** with a single DI style: constructor injection + `InheritedWidget` scopes. There is **no** Riverpod, Bloc, or GetIt.
-
-```text
-UI (widgets / pages)
-        ↓
-Controller (ChangeNotifier)
-        ↓
-Use case (only when logic is non-trivial)
-        ↓
-Repository interface (domain)
-        ↓
-Repository implementation (data)
-        ↓
-Firebase · device SDKs · Cloud Functions · LiveKit
+```mermaid
+flowchart TB
+    subgraph Presentation
+        Pages[Pages / Widgets]
+        Ctrl[Controllers]
+    end
+    subgraph Domain
+        Ent[Entities & policies]
+        Repo[Repository interfaces]
+    end
+    subgraph Data
+        Impl[Repository implementations]
+        DS[Firebase / SDK datasources]
+    end
+    subgraph Backend
+        CF[Cloud Functions]
+        FS[(Firestore)]
+        ST[(Storage)]
+    end
+    Pages --> Ctrl
+    Ctrl --> Repo
+    Impl --> Repo
+    Impl --> DS
+    DS --> FS
+    DS --> ST
+    DS --> CF
+    CF --> FS
+    CF --> ST
 ```
 
-### Layers
+**Rules**
 
-| Layer | Owns | Must not own |
-| --- | --- | --- |
-| **Presentation** | Widgets, controllers, navigation, l10n-facing copy | Firebase types, Firestore |
-| **Domain** | Entities, policies, repository contracts | Flutter UI widgets, Firebase SDKs |
-| **Data** | Firebase/SDK adapters, DTOs, mappers → `AppException` / `Failure` | Widget trees |
-| **Core** | Config, routing, theme, errors, DI scopes, shared ports | Feature internals (except composition roots) |
+- No Riverpod / Bloc / GetIt — constructor injection + scopes (`AuthScope`, `DiscoveryScope`, …)
+- Presentation never imports Firebase SDK types directly for business rules
+- Matching rules oracle: `MatchEngine` (shared with Functions semantics)
 
-### Dependency rules
+Deep dive: [ARCHITECTURE.md](ARCHITECTURE.md)
 
-1. `presentation` → `domain` (+ `core`, `shared`)
-2. `domain` → `core` only
-3. `data` → `domain` + SDKs
-4. Features talk through **domain types / repository interfaces**, never another feature’s `data/` or private widgets
+---
 
-### State & DI
+## Firebase architecture
 
-- Controllers: `AuthController`, `DiscoveryController`, `ChatController`, `CallController`, `MusicController`, `RelationshipController`, …
-- Scopes: `AuthScope`, `SocialScope`, `DiscoveryScope`, `BoostScope`, `MusicScope`, `MatchScoreScope`, `RelationshipScope`, `LocationScope`, …
-- Routing: **`go_router`** with `StatefulShellRoute` for the four main tabs
+```mermaid
+flowchart LR
+    App[Flutter App]
+    App --> Auth[Firebase Auth]
+    App --> FS[(Firestore)]
+    App --> ST[(Storage)]
+    App --> CF[Cloud Functions]
+    App --> FCM[FCM]
+    App --> AC[App Check]
+    CF --> FS
+    CF --> ST
+    CF --> Auth
+    Trg[Storage trigger] --> CF
+```
 
-See **[ARCHITECTURE.md](ARCHITECTURE.md)** for SOLID notes, error mapping, and testing fakes.
+**Key collections**
+
+| Path | Purpose |
+| --- | --- |
+| `users/{uid}` | Private account (owner read) |
+| `profiles/{uid}` | Public dating card |
+| `userPreferences/{uid}` | Discovery prefs |
+| `userLocation/{uid}` | GPS (server-side reads for distance) |
+| `matches/{id}` | Active matches |
+| `matches/{id}/messages` | Chat |
+| `likes/{from}_{to}` | Swipe records (server writes) |
+| `blocks/{blocker}_{blocked}` | Blocks |
+| `reports/{id}` | User reports |
+
+References: [FIREBASE_ARCHITECTURE.md](FIREBASE_ARCHITECTURE.md) · [FIREBASE_DATA_ARCHITECTURE.md](FIREBASE_DATA_ARCHITECTURE.md)
 
 ---
 
@@ -195,102 +409,79 @@ See **[ARCHITECTURE.md](ARCHITECTURE.md)** for SOLID notes, error mapping, and t
 
 ```text
 Mevora/
-├── android/ · ios/          Native hosts + flavors
-├── assets/
-│   ├── images/              Login hero, discovery mock portraits
-│   ├── fonts/               Fraunces · Manrope
-│   └── rive/                Feature-scoped .riv files
-├── docs/images/             README visuals (copied from app assets)
-├── firebase/                Firestore & Storage security rules, indexes
-├── functions/               Node Cloud Functions (TypeScript)
 ├── lib/
-│   ├── core/                Config, DI, routing, theme, Firebase bootstrap
+│   ├── core/           config, routing, theme, DI, Firebase bootstrap
 │   ├── features/
 │   │   ├── authentication/
 │   │   ├── onboarding/
 │   │   ├── profile/
-│   │   ├── location/
 │   │   ├── discovery/
 │   │   ├── matching/
 │   │   ├── match_score/
-│   │   ├── music/
 │   │   ├── relationship/
+│   │   ├── music/
 │   │   ├── chat/
-│   │   ├── calls/           LiveKit + mock video
+│   │   ├── calls/
 │   │   ├── boost/
-│   │   ├── notifications/
-│   │   ├── permissions/
 │   │   ├── safety/
 │   │   ├── settings/
-│   │   ├── subscription/    Disabled placeholder
-│   │   └── video/           Legacy disabled adapter stub
-│   ├── shared/              Design system, Rive wrappers, images
-│   ├── l10n/                ARB + generated localizations
-│   ├── main_development.dart
-│   ├── main_staging.dart
-│   └── main_production.dart
-└── test/                    Unit + widget + rules contract tests
-```
-
-Each feature typically follows:
-
-```text
-features/<name>/
-  data/          datasources · repositories · services
-  domain/        entities · repositories · policies · usecases
-  presentation/  pages · widgets · controllers
+│   │   └── …
+│   ├── shared/         design system, Rive wrappers
+│   └── l10n/
+├── functions/src/      Cloud Functions + moderation + smoke helpers
+├── firebase/           Firestore/Storage rules, indexes, rules tests
+├── test/               unit + widget + security contract tests
+├── integration_test/   device E2E entry (requires connected device)
+├── tools/smoke/        backend production smoke runner
+└── docs/               architecture & runbooks
 ```
 
 ---
 
-## Firebase & backend
+## Security
 
-### Client SDKs (wired)
+- **Firestore rules** — lifecycle fields, blocks, reports, server-only purchases/rate limits
+- **Storage rules** — clients upload `pending/` only; `photos/` publish is Functions-only
+- **App Check** — debug providers in dev/staging; Play Integrity / App Attest in production
+- **Server validation** — onboarding completion, swipes, boosts, reports, deletion
+- **18+ enforcement** — client + `completeOnboarding` + discovery filters
+- **Smoke test isolation** — `isSmokeTestUser` is server-only; smoke users only see each other in discovery
 
-| Product | Role |
-| --- | --- |
-| Authentication | All identity providers |
-| Cloud Firestore | Profiles, matches, chat, social graph |
-| Cloud Storage | Profile & chat media |
-| Cloud Functions | Discovery, swipes, Spotify, boost, calls, relationship, match score |
-| Cloud Messaging | Push |
-| Crashlytics | Crash reporting |
-| Analytics | Product analytics |
-| App Check | Debug / Play Integrity / App Attest by environment |
-
-### Notable callable / trigger areas
-
-| Area | Examples |
-| --- | --- |
-| Discovery | `getDiscoveryCandidates`, `getDiscoveryFeed`, `recordDiscoveryDecision`, `getDistanceLabel` |
-| Social | `recordSwipe`, `unmatchUser`, `blockUser`, `reportUser`, message/match notifications |
-| Video | `createVideoCall`, `respondToVideoCall`, `endVideoCall`, `expireVideoCall` |
-| Spotify | `spotifyCompleteAuth` (+ music link/sync helpers used by the client) |
-| Relationship | `saveRelationshipAnswer`, `getRelationshipAnswered`, `getRelationshipMatches` |
-| Match score | `seedMatchScoreOnUserCreate`, `awardMatchBonusOnMatchCreate`, `submitMatchFeedback` |
-| Boost | `verifyBoostPurchase`, `activateBoost`, `expireBoost` |
-| Account | `deleteUserAccount`, `exportMyData`, `syncAuthAccount` |
-
-### Projects / flavors
-
-| Flavor | Dart entry | Application ID (typical) | Firebase options project |
-| --- | --- | --- | --- |
-| development | `lib/main_development.dart` | `com.mevora.app.dev` | `mevora-d6ed0` (live options in current bootstrap) |
-| staging | `lib/main_staging.dart` | `com.mevora.app.staging` | `mevora-staging` |
-| production | `lib/main_production.dart` | `com.mevora.app` | `mevora-production` |
-
-`.firebaserc` also defines aliases `mevora-dev` / `mevora-staging` / `mevora-production` for CLI deploys. Confirm the active project before deploying rules or functions.
+More: [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md) · [LOCATION_ARCHITECTURE.md](LOCATION_ARCHITECTURE.md)
 
 ---
 
-## Environments
+## Testing
 
-Development can target the Emulator Suite for **Firestore / Functions / Storage**. Phone Auth usually uses the **live** Firebase project because the Auth emulator cannot send real SMS. Optional:
+| Layer | Location | Status |
+| --- | --- | --- |
+| Unit / widget tests | `test/` (~120 files) | Implemented |
+| Cloud Functions tests | `functions/test/` (41 tests) | Implemented |
+| Firestore rules tests | `firebase/tests/` | Implemented |
+| Security contract tests | `test/security/` | Implemented |
+| Integration config test | `test/integration/` | Implemented |
+| Device E2E | `integration_test/smoke/` | Partial — needs Android/iOS device |
+| Backend smoke | `tools/smoke/run_smoke_test.mjs` | Implemented |
+| CI | `.github/workflows/smoke.yml` | Implemented |
 
 ```bash
---dart-define=USE_AUTH_EMULATOR=true
---dart-define=USE_EMULATORS=false
+# Flutter (default scope via dart_test.yaml)
+flutter analyze
+flutter test
+
+# Cloud Functions
+cd functions && npm test
+
+# Firestore / moderation integration
+cd firebase/tests && npm test
+
+# Backend smoke (requires service account — never commit credentials)
+cd tools/smoke && npm install
+# set GOOGLE_APPLICATION_CREDENTIALS, then:
+node run_smoke_test.mjs
 ```
+
+Smoke flow documentation: [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md)
 
 ---
 
@@ -298,90 +489,86 @@ Development can target the Emulator Suite for **Firestore / Functions / Storage*
 
 ### Prerequisites
 
-- Flutter SDK compatible with `sdk: ^3.11.5` (see `pubspec.yaml`)
-- Xcode / Android Studio as needed
-- Node.js for Cloud Functions
-- Firebase CLI (`npx -y firebase-tools@latest` recommended)
+- Flutter SDK compatible with `sdk: ^3.11.5`
+- Xcode / Android Studio
+- Node.js 20+ for Cloud Functions
+- Firebase CLI
 
 ### Install & run
 
 ```bash
+git clone https://github.com/HalilMertDeveli/mevora.git
+cd mevora
 flutter pub get
-
-# Optional: Firestore emulator
-npx -y firebase-tools@latest emulators:start --only firestore --project mevora-d6ed0
 
 # Development flavor
 flutter run --flavor development -t lib/main_development.dart
-```
 
-Other flavors:
-
-```bash
+# Staging
 flutter run --flavor staging -t lib/main_staging.dart
+
+# Production flavor (local testing only — use with care)
 flutter run --flavor production -t lib/main_production.dart
 ```
 
-Physical devices are recommended for real SMS and push. Android emulators use `10.0.2.2` for host loopback when talking to local emulators.
-
-### Functions
+### Cloud Functions
 
 ```bash
 cd functions
 npm install
 npm run build
-# Deploy only after selecting the correct Firebase project
+# Confirm Firebase project before deploy:
+# firebase deploy --only functions,firestore:rules,storage --project mevora-production
 ```
 
----
-
-## Testing
+### Emulators (optional)
 
 ```bash
-flutter analyze
-flutter test
+firebase emulators:start --only firestore,functions,storage,auth
+flutter run --dart-define=USE_EMULATORS=true -t lib/main_development.dart
 ```
 
-Tests cover policies (chat, discovery activity, match score, music, relationship), widgets, call state machine, localization formatting, and selected security-rules contracts under `test/security/`.
+Phone Auth typically needs a **live** Firebase project for real SMS unless using test numbers / Auth emulator.
 
 ---
 
-## Localization
+## Environments & secrets
 
-| Locale | File |
+| Flavor | Entry | Package (typical) | Firebase project |
+| --- | --- | --- | --- |
+| development | `main_development.dart` | `com.mevora.app.dev` | `mevora-d6ed0` |
+| staging | `main_staging.dart` | `com.mevora.app.staging` | `mevora-staging` |
+| production | `main_production.dart` | `com.mevora.app` | `mevora-production` |
+
+**Never commit:** `.env`, keystores, service account JSON, Spotify client secret, LiveKit secrets, Apple signing keys.
+
+Public client IDs may be passed via `--dart-define` (e.g. `SPOTIFY_CLIENT_ID`). See [FIREBASE_SETUP.md](FIREBASE_SETUP.md).
+
+---
+
+## Recent development
+
+| Commit | Summary |
 | --- | --- |
-| English | `lib/l10n/app_en.arb` |
-| Turkish | `lib/l10n/app_tr.arb` |
-
-Generated with Flutter gen-l10n (`l10n.yaml`). Runtime language selection lives under settings / `LanguageScope`.
-
----
-
-## Animations (Rive)
-
-Compact `.riv` assets under `assets/rive/` with a safe Flutter fallback (`MevoraRiveAnimation`). Typical uses:
-
-| Moment | Asset family |
-| --- | --- |
-| Loading / music sync | `common/searching.riv` |
-| Match celebration | `matching/match.riv` |
-| Empty discovery / matches / chat | feature empty rivs |
-| Login / Spotify idle | `authentication/login_ambient.riv` |
-| Relationship accent | onboarding / look family |
-
-Inventory and mapping: [`assets/rive/ASSETS.md`](assets/rive/ASSETS.md).
+| `8946ffb` | Production hardening, photo moderation pipeline, smoke tests, compliance tests |
+| `11fbba3` | Relationship survey timing tuning |
+| `7c8f1d0` | README + asset visuals |
+| `5cdac15` | Phone auth synced with shared `AuthController` |
+| `cef0595` | Boost IAP, Rive UI, logout stability |
 
 ---
 
-## Security & privacy
+## Roadmap
 
-- Firestore rules: `firebase/firestore.rules`
-- Storage rules: `firebase/storage.rules`
-- Exact GPS is owner-only; discovery surfaces **labels**, not coordinates
-- Clients cannot spoof another user’s `auth.uid`
-- Boost and purchase verification are server-side
+Verified gaps / planned improvements (not implemented as full products yet):
 
-Deeper write-ups: [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md), [LOCATION_ARCHITECTURE.md](LOCATION_ARCHITECTURE.md).
+- AI/ML photo moderation provider (architecture ready, not active)
+- Firebase Remote Config SDK integration (defaults exist in code only)
+- Stronger profile read model (reduce authenticated enumeration surface)
+- Full device E2E smoke on CI (App Check + Test Lab strategy)
+- Live subscriptions (placeholder module only today)
+- Admin moderation console for `manual_review` photos
+- Expanded analytics for safety events
 
 ---
 
@@ -389,50 +576,15 @@ Deeper write-ups: [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md), [LOCATION_ARCHIT
 
 | Topic | Document |
 | --- | --- |
-| Product phases | [MEVORA_DEVELOPMENT.md](MEVORA_DEVELOPMENT.md) |
-| App architecture | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Firebase overview | [FIREBASE_ARCHITECTURE.md](FIREBASE_ARCHITECTURE.md) |
-| Firebase setup | [FIREBASE_SETUP.md](FIREBASE_SETUP.md) |
 | Data model | [FIREBASE_DATA_ARCHITECTURE.md](FIREBASE_DATA_ARCHITECTURE.md) |
+| Photo moderation | [docs/PHOTO_MODERATION.md](docs/PHOTO_MODERATION.md) |
+| Smoke testing | [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md) |
 | Phone auth | [PHONE_AUTH_IMPLEMENTATION.md](PHONE_AUTH_IMPLEMENTATION.md) |
-| Location privacy | [LOCATION_ARCHITECTURE.md](LOCATION_ARCHITECTURE.md) |
 | Boost / IAP | [PAYMENT_ARCHITECTURE.md](PAYMENT_ARCHITECTURE.md) |
 | Localization | [LOCALIZATION_ARCHITECTURE.md](LOCALIZATION_ARCHITECTURE.md) |
-
----
-
-## Secrets
-
-Do **not** commit:
-
-- `.env`, `*.jks`, `key.properties`, service-account JSON
-- LiveKit API keys/secrets, Spotify client secret, Apple IAP private keys
-
-Configure in Firebase / store consoles and pass public client IDs via `--dart-define` when needed (for example `SPOTIFY_CLIENT_ID`).
-
-### Manual production checklist
-
-1. **LiveKit** — `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL` as Functions secrets; enable `videoCallsEnabled` only when ready
-2. **APNs** — upload key in Firebase Cloud Messaging for iOS push
-3. **Play / SHA** — fingerprints registered for Google Sign-In and FCM
-4. **IAP** — Boost products created in App Store Connect / Play Console matching the pack IDs
-
----
-
-## Key dependencies
-
-| Package | Use |
-| --- | --- |
-| `go_router` | Navigation + shell tabs |
-| `firebase_*` / `cloud_*` | Auth, Firestore, Storage, Functions, FCM, Crashlytics, Analytics, App Check |
-| `google_sign_in` / `sign_in_with_apple` | Social auth |
-| `geolocator` / `permission_handler` | Location & permissions |
-| `in_app_purchase` | Boost packs |
-| `rive` | Motion accents |
-| `livekit_client` | Video media |
-| `record` / `audioplayers` | Voice messages |
-| `image_picker` | Photos |
-| `app_links` / `url_launcher` | OAuth / deep links |
+| Rive assets | [assets/rive/ASSETS.md](assets/rive/ASSETS.md) |
 
 ---
 

@@ -44,6 +44,7 @@
 - [Project structure](#project-structure)
 - [Security](#security)
 - [Testing](#testing)
+- [Production smoke test](#production-smoke-test)
 - [Getting started](#getting-started)
 - [Environments & secrets](#environments--secrets)
 - [Recent development](#recent-development)
@@ -93,6 +94,18 @@ Repository visuals are **project assets** (login hero + discovery mock portraits
 | Boost / IAP | consumable packs | Implemented |
 | Video calls | LiveKit provider | Implemented, **feature flag off by default** |
 | Full UI screenshot set | — | **Not checked in yet** |
+
+### Screen coverage map
+
+| Login / auth | Onboarding / profile | Discover / swipe |
+| --- | --- | --- |
+| Implemented | Implemented | Implemented |
+| Match / celebration | Chat | Settings / safety |
+| Implemented | Implemented | Implemented |
+| Music tab | Boost / IAP | Relationship questions |
+| Implemented | Implemented | Implemented |
+| Video calls | Photo moderation (backend) | — |
+| Implemented, flag off | Implemented (no AI) | — |
 
 ---
 
@@ -226,16 +239,16 @@ flowchart LR
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| 18+ age gate | Implemented | Client validators + `completeOnboarding` + `profileSafety.ts` |
-| Server-side onboarding flags | Implemented | Clients cannot set `isDiscoverable` directly |
-| Report user | Implemented | Whitelist reasons, 20/day limit |
-| Block user | Implemented | `blocks/` + `users/.../blockedUsers/` |
+| 🔞 18+ age gate | Implemented | Client validators + `completeOnboarding` + `profileSafety.ts` |
+| 🔐 Server-side onboarding flags | Implemented | Clients cannot set `isDiscoverable` directly |
+| 🛡️ Report user | Implemented | Whitelist reasons, 20/day limit |
+| 🚫 Block user | Implemented | `blocks/` + `users/.../blockedUsers/` |
 | Unmatch | Implemented | Deactivates match server-side |
 | Message rate limit | Implemented | 20/min per match, 60/min global |
 | Discovery safety sheet | Implemented | Hide / block / report from profile |
-| Account deletion | Implemented | `deleteUserAccount` callable |
-| Location privacy | Implemented | GPS owner-only; others get distance labels |
-| Photo moderation | Implemented | Technical pipeline, no AI (see below) |
+| 🗑️ Account deletion | Implemented | `deleteUserAccount` callable |
+| 📍 Location privacy | Implemented | GPS owner-only; others get distance labels |
+| 📸 Photo moderation | Implemented | Technical pipeline, no AI (see below) |
 | Profile read enumeration hardening | In progress | `profiles` still readable to authenticated users |
 | AI content moderation | Planned | Architecture allows future provider |
 
@@ -485,6 +498,37 @@ Smoke flow documentation: [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md)
 
 ---
 
+## Production smoke test
+
+Backend smoke harness validates critical production flows against **real Firebase state** (not fake UI success).
+
+```mermaid
+flowchart TD
+    R[Register / seed smoke users] --> A[18+ validation]
+    A --> P[3 photos]
+    P --> M[Moderation pipeline]
+    M --> D[Discover]
+    D --> L[Like]
+    L --> MT[Match]
+    MT --> MSG[Message]
+    MSG --> BL[Block]
+    BL --> RP[Report]
+    RP --> DEL[Delete account]
+    DEL --> CL[Cleanup]
+```
+
+| Component | Location | Status |
+| --- | --- | --- |
+| Backend runner | `tools/smoke/run_smoke_test.mjs` | Implemented |
+| Smoke users | `smoke-a@mevora.test`, `smoke-b@mevora.test` | Implemented |
+| Isolation flag | `users.isSmokeTestUser` (server-only) | Implemented |
+| Device E2E | `integration_test/smoke/` | Partial — requires connected device |
+| CI workflow | `.github/workflows/smoke.yml` | Implemented |
+
+Run with a **service account** (never commit credentials). See [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md).
+
+---
+
 ## Getting started
 
 ### Prerequisites
@@ -550,6 +594,7 @@ Public client IDs may be passed via `--dart-define` (e.g. `SPOTIFY_CLIENT_ID`). 
 
 | Commit | Summary |
 | --- | --- |
+| `901fafd` | Comprehensive visual README with verified project analysis |
 | `8946ffb` | Production hardening, photo moderation pipeline, smoke tests, compliance tests |
 | `11fbba3` | Relationship survey timing tuning |
 | `7c8f1d0` | README + asset visuals |

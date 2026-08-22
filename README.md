@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="README.md">English</a> · <a href="README.tr.md">Türkçe</a>
+</p>
+
+<p align="center">
   <img src="docs/images/mevora-hero.png" alt="Mevora login hero" width="850" />
 </p>
 

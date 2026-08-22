@@ -84,11 +84,11 @@ class _MevoraStatusMotionState extends State<MevoraStatusMotion>
                 ? Icon(icon, size: 56, color: theme.colorScheme.primary)
                 : MevoraRiveAnimation(
                     asset: widget.riveAsset!,
-                    width: 72,
-                    height: 72,
+                    width: 56,
+                    height: 56,
                     fallback: Icon(
                       icon,
-                      size: 56,
+                      size: 40,
                       color: theme.colorScheme.primary,
                     ),
                   ),

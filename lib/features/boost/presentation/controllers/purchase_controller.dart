@@ -42,7 +42,7 @@ class PurchaseViewState {
   final PurchaseErrorKind? errorKind;
 
   bool get hasActiveBoost => activeBoost != null;
-  bool get canActivate => wallet.hasBoosts && !hasActiveBoost;
+  bool get canActivate => wallet.hasBoosts;
   int get balance => wallet.balance;
 
   PurchaseViewState copyWith({
@@ -118,6 +118,7 @@ class PurchaseController extends ChangeNotifier {
     );
     notifyListeners();
     await _analytics.logEvent(AnalyticsEvents.boostViewed);
+    await _analytics.logEvent(AnalyticsEvents.boostPageOpened);
 
     final active = await _getActiveBoost(userId);
     final packs = await _getBoostProducts();
@@ -169,10 +170,8 @@ class PurchaseController extends ChangeNotifier {
       history: loadedHistory,
       activeBoost: boost,
       clearBoost: boost == null,
-      message: boost != null ? AppStrings.boostAlreadyActive : null,
-      errorKind: boost != null ? PurchaseErrorKind.alreadyActive : null,
-      clearMessage: boost == null,
-      clearErrorKind: boost == null,
+      clearMessage: true,
+      clearErrorKind: true,
     );
     notifyListeners();
   }
@@ -199,6 +198,10 @@ class PurchaseController extends ChangeNotifier {
       clearErrorKind: true,
     );
     notifyListeners();
+    await _analytics.logEvent(
+      AnalyticsEvents.boostProductSelected,
+      parameters: {'product_id': product.productId},
+    );
     await _analytics.logEvent(AnalyticsEvents.boostPurchaseStarted);
 
     final purchased = await _purchaseBoost(product);
@@ -219,7 +222,11 @@ class PurchaseController extends ChangeNotifier {
         await _repository.completeStoreTransaction(value);
         switch (verified) {
           case Success(:final value):
-            await _credited(value.balance, value.boostCount);
+            if (value.boost != null) {
+              await _activated(value.boost!);
+            } else {
+              await _credited(value.balance, value.boostCount);
+            }
           case Err(:final failure):
             await _fail(failure);
         }
@@ -227,15 +234,6 @@ class PurchaseController extends ChangeNotifier {
   }
 
   Future<void> activate() async {
-    if (state.hasActiveBoost) {
-      state = state.copyWith(
-        status: PurchaseUiStatus.failed,
-        message: AppStrings.boostAlreadyActive,
-        errorKind: PurchaseErrorKind.alreadyActive,
-      );
-      notifyListeners();
-      return;
-    }
     if (!state.wallet.hasBoosts) {
       state = state.copyWith(
         status: PurchaseUiStatus.failed,
@@ -257,6 +255,22 @@ class PurchaseController extends ChangeNotifier {
     switch (result) {
       case Success(:final value):
         await _activated(value);
+      case Err(:final failure):
+        await _fail(failure);
+    }
+  }
+
+  Future<void> restore() async {
+    state = state.copyWith(
+      status: PurchaseUiStatus.loading,
+      clearMessage: true,
+      clearErrorKind: true,
+    );
+    notifyListeners();
+    final result = await _repository.restorePurchases(userId);
+    switch (result) {
+      case Success():
+        await load();
       case Err(:final failure):
         await _fail(failure);
     }
@@ -288,6 +302,7 @@ class PurchaseController extends ChangeNotifier {
       clearErrorKind: true,
     );
     notifyListeners();
+    await _analytics.logEvent(AnalyticsEvents.boostPurchaseSuccess);
     await _analytics.logEvent(AnalyticsEvents.boostActivated);
   }
 

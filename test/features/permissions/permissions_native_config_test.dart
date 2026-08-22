@@ -25,7 +25,7 @@ void main() {
     final plist = File('ios/Runner/Info.plist').readAsStringSync();
     expect(
       plist,
-      contains('Mevora uses your camera to take profile photos.'),
+      contains('Mevora uses your camera for profile photos and video calls.'),
     );
     expect(
       plist,

@@ -72,4 +72,27 @@ void main() {
     await controller.setRadius(DiscoveryRadius.km5);
     expect(controller.state.radius, DiscoveryRadius.km5);
   });
+
+  test('hideCandidate removes profile from stack', () async {
+    final discovery = InMemoryDiscoveryRepository(
+      seeds: const [
+        DiscoverySeed(
+          profile: UserProfile(uid: 'ada', displayName: 'Ada', age: 27),
+          distanceKm: 4,
+          distanceLabel: '4 km away',
+        ),
+        DiscoverySeed(
+          profile: UserProfile(uid: 'beo', displayName: 'Beo', age: 28),
+          distanceKm: 6,
+          distanceLabel: '6 km away',
+        ),
+      ],
+    );
+    final controller = build(discovery: discovery);
+    await controller.skipLocation();
+    expect(controller.state.candidates, hasLength(2));
+    await controller.hideCandidate('ada');
+    expect(controller.state.candidates, hasLength(1));
+    expect(controller.state.candidates.first.uid, 'beo');
+  });
 }

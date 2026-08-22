@@ -14,6 +14,7 @@ import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/models/swipe_action.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
+import 'package:mevora/features/match_score/data/datasources/memory_match_score_data_source.dart';
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
 import 'package:mevora/features/safety/domain/models/report_reason.dart';
 import 'package:mevora/features/safety/domain/safety_policy.dart';
@@ -21,9 +22,13 @@ import 'package:mevora/features/safety/domain/safety_policy.dart';
 /// Trusted-backend stand-in used by tests. Mirrors Cloud Function rules:
 /// clients never create matches directly.
 class InMemorySocialGraph {
-  InMemorySocialGraph({this.now});
+  InMemorySocialGraph({
+    this.now,
+    MemoryMatchScoreDataSource? matchScore,
+  }) : matchScore = matchScore ?? MemoryMatchScoreDataSource();
 
   DateTime Function()? now;
+  final MemoryMatchScoreDataSource matchScore;
 
   final Map<String, LikeRecord> likes = {};
   final Map<String, Match> matches = {};
@@ -42,11 +47,13 @@ class InMemorySocialGraph {
   final _typingControllers =
       <String, StreamController<Map<String, DateTime>>>{};
   final _incomingControllers = <String, StreamController<List<CallSession>>>{};
+  final _callControllers = <String, StreamController<CallSession?>>{};
 
   DateTime get _now => now?.call() ?? DateTime.now();
 
   void seedProfile(String uid, {required String name, String? photoUrl}) {
     profiles[uid] = _Profile(name: name, photoUrl: photoUrl);
+    matchScore.ensureUser(uid);
   }
 
   SwipeResultWrapper recordSwipe({
@@ -114,6 +121,11 @@ class InMemorySocialGraph {
       );
       matches[matchId] = created;
       messages[matchId] = [];
+      matchScore.recordMatchCreated(
+        matchId: matchId,
+        userIds: created.userIds,
+        matchedAt: created.createdAt,
+      );
       _emitMatches(actorUid);
       _emitMatches(targetUserId);
     }
@@ -183,26 +195,131 @@ class InMemorySocialGraph {
       status: MessageStatus.sent,
     );
     messages.putIfAbsent(matchId, () => []).add(message);
+    _afterSend(
+      match: match,
+      senderId: actorUid,
+      receiverId: receiverId,
+      preview: trimmed,
+      at: message.createdAt,
+    );
+    return message;
+  }
+
+  ChatMessage sendMedia({
+    required String actorUid,
+    required String matchId,
+    required String receiverId,
+    required MessageType type,
+    int? durationMs,
+    List<int>? bytes,
+  }) {
+    final match = _requireActiveMatch(matchId, actorUid, receiverId);
+    if (!ChatPolicy.canSendMessage(
+      match: match,
+      senderId: actorUid,
+      receiverId: receiverId,
+      blocked: SafetyPolicy.isBlocked(
+        blockIds: blockIds,
+        uidA: actorUid,
+        uidB: receiverId,
+      ),
+    )) {
+      throw const AuthzException('blocked', code: 'blocked');
+    }
+    final messageId = 'm${_now.microsecondsSinceEpoch}${Random().nextInt(999)}';
+    final path = ChatMediaArchitecture.storagePath(
+      senderUid: actorUid,
+      matchId: matchId,
+      messageId: messageId,
+    );
+    final message = ChatMessage(
+      id: messageId,
+      senderId: actorUid,
+      receiverId: receiverId,
+      text: '',
+      type: type,
+      createdAt: _now,
+      status: MessageStatus.sent,
+      imageStoragePath: type == MessageType.image ? path : null,
+      voiceStoragePath: type == MessageType.voice ? path : null,
+      mediaUrl: null,
+      durationMs: durationMs,
+      localMediaBytes: bytes == null || bytes.isEmpty
+          ? null
+          : List<int>.unmodifiable(bytes),
+    );
+    messages.putIfAbsent(matchId, () => []).add(message);
+    _afterSend(
+      match: match,
+      senderId: actorUid,
+      receiverId: receiverId,
+      preview: type == MessageType.image ? '📷' : '🎤',
+      at: message.createdAt,
+    );
+    return message;
+  }
+
+  void deleteMessage({
+    required String actorUid,
+    required String matchId,
+    required String messageId,
+  }) {
+    final current = messages[matchId];
+    if (current == null) {
+      return;
+    }
+    final target = current.cast<ChatMessage?>().firstWhere(
+      (item) => item?.id == messageId,
+      orElse: () => null,
+    );
+    if (target == null) {
+      return;
+    }
+    if (!ChatPolicy.canDeleteOwnMessage(message: target, uid: actorUid)) {
+      throw const AuthzException('not-allowed', code: 'permission-denied');
+    }
+    messages[matchId] = [
+      for (final item in current)
+        if (item.id == messageId)
+          item.copyWith(deleted: true, text: '', mediaUrl: '')
+        else
+          item,
+    ];
+    _emitMessages(matchId);
+  }
+
+  void _afterSend({
+    required Match match,
+    required String senderId,
+    required String receiverId,
+    required String preview,
+    required DateTime at,
+  }) {
     final unread = Map<String, int>.from(match.unreadCounts);
     unread[receiverId] = (unread[receiverId] ?? 0) + 1;
-    matches[matchId] = Match(
+    matches[match.id] = Match(
       id: match.id,
       userIds: match.userIds,
       createdAt: match.createdAt,
       isActive: match.isActive,
-      lastMessage: trimmed,
-      lastMessageAt: message.createdAt,
+      lastMessage: preview,
+      lastMessageAt: at,
       unmatchedBy: match.unmatchedBy,
       unmatchedAt: match.unmatchedAt,
       unreadCounts: unread,
       isNewFor: {for (final id in match.userIds) id: false},
       participantNames: match.participantNames,
       participantPhotos: match.participantPhotos,
+      source: match.source,
     );
-    _emitMessages(matchId);
+    matchScore.recordMessage(
+      matchId: match.id,
+      senderId: senderId,
+      now: at,
+    );
+    _emitMessages(match.id);
     _emitMatches(match.userIds[0]);
     _emitMatches(match.userIds[1]);
-    return message;
   }
 
   List<ChatMessage> latestMessages(String matchId, {int limit = 30}) {
@@ -246,17 +363,10 @@ class InMemorySocialGraph {
       if (items.every((item) => item.id != message.id)) {
         return message;
       }
-      return ChatMessage(
-        id: message.id,
-        senderId: message.senderId,
-        receiverId: message.receiverId,
-        text: message.text,
-        type: message.type,
-        createdAt: message.createdAt,
+      return message.copyWith(
         status: MessageStatus.read,
         isRead: true,
         readAt: _now,
-        imageStoragePath: message.imageStoragePath,
       );
     }).toList();
     final match = matches[matchId];
@@ -276,6 +386,7 @@ class InMemorySocialGraph {
         isNewFor: match.isNewFor,
         participantNames: match.participantNames,
         participantPhotos: match.participantPhotos,
+        source: match.source,
       );
       _emitMatches(match.userIds[0]);
       _emitMatches(match.userIds[1]);
@@ -298,7 +409,11 @@ class InMemorySocialGraph {
     _typingControllers[matchId]?.add(current);
   }
 
-  void unmatch({required String actorUid, required String matchId}) {
+  void unmatch({
+    required String actorUid,
+    required String matchId,
+    String reason = 'unmatch',
+  }) {
     final match = matches[matchId];
     if (match == null || !match.isParticipant(actorUid)) {
       throw const AuthzException('not-matched', code: 'not-matched');
@@ -316,25 +431,45 @@ class InMemorySocialGraph {
       isNewFor: match.isNewFor,
       participantNames: match.participantNames,
       participantPhotos: match.participantPhotos,
+      source: match.source,
+    );
+    matchScore.recordMatchEnded(
+      matchId: matchId,
+      endedBy: actorUid,
+      reason: reason,
+      userIds: match.userIds,
     );
     _emitMatches(match.userIds[0]);
     _emitMatches(match.userIds[1]);
+    _endLiveCalls(matchId);
   }
 
   void blockUser({required String actorUid, required String userId}) {
     blockIds.add(SafetyPolicy.blockId(blockerId: actorUid, blockedUserId: userId));
     final matchId = MatchEngine.matchId(actorUid, userId);
     if (matches.containsKey(matchId)) {
-      unmatch(actorUid: actorUid, matchId: matchId);
+      unmatch(actorUid: actorUid, matchId: matchId, reason: 'block');
     }
+  }
+
+  void _endLiveCalls(String matchId) {
     final live = calls.values.where(
       (call) =>
-          (call.callerId == actorUid && call.receiverId == userId) ||
-          (call.callerId == userId && call.receiverId == actorUid),
+          call.matchId == matchId && !CallStateMachine.isTerminal(call.lifecycle),
     );
     for (final call in live) {
       calls[call.id] = call.copyWith(lifecycle: CallLifecycle.ended);
+      _emitCall(calls[call.id]!);
     }
+  }
+
+  void _emitCall(CallSession call) {
+    _callControllers[call.id]?.add(call);
+    _incomingControllers[call.receiverId]?.add(
+      calls.values
+          .where((item) => item.receiverId == call.receiverId)
+          .toList(growable: false),
+    );
   }
 
   void report({
@@ -402,11 +537,7 @@ class InMemorySocialGraph {
       remotePhotoUrl: match.otherPhoto(actorUid),
     );
     calls[session.id] = session;
-    _incomingControllers[receiverId]?.add(
-      calls.values
-          .where((call) => call.receiverId == receiverId)
-          .toList(growable: false),
-    );
+    _emitCall(session);
     return session;
   }
 
@@ -422,6 +553,7 @@ class InMemorySocialGraph {
     final next = accept ? CallLifecycle.connecting : CallLifecycle.declined;
     final updated = call.copyWith(lifecycle: next);
     calls[callId] = updated;
+    _emitCall(updated);
     if (!accept) {
       history.add(
         CallHistoryRecord(
@@ -441,6 +573,16 @@ class InMemorySocialGraph {
       token: 'short-lived-test-token',
       roomName: call.roomName,
     );
+  }
+
+  void endCall(String callId, {CallLifecycle lifecycle = CallLifecycle.ended}) {
+    final call = calls[callId];
+    if (call == null) {
+      return;
+    }
+    final updated = call.copyWith(lifecycle: lifecycle);
+    calls[callId] = updated;
+    _emitCall(updated);
   }
 
   Match _requireActiveMatch(String matchId, String uid, String otherUid) {
@@ -493,6 +635,15 @@ class InMemorySocialGraph {
         calls.values.where((call) => call.receiverId == uid).toList(),
       ),
     );
+    return controller.stream;
+  }
+
+  Stream<CallSession?> watchCall(String callId) {
+    final controller = _callControllers.putIfAbsent(
+      callId,
+      () => StreamController<CallSession?>.broadcast(),
+    );
+    scheduleMicrotask(() => controller.add(calls[callId]));
     return controller.stream;
   }
 

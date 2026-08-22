@@ -18,8 +18,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectTagline => 'Connect with people who match you.';
 
   @override
-  String get loginSlogan =>
-      'Don\'t just meet people.\nMeet someone compatible.';
+  String get loginSlogan => 'Don\'t just meet people.\nMeet someone compatible.';
 
   @override
   String get continueWithEmail => 'Continue with email';
@@ -34,8 +33,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unexpectedError => 'The app hit an unexpected error.';
 
   @override
-  String get firebaseUnavailableMessage =>
-      'Mevora could not start. Check your connection and try again.';
+  String get firebaseUnavailableMessage => 'Mevora could not start. Check your connection and try again.';
 
   @override
   String get retry => 'Retry';
@@ -77,8 +75,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyTitle => 'Nothing here yet';
 
   @override
-  String get emptyMessage =>
-      'When there is something to show, it will appear here.';
+  String get emptyMessage => 'When there is something to show, it will appear here.';
 
   @override
   String get networkError => 'Check your connection and try again.';
@@ -105,8 +102,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAccountTitle => 'Create your account';
 
   @override
-  String get registerSubtitle =>
-      'Join Mevora to meet people you are likely to connect with.';
+  String get registerSubtitle => 'Join Mevora to meet people you are likely to connect with.';
 
   @override
   String get email => 'Email';
@@ -169,8 +165,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetPasswordTitle => 'Reset password';
 
   @override
-  String get resetPasswordMessage =>
-      'Enter your email and we will send a reset link.';
+  String get resetPasswordMessage => 'Enter your email and we will send a reset link.';
 
   @override
   String get sendResetLink => 'Send reset link';
@@ -179,8 +174,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get resetEmailSentTitle => 'Check your email';
 
   @override
-  String get resetEmailSentMessage =>
-      'If an account exists for that email, a reset link is on the way.';
+  String get resetEmailSentMessage => 'If an account exists for that email, a reset link is on the way.';
 
   @override
   String get backToSignIn => 'Back to sign in';
@@ -201,7 +195,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueWithSpotify => 'Continue with Spotify';
 
   @override
-  String get continueWithPhone => 'Continue with phone';
+  String get continueWithPhone => 'Sign in with Phone Number';
 
   @override
   String get legalPrefix => 'By continuing you agree to our';
@@ -240,20 +234,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hidePassword => 'Hide password';
 
   @override
-  String get appleSignInUnavailable =>
-      'Apple Sign-In is available on iPhone and iPad.';
+  String get appleSignInUnavailable => 'Apple Sign-In is available on iPhone and iPad.';
 
   @override
-  String get phoneTitle => 'Enter your phone number';
+  String get phoneTitle => 'Sign in with Phone Number';
 
   @override
-  String get phoneSubtitle => 'We will text you a verification code.';
+  String get phoneSubtitle => 'Choose your country code and enter your phone number. We\'ll send a 6-digit verification code by SMS.';
 
   @override
   String get phoneHint => '555 000 0000';
 
   @override
-  String get sendCode => 'Send SMS code';
+  String get sendCode => 'Send verification code';
 
   @override
   String get countrySearchHint => 'Search country';
@@ -308,26 +301,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSmsFailed => 'We could not send the SMS. Please try again.';
 
   @override
+  String get authAppVerification => 'App verification failed. Check SHA certificates, try a physical device, or use a Firebase Console test phone number.';
+
+  @override
   String get authInvalidOtp => 'Invalid verification code.';
 
   @override
   String get authExpiredOtp => 'That code has expired. Request a new one.';
 
   @override
-  String get authSessionExpired =>
-      'Your session expired. Please enter your number again.';
+  String get authSessionExpired => 'Your session expired. Please enter your number again.';
 
   @override
-  String get authTooManyAttempts =>
-      'Too many attempts. Please wait and try again.';
+  String get authTooManyAttempts => 'Too many attempts. Please wait and try again.';
 
   @override
-  String get authSmsQuota =>
-      'SMS sending limit reached. Please try again later.';
+  String get authSmsQuota => 'SMS sending limit reached. Please try again later.';
 
   @override
-  String get authFirebaseUnavailable =>
-      'Verification is temporarily unavailable. Please try again later.';
+  String get authFirebaseUnavailable => 'Verification is temporarily unavailable. Please try again later.';
 
   @override
   String get authNetwork => 'Check your internet connection.';
@@ -345,44 +337,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authUnknown => 'Something unexpected happened. Please try again.';
 
   @override
-  String get authAccountExists =>
-      'That sign-in method is already tied to another Mevora account. Accounts are never merged automatically.';
+  String get authAccountExists => 'That sign-in method is already tied to another Mevora account. Accounts are never merged automatically.';
 
   @override
-  String get authLinkingBlocked =>
-      'Accounts are linked only when you confirm. A matching email is not enough.';
+  String get authLinkingBlocked => 'Accounts are linked only when you confirm. A matching email is not enough.';
 
   @override
-  String get authNotConfigured => 'This sign-in method is not set up yet.';
+  String get authNotConfigured => 'Phone sign-in is not enabled for this Firebase project yet.';
 
   @override
-  String get authBillingNotEnabled =>
-      'Firebase billing (Blaze) is required to send SMS verification codes.';
+  String get authBillingNotEnabled => 'Firebase billing (Blaze) is required to send SMS verification codes.';
 
   @override
   String get authInvalidEmail => 'Enter a valid email address.';
 
   @override
-  String get authWeakPassword =>
-      'Choose a stronger password with at least 8 characters.';
+  String get authWeakPassword => 'Choose a stronger password with at least 8 characters.';
 
   @override
   String get authUserNotFound => 'No account found for that email.';
 
   @override
-  String get authWrongPassword =>
-      'That email and password combination does not match.';
+  String get authWrongPassword => 'That email and password combination does not match.';
 
   @override
-  String get authSpotifyCallbackExpired =>
-      'The Spotify session timed out. Please try again.';
+  String get authSpotifyCallbackExpired => 'The Spotify session timed out. Please try again.';
 
   @override
   String get authEmailInUse => 'An account already exists for that email.';
 
   @override
-  String get authGeneric =>
-      'We could not complete that request. Please try again.';
+  String get authGeneric => 'We could not complete that request. Please try again.';
 
   @override
   String get authGoogleFailed => 'Google Sign-In could not be completed.';
@@ -400,8 +385,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingTitle => 'A few more steps';
 
   @override
-  String get onboardingMessage =>
-      'Complete your profile so Mevora can introduce compatible people.';
+  String get onboardingMessage => 'Complete your profile so Mevora can introduce compatible people.';
 
   @override
   String get onboardingFirstName => 'First name';
@@ -466,15 +450,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingPets => 'Pets';
 
   @override
-  String get onboardingInterestsHint =>
-      'Pick at least 3 interests so Mevora can find compatible people.';
+  String get onboardingInterestsHint => 'Pick at least 3 interests so Mevora can find compatible people.';
 
   @override
   String get onboardingBioHint => 'Share a little about yourself.';
 
   @override
-  String get onboardingPhotosHint =>
-      'Add at least 3 photos. Drag to reorder — your first photo is your main one.';
+  String get onboardingPhotosHint => 'Add at least 3 photos. Drag to reorder — your first photo is your main one.';
 
   @override
   String get onboardingPrimaryPhoto => 'Main photo';
@@ -488,8 +470,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingCompleteTitle => 'You\'re all set';
 
   @override
-  String get onboardingCompleteMessage =>
-      'Your profile is ready. Mevora will start introducing compatible people.';
+  String get onboardingCompleteMessage => 'Your profile is ready. Mevora will start introducing compatible people.';
 
   @override
   String get onboardingStartDiscovering => 'Start discovering';
@@ -630,12 +611,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationPermissionTitle => 'Discover people nearby';
 
   @override
-  String get locationPermissionMessage =>
-      'Mevora uses your location to show more compatible matches around you.';
+  String get locationPermissionMessage => 'Mevora uses your location to show more compatible matches around you.';
 
   @override
-  String get locationPermissionSub =>
-      'Your exact location is never shown to others. It is only used for matching and distance.';
+  String get locationPermissionSub => 'Your exact location is never shown to others. It is only used for matching and distance.';
 
   @override
   String get useMyLocation => 'Turn on location';
@@ -644,15 +623,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notNow => 'Skip for now';
 
   @override
-  String get locationSkipHint =>
-      'Location is needed for matching and discovery. You can turn it on later in Settings.';
+  String get locationSkipHint => 'Location is needed for matching and discovery. You can turn it on later in Settings.';
 
   @override
   String get locationSettingsTitle => 'Location permission is off';
 
   @override
-  String get locationSettingsMessage =>
-      'You can turn on location permission in your device settings.';
+  String get locationSettingsMessage => 'You can turn on location permission in your device settings.';
 
   @override
   String get openSettings => 'Open settings';
@@ -661,16 +638,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsDisabledTitle => 'Location services are off';
 
   @override
-  String get gpsDisabledMessage =>
-      'Turn on location services on your device so we can show nearby matches.';
+  String get gpsDisabledMessage => 'Turn on location services on your device so we can show nearby matches.';
 
   @override
-  String get locationDeniedMessage =>
-      'Without location permission we cannot show matches near you.';
+  String get locationDeniedMessage => 'Without location permission we cannot show matches near you.';
 
   @override
-  String get locationSuccessTitle =>
-      'Nice. We are ready to find matches nearby.';
+  String get locationSuccessTitle => 'Nice. We are ready to find matches nearby.';
 
   @override
   String get locationLocating => 'Finding your location...';
@@ -682,19 +656,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get locationUnavailableTitle => 'Could not get your location';
 
   @override
-  String get locationTimeoutMessage =>
-      'The location request timed out. You can try again later.';
+  String get locationTimeoutMessage => 'The location request timed out. You can try again later.';
 
   @override
-  String get locationNetworkMessage =>
-      'Your location could not be saved because of a connection issue. Try again.';
+  String get locationNetworkMessage => 'Your location could not be saved because of a connection issue. Try again.';
 
   @override
   String get locationPreciseOffTitle => 'Precise location is off';
 
   @override
-  String get locationPreciseOffMessage =>
-      'Precise Location is off. Distance will be approximate; your exact coordinates are still not shared.';
+  String get locationPreciseOffMessage => 'Precise Location is off. Distance will be approximate; your exact coordinates are still not shared.';
 
   @override
   String get continueWithoutLocation => 'Continue without location';
@@ -703,22 +674,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discoveryTitle => 'Your matches are next';
 
   @override
-  String get discoveryMessage =>
-      'Compatible people will appear here once discovery is ready.';
+  String get discoveryMessage => 'Compatible people will appear here once discovery is ready.';
 
   @override
   String get discoveryEmptyTitle => 'No one new right now';
 
   @override
-  String get discoveryEmptyMessage =>
-      'Widen your distance or check back a little later.';
+  String get discoveryEmptyMessage => 'Widen your distance or check back a little later.';
 
   @override
   String get discoverySeenEveryoneTitle => 'You\'ve seen everyone for now';
 
   @override
-  String get discoverySeenEveryoneMessage =>
-      'Check back later for new people, or restart the demo to explore again.';
+  String get discoverySeenEveryoneMessage => 'Check back later for new people, or restart the demo to explore again.';
 
   @override
   String get exploreAgain => 'Explore again';
@@ -730,8 +698,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discoveryFiltersTitle => 'Discovery filters';
 
   @override
-  String get discoveryFiltersHint =>
-      'Filters are saved locally. Server-side filtering arrives in a later update.';
+  String get discoveryFiltersHint => 'Filters are saved locally. Server-side filtering arrives in a later update.';
 
   @override
   String get applyFilters => 'Apply filters';
@@ -767,10 +734,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipGoalFiguringOut => 'Still figuring it out';
 
   @override
-  String get compatibilityReasonsHeading => 'Why you\'re compatible';
+  String get compatibilityReasonsHeading => 'Why you might connect';
 
   @override
-  String get whyYoureSeeingThis => 'Why you\'re seeing this person';
+  String get whyYoureSeeingThis => 'Why this profile is shown';
 
   @override
   String get sharedInterests => 'Shared interests';
@@ -808,7 +775,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String compatibilityPercent(int percent) {
-    return '$percent% match';
+    return 'Suggested · $percent% compatible';
   }
 
   @override
@@ -899,8 +866,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchesEmptyTitle => 'No matches yet';
 
   @override
-  String get matchesEmptyMessage =>
-      'When you like each other, the conversation starts here.';
+  String get matchesEmptyMessage => 'When you like each other, the conversation starts here.';
 
   @override
   String get newMatch => 'New match';
@@ -921,6 +887,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get typing => 'is typing...';
 
   @override
+  String get attachPhoto => 'Photo';
+
+  @override
+  String get takePhoto => 'Camera';
+
+  @override
+  String get recordVoice => 'Voice message';
+
+  @override
+  String get holdToRecord => 'Recording…';
+
+  @override
+  String get playVoice => 'Play';
+
+  @override
+  String get pauseVoice => 'Pause';
+
+  @override
+  String get previewPhoto => 'Send this photo?';
+
+  @override
+  String get messageDeleted => 'Message deleted';
+
+  @override
+  String get deleteMessage => 'Delete';
+
+  @override
+  String get deleteMessageConfirm => 'Delete this message? The other person will no longer see it.';
+
+  @override
+  String get micDeniedChat => 'Microphone permission is needed to send a voice message.';
+
+  @override
+  String get photoDeniedChat => 'Photo permission is needed to send an image.';
+
+  @override
+  String get callCancelled => 'Call cancelled';
+
+  @override
+  String get callRejected => 'Call declined';
+
+  @override
   String get unmatchedBanner => 'You are no longer matched with this person.';
 
   @override
@@ -939,8 +947,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchInactive => 'This match is no longer active.';
 
   @override
-  String get notMatched =>
-      'You can only chat with people you have matched with.';
+  String get notMatched => 'You can only chat with people you have matched with.';
 
   @override
   String get alreadySwiped => 'You already decided on this person.';
@@ -1021,8 +1028,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get callPermissionTitle => 'Camera and microphone';
 
   @override
-  String get callPermissionBody =>
-      'Video calls need camera and microphone permission.';
+  String get callPermissionBody => 'Video calls need camera and microphone permission.';
 
   @override
   String get presenceOnline => 'Online';
@@ -1058,8 +1064,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unmatchConfirmTitle => 'Unmatch this person?';
 
   @override
-  String get unmatchConfirmMessage =>
-      'You will not be able to message each other, and the chat will close.';
+  String get unmatchConfirmMessage => 'You will not be able to message each other, and the chat will close.';
 
   @override
   String get block => 'Block';
@@ -1068,8 +1073,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get blockConfirmTitle => 'Block this person?';
 
   @override
-  String get blockConfirmMessage =>
-      'They will disappear from discovery, and you will not be able to message or call each other.';
+  String get blockConfirmMessage => 'They will disappear from discovery, and you will not be able to message or call each other.';
 
   @override
   String get report => 'Report';
@@ -1090,8 +1094,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offerBlockTitle => 'Want to block them too?';
 
   @override
-  String get offerBlockMessage =>
-      'Blocking stops new messages, matches, and calls.';
+  String get offerBlockMessage => 'Blocking stops new messages, matches, and calls.';
 
   @override
   String get reportSpam => 'Spam';
@@ -1115,6 +1118,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportOther => 'Other';
 
   @override
+  String get hideProfile => 'Hide profile';
+
+  @override
+  String get hideProfileTitle => 'Hide this profile?';
+
+  @override
+  String get hideProfileMessage => 'They will not appear in your discovery stack again.';
+
+  @override
   String get linkedAccounts => 'Linked accounts';
 
   @override
@@ -1127,8 +1139,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkEmailTitle => 'Link email and password';
 
   @override
-  String get linkEmailSubtitle =>
-      'This adds email sign-in to your current account. It does not merge another Mevora account.';
+  String get linkEmailSubtitle => 'This adds email sign-in to your current account. It does not merge another Mevora account.';
 
   @override
   String get deleteAccount => 'Delete account';
@@ -1137,8 +1148,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteAccountTitle => 'Delete your account?';
 
   @override
-  String get deleteAccountBody =>
-      'This permanently deletes your Mevora account, profile, matches, and messages. This cannot be undone.';
+  String get deleteAccountBody => 'This permanently deletes your Mevora account, profile, matches, and messages. This cannot be undone.';
 
   @override
   String get deleteConfirm => 'Delete forever';
@@ -1171,14 +1181,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boostTitle => 'BOOST';
 
   @override
-  String get boostSubtitle =>
-      'Show your profile to more people and get discovered faster.';
+  String get boostSubtitle => 'Show your profile to more people and get discovered faster.';
 
   @override
-  String get boostDuration => '30 minutes';
+  String get boostDuration => 'Boost your profile';
 
   @override
-  String get boostActivate => 'Activate Boost';
+  String get boostActivate => 'Use leftover Boost';
 
   @override
   String get boostBuy => 'Buy Boost';
@@ -1193,34 +1202,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boostSuccessTitle => 'Boost is on! 🚀';
 
   @override
-  String get boostSuccessMessage =>
-      'Your profile will start appearing to more people.';
+  String get boostSuccessMessage => 'Your profile will start appearing to more people.';
 
   @override
-  String get boostAlreadyActive => 'You already have an active Boost.';
+  String get boostAlreadyActive => 'You already have an active Boost. Buying another pack adds time to the remaining period.';
 
   @override
   String get boostPurchaseCancelled => 'Purchase cancelled.';
 
   @override
-  String get boostPurchaseFailed =>
-      'Purchase could not be completed. Please try again.';
+  String get boostPurchaseFailed => 'Purchase could not be completed. Please try again.';
 
   @override
-  String get boostStoreUnavailable =>
-      'The store is not available on this device right now.';
+  String get boostStoreUnavailable => 'The store is not available on this device right now.';
 
   @override
-  String get boostStoreDown =>
-      'The store is not responding. Try again in a moment.';
+  String get boostStoreDown => 'The store is not responding. Try again in a moment.';
 
   @override
-  String get boostNetworkError =>
-      'We could not verify the purchase because of a connection issue.';
+  String get boostNetworkError => 'We could not verify the purchase because of a connection issue.';
 
   @override
-  String get boostVerificationFailed =>
-      'We could not verify the purchase. Try again in a moment.';
+  String get boostVerificationFailed => 'We could not verify the purchase. Try again in a moment.';
 
   @override
   String get boostAlreadyProcessed => 'This purchase was already processed.';
@@ -1236,7 +1239,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String boostRemainingMinutes(int minutes) {
-    return '$minutes min';
+    return '$minutes min left';
+  }
+
+  @override
+  String boostRemainingDays(int days) {
+    return '$days days left';
+  }
+
+  @override
+  String boostRemainingHours(int hours) {
+    return '$hours hours left';
   }
 
   @override
@@ -1257,8 +1270,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get boostPackWeek => '1 Week';
+
+  @override
+  String get boostPackMonth => '1 Month';
+
+  @override
+  String get boostPackYear => '1 Year';
+
+  @override
+  String get boostPackWeekSubtitle => 'Boost your profile for 7 days';
+
+  @override
+  String get boostPackMonthSubtitle => 'Boost your profile for 30 days';
+
+  @override
+  String get boostPackYearSubtitle => 'Boost your profile for 365 days';
+
+  @override
+  String get boostBestValue => 'Best value';
+
+  @override
   String boostBalance(int count) {
-    return '$count Boost';
+    return '$count leftover Boost';
   }
 
   @override
@@ -1273,14 +1307,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get boostInsufficientBalance =>
-      'You need a Boost before you can go live.';
+  String get boostInsufficientBalance => 'You need a Boost before you can go live.';
 
   @override
-  String get boostHistoryTitle => 'Boost history';
+  String get boostHistoryTitle => 'Purchase history';
 
   @override
-  String get boostHistoryEmpty => 'No Boost activity yet.';
+  String get boostHistoryEmpty => 'No purchases yet.';
 
   @override
   String get boostHistoryPurchase => 'Purchase';
@@ -1289,13 +1322,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boostHistoryActivation => 'Activation';
 
   @override
+  String get boostHistoryPlatformIos => 'App Store';
+
+  @override
+  String get boostHistoryPlatformAndroid => 'Google Play';
+
+  @override
   String get boostActiveBadge => 'Boost on';
 
   @override
   String get boostActivating => 'Turning Boost on...';
 
   @override
-  String get boostNoBalance => 'Buy a pack to activate Boost.';
+  String get boostNoBalance => 'Choose a pack to Boost your profile.';
+
+  @override
+  String get boostPriceUnavailable => 'Price unavailable';
+
+  @override
+  String get boostRestoring => 'Restoring purchases...';
 
   @override
   String radiusKm(int km) {
@@ -1318,43 +1363,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restorePurchases => 'Restore purchases';
 
   @override
-  String get startupUnavailable =>
-      'Mevora could not start. Check your connection and try again.';
+  String get startupUnavailable => 'Mevora could not start. Check your connection and try again.';
 
   @override
   String get permissionCameraTitle => 'Camera';
 
   @override
-  String get permissionCameraDescription =>
-      'Mevora uses your camera to take profile photos.';
+  String get permissionCameraDescription => 'Mevora uses your camera to take profile photos.';
 
   @override
   String get permissionMicrophoneTitle => 'Microphone';
 
   @override
-  String get permissionMicrophoneDescription =>
-      'Mevora uses your microphone for voice and audio features.';
+  String get permissionMicrophoneDescription => 'Mevora uses your microphone for voice and audio features.';
 
   @override
   String get permissionPhotosTitle => 'Photos';
 
   @override
-  String get permissionPhotosDescription =>
-      'Mevora needs access to your photos so you can add profile pictures.';
+  String get permissionPhotosDescription => 'Mevora needs access to your photos so you can add profile pictures.';
 
   @override
   String get permissionLocationTitle => 'Location';
 
   @override
-  String get permissionLocationDescription =>
-      'Mevora uses your location to improve distance and nearby discovery.';
+  String get permissionLocationDescription => 'Mevora uses your location to improve distance and nearby discovery.';
 
   @override
   String get permissionNotificationsTitle => 'Notifications';
 
   @override
-  String get permissionNotificationsDescription =>
-      'Notifications help you know when you receive a match or message.';
+  String get permissionNotificationsDescription => 'Notifications help you know when you receive a match or message.';
 
   @override
   String get permissionAllow => 'Continue';
@@ -1363,12 +1402,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionDeniedTitle => 'Permission needed';
 
   @override
-  String get permissionDeniedBody =>
-      'This feature works better with permission. You can try again, or continue without it.';
+  String get permissionDeniedBody => 'This feature works better with permission. You can try again, or continue without it.';
 
   @override
-  String get permissionPermanentlyDeniedBody =>
-      'Permission is turned off. You can enable it in device settings.';
+  String get permissionPermanentlyDeniedBody => 'Permission is turned off. You can enable it in device settings.';
 
   @override
   String get permissionContinueWithout => 'Continue without permission';
@@ -1395,8 +1432,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacyPermissionsTitle => 'Privacy & Permissions';
 
   @override
-  String get privacyPermissionsSubtitle =>
-      'Mevora asks for each permission only when a feature needs it. You can use the app without granting optional access.';
+  String get privacyPermissionsSubtitle => 'Mevora asks for each permission only when a feature needs it. You can use the app without granting optional access.';
 
   @override
   String get privacyOpenDeviceSettings => 'Open device settings';
@@ -1422,8 +1458,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get photoUploadFailed =>
-      'Photo could not be uploaded. Please try again.';
+  String get photoUploadFailed => 'Photo could not be uploaded. Please try again.';
 
   @override
   String get photoUploaded => 'Photo uploaded';
@@ -1462,15 +1497,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLogoutTitle => 'Log out?';
 
   @override
-  String get settingsLogoutBody =>
-      'You will need to sign in again to use Mevora.';
+  String get settingsLogoutBody => 'You will need to sign in again to use Mevora.';
 
   @override
   String get settingsDeleteConfirmTitle => 'This is permanent';
 
   @override
-  String get settingsDeleteConfirmBody =>
-      'All matches, messages, and profile data will be deleted forever.';
+  String get settingsDeleteConfirmBody => 'All matches, messages, and profile data will be deleted forever.';
 
   @override
   String get settingsReauthTitle => 'Confirm your identity';
@@ -1494,8 +1527,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPhotoMaxExceeded => 'You can add up to 6 photos.';
 
   @override
-  String get settingsPhotoPrimaryDeleteBlocked =>
-      'Set another photo as primary before deleting this one.';
+  String get settingsPhotoPrimaryDeleteBlocked => 'Set another photo as primary before deleting this one.';
 
   @override
   String get settingsPhotoPrimaryRequired => 'Choose a primary photo.';
@@ -1519,20 +1551,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMaxAgeInvalid => 'Maximum age is too high.';
 
   @override
-  String get settingsAgeRangeInvalid =>
-      'Maximum age must be greater than minimum age.';
+  String get settingsAgeRangeInvalid => 'Maximum age must be greater than minimum age.';
 
   @override
-  String get settingsDistanceInvalid =>
-      'Distance must be between 1 and 500 km.';
+  String get settingsDistanceInvalid => 'Distance must be between 1 and 500 km.';
 
   @override
-  String get settingsGooglePasswordMessage =>
-      'Your account uses Google Sign-In. Password changes are managed by Google.';
+  String get settingsGooglePasswordMessage => 'Your account uses Google Sign-In. Password changes are managed by Google.';
 
   @override
-  String get settingsBirthDateLocked =>
-      'Birthday cannot be changed after onboarding. Age is calculated from your birthday.';
+  String get settingsBirthDateLocked => 'Birthday cannot be changed after onboarding. Age is calculated from your birthday.';
 
   @override
   String get settingsSaveProfile => 'Save profile';
@@ -1544,8 +1572,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsBlockedEmptyTitle => 'No blocked users';
 
   @override
-  String get settingsBlockedEmptyMessage =>
-      'People you block will appear here.';
+  String get settingsBlockedEmptyMessage => 'People you block will appear here.';
 
   @override
   String get settingsShowOnlineStatus => 'Show online status';
@@ -1614,14 +1641,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get citySelectNone => 'No province found';
 
   @override
-  String get discoveryLoading => 'Finding compatible people...';
+  String get discoveryLoading => 'Discovering people for you...';
 
   @override
   String get discoveryLoadErrorTitle => 'Couldn\'t load profiles';
 
   @override
-  String get discoveryLoadErrorMessage =>
-      'Something went wrong while loading profiles.';
+  String get discoveryLoadErrorMessage => 'Something went wrong while loading profiles.';
 
   @override
   String get discoveryChangePreferences => 'Change discovery preferences';
@@ -1639,4 +1665,250 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tabSettings => 'Settings';
+
+  @override
+  String get tabMusic => 'Music';
+
+  @override
+  String get musicTitle => 'Music';
+
+  @override
+  String get musicConnectCta => '🎵 Connect Spotify';
+
+  @override
+  String get musicConnected => '✓ Spotify connected';
+
+  @override
+  String get musicUnconnectedCopy => 'Connect your Spotify account and discover people who fit your music taste.';
+
+  @override
+  String get musicConnecting => 'Connecting Spotify…';
+
+  @override
+  String get musicSyncing => 'Refreshing your music taste…';
+
+  @override
+  String get musicRefresh => 'Refresh music data';
+
+  @override
+  String get musicRefreshCooldown => 'You can refresh again later.';
+
+  @override
+  String get musicProfileTitle => 'Your music profile';
+
+  @override
+  String get musicSameTasteTitle => 'People who listen to the same music';
+
+  @override
+  String get musicSameTasteEmpty => 'No overlapping tastes yet. Refresh after you listen a bit more.';
+
+  @override
+  String get musicWeeklyTitle => 'This week\'s music';
+
+  @override
+  String get musicWeeklyEmpty => 'Weekly highlights will appear here once enough people connect Spotify.';
+
+  @override
+  String musicCompatibilityPercent(int percent) {
+    return 'Similar music taste · up to $percent%';
+  }
+
+  @override
+  String musicCompatibilityShort(int percent) {
+    return 'Music · $percent%';
+  }
+
+  @override
+  String musicSharedCounts(int tracks, int artists) {
+    return '$tracks shared tracks · $artists shared artists';
+  }
+
+  @override
+  String get musicOauthCancelled => 'Spotify connection was cancelled.';
+
+  @override
+  String get musicApiDenied => 'Spotify didn\'t allow access. You can try again later.';
+
+  @override
+  String get musicTokenExpired => 'Your Spotify connection expired. Please reconnect.';
+
+  @override
+  String get musicNetwork => 'Check your internet connection and try again.';
+
+  @override
+  String get musicNotConfigured => 'Spotify isn\'t configured in this build yet.';
+
+  @override
+  String get musicConnectError => 'Couldn\'t connect Spotify. The rest of Mevora still works.';
+
+  @override
+  String get settingsConnectSpotify => 'Connect Spotify';
+
+  @override
+  String get settingsSpotifySubtitle => 'Music taste matching — no playback in Mevora.';
+
+  @override
+  String get matchScoreTitle => 'Match points';
+
+  @override
+  String get matchScoreSubtitle => 'Your connection reputation';
+
+  @override
+  String matchScoreValue(int score) {
+    return '$score points';
+  }
+
+  @override
+  String get matchScoreHistoryTitle => 'Point history';
+
+  @override
+  String get matchScoreHistoryEmpty => 'New matches and conversations will add points here.';
+
+  @override
+  String get matchScoreHistoryMatch => 'New match +1';
+
+  @override
+  String get matchScoreHistoryInteraction => 'Conversation +1';
+
+  @override
+  String get matchFeedbackTitle => 'How did this match go?';
+
+  @override
+  String get matchFeedbackMessage => 'Optional. This note stays in your history — they will not see it, and it does not change anyone\'s points.';
+
+  @override
+  String get matchFeedbackHint => 'A short private note';
+
+  @override
+  String get matchFeedbackSubmit => 'Save note';
+
+  @override
+  String get matchFeedbackThanks => 'Saved to your history.';
+
+  @override
+  String get matchFeedbackTooShort => 'Write a short note, or skip.';
+
+  @override
+  String get matchFeedbackFailed => 'Couldn\'t save that note. Try again.';
+
+  @override
+  String get relationshipPromptTitle => 'What do you think about relationships?';
+
+  @override
+  String get relationshipQuestionsPreparing => 'New questions are being prepared. Please try again in a bit.';
+
+  @override
+  String get relationshipTestTitle => 'Relationship Test';
+
+  @override
+  String get relationshipTestHeadline => 'Discover people who share your views';
+
+  @override
+  String get relationshipTestMessage => 'Answer 3 short questions to see people who may think similarly.';
+
+  @override
+  String get relationshipTestStart => 'Start the Relationship Test';
+
+  @override
+  String get relationshipTestLater => 'Not now';
+
+  @override
+  String get relationshipTestDoneTitle => 'Your relationship test is complete';
+
+  @override
+  String get relationshipTestFound => 'We found someone whose views match yours.';
+
+  @override
+  String get relationshipTestAlign => 'Your answers overlap on several topics.';
+
+  @override
+  String get relationshipTestNearest => 'Closest to you:';
+
+  @override
+  String get relationshipTestEmpty => 'There\'s no one nearby who thinks like you right now.';
+
+  @override
+  String get relationshipTestViewProfile => 'View profile';
+
+  @override
+  String get relationshipTestOpenChat => 'Open chat';
+
+  @override
+  String get relationshipMatchBadge => 'Relationship Test';
+
+  @override
+  String relationshipPromptProgress(int answered, int total) {
+    return '$answered / $total';
+  }
+
+  @override
+  String relationshipCompatibilityPercent(int percent) {
+    return 'Views overlap · $percent%';
+  }
+
+  @override
+  String relationshipCompatibilityShort(int percent) {
+    return 'Views · $percent%';
+  }
+
+  @override
+  String relationshipSharedViews(int count) {
+    return '$count shared views';
+  }
+
+  @override
+  String get relationshipSimilarThinker => 'Someone who thinks similarly about relationships was found.';
+
+  @override
+  String get relationshipViewsAlign => 'Your relationship views overlap.';
+
+  @override
+  String get relationshipMatchesTitle => 'Relationship matches';
+
+  @override
+  String get relationshipMatchesEmpty => 'Answer a few relationship questions to find people who think like you — distance does not matter here.';
+
+  @override
+  String relationshipProfileSubtitle(int answered) {
+    return '$answered relationship questions answered';
+  }
+
+  @override
+  String get relationshipTopicJealousy => 'You think similarly about jealousy.';
+
+  @override
+  String get relationshipTopicTrust => 'You think similarly about trust.';
+
+  @override
+  String get relationshipTopicLoyalty => 'You think similarly about loyalty.';
+
+  @override
+  String get relationshipTopicCommunication => 'You think similarly about communication.';
+
+  @override
+  String get relationshipTopicBoundaries => 'You think similarly about boundaries.';
+
+  @override
+  String get relationshipTopicSocialLife => 'You think similarly about social life.';
+
+  @override
+  String get relationshipTopicFriendship => 'You think similarly about friendship.';
+
+  @override
+  String get relationshipTopicPersonalSpace => 'You think similarly about personal space.';
+
+  @override
+  String get relationshipTopicFuturePlans => 'You think similarly about future plans.';
+
+  @override
+  String get relationshipTopicMoney => 'You think similarly about money.';
+
+  @override
+  String get relationshipTopicFlirting => 'You think similarly about flirting.';
+
+  @override
+  String get relationshipTopicExes => 'You think similarly about past relationships.';
+
+  @override
+  String get relationshipTopicExpectations => 'You think similarly about relationship expectations.';
 }

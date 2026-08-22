@@ -5,83 +5,63 @@
   ],
   "products" : [
     {
-      "displayPrice" : "49.99",
+      "displayPrice" : "99.99",
       "familyShareable" : false,
-      "internalID" : "BOOST1",
+      "internalID" : "BOOST7D",
       "localizations" : [
         {
-          "description" : "One Boost: extra Discovery visibility for 30 minutes.",
-          "displayName" : "1 Boost",
+          "description" : "Boost your profile in Discovery for 7 days.",
+          "displayName" : "1 Week Boost",
           "locale" : "en_US"
         },
         {
-          "description" : "1 Boost: profilini 30 dakika boyunca daha fazla kişiye göster.",
-          "displayName" : "1 Boost",
+          "description" : "Profilini 7 gün boyunca öne çıkar.",
+          "displayName" : "1 Haftalık Boost",
           "locale" : "tr"
         }
       ],
-      "productID" : "com.mevora.app.boost.1",
-      "referenceName" : "Boost x1",
+      "productID" : "mevora_boost_7_days",
+      "referenceName" : "Boost 7 days",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "199.99",
+      "displayPrice" : "249.99",
       "familyShareable" : false,
-      "internalID" : "BOOST5",
+      "internalID" : "BOOST30D",
       "localizations" : [
         {
-          "description" : "Five Boosts. Each lasts 30 minutes.",
-          "displayName" : "5 Boost",
+          "description" : "Boost your profile in Discovery for 30 days.",
+          "displayName" : "1 Month Boost",
           "locale" : "en_US"
         },
         {
-          "description" : "5 Boost. Her biri 30 dakika sürer.",
-          "displayName" : "5 Boost",
+          "description" : "Profilini 30 gün boyunca öne çıkar.",
+          "displayName" : "1 Aylık Boost",
           "locale" : "tr"
         }
       ],
-      "productID" : "com.mevora.app.boost.5",
-      "referenceName" : "Boost x5",
+      "productID" : "mevora_boost_1_month",
+      "referenceName" : "Boost 1 month",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "349.99",
+      "displayPrice" : "1499.99",
       "familyShareable" : false,
-      "internalID" : "BOOST10",
+      "internalID" : "BOOST365D",
       "localizations" : [
         {
-          "description" : "Ten Boosts. Each lasts 30 minutes.",
-          "displayName" : "10 Boost",
+          "description" : "Boost your profile in Discovery for 365 days.",
+          "displayName" : "1 Year Boost",
           "locale" : "en_US"
         },
         {
-          "description" : "10 Boost. Her biri 30 dakika sürer.",
-          "displayName" : "10 Boost",
+          "description" : "Profilini 365 gün boyunca öne çıkar.",
+          "displayName" : "1 Yıllık Boost",
           "locale" : "tr"
         }
       ],
-      "productID" : "com.mevora.app.boost.10",
-      "referenceName" : "Boost x10",
-      "type" : "Consumable"
-    },
-    {
-      "displayPrice" : "49.99",
-      "familyShareable" : false,
-      "internalID" : "BOOST30",
-      "localizations" : [
-        {
-          "description" : "Show your profile to more people for 30 minutes.",
-          "displayName" : "Mevora Boost",
-          "locale" : "en_US"
-        },
-        {
-          "description" : "Profilini 30 dakika boyunca daha fazla kişiye göster.",
-          "displayName" : "Mevora Boost",
-          "locale" : "tr"
-        }
-      ],
-      "productID" : "com.mevora.app.boost",
-      "referenceName" : "Boost 30 min (legacy)",
+      "productID" : "mevora_boost_1_year",
+      "referenceName" : "Boost 1 year",
       "type" : "Consumable"
     }
   ],

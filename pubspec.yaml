@@ -34,9 +34,15 @@ dependencies:
   shared_preferences: ^2.5.3
   image_picker: ^1.2.0
   rive: ^0.14.11
+  livekit_client: ^2.11.0
+  record: ^6.2.1
+  audioplayers: ^6.7.1
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
 
@@ -45,6 +51,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/login_background.jpg
+    - assets/images/portraits/
     - assets/rive/common/
     - assets/rive/authentication/
     - assets/rive/onboarding/

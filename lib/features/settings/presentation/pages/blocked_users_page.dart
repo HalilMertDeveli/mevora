@@ -6,7 +6,9 @@ import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/features/settings/domain/entities/blocked_user_entry.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
+import 'package:mevora/shared/widgets/mevora_loading.dart';
 
 class BlockedUsersPage extends StatelessWidget {
   const BlockedUsersPage({super.key});
@@ -24,6 +26,13 @@ class BlockedUsersPage extends StatelessWidget {
       body: StreamBuilder<List<BlockedUserEntry>>(
         stream: settings.settingsHub.watchBlockedUsers(uid),
         builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
+            return MevoraLoading.page(
+              message: l10n.blockedUsers,
+              size: 72,
+            );
+          }
           final entries = snapshot.data ?? const [];
           if (entries.isEmpty) {
             return MevoraEmptyState(
@@ -35,15 +44,14 @@ class BlockedUsersPage extends StatelessWidget {
           }
           return ListView.separated(
             itemCount: entries.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final entry = entries[index];
+              final photo = MevoraNetworkImages.provider(entry.photoUrl);
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundImage: entry.photoUrl == null
-                      ? null
-                      : NetworkImage(entry.photoUrl!),
-                  child: entry.photoUrl == null
+                  backgroundImage: photo,
+                  child: photo == null
                       ? const Icon(Icons.person_outline)
                       : null,
                 ),

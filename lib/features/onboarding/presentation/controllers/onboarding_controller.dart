@@ -341,16 +341,17 @@ class OnboardingController extends ChangeNotifier {
       switch (upload) {
         case Success(:final value):
           final latest = photoDrafts.indexWhere((item) => item.id == id);
+          final extension = draft.contentType.contains('png')
+              ? 'png'
+              : draft.contentType.contains('webp')
+              ? 'webp'
+              : 'jpg';
           final remote = ProfilePhoto(
             id: draft.id,
-            storagePath: StoragePaths.profilePhoto(
+            storagePath: StoragePaths.profilePending(
               ownerUid: uid,
               imageId: draft.id,
-              extension: draft.contentType.contains('png')
-                  ? 'png'
-                  : draft.contentType.contains('webp')
-                  ? 'webp'
-                  : 'jpg',
+              extension: extension,
             ),
             downloadUrl: value.toString(),
             moderationStatus: 'pending',

@@ -24,10 +24,15 @@ class BoostActiveBadge extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
-    final minutes = boost!.remaining(current).inMinutes.clamp(1, 24 * 60);
+    final remaining = boost!.remaining(current);
+    final remainingLabel = remaining.inDays >= 1
+        ? l10n.boostRemainingDays(remaining.inDays)
+        : remaining.inHours >= 1
+        ? l10n.boostRemainingHours(remaining.inHours)
+        : l10n.boostRemainingMinutes(remaining.inMinutes.clamp(1, 59));
     final label = compact
         ? l10n.boostActiveBadge
-        : '${l10n.boostActiveBadge} · ${l10n.boostRemainingMinutes(minutes)}';
+        : '${l10n.boostActiveBadge} · $remainingLabel';
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,

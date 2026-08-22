@@ -85,11 +85,12 @@ class DiscoverySwipeOverlay extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         label,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.4,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: color,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.4,
+                            ),
                       ),
                     ],
                   ),
@@ -119,12 +120,18 @@ class DiscoverySwipeOverlay extends StatelessWidget {
 
   double _progressFor(DiscoverySwipeDirection direction) {
     return switch (direction) {
-      DiscoverySwipeDirection.like =>
-        (dragOffset.dx / threshold).clamp(0.0, 1.0),
-      DiscoverySwipeDirection.pass =>
-        (-dragOffset.dx / threshold).clamp(0.0, 1.0),
-      DiscoverySwipeDirection.superLike =>
-        (-dragOffset.dy / threshold).clamp(0.0, 1.0),
+      DiscoverySwipeDirection.like => (dragOffset.dx / threshold).clamp(
+        0.0,
+        1.0,
+      ),
+      DiscoverySwipeDirection.pass => (-dragOffset.dx / threshold).clamp(
+        0.0,
+        1.0,
+      ),
+      DiscoverySwipeDirection.superLike => (-dragOffset.dy / threshold).clamp(
+        0.0,
+        1.0,
+      ),
       DiscoverySwipeDirection.none => 0,
     };
   }

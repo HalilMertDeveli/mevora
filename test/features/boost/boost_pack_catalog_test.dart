@@ -3,38 +3,43 @@ import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/services/boost_credit_service.dart';
 
 void main() {
-  test('default packs map SKUs to 1 / 5 / 10 credits', () {
-    expect(BoostPackCatalog.boostCountFor(BoostPackCatalog.pack1), 1);
-    expect(BoostPackCatalog.boostCountFor(BoostPackCatalog.pack5), 5);
-    expect(BoostPackCatalog.boostCountFor(BoostPackCatalog.pack10), 10);
-    expect(BoostPackCatalog.boostCountFor(BoostPackCatalog.legacyProductId), 1);
+  test('storefront packs are 7 / 30 / 365 day grants', () {
+    expect(BoostPackCatalog.durationFor(BoostPackCatalog.week).inDays, 7);
+    expect(BoostPackCatalog.durationFor(BoostPackCatalog.month).inDays, 30);
+    expect(BoostPackCatalog.durationFor(BoostPackCatalog.year).inDays, 365);
+    expect(
+      BoostPackCatalog.storefrontPacks.map((pack) => pack.productId),
+      [
+        BoostPackCatalog.week,
+        BoostPackCatalog.month,
+        BoostPackCatalog.year,
+      ],
+    );
     expect(BoostPackCatalog.isAllowed('com.other.boost'), isFalse);
+    expect(BoostPackCatalog.isAllowed(BoostPackCatalog.pack5), isTrue);
   });
 
-  test('catalog parse uses backend JSON and skips invalid rows', () {
+  test('catalog parse keeps duration packs and skips invalid rows', () {
     final packs = BoostPackCatalog.parse([
       {
-        'productId': 'com.mevora.app.boost.1',
-        'boostCount': 1,
+        'productId': BoostPackCatalog.week,
+        'durationDays': 7,
         'displayOrder': 0,
-        'fallbackPriceAmount': 49.99,
       },
       {'productId': 'bad', 'boostCount': 0},
       {
-        'sku': 'com.mevora.app.boost.5',
-        'count': 5,
+        'sku': BoostPackCatalog.month,
+        'days': 30,
         'order': 1,
-        'price': 199.99,
       },
     ]);
     expect(packs.map((pack) => pack.productId), [
-      BoostPackCatalog.pack1,
-      BoostPackCatalog.pack5,
+      BoostPackCatalog.week,
+      BoostPackCatalog.month,
     ]);
-    expect(packs.first.fallbackPriceLabel, '₺49,99');
   });
 
-  test('credit adds pack size and is idempotent on already-credited purchases', () {
+  test('legacy credit packs still credit wallet and are not on the storefront', () {
     const service = BoostCreditService();
     final first = service.credit(
       productId: BoostPackCatalog.pack10,
@@ -51,14 +56,14 @@ void main() {
       alreadyCredited: true,
     );
     expect(again.alreadyProcessed, isTrue);
-    expect(again.shouldCredit, isFalse);
-    expect(again.balance, 12);
 
-    final unknown = service.credit(
-      productId: 'com.other.boost',
+    final duration = service.credit(
+      productId: BoostPackCatalog.week,
       currentBalance: 2,
       alreadyCredited: false,
     );
-    expect(unknown.invalidPack, isTrue);
+    expect(duration.shouldCredit, isTrue);
+    expect(duration.added, 0);
+    expect(duration.balance, 2);
   });
 }

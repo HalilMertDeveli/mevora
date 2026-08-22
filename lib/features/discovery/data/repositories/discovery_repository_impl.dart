@@ -118,6 +118,24 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       compatibilityReasons: firestoreStringList(raw['compatibilityReasons']),
       bio: profile['bio'] as String?,
       city: profile['city'] as String?,
+      gender: profile['gender'] as String?,
+      relationshipGoal: profile['relationshipGoal'] as String?,
+      musicCompatibilityScore: raw['musicCompatibilityScore'] == null
+          ? null
+          : firestoreInt(raw['musicCompatibilityScore'], 0),
+      relationshipCompatibilityScore:
+          raw['relationshipCompatibilityScore'] == null
+          ? null
+          : firestoreInt(raw['relationshipCompatibilityScore'], 0),
+      relationshipSharedViewCount: raw['relationshipSharedViewCount'] == null
+          ? null
+          : firestoreInt(raw['relationshipSharedViewCount'], 0),
+      relationshipAlignedCount: raw['relationshipAlignedCount'] == null
+          ? null
+          : firestoreInt(raw['relationshipAlignedCount'], 0),
+      relationshipSummaryTopics: firestoreStringList(
+        raw['relationshipSummaryTopics'],
+      ),
     );
   }
 }

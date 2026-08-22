@@ -118,7 +118,12 @@ function datingPreference(
   prefs: DocumentData,
   profile: DocumentData,
 ): unknown {
-  return prefs.preferredGender || prefs.showMe || profile.interestedIn;
+  return (
+    prefs.preferredGender ||
+    prefs.showMe ||
+    prefs.interestedIn ||
+    profile.interestedIn
+  );
 }
 
 async function isBlocked(a: string, b: string): Promise<boolean> {
@@ -212,6 +217,7 @@ async function findExactCandidates(
   const viewerProfile = profileSnap.data() ?? {};
   const viewerGender = viewerProfile.gender as string | undefined;
   const viewerWant = datingPreference(prefs, viewerProfile);
+  const viewerAnswers = answersFromSummary((await loadSummary(uid)).data());
   const minAge = Number(prefs.minAge ?? 18);
   const maxAge = Number(prefs.maxAge ?? 99);
   relDebug(
@@ -255,6 +261,13 @@ async function findExactCandidates(
     if (!interestedInAllows(viewerWant, data.gender)) continue;
     if (!interestedInAllows(otherWant, viewerGender)) continue;
     afterPreference += 1;
+    const filteredViewer: RelationshipAnswers = {};
+    const filteredOther: RelationshipAnswers = {};
+    for (const questionId of questionIds) {
+      if (viewerAnswers[questionId]) filteredViewer[questionId] = viewerAnswers[questionId];
+      if (otherAnswers[questionId]) filteredOther[questionId] = otherAnswers[questionId];
+    }
+    const compatibility = scoreRelationshipCompatibility(filteredViewer, filteredOther);
     const otherLoc = await db.doc(`userLocation/${otherUid}`).get();
     const other = otherLoc.data();
     let distanceKm: number | null = null;
@@ -278,9 +291,9 @@ async function findExactCandidates(
     }
     scored.push({
       uid: otherUid,
-      score: 100,
-      sharedQuestionCount: 3,
-      alignedCount: 3,
+      score: compatibility.score,
+      sharedQuestionCount: compatibility.sharedQuestionCount,
+      alignedCount: compatibility.alignedCount,
       distanceKm,
       distanceLabel: distanceKm == null ? null : distanceLabel(distanceKm, lang),
       profile: {

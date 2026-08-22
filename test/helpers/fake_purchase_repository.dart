@@ -10,6 +10,7 @@ import 'package:mevora/features/boost/domain/entities/boost_product.dart';
 import 'package:mevora/features/boost/domain/entities/boost_wallet.dart';
 import 'package:mevora/features/boost/domain/entities/store_transaction.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
+import 'package:mevora/features/boost/domain/services/boost_activation_service.dart';
 
 class FakeUidSource implements AuthUidSource {
   FakeUidSource(this.currentUid);
@@ -24,19 +25,18 @@ class FakeUidSource implements AuthUidSource {
 class FakePurchaseRepository implements PurchaseRepository {
   FakePurchaseRepository({
     this.product = const BoostProduct(
-      productId: BoostPackCatalog.pack1,
-      title: 'Mevora Boost',
-      description: 'Extra discovery visibility',
-      localizedPrice: '₺49,99',
+      productId: BoostPackCatalog.week,
+      title: '1 Week',
+      description: 'Boost your profile for 7 days',
+      localizedPrice: '₺99,99',
       currency: 'TRY',
       available: true,
-      duration: Duration(minutes: 30),
-      boostCount: 1,
-      fallbackPrice: '₺49,99',
+      duration: BoostPackCatalog.weekDuration,
+      fallbackPrice: '₺99,99',
     ),
     this.transaction = const StoreTransaction(
       platform: PurchasePlatform.android,
-      productId: BoostPackCatalog.pack1,
+      productId: BoostPackCatalog.week,
       transactionId: 'GPA.1234',
       purchaseToken: 'token',
     ),
@@ -61,6 +61,7 @@ class FakePurchaseRepository implements PurchaseRepository {
   bool purchaseCalled = false;
   bool verifyCalled = false;
   bool activateCalled = false;
+  bool restoreCalled = false;
   int activeReads = 0;
   StoreTransaction? lastCompleted;
 
@@ -69,28 +70,27 @@ class FakePurchaseRepository implements PurchaseRepository {
       [
         ?product,
         const BoostProduct(
-          productId: BoostPackCatalog.pack5,
-          title: '5 Boost',
-          description: 'Extra discovery visibility',
-          localizedPrice: '₺199,99',
+          productId: BoostPackCatalog.month,
+          title: '1 Month',
+          description: 'Boost your profile for 30 days',
+          localizedPrice: '₺249,99',
           currency: 'TRY',
           available: true,
-          duration: Duration(minutes: 30),
+          duration: BoostPackCatalog.monthDuration,
           displayOrder: 1,
-          boostCount: 5,
-          fallbackPrice: '₺199,99',
+          fallbackPrice: '₺249,99',
         ),
         const BoostProduct(
-          productId: BoostPackCatalog.pack10,
-          title: '10 Boost',
-          description: 'Extra discovery visibility',
-          localizedPrice: '₺349,99',
+          productId: BoostPackCatalog.year,
+          title: '1 Year',
+          description: 'Boost your profile for 365 days',
+          localizedPrice: '₺1.499,99',
           currency: 'TRY',
           available: true,
-          duration: Duration(minutes: 30),
+          duration: BoostPackCatalog.yearDuration,
           displayOrder: 2,
-          boostCount: 10,
-          fallbackPrice: '₺349,99',
+          featured: true,
+          fallbackPrice: '₺1.499,99',
         ),
       ];
 
@@ -148,17 +148,36 @@ class FakePurchaseRepository implements PurchaseRepository {
     if (failure != null) {
       return Err(failure);
     }
-    final added = BoostPackCatalog.boostCountFor(transaction.productId);
-    final count = added < 1 ? 1 : added;
-    wallet = BoostWallet(balance: wallet.balance + count);
+    final duration = BoostPackCatalog.durationFor(transaction.productId);
+    final now = DateTime.utc(2026, 8, 18, 12);
+    const activation = BoostActivationService();
+    final decision = activation.decide(
+      now: now,
+      currentActive: activeBoost,
+      duration: duration == Duration.zero
+          ? BoostPackCatalog.weekDuration
+          : duration,
+    );
+    final boost = Boost(
+      boostId: activeBoost?.boostId ?? 'b1',
+      userId: userId,
+      productId: transaction.productId,
+      purchaseId: 'android_${transaction.transactionId}',
+      status: BoostStatus.active,
+      createdAt: activeBoost?.createdAt ?? now,
+      startedAt: decision.startedAt,
+      expiresAt: decision.expiresAt,
+    );
+    activeBoost = boost;
     history = [
       BoostHistoryEntry(
         id: 'p-${transaction.transactionId}',
         type: BoostHistoryType.purchase,
         productId: transaction.productId,
-        boostCount: count,
-        createdAt: DateTime.utc(2026, 8, 18, 12),
+        createdAt: now,
         status: 'verified',
+        platform: transaction.platform.name,
+        expiresAt: boost.expiresAt,
       ),
       ...history,
     ];
@@ -166,8 +185,9 @@ class FakePurchaseRepository implements PurchaseRepository {
       BoostCreditResult(
         purchaseId: 'android_${transaction.transactionId}',
         productId: transaction.productId,
-        boostCount: count,
+        boostCount: 0,
         balance: wallet.balance,
+        boost: boost,
       ),
     );
   }
@@ -189,15 +209,24 @@ class FakePurchaseRepository implements PurchaseRepository {
     }
     final now = DateTime.utc(2026, 8, 18, 12);
     wallet = BoostWallet(balance: wallet.balance - 1);
+    const activation = BoostActivationService(
+      duration: BoostPackCatalog.legacyDuration,
+    );
+    final decision = activation.decide(
+      now: now,
+      currentActive: activeBoost,
+      requireBalance: true,
+      balance: wallet.balance + 1,
+    );
     final boost = Boost(
-      boostId: 'b1',
+      boostId: activeBoost?.boostId ?? 'b1',
       userId: userId,
       productId: 'activate',
       purchaseId: '',
       status: BoostStatus.active,
       createdAt: now,
-      startedAt: now,
-      expiresAt: now.add(const Duration(minutes: 30)),
+      startedAt: decision.startedAt,
+      expiresAt: decision.expiresAt,
     );
     activeBoost = boost;
     history = [
@@ -240,6 +269,7 @@ class FakePurchaseRepository implements PurchaseRepository {
 
   @override
   Future<Result<Boost?>> restorePurchases(String userId) {
+    restoreCalled = true;
     return getActiveBoost(userId);
   }
 }

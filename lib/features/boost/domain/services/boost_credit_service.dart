@@ -61,8 +61,11 @@ class BoostCreditService {
       return BoostCreditDecision.idempotent(currentBalance);
     }
     final pack = BoostPackCatalog.packFor(productId, catalog: catalog);
-    if (pack == null || pack.boostCount < 1) {
+    if (pack == null) {
       return BoostCreditDecision.invalidPack(currentBalance);
+    }
+    if (pack.boostCount < 1) {
+      return BoostCreditDecision.credited(added: 0, balance: currentBalance);
     }
     return BoostCreditDecision.credited(
       added: pack.boostCount,

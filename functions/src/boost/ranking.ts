@@ -29,6 +29,14 @@ export function sortByBoostVisibility<T extends Record<string, unknown>>(
     if (aBoost !== bBoost) {
       return bBoost - aBoost;
     }
-    return Number(b.compatibilityScore ?? 0) - Number(a.compatibilityScore ?? 0);
+    const aRank =
+      Number(a.compatibilityScore ?? 0) + Number(a.musicRankingBonus ?? 0);
+    const bRank =
+      Number(b.compatibilityScore ?? 0) + Number(b.musicRankingBonus ?? 0);
+    if (bRank !== aRank) {
+      return bRank - aRank;
+    }
+    return Number(b.musicCompatibilityScore ?? 0) -
+      Number(a.musicCompatibilityScore ?? 0);
   });
 }

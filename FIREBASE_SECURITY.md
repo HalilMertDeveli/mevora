@@ -33,7 +33,7 @@ Rules live in `firebase/firestore.rules` and `firebase/storage.rules`. Field-lev
 
 ## Boost / IAP
 
-Clients never write `status`, `expiresAt`, `verifiedAt`, `purchaseId`, `transactionId`, or wallet `balance` on boosts or purchases. `verifyBoostPurchase` is authoritative for credit. `activateBoost` consumes one server-owned Boost from the wallet.
+Clients never write `status`, `expiresAt`, `verifiedAt`, `purchaseId`, `transactionId`, or wallet `balance` on boosts or purchases. `verifyBoostPurchase` is authoritative for duration grants (7 / 30 / 365 days). Legacy `activateBoost` may consume leftover wallet credits.
 
 ## Storage
 

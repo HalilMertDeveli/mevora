@@ -68,6 +68,33 @@ void main() {
     );
   });
 
+  test('only the sender can delete their own message', () {
+    final message = ChatMessage(
+      id: '1',
+      senderId: 'a',
+      receiverId: 'b',
+      text: 'hi',
+      type: MessageType.text,
+      createdAt: DateTime(2026),
+      status: MessageStatus.sent,
+    );
+    expect(
+      ChatPolicy.canDeleteOwnMessage(message: message, uid: 'a'),
+      isTrue,
+    );
+    expect(
+      ChatPolicy.canDeleteOwnMessage(message: message, uid: 'b'),
+      isFalse,
+    );
+    expect(
+      ChatPolicy.canDeleteOwnMessage(
+        message: message.copyWith(deleted: true),
+        uid: 'a',
+      ),
+      isFalse,
+    );
+  });
+
   test('typing freshness uses a short ttl', () {
     final now = DateTime(2026, 1, 1, 12);
     expect(

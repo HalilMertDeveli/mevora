@@ -39,7 +39,7 @@ export class PurchaseVerificationService {
       return {outcome: "invalidTransaction"};
     }
     const platform: StorePlatform = request.platform === "ios" ? "ios" : "android";
-    if (!pack || pack.productId !== request.productId || pack.boostCount < 1) {
+    if (!pack || pack.productId !== request.productId || (pack.durationMs < 1 && pack.boostCount < 1)) {
       return {outcome: "invalidProduct"};
     }
 

@@ -7,9 +7,10 @@ class BoostHistoryEntry {
     required this.type,
     required this.productId,
     required this.createdAt,
-    this.boostCount = 1,
+    this.boostCount = 0,
     this.status,
     this.expiresAt,
+    this.platform,
   });
 
   final String id;
@@ -19,4 +20,5 @@ class BoostHistoryEntry {
   final DateTime createdAt;
   final String? status;
   final DateTime? expiresAt;
+  final String? platform;
 }

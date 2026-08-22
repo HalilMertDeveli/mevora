@@ -2,26 +2,41 @@
 class BoostPack {
   const BoostPack({
     required this.productId,
-    required this.boostCount,
     required this.displayOrder,
-    required this.fallbackPriceAmount,
+    this.boostCount = 0,
+    this.fallbackPriceAmount = 0,
     this.fallbackCurrency = 'TRY',
-    this.duration = const Duration(minutes: 30),
+    this.duration = const Duration(days: 7),
     this.active = true,
+    this.storefront = true,
+    this.featured = false,
     this.title = '',
   });
 
   final String productId;
+
+  /// Legacy wallet credits. Duration packs use 0.
   final int boostCount;
   final int displayOrder;
   final double fallbackPriceAmount;
   final String fallbackCurrency;
   final Duration duration;
   final bool active;
+
+  /// Shown on the Boost storefront. Legacy SKUs stay verifiable but hidden.
+  final bool storefront;
+  final bool featured;
   final String title;
 
-  /// Display-only fallback, e.g. "₺49,99". Never charged; stores set the real price.
+  int get durationDays => duration.inDays;
+
+  bool get isDurationPack => duration.inHours >= 24;
+
+  /// Display-only fallback. Never charged; stores set the real price.
   String get fallbackPriceLabel {
+    if (fallbackPriceAmount <= 0) {
+      return '';
+    }
     final fixed = fallbackPriceAmount.toStringAsFixed(2);
     final parts = fixed.split('.');
     if (fallbackCurrency == 'TRY') {

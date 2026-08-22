@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/features/profile/presentation/pages/profile_tab_page.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
@@ -26,6 +28,20 @@ void main() {
     expect(find.text('fallback'), findsOneWidget);
   });
 
+  test('loading and sync assets stay distinct and compact', () {
+    expect(MevoraRiveAssets.loading, 'assets/rive/common/searching.riv');
+    expect(MevoraRiveAssets.callConnecting, MevoraRiveAssets.loading);
+    expect(MevoraRiveAssets.musicAnalyzing, 'assets/rive/common/loading.riv');
+    expect(MevoraRiveAssets.spotifyConnecting, MevoraRiveAssets.musicAnalyzing);
+    expect(MevoraRiveAssets.spotifyIdle, MevoraRiveAssets.loginAmbient);
+    expect(
+      MevoraRiveAssets.relationshipResult,
+      MevoraRiveAssets.onboardingComplete,
+    );
+    expect(MevoraRiveAssets.profileLoading, MevoraRiveAssets.profileAccent);
+    expect(MevoraRiveAssets.loading, isNot(MevoraRiveAssets.musicAnalyzing));
+  });
+
   testWidgets('loading still exposes a progress fallback', (tester) async {
     await tester.pumpWidget(
       wrapWithApp(const MevoraLoading.page(message: 'Finding people')),
@@ -33,6 +49,17 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.text('Finding people'), findsOneWidget);
+  });
+
+  testWidgets('profile tab keeps the photo and does not overlay Rive', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrapWithApp(const ProfileTabPage(), scaffold: false),
+    );
+
+    expect(find.byType(MevoraAvatar), findsOneWidget);
+    expect(find.byType(MevoraRiveAnimation), findsNothing);
   });
 
   testWidgets('empty and error views keep copy with fallbacks', (tester) async {

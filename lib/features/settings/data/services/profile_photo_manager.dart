@@ -41,9 +41,14 @@ class ProfilePhotoManager {
         : profile.photos.map((p) => p.order).reduce((a, b) => a > b ? a : b) +
               1;
     final isPrimary = profile.photos.isEmpty;
-    final storagePath = StoragePaths.profilePhoto(
+    final storagePath = StoragePaths.profilePending(
       ownerUid: profile.uid,
       imageId: imageId,
+      extension: contentType.contains('png')
+          ? 'png'
+          : contentType.contains('webp')
+          ? 'webp'
+          : 'jpg',
     );
     final nextPhoto = ProfilePhoto(
       id: imageId,

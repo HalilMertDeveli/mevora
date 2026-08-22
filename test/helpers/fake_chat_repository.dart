@@ -57,6 +57,80 @@ class FakeChatRepository implements ChatRepository {
   }
 
   @override
+  Future<ChatMessage> sendImage({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) {
+    return _sendMedia(
+      matchId: matchId,
+      receiverId: receiverId,
+      type: MessageType.image,
+      durationMs: media.durationMs,
+    );
+  }
+
+  @override
+  Future<ChatMessage> sendVoice({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) {
+    return _sendMedia(
+      matchId: matchId,
+      receiverId: receiverId,
+      type: MessageType.voice,
+      durationMs: media.durationMs ?? 1000,
+    );
+  }
+
+  Future<ChatMessage> _sendMedia({
+    required String matchId,
+    required String receiverId,
+    required MessageType type,
+    int? durationMs,
+  }) async {
+    _seq += 1;
+    final message = ChatMessage(
+      id: 'msg-$_seq',
+      senderId: uid,
+      receiverId: receiverId,
+      text: '',
+      type: type,
+      createdAt: DateTime.utc(2026, 8, 18, 12, _seq),
+      status: MessageStatus.sent,
+      imageStoragePath: type == MessageType.image ? 'users/$uid/chat/$matchId/msg-$_seq.jpg' : null,
+      voiceStoragePath: type == MessageType.voice ? 'users/$uid/chat/$matchId/msg-$_seq.m4a' : null,
+      mediaUrl: 'https://example.invalid/msg-$_seq',
+      durationMs: durationMs,
+    );
+    messages.putIfAbsent(matchId, () => []).add(message);
+    _messagesController(matchId).add(List<ChatMessage>.from(messages[matchId]!));
+    return message;
+  }
+
+  @override
+  Future<void> deleteMessage({
+    required String matchId,
+    required String messageId,
+  }) async {
+    final current = messages[matchId];
+    if (current == null) {
+      return;
+    }
+    messages[matchId] = [
+      for (final item in current)
+        if (item.id == messageId && item.senderId == uid)
+          item.copyWith(deleted: true, text: '')
+        else
+          item,
+    ];
+    _messagesController(matchId).add(List<ChatMessage>.from(messages[matchId]!));
+  }
+
+  @override
   Future<void> markDelivered(String matchId, List<ChatMessage> items) async {}
 
   @override

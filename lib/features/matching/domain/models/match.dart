@@ -1,3 +1,12 @@
+enum MatchSource { mutualLike, relationshipTest }
+
+MatchSource matchSourceFrom(Object? raw, {Object? matchType}) {
+  if (raw == 'relationship_test' || matchType == 'relationship') {
+    return MatchSource.relationshipTest;
+  }
+  return MatchSource.mutualLike;
+}
+
 class Match {
   const Match({
     required this.id,
@@ -12,6 +21,7 @@ class Match {
     this.isNewFor = const {},
     this.participantNames = const {},
     this.participantPhotos = const {},
+    this.source = MatchSource.mutualLike,
   });
 
   final String id;
@@ -28,6 +38,9 @@ class Match {
   final Map<String, bool> isNewFor;
   final Map<String, String> participantNames;
   final Map<String, String> participantPhotos;
+  final MatchSource source;
+
+  bool get isRelationshipTest => source == MatchSource.relationshipTest;
 
   String otherUserId(String uid) {
     return userIds.firstWhere(
@@ -56,6 +69,7 @@ class Match {
     DateTime? unmatchedAt,
     Map<String, int>? unreadCounts,
     Map<String, bool>? isNewFor,
+    MatchSource? source,
   }) {
     return Match(
       id: id,
@@ -70,6 +84,7 @@ class Match {
       isNewFor: isNewFor ?? this.isNewFor,
       participantNames: participantNames,
       participantPhotos: participantPhotos,
+      source: source ?? this.source,
     );
   }
 }

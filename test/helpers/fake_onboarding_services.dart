@@ -23,6 +23,7 @@ class FakeOnboardingRepository implements OnboardingRepository {
       profileCompleted: true,
       onboardingCompleted: true,
       isProfileComplete: true,
+      isDiscoverable: true,
     );
     return Success(saved!);
   }

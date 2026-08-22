@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/entities/boost_history_entry.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
@@ -52,9 +54,20 @@ class BoostHistoryTile extends StatelessWidget {
     final title = isPurchase
         ? l10n.boostHistoryPurchase
         : l10n.boostHistoryActivation;
-    final subtitle = isPurchase
-        ? l10n.boostPackCount(entry.boostCount)
-        : (entry.status ?? '');
+    final pack = _packLabel(l10n, entry.productId);
+    final platform = switch (entry.platform) {
+      'ios' => l10n.boostHistoryPlatformIos,
+      'android' => l10n.boostHistoryPlatformAndroid,
+      _ => null,
+    };
+    final date = DateFormat.yMMMd(l10n.localeName).format(entry.createdAt);
+    final status = entry.status ?? '';
+    final subtitle = [
+      pack,
+      date,
+      if (platform != null) platform,
+      if (status.isNotEmpty) status,
+    ].join(' · ');
     return MevoraCard(
       child: Row(
         children: [
@@ -78,5 +91,16 @@ class BoostHistoryTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _packLabel(AppLocalizations l10n, String productId) {
+    return switch (productId) {
+      BoostPackCatalog.week => l10n.boostPackWeek,
+      BoostPackCatalog.month => l10n.boostPackMonth,
+      BoostPackCatalog.year => l10n.boostPackYear,
+      BoostPackCatalog.pack5 => l10n.boostPackFive,
+      BoostPackCatalog.pack10 => l10n.boostPackTen,
+      _ => l10n.boostPackOne,
+    };
   }
 }

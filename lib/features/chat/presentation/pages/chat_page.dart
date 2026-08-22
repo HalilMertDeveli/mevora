@@ -1,17 +1,27 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/services/permissions/permission_status.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
+import 'package:mevora/features/chat/data/services/chat_audio_player.dart';
+import 'package:mevora/features/chat/data/services/record_chat_voice_recorder.dart';
+import 'package:mevora/features/chat/domain/models/chat_message.dart';
+import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
+import 'package:mevora/features/chat/domain/services/chat_voice_recorder.dart';
 import 'package:mevora/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:mevora/features/chat/presentation/widgets/chat_widgets.dart';
 import 'package:mevora/features/matching/domain/models/presence_status.dart';
+import 'package:mevora/features/match_score/presentation/widgets/match_feedback_prompt.dart';
+import 'package:mevora/features/profile/data/services/profile_image_pipeline.dart';
 import 'package:mevora/features/safety/presentation/widgets/chat_more_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
@@ -21,10 +31,20 @@ import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 
 class ChatPage extends StatefulWidget {
-  const ChatPage({super.key, required this.matchId, this.controller});
+  const ChatPage({
+    super.key,
+    required this.matchId,
+    this.controller,
+    this.voiceRecorder,
+    this.audioPlayer,
+    this.imagePicker,
+  });
 
   final String matchId;
   final ChatController? controller;
+  final ChatVoiceRecorder? voiceRecorder;
+  final ChatAudioPlayer? audioPlayer;
+  final ImagePicker? imagePicker;
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -34,8 +54,20 @@ class _ChatPageState extends State<ChatPage> {
   ChatController? _controller;
   final _composer = TextEditingController();
   final _scroll = ScrollController();
+  late final ChatVoiceRecorder _recorder;
+  late final ChatAudioPlayer _player;
+  late final ImagePicker _picker;
+  bool _recording = false;
 
   ChatController get ctrl => _controller!;
+
+  @override
+  void initState() {
+    super.initState();
+    _recorder = widget.voiceRecorder ?? RecordChatVoiceRecorder();
+    _player = widget.audioPlayer ?? AudioplayersChatAudioPlayer();
+    _picker = widget.imagePicker ?? ImagePicker();
+  }
 
   @override
   void didChangeDependencies() {
@@ -70,6 +102,8 @@ class _ChatPageState extends State<ChatPage> {
   void dispose() {
     _composer.dispose();
     _scroll.dispose();
+    unawaited(_player.dispose());
+    unawaited(_recorder.cancel());
     if (widget.controller == null) {
       _controller?.dispose();
     }
@@ -80,7 +114,9 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     final controller = _controller;
     if (controller == null) {
-      return const Scaffold(body: MevoraLoading.page());
+      return Scaffold(
+        body: MevoraLoading.page(asset: MevoraRiveAssets.loading),
+      );
     }
     return AnimatedBuilder(
       animation: controller,
@@ -88,6 +124,7 @@ class _ChatPageState extends State<ChatPage> {
         final l10n = AppLocalizations.of(context);
         final presence = controller.presence.labelFor(l10n);
         return Scaffold(
+          resizeToAvoidBottomInset: true,
           appBar: AppBar(
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,10 +161,14 @@ class _ChatPageState extends State<ChatPage> {
                   content: Text(l10n.unmatchedBanner),
                   actions: const [SizedBox.shrink()],
                 ),
+              if (!controller.canChat)
+                MatchFeedbackForChat(matchId: controller.matchId),
               if (controller.error != null)
                 MevoraErrorView(
                   message: L10nErrors.message(l10n, controller.error),
                 ),
+              if (controller.uploadProgress != null)
+                LinearProgressIndicator(value: controller.uploadProgress),
               Expanded(
                 child: controller.messages.isEmpty
                     ? MevoraEmptyState(
@@ -137,26 +178,36 @@ class _ChatPageState extends State<ChatPage> {
                         message: l10n.chatEmptyMessage,
                       )
                     : ListView.builder(
-                  controller: _scroll,
-                  reverse: true,
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  itemCount: controller.messages.length,
-                  itemBuilder: (context, index) {
-                    final ordered = controller.messages.reversed.toList();
-                    final message = ordered[index];
-                    return ChatBubble(
-                      message: message,
-                      isMine: message.isFrom(controller.uid ?? ''),
-                    );
-                  },
-                ),
+                        controller: _scroll,
+                        reverse: true,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
+                        ),
+                        itemCount: controller.messages.length,
+                        itemBuilder: (context, index) {
+                          final ordered = controller.messages.reversed.toList();
+                          final message = ordered[index];
+                          return ChatBubble(
+                            message: message,
+                            isMine: message.isFrom(controller.uid ?? ''),
+                            audioPlayer: _player,
+                            onDelete: () => unawaited(_confirmDelete(message)),
+                          );
+                        },
+                      ),
               ),
               if (controller.typingUid != null)
                 TypingDots(name: controller.otherName),
               ChatComposer(
                 controller: _composer,
                 enabled: controller.canChat,
+                recording: _recording,
+                uploading: controller.sending,
                 onChanged: controller.onComposerChanged,
+                onAttachPhoto: () => unawaited(_pick(ImageSource.gallery)),
+                onAttachCamera: () => unawaited(_pick(ImageSource.camera)),
+                onVoiceStart: () => unawaited(_startVoice()),
+                onVoiceEnd: () => unawaited(_stopVoice()),
                 onSend: () {
                   final text = _composer.text;
                   _composer.clear();
@@ -170,56 +221,206 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Future<void> _startCall() async {
+  Future<void> _confirmDelete(ChatMessage message) async {
     final l10n = AppLocalizations.of(context);
-    final allowed = await MevoraDialog.show(
+    final ok = await MevoraDialog.show(
       context,
-      title: l10n.callPermissionTitle,
-      message: l10n.callPermissionBody,
-      confirmLabel: l10n.continueAction,
+      title: l10n.deleteMessage,
+      message: l10n.deleteMessageConfirm,
+      confirmLabel: l10n.deleteMessage,
     );
-    if (allowed != true || !mounted) {
+    if (ok == true) {
+      await ctrl.deleteOwn(message);
+    }
+  }
+
+  Future<bool> _ensurePermission(PermissionType type) async {
+    final l10n = AppLocalizations.of(context);
+    final permissions = PermissionScope.maybeOf(context)?.controller;
+    if (permissions == null) {
+      return true;
+    }
+    final status = await permissions.request(type);
+    if (!mounted) {
+      return false;
+    }
+    if (status.isUsable) {
+      return true;
+    }
+    if (status.isPermanentlyDenied) {
+      final open = await MevoraDialog.show(
+        context,
+        title: l10n.permissionDeniedTitle,
+        message: l10n.permissionPermanentlyDeniedBody,
+        confirmLabel: l10n.openSettings,
+      );
+      if (open == true) {
+        await permissions.openSettings();
+      }
+    } else {
+      final message = type == PermissionType.microphone
+          ? l10n.micDeniedChat
+          : l10n.photoDeniedChat;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
+    return false;
+  }
+
+  Future<void> _pick(ImageSource source) async {
+    final type = source == ImageSource.camera
+        ? PermissionType.camera
+        : PermissionType.photos;
+    final allowed = await _ensurePermission(type);
+    // #region agent log
+    AgentDebugLog.log(
+      location: 'chat_page.dart:_pick:perm',
+      message: 'image_pick_perm',
+      hypothesisId: 'I3',
+      data: {
+        'source': source.name,
+        'allowed': allowed,
+        'canChat': ctrl.canChat,
+        'isDemoOther': ctrl.otherUid.startsWith('mock-'),
+      },
+    );
+    // #endregion
+    if (!allowed || !mounted) {
       return;
     }
-    final permissions = PermissionScope.maybeOf(context)?.controller;
-    if (permissions != null) {
-      final camera = await permissions.request(PermissionType.camera);
+    try {
+      final file = await _picker.pickImage(
+        source: source,
+        maxWidth: ProfileImagePipeline.maxEdgePx.toDouble(),
+        maxHeight: ProfileImagePipeline.maxEdgePx.toDouble(),
+        imageQuality: 70,
+      );
+      if (file == null || !mounted) {
+        // #region agent log
+        AgentDebugLog.log(
+          location: 'chat_page.dart:_pick:cancelled',
+          message: 'image_pick_cancelled',
+          hypothesisId: 'I3',
+        );
+        // #endregion
+        return;
+      }
+      final bytes = await file.readAsBytes();
+      // #region agent log
+      AgentDebugLog.log(
+        location: 'chat_page.dart:_pick:file',
+        message: 'image_picked',
+        hypothesisId: 'I5',
+        data: {
+          'bytes': bytes.length,
+          'mime': file.mimeType ?? 'null',
+        },
+      );
+      // #endregion
+      final preview = await MevoraDialog.show(
+        context,
+        title: AppLocalizations.of(context).previewPhoto,
+        message: AppLocalizations.of(context).send,
+        confirmLabel: AppLocalizations.of(context).send,
+      );
+      if (preview != true || !mounted) {
+        // #region agent log
+        AgentDebugLog.log(
+          location: 'chat_page.dart:_pick:preview',
+          message: 'image_preview_skipped',
+          hypothesisId: 'I3',
+          data: {'preview': preview == true},
+        );
+        // #endregion
+        return;
+      }
+      final result = await ctrl.sendImage(
+        ChatMediaBytes(
+          bytes: Uint8List.fromList(bytes),
+          contentType: file.mimeType ?? 'image/jpeg',
+        ),
+      );
+      // #region agent log
+      AgentDebugLog.log(
+        location: 'chat_page.dart:_pick:sent',
+        message: 'image_send_result',
+        hypothesisId: 'I2',
+        data: {
+          'ok': result.isSuccess,
+          'error': ctrl.error,
+        },
+      );
+      // #endregion
+    } on Object catch (error) {
+      // #region agent log
+      AgentDebugLog.log(
+        location: 'chat_page.dart:_pick:throw',
+        message: 'image_pick_threw',
+        hypothesisId: 'I2',
+        data: {'error': error.runtimeType.toString()},
+      );
+      // #endregion
       if (!mounted) {
         return;
       }
-      if (!camera.isUsable) {
-        if (camera.isPermanentlyDenied) {
-          final open = await MevoraDialog.show(
-            context,
-            title: l10n.permissionDeniedTitle,
-            message: l10n.permissionPermanentlyDeniedBody,
-            confirmLabel: l10n.openSettings,
-          );
-          if (open == true) {
-            await permissions.openSettings();
-          }
-        }
-        return;
-      }
-      final mic = await permissions.request(PermissionType.microphone);
-      if (!mounted) {
-        return;
-      }
-      if (!mic.isUsable) {
-        if (mic.isPermanentlyDenied) {
-          final open = await MevoraDialog.show(
-            context,
-            title: l10n.permissionDeniedTitle,
-            message: l10n.permissionPermanentlyDeniedBody,
-            confirmLabel: l10n.openSettings,
-          );
-          if (open == true) {
-            await permissions.openSettings();
-          }
-        }
-        return;
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).chatGeneric)),
+      );
     }
+  }
+
+  Future<void> _startVoice() async {
+    final allowed = await _ensurePermission(PermissionType.microphone);
+    if (!allowed || !mounted) {
+      return;
+    }
+    try {
+      await _recorder.start();
+      setState(() => _recording = true);
+    } on ChatMicDenied {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).micDeniedChat)),
+      );
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).chatGeneric)),
+      );
+    }
+  }
+
+  Future<void> _stopVoice() async {
+    if (!_recording) {
+      return;
+    }
+    setState(() => _recording = false);
+    try {
+      final recorded = await _recorder.stop();
+      if (recorded == null || !mounted) {
+        return;
+      }
+      await ctrl.sendVoice(
+        ChatMediaBytes(
+          bytes: recorded.bytes,
+          contentType: recorded.contentType,
+          durationMs: recorded.durationMs,
+        ),
+      );
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).chatGeneric)),
+      );
+    }
+  }
+
+  Future<void> _startCall() async {
     final social = SocialScope.of(context);
     await social.callController.startCall(
       matchId: widget.matchId,

@@ -98,11 +98,21 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                 const SizedBox(height: AppSpacing.xl),
                 if (sending)
                   MevoraLoading(message: l10n.sendingSms)
-                else
+                else ...[
+                  if (error != null) ...[
+                    Text(
+                      error,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                   MevoraButton(
                     label: l10n.sendCode,
                     onPressed: blocked ? null : () => unawaited(_submit()),
                   ),
+                ],
               ],
             ),
           ),

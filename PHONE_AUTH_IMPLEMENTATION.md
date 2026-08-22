@@ -4,8 +4,8 @@ Production phone authentication for Mevora. OTP codes are created, sent, and ver
 
 ## Flow
 
-1. Login → **Telefon ile devam et**
-2. Country + national number (default 🇹🇷 +90)
+1. Login → **Telefon Numarası ile Giriş Yap** / **Sign in with Phone Number**
+2. Country + national number (default 🇹🇷 +90; trunk `0` OK, e.g. `0542 519 2119` → `+905425192119`)
 3. Domain validation → `SendPhoneVerificationCode`
 4. Firebase `verifyPhoneNumber` sends the SMS
 5. 6-digit OTP screen (autofill / paste)
@@ -68,15 +68,13 @@ Development builds target **live Auth on `mevora-d6ed0`**. Do not confuse with o
 
 ### Enable Phone provider
 
-Firebase Console → Authentication → Sign-in method → **Phone** → Enable, for:
+Firebase Console → Authentication → Sign-in method → **Phone** → Enable, for each project.
 
-- `mevora-d6ed0` (development)
-- `mevora-staging`
-- `mevora-production`
+On `mevora-d6ed0` this is already **enabled** (verified via Identity Toolkit Admin API). Staging/production still need the same check if those projects are used for SMS.
 
 Test phone numbers belong only in the Firebase Console (Authentication → Settings → Phone numbers for testing), never in app source.
 
-Example (Console only): `+905551112233` / code `123456`.
+Example Console test number on `mevora-d6ed0`: `+905551112233` / code `123456`.
 
 ### Real SMS vs Auth emulator
 
@@ -109,30 +107,30 @@ Observed debug fingerprints (registered on `com.mevora.app` in `mevora-d6ed0`):
 
 The same debug hashes are also present on the legacy `com.mevora.app.dev` Android app entry in `mevora-d6ed0` (unused by current development flavor).
 
-Firebase MCP cannot enable the Phone sign-in provider. Enable it in Console:
+Firebase MCP cannot enable the Phone sign-in provider via the plugin alone; Identity Toolkit Admin API / Console can. On `mevora-d6ed0` Phone is enabled.
 
-Authentication → Sign-in method → Phone → Enable.
+Authentication → Sign-in method → Phone → Enable (other projects).
 
 Release / Play App Signing SHA-1 and SHA-256 still need to be added from Play Console (App integrity → App signing) onto the production Android app. Debug hashes are not a substitute for Play signing certificates.
 
-### iOS
+### App Check + phone verification (development)
 
-- Enable Push Notifications and upload APNs key/cert for silent verification.
-- If APNs is unavailable, Firebase falls back to reCAPTCHA.
-- App Check (already bootstrapped) stays compatible: debug providers in development, Play Integrity / DeviceCheck in production.
-
-### Rate limits
-
-The resend countdown is UX only. Firebase abuse protection and quota are authoritative. Invalid OTP limits are also enforced by Firebase.
+1. Activates **App Check debug providers**. If App Check enforcement is ON for Authentication, register the debug token from logcat in Firebase Console → App Check → Manage debug tokens.
+2. Sets `appVerificationDisabledForTesting: true` by default in development so Console test numbers and debug sideloads are not blocked by Play Integrity / reCAPTCHA.
+3. Registers the Console test pair `+905551112233` / `123456` via `setSettings(phoneNumber:, smsCode:)` for automatic retrieval in development.
+4. Removed empty `android:taskAffinity=""` from `MainActivity` — it broke reCAPTCHA Custom Tab returns (`about:blank`).
+5. Production keeps app verification enabled. To exercise real verification in development: `--dart-define=DISABLE_PHONE_APP_VERIFICATION=false`.
 
 ### User-facing errors
 
 `AuthErrorMapper` + `L10nErrors.auth` map Firebase codes to safe copy (never raw `firebase_auth/` strings), including:
 
-- `billing-not-enabled` → Blaze required
+- `billing-not-enabled` / status `17499` → Blaze required
 - `invalid-verification-code` → invalid OTP
-- `invalid-app-credential` / region restriction → SMS failed
+- `invalid-app-credential` / `captcha-check-failed` / Play Integrity → app verification
+- `sms-region-restricted` → SMS failed
 - `quota-exceeded` / `too-many-requests` → quota / too many attempts
+- `unavailable` / `internal` (without billing hint) → temporarily unavailable
 
 ## Testing
 
@@ -143,20 +141,20 @@ The resend countdown is UX only. Firebase abuse protection and quota are authori
 
 ### Smoke test (manual)
 
-1. Add a Console test number on `mevora-d6ed0`.
+1. Use Console test number on `mevora-d6ed0`: national `0555 111 22 33` with 🇹🇷 +90 (maps to `+905551112233`) / code `123456`.
 2. Run with `USE_EMULATORS=false` (Auth emulator off).
-3. Login → Telefon → enter test national number → OTP screen → enter Console code → signed in.
+3. Login → **Telefon Numarası ile Giriş Yap** → enter test national number → OTP screen → enter Console code → signed in.
 
 ## Production checklist
 
 - [x] Debug SHA-1 and SHA-256 on `com.mevora.app` for `mevora-d6ed0`
 - [ ] Play App Signing SHA-1 and SHA-256 on production Android
-- [ ] Phone provider enabled on `mevora-d6ed0`, staging, production (Console only)
-- [ ] Blaze billing on each project that must send real SMS
+- [x] Phone provider enabled on `mevora-d6ed0` (Identity Toolkit `signIn.phoneNumber.enabled`)
+- [x] Blaze billing enabled on `mevora-d6ed0` (required for real SMS)
 - [x] SMS region ALLOW list includes TR and the in-app country catalog on `mevora-d6ed0`
 - [ ] Same SMS region policy on staging and production
 - [ ] iOS APNs configured
-- [x] No test numbers in source
+- [x] No test numbers in source (Console test number `+905551112233` / `123456` registered on `mevora-d6ed0` only)
 - [ ] `syncAuthAccount` deployed
 - [x] Firestore rules: other users cannot read `users/{uid}`
 - [x] `flutter analyze` and `flutter test` clean
@@ -168,4 +166,5 @@ The resend countdown is UX only. Firebase abuse protection and quota are authori
 3. SHA registered on `mevora-d6ed0` Android app `com.mevora.app`?
 4. Phone provider enabled on this project?
 5. Blaze active for real SMS? (test numbers do not need carrier SMS)
-6. Logcat: `verificationFailed` / `billing-not-enabled` / `invalid-app-credential`?
+6. App Check enforcement on? → register debug token from logcat
+7. Logcat: `PhoneAuth verificationFailed code=...` / `billing-not-enabled` / `invalid-app-credential`?

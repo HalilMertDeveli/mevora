@@ -3,6 +3,7 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/images/mevora_network_images.dart';
 
 class PhotoGridEditor extends StatelessWidget {
   const PhotoGridEditor({
@@ -53,10 +54,8 @@ class PhotoGridEditor extends StatelessWidget {
             return ListTile(
               key: ValueKey(photo.id),
               leading: CircleAvatar(
-                backgroundImage: photo.downloadUrl == null
-                    ? null
-                    : NetworkImage(photo.downloadUrl!),
-                child: photo.downloadUrl == null
+                backgroundImage: MevoraNetworkImages.provider(photo.downloadUrl),
+                child: MevoraNetworkImages.provider(photo.downloadUrl) == null
                     ? const Icon(Icons.person_outline)
                     : null,
               ),

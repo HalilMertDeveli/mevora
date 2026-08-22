@@ -65,8 +65,7 @@ void main() {
     final result = await repository.getBoostProducts();
     expect(result, isA<Success<List<BoostProduct>>>());
     final packs = (result as Success<List<BoostProduct>>).value;
-    expect(packs.map((pack) => pack.boostCount), [1, 5, 10]);
-    expect(packs.first.fallbackPrice, '₺49,99');
+    expect(packs.map((pack) => pack.durationDays), [7, 30, 365]);
     expect(packs.first.available, isFalse);
   });
 

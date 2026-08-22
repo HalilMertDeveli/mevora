@@ -1,4 +1,5 @@
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/shared/images/mevora_photo_images.dart';
 
 /// Dev/test discovery profiles. Never written to production Firestore.
 class MockDiscoveryProfile {
@@ -23,12 +24,52 @@ class MockDiscoveryProfile {
   final bool likesYou;
 
   String get uid => profile.uid;
+
+  MockDiscoveryProfile withLastActiveAt(DateTime? lastActiveAt) {
+    return MockDiscoveryProfile(
+      profile: UserProfile(
+        uid: profile.uid,
+        displayName: profile.displayName,
+        birthDate: profile.birthDate,
+        age: profile.age,
+        gender: profile.gender,
+        interestedIn: profile.interestedIn,
+        bio: profile.bio,
+        photos: profile.photos,
+        interests: profile.interests,
+        relationshipGoal: profile.relationshipGoal,
+        occupation: profile.occupation,
+        education: profile.education,
+        languages: profile.languages,
+        city: profile.city,
+        lifestyle: profile.lifestyle,
+        lifestyleProfile: profile.lifestyleProfile,
+        onboardingStep: profile.onboardingStep,
+        lastActiveAt: lastActiveAt,
+        profileCompleted: profile.profileCompleted,
+        onboardingCompleted: profile.onboardingCompleted,
+        isProfileComplete: profile.isProfileComplete,
+        isDiscoverable: profile.isDiscoverable,
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt,
+      ),
+      compatibilityScore: compatibilityScore,
+      sharedInterests: sharedInterests,
+      compatibilityReasons: compatibilityReasons,
+      distanceKm: distanceKm,
+      distanceLabel: distanceLabel,
+      likesYou: likesYou,
+    );
+  }
 }
 
-/// Illustration-style avatar seeds for dev UI. Cards render placeholders locally.
+/// Bundled Unsplash portraits for demo decks. Never written to Firestore.
 abstract final class MockDiscoveryPhotos {
   static List<String> forProfile(String uid, {int count = 1}) {
-    return List<String>.generate(count, (index) => 'mock://$uid/$index');
+    final asset =
+        MevoraPhotoImages.portraitForUid(uid) ??
+        MevoraPhotoImages.portraits.values.first;
+    return List<String>.filled(count, asset);
   }
 }
 
@@ -91,16 +132,14 @@ abstract final class MockDiscoveryDataSource {
         age: 24,
         city: 'Izmir',
         gender: 'woman',
-        bio: 'Koşucu, bitki bakıcısı ve bir sonraki sahil kaçamaklarının peşinde.',
+        bio:
+            'Koşucu, bitki bakıcısı ve bir sonraki sahil kaçamaklarının peşinde.',
         interests: const ['running', 'plants', 'travel', 'photography'],
         relationshipGoal: 'casual',
         lifestyle: const ['active', 'outdoors'],
         score: 71,
         shared: const ['travel', 'photography'],
-        reasons: const [
-          'Ortak fotoğraf tutkusu',
-          'Aktif yaşam tarzı uyumu',
-        ],
+        reasons: const ['Ortak fotoğraf tutkusu', 'Aktif yaşam tarzı uyumu'],
         distanceKm: 12.0,
         photos: 3,
       ),
@@ -149,7 +188,8 @@ abstract final class MockDiscoveryDataSource {
         age: 33,
         city: 'Antalya',
         gender: 'man',
-        bio: 'Yelken eğitmeni. Gün batımı, deniz mahsulleri ve plansız yolculuklar.',
+        bio:
+            'Yelken eğitmeni. Gün batımı, deniz mahsulleri ve plansız yolculuklar.',
         interests: const ['sailing', 'seafood', 'travel', 'fitness'],
         relationshipGoal: 'casual',
         lifestyle: const ['outdoors', 'active'],
@@ -168,7 +208,8 @@ abstract final class MockDiscoveryDataSource {
         age: 25,
         city: 'Istanbul',
         gender: 'woman',
-        bio: 'Sinema öğrencisi. Bağımsız salonlar, plak dükkanları ve teras sohbetleri.',
+        bio:
+            'Sinema öğrencisi. Bağımsız salonlar, plak dükkanları ve teras sohbetleri.',
         interests: const ['film', 'vinyl', 'coffee', 'writing'],
         relationshipGoal: 'figuringOut',
         lifestyle: const ['creative', 'night-owl'],
@@ -208,7 +249,8 @@ abstract final class MockDiscoveryDataSource {
         age: 30,
         city: 'Istanbul',
         gender: 'woman',
-        bio: 'Pazarlama yöneticisi. Ne randevu gecesini ne de iyi bir çalma listesini kaçırır.',
+        bio:
+            'Pazarlama yöneticisi. Ne randevu gecesini ne de iyi bir çalma listesini kaçırır.',
         interests: const ['music', 'food', 'travel', 'podcasts'],
         relationshipGoal: 'longTerm',
         lifestyle: const ['social', 'foodie'],
@@ -235,10 +277,7 @@ abstract final class MockDiscoveryDataSource {
         lifestyle: const ['foodie', 'night-owl'],
         score: 61,
         shared: const ['travel'],
-        reasons: const [
-          'Ortak gezme tutkusu',
-          'Tamamlayıcı yaşam tarzları',
-        ],
+        reasons: const ['Ortak gezme tutkusu', 'Tamamlayıcı yaşam tarzları'],
         distanceKm: 28.0,
         photos: 2,
       ),

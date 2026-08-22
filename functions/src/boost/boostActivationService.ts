@@ -2,7 +2,7 @@ import {ALLOW_STACKING, BOOST_PRODUCTS} from "./config.js";
 import type {ActiveBoostSnapshot} from "./types.js";
 
 export type ActivationDecision =
-  | {shouldActivate: true; startedAt: Date; expiresAt: Date}
+  | {shouldActivate: true; startedAt: Date; expiresAt: Date; extendBoostId?: string}
   | {shouldActivate: false; alreadyActive: true}
   | {shouldActivate: false; insufficientBalance: true};
 
@@ -35,18 +35,29 @@ export class BoostActivationService {
     now: Date;
     currentActive: ActiveBoostSnapshot | null;
     balance?: number;
+    durationMs?: number;
+    requireBalance?: boolean;
   }): ActivationDecision {
-    if (params.currentActive && this.isActive(params.currentActive, params.now) && !this.allowStacking) {
-      return {shouldActivate: false, alreadyActive: true};
-    }
-    if ((params.balance ?? 1) < 1) {
+    const grantMs = params.durationMs ?? this.durationMs;
+    if (!Number.isFinite(grantMs) || grantMs <= 0) {
       return {shouldActivate: false, insufficientBalance: true};
     }
-    const startedAt = params.now;
+    const live =
+      params.currentActive && this.isActive(params.currentActive, params.now)
+        ? params.currentActive
+        : null;
+    if (live && !this.allowStacking) {
+      return {shouldActivate: false, alreadyActive: true};
+    }
+    if (params.requireBalance && (params.balance ?? 0) < 1) {
+      return {shouldActivate: false, insufficientBalance: true};
+    }
+    const base = live?.expiresAt ?? params.now;
     return {
       shouldActivate: true,
-      startedAt,
-      expiresAt: new Date(startedAt.getTime() + this.durationMs),
+      startedAt: live?.startedAt ?? params.now,
+      expiresAt: new Date(base.getTime() + grantMs),
+      extendBoostId: live?.boostId,
     };
   }
 }

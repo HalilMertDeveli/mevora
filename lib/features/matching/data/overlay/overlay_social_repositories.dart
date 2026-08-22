@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
@@ -162,7 +163,21 @@ class OverlayChatRepository implements ChatRepository {
     required ChatMediaBytes media,
     void Function(double progress)? onProgress,
   }) {
-    if (_isDemo(matchId)) {
+    final isDemo = _isDemo(matchId);
+    // #region agent log
+    AgentDebugLog.log(
+      location: 'overlay_social_repositories.dart:sendImage',
+      message: 'chat_send_image_route',
+      hypothesisId: 'I4',
+      data: {
+        'isDemo': isDemo,
+        'looksMock': matchId.contains('mock-'),
+        'bytes': media.bytes.length,
+        'mime': media.contentType,
+      },
+    );
+    // #endregion
+    if (isDemo) {
       return hub.chat.sendImage(
         matchId: matchId,
         receiverId: receiverId,

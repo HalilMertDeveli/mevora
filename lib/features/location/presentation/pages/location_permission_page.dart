@@ -6,6 +6,7 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/features/location/domain/entities/location_screen_state.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_motion_size.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
@@ -165,7 +166,7 @@ class _LoadingCopy extends StatelessWidget {
       return MevoraLoading.page(message: message);
     }
 
-    const size = 160.0;
+    final size = MevoraMotionSize.loading(context);
     return Semantics(
       label: message,
       child: Center(
@@ -182,10 +183,10 @@ class _LoadingCopy extends StatelessWidget {
                 semanticsLabel: message,
                 fallback: Center(
                   child: SizedBox(
-                    width: 72,
-                    height: 72,
+                    width: 24,
+                    height: 24,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
+                      strokeWidth: 2.4,
                       color: Theme.of(context).colorScheme.primary,
                     ),
                   ),

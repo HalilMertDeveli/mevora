@@ -47,6 +47,18 @@ class MevoraAvatar extends StatelessWidget {
                       fit: BoxFit.cover,
                       filterQuality: FilterQuality.high,
                       gaplessPlayback: true,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Text(
+                            initials.isEmpty ? '?' : initials,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: size * 0.32,
+                              color: colors.onPrimaryContainer,
+                            ),
+                          ),
+                        );
+                      },
                     ),
             ),
           ),

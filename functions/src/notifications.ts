@@ -13,6 +13,8 @@ const db = getFirestore();
 export const FcmTypes = {
   newMatch: "newMatch",
   newMessage: "newMessage",
+  newPhoto: "newPhoto",
+  newVoice: "newVoice",
   incomingCall: "incomingCall",
   missedCall: "missedCall",
   boostActivated: "boostActivated",
@@ -33,8 +35,16 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
     en: {title: "Mevora", body: "You have a new match!"},
   },
   newMessage: {
-    tr: {title: "Mevora", body: "Yeni bir mesajın var"},
-    en: {title: "Mevora", body: "You have a new message"},
+    tr: {title: "Mevora", body: "Yeni mesaj"},
+    en: {title: "Mevora", body: "New message"},
+  },
+  newPhoto: {
+    tr: {title: "Mevora", body: "Yeni fotoğraf"},
+    en: {title: "Mevora", body: "New photo"},
+  },
+  newVoice: {
+    tr: {title: "Mevora", body: "Yeni sesli mesaj"},
+    en: {title: "Mevora", body: "New voice message"},
   },
   incomingCall: {
     tr: {title: "Mevora", body: "Gelen görüntülü arama"},

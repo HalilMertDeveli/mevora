@@ -13,6 +13,17 @@ void main() {
     expect(OnboardingValidators.validateAge(adultBirthDate).isSuccess, isTrue);
   });
 
+  test('exact 18th birthday and 17th birthday edge cases', () {
+    final today = DateTime.now();
+    final seventeenthBirthday = DateTime(today.year - 17, today.month, today.day);
+    final eighteenthBirthday = DateTime(today.year - 18, today.month, today.day);
+    final nineteenthBirthday = DateTime(today.year - 19, today.month, today.day);
+
+    expect(OnboardingValidators.validateAge(seventeenthBirthday).isError, isTrue);
+    expect(OnboardingValidators.validateAge(eighteenthBirthday).isSuccess, isTrue);
+    expect(OnboardingValidators.validateAge(nineteenthBirthday).isSuccess, isTrue);
+  });
+
   test('interests enforce min and max', () {
     expect(
       OnboardingValidators.validateInterests(['a', 'b']).isError,

@@ -41,8 +41,7 @@ String _boostStatusMessage(AppLocalizations l10n, PurchaseViewState state) {
     PurchaseUiStatus.failed => l10n.boostPurchaseFailed,
     PurchaseUiStatus.credited => l10n.boostCreditedTitle,
     PurchaseUiStatus.success => l10n.boostSuccessTitle,
-    PurchaseUiStatus.productLoaded =>
-      state.hasActiveBoost ? l10n.boostAlreadyActive : l10n.boostSubtitle,
+    PurchaseUiStatus.productLoaded => l10n.boostSubtitle,
   };
 }
 
@@ -155,9 +154,7 @@ class _BoostScreenState extends State<BoostScreen> {
         PurchaseUiStatus.unavailable => MevoraErrorView(
           title: l10n.boostTitle,
           message: _boostStatusMessage(l10n, state),
-          onRetry: state.status == PurchaseUiStatus.unavailable
-              ? () => unawaited(controller.load())
-              : () => unawaited(controller.load()),
+          onRetry: () => unawaited(controller.load()),
         ),
         PurchaseUiStatus.credited ||
         PurchaseUiStatus.productLoaded => _ProductView(controller: controller),
@@ -206,13 +203,18 @@ class _ProductView extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               BoostActiveBadge(boost: state.activeBoost),
-              const SizedBox(height: AppSpacing.sm),
-              BoostBalanceChip(balance: state.balance),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                l10n.boostDuration,
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
+              if (state.hasActiveBoost) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  l10n.boostAlreadyActive,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+              if (state.balance > 0) ...[
+                const SizedBox(height: AppSpacing.sm),
+                BoostBalanceChip(balance: state.balance),
+              ],
               if (state.status == PurchaseUiStatus.credited) ...[
                 const SizedBox(height: AppSpacing.md),
                 Text(
@@ -221,36 +223,27 @@ class _ProductView extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
-              if (state.hasActiveBoost) ...[
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  l10n.boostAlreadyActive,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        MevoraButton(
-          label: l10n.boostActivate,
-          onPressed: state.canActivate
-              ? () => unawaited(controller.activate())
-              : null,
-        ),
-        if (!state.canActivate && !state.hasActiveBoost) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            l10n.boostNoBalance,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall,
+        if (state.canActivate) ...[
+          const SizedBox(height: AppSpacing.lg),
+          MevoraButton(
+            label: l10n.boostActivate,
+            onPressed: () => unawaited(controller.activate()),
+            variant: MevoraButtonVariant.secondary,
           ),
         ],
         const SizedBox(height: AppSpacing.lg),
         BoostPackList(
           products: products,
           onSelect: (product) => unawaited(controller.purchase(product)),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        MevoraButton(
+          label: l10n.restorePurchases,
+          onPressed: () => unawaited(controller.restore()),
+          variant: MevoraButtonVariant.ghost,
         ),
         const SizedBox(height: AppSpacing.lg),
         BoostHistoryList(entries: state.history),

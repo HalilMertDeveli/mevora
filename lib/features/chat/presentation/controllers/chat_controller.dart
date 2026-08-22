@@ -48,8 +48,12 @@ class ChatController extends ChangeNotifier {
   StreamSubscription<List<ChatMessage>>? _messageSub;
   StreamSubscription<Map<String, DateTime>>? _typingSub;
   StreamSubscription<PresenceWatch>? _presenceSub;
+  StreamSubscription<Match?>? _matchSub;
   Timer? _typingDebounce;
+  Timer? _typingIdle;
   bool _typingSent = false;
+  double? uploadProgress;
+  bool recording = false;
 
   String? get uid => _uidSource.currentUid;
 
@@ -89,6 +93,16 @@ class ChatController extends ChangeNotifier {
       match = await _matches.getMatch(matchId);
     } on Object {
       match = null;
+    }
+    try {
+      _matchSub = _matches.watchMatch(matchId).listen((value) {
+        if (value != null) {
+          match = value;
+          notifyListeners();
+        }
+      }, onError: (_) {});
+    } on Object {
+      // Some adapters only expose getMatch.
     }
     try {
       if (match != null) {
@@ -155,6 +169,7 @@ class ChatController extends ChangeNotifier {
 
   void onComposerChanged(String text) {
     _typingDebounce?.cancel();
+    _typingIdle?.cancel();
     if (!canChat) {
       return;
     }
@@ -166,6 +181,15 @@ class ChatController extends ChangeNotifier {
       _typingSent = typing;
       unawaited(_chat.setTyping(matchId: matchId, isTyping: typing));
     });
+    if (text.trim().isNotEmpty) {
+      _typingIdle = Timer(ChatPolicy.typingTtl, () {
+        if (!_typingSent) {
+          return;
+        }
+        _typingSent = false;
+        unawaited(_chat.setTyping(matchId: matchId, isTyping: false));
+      });
+    }
   }
 
   Future<Result<void>> send(String text) async {
@@ -197,12 +221,84 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  Future<Result<void>> sendImage(ChatMediaBytes media) {
+    return _sendMedia(
+      () => _chat.sendImage(
+        matchId: matchId,
+        receiverId: otherUid,
+        media: media,
+        onProgress: _onUploadProgress,
+      ),
+    );
+  }
+
+  Future<Result<void>> sendVoice(ChatMediaBytes media) {
+    return _sendMedia(
+      () => _chat.sendVoice(
+        matchId: matchId,
+        receiverId: otherUid,
+        media: media,
+        onProgress: _onUploadProgress,
+      ),
+    );
+  }
+
+  void _onUploadProgress(double value) {
+    uploadProgress = value;
+    notifyListeners();
+  }
+
+  Future<Result<void>> _sendMedia(Future<ChatMessage> Function() send) async {
+    if (!canChat) {
+      error = ChatStrings.matchInactive;
+      notifyListeners();
+      return const Err(AuthzFailure(ChatStrings.matchInactive));
+    }
+    sending = true;
+    error = null;
+    uploadProgress = 0;
+    notifyListeners();
+    try {
+      await send();
+      sending = false;
+      uploadProgress = null;
+      notifyListeners();
+      return const Success(null);
+    } on Object catch (err) {
+      sending = false;
+      uploadProgress = null;
+      final failure = SocialErrorMapper.map(err);
+      error = failure.message;
+      notifyListeners();
+      return Err(failure);
+    }
+  }
+
+  Future<Result<void>> deleteOwn(ChatMessage message) async {
+    final current = uid;
+    if (current == null ||
+        !ChatPolicy.canDeleteOwnMessage(message: message, uid: current)) {
+      return const Err(AuthzFailure(ChatStrings.notAllowed));
+    }
+    try {
+      await _chat.deleteMessage(matchId: matchId, messageId: message.id);
+      return const Success(null);
+    } on Object catch (err) {
+      final failure = SocialErrorMapper.map(err);
+      error = failure.message;
+      notifyListeners();
+      return Err(failure);
+    }
+  }
+
   @override
   void dispose() {
     _typingDebounce?.cancel();
+    _typingIdle?.cancel();
     unawaited(_messageSub?.cancel());
     unawaited(_typingSub?.cancel());
     unawaited(_presenceSub?.cancel());
+    unawaited(_matchSub?.cancel());
     if (_typingSent) {
       unawaited(_chat.setTyping(matchId: matchId, isTyping: false));
     }

@@ -226,6 +226,9 @@ void main() {
     expect(find.text('Edit profile'), findsOneWidget);
     expect(find.text('Change password'), findsOneWidget);
     expect(find.text('Log out'), findsOneWidget);
+    expect(find.text('Connect Spotify'), findsOneWidget);
+    expect(find.text('Delete account'), findsNothing);
+    expect(find.text('Hesabı sil'), findsNothing);
   });
 
   testWidgets('change password validates mismatch', (tester) async {

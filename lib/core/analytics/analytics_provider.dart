@@ -32,6 +32,8 @@ abstract final class AnalyticsEvents {
   static const String locationAcquired = 'location_acquired';
   static const String locationError = 'location_error';
   static const String boostViewed = 'boost_viewed';
+  static const String boostPageOpened = 'boost_page_opened';
+  static const String boostProductSelected = 'boost_product_selected';
   static const String boostPurchaseStarted = 'boost_purchase_started';
   static const String boostPurchaseSuccess = 'boost_purchase_success';
   static const String boostPurchaseCancelled = 'boost_purchase_cancelled';

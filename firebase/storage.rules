@@ -31,6 +31,24 @@ service firebase.storage {
         && request.auth.uid in firestore.get(/databases/(default)/documents/matches/$(matchId)).data.userIds;
     }
 
+    function isAudio() {
+      return request.resource.contentType.matches('audio/mp4')
+        || request.resource.contentType.matches('audio/m4a')
+        || request.resource.contentType.matches('audio/x-m4a')
+        || request.resource.contentType.matches('audio/aac')
+        || request.resource.contentType.matches('audio/mpeg');
+    }
+
+    function isChatMediaOk() {
+      return (isImage() && isSmallEnough())
+        || (isAudio() && request.resource.size < 8 * 1024 * 1024);
+    }
+
+    function isActiveMatch(matchId) {
+      return firestore.exists(/databases/(default)/documents/matches/$(matchId))
+        && firestore.get(/databases/(default)/documents/matches/$(matchId)).data.isActive == true;
+    }
+
     match /users/{userId}/profile/pending/{imageId} {
       allow read, delete: if isOwner(userId);
       allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
@@ -38,7 +56,7 @@ service firebase.storage {
 
     match /users/{userId}/profile/photos/{imageId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/profile/thumbs/{imageId} {
@@ -51,9 +69,12 @@ service firebase.storage {
       allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();
     }
 
-    match /users/{userId}/chat/{matchId}/{messageId} {
+    match /users/{userId}/chat/{matchId}/{fileId} {
       allow read: if isOwner(userId) || isMatchParticipant(matchId);
-      allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
+      allow create, update: if isOwner(userId)
+        && isMatchParticipant(matchId)
+        && isActiveMatch(matchId)
+        && isChatMediaOk();
       allow delete: if isOwner(userId);
     }
 

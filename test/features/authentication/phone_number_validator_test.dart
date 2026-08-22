@@ -48,6 +48,15 @@ void main() {
       expect(result.e164, '+905551112233');
     });
 
+    test('accepts 0542 519 2119 as +905425192119', () {
+      final result = PhoneNumberValidator.validate(
+        country: CountryCodes.turkey,
+        nationalNumber: '0542 519 2119',
+      );
+      expect(result.isValid, isTrue);
+      expect(result.e164, '+905425192119');
+    });
+
     test('accepts 05321234567 as +905321234567', () {
       final result = PhoneNumberValidator.validate(
         country: CountryCodes.turkey,
@@ -64,11 +73,19 @@ void main() {
         E164Formatter.formatNational(CountryCodes.turkey, '5551112233'),
         '555 111 22 33',
       );
+      expect(
+        E164Formatter.formatNational(CountryCodes.turkey, '05425192119'),
+        '0542 519 2119',
+      );
     });
 
     test('builds E.164 and masks without exposing the full number', () {
       const e164 = '+905551112233';
       expect(E164Formatter.toE164(CountryCodes.turkey, '5551112233'), e164);
+      expect(
+        E164Formatter.toE164(CountryCodes.turkey, '0542 519 2119'),
+        '+905425192119',
+      );
       expect(E164Formatter.isValidE164(e164), isTrue);
       expect(E164Formatter.mask(e164), contains('••'));
       expect(E164Formatter.mask(e164), isNot(contains('55511122')));

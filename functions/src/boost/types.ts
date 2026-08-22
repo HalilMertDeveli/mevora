@@ -32,6 +32,7 @@ export interface ActiveBoostSnapshot {
   boostId: string;
   userId: string;
   status: "pending" | "active" | "expired" | "cancelled";
+  startedAt: Date | null;
   expiresAt: Date | null;
 }
 

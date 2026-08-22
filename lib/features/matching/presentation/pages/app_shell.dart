@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
+import 'package:mevora/features/match_score/presentation/widgets/match_feedback_prompt.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
@@ -15,17 +20,27 @@ class AppShell extends StatelessWidget {
     final social = SocialScope.maybeOf(context);
     Widget shell(int unread) {
       final l10n = AppLocalizations.of(context);
+      final relationship = RelationshipScope.controllerOf(context);
+      Widget body = IncomingCallNavigator(
+        child: MatchFeedbackHost(child: navigationShell),
+      );
+      if (relationship != null) {
+        body = RelationshipPromptHost(
+          controller: relationship,
+          discoveryVisible: navigationShell.currentIndex == 0,
+          normalMatchCount: social?.matchesController.mutualLikeCount ?? 0,
+          child: body,
+        );
+      }
       return Scaffold(
-        body: IncomingCallNavigator(
-          child: navigationShell,
-        ),
+        body: body,
         bottomNavigationBar: NavigationBar(
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: navigationShell.goBranch,
           destinations: [
             NavigationDestination(
-              icon: Icon(Icons.explore_outlined),
-              selectedIcon: Icon(Icons.explore),
+              icon: const Icon(Icons.explore_outlined),
+              selectedIcon: const Icon(Icons.explore),
               label: l10n.tabDiscovery,
             ),
             NavigationDestination(
@@ -42,8 +57,13 @@ class AppShell extends StatelessWidget {
               label: l10n.tabMatches,
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
+              icon: const Icon(Icons.library_music_outlined),
+              selectedIcon: const Icon(Icons.library_music),
+              label: l10n.tabMusic,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person),
               label: l10n.tabProfile,
             ),
           ],
@@ -98,7 +118,7 @@ class _IncomingCallNavigatorState extends State<IncomingCallNavigator> {
             if (path.contains('/call/')) {
               return;
             }
-            context.push(AppRoutes.incomingCallPath(callId));
+            unawaited(context.push(AppRoutes.incomingCallPath(callId)));
           });
         }
         return widget.child;

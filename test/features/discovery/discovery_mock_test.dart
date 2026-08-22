@@ -30,6 +30,16 @@ void main() {
       final scores = candidates.map((c) => c.compatibilityScore).toList();
       expect(scores.every((score) => score >= 61 && score <= 92), isTrue);
       expect(scores.toSet().length, greaterThan(5));
+      expect(
+        candidates.every(
+          (c) =>
+              c.photos.isNotEmpty &&
+              c.photos.first.startsWith('assets/images/portraits/'),
+        ),
+        isTrue,
+      );
+      final burak = candidates.firstWhere((c) => c.uid == 'mock-08');
+      expect(burak.photos.first, 'assets/images/portraits/mock-08.jpg');
     });
 
     test('never returns self', () async {

@@ -5,7 +5,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Mevora uses your location to improve distance and nearby discovery.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Mevora uses your camera to take profile photos.</string>
+	<string>Mevora uses your camera for profile photos and video calls.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Mevora uses your microphone for voice and audio features.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -83,6 +83,8 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>audio</string>
+		<string>voip</string>
 	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

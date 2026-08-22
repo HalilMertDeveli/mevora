@@ -3,14 +3,23 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
+import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
+import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
+import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
+import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
 
 class DiscoveryProfileDetailsPage extends StatefulWidget {
-  const DiscoveryProfileDetailsPage({super.key, required this.candidate});
+  const DiscoveryProfileDetailsPage({
+    super.key,
+    required this.candidate,
+    this.controller,
+  });
 
   final DiscoveryCandidate candidate;
+  final DiscoveryController? controller;
 
   @override
   State<DiscoveryProfileDetailsPage> createState() =>
@@ -41,6 +50,22 @@ class _DiscoveryProfileDetailsPageState
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.profileDetailsTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_horiz),
+            tooltip: l10n.more,
+            onPressed: () => showDiscoverySafetySheet(
+              context,
+              userId: candidate.uid,
+              onHide: widget.controller == null
+                  ? null
+                  : (userId) => widget.controller!.hideCandidate(userId),
+              onBlocked: widget.controller == null
+                  ? null
+                  : (userId) => widget.controller!.hideCandidate(userId),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -121,13 +146,27 @@ class _DiscoveryProfileDetailsPageState
                 if (distance != null && distance.isNotEmpty)
                   MevoraChip(label: distance, compact: true),
                 MevoraChip(
-                  label: l10n.compatibilityPercent(candidate.compatibilityScore),
+                  label: l10n.compatibilityPercent(
+                    candidate.compatibilityScore,
+                  ),
                   selected: true,
                   compact: true,
                 ),
+                if (candidate.musicCompatibilityScore != null)
+                  MusicCompatibilityBadge(
+                    score: candidate.musicCompatibilityScore!,
+                  ),
+                if (candidate.relationshipCompatibilityScore != null)
+                  RelationshipCompatibilityBadge(
+                    score: candidate.relationshipCompatibilityScore!,
+                    showAccent: true,
+                  ),
                 if (candidate.relationshipGoal != null)
                   MevoraChip(
-                    label: _relationshipLabel(l10n, candidate.relationshipGoal!),
+                    label: _relationshipLabel(
+                      l10n,
+                      candidate.relationshipGoal!,
+                    ),
                     compact: true,
                   ),
               ],
@@ -151,15 +190,44 @@ class _DiscoveryProfileDetailsPageState
               ),
             ],
             const SizedBox(height: AppSpacing.lg),
-            Text(
-              l10n.whyYoureSeeingThis,
-              style: theme.textTheme.titleMedium,
-            ),
+            Text(l10n.whyYoureSeeingThis, style: theme.textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
             MevoraChip(
               label: l10n.compatibilityPercent(candidate.compatibilityScore),
               selected: true,
             ),
+            if (candidate.musicCompatibilityScore != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              MusicCompatibilityBadge(
+                score: candidate.musicCompatibilityScore!,
+                compact: false,
+              ),
+            ],
+            if (candidate.relationshipCompatibilityScore != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              RelationshipCompatibilityBadge(
+                score: candidate.relationshipCompatibilityScore!,
+                compact: false,
+                showAccent: true,
+              ),
+              if (candidate.relationshipSharedViewCount != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.relationshipSharedViews(
+                    candidate.relationshipSharedViewCount!,
+                  ),
+                ),
+              ],
+              if (candidate.relationshipSummaryTopics.isNotEmpty)
+                Text(
+                  relationshipTopicSummary(
+                    l10n,
+                    relationshipTopicsFromNames(
+                      candidate.relationshipSummaryTopics,
+                    ),
+                  ),
+                ),
+            ],
             if (candidate.sharedInterests.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(l10n.sharedInterests, style: theme.textTheme.titleSmall),
@@ -168,7 +236,9 @@ class _DiscoveryProfileDetailsPageState
                 spacing: AppSpacing.xs,
                 runSpacing: AppSpacing.xs,
                 children: candidate.sharedInterests
-                    .map((interest) => MevoraChip(label: interest, compact: true))
+                    .map(
+                      (interest) => MevoraChip(label: interest, compact: true),
+                    )
                     .toList(),
               ),
             ],

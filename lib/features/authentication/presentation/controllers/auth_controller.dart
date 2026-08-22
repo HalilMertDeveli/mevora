@@ -208,6 +208,7 @@ class AuthController extends ChangeNotifier {
     final result = await _run(
       _authRepository.signInWithGoogle,
       provider: 'google',
+      onSuccess: _applyAuthenticatedUser,
     );
     switch (result) {
       case Success<void>():
@@ -459,6 +460,7 @@ class AuthController extends ChangeNotifier {
     Future<Result<T>> Function() action, {
     String? provider,
     VoidCallback? afterSuccess,
+    void Function(T value)? onSuccess,
   }) async {
     if (provider != null) {
       _signingOut = false;
@@ -479,7 +481,8 @@ class AuthController extends ChangeNotifier {
       );
     }
     switch (result) {
-      case Success<T>():
+      case Success<T>(:final value):
+        onSuccess?.call(value);
         afterSuccess?.call();
         notifyListeners();
         return const Success<void>(null);

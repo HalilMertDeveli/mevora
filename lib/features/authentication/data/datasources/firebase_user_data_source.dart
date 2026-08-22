@@ -110,6 +110,8 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
     final privacyRef = _firestore
         .collection(FirestorePaths.userPrivacy)
         .doc(uid);
+    // lastActiveAt must be FieldValue.serverTimestamp() — rules reject
+    // arbitrary client dates so users cannot stay in the discovery pool.
     final now = FieldValue.serverTimestamp();
 
     // Avoid runTransaction: Flutter's MethodChannel completer double-fires on

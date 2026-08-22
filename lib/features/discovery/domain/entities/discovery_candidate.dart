@@ -15,6 +15,11 @@ class DiscoveryCandidate {
     this.city,
     this.gender,
     this.relationshipGoal,
+    this.musicCompatibilityScore,
+    this.relationshipCompatibilityScore,
+    this.relationshipSharedViewCount,
+    this.relationshipAlignedCount,
+    this.relationshipSummaryTopics = const [],
     this.isDemo = false,
   });
 
@@ -39,6 +44,17 @@ class DiscoveryCandidate {
   final String? city;
   final String? gender;
   final String? relationshipGoal;
+
+  /// Extra music-taste signal (0–100). Null when neither person has music data.
+  /// Never used as the only match criterion.
+  final int? musicCompatibilityScore;
+
+  /// Relationship-answer overlap (0–100). Null when there is no shared question.
+  /// Distance is never required for this signal. Never an automatic match.
+  final int? relationshipCompatibilityScore;
+  final int? relationshipSharedViewCount;
+  final int? relationshipAlignedCount;
+  final List<String> relationshipSummaryTopics;
 
   /// Local seed profile. Never persisted to production Firestore.
   final bool isDemo;

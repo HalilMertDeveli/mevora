@@ -15,6 +15,8 @@ abstract final class PushRouteResolver {
         return AppRoutes.incomingCallPath(callId);
       case 'newMessage':
       case 'message':
+      case 'newPhoto':
+      case 'newVoice':
       case 'newMatch':
       case 'match':
       case 'missedCall':

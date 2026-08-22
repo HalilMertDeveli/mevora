@@ -62,8 +62,7 @@ import 'app_localizations_tr.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,8 +70,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -84,18 +82,17 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('tr'),
+    Locale('tr')
   ];
 
   /// No description provided for @appName.
@@ -461,7 +458,7 @@ abstract class AppLocalizations {
   /// No description provided for @continueWithPhone.
   ///
   /// In en, this message translates to:
-  /// **'Continue with phone'**
+  /// **'Sign in with Phone Number'**
   String get continueWithPhone;
 
   /// No description provided for @legalPrefix.
@@ -545,13 +542,13 @@ abstract class AppLocalizations {
   /// No description provided for @phoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'Enter your phone number'**
+  /// **'Sign in with Phone Number'**
   String get phoneTitle;
 
   /// No description provided for @phoneSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'We will text you a verification code.'**
+  /// **'Choose your country code and enter your phone number. We\'ll send a 6-digit verification code by SMS.'**
   String get phoneSubtitle;
 
   /// No description provided for @phoneHint.
@@ -563,7 +560,7 @@ abstract class AppLocalizations {
   /// No description provided for @sendCode.
   ///
   /// In en, this message translates to:
-  /// **'Send SMS code'**
+  /// **'Send verification code'**
   String get sendCode;
 
   /// No description provided for @countrySearchHint.
@@ -662,6 +659,12 @@ abstract class AppLocalizations {
   /// **'We could not send the SMS. Please try again.'**
   String get authSmsFailed;
 
+  /// No description provided for @authAppVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'App verification failed. Check SHA certificates, try a physical device, or use a Firebase Console test phone number.'**
+  String get authAppVerification;
+
   /// No description provided for @authInvalidOtp.
   ///
   /// In en, this message translates to:
@@ -743,7 +746,7 @@ abstract class AppLocalizations {
   /// No description provided for @authNotConfigured.
   ///
   /// In en, this message translates to:
-  /// **'This sign-in method is not set up yet.'**
+  /// **'Phone sign-in is not enabled for this Firebase project yet.'**
   String get authNotConfigured;
 
   /// No description provided for @authBillingNotEnabled.
@@ -1517,13 +1520,13 @@ abstract class AppLocalizations {
   /// No description provided for @compatibilityReasonsHeading.
   ///
   /// In en, this message translates to:
-  /// **'Why you\'re compatible'**
+  /// **'Why you might connect'**
   String get compatibilityReasonsHeading;
 
   /// No description provided for @whyYoureSeeingThis.
   ///
   /// In en, this message translates to:
-  /// **'Why you\'re seeing this person'**
+  /// **'Why this profile is shown'**
   String get whyYoureSeeingThis;
 
   /// No description provided for @sharedInterests.
@@ -1589,7 +1592,7 @@ abstract class AppLocalizations {
   /// No description provided for @compatibilityPercent.
   ///
   /// In en, this message translates to:
-  /// **'{percent}% match'**
+  /// **'Suggested · {percent}% compatible'**
   String compatibilityPercent(int percent);
 
   /// No description provided for @like.
@@ -1807,6 +1810,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'is typing...'**
   String get typing;
+
+  /// No description provided for @attachPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get attachPhoto;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get takePhoto;
+
+  /// No description provided for @recordVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice message'**
+  String get recordVoice;
+
+  /// No description provided for @holdToRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording…'**
+  String get holdToRecord;
+
+  /// No description provided for @playVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get playVoice;
+
+  /// No description provided for @pauseVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pauseVoice;
+
+  /// No description provided for @previewPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this photo?'**
+  String get previewPhoto;
+
+  /// No description provided for @messageDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Message deleted'**
+  String get messageDeleted;
+
+  /// No description provided for @deleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteMessage;
+
+  /// No description provided for @deleteMessageConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this message? The other person will no longer see it.'**
+  String get deleteMessageConfirm;
+
+  /// No description provided for @micDeniedChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is needed to send a voice message.'**
+  String get micDeniedChat;
+
+  /// No description provided for @photoDeniedChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo permission is needed to send an image.'**
+  String get photoDeniedChat;
+
+  /// No description provided for @callCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Call cancelled'**
+  String get callCancelled;
+
+  /// No description provided for @callRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Call declined'**
+  String get callRejected;
 
   /// No description provided for @unmatchedBanner.
   ///
@@ -2174,6 +2261,24 @@ abstract class AppLocalizations {
   /// **'Other'**
   String get reportOther;
 
+  /// No description provided for @hideProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide profile'**
+  String get hideProfile;
+
+  /// No description provided for @hideProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide this profile?'**
+  String get hideProfileTitle;
+
+  /// No description provided for @hideProfileMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'They will not appear in your discovery stack again.'**
+  String get hideProfileMessage;
+
   /// No description provided for @linkedAccounts.
   ///
   /// In en, this message translates to:
@@ -2291,13 +2396,13 @@ abstract class AppLocalizations {
   /// No description provided for @boostDuration.
   ///
   /// In en, this message translates to:
-  /// **'30 minutes'**
+  /// **'Boost your profile'**
   String get boostDuration;
 
   /// No description provided for @boostActivate.
   ///
   /// In en, this message translates to:
-  /// **'Activate Boost'**
+  /// **'Use leftover Boost'**
   String get boostActivate;
 
   /// No description provided for @boostBuy.
@@ -2333,7 +2438,7 @@ abstract class AppLocalizations {
   /// No description provided for @boostAlreadyActive.
   ///
   /// In en, this message translates to:
-  /// **'You already have an active Boost.'**
+  /// **'You already have an active Boost. Buying another pack adds time to the remaining period.'**
   String get boostAlreadyActive;
 
   /// No description provided for @boostPurchaseCancelled.
@@ -2399,8 +2504,20 @@ abstract class AppLocalizations {
   /// No description provided for @boostRemainingMinutes.
   ///
   /// In en, this message translates to:
-  /// **'{minutes} min'**
+  /// **'{minutes} min left'**
   String boostRemainingMinutes(int minutes);
+
+  /// No description provided for @boostRemainingDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days left'**
+  String boostRemainingDays(int days);
+
+  /// No description provided for @boostRemainingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} hours left'**
+  String boostRemainingHours(int hours);
 
   /// No description provided for @boostSpotlight.
   ///
@@ -2432,10 +2549,52 @@ abstract class AppLocalizations {
   /// **'{count} Boost'**
   String boostPackCount(int count);
 
+  /// No description provided for @boostPackWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'1 Week'**
+  String get boostPackWeek;
+
+  /// No description provided for @boostPackMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'1 Month'**
+  String get boostPackMonth;
+
+  /// No description provided for @boostPackYear.
+  ///
+  /// In en, this message translates to:
+  /// **'1 Year'**
+  String get boostPackYear;
+
+  /// No description provided for @boostPackWeekSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost your profile for 7 days'**
+  String get boostPackWeekSubtitle;
+
+  /// No description provided for @boostPackMonthSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost your profile for 30 days'**
+  String get boostPackMonthSubtitle;
+
+  /// No description provided for @boostPackYearSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost your profile for 365 days'**
+  String get boostPackYearSubtitle;
+
+  /// No description provided for @boostBestValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Best value'**
+  String get boostBestValue;
+
   /// No description provided for @boostBalance.
   ///
   /// In en, this message translates to:
-  /// **'{count} Boost'**
+  /// **'{count} leftover Boost'**
   String boostBalance(int count);
 
   /// No description provided for @boostBuyPack.
@@ -2465,13 +2624,13 @@ abstract class AppLocalizations {
   /// No description provided for @boostHistoryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Boost history'**
+  /// **'Purchase history'**
   String get boostHistoryTitle;
 
   /// No description provided for @boostHistoryEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No Boost activity yet.'**
+  /// **'No purchases yet.'**
   String get boostHistoryEmpty;
 
   /// No description provided for @boostHistoryPurchase.
@@ -2485,6 +2644,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activation'**
   String get boostHistoryActivation;
+
+  /// No description provided for @boostHistoryPlatformIos.
+  ///
+  /// In en, this message translates to:
+  /// **'App Store'**
+  String get boostHistoryPlatformIos;
+
+  /// No description provided for @boostHistoryPlatformAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Play'**
+  String get boostHistoryPlatformAndroid;
 
   /// No description provided for @boostActiveBadge.
   ///
@@ -2501,8 +2672,20 @@ abstract class AppLocalizations {
   /// No description provided for @boostNoBalance.
   ///
   /// In en, this message translates to:
-  /// **'Buy a pack to activate Boost.'**
+  /// **'Choose a pack to Boost your profile.'**
   String get boostNoBalance;
+
+  /// No description provided for @boostPriceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Price unavailable'**
+  String get boostPriceUnavailable;
+
+  /// No description provided for @boostRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring purchases...'**
+  String get boostRestoring;
 
   /// No description provided for @radiusKm.
   ///
@@ -3095,7 +3278,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoveryLoading.
   ///
   /// In en, this message translates to:
-  /// **'Finding compatible people...'**
+  /// **'Discovering people for you...'**
   String get discoveryLoading;
 
   /// No description provided for @discoveryLoadErrorTitle.
@@ -3139,10 +3322,465 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get tabSettings;
+
+  /// No description provided for @tabMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get tabMusic;
+
+  /// No description provided for @musicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get musicTitle;
+
+  /// No description provided for @musicConnectCta.
+  ///
+  /// In en, this message translates to:
+  /// **'🎵 Connect Spotify'**
+  String get musicConnectCta;
+
+  /// No description provided for @musicConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'✓ Spotify connected'**
+  String get musicConnected;
+
+  /// No description provided for @musicUnconnectedCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your Spotify account and discover people who fit your music taste.'**
+  String get musicUnconnectedCopy;
+
+  /// No description provided for @musicConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting Spotify…'**
+  String get musicConnecting;
+
+  /// No description provided for @musicSyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing your music taste…'**
+  String get musicSyncing;
+
+  /// No description provided for @musicRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh music data'**
+  String get musicRefresh;
+
+  /// No description provided for @musicRefreshCooldown.
+  ///
+  /// In en, this message translates to:
+  /// **'You can refresh again later.'**
+  String get musicRefreshCooldown;
+
+  /// No description provided for @musicProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music profile'**
+  String get musicProfileTitle;
+
+  /// No description provided for @musicSameTasteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People who listen to the same music'**
+  String get musicSameTasteTitle;
+
+  /// No description provided for @musicSameTasteEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No overlapping tastes yet. Refresh after you listen a bit more.'**
+  String get musicSameTasteEmpty;
+
+  /// No description provided for @musicWeeklyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This week\'s music'**
+  String get musicWeeklyTitle;
+
+  /// No description provided for @musicWeeklyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly highlights will appear here once enough people connect Spotify.'**
+  String get musicWeeklyEmpty;
+
+  /// No description provided for @musicCompatibilityPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar music taste · up to {percent}%'**
+  String musicCompatibilityPercent(int percent);
+
+  /// No description provided for @musicCompatibilityShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Music · {percent}%'**
+  String musicCompatibilityShort(int percent);
+
+  /// No description provided for @musicSharedCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{tracks} shared tracks · {artists} shared artists'**
+  String musicSharedCounts(int tracks, int artists);
+
+  /// No description provided for @musicOauthCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify connection was cancelled.'**
+  String get musicOauthCancelled;
+
+  /// No description provided for @musicApiDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify didn\'t allow access. You can try again later.'**
+  String get musicApiDenied;
+
+  /// No description provided for @musicTokenExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Spotify connection expired. Please reconnect.'**
+  String get musicTokenExpired;
+
+  /// No description provided for @musicNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your internet connection and try again.'**
+  String get musicNetwork;
+
+  /// No description provided for @musicNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify isn\'t configured in this build yet.'**
+  String get musicNotConfigured;
+
+  /// No description provided for @musicConnectError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect Spotify. The rest of Mevora still works.'**
+  String get musicConnectError;
+
+  /// No description provided for @settingsConnectSpotify.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Spotify'**
+  String get settingsConnectSpotify;
+
+  /// No description provided for @settingsSpotifySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Music taste matching — no playback in Mevora.'**
+  String get settingsSpotifySubtitle;
+
+  /// No description provided for @matchScoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Match points'**
+  String get matchScoreTitle;
+
+  /// No description provided for @matchScoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your connection reputation'**
+  String get matchScoreSubtitle;
+
+  /// No description provided for @matchScoreValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{score} points'**
+  String matchScoreValue(int score);
+
+  /// No description provided for @matchScoreHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Point history'**
+  String get matchScoreHistoryTitle;
+
+  /// No description provided for @matchScoreHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'New matches and conversations will add points here.'**
+  String get matchScoreHistoryEmpty;
+
+  /// No description provided for @matchScoreHistoryMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'New match +1'**
+  String get matchScoreHistoryMatch;
+
+  /// No description provided for @matchScoreHistoryInteraction.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation +1'**
+  String get matchScoreHistoryInteraction;
+
+  /// No description provided for @matchFeedbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How did this match go?'**
+  String get matchFeedbackTitle;
+
+  /// No description provided for @matchFeedbackMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. This note stays in your history — they will not see it, and it does not change anyone\'s points.'**
+  String get matchFeedbackMessage;
+
+  /// No description provided for @matchFeedbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A short private note'**
+  String get matchFeedbackHint;
+
+  /// No description provided for @matchFeedbackSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Save note'**
+  String get matchFeedbackSubmit;
+
+  /// No description provided for @matchFeedbackThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your history.'**
+  String get matchFeedbackThanks;
+
+  /// No description provided for @matchFeedbackTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a short note, or skip.'**
+  String get matchFeedbackTooShort;
+
+  /// No description provided for @matchFeedbackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save that note. Try again.'**
+  String get matchFeedbackFailed;
+
+  /// No description provided for @relationshipPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you think about relationships?'**
+  String get relationshipPromptTitle;
+
+  /// No description provided for @relationshipQuestionsPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'New questions are being prepared. Please try again in a bit.'**
+  String get relationshipQuestionsPreparing;
+
+  /// No description provided for @relationshipTestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship Test'**
+  String get relationshipTestTitle;
+
+  /// No description provided for @relationshipTestHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover people who share your views'**
+  String get relationshipTestHeadline;
+
+  /// No description provided for @relationshipTestMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer 3 short questions to see people who may think similarly.'**
+  String get relationshipTestMessage;
+
+  /// No description provided for @relationshipTestStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the Relationship Test'**
+  String get relationshipTestStart;
+
+  /// No description provided for @relationshipTestLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get relationshipTestLater;
+
+  /// No description provided for @relationshipTestDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your relationship test is complete'**
+  String get relationshipTestDoneTitle;
+
+  /// No description provided for @relationshipTestFound.
+  ///
+  /// In en, this message translates to:
+  /// **'We found someone whose views match yours.'**
+  String get relationshipTestFound;
+
+  /// No description provided for @relationshipTestAlign.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers overlap on several topics.'**
+  String get relationshipTestAlign;
+
+  /// No description provided for @relationshipTestNearest.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest to you:'**
+  String get relationshipTestNearest;
+
+  /// No description provided for @relationshipTestEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no one nearby who thinks like you right now.'**
+  String get relationshipTestEmpty;
+
+  /// No description provided for @relationshipTestViewProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View profile'**
+  String get relationshipTestViewProfile;
+
+  /// No description provided for @relationshipTestOpenChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chat'**
+  String get relationshipTestOpenChat;
+
+  /// No description provided for @relationshipMatchBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship Test'**
+  String get relationshipMatchBadge;
+
+  /// No description provided for @relationshipPromptProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{answered} / {total}'**
+  String relationshipPromptProgress(int answered, int total);
+
+  /// No description provided for @relationshipCompatibilityPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'Views overlap · {percent}%'**
+  String relationshipCompatibilityPercent(int percent);
+
+  /// No description provided for @relationshipCompatibilityShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Views · {percent}%'**
+  String relationshipCompatibilityShort(int percent);
+
+  /// No description provided for @relationshipSharedViews.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} shared views'**
+  String relationshipSharedViews(int count);
+
+  /// No description provided for @relationshipSimilarThinker.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone who thinks similarly about relationships was found.'**
+  String get relationshipSimilarThinker;
+
+  /// No description provided for @relationshipViewsAlign.
+  ///
+  /// In en, this message translates to:
+  /// **'Your relationship views overlap.'**
+  String get relationshipViewsAlign;
+
+  /// No description provided for @relationshipMatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship matches'**
+  String get relationshipMatchesTitle;
+
+  /// No description provided for @relationshipMatchesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer a few relationship questions to find people who think like you — distance does not matter here.'**
+  String get relationshipMatchesEmpty;
+
+  /// No description provided for @relationshipProfileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{answered} relationship questions answered'**
+  String relationshipProfileSubtitle(int answered);
+
+  /// No description provided for @relationshipTopicJealousy.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about jealousy.'**
+  String get relationshipTopicJealousy;
+
+  /// No description provided for @relationshipTopicTrust.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about trust.'**
+  String get relationshipTopicTrust;
+
+  /// No description provided for @relationshipTopicLoyalty.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about loyalty.'**
+  String get relationshipTopicLoyalty;
+
+  /// No description provided for @relationshipTopicCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about communication.'**
+  String get relationshipTopicCommunication;
+
+  /// No description provided for @relationshipTopicBoundaries.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about boundaries.'**
+  String get relationshipTopicBoundaries;
+
+  /// No description provided for @relationshipTopicSocialLife.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about social life.'**
+  String get relationshipTopicSocialLife;
+
+  /// No description provided for @relationshipTopicFriendship.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about friendship.'**
+  String get relationshipTopicFriendship;
+
+  /// No description provided for @relationshipTopicPersonalSpace.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about personal space.'**
+  String get relationshipTopicPersonalSpace;
+
+  /// No description provided for @relationshipTopicFuturePlans.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about future plans.'**
+  String get relationshipTopicFuturePlans;
+
+  /// No description provided for @relationshipTopicMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about money.'**
+  String get relationshipTopicMoney;
+
+  /// No description provided for @relationshipTopicFlirting.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about flirting.'**
+  String get relationshipTopicFlirting;
+
+  /// No description provided for @relationshipTopicExes.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about past relationships.'**
+  String get relationshipTopicExes;
+
+  /// No description provided for @relationshipTopicExpectations.
+  ///
+  /// In en, this message translates to:
+  /// **'You think similarly about relationship expectations.'**
+  String get relationshipTopicExpectations;
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -3151,26 +3789,25 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'tr'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['en', 'tr'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
-    case 'tr':
-      return AppLocalizationsTr();
+    case 'en': return AppLocalizationsEn();
+    case 'tr': return AppLocalizationsTr();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
+    'that was used.'
   );
 }

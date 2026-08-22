@@ -2,6 +2,8 @@ rules_version = '2';
 
 // users/{uid}                  ACCOUNT ONLY (private). May contain
 //   location: { latitude, longitude, updatedAt } readable by the owner only.
+//   lastActiveAt: server timestamp only. Discovery Functions hide users
+//   inactive for 90+ days; missing lastActiveAt still counts as active.
 // userLocation/{uid}           OWNER READ/WRITE ONLY (lat, lng, geohash)
 // Other clients never read exact GPS. Discovery receives distanceLabel from
 // Cloud Functions (getDiscoveryCandidates / getDistanceLabel).
@@ -26,11 +28,82 @@ service cloud.firestore {
 
     function isBlockedPair(a, b) {
       return exists(/databases/$(database)/documents/users/$(a)/blockedUsers/$(b))
-        || exists(/databases/$(database)/documents/users/$(b)/blockedUsers/$(a));
+        || exists(/databases/$(database)/documents/users/$(b)/blockedUsers/$(a))
+        || exists(/databases/$(database)/documents/blocks/$(a + '_' + b))
+        || exists(/databases/$(database)/documents/blocks/$(b + '_' + a));
+    }
+
+    function unchangedOrFalse(key) {
+      return request.resource.data.get(key, false) == resource.data.get(key, false)
+        || request.resource.data.get(key, false) == false;
+    }
+
+    function birthDateUnchanged() {
+      return !('birthDate' in resource.data)
+        || request.resource.data.birthDate == resource.data.birthDate;
+    }
+
+    function ageUnchanged() {
+      return !('age' in resource.data)
+        || request.resource.data.age == resource.data.age;
+    }
+
+    function profileLifecycleClientSafe() {
+      return request.resource.data.get('isDiscoverable', false) == false
+        && request.resource.data.get('profileCompleted', false) == false
+        && request.resource.data.get('onboardingCompleted', false) == false
+        && request.resource.data.get('isProfileComplete', false) == false
+        && !request.resource.data.keys().hasAny([
+          'profileModerationStatus',
+          'moderationStatus',
+          'isVerified',
+          'isAdmin',
+          'isSuspended',
+          'isBanned',
+          'subscriptionStatus',
+          'boostStatus',
+          'matchCount'
+        ]);
+    }
+
+    function profileLifecycleUpdateSafe() {
+      return unchangedOrFalse('isDiscoverable')
+        && unchangedOrFalse('profileCompleted')
+        && unchangedOrFalse('onboardingCompleted')
+        && unchangedOrFalse('isProfileComplete')
+        && birthDateUnchanged()
+        && ageUnchanged()
+        && request.resource.data.get('profileModerationStatus', resource.data.get('profileModerationStatus', 'pending'))
+          == resource.data.get('profileModerationStatus', 'pending')
+        && request.resource.data.get('moderationStatus', resource.data.get('moderationStatus', 'pending'))
+          == resource.data.get('moderationStatus', 'pending')
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'isVerified',
+          'isAdmin',
+          'isSuspended',
+          'isBanned',
+          'subscriptionStatus',
+          'boostStatus',
+          'matchCount'
+        ]);
     }
 
     function unchanged(key) {
       return request.resource.data[key] == resource.data[key];
+    }
+
+    // lastActiveAt lives on users/{uid} (private). Discovery Functions
+    // filter with a 90-day window. Clients may only write request.time
+    // (FieldValue.serverTimestamp()) — never an arbitrary date.
+    function lastActiveAtUnchangedOrServerNow() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['lastActiveAt'])
+        || request.resource.data.lastActiveAt == request.time;
+    }
+
+    function lastActiveAtMissingOrServerNow() {
+      return !('lastActiveAt' in request.resource.data)
+        || request.resource.data.lastActiveAt == request.time;
     }
 
     // -----------------------------------------------------------
@@ -41,6 +114,7 @@ service cloud.firestore {
 
       allow create: if isOwner(userId)
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
+        && lastActiveAtMissingOrServerNow()
         && request.resource.data.get('isBanned', false) == false
         && request.resource.data.get('isVerified', false) == false
         && request.resource.data.get('phoneVerified', false) == false
@@ -49,11 +123,15 @@ service cloud.firestore {
           'boostBalance',
           'boostStatus',
           'boostExpiresAt',
-          'boostActive'
+          'boostActive',
+          'matchScore',
+          'matchCount',
+          'isSmokeTestUser'
         ]);
 
       allow update: if isOwner(userId)
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
+        && lastActiveAtUnchangedOrServerNow()
         && request.resource.data.get('isBanned', resource.data.get('isBanned', false))
           == resource.data.get('isBanned', false)
         && request.resource.data.get('isVerified', resource.data.get('isVerified', false))
@@ -62,11 +140,15 @@ service cloud.firestore {
           == resource.data.get('phoneVerified', false)
         && request.resource.data.get('accountStatus', resource.data.get('accountStatus', 'active'))
           == resource.data.get('accountStatus', 'active')
+        && request.resource.data.get('isSmokeTestUser', resource.data.get('isSmokeTestUser', false))
+          == resource.data.get('isSmokeTestUser', false)
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'boostBalance',
           'boostStatus',
           'boostExpiresAt',
-          'boostActive'
+          'boostActive',
+          'matchScore',
+          'matchCount'
         ]);
 
       allow delete: if false;
@@ -115,6 +197,50 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
+
+      // Owner may read their own music summary. Tokens live in spotifySecrets
+      // (Admin SDK only). Clients never write music docs.
+      match /music/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Private relationship answers. Other users never read these.
+      // Compatibility is computed by Cloud Functions only.
+      match /relationshipAnswers/{questionId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /relationshipMatch/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /relationshipSeen/{otherUid} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Match points + private feedback. Clients never write scores.
+      match /matchScoreHistory/{entryId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /matchFeedback/{matchId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /pendingMatchFeedback/{matchId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /rateLimits/{docId} {
+        allow read, write: if false;
+      }
     }
 
     // -----------------------------------------------------------
@@ -122,8 +248,9 @@ service cloud.firestore {
     // -----------------------------------------------------------
     match /profiles/{userId} {
       allow read: if isAuthenticated();
-      allow create, update: if isOwner(userId)
+      allow create: if isOwner(userId)
         && (request.resource.data.get('uid', userId) == userId)
+        && profileLifecycleClientSafe()
         && !request.resource.data.keys().hasAny([
           'email',
           'phoneNumber',
@@ -135,7 +262,27 @@ service cloud.firestore {
           'geohash',
           'location',
           'fcmToken',
-          'token'
+          'token',
+          'accessToken',
+          'refreshToken'
+        ]);
+      allow update: if isOwner(userId)
+        && (request.resource.data.get('uid', userId) == userId)
+        && profileLifecycleUpdateSafe()
+        && !request.resource.data.keys().hasAny([
+          'email',
+          'phoneNumber',
+          'password',
+          'authProviders',
+          'phoneVerified',
+          'latitude',
+          'longitude',
+          'geohash',
+          'location',
+          'fcmToken',
+          'token',
+          'accessToken',
+          'refreshToken'
         ]);
       allow delete: if false;
     }
@@ -193,7 +340,23 @@ service cloud.firestore {
         && unchanged('createdAt')
         && request.resource.data.isActive == resource.data.isActive
         && request.resource.data.get('unmatchedBy', null)
-          == resource.data.get('unmatchedBy', null);
+          == resource.data.get('unmatchedBy', null)
+        && request.resource.data.get('matchBonusAwarded', false)
+          == resource.data.get('matchBonusAwarded', false)
+        && request.resource.data.get('interactionBonusAwarded', false)
+          == resource.data.get('interactionBonusAwarded', false)
+        && request.resource.data.get('matchedAt', resource.data.get('matchedAt', null))
+          == resource.data.get('matchedAt', null)
+        && request.resource.data.get('messagedUserIds', resource.data.get('messagedUserIds', []))
+          == resource.data.get('messagedUserIds', [])
+        && request.resource.data.get('endedReason', resource.data.get('endedReason', null))
+          == resource.data.get('endedReason', null)
+        && request.resource.data.get('source', resource.data.get('source', 'mutual_like'))
+          == resource.data.get('source', 'mutual_like')
+        && request.resource.data.get('matchType', resource.data.get('matchType', null))
+          == resource.data.get('matchType', null)
+        && request.resource.data.get('compatibilityKey', resource.data.get('compatibilityKey', null))
+          == resource.data.get('compatibilityKey', null);
 
       match /messages/{messageId} {
         allow read: if isMatchParticipant(matchId);
@@ -203,12 +366,30 @@ service cloud.firestore {
           && request.resource.data.receiverId != request.auth.uid
           && request.resource.data.receiverId in get(/databases/$(database)/documents/matches/$(matchId)).data.userIds
           && !isBlockedPair(request.auth.uid, request.resource.data.receiverId)
+          && request.resource.data.type in ['text', 'image', 'gif', 'voice', 'system']
+          && request.resource.data.get('deleted', false) == false
           && (!('text' in request.resource.data)
             || (request.resource.data.text is string && request.resource.data.text.size() <= 2000));
         allow update: if isMatchParticipant(matchId)
           && unchanged('senderId')
-          && unchanged('receiverId');
-        allow delete: if false;
+          && unchanged('receiverId')
+          && unchanged('createdAt')
+          && unchanged('type')
+          && (
+            (
+              request.auth.uid == resource.data.receiverId
+              && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['status', 'isRead', 'readAt'])
+            )
+            || (
+              request.auth.uid == resource.data.senderId
+              && request.resource.data.deleted == true
+              && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['deleted', 'text', 'mediaUrl', 'imageStoragePath', 'voiceStoragePath'])
+            )
+          );
+        allow delete: if isMatchParticipant(matchId)
+          && resource.data.senderId == request.auth.uid;
       }
 
       match /meta/{docId} {
@@ -271,6 +452,19 @@ service cloud.firestore {
     match /boostProducts/{productId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if false;
+    }
+
+    match /weeklyMusicStats/{weekId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /spotifySecrets/{userId} {
+      allow read, write: if false;
+    }
+
+    match /musicSpotifyIndex/{spotifyId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

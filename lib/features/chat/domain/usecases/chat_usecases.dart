@@ -47,6 +47,108 @@ class SendChatText {
   }
 }
 
+class SendChatImage {
+  const SendChatImage(this._chat);
+
+  final ChatRepository _chat;
+
+  Future<Result<ChatMessage>> call({
+    required Match match,
+    required String senderId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    required bool blocked,
+    void Function(double progress)? onProgress,
+  }) {
+    return sendChatMedia(
+      match: match,
+      senderId: senderId,
+      receiverId: receiverId,
+      blocked: blocked,
+      send: () => _chat.sendImage(
+        matchId: match.id,
+        receiverId: receiverId,
+        media: media,
+        onProgress: onProgress,
+      ),
+    );
+  }
+}
+
+class SendChatVoice {
+  const SendChatVoice(this._chat);
+
+  final ChatRepository _chat;
+
+  Future<Result<ChatMessage>> call({
+    required Match match,
+    required String senderId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    required bool blocked,
+    void Function(double progress)? onProgress,
+  }) {
+    return sendChatMedia(
+      match: match,
+      senderId: senderId,
+      receiverId: receiverId,
+      blocked: blocked,
+      send: () => _chat.sendVoice(
+        matchId: match.id,
+        receiverId: receiverId,
+        media: media,
+        onProgress: onProgress,
+      ),
+    );
+  }
+}
+
+Future<Result<ChatMessage>> sendChatMedia({
+  required Match match,
+  required String senderId,
+  required String receiverId,
+  required bool blocked,
+  required Future<ChatMessage> Function() send,
+}) async {
+  if (!ChatPolicy.canSendMessage(
+    match: match,
+    senderId: senderId,
+    receiverId: receiverId,
+    blocked: blocked,
+  )) {
+    return const Err<ChatMessage>(
+      AuthzFailure('This conversation is not available.'),
+    );
+  }
+  try {
+    return Success(await send());
+  } on Object catch (error) {
+    return Err(FailureMapper.from(error));
+  }
+}
+
+class DeleteChatMessage {
+  const DeleteChatMessage(this._chat);
+
+  final ChatRepository _chat;
+
+  Future<Result<void>> call({
+    required ChatMessage message,
+    required String uid,
+    required String matchId,
+  }) async {
+    if (!ChatPolicy.canDeleteOwnMessage(message: message, uid: uid)) {
+      return const Err(AuthzFailure('You can only delete your own messages.'));
+    }
+    try {
+      await _chat.deleteMessage(matchId: matchId, messageId: message.id);
+      return const Success(null);
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+}
+
 class MarkChatRead {
   const MarkChatRead(this._chat);
 

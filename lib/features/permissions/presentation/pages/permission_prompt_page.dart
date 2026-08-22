@@ -9,6 +9,7 @@ import 'package:mevora/features/permissions/presentation/controllers/permission_
 import 'package:mevora/features/permissions/presentation/widgets/permission_denied_view.dart';
 import 'package:mevora/features/permissions/presentation/widgets/permission_rationale_view.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_page_transitions.dart';
 
 enum _PromptPhase { rationale, denied, permanentlyDenied }
 
@@ -32,11 +33,12 @@ class PermissionPromptPage extends StatefulWidget {
     PermissionController? controller,
   }) async {
     final result = await Navigator.of(context).push<PermissionFlowOutcome>(
-      MaterialPageRoute(
+      MevoraPageTransitions.route(
         builder: (_) => PermissionPromptPage(
           type: type,
           mandatory: mandatory,
-          controller: controller ?? PermissionScope.maybeOf(context)?.controller,
+          controller:
+              controller ?? PermissionScope.maybeOf(context)?.controller,
         ),
       ),
     );

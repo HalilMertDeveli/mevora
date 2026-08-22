@@ -12,6 +12,7 @@ import 'package:mevora/features/onboarding/presentation/controllers/onboarding_c
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo_grid.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_motion_size.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/turkish_province_picker.dart';
@@ -152,9 +153,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
             controller: TextEditingController(
               text: _birthDate == null
                   ? ''
-                  : MaterialLocalizations.of(context).formatMediumDate(
-                      _birthDate!,
-                    ),
+                  : MaterialLocalizations.of(
+                      context,
+                    ).formatMediumDate(_birthDate!),
             ),
             suffixIcon: IconButton(
               icon: const Icon(Icons.calendar_today_outlined),
@@ -162,7 +163,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(l10n.onboardingGender, style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            l10n.onboardingGender,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
@@ -362,7 +366,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
             OnboardingLifestyleOption.petValues,
             (value) => _controller.updateDraft(
               (current) => current.copyWith(
-                lifestyleProfile: current.lifestyleProfile.copyWith(pets: value),
+                lifestyleProfile: current.lifestyleProfile.copyWith(
+                  pets: value,
+                ),
               ),
             ),
             l10n,
@@ -468,15 +474,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
       child: ListView(
         children: [
           Center(
-            child: MevoraRiveAnimation(
-              asset: MevoraRiveAssets.onboardingComplete,
-              width: 120,
-              height: 120,
-              fallback: Icon(
-                Icons.auto_awesome_outlined,
-                size: 56,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+            child: Builder(
+              builder: (context) {
+                final size = MevoraMotionSize.accent(context);
+                return MevoraRiveAnimation(
+                  asset: MevoraRiveAssets.onboardingComplete,
+                  width: size,
+                  height: size,
+                  fallback: Icon(
+                    Icons.auto_awesome_outlined,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -584,7 +595,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   String _relationshipLabel(AppLocalizations l10n, String value) {
     return switch (value) {
-      OnboardingRelationshipGoal.longTerm => l10n.onboardingRelationshipLongTerm,
+      OnboardingRelationshipGoal.longTerm =>
+        l10n.onboardingRelationshipLongTerm,
       OnboardingRelationshipGoal.shortTerm =>
         l10n.onboardingRelationshipShortTerm,
       OnboardingRelationshipGoal.friendship =>

@@ -7,16 +7,19 @@ class BoostActivationDecision {
     this.insufficientBalance = false,
     this.startedAt,
     this.expiresAt,
+    this.extendBoostId,
   });
 
   factory BoostActivationDecision.activate({
     required DateTime startedAt,
     required DateTime expiresAt,
+    String? extendBoostId,
   }) {
     return BoostActivationDecision._(
       shouldActivate: true,
       startedAt: startedAt,
       expiresAt: expiresAt,
+      extendBoostId: extendBoostId,
     );
   }
 
@@ -39,15 +42,19 @@ class BoostActivationDecision {
   final bool insufficientBalance;
   final DateTime? startedAt;
   final DateTime? expiresAt;
+
+  /// When set, extend this existing Boost document instead of creating another.
+  final String? extendBoostId;
 }
 
-/// Server-side policy for consuming one Boost from wallet.
-/// [allowStacking] is false for MVP; keep the flag so duration stacking can
-/// be enabled later without rewriting callers.
+/// Server-side policy for granting Boost time.
+///
+/// Stacking adds [duration] onto remaining time. Duplicate store transactions
+/// must be rejected before this service runs.
 class BoostActivationService {
   const BoostActivationService({
-    this.allowStacking = false,
-    this.duration = const Duration(minutes: 30),
+    this.allowStacking = true,
+    this.duration = const Duration(days: 7),
   });
 
   final bool allowStacking;
@@ -69,18 +76,28 @@ class BoostActivationService {
     required DateTime now,
     Boost? currentActive,
     int balance = 1,
+    Duration? duration,
+    bool requireBalance = false,
   }) {
-    if (currentActive != null &&
-        currentActive.isActiveAt(now) &&
-        !allowStacking) {
-      return BoostActivationDecision.alreadyActive();
-    }
-    if (balance < 1) {
+    final grant = duration ?? this.duration;
+    if (grant <= Duration.zero) {
       return BoostActivationDecision.insufficientBalance();
     }
+    final live =
+        currentActive != null && currentActive.isActiveAt(now)
+            ? currentActive
+            : null;
+    if (live != null && !allowStacking) {
+      return BoostActivationDecision.alreadyActive();
+    }
+    if (requireBalance && balance < 1) {
+      return BoostActivationDecision.insufficientBalance();
+    }
+    final base = live?.expiresAt ?? now;
     return BoostActivationDecision.activate(
-      startedAt: now,
-      expiresAt: now.add(duration),
+      startedAt: live?.startedAt ?? now,
+      expiresAt: base.add(grant),
+      extendBoostId: live?.boostId,
     );
   }
 }

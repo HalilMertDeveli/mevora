@@ -12,11 +12,13 @@ abstract final class CallStateMachine {
       (CallLifecycle.calling, CallEvent.busy) => CallLifecycle.busy,
       (CallLifecycle.calling, CallEvent.timeout) => CallLifecycle.ended,
       (CallLifecycle.calling, CallEvent.fail) => CallLifecycle.failed,
-      (CallLifecycle.calling, CallEvent.end) => CallLifecycle.ended,
+      (CallLifecycle.calling, CallEvent.cancel) => CallLifecycle.cancelled,
+      (CallLifecycle.calling, CallEvent.end) => CallLifecycle.cancelled,
       (CallLifecycle.ringing, CallEvent.accept) => CallLifecycle.connecting,
       (CallLifecycle.ringing, CallEvent.decline) => CallLifecycle.declined,
       (CallLifecycle.ringing, CallEvent.timeout) => CallLifecycle.ended,
-      (CallLifecycle.ringing, CallEvent.end) => CallLifecycle.ended,
+      (CallLifecycle.ringing, CallEvent.cancel) => CallLifecycle.cancelled,
+      (CallLifecycle.ringing, CallEvent.end) => CallLifecycle.cancelled,
       (CallLifecycle.connecting, CallEvent.connected) =>
         CallLifecycle.connected,
       (CallLifecycle.connecting, CallEvent.fail) => CallLifecycle.failed,
@@ -39,6 +41,7 @@ abstract final class CallStateMachine {
   static bool isTerminal(CallLifecycle state) {
     return state == CallLifecycle.ended ||
         state == CallLifecycle.declined ||
+        state == CallLifecycle.cancelled ||
         state == CallLifecycle.busy ||
         state == CallLifecycle.failed;
   }

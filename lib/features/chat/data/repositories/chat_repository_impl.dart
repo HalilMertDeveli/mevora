@@ -1,12 +1,21 @@
+import 'package:mevora/core/constants/firestore_paths.dart';
+import 'package:mevora/core/debug/agent_debug_log.dart';
+import 'package:mevora/core/errors/failure.dart';
+import 'package:mevora/core/errors/result.dart';
+import 'package:mevora/core/storage/storage_provider.dart';
 import 'package:mevora/features/chat/data/datasources/firebase_chat_data_source.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
-  ChatRepositoryImpl({required FirebaseChatDataSource dataSource})
-    : _dataSource = dataSource;
+  ChatRepositoryImpl({
+    required FirebaseChatDataSource dataSource,
+    StorageProvider? storage,
+  }) : _dataSource = dataSource,
+       _storage = storage;
 
   final FirebaseChatDataSource _dataSource;
+  final StorageProvider? _storage;
 
   @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30}) {
@@ -37,6 +46,153 @@ class ChatRepositoryImpl implements ChatRepository {
       receiverId: receiverId,
       text: text,
     );
+  }
+
+  @override
+  Future<ChatMessage> sendImage({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) {
+    return _sendUploaded(
+      matchId: matchId,
+      receiverId: receiverId,
+      media: media,
+      type: MessageType.image,
+      onProgress: onProgress,
+    );
+  }
+
+  @override
+  Future<ChatMessage> sendVoice({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) {
+    return _sendUploaded(
+      matchId: matchId,
+      receiverId: receiverId,
+      media: media,
+      type: MessageType.voice,
+      onProgress: onProgress,
+    );
+  }
+
+  Future<ChatMessage> _sendUploaded({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    required MessageType type,
+    void Function(double progress)? onProgress,
+  }) async {
+    final storage = _storage;
+    if (storage == null) {
+      // #region agent log
+      AgentDebugLog.log(
+        location: 'chat_repository_impl.dart:_sendUploaded',
+        message: 'chat_storage_missing',
+        hypothesisId: 'I2',
+      );
+      // #endregion
+      throw StateError('Chat storage is not configured');
+    }
+    final ownerUid = _dataSource.currentUid;
+    if (ownerUid == null) {
+      throw StateError('unauthenticated');
+    }
+    final messageId = _dataSource.allocateMessageId(matchId);
+    final extension = type == MessageType.voice
+        ? _voiceExtension(media.contentType)
+        : _imageExtension(media.contentType);
+    final path = type == MessageType.voice
+        ? StoragePaths.chatVoice(
+            ownerUid: ownerUid,
+            matchId: matchId,
+            messageId: messageId,
+            extension: extension,
+          )
+        : StoragePaths.chatImage(
+            ownerUid: ownerUid,
+            matchId: matchId,
+            messageId: messageId,
+            extension: extension,
+          );
+    final uploaded = await storage.uploadBytes(
+      path: path,
+      bytes: media.bytes,
+      contentType: media.contentType,
+      onProgress: onProgress,
+    );
+    switch (uploaded) {
+      case Err(:final failure):
+        // #region agent log
+        AgentDebugLog.log(
+          location: 'chat_repository_impl.dart:_sendUploaded',
+          message: 'chat_upload_failed',
+          hypothesisId: 'I2',
+          data: {
+            'failure': failure.runtimeType.toString(),
+            'mime': media.contentType,
+            'bytes': media.bytes.length,
+          },
+        );
+        // #endregion
+        throw failure;
+      case Success(:final value):
+        // #region agent log
+        AgentDebugLog.log(
+          location: 'chat_repository_impl.dart:_sendUploaded',
+          message: 'chat_upload_ok',
+          hypothesisId: 'I2',
+          data: {'scheme': value.scheme, 'host': value.host},
+        );
+        // #endregion
+        return _dataSource.sendMediaMessage(
+          matchId: matchId,
+          receiverId: receiverId,
+          type: type,
+          messageId: messageId,
+          imageStoragePath: type == MessageType.image ? path : null,
+          voiceStoragePath: type == MessageType.voice ? path : null,
+          mediaUrl: value.toString(),
+          durationMs: media.durationMs,
+        );
+    }
+  }
+
+  static String _imageExtension(String contentType) {
+    final lower = contentType.toLowerCase();
+    if (lower.contains('png')) {
+      return 'png';
+    }
+    if (lower.contains('webp')) {
+      return 'webp';
+    }
+    return 'jpg';
+  }
+
+  static String _voiceExtension(String contentType) {
+    final lower = contentType.toLowerCase();
+    if (lower.contains('mpeg') || lower.contains('mp3')) {
+      return 'mp3';
+    }
+    if (lower.contains('wav')) {
+      return 'wav';
+    }
+    if (lower.contains('aac')) {
+      return 'aac';
+    }
+    return 'm4a';
+  }
+
+  @override
+  Future<void> deleteMessage({
+    required String matchId,
+    required String messageId,
+  }) {
+    return _dataSource.deleteMessage(matchId: matchId, messageId: messageId);
   }
 
   @override

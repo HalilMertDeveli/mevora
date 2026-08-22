@@ -3,7 +3,10 @@ import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/boost/domain/services/boost_activation_service.dart';
 
 void main() {
-  const service = BoostActivationService(duration: Duration(minutes: 30));
+  const service = BoostActivationService(
+    allowStacking: false,
+    duration: Duration(minutes: 30),
+  );
   final now = DateTime.utc(2026, 8, 18, 12);
 
   Boost boost({
@@ -13,7 +16,7 @@ void main() {
     return Boost(
       boostId: 'b1',
       userId: 'u1',
-      productId: 'com.mevora.app.boost',
+      productId: 'mevora_boost_7_days',
       purchaseId: 'p1',
       status: status,
       createdAt: now,
@@ -28,7 +31,7 @@ void main() {
     expect(decision.expiresAt, now.add(const Duration(minutes: 30)));
   });
 
-  test('one active boost at a time', () {
+  test('one active boost at a time when stacking is disabled', () {
     final decision = service.decide(now: now, currentActive: boost());
     expect(decision.shouldActivate, isFalse);
     expect(decision.alreadyActive, isTrue);
@@ -42,14 +45,26 @@ void main() {
     expect(decision.shouldActivate, isTrue);
   });
 
-  test('stacking flag can be enabled later without rewriting callers', () {
-    const stacking = BoostActivationService(allowStacking: true);
-    final decision = stacking.decide(now: now, currentActive: boost());
+  test('stacking adds the new duration onto remaining time', () {
+    const stacking = BoostActivationService(duration: Duration(days: 7));
+    final remaining = now.add(const Duration(days: 5));
+    final decision = stacking.decide(
+      now: now,
+      currentActive: boost(expiresAt: remaining),
+      duration: const Duration(days: 7),
+    );
     expect(decision.shouldActivate, isTrue);
+    expect(decision.extendBoostId, 'b1');
+    expect(decision.expiresAt, remaining.add(const Duration(days: 7)));
   });
 
-  test('zero balance cannot activate', () {
-    final decision = service.decide(now: now, currentActive: null, balance: 0);
+  test('zero balance cannot activate when a wallet grant is required', () {
+    final decision = service.decide(
+      now: now,
+      currentActive: null,
+      balance: 0,
+      requireBalance: true,
+    );
     expect(decision.shouldActivate, isFalse);
     expect(decision.insufficientBalance, isTrue);
   });

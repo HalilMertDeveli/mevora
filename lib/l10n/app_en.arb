@@ -79,7 +79,7 @@
   "signingIn": "Signing in...",
   "continueWithApple": "Continue with Apple",
   "continueWithSpotify": "Continue with Spotify",
-  "continueWithPhone": "Continue with phone",
+  "continueWithPhone": "Sign in with Phone Number",
   "legalPrefix": "By continuing you agree to our",
   "termsOfService": "Terms of Service",
   "privacyPolicy": "Privacy Policy",
@@ -93,10 +93,10 @@
   "showPassword": "Show password",
   "hidePassword": "Hide password",
   "appleSignInUnavailable": "Apple Sign-In is available on iPhone and iPad.",
-  "phoneTitle": "Enter your phone number",
-  "phoneSubtitle": "We will text you a verification code.",
+  "phoneTitle": "Sign in with Phone Number",
+  "phoneSubtitle": "Choose your country code and enter your phone number. We'll send a 6-digit verification code by SMS.",
   "phoneHint": "555 000 0000",
-  "sendCode": "Send SMS code",
+  "sendCode": "Send verification code",
   "countrySearchHint": "Search country",
   "otpTitle": "Verify your phone",
   "verify": "Verify",
@@ -123,6 +123,7 @@
   "authCancelled": "Sign-in was cancelled.",
   "authInvalidPhone": "Enter a valid phone number.",
   "authSmsFailed": "We could not send the SMS. Please try again.",
+  "authAppVerification": "App verification failed. Check SHA certificates, try a physical device, or use a Firebase Console test phone number.",
   "authInvalidOtp": "Invalid verification code.",
   "authExpiredOtp": "That code has expired. Request a new one.",
   "authSessionExpired": "Your session expired. Please enter your number again.",
@@ -136,7 +137,7 @@
   "authUnknown": "Something unexpected happened. Please try again.",
   "authAccountExists": "That sign-in method is already tied to another Mevora account. Accounts are never merged automatically.",
   "authLinkingBlocked": "Accounts are linked only when you confirm. A matching email is not enough.",
-  "authNotConfigured": "This sign-in method is not set up yet.",
+  "authNotConfigured": "Phone sign-in is not enabled for this Firebase project yet.",
   "authBillingNotEnabled": "Firebase billing (Blaze) is required to send SMS verification codes.",
   "authInvalidEmail": "Enter a valid email address.",
   "authWeakPassword": "Choose a stronger password with at least 8 characters.",
@@ -276,8 +277,8 @@
   "relationshipGoalLongTerm": "Long-term",
   "relationshipGoalCasual": "Casual",
   "relationshipGoalFiguringOut": "Still figuring it out",
-  "compatibilityReasonsHeading": "Why you're compatible",
-  "whyYoureSeeingThis": "Why you're seeing this person",
+  "compatibilityReasonsHeading": "Why you might connect",
+  "whyYoureSeeingThis": "Why this profile is shown",
   "sharedInterests": "Shared interests",
   "profileDetailsTitle": "Profile",
   "photoCounter": "{current} / {total}",
@@ -299,7 +300,7 @@
   },
   "distanceLessThanOne": "Less than 1 km away",
   "distanceFar": "100+ km away",
-  "compatibilityPercent": "{percent}% match",
+  "compatibilityPercent": "Suggested · {percent}% compatible",
   "@compatibilityPercent": {
     "placeholders": {
       "percent": {"type": "int"}
@@ -341,6 +342,20 @@
   "chatEmptyMessage": "Send the first message.",
   "send": "Send",
   "typing": "is typing...",
+  "attachPhoto": "Photo",
+  "takePhoto": "Camera",
+  "recordVoice": "Voice message",
+  "holdToRecord": "Recording…",
+  "playVoice": "Play",
+  "pauseVoice": "Pause",
+  "previewPhoto": "Send this photo?",
+  "messageDeleted": "Message deleted",
+  "deleteMessage": "Delete",
+  "deleteMessageConfirm": "Delete this message? The other person will no longer see it.",
+  "micDeniedChat": "Microphone permission is needed to send a voice message.",
+  "photoDeniedChat": "Photo permission is needed to send an image.",
+  "callCancelled": "Call cancelled",
+  "callRejected": "Call declined",
   "unmatchedBanner": "You are no longer matched with this person.",
   "videoCall": "Video call",
   "more": "More",
@@ -417,6 +432,9 @@
   "reportFakeProfile": "Fake profile",
   "reportUnderage": "Underage",
   "reportOther": "Other",
+  "hideProfile": "Hide profile",
+  "hideProfileTitle": "Hide this profile?",
+  "hideProfileMessage": "They will not appear in your discovery stack again.",
   "linkedAccounts": "Linked accounts",
   "link": "Link",
   "linked": "Linked",
@@ -436,14 +454,14 @@
   "notificationSuperLike": "Someone Super Liked you",
   "boostTitle": "BOOST",
   "boostSubtitle": "Show your profile to more people and get discovered faster.",
-  "boostDuration": "30 minutes",
-  "boostActivate": "Activate Boost",
+  "boostDuration": "Boost your profile",
+  "boostActivate": "Use leftover Boost",
   "boostBuy": "Buy Boost",
   "boostPurchasing": "Starting purchase...",
   "boostVerifying": "Confirming your purchase...",
   "boostSuccessTitle": "Boost is on! 🚀",
   "boostSuccessMessage": "Your profile will start appearing to more people.",
-  "boostAlreadyActive": "You already have an active Boost.",
+  "boostAlreadyActive": "You already have an active Boost. Buying another pack adds time to the remaining period.",
   "boostPurchaseCancelled": "Purchase cancelled.",
   "boostPurchaseFailed": "Purchase could not be completed. Please try again.",
   "boostStoreUnavailable": "The store is not available on this device right now.",
@@ -454,10 +472,22 @@
   "boostLoadingProduct": "Loading store details...",
   "boostBackToDiscovery": "Back to Discover",
   "boostTooltip": "Boost",
-  "boostRemainingMinutes": "{minutes} min",
+  "boostRemainingMinutes": "{minutes} min left",
   "@boostRemainingMinutes": {
     "placeholders": {
       "minutes": {"type": "int"}
+    }
+  },
+  "boostRemainingDays": "{days} days left",
+  "@boostRemainingDays": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "boostRemainingHours": "{hours} hours left",
+  "@boostRemainingHours": {
+    "placeholders": {
+      "hours": {"type": "int"}
     }
   },
   "boostSpotlight": "Boost Profile",
@@ -470,7 +500,14 @@
       "count": {"type": "int"}
     }
   },
-  "boostBalance": "{count} Boost",
+  "boostPackWeek": "1 Week",
+  "boostPackMonth": "1 Month",
+  "boostPackYear": "1 Year",
+  "boostPackWeekSubtitle": "Boost your profile for 7 days",
+  "boostPackMonthSubtitle": "Boost your profile for 30 days",
+  "boostPackYearSubtitle": "Boost your profile for 365 days",
+  "boostBestValue": "Best value",
+  "boostBalance": "{count} leftover Boost",
   "@boostBalance": {
     "placeholders": {
       "count": {"type": "int"}
@@ -485,13 +522,17 @@
     }
   },
   "boostInsufficientBalance": "You need a Boost before you can go live.",
-  "boostHistoryTitle": "Boost history",
-  "boostHistoryEmpty": "No Boost activity yet.",
+  "boostHistoryTitle": "Purchase history",
+  "boostHistoryEmpty": "No purchases yet.",
   "boostHistoryPurchase": "Purchase",
   "boostHistoryActivation": "Activation",
+  "boostHistoryPlatformIos": "App Store",
+  "boostHistoryPlatformAndroid": "Google Play",
   "boostActiveBadge": "Boost on",
   "boostActivating": "Turning Boost on...",
-  "boostNoBalance": "Buy a pack to activate Boost.",
+  "boostNoBalance": "Choose a pack to Boost your profile.",
+  "boostPriceUnavailable": "Price unavailable",
+  "boostRestoring": "Restoring purchases...",
   "radiusKm": "{km} km",
   "@radiusKm": {
     "placeholders": {
@@ -600,7 +641,7 @@
   "citySelectTitle": "Select City",
   "citySelectSearch": "Search province…",
   "citySelectNone": "No province found",
-  "discoveryLoading": "Finding compatible people...",
+  "discoveryLoading": "Discovering people for you...",
   "discoveryLoadErrorTitle": "Couldn't load profiles",
   "discoveryLoadErrorMessage": "Something went wrong while loading profiles.",
   "discoveryChangePreferences": "Change discovery preferences",
@@ -612,5 +653,128 @@
       "count": {"type": "int"}
     }
   },
-  "tabSettings": "Settings"
+  "tabSettings": "Settings",
+  "tabMusic": "Music",
+  "musicTitle": "Music",
+  "musicConnectCta": "🎵 Connect Spotify",
+  "musicConnected": "✓ Spotify connected",
+  "musicUnconnectedCopy": "Connect your Spotify account and discover people who fit your music taste.",
+  "musicConnecting": "Connecting Spotify…",
+  "musicSyncing": "Refreshing your music taste…",
+  "musicRefresh": "Refresh music data",
+  "musicRefreshCooldown": "You can refresh again later.",
+  "musicProfileTitle": "Your music profile",
+  "musicSameTasteTitle": "People who listen to the same music",
+  "musicSameTasteEmpty": "No overlapping tastes yet. Refresh after you listen a bit more.",
+  "musicWeeklyTitle": "This week's music",
+  "musicWeeklyEmpty": "Weekly highlights will appear here once enough people connect Spotify.",
+  "musicCompatibilityPercent": "Similar music taste · up to {percent}%",
+  "@musicCompatibilityPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicCompatibilityShort": "Music · {percent}%",
+  "@musicCompatibilityShort": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicSharedCounts": "{tracks} shared tracks · {artists} shared artists",
+  "@musicSharedCounts": {
+    "placeholders": {
+      "tracks": {"type": "int"},
+      "artists": {"type": "int"}
+    }
+  },
+  "musicOauthCancelled": "Spotify connection was cancelled.",
+  "musicApiDenied": "Spotify didn't allow access. You can try again later.",
+  "musicTokenExpired": "Your Spotify connection expired. Please reconnect.",
+  "musicNetwork": "Check your internet connection and try again.",
+  "musicNotConfigured": "Spotify isn't configured in this build yet.",
+  "musicConnectError": "Couldn't connect Spotify. The rest of Mevora still works.",
+  "settingsConnectSpotify": "Connect Spotify",
+  "settingsSpotifySubtitle": "Music taste matching — no playback in Mevora.",
+  "matchScoreTitle": "Match points",
+  "matchScoreSubtitle": "Your connection reputation",
+  "matchScoreValue": "{score} points",
+  "@matchScoreValue": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "matchScoreHistoryTitle": "Point history",
+  "matchScoreHistoryEmpty": "New matches and conversations will add points here.",
+  "matchScoreHistoryMatch": "New match +1",
+  "matchScoreHistoryInteraction": "Conversation +1",
+  "matchFeedbackTitle": "How did this match go?",
+  "matchFeedbackMessage": "Optional. This note stays in your history — they will not see it, and it does not change anyone's points.",
+  "matchFeedbackHint": "A short private note",
+  "matchFeedbackSubmit": "Save note",
+  "matchFeedbackThanks": "Saved to your history.",
+  "matchFeedbackTooShort": "Write a short note, or skip.",
+  "matchFeedbackFailed": "Couldn't save that note. Try again.",
+  "relationshipPromptTitle": "What do you think about relationships?",
+  "relationshipQuestionsPreparing": "New questions are being prepared. Please try again in a bit.",
+  "relationshipTestTitle": "Relationship Test",
+  "relationshipTestHeadline": "Discover people who share your views",
+  "relationshipTestMessage": "Answer 3 short questions to see people who may think similarly.",
+  "relationshipTestStart": "Start the Relationship Test",
+  "relationshipTestLater": "Not now",
+  "relationshipTestDoneTitle": "Your relationship test is complete",
+  "relationshipTestFound": "We found someone whose views match yours.",
+  "relationshipTestAlign": "Your answers overlap on several topics.",
+  "relationshipTestNearest": "Closest to you:",
+  "relationshipTestEmpty": "There's no one nearby who thinks like you right now.",
+  "relationshipTestViewProfile": "View profile",
+  "relationshipTestOpenChat": "Open chat",
+  "relationshipMatchBadge": "Relationship Test",
+  "relationshipPromptProgress": "{answered} / {total}",
+  "@relationshipPromptProgress": {
+    "placeholders": {
+      "answered": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "relationshipCompatibilityPercent": "Views overlap · {percent}%",
+  "@relationshipCompatibilityPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "relationshipCompatibilityShort": "Views · {percent}%",
+  "@relationshipCompatibilityShort": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "relationshipSharedViews": "{count} shared views",
+  "@relationshipSharedViews": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relationshipSimilarThinker": "Someone who thinks similarly about relationships was found.",
+  "relationshipViewsAlign": "Your relationship views overlap.",
+  "relationshipMatchesTitle": "Relationship matches",
+  "relationshipMatchesEmpty": "Answer a few relationship questions to find people who think like you — distance does not matter here.",
+  "relationshipProfileSubtitle": "{answered} relationship questions answered",
+  "@relationshipProfileSubtitle": {
+    "placeholders": {
+      "answered": {"type": "int"}
+    }
+  },
+  "relationshipTopicJealousy": "You think similarly about jealousy.",
+  "relationshipTopicTrust": "You think similarly about trust.",
+  "relationshipTopicLoyalty": "You think similarly about loyalty.",
+  "relationshipTopicCommunication": "You think similarly about communication.",
+  "relationshipTopicBoundaries": "You think similarly about boundaries.",
+  "relationshipTopicSocialLife": "You think similarly about social life.",
+  "relationshipTopicFriendship": "You think similarly about friendship.",
+  "relationshipTopicPersonalSpace": "You think similarly about personal space.",
+  "relationshipTopicFuturePlans": "You think similarly about future plans.",
+  "relationshipTopicMoney": "You think similarly about money.",
+  "relationshipTopicFlirting": "You think similarly about flirting.",
+  "relationshipTopicExes": "You think similarly about past relationships.",
+  "relationshipTopicExpectations": "You think similarly about relationship expectations."
 }

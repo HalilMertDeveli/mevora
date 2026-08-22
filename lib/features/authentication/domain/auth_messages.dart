@@ -6,16 +6,16 @@ abstract final class AuthMessages {
   static const String continueGoogle = 'Continue with Google';
   static const String continueApple = 'Continue with Apple';
   static const String continueSpotify = 'Continue with Spotify';
-  static const String continuePhone = 'Continue with Phone Number';
+  static const String continuePhone = 'Sign in with Phone Number';
   static const String legalPrefix = 'By continuing you agree to our';
   static const String termsOfService = 'Terms of Service';
   static const String privacyPolicy = 'Privacy Policy';
   static const String legalConjunction = 'and';
-  static const String phoneTitle = 'Telefon numaranı gir';
+  static const String phoneTitle = 'Telefon Numarası ile Giriş Yap';
   static const String phoneSubtitle =
-      'Doğrulama kodunu SMS ile göndereceğiz.';
-  static const String phoneHint = '5xx xxx xx xx';
-  static const String sendCode = 'SMS Kodu Gönder';
+      'Ülke kodunu seçip telefon numaranı gir. Doğrulama için SMS ile 6 haneli bir kod göndereceğiz.';
+  static const String phoneHint = '0542 519 2119';
+  static const String sendCode = 'Doğrulama kodu gönder';
   static const String countrySearchHint = 'Ülke ara';
   static const String otpTitle = 'Doğrulama kodunu gir';
   static const String verify = 'Doğrula';
@@ -42,6 +42,8 @@ abstract final class AuthMessages {
   static const String invalidPhone = 'Geçerli bir telefon numarası gir.';
   static const String smsFailed =
       'SMS gönderilemedi. Lütfen tekrar dene.';
+  static const String appVerification =
+      'Uygulama doğrulaması tamamlanamadı. SHA kayıtlarını kontrol et, gerçek cihazda dene veya Firebase Console’da test numarası kullan.';
   static const String invalidOtp = 'Doğrulama kodu geçersiz.';
   static const String expiredOtp =
       'Doğrulama kodunun süresi doldu. Yeni kod iste.';
@@ -53,6 +55,8 @@ abstract final class AuthMessages {
       'SMS gönderim limiti aşıldı. Lütfen daha sonra tekrar deneyin.';
   static const String firebaseUnavailable =
       'Doğrulama servisine şu anda ulaşılamıyor. Lütfen daha sonra tekrar dene.';
+  static const String smsInFlight =
+      'SMS isteği zaten gönderiliyor. Lütfen kısa süre bekle.';
   static const String network = 'İnternet bağlantını kontrol et.';
   static const String disabled = 'Bu hesap devre dışı bırakılmış.';
   static const String banned = 'Bu hesap askıya alındı.';
@@ -64,7 +68,7 @@ abstract final class AuthMessages {
   static const String linkingBlocked =
       'Hesaplar yalnızca sen onayladığında bağlanır. E-posta eşleşmesi yeterli değildir.';
   static const String notConfigured =
-      'Bu giriş yöntemi henüz yapılandırılmadı.';
+      'Telefon ile giriş henüz Firebase’de etkin değil.';
   static const String billingNotEnabled =
       'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.';
   static const String invalidEmail = 'Geçerli bir e-posta adresi gir.';

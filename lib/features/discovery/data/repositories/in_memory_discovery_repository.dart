@@ -12,12 +12,15 @@ class InMemoryDiscoveryRepository implements DiscoveryRepository {
     this.selfUid = 'self',
     List<DiscoverySeed>? seeds,
     CompatibilityEngine? engine,
+    DateTime Function()? clock,
   }) : _engine = engine ?? CompatibilityEngine.standard(),
-       _seeds = List<DiscoverySeed>.from(seeds ?? const []);
+       _seeds = List<DiscoverySeed>.from(seeds ?? const []),
+       _clock = clock ?? DateTime.now;
 
   final String selfUid;
   final CompatibilityEngine _engine;
   final List<DiscoverySeed> _seeds;
+  final DateTime Function() _clock;
   final Set<String> blocked = <String>{};
   final Set<String> liked = <String>{};
   final Set<String> passed = <String>{};
@@ -38,6 +41,8 @@ class InMemoryDiscoveryRepository implements DiscoveryRepository {
       liked: liked,
       passed: passed,
       radiusKm: radius.kilometers,
+      lastActiveAtOf: (seed) => seed.profile.lastActiveAt,
+      clock: _clock,
     );
     final start = cursor == null
         ? 0
@@ -56,7 +61,9 @@ class InMemoryDiscoveryRepository implements DiscoveryRepository {
         CompatibilityContext(
           viewer: viewer,
           candidate: seed.profile,
-          preferences: preferences.copyWith(maxDistanceKm: radius.kilometers.toDouble()),
+          preferences: preferences.copyWith(
+            maxDistanceKm: radius.kilometers.toDouble(),
+          ),
           distanceKm: seed.distanceKm,
         ),
       );

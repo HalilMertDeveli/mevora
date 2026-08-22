@@ -114,6 +114,7 @@ class InAppStorePurchaseDataSource implements StorePurchaseDataSource {
         duration: config.duration,
         displayOrder: config.displayOrder,
         boostCount: BoostPackCatalog.boostCountFor(details.id),
+        featured: BoostPackCatalog.packFor(details.id)?.featured ?? false,
       );
     } on PurchaseException {
       rethrow;
@@ -140,7 +141,9 @@ class InAppStorePurchaseDataSource implements StorePurchaseDataSource {
       );
     }
     try {
-      final response = await _store.queryProductDetails(config.allProductIds);
+      final response = await _store.queryProductDetails(
+        BoostPackCatalog.storefrontSkus,
+      );
       if (response.error != null && response.productDetails.isEmpty) {
         throw const PurchaseException(
           AppStrings.boostStoreDown,
@@ -158,7 +161,8 @@ class InAppStorePurchaseDataSource implements StorePurchaseDataSource {
           available: true,
           duration: pack?.duration ?? config.duration,
           displayOrder: pack?.displayOrder ?? config.displayOrder,
-          boostCount: pack?.boostCount ?? 1,
+          boostCount: pack?.boostCount ?? 0,
+          featured: pack?.featured ?? false,
         );
       }).toList();
     } on PurchaseException {

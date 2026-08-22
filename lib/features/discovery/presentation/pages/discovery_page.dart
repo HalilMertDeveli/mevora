@@ -8,6 +8,7 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
+import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
@@ -25,7 +26,9 @@ import 'package:mevora/features/location/presentation/screens/location_permissio
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
 import 'package:mevora/shared/animations/mevora_match_celebration.dart';
+import 'package:mevora/shared/animations/mevora_page_transitions.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
@@ -46,6 +49,10 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
   bool _animateOut = false;
 
   DiscoveryController? get _controller => widget.controller ?? _owned;
+
+  void _pulseRelationshipActivity() {
+    RelationshipScope.controllerOf(context)?.recordDiscoveryActivity();
+  }
 
   @override
   void didChangeDependencies() {
@@ -87,6 +94,12 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     super.initState();
     widget.controller?.addListener(_onController);
     unawaited(widget.controller?.start());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      RelationshipScope.controllerOf(context)?.recordDiscoveryActivity();
+    });
   }
 
   @override
@@ -102,7 +115,9 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     final controller = _controller;
     final l10n = AppLocalizations.of(context);
     if (controller == null) {
-      return const Scaffold(body: MevoraLoading.page());
+      return const Scaffold(
+        body: MevoraLoading.page(asset: MevoraRiveAssets.loading),
+      );
     }
     final state = controller.state;
     return Scaffold(
@@ -146,7 +161,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     } else {
       final scope = BoostScope.maybeOf(context);
       await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
+        MevoraPageTransitions.route<void>(
           builder: (_) => scope == null
               ? const BoostScreen()
               : BoostScope(
@@ -167,7 +182,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       return MevoraMatchCelebration(
         leftName: l10n.you,
         rightName: match.displayName,
-        rightImage: match.photoUrl == null ? null : NetworkImage(match.photoUrl!),
+        rightImage: MevoraNetworkImages.provider(match.photoUrl),
         onSendMessage: () {
           final matchId = controller.state.matchedMatchId;
           controller.clearMatch();
@@ -240,24 +255,26 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     if (state.isLoading && state.current == null) {
       return MevoraLoading.page(
         message: l10n.discoveryLoading,
-        size: 96,
+        asset: MevoraRiveAssets.loading,
       );
     }
     final current = state.current;
     if (current == null) {
       if (state.hasSeenEveryone) {
-      return MevoraEmptyState(
-        icon: Icons.explore_outlined,
-        riveAsset: MevoraRiveAssets.emptyProfiles,
-        title: l10n.discoverySeenEveryoneTitle,
-        message: l10n.discoverySeenEveryoneMessage,
-        actionLabel: state.isMockMode ? l10n.restartDemo : l10n.exploreAgain,
-        onAction: () => unawaited(
-          state.isMockMode ? controller.restartDemo() : controller.exploreAgain(),
-        ),
-        secondaryActionLabel: l10n.discoveryChangePreferences,
-        onSecondaryAction: () => unawaited(_openFilters(controller)),
-      );
+        return MevoraEmptyState(
+          icon: Icons.explore_outlined,
+          riveAsset: MevoraRiveAssets.emptyProfiles,
+          title: l10n.discoverySeenEveryoneTitle,
+          message: l10n.discoverySeenEveryoneMessage,
+          actionLabel: state.isMockMode ? l10n.restartDemo : l10n.exploreAgain,
+          onAction: () => unawaited(
+            state.isMockMode
+                ? controller.restartDemo()
+                : controller.exploreAgain(),
+          ),
+          secondaryActionLabel: l10n.discoveryChangePreferences,
+          onSecondaryAction: () => unawaited(_openFilters(controller)),
+        );
       }
       return MevoraEmptyState(
         icon: Icons.favorite_outline_rounded,
@@ -293,18 +310,13 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
           const SizedBox(height: AppSpacing.lg),
           DiscoveryActionButtons(
             enabled: !busy,
-            onPass: () => unawaited(_triggerAction(
-              controller,
-              DiscoveryDecision.pass,
-            )),
-            onSuperLike: () => unawaited(_triggerAction(
-              controller,
-              DiscoveryDecision.superLike,
-            )),
-            onLike: () => unawaited(_triggerAction(
-              controller,
-              DiscoveryDecision.like,
-            )),
+            onPass: () =>
+                unawaited(_triggerAction(controller, DiscoveryDecision.pass)),
+            onSuperLike: () => unawaited(
+              _triggerAction(controller, DiscoveryDecision.superLike),
+            ),
+            onLike: () =>
+                unawaited(_triggerAction(controller, DiscoveryDecision.like)),
           ),
         ],
       ),
@@ -312,9 +324,13 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
   }
 
   Future<void> _openProfileDetails(DiscoveryCandidate candidate) async {
+    _pulseRelationshipActivity();
     await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => DiscoveryProfileDetailsPage(candidate: candidate),
+      MevoraPageTransitions.route<void>(
+        builder: (_) => DiscoveryProfileDetailsPage(
+          candidate: candidate,
+          controller: _controller,
+        ),
       ),
     );
   }
@@ -327,6 +343,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     if (current == null || controller.isProcessingAction) {
       return;
     }
+    _pulseRelationshipActivity();
     final direction = switch (decision) {
       DiscoveryDecision.like => DiscoverySwipeDirection.like,
       DiscoveryDecision.pass => DiscoverySwipeDirection.pass,
@@ -375,6 +392,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       return;
     }
 
+    _pulseRelationshipActivity();
     final current = controller.state.current;
     if (current == null) {
       setState(() => _drag = Offset.zero);

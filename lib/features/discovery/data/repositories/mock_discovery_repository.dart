@@ -15,16 +15,19 @@ class MockDiscoveryRepository
     this.demoHub,
     String Function()? currentUid,
     Set<String>? boostedUids,
+    DateTime Function()? clock,
   }) : _profiles = List<MockDiscoveryProfile>.from(
          profiles ?? MockDiscoveryDataSource.profiles(),
        ),
        _currentUid = currentUid,
+       _clock = clock ?? DateTime.now,
        boostedUids = boostedUids ?? <String>{};
 
   final String selfUid;
   final DemoSocialHub? demoHub;
   final String Function()? _currentUid;
   final List<MockDiscoveryProfile> _profiles;
+  final DateTime Function() _clock;
   final Set<String> blocked = <String>{};
   final Set<String> liked = <String>{};
   final Set<String> passed = <String>{};
@@ -37,17 +40,18 @@ class MockDiscoveryRepository
   bool get supportsDemoRestart => true;
 
   @override
-  bool isExhaustedForRadius(int radiusKm) =>
-      DiscoveryCandidateFilter.apply(
-        seeds: _profiles,
-        selfUid: _actorUid,
-        blocked: blocked,
-        liked: liked,
-        passed: passed,
-        radiusKm: radiusKm,
-        uidOf: (seed) => seed.uid,
-        distanceKmOf: (seed) => seed.distanceKm,
-      ).isEmpty;
+  bool isExhaustedForRadius(int radiusKm) => DiscoveryCandidateFilter.apply(
+    seeds: _profiles,
+    selfUid: _actorUid,
+    blocked: blocked,
+    liked: liked,
+    passed: passed,
+    radiusKm: radiusKm,
+    uidOf: (seed) => seed.uid,
+    distanceKmOf: (seed) => seed.distanceKm,
+    lastActiveAtOf: (seed) => seed.profile.lastActiveAt,
+    clock: _clock,
+  ).isEmpty;
 
   @override
   void restartDemo() {
@@ -71,6 +75,8 @@ class MockDiscoveryRepository
       radiusKm: radius.kilometers,
       uidOf: (seed) => seed.uid,
       distanceKmOf: (seed) => seed.distanceKm,
+      lastActiveAtOf: (seed) => seed.profile.lastActiveAt,
+      clock: _clock,
     );
     if (boostedUids.isNotEmpty) {
       visible.sort((a, b) {

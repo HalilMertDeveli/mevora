@@ -17,7 +17,7 @@ import '../../helpers/fake_purchase_repository.dart';
 final _l10n = lookupAppLocalizations(const Locale('en'));
 
 void main() {
-  testWidgets('open boost, load product, purchase, verify, activate, return to discovery', (
+  testWidgets('open boost, buy a duration pack, verify, return to discovery', (
     tester,
   ) async {
     final purchases = FakePurchaseRepository();
@@ -61,17 +61,12 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.byType(BoostScreen), findsOneWidget);
-    expect(find.text('₺49,99'), findsOneWidget);
+    expect(find.text('₺99,99'), findsOneWidget);
 
-    await tester.tap(find.text(_l10n.boostPackOne));
+    await tester.tap(find.text(_l10n.boostBuyPack).first);
     await tester.pump();
     await tester.pump();
-    expect(find.text(_l10n.boostCreditedTitle), findsWidgets);
     expect(purchases.verifyCalled, isTrue);
-
-    await tester.tap(find.text(_l10n.boostActivate));
-    await tester.pump();
-    await tester.pump();
     expect(find.text(_l10n.boostSuccessTitle), findsOneWidget);
     expect(purchases.activeBoost?.status.name, 'active');
 

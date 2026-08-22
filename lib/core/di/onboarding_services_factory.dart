@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/features/onboarding/data/repositories/onboarding_repository_impl.dart';
 import 'package:mevora/features/onboarding/data/services/image_picker_profile_photo_picker.dart';
 import 'package:mevora/features/onboarding/domain/repositories/onboarding_repository.dart';
@@ -33,6 +35,7 @@ OnboardingServices createOnboardingServices({
   OnboardingRepository? onboarding,
   ProfilePhotoPicker? photoPicker,
   FirebaseFirestore? firestore,
+  BackendCallable? backend,
 }) {
   final profileRepository =
       profiles ??
@@ -41,11 +44,12 @@ OnboardingServices createOnboardingServices({
       );
   final storageRepository =
       storage ?? StorageRepositoryImpl(dataSource: FirebaseStorageDataSource());
+  final callable = backend ?? FirebaseFunctionsCallable();
   final onboardingRepository =
       onboarding ??
       OnboardingRepositoryImpl(
         profiles: profileRepository,
-        firestore: firestore,
+        backend: callable,
       );
   final picker = photoPicker ?? ImagePickerProfilePhotoPicker();
   final controller = OnboardingController(

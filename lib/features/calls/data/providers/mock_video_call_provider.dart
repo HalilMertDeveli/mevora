@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
 import 'package:mevora/features/calls/domain/services/video_call_provider.dart';
+import 'package:mevora/features/calls/presentation/video_call_surface.dart';
 
-class MockVideoCallProvider implements VideoCallProvider {
+class MockVideoCallProvider implements VideoCallProvider, VideoCallSurface {
   bool _mic = true;
   bool _camera = true;
   bool _speaker = true;
@@ -57,6 +59,12 @@ class MockVideoCallProvider implements VideoCallProvider {
 
   @override
   Stream<VideoConnectionEvent> watch() => _events.stream;
+
+  @override
+  Widget? remoteVideo() => _remote ? const ColoredBox(color: Color(0xFF111111)) : null;
+
+  @override
+  Widget? localVideo() => _camera ? const ColoredBox(color: Color(0xFF333333)) : null;
 
   void emitUnstable() {
     _events.add(

@@ -76,7 +76,9 @@ class HybridDiscoveryRepository
     }
 
     if (allowDemoFallback && demo.isNotEmpty) {
-      return Success(DiscoveryPageResult(candidates: demo.take(limit).toList()));
+      return Success(
+        DiscoveryPageResult(candidates: demo.take(limit).toList()),
+      );
     }
     return remoteResult;
   }
@@ -110,6 +112,13 @@ class HybridDiscoveryRepository
                 city: candidate.city,
                 gender: candidate.gender,
                 relationshipGoal: candidate.relationshipGoal,
+                musicCompatibilityScore: candidate.musicCompatibilityScore,
+                relationshipCompatibilityScore:
+                    candidate.relationshipCompatibilityScore,
+                relationshipSharedViewCount:
+                    candidate.relationshipSharedViewCount,
+                relationshipAlignedCount: candidate.relationshipAlignedCount,
+                relationshipSummaryTopics: candidate.relationshipSummaryTopics,
                 isDemo: true,
               ),
             )

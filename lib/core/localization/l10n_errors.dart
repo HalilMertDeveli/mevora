@@ -11,6 +11,7 @@ abstract final class L10nErrors {
       AuthErrorKind.cancelled => l10n.authCancelled,
       AuthErrorKind.invalidPhone => l10n.authInvalidPhone,
       AuthErrorKind.smsFailed => l10n.authSmsFailed,
+      AuthErrorKind.appVerification => l10n.authAppVerification,
       AuthErrorKind.invalidOtp => l10n.authInvalidOtp,
       AuthErrorKind.expiredOtp => l10n.authExpiredOtp,
       AuthErrorKind.sessionExpired => l10n.authSessionExpired,

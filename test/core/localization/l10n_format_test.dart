@@ -26,6 +26,17 @@ void main() {
     );
   });
 
+  test('app verification is localized for EN and TR', () {
+    expect(
+      L10nErrors.auth(en, AuthErrorKind.appVerification),
+      en.authAppVerification,
+    );
+    expect(
+      L10nErrors.auth(tr, AuthErrorKind.appVerification),
+      tr.authAppVerification,
+    );
+  });
+
   test('email-in-use is localized for EN and TR', () {
     expect(
       L10nErrors.auth(en, AuthErrorKind.emailInUse),

@@ -41,6 +41,8 @@ abstract final class ErrorHandler {
         (message.contains('MissingPluginException') &&
             message.contains('firebase_firestore/transaction')) ||
         message.contains('permission-denied') ||
-        message.contains('PERMISSION_DENIED');
+        message.contains('PERMISSION_DENIED') ||
+        message.contains("Unsupported scheme 'mock'") ||
+        message.contains('Unsupported scheme');
   }
 }

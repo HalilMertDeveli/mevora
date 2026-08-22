@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/entities/boost_product.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
 
 class BoostPackSheet extends StatelessWidget {
@@ -74,46 +76,69 @@ class BoostPackTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final label = switch (product.boostCount) {
-      1 => l10n.boostPackOne,
-      5 => l10n.boostPackFive,
-      10 => l10n.boostPackTen,
-      _ => l10n.boostPackCount(product.boostCount),
-    };
-    final price = product.displayPrice;
+    final title = boostPackTitle(l10n, product);
+    final subtitle = boostPackSubtitle(l10n, product);
+    final price = product.displayPrice.isEmpty
+        ? l10n.boostPriceUnavailable
+        : product.displayPrice;
+    final featured = product.featured ||
+        product.productId == BoostPackCatalog.year;
     return MevoraCard(
       emphasis: MevoraCardEmphasis.elevated,
-      onTap: product.available ? onTap : null,
-      child: Row(
+      onTap: product.available && onTap != null ? onTap : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            Icons.bolt_rounded,
-            color: Theme.of(context).colorScheme.secondary,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: Theme.of(context).textTheme.titleMedium),
-                Text(
-                  l10n.boostDuration,
-                  style: Theme.of(context).textTheme.bodySmall,
+          Row(
+            children: [
+              Icon(
+                Icons.bolt_rounded,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              if (featured)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                  ),
+                  child: Text(
+                    l10n.boostBestValue,
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+            ],
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          const SizedBox(height: AppSpacing.md),
+          Row(
             children: [
               Text(
                 price,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
+              const Spacer(),
               if (onTap != null)
-                Text(
-                  l10n.boostBuyPack,
-                  style: Theme.of(context).textTheme.labelSmall,
+                MevoraButton(
+                  label: l10n.boostBuyPack,
+                  onPressed: product.available ? onTap : null,
+                  isExpanded: false,
+                  size: MevoraButtonSize.small,
                 ),
             ],
           ),
@@ -157,6 +182,9 @@ class BoostBalanceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (balance < 1) {
+      return const SizedBox.shrink();
+    }
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -172,4 +200,28 @@ class BoostBalanceChip extends StatelessWidget {
       ),
     );
   }
+}
+
+String boostPackTitle(AppLocalizations l10n, BoostProduct product) {
+  return switch (product.durationDays) {
+    7 => l10n.boostPackWeek,
+    30 => l10n.boostPackMonth,
+    365 => l10n.boostPackYear,
+    _ => switch (product.boostCount) {
+      1 => l10n.boostPackOne,
+      5 => l10n.boostPackFive,
+      10 => l10n.boostPackTen,
+      _ when product.boostCount > 0 => l10n.boostPackCount(product.boostCount),
+      _ => product.title.isNotEmpty ? product.title : l10n.boostTitle,
+    },
+  };
+}
+
+String boostPackSubtitle(AppLocalizations l10n, BoostProduct product) {
+  return switch (product.durationDays) {
+    7 => l10n.boostPackWeekSubtitle,
+    30 => l10n.boostPackMonthSubtitle,
+    365 => l10n.boostPackYearSubtitle,
+    _ => l10n.boostDuration,
+  };
 }

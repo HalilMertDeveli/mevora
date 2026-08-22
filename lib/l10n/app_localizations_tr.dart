@@ -18,8 +18,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get connectTagline => 'Sana uyan insanlarla tanış.';
 
   @override
-  String get loginSlogan =>
-      'Sadece insanları değil,\nsana uygun insanları keşfet.';
+  String get loginSlogan => 'Sadece insanları değil,\nsana uygun insanları keşfet.';
 
   @override
   String get continueWithEmail => 'E-posta ile devam et';
@@ -34,8 +33,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get unexpectedError => 'Uygulama beklenmeyen bir hatayla karşılaştı.';
 
   @override
-  String get firebaseUnavailableMessage =>
-      'Mevora başlatılamadı. Bağlantını kontrol edip tekrar dene.';
+  String get firebaseUnavailableMessage => 'Mevora başlatılamadı. Bağlantını kontrol edip tekrar dene.';
 
   @override
   String get retry => 'Yeniden dene';
@@ -98,15 +96,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get welcomeBack => 'Tekrar hoş geldin';
 
   @override
-  String get loginSubtitle =>
-      'Uyumlu insanları keşfetmeye devam etmek için giriş yap.';
+  String get loginSubtitle => 'Keşfetmeye devam etmek için giriş yap.';
 
   @override
   String get createAccountTitle => 'Hesabını oluştur';
 
   @override
-  String get registerSubtitle =>
-      'Bağ kurabileceğin insanlarla tanışmak için Mevora\'ya katıl.';
+  String get registerSubtitle => 'Bağ kurabileceğin insanlarla tanışmak için Mevora\'ya katıl.';
 
   @override
   String get email => 'E-posta';
@@ -169,8 +165,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get resetPasswordTitle => 'Şifreyi sıfırla';
 
   @override
-  String get resetPasswordMessage =>
-      'E-postanı gir, sana bir sıfırlama bağlantısı gönderelim.';
+  String get resetPasswordMessage => 'E-postanı gir, sana bir sıfırlama bağlantısı gönderelim.';
 
   @override
   String get sendResetLink => 'Sıfırlama bağlantısı gönder';
@@ -179,8 +174,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get resetEmailSentTitle => 'E-postanı kontrol et';
 
   @override
-  String get resetEmailSentMessage =>
-      'Bu e-posta ile bir hesap varsa, sıfırlama bağlantısı yolda.';
+  String get resetEmailSentMessage => 'Bu e-posta ile bir hesap varsa, sıfırlama bağlantısı yolda.';
 
   @override
   String get backToSignIn => 'Girişe dön';
@@ -201,7 +195,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get continueWithSpotify => 'Spotify ile devam et';
 
   @override
-  String get continueWithPhone => 'Telefon ile devam et';
+  String get continueWithPhone => 'Telefon Numarası ile Giriş Yap';
 
   @override
   String get legalPrefix => 'Devam ederek';
@@ -240,20 +234,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get hidePassword => 'Şifreyi gizle';
 
   @override
-  String get appleSignInUnavailable =>
-      'Apple ile giriş iPhone ve iPad\'de kullanılabilir.';
+  String get appleSignInUnavailable => 'Apple ile giriş iPhone ve iPad\'de kullanılabilir.';
 
   @override
-  String get phoneTitle => 'Telefon numaranı gir';
+  String get phoneTitle => 'Telefon Numarası ile Giriş Yap';
 
   @override
-  String get phoneSubtitle => 'Doğrulama kodunu SMS ile göndereceğiz.';
+  String get phoneSubtitle => 'Ülke kodunu seçip telefon numaranı gir. Doğrulama için SMS ile 6 haneli bir kod göndereceğiz.';
 
   @override
-  String get phoneHint => '5xx xxx xx xx';
+  String get phoneHint => '0542 519 2119';
 
   @override
-  String get sendCode => 'SMS kodu gönder';
+  String get sendCode => 'Doğrulama kodu gönder';
 
   @override
   String get countrySearchHint => 'Ülke ara';
@@ -308,26 +301,25 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authSmsFailed => 'SMS gönderilemedi. Lütfen tekrar dene.';
 
   @override
+  String get authAppVerification => 'Uygulama doğrulaması tamamlanamadı. SHA kayıtlarını kontrol et, gerçek cihazda dene veya Firebase Console’da test numarası kullan.';
+
+  @override
   String get authInvalidOtp => 'Doğrulama kodu geçersiz.';
 
   @override
   String get authExpiredOtp => 'Doğrulama kodunun süresi doldu. Yeni kod iste.';
 
   @override
-  String get authSessionExpired =>
-      'Oturumun süresi doldu. Lütfen numarayı tekrar gir.';
+  String get authSessionExpired => 'Oturumun süresi doldu. Lütfen numarayı tekrar gir.';
 
   @override
-  String get authTooManyAttempts =>
-      'Çok fazla hatalı deneme yaptınız. Lütfen daha sonra tekrar deneyin.';
+  String get authTooManyAttempts => 'Çok fazla hatalı deneme yaptınız. Lütfen daha sonra tekrar deneyin.';
 
   @override
-  String get authSmsQuota =>
-      'SMS gönderim limiti aşıldı. Lütfen daha sonra tekrar deneyin.';
+  String get authSmsQuota => 'SMS gönderim limiti aşıldı. Lütfen daha sonra tekrar deneyin.';
 
   @override
-  String get authFirebaseUnavailable =>
-      'Doğrulama servisine şu anda ulaşılamıyor. Lütfen daha sonra tekrar dene.';
+  String get authFirebaseUnavailable => 'Doğrulama servisine şu anda ulaşılamıyor. Lütfen daha sonra tekrar dene.';
 
   @override
   String get authNetwork => 'İnternet bağlantını kontrol et.';
@@ -345,26 +337,22 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authUnknown => 'Beklenmeyen bir hata oluştu. Lütfen tekrar dene.';
 
   @override
-  String get authAccountExists =>
-      'Bu giriş yöntemi başka bir Mevora hesabına bağlı. Otomatik birleştirme yapılmaz.';
+  String get authAccountExists => 'Bu giriş yöntemi başka bir Mevora hesabına bağlı. Otomatik birleştirme yapılmaz.';
 
   @override
-  String get authLinkingBlocked =>
-      'Hesaplar yalnızca sen onayladığında bağlanır. E-posta eşleşmesi yeterli değildir.';
+  String get authLinkingBlocked => 'Hesaplar yalnızca sen onayladığında bağlanır. E-posta eşleşmesi yeterli değildir.';
 
   @override
-  String get authNotConfigured => 'Bu giriş yöntemi henüz yapılandırılmadı.';
+  String get authNotConfigured => 'Telefon ile giriş henüz Firebase’de etkin değil.';
 
   @override
-  String get authBillingNotEnabled =>
-      'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.';
+  String get authBillingNotEnabled => 'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.';
 
   @override
   String get authInvalidEmail => 'Geçerli bir e-posta adresi gir.';
 
   @override
-  String get authWeakPassword =>
-      'En az 8 karakterlik daha güçlü bir şifre seç.';
+  String get authWeakPassword => 'En az 8 karakterlik daha güçlü bir şifre seç.';
 
   @override
   String get authUserNotFound => 'Bu e-posta ile hesap bulunamadı.';
@@ -373,8 +361,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authWrongPassword => 'E-posta ve şifre eşleşmiyor.';
 
   @override
-  String get authSpotifyCallbackExpired =>
-      'Spotify oturumu zaman aşımına uğradı. Lütfen tekrar dene.';
+  String get authSpotifyCallbackExpired => 'Spotify oturumu zaman aşımına uğradı. Lütfen tekrar dene.';
 
   @override
   String get authEmailInUse => 'Bu e-posta ile zaten bir hesap var.';
@@ -398,8 +385,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingTitle => 'Birkaç adım kaldı';
 
   @override
-  String get onboardingMessage =>
-      'Mevora\'nın sana uyumlu insanları önerebilmesi için profilini tamamla.';
+  String get onboardingMessage => 'Mevora\'nın sana uyumlu insanları önerebilmesi için profilini tamamla.';
 
   @override
   String get onboardingFirstName => 'Adın';
@@ -432,8 +418,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingAddPhoto => 'Fotoğraf ekle';
 
   @override
-  String get onboardingMustBeAdult =>
-      'Mevora\'yı kullanmak için 18 yaşında veya daha büyük olmalısın.';
+  String get onboardingMustBeAdult => 'Mevora\'yı kullanmak için 18 yaşında veya daha büyük olmalısın.';
 
   @override
   String onboardingStepProgress(int current, int total) {
@@ -465,15 +450,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingPets => 'Evcil hayvan';
 
   @override
-  String get onboardingInterestsHint =>
-      'Uyumlu kişileri bulabilmemiz için en az 3 ilgi alanı seç.';
+  String get onboardingInterestsHint => 'Profilini tamamlamak için en az 3 ilgi alanı seç.';
 
   @override
   String get onboardingBioHint => 'Kendinden biraz bahset.';
 
   @override
-  String get onboardingPhotosHint =>
-      'En az 3 fotoğraf ekle. Sıralamak için sürükle — ilk fotoğraf ana fotoğrafındır.';
+  String get onboardingPhotosHint => 'En az 3 fotoğraf ekle. Sıralamak için sürükle — ilk fotoğraf ana fotoğrafındır.';
 
   @override
   String get onboardingPrimaryPhoto => 'Ana fotoğraf';
@@ -487,8 +470,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingCompleteTitle => 'Hazırsın';
 
   @override
-  String get onboardingCompleteMessage =>
-      'Profilin hazır. Mevora uyumlu kişilerle tanıştırmaya başlayacak.';
+  String get onboardingCompleteMessage => 'Profilin hazır. Mevora uyumlu kişilerle tanıştırmaya başlayacak.';
 
   @override
   String get onboardingStartDiscovering => 'Keşfetmeye başla';
@@ -629,12 +611,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get locationPermissionTitle => 'Yakınındaki insanları keşfet';
 
   @override
-  String get locationPermissionMessage =>
-      'Mevora, sana daha uygun eşleşmeler gösterebilmek için konumunu kullanır.';
+  String get locationPermissionMessage => 'Mevora, sana daha uygun eşleşmeler gösterebilmek için konumunu kullanır.';
 
   @override
-  String get locationPermissionSub =>
-      'Konumun diğer kullanıcılara tam olarak gösterilmez. Yalnızca eşleşme ve mesafe hesaplamalarında kullanılır.';
+  String get locationPermissionSub => 'Konumun diğer kullanıcılara tam olarak gösterilmez. Yalnızca eşleşme ve mesafe hesaplamalarında kullanılır.';
 
   @override
   String get useMyLocation => 'Konumumu aç';
@@ -643,15 +623,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notNow => 'Şimdilik atla';
 
   @override
-  String get locationSkipHint =>
-      'Eşleşme ve keşif için konum gerekir. Daha sonra ayarlardan açabilirsin.';
+  String get locationSkipHint => 'Eşleşme ve keşif için konum gerekir. Daha sonra ayarlardan açabilirsin.';
 
   @override
   String get locationSettingsTitle => 'Konum izni kapalı';
 
   @override
-  String get locationSettingsMessage =>
-      'Konum iznini cihaz ayarlarından açabilirsin.';
+  String get locationSettingsMessage => 'Konum iznini cihaz ayarlarından açabilirsin.';
 
   @override
   String get openSettings => 'Ayarları aç';
@@ -660,16 +638,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get gpsDisabledTitle => 'Konum hizmetleri kapalı';
 
   @override
-  String get gpsDisabledMessage =>
-      'Yakındaki eşleşmeleri gösterebilmemiz için cihazının konum hizmetlerini açman gerekiyor.';
+  String get gpsDisabledMessage => 'Yakındaki eşleşmeleri gösterebilmemiz için cihazının konum hizmetlerini açman gerekiyor.';
 
   @override
-  String get locationDeniedMessage =>
-      'Konum izni olmadan yakınındaki eşleşmeleri gösteremeyiz.';
+  String get locationDeniedMessage => 'Konum izni olmadan yakınındaki eşleşmeleri gösteremeyiz.';
 
   @override
-  String get locationSuccessTitle =>
-      'Harika! Yakınındaki eşleşmeleri bulmaya hazırız.';
+  String get locationSuccessTitle => 'Harika! Yakınındaki eşleşmeleri bulmaya hazırız.';
 
   @override
   String get locationLocating => 'Konumun belirleniyor...';
@@ -681,19 +656,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get locationUnavailableTitle => 'Konum alınamadı';
 
   @override
-  String get locationTimeoutMessage =>
-      'Konum isteği zaman aşımına uğradı. Daha sonra tekrar deneyebilirsin.';
+  String get locationTimeoutMessage => 'Konum isteği zaman aşımına uğradı. Daha sonra tekrar deneyebilirsin.';
 
   @override
-  String get locationNetworkMessage =>
-      'Bağlantı sorunu nedeniyle konum kaydedilemedi. Tekrar dene.';
+  String get locationNetworkMessage => 'Bağlantı sorunu nedeniyle konum kaydedilemedi. Tekrar dene.';
 
   @override
   String get locationPreciseOffTitle => 'Kesin konum kapalı';
 
   @override
-  String get locationPreciseOffMessage =>
-      'Kesin Konum kapalı. Mesafe tahmini yaklaşık olacak; tam koordinatların yine paylaşılmaz.';
+  String get locationPreciseOffMessage => 'Kesin Konum kapalı. Mesafe tahmini yaklaşık olacak; tam koordinatların yine paylaşılmaz.';
 
   @override
   String get continueWithoutLocation => 'Konumsuz devam et';
@@ -702,22 +674,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get discoveryTitle => 'Eşleşmelerine az kaldı';
 
   @override
-  String get discoveryMessage =>
-      'Keşif hazır olduğunda uyumlu insanlar burada görünecek.';
+  String get discoveryMessage => 'Keşif hazır olduğunda uyumlu insanlar burada görünecek.';
 
   @override
   String get discoveryEmptyTitle => 'Şu an yeni kimse yok';
 
   @override
-  String get discoveryEmptyMessage =>
-      'Mesafeyi genişlet veya biraz sonra tekrar bak.';
+  String get discoveryEmptyMessage => 'Mesafeyi genişlet veya biraz sonra tekrar bak.';
 
   @override
   String get discoverySeenEveryoneTitle => 'Şimdilik burada herkes bu kadar.';
 
   @override
-  String get discoverySeenEveryoneMessage =>
-      'Yeni kişiler için daha sonra tekrar bak veya demoyu yeniden başlat.';
+  String get discoverySeenEveryoneMessage => 'Yeni kişiler için daha sonra tekrar bak veya demoyu yeniden başlat.';
 
   @override
   String get exploreAgain => 'Tekrar keşfet';
@@ -729,8 +698,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get discoveryFiltersTitle => 'Keşif filtreleri';
 
   @override
-  String get discoveryFiltersHint =>
-      'Filtreler yerel olarak kaydedilir. Sunucu tarafı filtreleme sonraki güncellemede gelecek.';
+  String get discoveryFiltersHint => 'Filtreler yerel olarak kaydedilir. Sunucu tarafı filtreleme sonraki güncellemede gelecek.';
 
   @override
   String get applyFilters => 'Filtreleri uygula';
@@ -766,10 +734,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relationshipGoalFiguringOut => 'Henüz kararsızım';
 
   @override
-  String get compatibilityReasonsHeading => 'Neden uyumlusunuz';
+  String get compatibilityReasonsHeading => 'Neden önerildi';
 
   @override
-  String get whyYoureSeeingThis => 'Bu kişiyi neden görüyorsun';
+  String get whyYoureSeeingThis => 'Bu profil neden gösteriliyor';
 
   @override
   String get sharedInterests => 'Ortak ilgi alanları';
@@ -807,7 +775,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String compatibilityPercent(int percent) {
-    return '$percent% Uyumlu';
+    return 'Önerilen · %$percent uyum';
   }
 
   @override
@@ -898,8 +866,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get matchesEmptyTitle => 'Henüz bir eşleşmen yok.';
 
   @override
-  String get matchesEmptyMessage =>
-      'Karşılıklı beğeniler burada sohbet olarak görünür.';
+  String get matchesEmptyMessage => 'Karşılıklı beğeniler burada sohbet olarak görünür.';
 
   @override
   String get newMatch => 'Yeni eşleşme';
@@ -918,6 +885,48 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get typing => 'yazıyor...';
+
+  @override
+  String get attachPhoto => 'Fotoğraf';
+
+  @override
+  String get takePhoto => 'Kamera';
+
+  @override
+  String get recordVoice => 'Sesli mesaj';
+
+  @override
+  String get holdToRecord => 'Kaydediliyor…';
+
+  @override
+  String get playVoice => 'Oynat';
+
+  @override
+  String get pauseVoice => 'Duraklat';
+
+  @override
+  String get previewPhoto => 'Bu fotoğraf gönderilsin mi?';
+
+  @override
+  String get messageDeleted => 'Mesaj silindi';
+
+  @override
+  String get deleteMessage => 'Sil';
+
+  @override
+  String get deleteMessageConfirm => 'Bu mesaj silinsin mi? Karşı taraf artık göremez.';
+
+  @override
+  String get micDeniedChat => 'Sesli mesaj için mikrofon izni gerekir.';
+
+  @override
+  String get photoDeniedChat => 'Fotoğraf göndermek için galeri izni gerekir.';
+
+  @override
+  String get callCancelled => 'Arama iptal edildi';
+
+  @override
+  String get callRejected => 'Arama reddedildi';
 
   @override
   String get unmatchedBanner => 'Bu kişiyle eşleşmeniz kaldırıldı.';
@@ -986,8 +995,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get callNotConfigured => 'Görüntülü arama şu anda kullanılamıyor.';
 
   @override
-  String get cameraDenied =>
-      'Kamera izni olmadan görüntülü arama başlatılamaz.';
+  String get cameraDenied => 'Kamera izni olmadan görüntülü arama başlatılamaz.';
 
   @override
   String get micDenied => 'Mikrofon izni olmadan arama başlatılamaz.';
@@ -1020,8 +1028,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get callPermissionTitle => 'Kamera ve mikrofon';
 
   @override
-  String get callPermissionBody =>
-      'Görüntülü arama için kamera ve mikrofon izni gerekir.';
+  String get callPermissionBody => 'Görüntülü arama için kamera ve mikrofon izni gerekir.';
 
   @override
   String get presenceOnline => 'Çevrimiçi';
@@ -1057,8 +1064,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get unmatchConfirmTitle => 'Eşleşme kaldırılsın mı?';
 
   @override
-  String get unmatchConfirmMessage =>
-      'Bu kişiyle artık mesajlaşamazsın. Bu işlem sohbeti kapatır.';
+  String get unmatchConfirmMessage => 'Bu kişiyle artık mesajlaşamazsın. Bu işlem sohbeti kapatır.';
 
   @override
   String get block => 'Engelle';
@@ -1067,8 +1073,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get blockConfirmTitle => 'Bu kişiyi engelle?';
 
   @override
-  String get blockConfirmMessage =>
-      'Engellenen kişi keşiften gizlenir, mesaj ve arama yapılamaz.';
+  String get blockConfirmMessage => 'Engellenen kişi keşiften gizlenir, mesaj ve arama yapılamaz.';
 
   @override
   String get report => 'Şikayet et';
@@ -1089,8 +1094,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get offerBlockTitle => 'Bu kişiyi de engellemek ister misin?';
 
   @override
-  String get offerBlockMessage =>
-      'Engellemek yeni mesaj, eşleşme ve aramaları durdurur.';
+  String get offerBlockMessage => 'Engellemek yeni mesaj, eşleşme ve aramaları durdurur.';
 
   @override
   String get reportSpam => 'Spam';
@@ -1114,6 +1118,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportOther => 'Diğer';
 
   @override
+  String get hideProfile => 'Profili gizle';
+
+  @override
+  String get hideProfileTitle => 'Bu profil gizlensin mi?';
+
+  @override
+  String get hideProfileMessage => 'Keşif yığınında bir daha görünmez.';
+
+  @override
   String get linkedAccounts => 'Bağlı hesaplar';
 
   @override
@@ -1126,8 +1139,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get linkEmailTitle => 'E-posta ve şifre bağla';
 
   @override
-  String get linkEmailSubtitle =>
-      'Bu, mevcut hesabına e-posta ile girişi ekler. Başka bir Mevora hesabını birleştirmez.';
+  String get linkEmailSubtitle => 'Bu, mevcut hesabına e-posta ile girişi ekler. Başka bir Mevora hesabını birleştirmez.';
 
   @override
   String get deleteAccount => 'Hesabı sil';
@@ -1136,8 +1148,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get deleteAccountTitle => 'Hesabın silinsin mi?';
 
   @override
-  String get deleteAccountBody =>
-      'Mevora hesabın, profilin, eşleşmelerin ve mesajların kalıcı olarak silinir. Bu işlem geri alınamaz.';
+  String get deleteAccountBody => 'Mevora hesabın, profilin, eşleşmelerin ve mesajların kalıcı olarak silinir. Bu işlem geri alınamaz.';
 
   @override
   String get deleteConfirm => 'Kalıcı olarak sil';
@@ -1170,17 +1181,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostTitle => 'BOOST';
 
   @override
-  String get boostSubtitle =>
-      'Profilini daha fazla kişiye göster ve keşfedilme şansını artır.';
+  String get boostSubtitle => 'Profilini daha fazla kişiye göster ve keşfedilme şansını artır.';
 
   @override
-  String get boostDuration => '30 dakika';
+  String get boostDuration => 'Profilini öne çıkar';
 
   @override
-  String get boostActivate => 'Boost\'u aktif et';
+  String get boostActivate => 'Kalan bakiyeyi kullan';
 
   @override
-  String get boostBuy => 'Boost\'u satın al';
+  String get boostBuy => 'Boost satın al';
 
   @override
   String get boostPurchasing => 'Satın alma işlemi başlatılıyor...';
@@ -1192,34 +1202,28 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostSuccessTitle => 'Boost aktif! 🚀';
 
   @override
-  String get boostSuccessMessage =>
-      'Profilin daha fazla kişiye gösterilmeye başlayacak.';
+  String get boostSuccessMessage => 'Profilin daha fazla kişiye gösterilmeye başlayacak.';
 
   @override
-  String get boostAlreadyActive => 'Zaten aktif bir Boost\'un var.';
+  String get boostAlreadyActive => 'Aktif bir Boost\'un var. Yeni paket kalan süreye eklenir.';
 
   @override
   String get boostPurchaseCancelled => 'Satın alma iptal edildi.';
 
   @override
-  String get boostPurchaseFailed =>
-      'Satın alma tamamlanamadı. Lütfen tekrar dene.';
+  String get boostPurchaseFailed => 'Satın alma tamamlanamadı. Lütfen tekrar dene.';
 
   @override
-  String get boostStoreUnavailable =>
-      'Mağaza şu anda bu cihazda kullanılamıyor.';
+  String get boostStoreUnavailable => 'Mağaza şu anda bu cihazda kullanılamıyor.';
 
   @override
-  String get boostStoreDown =>
-      'Mağaza şu anda yanıt vermiyor. Biraz sonra tekrar dene.';
+  String get boostStoreDown => 'Mağaza şu anda yanıt vermiyor. Biraz sonra tekrar dene.';
 
   @override
-  String get boostNetworkError =>
-      'Bağlantı sorunu nedeniyle satın alma doğrulanamadı.';
+  String get boostNetworkError => 'Bağlantı sorunu nedeniyle satın alma doğrulanamadı.';
 
   @override
-  String get boostVerificationFailed =>
-      'Satın alma doğrulanamadı. Biraz sonra tekrar dene.';
+  String get boostVerificationFailed => 'Satın alma doğrulanamadı. Biraz sonra tekrar dene.';
 
   @override
   String get boostAlreadyProcessed => 'Bu satın alma zaten işlendi.';
@@ -1235,7 +1239,17 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String boostRemainingMinutes(int minutes) {
-    return '$minutes dk';
+    return '$minutes dk kaldı';
+  }
+
+  @override
+  String boostRemainingDays(int days) {
+    return '$days gün kaldı';
+  }
+
+  @override
+  String boostRemainingHours(int hours) {
+    return '$hours saat kaldı';
   }
 
   @override
@@ -1256,8 +1270,29 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get boostPackWeek => '1 Hafta';
+
+  @override
+  String get boostPackMonth => '1 Ay';
+
+  @override
+  String get boostPackYear => '1 Yıl';
+
+  @override
+  String get boostPackWeekSubtitle => 'Profilini 7 gün boyunca öne çıkar';
+
+  @override
+  String get boostPackMonthSubtitle => 'Profilini 30 gün boyunca öne çıkar';
+
+  @override
+  String get boostPackYearSubtitle => 'Profilini 365 gün boyunca öne çıkar';
+
+  @override
+  String get boostBestValue => 'En avantajlı';
+
+  @override
   String boostBalance(int count) {
-    return '$count Boost';
+    return '$count kalan Boost';
   }
 
   @override
@@ -1275,10 +1310,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostInsufficientBalance => 'Aktif etmek için Boost bakiyen yok.';
 
   @override
-  String get boostHistoryTitle => 'Boost geçmişi';
+  String get boostHistoryTitle => 'Satın Alma Geçmişi';
 
   @override
-  String get boostHistoryEmpty => 'Henüz Boost işlemin yok.';
+  String get boostHistoryEmpty => 'Henüz satın alman yok.';
 
   @override
   String get boostHistoryPurchase => 'Satın alma';
@@ -1287,13 +1322,25 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostHistoryActivation => 'Aktivasyon';
 
   @override
+  String get boostHistoryPlatformIos => 'App Store';
+
+  @override
+  String get boostHistoryPlatformAndroid => 'Google Play';
+
+  @override
   String get boostActiveBadge => 'Boost aktif';
 
   @override
   String get boostActivating => 'Boost aktif ediliyor...';
 
   @override
-  String get boostNoBalance => 'Boost aktif etmek için bir paket satın al.';
+  String get boostNoBalance => 'Profilini öne çıkarmak için bir paket seç.';
+
+  @override
+  String get boostPriceUnavailable => 'Fiyat yüklenemedi';
+
+  @override
+  String get boostRestoring => 'Satın almalar geri yükleniyor...';
 
   @override
   String radiusKm(int km) {
@@ -1316,43 +1363,37 @@ class AppLocalizationsTr extends AppLocalizations {
   String get restorePurchases => 'Satın almaları geri yükle';
 
   @override
-  String get startupUnavailable =>
-      'Mevora başlatılamadı. Bağlantını kontrol et ve tekrar dene.';
+  String get startupUnavailable => 'Mevora başlatılamadı. Bağlantını kontrol et ve tekrar dene.';
 
   @override
   String get permissionCameraTitle => 'Kamera';
 
   @override
-  String get permissionCameraDescription =>
-      'Mevora, profil fotoğrafı çekmek için kameranı kullanır.';
+  String get permissionCameraDescription => 'Mevora, profil fotoğrafı çekmek için kameranı kullanır.';
 
   @override
   String get permissionMicrophoneTitle => 'Mikrofon';
 
   @override
-  String get permissionMicrophoneDescription =>
-      'Mevora, ses ve sesli özellikler için mikrofonunu kullanır.';
+  String get permissionMicrophoneDescription => 'Mevora, ses ve sesli özellikler için mikrofonunu kullanır.';
 
   @override
   String get permissionPhotosTitle => 'Fotoğraflar';
 
   @override
-  String get permissionPhotosDescription =>
-      'Profil fotoğrafı ekleyebilmen için Mevora\'nın fotoğraflarına erişmesi gerekir.';
+  String get permissionPhotosDescription => 'Profil fotoğrafı ekleyebilmen için Mevora\'nın fotoğraflarına erişmesi gerekir.';
 
   @override
   String get permissionLocationTitle => 'Konum';
 
   @override
-  String get permissionLocationDescription =>
-      'Mevora, mesafe ve yakındaki keşfi iyileştirmek için konumunu kullanır.';
+  String get permissionLocationDescription => 'Mevora, mesafe ve yakındaki keşfi iyileştirmek için konumunu kullanır.';
 
   @override
   String get permissionNotificationsTitle => 'Bildirimler';
 
   @override
-  String get permissionNotificationsDescription =>
-      'Bildirimler, eşleşme veya mesaj aldığında haberin olmasını sağlar.';
+  String get permissionNotificationsDescription => 'Bildirimler, eşleşme veya mesaj aldığında haberin olmasını sağlar.';
 
   @override
   String get permissionAllow => 'Devam et';
@@ -1361,12 +1402,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get permissionDeniedTitle => 'İzin gerekli';
 
   @override
-  String get permissionDeniedBody =>
-      'Bu özellik izinle daha iyi çalışır. Tekrar deneyebilir veya izinsiz devam edebilirsin.';
+  String get permissionDeniedBody => 'Bu özellik izinle daha iyi çalışır. Tekrar deneyebilir veya izinsiz devam edebilirsin.';
 
   @override
-  String get permissionPermanentlyDeniedBody =>
-      'İzin kapalı. Cihaz ayarlarından açabilirsin.';
+  String get permissionPermanentlyDeniedBody => 'İzin kapalı. Cihaz ayarlarından açabilirsin.';
 
   @override
   String get permissionContinueWithout => 'İzinsiz devam et';
@@ -1384,8 +1423,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get permissionStatusLimited => 'Sınırlı erişim';
 
   @override
-  String get permissionStatusPermanentlyDenied =>
-      'Kapalı — cihaz ayarlarını aç';
+  String get permissionStatusPermanentlyDenied => 'Kapalı — cihaz ayarlarını aç';
 
   @override
   String get permissionStatusUnknown => 'Bilinmiyor';
@@ -1394,8 +1432,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get privacyPermissionsTitle => 'Gizlilik ve izinler';
 
   @override
-  String get privacyPermissionsSubtitle =>
-      'Mevora her izni yalnızca ilgili özellik gerektiğinde ister. İsteğe bağlı izinler olmadan da uygulamayı kullanabilirsin.';
+  String get privacyPermissionsSubtitle => 'Mevora her izni yalnızca ilgili özellik gerektiğinde ister. İsteğe bağlı izinler olmadan da uygulamayı kullanabilirsin.';
 
   @override
   String get privacyOpenDeviceSettings => 'Cihaz ayarlarını aç';
@@ -1421,8 +1458,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get photoUploadFailed =>
-      'Fotoğraf yüklenirken bir hata oluştu. Lütfen tekrar deneyin.';
+  String get photoUploadFailed => 'Fotoğraf yüklenirken bir hata oluştu. Lütfen tekrar deneyin.';
 
   @override
   String get photoUploaded => 'Fotoğraf yüklendi';
@@ -1461,15 +1497,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsLogoutTitle => 'Çıkış yapılsın mı?';
 
   @override
-  String get settingsLogoutBody =>
-      'Mevora\'yı kullanmak için tekrar giriş yapman gerekecek.';
+  String get settingsLogoutBody => 'Mevora\'yı kullanmak için tekrar giriş yapman gerekecek.';
 
   @override
   String get settingsDeleteConfirmTitle => 'Bu kalıcıdır';
 
   @override
-  String get settingsDeleteConfirmBody =>
-      'Tüm eşleşmeler, mesajlar ve profil verilerin kalıcı olarak silinir.';
+  String get settingsDeleteConfirmBody => 'Tüm eşleşmeler, mesajlar ve profil verilerin kalıcı olarak silinir.';
 
   @override
   String get settingsReauthTitle => 'Kimliğini doğrula';
@@ -1493,8 +1527,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsPhotoMaxExceeded => 'En fazla 6 fotoğraf ekleyebilirsin.';
 
   @override
-  String get settingsPhotoPrimaryDeleteBlocked =>
-      'Bunu silmeden önce başka bir fotoğrafı birincil yap.';
+  String get settingsPhotoPrimaryDeleteBlocked => 'Bunu silmeden önce başka bir fotoğrafı birincil yap.';
 
   @override
   String get settingsPhotoPrimaryRequired => 'Bir birincil fotoğraf seç.';
@@ -1518,19 +1551,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsMaxAgeInvalid => 'Maksimum yaş çok yüksek.';
 
   @override
-  String get settingsAgeRangeInvalid =>
-      'Maksimum yaş, minimum yaştan büyük olmalı.';
+  String get settingsAgeRangeInvalid => 'Maksimum yaş, minimum yaştan büyük olmalı.';
 
   @override
   String get settingsDistanceInvalid => 'Mesafe 1 ile 500 km arasında olmalı.';
 
   @override
-  String get settingsGooglePasswordMessage =>
-      'Hesabın Google ile giriş kullanıyor. Şifre değişiklikleri Google üzerinden yapılır.';
+  String get settingsGooglePasswordMessage => 'Hesabın Google ile giriş kullanıyor. Şifre değişiklikleri Google üzerinden yapılır.';
 
   @override
-  String get settingsBirthDateLocked =>
-      'Doğum günü onboarding sonrası değiştirilemez. Yaş yalnızca doğum gününden hesaplanır.';
+  String get settingsBirthDateLocked => 'Doğum günü onboarding sonrası değiştirilemez. Yaş yalnızca doğum gününden hesaplanır.';
 
   @override
   String get settingsSaveProfile => 'Profili kaydet';
@@ -1542,8 +1572,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsBlockedEmptyTitle => 'Engellenen yok';
 
   @override
-  String get settingsBlockedEmptyMessage =>
-      'Engellediğin kişiler burada görünür.';
+  String get settingsBlockedEmptyMessage => 'Engellediğin kişiler burada görünür.';
 
   @override
   String get settingsShowOnlineStatus => 'Çevrimiçi durumunu göster';
@@ -1612,15 +1641,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get citySelectNone => 'İl bulunamadı';
 
   @override
-  String get discoveryLoading => 'Uyumlu kişileri buluyoruz...';
+  String get discoveryLoading => 'Senin için kişiler keşfediliyor...';
 
   @override
-  String get discoveryLoadErrorTitle =>
-      'Profilleri yüklerken bir sorun oluştu.';
+  String get discoveryLoadErrorTitle => 'Profilleri yüklerken bir sorun oluştu.';
 
   @override
-  String get discoveryLoadErrorMessage =>
-      'Bağlantını kontrol et ve tekrar dene.';
+  String get discoveryLoadErrorMessage => 'Bağlantını kontrol et ve tekrar dene.';
 
   @override
   String get discoveryChangePreferences => 'Keşfetme tercihlerini değiştir';
@@ -1638,4 +1665,250 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get tabSettings => 'Ayarlar';
+
+  @override
+  String get tabMusic => 'Müzik';
+
+  @override
+  String get musicTitle => 'Müzik';
+
+  @override
+  String get musicConnectCta => '🎵 Spotify\'ı Bağla';
+
+  @override
+  String get musicConnected => '✓ Spotify Bağlandı';
+
+  @override
+  String get musicUnconnectedCopy => 'Spotify hesabını bağla ve müzik zevkine göre sana en uygun kişileri keşfet.';
+
+  @override
+  String get musicConnecting => 'Spotify bağlanıyor…';
+
+  @override
+  String get musicSyncing => 'Müzik zevkin yenileniyor…';
+
+  @override
+  String get musicRefresh => 'Müzik Verilerini Yenile';
+
+  @override
+  String get musicRefreshCooldown => 'Daha sonra tekrar yenileyebilirsin.';
+
+  @override
+  String get musicProfileTitle => 'Müzik profilin';
+
+  @override
+  String get musicSameTasteTitle => 'Seninle Aynı Müziği Dinleyenler';
+
+  @override
+  String get musicSameTasteEmpty => 'Henüz örtüşen bir müzik zevki yok. Biraz dinledikten sonra yenile.';
+
+  @override
+  String get musicWeeklyTitle => 'Bu Haftanın Müzikleri';
+
+  @override
+  String get musicWeeklyEmpty => 'Yeterince kişi Spotify bağladığında haftalık öne çıkanlar burada görünür.';
+
+  @override
+  String musicCompatibilityPercent(int percent) {
+    return 'Benzer müzik zevki · en fazla %$percent';
+  }
+
+  @override
+  String musicCompatibilityShort(int percent) {
+    return 'Müzik · %$percent';
+  }
+
+  @override
+  String musicSharedCounts(int tracks, int artists) {
+    return '$tracks ortak parça · $artists ortak sanatçı';
+  }
+
+  @override
+  String get musicOauthCancelled => 'Spotify bağlantısı iptal edildi.';
+
+  @override
+  String get musicApiDenied => 'Spotify erişime izin vermedi. Daha sonra tekrar deneyebilirsin.';
+
+  @override
+  String get musicTokenExpired => 'Spotify bağlantının süresi doldu. Lütfen tekrar bağla.';
+
+  @override
+  String get musicNetwork => 'İnternet bağlantını kontrol et ve tekrar dene.';
+
+  @override
+  String get musicNotConfigured => 'Spotify bu sürümde henüz yapılandırılmadı.';
+
+  @override
+  String get musicConnectError => 'Spotify bağlanamadı. Mevora\'nın geri kalanı çalışmaya devam eder.';
+
+  @override
+  String get settingsConnectSpotify => 'Spotify\'ı Bağla';
+
+  @override
+  String get settingsSpotifySubtitle => 'Müzik zevki eşleşmesi — Mevora içinde müzik çalmaz.';
+
+  @override
+  String get matchScoreTitle => 'Eşleşme puanı';
+
+  @override
+  String get matchScoreSubtitle => 'Bağlantı itibarın';
+
+  @override
+  String matchScoreValue(int score) {
+    return '$score puan';
+  }
+
+  @override
+  String get matchScoreHistoryTitle => 'Puan geçmişi';
+
+  @override
+  String get matchScoreHistoryEmpty => 'Yeni eşleşmeler ve sohbetler burada puan ekler.';
+
+  @override
+  String get matchScoreHistoryMatch => 'Yeni eşleşme +1';
+
+  @override
+  String get matchScoreHistoryInteraction => 'Sohbet +1';
+
+  @override
+  String get matchFeedbackTitle => 'Bu eşleşme nasıldı?';
+
+  @override
+  String get matchFeedbackMessage => 'İsteğe bağlı. Bu not yalnızca senin geçmişinde kalır — karşı taraf görmez ve puanları değiştirmez.';
+
+  @override
+  String get matchFeedbackHint => 'Kısa bir özel not';
+
+  @override
+  String get matchFeedbackSubmit => 'Notu kaydet';
+
+  @override
+  String get matchFeedbackThanks => 'Geçmişine kaydedildi.';
+
+  @override
+  String get matchFeedbackTooShort => 'Kısa bir not yaz veya atla.';
+
+  @override
+  String get matchFeedbackFailed => 'Not kaydedilemedi. Tekrar dene.';
+
+  @override
+  String get relationshipPromptTitle => 'İlişkiler hakkında ne düşünüyorsun?';
+
+  @override
+  String get relationshipQuestionsPreparing => 'Yeni sorular hazırlanıyor. Lütfen biraz sonra tekrar deneyin.';
+
+  @override
+  String get relationshipTestTitle => 'İlişki Testi';
+
+  @override
+  String get relationshipTestHeadline => 'Görüşlerine yakın insanları keşfet';
+
+  @override
+  String get relationshipTestMessage => '3 kısa soruyla benzer düşünebilen kişileri gör.';
+
+  @override
+  String get relationshipTestStart => 'İlişki Testine Başla';
+
+  @override
+  String get relationshipTestLater => 'Daha Sonra';
+
+  @override
+  String get relationshipTestDoneTitle => 'İlişki Testin Tamamlandı';
+
+  @override
+  String get relationshipTestFound => 'Görüşlerine yakın biri bulundu.';
+
+  @override
+  String get relationshipTestAlign => 'Birkaç konuda benzer görüşleriniz var.';
+
+  @override
+  String get relationshipTestNearest => 'Size en yakın kişi:';
+
+  @override
+  String get relationshipTestEmpty => 'Şu an yakınında benzer düşünen kimse yok.';
+
+  @override
+  String get relationshipTestViewProfile => 'Profili Gör';
+
+  @override
+  String get relationshipTestOpenChat => 'Sohbete git';
+
+  @override
+  String get relationshipMatchBadge => 'İlişki Testi';
+
+  @override
+  String relationshipPromptProgress(int answered, int total) {
+    return '$answered / $total';
+  }
+
+  @override
+  String relationshipCompatibilityPercent(int percent) {
+    return 'Görüş örtüşmesi · %$percent';
+  }
+
+  @override
+  String relationshipCompatibilityShort(int percent) {
+    return 'Görüş · %$percent';
+  }
+
+  @override
+  String relationshipSharedViews(int count) {
+    return '$count ortak görüş';
+  }
+
+  @override
+  String get relationshipSimilarThinker => 'Seninle ilişki konusunda benzer düşünen biri bulundu.';
+
+  @override
+  String get relationshipViewsAlign => 'İlişki görüşleriniz birkaç konuda örtüşüyor.';
+
+  @override
+  String get relationshipMatchesTitle => 'İlişki eşleşmeleri';
+
+  @override
+  String get relationshipMatchesEmpty => 'Senin gibi düşünen insanları bulmak için birkaç ilişki sorusu yanıtla — burada mesafe önemli değil.';
+
+  @override
+  String relationshipProfileSubtitle(int answered) {
+    return '$answered ilişki sorusu yanıtlandı';
+  }
+
+  @override
+  String get relationshipTopicJealousy => 'Kıskançlık konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicTrust => 'Güven konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicLoyalty => 'Sadakat konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicCommunication => 'İletişim konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicBoundaries => 'Sınırlar konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicSocialLife => 'Sosyal hayat konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicFriendship => 'Arkadaşlık konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicPersonalSpace => 'Özel alan konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicFuturePlans => 'Gelecek planları konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicMoney => 'Para konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicFlirting => 'Flört konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicExes => 'Eski ilişkiler konusunda benzer düşünüyorsunuz.';
+
+  @override
+  String get relationshipTopicExpectations => 'İlişki beklentileri konusunda benzer düşünüyorsunuz.';
 }

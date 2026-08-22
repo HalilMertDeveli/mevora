@@ -11,6 +11,9 @@ abstract final class AppDurations {
   static const Duration like = Duration(milliseconds: 280);
   static const Duration pass = Duration(milliseconds: 240);
   static const Duration long = Duration(milliseconds: 400);
-  static const Duration match = Duration(milliseconds: 800);
+
+  /// Compact tab/route accent — keep short so it never feels like a wait.
+  static const Duration coverShrink = Duration(milliseconds: 320);
+  static const Duration match = Duration(milliseconds: 720);
   static const Duration relationshipPrompt = Duration(minutes: 30);
 }

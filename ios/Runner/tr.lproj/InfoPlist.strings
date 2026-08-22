@@ -1,4 +1,4 @@
-"NSCameraUsageDescription" = "Mevora, profil fotoğrafı çekmek için kameranı kullanır.";
+"NSCameraUsageDescription" = "Mevora, profil fotoğrafları ve görüntülü aramalar için kameranı kullanır.";
 "NSMicrophoneUsageDescription" = "Mevora, ses ve sesli özellikler için mikrofonunu kullanır.";
 "NSPhotoLibraryUsageDescription" = "Profil fotoğrafı ekleyebilmen için Mevora'nın fotoğraflarına erişmesi gerekir.";
 "NSPhotoLibraryAddUsageDescription" = "Profil fotoğrafı ekleyebilmen için Mevora'nın fotoğraflarına erişmesi gerekir.";

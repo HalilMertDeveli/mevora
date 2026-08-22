@@ -47,8 +47,7 @@ class FirebaseStorageDataSource implements StorageRepository {
       );
       return const Err(ValidationFailure(PhotoUploadMessages.failed));
     }
-    if (!pipeline.isAllowedType(contentType) ||
-        !pipeline.isAllowedSize(bytes.length)) {
+    if (!_isAllowedUpload(path: path, contentType: contentType, size: bytes.length)) {
       return const Err(ValidationFailure(PhotoUploadMessages.invalidFile));
     }
 
@@ -129,7 +128,7 @@ class FirebaseStorageDataSource implements StorageRepository {
   }) {
     final path = thumbnail
         ? StoragePaths.profileThumb(ownerUid: ownerUid, imageId: imageId)
-        : StoragePaths.profilePhoto(
+        : StoragePaths.profilePending(
             ownerUid: ownerUid,
             imageId: imageId,
             extension: _extensionFor(contentType),
@@ -159,7 +158,21 @@ class FirebaseStorageDataSource implements StorageRepository {
         imageId: imageId,
         extension: 'webp',
       ),
-      StoragePaths.profilePending(ownerUid: ownerUid, imageId: imageId),
+      StoragePaths.profilePending(
+        ownerUid: ownerUid,
+        imageId: imageId,
+        extension: 'jpg',
+      ),
+      StoragePaths.profilePending(
+        ownerUid: ownerUid,
+        imageId: imageId,
+        extension: 'png',
+      ),
+      StoragePaths.profilePending(
+        ownerUid: ownerUid,
+        imageId: imageId,
+        extension: 'webp',
+      ),
       StoragePaths.profileApproved(ownerUid: ownerUid, imageId: imageId),
       StoragePaths.profileThumb(ownerUid: ownerUid, imageId: imageId),
     ];
@@ -170,6 +183,24 @@ class FirebaseStorageDataSource implements StorageRepository {
       }
     }
     return const Success(null);
+  }
+
+  bool _isAllowedUpload({
+    required String path,
+    required String contentType,
+    required int size,
+  }) {
+    final isChat = path.contains('/chat/');
+    if (isChat &&
+        StoragePaths.allowedChatAudioTypes.contains(contentType.toLowerCase())) {
+      return size > 0 && size <= StoragePaths.maxChatVoiceBytes;
+    }
+    if (isChat) {
+      return pipeline.isAllowedType(contentType) &&
+          size > 0 &&
+          size <= StoragePaths.maxChatImageBytes;
+    }
+    return pipeline.isAllowedType(contentType) && pipeline.isAllowedSize(size);
   }
 
   static String _extensionFor(String contentType) {

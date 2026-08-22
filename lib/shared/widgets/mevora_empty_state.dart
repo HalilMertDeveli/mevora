@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_motion_size.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
@@ -43,16 +44,21 @@ class MevoraEmptyState extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (riveAsset != null)
-                MevoraRiveAnimation(
-                  asset: riveAsset!,
-                  width: 160,
-                  height: 160,
-                  fit: BoxFit.contain,
-                  fallback: Icon(
-                    icon,
-                    size: 48,
-                    color: theme.colorScheme.primary,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final size = MevoraMotionSize.accent(context);
+                    return MevoraRiveAnimation(
+                      asset: riveAsset!,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.contain,
+                      fallback: Icon(
+                        icon,
+                        size: 40,
+                        color: theme.colorScheme.primary,
+                      ),
+                    );
+                  },
                 )
               else
                 Icon(icon, size: 40, color: theme.colorScheme.primary),

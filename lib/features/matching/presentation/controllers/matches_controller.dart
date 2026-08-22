@@ -22,6 +22,9 @@ class MatchesController extends ChangeNotifier {
 
   String? get uid => _uidSource.currentUid;
 
+  int get mutualLikeCount =>
+      items.where((item) => !item.match.isRelationshipTest).length;
+
   int get totalUnread {
     final current = uid;
     if (current == null) {

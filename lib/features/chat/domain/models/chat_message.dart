@@ -35,7 +35,12 @@ class ChatMessage {
     required this.status,
     this.isRead = false,
     this.readAt,
+    this.deleted = false,
     this.imageStoragePath,
+    this.voiceStoragePath,
+    this.mediaUrl,
+    this.durationMs,
+    this.localMediaBytes,
   });
 
   final String id;
@@ -47,13 +52,32 @@ class ChatMessage {
   final MessageStatus status;
   final bool isRead;
   final DateTime? readAt;
+  final bool deleted;
 
-  /// Architecture-only for type=image. No send UI yet.
+  /// Storage object for type=image. Participants read via Storage rules.
   final String? imageStoragePath;
+
+  /// Storage object for type=voice.
+  final String? voiceStoragePath;
+
+  /// Download URL written after upload. Never contains message body PII.
+  final String? mediaUrl;
+
+  /// Voice duration in milliseconds.
+  final int? durationMs;
+
+  /// In-memory demo/preview bytes. Never written to Firestore.
+  final List<int>? localMediaBytes;
 
   bool get isMine => false;
 
   bool isFrom(String uid) => senderId == uid;
+
+  String? get storagePath => switch (type) {
+        MessageType.image => imageStoragePath,
+        MessageType.voice => voiceStoragePath,
+        _ => imageStoragePath ?? voiceStoragePath,
+      };
 
   ChatMessage copyWith({
     String? id,
@@ -65,7 +89,12 @@ class ChatMessage {
     MessageStatus? status,
     bool? isRead,
     DateTime? readAt,
+    bool? deleted,
     String? imageStoragePath,
+    String? voiceStoragePath,
+    String? mediaUrl,
+    int? durationMs,
+    List<int>? localMediaBytes,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -77,18 +106,40 @@ class ChatMessage {
       status: status ?? this.status,
       isRead: isRead ?? this.isRead,
       readAt: readAt ?? this.readAt,
+      deleted: deleted ?? this.deleted,
       imageStoragePath: imageStoragePath ?? this.imageStoragePath,
+      voiceStoragePath: voiceStoragePath ?? this.voiceStoragePath,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      durationMs: durationMs ?? this.durationMs,
+      localMediaBytes: localMediaBytes ?? this.localMediaBytes,
     );
   }
 }
 
-/// Storage contract for a future image composer. Not used by UI.
+/// Storage contract for chat media. Path owner is always the sender UID.
+abstract final class ChatMediaArchitecture {
+  static String storagePath({
+    required String senderUid,
+    required String matchId,
+    required String messageId,
+    String? extension,
+  }) {
+    final suffix = (extension == null || extension.isEmpty) ? '' : '.$extension';
+    return 'users/$senderUid/chat/$matchId/$messageId$suffix';
+  }
+}
+
+/// @deprecated Use [ChatMediaArchitecture]. Kept for existing imports.
 abstract final class ImageMessageArchitecture {
   static String storagePath({
     required String senderUid,
     required String matchId,
     required String messageId,
   }) {
-    return 'users/$senderUid/chat/$matchId/$messageId';
+    return ChatMediaArchitecture.storagePath(
+      senderUid: senderUid,
+      matchId: matchId,
+      messageId: messageId,
+    );
   }
 }

@@ -1,4 +1,6 @@
-/// Result of a verified IAP. Credits balance; does not activate visibility.
+import 'package:mevora/features/boost/domain/entities/boost.dart';
+
+/// Result of a verified IAP. Duration packs activate Boost immediately.
 class BoostCreditResult {
   const BoostCreditResult({
     required this.purchaseId,
@@ -6,6 +8,7 @@ class BoostCreditResult {
     required this.boostCount,
     required this.balance,
     this.alreadyProcessed = false,
+    this.boost,
   });
 
   final String purchaseId;
@@ -13,4 +16,7 @@ class BoostCreditResult {
   final int boostCount;
   final int balance;
   final bool alreadyProcessed;
+  final Boost? boost;
+
+  bool get didActivate => boost != null;
 }

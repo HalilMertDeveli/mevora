@@ -6,13 +6,32 @@ import {
   type DocumentData,
 } from "firebase-admin/firestore";
 import {getAuth} from "firebase-admin/auth";
+import {getStorage} from "firebase-admin/storage";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onObjectFinalized} from "firebase-functions/v2/storage";
 import {logger} from "firebase-functions";
 import {blockId} from "./ids.js";
+import {
+  isAccountEligible,
+  publicProfileProjection,
+  resolveProfileAge,
+} from "./profileSafety.js";
+import {
+  loadActiveMatchPartnerIds,
+  loadPreferencesByUid,
+  passesDiscoveryProfileFilters,
+  passesGenderPreferences,
+} from "./discoveryMatching.js";
 import {loadActiveBoostedUserIds, sortByBoostVisibility} from "./boost/ranking.js";
 import {userLanguage} from "./language.js";
+import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
+import {musicRankingBonus} from "./musicCompatibility.js";
+import {ensureMatchScore, preservedMatchScoreFields} from "./matchScore.js";
+import {musicScoreForPair} from "./spotifyMusic.js";
+import {relationshipScoreForPair} from "./relationshipMatch.js";
+import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
+import {passesSmokeDiscoveryIsolation} from "./smoke/smokeTestUsers.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -73,26 +92,80 @@ async function isBlocked(a: string, b: string): Promise<boolean> {
   return subA.exists || subB.exists || topA.exists || topB.exists;
 }
 
+async function loadUserAccounts(uids: string[]): Promise<Map<string, DocumentData>> {
+  const unique = [...new Set(uids.filter(Boolean))];
+  const entries = await Promise.all(
+    unique.map(async (uid) => {
+      const snap = await db.doc(`users/${uid}`).get();
+      return [uid, snap.data()] as const;
+    }),
+  );
+  return new Map(entries.filter(([, data]) => data != null) as Array<[string, DocumentData]>);
+}
+
+async function loadBlockedUserIds(uid: string): Promise<Set<string>> {
+  const [subSnap, blockedSnap, blockerSnap] = await Promise.all([
+    db.collection(`users/${uid}/blockedUsers`).get(),
+    db.collection("blocks").where("blockerId", "==", uid).get(),
+    db.collection("blocks").where("blockedUserId", "==", uid).get(),
+  ]);
+  const blocked = new Set<string>();
+  subSnap.docs.forEach((doc) => blocked.add(doc.id));
+  blockedSnap.docs.forEach((doc) => {
+    const other = String(doc.get("blockedUserId") ?? "");
+    if (other) blocked.add(other);
+  });
+  blockerSnap.docs.forEach((doc) => {
+    const other = String(doc.get("blockerId") ?? "");
+    if (other) blocked.add(other);
+  });
+  return blocked;
+}
+
+function parsePendingPhotoPath(name: string): {uid: string; imageId: string} | null {
+  const match = name.match(/^users\/([^/]+)\/profile\/pending\/([^/]+)$/);
+  if (!match) {
+    return null;
+  }
+  const [, uid, rawId] = match;
+  const imageId = rawId.replace(/\.(jpg|jpeg|png|webp)$/i, "");
+  if (!uid || !imageId) {
+    return null;
+  }
+  return {uid, imageId};
+}
+
 export const getDiscoveryCandidates = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  const callerAccount = await db.doc(`users/${uid}`).get();
+  if (!isAccountEligible(callerAccount.data())) {
+    throw new HttpsError("permission-denied", "account-suspended");
+  }
   const allowedRadii = new Set([5, 10, 25, 50, 100]);
   const requested = Number(request.data?.radiusKm ?? 25);
   const radiusKm = allowedRadii.has(requested) ? requested : 25;
   const limit = Math.min(Math.max(Number(request.data?.limit ?? 10), 1), 20);
   const cursor = String(request.data?.cursor ?? "");
-  const [prefsSnap, locationSnap, blockedSnap, likesSnap, passedSnap, boosted] = await Promise.all([
+  const [prefsSnap, viewerProfileSnap, locationSnap, blocked, likesSnap, passedSnap, boosted, activeMatches] =
+    await Promise.all([
     db.doc(`userPreferences/${uid}`).get(),
+    db.doc(`profiles/${uid}`).get(),
     db.doc(`userLocation/${uid}`).get(),
-    db.collection(`users/${uid}/blockedUsers`).get(),
+    loadBlockedUserIds(uid),
     db.collection("likes").where("fromUserId", "==", uid).get(),
     db.collection(`users/${uid}/passedUsers`).get(),
     loadActiveBoostedUserIds(db),
+    loadActiveMatchPartnerIds(db, uid),
   ]);
-  const blocked = new Set(blockedSnap.docs.map((doc) => doc.id));
   const seen = new Set(likesSnap.docs.map((doc) => String(doc.get("toUserId") ?? "")));
   for (const doc of passedSnap.docs) seen.add(doc.id);
+  for (const partner of activeMatches) seen.add(partner);
   seen.add(uid);
   const prefs = prefsSnap.data() ?? {};
+  if (prefs.discoveryEnabled === false) {
+    return {items: [], nextCursor: null};
+  }
+  const viewerProfile = viewerProfileSnap.data() ?? {};
   const lang = await userLanguage(uid);
   const minAge = Number(prefs.minAge ?? 18);
   const maxAge = Number(prefs.maxAge ?? 99);
@@ -110,15 +183,47 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
     }
   }
   const profiles = await query.get();
+  // lastActiveAt is on private users/{uid}. Filter here so inactive
+  // profiles never reach the client. Window: 90 days. Missing field = new user.
+  const candidateUids = profiles.docs.map((doc) => doc.id);
+  const [lastActiveByUid, accountsByUid, preferencesByUid] = await Promise.all([
+    loadLastActiveAt(db, candidateUids),
+    loadUserAccounts(candidateUids),
+    loadPreferencesByUid(db, candidateUids),
+  ]);
   const items: Array<Record<string, unknown>> = [];
   let lastUid: string | null = null;
   for (const doc of profiles.docs) {
     lastUid = doc.id;
     if (seen.has(doc.id) || blocked.has(doc.id)) continue;
+    if (!passesSmokeDiscoveryIsolation(callerAccount.data(), accountsByUid.get(doc.id))) {
+      continue;
+    }
+    if (!isActiveForDiscovery(lastActiveByUid.get(doc.id))) continue;
     if (await isBlocked(uid, doc.id)) continue;
     const data = doc.data();
-    const age = Number(data.age ?? 0);
-    if (age && (age < minAge || age > maxAge)) continue;
+    if (
+      !passesDiscoveryProfileFilters({
+        candidateProfile: data,
+        candidateAccount: accountsByUid.get(doc.id),
+        minAge,
+        maxAge,
+      })
+    ) {
+      continue;
+    }
+    if (
+      !passesGenderPreferences({
+        viewerPrefs: prefs,
+        viewerProfile,
+        candidatePrefs: preferencesByUid.get(doc.id) ?? {},
+        candidateProfile: data,
+      })
+    ) {
+      continue;
+    }
+    const age = resolveProfileAge(data);
+    if (age === null) continue;
     let distanceKm: number | null = null;
     let label: string | null = null;
     if (origin?.latitude != null && origin?.longitude != null) {
@@ -137,24 +242,33 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
       }
     }
     const compat = compatibility(prefs, data);
+    const music = await musicScoreForPair(uid, doc.id);
+    const relationship = await relationshipScoreForPair(uid, doc.id);
+    const reasons = [...compat.reasons];
+    if (music && music.score >= 40) {
+      reasons.push("Similar music taste");
+    }
+    if (relationship && relationship.alignedCount >= 1) {
+      reasons.push("Similar relationship views");
+    }
     items.push({
       uid: doc.id,
       profile: {
-        uid: doc.id,
-        displayName: data.displayName ?? "",
-        age: data.age ?? null,
-        gender: data.gender ?? null,
-        bio: data.bio ?? null,
-        photos: data.photos ?? [],
-        interests: data.interests ?? [],
-        relationshipGoal: data.relationshipGoal ?? null,
-        city: data.city ?? null,
+        ...publicProfileProjection({...data, uid: doc.id}),
       },
       distanceLabel: label,
       distanceKm,
       compatibilityScore: compat.score,
+      musicCompatibilityScore: music?.score ?? null,
+      musicRankingBonus: music ? musicRankingBonus(music.score) : 0,
+      sharedMusicArtists: music?.sharedArtists.slice(0, 3) ?? [],
+      sharedMusicTracks: music?.sharedTracks.slice(0, 3) ?? [],
+      relationshipCompatibilityScore: relationship?.score ?? null,
+      relationshipSharedViewCount: relationship?.sharedQuestionCount ?? null,
+      relationshipAlignedCount: relationship?.alignedCount ?? null,
+      relationshipSummaryTopics: relationship?.topTopics ?? [],
       sharedInterests: compat.sharedInterests,
-      compatibilityReasons: compat.reasons,
+      compatibilityReasons: reasons,
     });
   }
   const ranked = sortByBoostVisibility(items, boosted).slice(0, limit);
@@ -170,6 +284,46 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   const action = String(request.data?.action ?? "like");
   if (!candidateUid || candidateUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid candidate.");
+  }
+  const [callerAccount, callerProfileSnap, callerPrefsSnap, candidateProfile, candidatePrefsSnap, candidateAccountSnap, activeMatches] =
+    await Promise.all([
+    db.doc(`users/${uid}`).get(),
+    db.doc(`profiles/${uid}`).get(),
+    db.doc(`userPreferences/${uid}`).get(),
+    db.doc(`profiles/${candidateUid}`).get(),
+    db.doc(`userPreferences/${candidateUid}`).get(),
+    db.doc(`users/${candidateUid}`).get(),
+    loadActiveMatchPartnerIds(db, uid),
+  ]);
+  if (!isAccountEligible(callerAccount.data())) {
+    throw new HttpsError("permission-denied", "account-suspended");
+  }
+  if (activeMatches.has(candidateUid)) {
+    throw new HttpsError("failed-precondition", "already-matched");
+  }
+  const callerPrefs = callerPrefsSnap.data() ?? {};
+  const minAge = Number(callerPrefs.minAge ?? 18);
+  const maxAge = Number(callerPrefs.maxAge ?? 99);
+  if (
+    !candidateProfile.exists ||
+    !passesDiscoveryProfileFilters({
+      candidateProfile: candidateProfile.data(),
+      candidateAccount: candidateAccountSnap.data(),
+      minAge,
+      maxAge,
+    })
+  ) {
+    throw new HttpsError("failed-precondition", "candidate-unavailable");
+  }
+  if (
+    !passesGenderPreferences({
+      viewerPrefs: callerPrefs,
+      viewerProfile: callerProfileSnap.data() ?? {},
+      candidatePrefs: candidatePrefsSnap.data() ?? {},
+      candidateProfile: candidateProfile.data() ?? {},
+    })
+  ) {
+    throw new HttpsError("failed-precondition", "preference-mismatch");
   }
   if (await isBlocked(uid, candidateUid)) {
     throw new HttpsError("failed-precondition", "blocked");
@@ -206,9 +360,10 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
     if (snap.exists && snap.data()?.isActive === true) {
       return;
     }
+    const existing = snap.data();
     tx.set(matchRef, {
       userIds: [uid, candidateUid].sort(),
-      createdAt: FieldValue.serverTimestamp(),
+      createdAt: existing?.createdAt ?? FieldValue.serverTimestamp(),
       lastMessage: null,
       lastMessageAt: FieldValue.serverTimestamp(),
       isActive: true,
@@ -216,6 +371,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
       unmatchedAt: null,
       unreadCounts: {[uid]: 0, [candidateUid]: 0},
       isNewFor: {[uid]: true, [candidateUid]: true},
+      ...preservedMatchScoreFields(existing),
     });
   });
   return {matched: true, matchId};
@@ -274,11 +430,24 @@ export const exportMyData = onCall(callableOptions, async (request) => {
 });
 
 export const onProfilePhotoUploaded = onObjectFinalized(
-  {region: "europe-west1"},
+  {region: "us-east1"},
   async (event) => {
     const name = event.data.name ?? "";
-    if (!name.includes("/profile/pending/")) return;
-    logger.info("Photo queued for moderation", {name});
+    const parsed = parsePendingPhotoPath(name);
+    if (!parsed) {
+      return;
+    }
+    const {uid, imageId} = parsed;
+    const bucket = getStorage().bucket(event.data.bucket);
+    await processPendingProfilePhoto({
+      db,
+      bucket,
+      uid,
+      imageId,
+      pendingPath: name,
+      contentType: event.data.contentType,
+      sizeBytes: Number(event.data.size ?? 0),
+    });
   },
 );
 
@@ -296,9 +465,11 @@ export const retentionCleanup = onSchedule(
     const staleCalls = await db.collection("calls").where("endedAt", "<", cutoff).limit(200).get();
     for (const doc of staleCalls.docs) batch.delete(doc.ref);
     await batch.commit();
+    const retriedPhotos = await retryStaleProcessingPhotos(db, getStorage().bucket());
     logger.info("Retention cleanup complete", {
       notifications: staleNotifications.size,
       calls: staleCalls.size,
+      retriedPhotos,
     });
   },
 );
@@ -317,10 +488,12 @@ export const syncAuthAccount = onCall(callableOptions, async (request) => {
       phoneNumber,
       phoneVerified: Boolean(phoneNumber),
       lastLoginAt: FieldValue.serverTimestamp(),
+      lastActiveAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     },
     {merge: true},
   );
+  await ensureMatchScore(uid);
   return {ok: true};
 });
 

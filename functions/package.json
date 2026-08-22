@@ -2,11 +2,12 @@
   "name": "mevora-functions",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": "20"
   },
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
+    "test": "npm run build && node --test test/discoveryActivity.test.cjs test/discoveryMatching.test.cjs test/profileSafety.test.cjs test/reportCompliance.test.cjs test/photoModeration.test.cjs test/matchScore.test.cjs test/relationshipMatch.test.cjs test/boostActivation.test.cjs test/messageRateLimit.test.cjs",
     "serve": "npm run build && firebase emulators:start --only functions"
   },
   "dependencies": {

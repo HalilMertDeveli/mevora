@@ -53,8 +53,10 @@ export const deleteUserAccount = onCall(
 
     const userSnap = await db.doc(`users/${uid}`).get();
     const spotifyId = userSnap.data()?.spotifyId as string | undefined;
+    const musicSnap = await db.doc(`users/${uid}/music/summary`).get();
+    const musicSpotifyId = musicSnap.data()?.spotifyUserId as string | undefined;
 
-    const [devices, tokens, blocked, notifs, likesFrom, likesTo, boosts, wallet] = await Promise.all([
+    const [devices, tokens, blocked, notifs, likesFrom, likesTo, boosts, wallet, scoreHistory, feedback, pendingFeedback, relationshipAnswers] = await Promise.all([
       db.collection(`users/${uid}/devices`).get(),
       db.collection(`users/${uid}/fcmTokens`).get(),
       db.collection(`users/${uid}/blockedUsers`).get(),
@@ -63,6 +65,10 @@ export const deleteUserAccount = onCall(
       db.collection("likes").where("toUserId", "==", uid).get(),
       db.collection(`users/${uid}/boosts`).get(),
       db.collection(`users/${uid}/boostWallet`).get(),
+      db.collection(`users/${uid}/matchScoreHistory`).get(),
+      db.collection(`users/${uid}/matchFeedback`).get(),
+      db.collection(`users/${uid}/pendingMatchFeedback`).get(),
+      db.collection(`users/${uid}/relationshipAnswers`).get(),
     ]);
     await batchDelete([
       ...devices.docs.map((d) => d.ref),
@@ -73,6 +79,10 @@ export const deleteUserAccount = onCall(
       ...likesTo.docs.map((d) => d.ref),
       ...boosts.docs.map((d) => d.ref),
       ...wallet.docs.map((d) => d.ref),
+      ...scoreHistory.docs.map((d) => d.ref),
+      ...feedback.docs.map((d) => d.ref),
+      ...pendingFeedback.docs.map((d) => d.ref),
+      ...relationshipAnswers.docs.map((d) => d.ref),
     ]);
 
     const matches = await db.collection("matches").where("userIds", "array-contains", uid).get();
@@ -93,7 +103,6 @@ export const deleteUserAccount = onCall(
     }
 
     await deleteQuery("reports", "reporterId", uid);
-    await deleteQuery("reports", "reportedUserId", uid);
     await deleteQuery("blocks", "blockerId", uid);
     await deleteQuery("blocks", "blockedUserId", uid);
     await deleteQuery("calls", "callerId", uid);
@@ -105,9 +114,15 @@ export const deleteUserAccount = onCall(
     if (spotifyId) {
       await db.doc(`spotifyIndex/${spotifyId}`).delete().catch(() => undefined);
     }
+    if (musicSpotifyId) {
+      await db.doc(`musicSpotifyIndex/${musicSpotifyId}`).delete().catch(() => undefined);
+    }
 
     await batchDelete([
       db.doc(`users/${uid}`),
+      db.doc(`users/${uid}/music/summary`),
+      db.doc(`users/${uid}/relationshipMatch/summary`),
+      db.doc(`spotifySecrets/${uid}`),
       db.doc(`profiles/${uid}`),
       db.doc(`userPreferences/${uid}`),
       db.doc(`userSettings/${uid}`),

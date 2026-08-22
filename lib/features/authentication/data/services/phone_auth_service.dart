@@ -43,7 +43,7 @@ class PhoneAuthService implements FirebaseAuthDataSource {
     final existing = _inFlightSend;
     if (existing != null && !existing.isCompleted) {
       throw const AuthException(
-        AuthMessages.smsFailed,
+        AuthMessages.smsInFlight,
         kind: AuthErrorKind.smsFailed,
       );
     }
@@ -55,7 +55,7 @@ class PhoneAuthService implements FirebaseAuthDataSource {
       await _firebaseAuth.verifyPhoneNumber(
         phoneNumber: e164Phone,
         forceResendingToken: forceResendingToken,
-        timeout: const Duration(seconds: 120),
+        timeout: const Duration(seconds: 60),
         verificationCompleted: (credential) {
           _autoCredential = credential;
           if (!completer.isCompleted) {
@@ -72,6 +72,12 @@ class PhoneAuthService implements FirebaseAuthDataSource {
           }
         },
         verificationFailed: (error) {
+          // Log Firebase code only — never the phone number or SMS body.
+          // ignore: avoid_print
+          print(
+            'PhoneAuth verificationFailed code=${error.code} '
+            'message=${error.message}',
+          );
           if (!completer.isCompleted) {
             completer.completeError(AuthErrorMapper.map(error));
           }
@@ -90,12 +96,33 @@ class PhoneAuthService implements FirebaseAuthDataSource {
             );
           }
         },
-        codeAutoRetrievalTimeout: (_) {
-          // Do not treat auto-retrieval timeout as "SMS sent".
+        codeAutoRetrievalTimeout: (verificationId) {
+          // If codeSent already completed the future, this is a no-op.
+          // If verification never reached codeSent (stuck reCAPTCHA / Integrity),
+          // fail instead of hanging until the outer timeout.
+          if (!completer.isCompleted && verificationId.isNotEmpty) {
+            _sendCount += 1;
+            completer.complete(
+              PhoneChallenge(
+                verificationId: verificationId,
+                e164Phone: e164Phone,
+                maskedPhone: PhoneMask.mask(e164Phone),
+                resendToken: forceResendingToken,
+                resendAttempt: resendAttempt,
+              ),
+            );
+          } else if (!completer.isCompleted) {
+            completer.completeError(
+              const AuthException(
+                AuthMessages.smsFailed,
+                kind: AuthErrorKind.smsFailed,
+              ),
+            );
+          }
         },
       );
       return await completer.future.timeout(
-        const Duration(seconds: 120),
+        const Duration(seconds: 75),
         onTimeout: () {
           throw const AuthException(
             AuthMessages.smsFailed,

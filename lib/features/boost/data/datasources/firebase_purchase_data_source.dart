@@ -70,12 +70,6 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
         if (transaction.receiptData != null)
           'receiptData': transaction.receiptData,
       });
-      if (data['alreadyActive'] == true) {
-        throw const PurchaseException(
-          AppStrings.boostAlreadyActive,
-          kind: PurchaseErrorKind.alreadyActive,
-        );
-      }
       final purchase = _mapOf(data['purchase']);
       final wallet = _mapOf(data['wallet']);
       final purchaseId = purchase?['purchaseId'] as String? ??
@@ -84,9 +78,10 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
         purchaseId: purchaseId,
         productId:
             purchase?['productId'] as String? ?? transaction.productId,
-        boostCount: _intOf(purchase?['boostCount'], fallback: 1),
+        boostCount: _intOf(purchase?['boostCount'], fallback: 0),
         balance: _intOf(wallet?['balance']),
         alreadyProcessed: data['alreadyProcessed'] == true,
+        boost: _boostFromMap(data['boost']),
       );
     } on PurchaseException {
       rethrow;
@@ -213,9 +208,10 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
             id: doc.id,
             type: BoostHistoryType.purchase,
             productId: data['productId'] as String? ?? '',
-            boostCount: _intOf(data['boostCount'], fallback: 1),
+            boostCount: _intOf(data['boostCount'], fallback: 0),
             createdAt: _dateOf(data['createdAt']) ?? _clock(),
             status: data['status'] as String?,
+            platform: data['platform'] as String?,
           );
         }),
         ...boosts.docs.map((doc) {

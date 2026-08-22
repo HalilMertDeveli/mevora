@@ -161,10 +161,6 @@ class FirebaseProfileDataSource {
           : profile.lifestyleProfile.toTags(),
       'lifestyleProfile': profile.lifestyleProfile.toMap(),
       'onboardingStep': profile.onboardingStep.name,
-      'profileCompleted': profile.profileCompleted,
-      'onboardingCompleted': profile.onboardingCompleted,
-      'isProfileComplete': profile.isProfileComplete,
-      'isDiscoverable': profile.isDiscoverable,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }

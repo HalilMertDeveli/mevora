@@ -11,6 +11,9 @@ import 'package:mevora/core/di/boost_services_factory.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/di/discovery_services_factory.dart';
 import 'package:mevora/core/di/location_services_factory.dart';
+import 'package:mevora/core/di/match_score_services_factory.dart';
+import 'package:mevora/core/di/music_services_factory.dart';
+import 'package:mevora/core/di/relationship_services_factory.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_services_factory.dart';
 import 'package:mevora/core/errors/error_handler.dart';
@@ -24,9 +27,9 @@ import 'package:mevora/core/services/firebase/firebase_bootstrap.dart';
 import 'package:mevora/core/services/firebase/firebase_crash_reporter.dart';
 import 'package:mevora/core/services/permissions/permission_handler_permission_service.dart';
 import 'package:mevora/core/theme/app_theme.dart';
-import 'package:rive/rive.dart' as rive;
 import 'package:mevora/features/authentication/data/auth_composition.dart';
 import 'package:mevora/features/authentication/data/services/google_auth_service.dart';
+import 'package:mevora/features/authentication/data/services/spotify_auth_service.dart';
 import 'package:mevora/features/authentication/data/services/reauth_service.dart';
 import 'package:mevora/features/location/data/location_analytics.dart';
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
@@ -40,18 +43,14 @@ Future<void> bootstrap(AppEnvironment environment) async {
   WidgetsFlutterBinding.ensureInitialized();
   ImageCachePolicy.apply();
 
-  try {
-    await rive.RiveNative.init();
-  } on Object {
-    // Rive is optional. Screens fall back to Flutter widgets.
-  }
-
   final config = AppConfig(environment: environment);
   final logger = AppLogger(environment: environment);
 
   try {
     await FirebaseBootstrap(logger: logger).initialize(config);
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    if (!environment.isDevelopment) {
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    }
   } on Object catch (error, stackTrace) {
     logger.error(
       'Firebase initialization failed',
@@ -67,14 +66,18 @@ Future<void> bootstrap(AppEnvironment environment) async {
     crashReporter: const FirebaseCrashReporter(),
   );
   ErrorWidget.builder = (details) {
-    return Theme(
-      data: AppTheme.light(),
-      child: const MevoraErrorView(),
-    );
+    return Theme(data: AppTheme.light(), child: const MevoraErrorView());
   };
 
-  final authController = createAuthController(config: config, logger: logger);
-  final googleAuth = GoogleAuthService(serverClientId: config.googleWebClientId);
+  final spotifyAuthService = SpotifyAuthService(config: config);
+  final authController = createAuthController(
+    config: config,
+    logger: logger,
+    spotifyAuthService: spotifyAuthService,
+  );
+  final googleAuth = GoogleAuthService(
+    serverClientId: config.googleWebClientId,
+  );
   final settingsServices = createSettingsServices(
     reauthService: ReauthService(googleAuthService: googleAuth),
   );
@@ -89,6 +92,15 @@ Future<void> bootstrap(AppEnvironment environment) async {
     config: config,
     demoHub: demoHub,
     currentUid: () => uidSource.currentUid ?? 'self',
+  );
+  final musicServices = createMusicServices(
+    config: config,
+    spotifyAuthService: spotifyAuthService,
+  );
+  final relationshipServices = createRelationshipServices(config: config);
+  final matchScoreServices = createMatchScoreServices(
+    config: config,
+    uidSource: uidSource,
   );
   final socialServices = createFirebaseSocialServices(
     uidSource: uidSource,
@@ -128,6 +140,9 @@ Future<void> bootstrap(AppEnvironment environment) async {
       locationRepository: locationServices.locationRepository,
       locationController: locationController,
       discoveryRepository: discoveryServices.discoveryRepository,
+      musicRepository: musicServices.repository,
+      relationshipRepository: relationshipServices.repository,
+      matchScoreRepository: matchScoreServices.repository,
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,
       analytics: analytics,

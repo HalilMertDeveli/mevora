@@ -34,4 +34,9 @@ class VideoCallServiceImpl implements VideoCallService {
   Stream<CallSession> watchIncoming(String uid) {
     return _repository.watchIncoming(uid).expand((calls) => calls);
   }
+
+  @override
+  Stream<CallSession?> watchCall(String callId) {
+    return _repository.watchCall(callId);
+  }
 }

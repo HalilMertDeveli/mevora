@@ -94,12 +94,16 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
       duration: pack.duration,
       displayOrder: pack.displayOrder,
       boostCount: pack.boostCount,
+      featured: pack.featured,
       fallbackPrice: pack.fallbackPriceLabel,
     );
   }
 
+  var _purchaseInFlight = false;
+
   @override
   Future<Result<StoreTransaction>> purchaseBoost(BoostProduct product) async {
+    _purchaseInFlight = true;
     try {
       final pending = _store.purchaseEvents
           .where(
@@ -139,6 +143,8 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
       );
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
+    } finally {
+      _purchaseInFlight = false;
     }
   }
 
@@ -177,6 +183,9 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
         userId: userId,
         transaction: transaction,
       );
+      if (credited.boost != null) {
+        _cache.set(_cacheKeyFor(userId), _CachedBoost(credited.boost));
+      }
       return Success(credited);
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
@@ -256,11 +265,58 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
   @override
   Future<Result<Boost?>> restorePurchases(String userId) async {
     try {
+      final expectedUid = _uidSource.currentUid;
+      if (expectedUid == null || expectedUid != userId) {
+        return const Err(
+          PurchaseFailure(
+            AppStrings.boostVerificationFailed,
+            kind: PurchaseErrorKind.verificationFailed,
+          ),
+        );
+      }
+      final restored = <String>{};
+      final sub = _store.purchaseEvents.listen((event) {
+        final transaction = event.transaction;
+        if (transaction == null) {
+          return;
+        }
+        if (event.status != StorePurchaseStatus.purchased &&
+            event.status != StorePurchaseStatus.restored) {
+          return;
+        }
+        if (!restored.add(transaction.transactionId)) {
+          return;
+        }
+        unawaited(_redeemUnfinished(userId, transaction));
+      });
       await _store.restore();
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await sub.cancel();
       _cache.invalidate(_cacheKeyFor(userId));
       return getActiveBoost(userId);
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
+    }
+  }
+
+  Future<void> _redeemUnfinished(
+    String userId,
+    StoreTransaction transaction,
+  ) async {
+    if (_purchaseInFlight) {
+      return;
+    }
+    try {
+      final credited = await _remote.verifyPurchase(
+        userId: userId,
+        transaction: transaction,
+      );
+      await _store.complete(transaction);
+      if (credited.boost != null) {
+        _cache.set(_cacheKeyFor(userId), _CachedBoost(credited.boost));
+      }
+    } on Object {
+      return;
     }
   }
 

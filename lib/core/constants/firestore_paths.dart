@@ -22,6 +22,12 @@ abstract final class FirestorePaths {
   static const String blockedUsers = 'blockedUsers';
   static const String messages = 'messages';
   static const String fcmTokens = 'fcmTokens';
+  static const String scoreHistory = 'matchScoreHistory';
+  static const String matchFeedback = 'matchFeedback';
+  static const String pendingFeedback = 'pendingMatchFeedback';
+  static const String relationshipAnswers = 'relationshipAnswers';
+  static const String relationshipMatch = 'relationshipMatch';
+  static const String relationshipSeen = 'relationshipSeen';
 
   static String user(String uid) => '$users/$uid';
 
@@ -70,6 +76,14 @@ abstract final class FirestorePaths {
 
   static String presence(String uid) => '$users/$uid/presence/current';
 
+  static String matchScoreHistory(String uid) => '$users/$uid/$scoreHistory';
+
+  static String matchFeedbackDoc(String uid, String matchId) =>
+      '$users/$uid/$matchFeedback/$matchId';
+
+  static String pendingMatchFeedback(String uid) =>
+      '$users/$uid/$pendingFeedback';
+
   static String purchase(String purchaseId) => '$purchases/$purchaseId';
 
   static String userBoosts(String uid) => '$users/$uid/$boosts';
@@ -81,6 +95,15 @@ abstract final class FirestorePaths {
       '$users/$uid/$boostWallet/current';
 
   static String boostProduct(String productId) => '$boostProducts/$productId';
+
+  static String relationshipAnswer(String uid, String questionId) =>
+      '$users/$uid/$relationshipAnswers/$questionId';
+
+  static String relationshipMatchSummary(String uid) =>
+      '$users/$uid/$relationshipMatch/summary';
+
+  static String relationshipSeenDoc(String uid, String otherUid) =>
+      '$users/$uid/$relationshipSeen/$otherUid';
 }
 
 abstract final class StoragePaths {
@@ -96,7 +119,8 @@ abstract final class StoragePaths {
   static String profilePending({
     required String ownerUid,
     required String imageId,
-  }) => 'users/$ownerUid/profile/pending/$imageId';
+    String extension = 'jpg',
+  }) => 'users/$ownerUid/profile/pending/$imageId.$extension';
 
   /// Canonical client upload path. Unique [imageId] so photos are never overwritten.
   static String profilePhoto({
@@ -119,7 +143,29 @@ abstract final class StoragePaths {
     required String ownerUid,
     required String matchId,
     required String messageId,
+    String extension = 'jpg',
   }) {
-    return 'users/$ownerUid/chat/$matchId/$messageId';
+    return 'users/$ownerUid/chat/$matchId/$messageId.$extension';
   }
+
+  static String chatVoice({
+    required String ownerUid,
+    required String matchId,
+    required String messageId,
+    String extension = 'm4a',
+  }) {
+    return 'users/$ownerUid/chat/$matchId/$messageId.$extension';
+  }
+
+  static const int maxChatImageBytes = 5 * 1024 * 1024;
+  static const int maxChatVoiceBytes = 8 * 1024 * 1024;
+
+  static const Set<String> allowedChatAudioTypes = {
+    'audio/mp4',
+    'audio/m4a',
+    'audio/x-m4a',
+    'audio/aac',
+    'audio/mpeg',
+    'audio/wav',
+  };
 }

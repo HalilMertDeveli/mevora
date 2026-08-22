@@ -16,6 +16,13 @@ abstract final class AuthErrorMapper {
         cause: error,
       );
     }
+    if (_looksLikeAppVerification(error)) {
+      return AuthException(
+        AuthMessages.appVerification,
+        kind: AuthErrorKind.appVerification,
+        cause: error,
+      );
+    }
     final code = _codeOf(error);
     return fromCode(code, cause: error);
   }
@@ -26,6 +33,14 @@ abstract final class AuthErrorMapper {
       return AuthException(
         AuthMessages.billingNotEnabled,
         kind: AuthErrorKind.billingNotEnabled,
+        cause: cause,
+      );
+    }
+    if (_looksLikeAppVerification(cause) ||
+        _haystackContainsAppVerification(code)) {
+      return AuthException(
+        AuthMessages.appVerification,
+        kind: AuthErrorKind.appVerification,
         cause: cause,
       );
     }
@@ -61,7 +76,8 @@ abstract final class AuthErrorMapper {
       'captcha-check-failed' ||
       'missing-client-identifier' ||
       'invalid-app-credential' ||
-      'app-not-authorized' ||
+      'app-not-authorized' =>
+        AuthErrorKind.appVerification,
       'sms-region-restricted' ||
       'sms-region-restriction' =>
         AuthErrorKind.smsFailed,
@@ -93,16 +109,20 @@ abstract final class AuthErrorMapper {
         AuthErrorKind.accountExists,
       'email-already-in-use' => AuthErrorKind.emailInUse,
       'linking-blocked' => AuthErrorKind.linkingBlocked,
-      'user-mismatch' || 'no-such-provider' => AuthErrorKind.oauth,
+      'user-mismatch' ||
+      'no-such-provider' ||
+      'oauth' ||
+      'clientconfigurationerror' ||
+      'client-configuration-error' =>
+        AuthErrorKind.oauth,
+      'token-expired' => AuthErrorKind.sessionExpired,
+      'permission-denied' || 'api-denied' => AuthErrorKind.oauth,
       'billing-not-enabled' => AuthErrorKind.billingNotEnabled,
       'operation-not-allowed' ||
       'not-configured' ||
       'providerconfigurationerror' ||
       'provider-configuration-error' =>
         AuthErrorKind.notConfigured,
-      'clientconfigurationerror' ||
-      'client-configuration-error' =>
-        AuthErrorKind.oauth,
       'invalid-email' => AuthErrorKind.invalidEmail,
       'weak-password' => AuthErrorKind.weakPassword,
       'user-not-found' => AuthErrorKind.userNotFound,
@@ -119,6 +139,7 @@ abstract final class AuthErrorMapper {
       AuthErrorKind.cancelled => AuthMessages.cancelled,
       AuthErrorKind.invalidPhone => AuthMessages.invalidPhone,
       AuthErrorKind.smsFailed => AuthMessages.smsFailed,
+      AuthErrorKind.appVerification => AuthMessages.appVerification,
       AuthErrorKind.invalidOtp => AuthMessages.invalidOtp,
       AuthErrorKind.expiredOtp => AuthMessages.expiredOtp,
       AuthErrorKind.sessionExpired => AuthMessages.sessionExpired,
@@ -153,6 +174,16 @@ abstract final class AuthErrorMapper {
     return _haystackContainsBilling(code) || _haystackContainsBilling(message);
   }
 
+  static bool _looksLikeAppVerification(Object? error) {
+    if (error == null) {
+      return false;
+    }
+    final code = _codeOf(error);
+    final message = _messageOf(error);
+    return _haystackContainsAppVerification(code) ||
+        _haystackContainsAppVerification(message);
+  }
+
   static bool _haystackContainsBilling(String? value) {
     if (value == null || value.isEmpty) {
       return false;
@@ -160,6 +191,25 @@ abstract final class AuthErrorMapper {
     final haystack = value.toLowerCase().replaceAll('_', '-');
     return haystack.contains('billing-not-enabled') ||
         haystack.contains('17499');
+  }
+
+  static bool _haystackContainsAppVerification(String? value) {
+    if (value == null || value.isEmpty) {
+      return false;
+    }
+    final haystack = value.toLowerCase().replaceAll('_', '-');
+    return haystack.contains('missing-client-identifier') ||
+        haystack.contains('invalid-app-credential') ||
+        haystack.contains('captcha-check-failed') ||
+        haystack.contains('playintegrity') ||
+        haystack.contains('play-integrity') ||
+        haystack.contains('safetynet') ||
+        haystack.contains('recaptcha') ||
+        haystack.contains('app not recognized') ||
+        haystack.contains('package certificate') ||
+        haystack.contains('18002') ||
+        haystack.contains('17028') ||
+        haystack.contains('17010');
   }
 
   static String? _codeOf(Object error) {

@@ -32,32 +32,30 @@ void main() {
   test('load shows store product without activating', () async {
     await controller.load();
     expect(controller.state.status, PurchaseUiStatus.productLoaded);
-    expect(controller.state.product?.localizedPrice, '₺49,99');
+    expect(controller.state.product?.localizedPrice, '₺99,99');
     expect(controller.state.hasActiveBoost, isFalse);
     expect(controller.state.products, isNotEmpty);
   });
 
-  test('already active boost blocks a second activation, not a pack purchase', () async {
+  test('already active boost still allows buying another duration pack', () async {
     repository.wallet = const BoostWallet(balance: 2);
     await repository.activateBoost('u1');
     await controller.load();
-    expect(controller.state.message, AppStrings.boostAlreadyActive);
-    await controller.activate();
-    expect(controller.state.message, AppStrings.boostAlreadyActive);
+    expect(controller.state.hasActiveBoost, isTrue);
     await controller.purchase();
     expect(repository.verifyCalled, isTrue);
-    expect(controller.state.status, PurchaseUiStatus.credited);
+    expect(controller.state.status, PurchaseUiStatus.success);
+    expect(controller.state.hasActiveBoost, isTrue);
   });
 
-  test('purchase waits for backend before crediting copy', () async {
+  test('purchase waits for backend then activates Boost', () async {
     await controller.load();
     await controller.purchase();
     expect(repository.purchaseCalled, isTrue);
     expect(repository.verifyCalled, isTrue);
-    expect(controller.state.status, PurchaseUiStatus.credited);
-    expect(controller.state.message, AppStrings.boostCreditedTitle);
-    expect(controller.state.hasActiveBoost, isFalse);
-    expect(controller.state.balance, 1);
+    expect(controller.state.status, PurchaseUiStatus.success);
+    expect(controller.state.message, AppStrings.boostSuccessTitle);
+    expect(controller.state.hasActiveBoost, isTrue);
     expect(repository.lastCompleted?.transactionId, 'GPA.1234');
   });
 

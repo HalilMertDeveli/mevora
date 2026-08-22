@@ -9,6 +9,7 @@ import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/animations/mevora_status_motion.dart';
+import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
 class OnboardingPhotoGrid extends StatelessWidget {
@@ -121,8 +122,8 @@ class _PhotoTile extends StatelessWidget {
     final bytes = draft.localBytes;
     if (bytes != null && bytes.isNotEmpty) {
       image = MemoryImage(Uint8List.fromList(bytes));
-    } else if (draft.remote?.downloadUrl != null) {
-      image = NetworkImage(draft.remote!.downloadUrl!);
+    } else if (MevoraNetworkImages.isHttpUrl(draft.remote?.downloadUrl)) {
+      image = MevoraNetworkImages.provider(draft.remote!.downloadUrl);
     }
 
     return ListTile(

@@ -49,6 +49,7 @@ class MevoraRiveAnimation extends StatefulWidget {
 class _MevoraRiveAnimationState extends State<MevoraRiveAnimation> {
   static final Set<String> _missingAssets = <String>{};
   static final Set<String> _availableAssets = <String>{};
+  static Future<bool>? _nativeInit;
 
   rive.FileLoader? _loader;
   bool _assetReady = false;
@@ -114,6 +115,27 @@ class _MevoraRiveAnimationState extends State<MevoraRiveAnimation> {
       }
     }
 
+    _nativeInit ??= () async {
+      try {
+        await rive.RiveNative.init();
+        return true;
+      } on Object {
+        return false;
+      }
+    }();
+    if (!await _nativeInit!) {
+      _missingAssets.add(asset);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loader = null;
+        _assetMissing = true;
+        _assetReady = true;
+      });
+      return;
+    }
+
     if (!mounted) {
       return;
     }
@@ -134,10 +156,13 @@ class _MevoraRiveAnimationState extends State<MevoraRiveAnimation> {
 
   Widget _fallback(BuildContext context) {
     return widget.fallback ??
-        Icon(
-          Icons.auto_awesome_outlined,
-          size: (widget.height ?? widget.width ?? 40).clamp(18, 56),
-          color: Theme.of(context).colorScheme.primary,
+        SizedBox(
+          width: (widget.height ?? widget.width ?? 40).clamp(18, 40),
+          height: (widget.height ?? widget.width ?? 40).clamp(18, 40),
+          child: CircularProgressIndicator(
+            strokeWidth: 2.2,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         );
   }
 
@@ -153,6 +178,78 @@ class _MevoraRiveAnimationState extends State<MevoraRiveAnimation> {
     };
   }
 
+  Iterable<rive.ArtboardSelector> get _artboardSelectors {
+    final name = widget.artboardName;
+    if (name != null) {
+      return [rive.ArtboardNamed(name)];
+    }
+    return const [rive.ArtboardDefault(), rive.ArtboardAtIndex(0)];
+  }
+
+  Iterable<rive.StateMachineSelector> get _stateMachineSelectors {
+    final name = widget.stateMachineName;
+    if (name != null) {
+      return [rive.StateMachineNamed(name)];
+    }
+    return const [rive.StateMachineDefault(), rive.StateMachineAtIndex(0)];
+  }
+
+  rive.RiveWidgetController _createController(rive.File file) {
+    Object? lastError;
+    for (final artboardSelector in _artboardSelectors) {
+      for (final stateMachineSelector in _stateMachineSelectors) {
+        try {
+          final controller = rive.RiveWidgetController(
+            file,
+            artboardSelector: artboardSelector,
+            stateMachineSelector: stateMachineSelector,
+          );
+          _kickPlayback(controller.stateMachine);
+          return controller;
+        } on rive.RiveArtboardException catch (error) {
+          lastError = error;
+          break;
+        } on Object catch (error) {
+          lastError = error;
+        }
+      }
+    }
+    throw lastError ??
+        rive.RiveStateMachineException(
+          'No playable artboard or state machine in ${widget.asset}.',
+        );
+  }
+
+  void _kickPlayback(rive.StateMachine machine) {
+    // Some .riv files (e.g. leftover liquid download) stay static unless
+    // Downloading/Indeterminate inputs are driven. Harmless for autoplay
+    // walk/search machines.
+    for (var i = 0; ; i++) {
+      // ignore: deprecated_member_use
+      final input = machine.inputAt(i);
+      if (input == null) {
+        break;
+      }
+      final name = input.name.toLowerCase();
+      if (input is rive.BooleanInput) {
+        if (name.contains('indeterminate') ||
+            name.contains('download') ||
+            name == 'loop' ||
+            name == 'play') {
+          input.value = true;
+        }
+      } else if (input is rive.TriggerInput) {
+        if (name.contains('indeterminate') || name == 'start') {
+          input.fire();
+        }
+      } else if (input is rive.NumberInput) {
+        if (name.contains('progress') && input.value >= 99) {
+          input.value = 0;
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
@@ -165,12 +262,7 @@ class _MevoraRiveAnimationState extends State<MevoraRiveAnimation> {
     } else {
       child = rive.RiveWidgetBuilder(
         fileLoader: loader,
-        artboardSelector: widget.artboardName == null
-            ? const rive.ArtboardDefault()
-            : rive.ArtboardNamed(widget.artboardName!),
-        stateMachineSelector: widget.stateMachineName == null
-            ? const rive.StateMachineDefault()
-            : rive.StateMachineNamed(widget.stateMachineName!),
+        controller: _createController,
         builder: (context, state) {
           if (state is rive.RiveLoaded) {
             return rive.RiveWidget(

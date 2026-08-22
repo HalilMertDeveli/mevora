@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/app_colors.dart';
@@ -16,10 +16,9 @@ class LoginHeroBackground extends StatefulWidget {
   final Widget? child;
 
   /// Disabled in widget tests so [pumpAndSettle] can complete.
-  static bool get kenBurnsEnabled =>
-      !WidgetsBinding.instance.runtimeType.toString().contains(
-        'TestWidgetsFlutterBinding',
-      );
+  static bool get kenBurnsEnabled => !WidgetsBinding.instance.runtimeType
+      .toString()
+      .contains('TestWidgetsFlutterBinding');
 
   @override
   State<LoginHeroBackground> createState() => _LoginHeroBackgroundState();
@@ -64,15 +63,15 @@ class _LoginHeroBackgroundState extends State<LoginHeroBackground>
               return _LoginPhoto(scale: scale);
             },
           ),
-        // People/dating accent in the upper hero — never intercepts taps.
+        // People/dating accent in the upper hero — compact, never full-bleed.
         const IgnorePointer(
           child: Align(
             alignment: Alignment(0, -0.72),
             child: Opacity(
               opacity: 0.88,
               child: SizedBox(
-                width: 220,
-                height: 180,
+                width: 72,
+                height: 64,
                 child: MevoraRiveAnimation(
                   asset: MevoraRiveAssets.loginAmbient,
                   fit: BoxFit.contain,

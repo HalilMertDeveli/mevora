@@ -5,13 +5,15 @@ import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
+import 'package:mevora/core/di/match_score_scope.dart';
+import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
+import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
 
 class ProfileTabPage extends StatelessWidget {
@@ -37,30 +39,10 @@ class ProfileTabPage extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.screenPadding),
         children: [
           Center(
-            child: Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                const IgnorePointer(
-                  child: Opacity(
-                    opacity: 0.55,
-                    child: MevoraRiveAnimation(
-                      asset: MevoraRiveAssets.profileAccent,
-                      width: 168,
-                      height: 168,
-                      fit: BoxFit.contain,
-                      fallback: SizedBox.shrink(),
-                    ),
-                  ),
-                ),
-                MevoraAvatar(
-                  name: user?.displayName ?? l10n.appName,
-                  image: user?.photoUrl == null
-                      ? null
-                      : NetworkImage(user!.photoUrl!),
-                  size: 96,
-                ),
-              ],
+            child: MevoraAvatar(
+              name: user?.displayName ?? l10n.appName,
+              image: MevoraNetworkImages.provider(user?.photoUrl),
+              size: 96,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -81,10 +63,17 @@ class ProfileTabPage extends StatelessWidget {
           ],
           const SizedBox(height: AppSpacing.xl),
           const _ProfileBoostTile(),
+          const _ProfileMatchScoreTile(),
+          const _ProfileRelationshipTile(),
           _ProfileTile(
             icon: Icons.edit_outlined,
             title: l10n.editProfile,
             onTap: () => context.push(AppRoutes.editProfile),
+          ),
+          _ProfileTile(
+            icon: Icons.library_music_outlined,
+            title: l10n.musicTitle,
+            onTap: () => context.go(AppRoutes.music),
           ),
           _ProfileTile(
             icon: Icons.tune_rounded,
@@ -109,6 +98,20 @@ class ProfileTabPage extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ProfileMatchScoreTile extends StatelessWidget {
+  const _ProfileMatchScoreTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = AuthScope.maybeOf(context)?.user?.id;
+    final repository = MatchScoreScope.maybeOf(context);
+    if (uid == null || repository == null) {
+      return const SizedBox.shrink();
+    }
+    return MatchScoreTile(uid: uid, repository: repository);
   }
 }
 
@@ -162,6 +165,40 @@ class _ProfileBoostTileState extends State<_ProfileBoostTile> {
           onTap: () => context.push(AppRoutes.boost),
         ),
       ),
+    );
+  }
+}
+
+class _ProfileRelationshipTile extends StatelessWidget {
+  const _ProfileRelationshipTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = RelationshipScope.controllerOf(context);
+    if (controller == null) {
+      return const SizedBox.shrink();
+    }
+    final l10n = AppLocalizations.of(context);
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Material(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            child: ListTile(
+              leading: const Icon(Icons.favorite_outline),
+              title: Text(l10n.relationshipMatchesTitle),
+              subtitle: Text(
+                l10n.relationshipProfileSubtitle(controller.answeredCount),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go(AppRoutes.matches),
+            ),
+          ),
+        );
+      },
     );
   }
 }

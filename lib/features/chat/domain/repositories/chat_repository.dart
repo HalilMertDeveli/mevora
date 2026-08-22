@@ -1,5 +1,7 @@
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 
+/// Pagination DTO. Distinct from the `ChatPage` widget — import one library
+/// at a time, or prefix.
 class ChatPage {
   const ChatPage({
     required this.messages,
@@ -8,6 +10,18 @@ class ChatPage {
 
   final List<ChatMessage> messages;
   final bool hasMore;
+}
+
+class ChatMediaBytes {
+  const ChatMediaBytes({
+    required this.bytes,
+    required this.contentType,
+    this.durationMs,
+  });
+
+  final List<int> bytes;
+  final String contentType;
+  final int? durationMs;
 }
 
 abstract class ChatRepository {
@@ -23,6 +37,25 @@ abstract class ChatRepository {
     required String matchId,
     required String receiverId,
     required String text,
+  });
+
+  Future<ChatMessage> sendImage({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  });
+
+  Future<ChatMessage> sendVoice({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  });
+
+  Future<void> deleteMessage({
+    required String matchId,
+    required String messageId,
   });
 
   Future<void> markDelivered(String matchId, List<ChatMessage> messages);

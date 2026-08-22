@@ -116,7 +116,8 @@ class DiscoveryController extends ChangeNotifier {
        _locationSync = locationSync ?? LocationSyncCoordinator(),
        _skipExplanationIfAlreadyGranted = skipExplanationIfAlreadyGranted {
     state = state.copyWith(
-      isMockMode: discoveryRepository is DemoDiscoverySupport &&
+      isMockMode:
+          discoveryRepository is DemoDiscoverySupport &&
           (discoveryRepository as DemoDiscoverySupport).supportsDemoRestart,
     );
   }
@@ -144,7 +145,9 @@ class DiscoveryController extends ChangeNotifier {
 
   Future<void> start() async {
     unawaited(refreshBoost());
-    final flags = (await _locationRepository.loadLocationFlags(uid)).valueOrNull;
+    final flags = (await _locationRepository.loadLocationFlags(
+      uid,
+    )).valueOrNull;
     if (flags?.locationOnboardingCompleted == true) {
       declinedLocation = flags?.locationEnabled != true;
       state = state.copyWith(phase: LocationPromptPhase.ready);
@@ -314,6 +317,33 @@ class DiscoveryController extends ChangeNotifier {
   Future<void> onLike(String userId) =>
       _performAction(userId, DiscoveryDecision.like);
 
+  Future<void> hideCandidate(String userId) async {
+    if (userId == uid) {
+      return;
+    }
+    if (!_actedUserIds.contains(userId)) {
+      await _discoveryRepository.recordDecision(
+        candidateUid: userId,
+        decision: DiscoveryDecision.pass,
+      );
+      _actedUserIds.add(userId);
+    }
+    _removeCandidate(userId);
+  }
+
+  void _removeCandidate(String userId) {
+    final remaining =
+        state.candidates.where((candidate) => candidate.uid != userId).toList();
+    if (remaining.length == state.candidates.length) {
+      return;
+    }
+    state = state.copyWith(candidates: remaining);
+    notifyListeners();
+    if (remaining.isEmpty) {
+      unawaited(loadCandidates());
+    }
+  }
+
   Future<void> onPass(String userId) =>
       _performAction(userId, DiscoveryDecision.pass);
 
@@ -328,10 +358,7 @@ class DiscoveryController extends ChangeNotifier {
     await _performAction(current.uid, decision);
   }
 
-  Future<void> _performAction(
-    String userId,
-    DiscoveryDecision decision,
-  ) async {
+  Future<void> _performAction(String userId, DiscoveryDecision decision) async {
     if (_isProcessingAction) {
       return;
     }

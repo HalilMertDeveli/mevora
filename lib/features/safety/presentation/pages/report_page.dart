@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/analytics/analytics_provider.dart';
+import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/features/safety/domain/models/report_reason.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -96,6 +98,9 @@ class _ReportPageState extends State<ReportPage> {
       messageId: widget.messageId,
       description: _description.text,
     );
+    await BoostScope.maybeOf(context)?.analytics?.logEvent(
+      AnalyticsEvents.reportSubmitted,
+    );
     if (!mounted) {
       return;
     }
@@ -111,6 +116,9 @@ class _ReportPageState extends State<ReportPage> {
       await SocialScope.of(context).safetyRepository.blockUser(
         userId: widget.userId,
         matchId: widget.matchId,
+      );
+      await BoostScope.maybeOf(context)?.analytics?.logEvent(
+        AnalyticsEvents.userBlocked,
       );
     }
     if (mounted) {

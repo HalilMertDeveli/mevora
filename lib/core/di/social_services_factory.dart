@@ -3,6 +3,7 @@ import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/identity/firebase_auth_uid_source.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
+import 'package:mevora/features/calls/data/providers/livekit_video_call_provider.dart';
 import 'package:mevora/features/calls/data/providers/mock_video_call_provider.dart';
 import 'package:mevora/features/calls/data/services/video_call_service_impl.dart';
 import 'package:mevora/features/matching/data/firebase/firebase_social_data.dart';
@@ -65,7 +66,7 @@ SocialServices createFirebaseSocialServices({
     presenceRepository: FirebasePresenceRepository(),
     callRepository: calls,
     videoCallService: VideoCallServiceImpl(calls),
-    videoCallProvider: MockVideoCallProvider(),
+    videoCallProvider: LiveKitVideoCallProvider(),
     notificationRepository: FirebaseNotificationRepository(),
     discoveryExclusion: matches,
   );

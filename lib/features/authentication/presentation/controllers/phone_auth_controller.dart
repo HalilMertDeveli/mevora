@@ -203,16 +203,22 @@ class PhoneAuthController extends ChangeNotifier {
   }
 
   bool _failSend(Failure failure) {
-    _logger.warning('phone_auth send failed');
+    final kind = failure is AuthFailure ? failure.kind : AuthErrorKind.smsFailed;
+    _logger.warning(
+      'phone_auth send failed kind=$kind',
+      error: failure.message,
+    );
     unawaited(_analytics.phoneAuthFailed());
     _state = _isTooMany(failure)
         ? TooManyAttempts(
             failure.message,
-            kind: failure is AuthFailure ? failure.kind : AuthErrorKind.tooManyAttempts,
+            kind: kind == AuthErrorKind.smsQuota
+                ? AuthErrorKind.smsQuota
+                : AuthErrorKind.tooManyAttempts,
           )
         : SmsSendError(
             failure.message,
-            kind: failure is AuthFailure ? failure.kind : AuthErrorKind.smsFailed,
+            kind: kind,
           );
     notifyListeners();
     return false;

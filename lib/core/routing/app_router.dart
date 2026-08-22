@@ -4,6 +4,7 @@ import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/presentation/pages/design_system_page.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/routing/auth_redirector.dart';
+import 'package:mevora/core/routing/lazy_shell_navigator.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/settings/presentation/pages/blocked_users_page.dart';
 import 'package:mevora/features/settings/presentation/pages/change_password_page.dart';
@@ -27,6 +28,7 @@ import 'package:mevora/features/location/presentation/controllers/location_contr
 import 'package:mevora/features/location/presentation/pages/location_permission_page.dart';
 import 'package:mevora/features/matching/presentation/pages/app_shell.dart';
 import 'package:mevora/features/matching/presentation/pages/matches_page.dart';
+import 'package:mevora/features/music/presentation/pages/music_page.dart';
 import 'package:mevora/features/notifications/presentation/pages/notification_settings_page.dart';
 import 'package:mevora/features/permissions/presentation/pages/privacy_permissions_page.dart';
 import 'package:mevora/features/profile/presentation/pages/profile_tab_page.dart';
@@ -113,19 +115,30 @@ GoRouter createAppRouter({
           child: const OnboardingPage(),
         ),
       ),
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return AppShell(navigationShell: navigationShell);
+      StatefulShellRoute(
+        navigatorContainerBuilder: (context, navigationShell, children) {
+          return LazyShellNavigator(
+            currentIndex: navigationShell.currentIndex,
+            children: children,
+          );
+        },
+        pageBuilder: (context, state, navigationShell) {
+          return MevoraPageTransitions.fadeSlide(
+            key: state.pageKey,
+            child: AppShell(navigationShell: navigationShell),
+          );
         },
         branches: [
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: AppRoutes.discovery,
-                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
-                  key: state.pageKey,
-                  child: const DiscoveryPage(),
-                ),
+                pageBuilder: (context, state) =>
+                    MevoraPageTransitions.fadeSlide(
+                      key: state.pageKey,
+                      cover: false,
+                      child: const DiscoveryPage(),
+                    ),
               ),
             ],
           ),
@@ -133,10 +146,25 @@ GoRouter createAppRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.matches,
-                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
-                  key: state.pageKey,
-                  child: const MatchesRoutePage(),
-                ),
+                pageBuilder: (context, state) =>
+                    MevoraPageTransitions.fadeSlide(
+                      key: state.pageKey,
+                      cover: false,
+                      child: const MatchesRoutePage(),
+                    ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.music,
+                pageBuilder: (context, state) =>
+                    MevoraPageTransitions.fadeSlide(
+                      key: state.pageKey,
+                      cover: false,
+                      child: const MusicPage(),
+                    ),
               ),
             ],
           ),
@@ -144,10 +172,12 @@ GoRouter createAppRouter({
             routes: [
               GoRoute(
                 path: AppRoutes.profile,
-                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
-                  key: state.pageKey,
-                  child: const ProfileTabPage(),
-                ),
+                pageBuilder: (context, state) =>
+                    MevoraPageTransitions.fadeSlide(
+                      key: state.pageKey,
+                      cover: false,
+                      child: const ProfileTabPage(),
+                    ),
               ),
             ],
           ),
@@ -164,9 +194,7 @@ GoRouter createAppRouter({
         path: AppRoutes.incomingCall,
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: IncomingCallPage(
-            callId: state.pathParameters['callId'] ?? '',
-          ),
+          child: IncomingCallPage(callId: state.pathParameters['callId'] ?? ''),
         ),
       ),
       GoRoute(

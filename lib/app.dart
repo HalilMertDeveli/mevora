@@ -9,9 +9,12 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
+import 'package:mevora/core/di/match_score_scope.dart';
+import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
+import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_scope.dart';
@@ -29,8 +32,12 @@ import 'package:mevora/features/boost/domain/repositories/purchase_repository.da
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
+import 'package:mevora/features/match_score/domain/repositories/match_score_repository.dart';
+import 'package:mevora/features/music/domain/repositories/music_repository.dart';
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
+import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
+import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 class MevoraApp extends StatefulWidget {
@@ -42,6 +49,9 @@ class MevoraApp extends StatefulWidget {
     this.router,
     this.locationRepository,
     this.discoveryRepository,
+    this.musicRepository,
+    this.matchScoreRepository,
+    this.relationshipRepository,
     this.locationController,
     this.socialServices,
     this.purchaseRepository,
@@ -59,6 +69,9 @@ class MevoraApp extends StatefulWidget {
   final GoRouter? router;
   final LocationRepository? locationRepository;
   final DiscoveryRepository? discoveryRepository;
+  final MusicRepository? musicRepository;
+  final MatchScoreRepository? matchScoreRepository;
+  final RelationshipRepository? relationshipRepository;
   final LocationController? locationController;
   final SocialServices? socialServices;
   final PurchaseRepository? purchaseRepository;
@@ -85,6 +98,7 @@ class _MevoraAppState extends State<MevoraApp> {
   bool _ownsPermissionController = false;
   late final OnboardingServices _onboardingServices;
   bool _ownsOnboardingServices = false;
+  RelationshipController? _relationshipController;
 
   @override
   void initState() {
@@ -137,6 +151,12 @@ class _MevoraAppState extends State<MevoraApp> {
       _onboardingServices = createOnboardingServices();
       _ownsOnboardingServices = true;
     }
+    final relationship = widget.relationshipRepository;
+    if (relationship != null) {
+      _relationshipController = RelationshipController(
+        repository: relationship,
+      );
+    }
     _router =
         widget.router ??
         createAppRouter(
@@ -147,14 +167,14 @@ class _MevoraAppState extends State<MevoraApp> {
     final social = widget.socialServices;
     if (social != null) {
       _pushBinder = FcmPushBinder(router: _router, services: social);
-      unawaited(_pushBinder!.attach());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_pushBinder?.attach());
+      });
     }
   }
 
   void _syncLocationGate() {
-    unawaited(
-      _locationController?.syncForUser(widget.authController.user?.id),
-    );
+    unawaited(_locationController?.syncForUser(widget.authController.user?.id));
   }
 
   void _syncLanguageUser() {
@@ -219,6 +239,26 @@ class _MevoraAppState extends State<MevoraApp> {
       child = DiscoveryScope(repository: discovery, child: child);
     }
 
+    final music = widget.musicRepository;
+    if (music != null) {
+      child = MusicScope(repository: music, child: child);
+    }
+
+    final relationship = widget.relationshipRepository;
+    final relationshipController = _relationshipController;
+    if (relationship != null && relationshipController != null) {
+      child = RelationshipScope(
+        repository: relationship,
+        controller: relationshipController,
+        child: child,
+      );
+    }
+
+    final matchScore = widget.matchScoreRepository;
+    if (matchScore != null) {
+      child = MatchScoreScope(repository: matchScore, child: child);
+    }
+
     final location =
         widget.locationRepository ?? _locationController?.repository;
     final locationController = _locationController;
@@ -263,6 +303,7 @@ class _MevoraAppState extends State<MevoraApp> {
     if (_ownsOnboardingServices) {
       _onboardingServices.controller.dispose();
     }
+    _relationshipController?.dispose();
     _router.dispose();
     super.dispose();
   }

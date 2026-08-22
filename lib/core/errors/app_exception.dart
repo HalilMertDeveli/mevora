@@ -28,6 +28,7 @@ enum AuthErrorKind {
   cancelled,
   invalidPhone,
   smsFailed,
+  appVerification,
   invalidOtp,
   expiredOtp,
   sessionExpired,

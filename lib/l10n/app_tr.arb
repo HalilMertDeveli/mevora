@@ -32,7 +32,7 @@
   "notAllowed": "Bu işlem için yetkin yok.",
   "needSignIn": "Devam etmek için giriş yapmalısın.",
   "welcomeBack": "Tekrar hoş geldin",
-  "loginSubtitle": "Uyumlu insanları keşfetmeye devam etmek için giriş yap.",
+  "loginSubtitle": "Keşfetmeye devam etmek için giriş yap.",
   "createAccountTitle": "Hesabını oluştur",
   "registerSubtitle": "Bağ kurabileceğin insanlarla tanışmak için Mevora'ya katıl.",
   "email": "E-posta",
@@ -79,7 +79,7 @@
   "signingIn": "Giriş yapılıyor...",
   "continueWithApple": "Apple ile devam et",
   "continueWithSpotify": "Spotify ile devam et",
-  "continueWithPhone": "Telefon ile devam et",
+  "continueWithPhone": "Telefon Numarası ile Giriş Yap",
   "legalPrefix": "Devam ederek",
   "termsOfService": "Kullanım Koşulları",
   "privacyPolicy": "Gizlilik Politikası",
@@ -93,10 +93,10 @@
   "showPassword": "Şifreyi göster",
   "hidePassword": "Şifreyi gizle",
   "appleSignInUnavailable": "Apple ile giriş iPhone ve iPad'de kullanılabilir.",
-  "phoneTitle": "Telefon numaranı gir",
-  "phoneSubtitle": "Doğrulama kodunu SMS ile göndereceğiz.",
-  "phoneHint": "5xx xxx xx xx",
-  "sendCode": "SMS kodu gönder",
+  "phoneTitle": "Telefon Numarası ile Giriş Yap",
+  "phoneSubtitle": "Ülke kodunu seçip telefon numaranı gir. Doğrulama için SMS ile 6 haneli bir kod göndereceğiz.",
+  "phoneHint": "0542 519 2119",
+  "sendCode": "Doğrulama kodu gönder",
   "countrySearchHint": "Ülke ara",
   "otpTitle": "Telefonunu doğrula",
   "verify": "Doğrula",
@@ -123,6 +123,7 @@
   "authCancelled": "Giriş iptal edildi.",
   "authInvalidPhone": "Geçerli bir telefon numarası gir.",
   "authSmsFailed": "SMS gönderilemedi. Lütfen tekrar dene.",
+  "authAppVerification": "Uygulama doğrulaması tamamlanamadı. SHA kayıtlarını kontrol et, gerçek cihazda dene veya Firebase Console’da test numarası kullan.",
   "authInvalidOtp": "Doğrulama kodu geçersiz.",
   "authExpiredOtp": "Doğrulama kodunun süresi doldu. Yeni kod iste.",
   "authSessionExpired": "Oturumun süresi doldu. Lütfen numarayı tekrar gir.",
@@ -136,7 +137,7 @@
   "authUnknown": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
   "authAccountExists": "Bu giriş yöntemi başka bir Mevora hesabına bağlı. Otomatik birleştirme yapılmaz.",
   "authLinkingBlocked": "Hesaplar yalnızca sen onayladığında bağlanır. E-posta eşleşmesi yeterli değildir.",
-  "authNotConfigured": "Bu giriş yöntemi henüz yapılandırılmadı.",
+  "authNotConfigured": "Telefon ile giriş henüz Firebase’de etkin değil.",
   "authBillingNotEnabled": "SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.",
   "authInvalidEmail": "Geçerli bir e-posta adresi gir.",
   "authWeakPassword": "En az 8 karakterlik daha güçlü bir şifre seç.",
@@ -177,7 +178,7 @@
   "onboardingDrinking": "Alkol",
   "onboardingExercise": "Egzersiz",
   "onboardingPets": "Evcil hayvan",
-  "onboardingInterestsHint": "Uyumlu kişileri bulabilmemiz için en az 3 ilgi alanı seç.",
+  "onboardingInterestsHint": "Profilini tamamlamak için en az 3 ilgi alanı seç.",
   "onboardingBioHint": "Kendinden biraz bahset.",
   "onboardingPhotosHint": "En az 3 fotoğraf ekle. Sıralamak için sürükle — ilk fotoğraf ana fotoğrafındır.",
   "onboardingPrimaryPhoto": "Ana fotoğraf",
@@ -276,8 +277,8 @@
   "relationshipGoalLongTerm": "Uzun vadeli",
   "relationshipGoalCasual": "Gündelik",
   "relationshipGoalFiguringOut": "Henüz kararsızım",
-  "compatibilityReasonsHeading": "Neden uyumlusunuz",
-  "whyYoureSeeingThis": "Bu kişiyi neden görüyorsun",
+  "compatibilityReasonsHeading": "Neden önerildi",
+  "whyYoureSeeingThis": "Bu profil neden gösteriliyor",
   "sharedInterests": "Ortak ilgi alanları",
   "profileDetailsTitle": "Profil",
   "photoCounter": "{current} / {total}",
@@ -299,7 +300,7 @@
   },
   "distanceLessThanOne": "1 km'den yakın",
   "distanceFar": "100+ km uzakta",
-  "compatibilityPercent": "{percent}% Uyumlu",
+  "compatibilityPercent": "Önerilen · %{percent} uyum",
   "@compatibilityPercent": {
     "placeholders": {
       "percent": {"type": "int"}
@@ -341,6 +342,20 @@
   "chatEmptyMessage": "İlk mesajı sen gönder.",
   "send": "Gönder",
   "typing": "yazıyor...",
+  "attachPhoto": "Fotoğraf",
+  "takePhoto": "Kamera",
+  "recordVoice": "Sesli mesaj",
+  "holdToRecord": "Kaydediliyor…",
+  "playVoice": "Oynat",
+  "pauseVoice": "Duraklat",
+  "previewPhoto": "Bu fotoğraf gönderilsin mi?",
+  "messageDeleted": "Mesaj silindi",
+  "deleteMessage": "Sil",
+  "deleteMessageConfirm": "Bu mesaj silinsin mi? Karşı taraf artık göremez.",
+  "micDeniedChat": "Sesli mesaj için mikrofon izni gerekir.",
+  "photoDeniedChat": "Fotoğraf göndermek için galeri izni gerekir.",
+  "callCancelled": "Arama iptal edildi",
+  "callRejected": "Arama reddedildi",
   "unmatchedBanner": "Bu kişiyle eşleşmeniz kaldırıldı.",
   "videoCall": "Görüntülü ara",
   "more": "Daha fazla",
@@ -417,6 +432,9 @@
   "reportFakeProfile": "Sahte profil",
   "reportUnderage": "Reşit değil",
   "reportOther": "Diğer",
+  "hideProfile": "Profili gizle",
+  "hideProfileTitle": "Bu profil gizlensin mi?",
+  "hideProfileMessage": "Keşif yığınında bir daha görünmez.",
   "linkedAccounts": "Bağlı hesaplar",
   "link": "Bağla",
   "linked": "Bağlı",
@@ -436,14 +454,14 @@
   "notificationSuperLike": "Birisi seni Süper Beğendi",
   "boostTitle": "BOOST",
   "boostSubtitle": "Profilini daha fazla kişiye göster ve keşfedilme şansını artır.",
-  "boostDuration": "30 dakika",
-  "boostActivate": "Boost'u aktif et",
-  "boostBuy": "Boost'u satın al",
+  "boostDuration": "Profilini öne çıkar",
+  "boostActivate": "Kalan bakiyeyi kullan",
+  "boostBuy": "Boost satın al",
   "boostPurchasing": "Satın alma işlemi başlatılıyor...",
   "boostVerifying": "Satın alma doğrulanıyor...",
   "boostSuccessTitle": "Boost aktif! 🚀",
   "boostSuccessMessage": "Profilin daha fazla kişiye gösterilmeye başlayacak.",
-  "boostAlreadyActive": "Zaten aktif bir Boost'un var.",
+  "boostAlreadyActive": "Aktif bir Boost'un var. Yeni paket kalan süreye eklenir.",
   "boostPurchaseCancelled": "Satın alma iptal edildi.",
   "boostPurchaseFailed": "Satın alma tamamlanamadı. Lütfen tekrar dene.",
   "boostStoreUnavailable": "Mağaza şu anda bu cihazda kullanılamıyor.",
@@ -454,10 +472,22 @@
   "boostLoadingProduct": "Mağaza bilgileri yükleniyor...",
   "boostBackToDiscovery": "Keşfe dön",
   "boostTooltip": "Boost",
-  "boostRemainingMinutes": "{minutes} dk",
+  "boostRemainingMinutes": "{minutes} dk kaldı",
   "@boostRemainingMinutes": {
     "placeholders": {
       "minutes": {"type": "int"}
+    }
+  },
+  "boostRemainingDays": "{days} gün kaldı",
+  "@boostRemainingDays": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "boostRemainingHours": "{hours} saat kaldı",
+  "@boostRemainingHours": {
+    "placeholders": {
+      "hours": {"type": "int"}
     }
   },
   "boostSpotlight": "Öne Çıkar",
@@ -470,7 +500,14 @@
       "count": {"type": "int"}
     }
   },
-  "boostBalance": "{count} Boost",
+  "boostPackWeek": "1 Hafta",
+  "boostPackMonth": "1 Ay",
+  "boostPackYear": "1 Yıl",
+  "boostPackWeekSubtitle": "Profilini 7 gün boyunca öne çıkar",
+  "boostPackMonthSubtitle": "Profilini 30 gün boyunca öne çıkar",
+  "boostPackYearSubtitle": "Profilini 365 gün boyunca öne çıkar",
+  "boostBestValue": "En avantajlı",
+  "boostBalance": "{count} kalan Boost",
   "@boostBalance": {
     "placeholders": {
       "count": {"type": "int"}
@@ -485,13 +522,17 @@
     }
   },
   "boostInsufficientBalance": "Aktif etmek için Boost bakiyen yok.",
-  "boostHistoryTitle": "Boost geçmişi",
-  "boostHistoryEmpty": "Henüz Boost işlemin yok.",
+  "boostHistoryTitle": "Satın Alma Geçmişi",
+  "boostHistoryEmpty": "Henüz satın alman yok.",
   "boostHistoryPurchase": "Satın alma",
   "boostHistoryActivation": "Aktivasyon",
+  "boostHistoryPlatformIos": "App Store",
+  "boostHistoryPlatformAndroid": "Google Play",
   "boostActiveBadge": "Boost aktif",
   "boostActivating": "Boost aktif ediliyor...",
-  "boostNoBalance": "Boost aktif etmek için bir paket satın al.",
+  "boostNoBalance": "Profilini öne çıkarmak için bir paket seç.",
+  "boostPriceUnavailable": "Fiyat yüklenemedi",
+  "boostRestoring": "Satın almalar geri yükleniyor...",
   "radiusKm": "{km} km",
   "@radiusKm": {
     "placeholders": {
@@ -600,7 +641,7 @@
   "citySelectTitle": "Şehir Seç",
   "citySelectSearch": "İl ara…",
   "citySelectNone": "İl bulunamadı",
-  "discoveryLoading": "Uyumlu kişileri buluyoruz...",
+  "discoveryLoading": "Senin için kişiler keşfediliyor...",
   "discoveryLoadErrorTitle": "Profilleri yüklerken bir sorun oluştu.",
   "discoveryLoadErrorMessage": "Bağlantını kontrol et ve tekrar dene.",
   "discoveryChangePreferences": "Keşfetme tercihlerini değiştir",
@@ -612,5 +653,128 @@
       "count": {"type": "int"}
     }
   },
-  "tabSettings": "Ayarlar"
+  "tabSettings": "Ayarlar",
+  "tabMusic": "Müzik",
+  "musicTitle": "Müzik",
+  "musicConnectCta": "🎵 Spotify'ı Bağla",
+  "musicConnected": "✓ Spotify Bağlandı",
+  "musicUnconnectedCopy": "Spotify hesabını bağla ve müzik zevkine göre sana en uygun kişileri keşfet.",
+  "musicConnecting": "Spotify bağlanıyor…",
+  "musicSyncing": "Müzik zevkin yenileniyor…",
+  "musicRefresh": "Müzik Verilerini Yenile",
+  "musicRefreshCooldown": "Daha sonra tekrar yenileyebilirsin.",
+  "musicProfileTitle": "Müzik profilin",
+  "musicSameTasteTitle": "Seninle Aynı Müziği Dinleyenler",
+  "musicSameTasteEmpty": "Henüz örtüşen bir müzik zevki yok. Biraz dinledikten sonra yenile.",
+  "musicWeeklyTitle": "Bu Haftanın Müzikleri",
+  "musicWeeklyEmpty": "Yeterince kişi Spotify bağladığında haftalık öne çıkanlar burada görünür.",
+  "musicCompatibilityPercent": "Benzer müzik zevki · en fazla %{percent}",
+  "@musicCompatibilityPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicCompatibilityShort": "Müzik · %{percent}",
+  "@musicCompatibilityShort": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicSharedCounts": "{tracks} ortak parça · {artists} ortak sanatçı",
+  "@musicSharedCounts": {
+    "placeholders": {
+      "tracks": {"type": "int"},
+      "artists": {"type": "int"}
+    }
+  },
+  "musicOauthCancelled": "Spotify bağlantısı iptal edildi.",
+  "musicApiDenied": "Spotify erişime izin vermedi. Daha sonra tekrar deneyebilirsin.",
+  "musicTokenExpired": "Spotify bağlantının süresi doldu. Lütfen tekrar bağla.",
+  "musicNetwork": "İnternet bağlantını kontrol et ve tekrar dene.",
+  "musicNotConfigured": "Spotify bu sürümde henüz yapılandırılmadı.",
+  "musicConnectError": "Spotify bağlanamadı. Mevora'nın geri kalanı çalışmaya devam eder.",
+  "settingsConnectSpotify": "Spotify'ı Bağla",
+  "settingsSpotifySubtitle": "Müzik zevki eşleşmesi — Mevora içinde müzik çalmaz.",
+  "matchScoreTitle": "Eşleşme puanı",
+  "matchScoreSubtitle": "Bağlantı itibarın",
+  "matchScoreValue": "{score} puan",
+  "@matchScoreValue": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "matchScoreHistoryTitle": "Puan geçmişi",
+  "matchScoreHistoryEmpty": "Yeni eşleşmeler ve sohbetler burada puan ekler.",
+  "matchScoreHistoryMatch": "Yeni eşleşme +1",
+  "matchScoreHistoryInteraction": "Sohbet +1",
+  "matchFeedbackTitle": "Bu eşleşme nasıldı?",
+  "matchFeedbackMessage": "İsteğe bağlı. Bu not yalnızca senin geçmişinde kalır — karşı taraf görmez ve puanları değiştirmez.",
+  "matchFeedbackHint": "Kısa bir özel not",
+  "matchFeedbackSubmit": "Notu kaydet",
+  "matchFeedbackThanks": "Geçmişine kaydedildi.",
+  "matchFeedbackTooShort": "Kısa bir not yaz veya atla.",
+  "matchFeedbackFailed": "Not kaydedilemedi. Tekrar dene.",
+  "relationshipPromptTitle": "İlişkiler hakkında ne düşünüyorsun?",
+  "relationshipQuestionsPreparing": "Yeni sorular hazırlanıyor. Lütfen biraz sonra tekrar deneyin.",
+  "relationshipTestTitle": "İlişki Testi",
+  "relationshipTestHeadline": "Görüşlerine yakın insanları keşfet",
+  "relationshipTestMessage": "3 kısa soruyla benzer düşünebilen kişileri gör.",
+  "relationshipTestStart": "İlişki Testine Başla",
+  "relationshipTestLater": "Daha Sonra",
+  "relationshipTestDoneTitle": "İlişki Testin Tamamlandı",
+  "relationshipTestFound": "Görüşlerine yakın biri bulundu.",
+  "relationshipTestAlign": "Birkaç konuda benzer görüşleriniz var.",
+  "relationshipTestNearest": "Size en yakın kişi:",
+  "relationshipTestEmpty": "Şu an yakınında benzer düşünen kimse yok.",
+  "relationshipTestViewProfile": "Profili Gör",
+  "relationshipTestOpenChat": "Sohbete git",
+  "relationshipMatchBadge": "İlişki Testi",
+  "relationshipPromptProgress": "{answered} / {total}",
+  "@relationshipPromptProgress": {
+    "placeholders": {
+      "answered": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "relationshipCompatibilityPercent": "Görüş örtüşmesi · %{percent}",
+  "@relationshipCompatibilityPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "relationshipCompatibilityShort": "Görüş · %{percent}",
+  "@relationshipCompatibilityShort": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "relationshipSharedViews": "{count} ortak görüş",
+  "@relationshipSharedViews": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relationshipSimilarThinker": "Seninle ilişki konusunda benzer düşünen biri bulundu.",
+  "relationshipViewsAlign": "İlişki görüşleriniz birkaç konuda örtüşüyor.",
+  "relationshipMatchesTitle": "İlişki eşleşmeleri",
+  "relationshipMatchesEmpty": "Senin gibi düşünen insanları bulmak için birkaç ilişki sorusu yanıtla — burada mesafe önemli değil.",
+  "relationshipProfileSubtitle": "{answered} ilişki sorusu yanıtlandı",
+  "@relationshipProfileSubtitle": {
+    "placeholders": {
+      "answered": {"type": "int"}
+    }
+  },
+  "relationshipTopicJealousy": "Kıskançlık konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicTrust": "Güven konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicLoyalty": "Sadakat konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicCommunication": "İletişim konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicBoundaries": "Sınırlar konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicSocialLife": "Sosyal hayat konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicFriendship": "Arkadaşlık konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicPersonalSpace": "Özel alan konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicFuturePlans": "Gelecek planları konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicMoney": "Para konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicFlirting": "Flört konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicExes": "Eski ilişkiler konusunda benzer düşünüyorsunuz.",
+  "relationshipTopicExpectations": "İlişki beklentileri konusunda benzer düşünüyorsunuz."
 }

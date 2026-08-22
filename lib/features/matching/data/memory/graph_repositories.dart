@@ -1,3 +1,4 @@
+import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
 import 'package:mevora/features/calls/domain/services/video_call_provider.dart';
@@ -107,6 +108,66 @@ class GraphChatRepository implements ChatRepository {
   }
 
   @override
+  Future<ChatMessage> sendImage({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) async {
+    onProgress?.call(1);
+    final sent = graph.sendMedia(
+      actorUid: _uid,
+      matchId: matchId,
+      receiverId: receiverId,
+      type: MessageType.image,
+      bytes: media.bytes,
+    );
+    // #region agent log
+    AgentDebugLog.log(
+      location: 'graph_repositories.dart:sendImage',
+      message: 'demo_image_sent',
+      hypothesisId: 'I1',
+      data: {
+        'bytesKept': sent.localMediaBytes?.length ?? 0,
+        'hasUrl': sent.mediaUrl != null,
+        'urlHost': Uri.tryParse(sent.mediaUrl ?? '')?.host,
+      },
+    );
+    // #endregion
+    return sent;
+  }
+
+  @override
+  Future<ChatMessage> sendVoice({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) async {
+    onProgress?.call(1);
+    return graph.sendMedia(
+      actorUid: _uid,
+      matchId: matchId,
+      receiverId: receiverId,
+      type: MessageType.voice,
+      durationMs: media.durationMs,
+      bytes: media.bytes,
+    );
+  }
+
+  @override
+  Future<void> deleteMessage({
+    required String matchId,
+    required String messageId,
+  }) async {
+    graph.deleteMessage(
+      actorUid: _uid,
+      matchId: matchId,
+      messageId: messageId,
+    );
+  }
+
+  @override
   Future<void> markDelivered(String matchId, List<ChatMessage> messages) async {}
 
   @override
@@ -209,20 +270,22 @@ class GraphCallRepository implements CallRepository {
 
   @override
   Future<void> end(String callId) async {
-    final call = graph.calls[callId];
-    if (call != null) {
-      graph.calls[callId] = call.copyWith(lifecycle: CallLifecycle.ended);
-    }
+    graph.endCall(callId);
   }
 
   @override
   Future<void> expire(String callId) async {
-    await end(callId);
+    graph.endCall(callId);
   }
 
   @override
   Stream<List<CallSession>> watchIncoming(String uid) {
     return graph.watchIncoming(uid);
+  }
+
+  @override
+  Stream<CallSession?> watchCall(String callId) {
+    return graph.watchCall(callId);
   }
 }
 

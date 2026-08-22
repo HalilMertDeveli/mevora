@@ -5,10 +5,7 @@ import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart'
 enum DiscoveryDecision { pass, like, superLike }
 
 class DiscoveryPageResult {
-  const DiscoveryPageResult({
-    required this.candidates,
-    this.nextCursor,
-  });
+  const DiscoveryPageResult({required this.candidates, this.nextCursor});
 
   final List<DiscoveryCandidate> candidates;
   final String? nextCursor;

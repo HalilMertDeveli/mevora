@@ -54,10 +54,8 @@ void main() {
     await tester.pump();
     expect(find.text(_l10n.boostTitle), findsWidgets);
     expect(find.text(_l10n.boostSubtitle), findsOneWidget);
-    expect(find.text(_l10n.boostDuration), findsWidgets);
-    expect(find.text('₺49,99'), findsOneWidget);
-    expect(find.text(_l10n.boostActivate), findsOneWidget);
-    expect(find.text(_l10n.boostPackOne), findsOneWidget);
+    expect(find.text('₺99,99'), findsOneWidget);
+    expect(find.text(_l10n.boostPackWeek), findsOneWidget);
     expect(find.text(_l10n.boostSuccessTitle), findsNothing);
   });
 
@@ -88,7 +86,7 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(BoostPackTile), findsWidgets);
-    expect(find.text(_l10n.boostPackOne), findsOneWidget);
+    expect(find.text(_l10n.boostPackWeek), findsOneWidget);
   });
 
   testWidgets('history lists purchases and activations', (tester) async {
@@ -100,10 +98,10 @@ void main() {
               BoostHistoryEntry(
                 id: 'p1',
                 type: BoostHistoryType.purchase,
-                productId: 'com.mevora.app.boost.5',
-                boostCount: 5,
+                productId: 'mevora_boost_1_month',
                 createdAt: DateTime.utc(2026, 8, 18),
                 status: 'verified',
+                platform: 'android',
               ),
               BoostHistoryEntry(
                 id: 'b1',
@@ -167,22 +165,17 @@ void main() {
     expect(find.text(_l10n.boostVerifying), findsOneWidget);
   });
 
-  testWidgets('success copy appears only after activate', (tester) async {
+  testWidgets('success copy appears after a verified purchase', (tester) async {
     final repository = FakePurchaseRepository();
     final controller = controllerFor(repository);
     addTearDown(controller.dispose);
     await tester.pumpWidget(wrap(BoostScreen(controller: controller)));
     await tester.pump();
     await tester.pump();
-    await tester.tap(find.text(_l10n.boostPackOne));
+    await tester.tap(find.text(_l10n.boostBuyPack).first);
     await tester.pump();
     await tester.pump();
-    expect(find.text(_l10n.boostCreditedTitle), findsWidgets);
     expect(repository.verifyCalled, isTrue);
-    expect(find.text(_l10n.boostSuccessTitle), findsNothing);
-    await tester.tap(find.text(_l10n.boostActivate));
-    await tester.pump();
-    await tester.pump();
     expect(find.text(_l10n.boostSuccessTitle), findsOneWidget);
     expect(find.text(_l10n.boostSuccessMessage), findsOneWidget);
   });

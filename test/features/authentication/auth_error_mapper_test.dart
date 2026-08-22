@@ -52,7 +52,7 @@ void main() {
     );
     expect(
       AuthErrorMapper.fromCode('firebase_auth/invalid-app-credential').kind,
-      AuthErrorKind.smsFailed,
+      AuthErrorKind.appVerification,
     );
     expect(
       AuthErrorMapper.fromCode('sms-region-restricted').kind,
@@ -60,7 +60,15 @@ void main() {
     );
     expect(
       AuthErrorMapper.fromCode('invalid-app-credential').message,
-      AuthMessages.smsFailed,
+      AuthMessages.appVerification,
+    );
+    expect(
+      AuthErrorMapper.fromCode('captcha-check-failed').kind,
+      AuthErrorKind.appVerification,
+    );
+    expect(
+      AuthErrorMapper.fromCode('missing-client-identifier').kind,
+      AuthErrorKind.appVerification,
     );
     expect(
       AuthErrorMapper.fromCode('invalid-phone-number').kind,

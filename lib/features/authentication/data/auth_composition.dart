@@ -20,6 +20,7 @@ AuthController createAuthController({
   required AppConfig config,
   required AppLogger logger,
   AuthAnalytics? analytics,
+  SpotifyAuthService? spotifyAuthService,
 }) {
   final userRemote = FirestoreUserRemoteDataSource();
   final google = GoogleAuthService(serverClientId: config.googleWebClientId);
@@ -31,7 +32,7 @@ AuthController createAuthController({
       emailAuthService: EmailAuthService(),
       googleAuthService: google,
       appleAuthService: AppleAuthService(config: config),
-      spotifyAuthService: SpotifyAuthService(config: config),
+      spotifyAuthService: spotifyAuthService ?? SpotifyAuthService(config: config),
       phoneAuthService: PhoneAuthService(),
       userRemoteDataSource: userRemote,
       accountSync: FirebaseFunctionsCallable(region: config.functionsRegion),

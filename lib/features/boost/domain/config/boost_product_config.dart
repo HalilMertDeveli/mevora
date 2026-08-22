@@ -1,6 +1,6 @@
 import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 
-/// Store product identifiers and Boost duration. Prices are never stored here.
+/// Store product identifiers. Prices are never stored here.
 ///
 /// Pack SKUs live in [BoostPackCatalog] / Firestore `boostProducts`. Create them
 /// in App Store Connect and Play Console, then override with `--dart-define`
@@ -13,17 +13,17 @@ class BoostProductConfig {
     this.displayOrder = 0,
   });
 
-  static const String defaultIosProductId = BoostPackCatalog.legacyProductId;
-  static const String defaultAndroidProductId = BoostPackCatalog.legacyProductId;
-  static const Duration defaultDuration = Duration(minutes: 30);
+  static const String defaultIosProductId = BoostPackCatalog.week;
+  static const String defaultAndroidProductId = BoostPackCatalog.week;
+  static const Duration defaultDuration = BoostPackCatalog.weekDuration;
 
-  /// Legacy single-SKU placeholder. Still accepted as a 1-Boost pack.
+  /// Fallback SKU used by single-product queries.
   final String iosProductId;
 
-  /// Legacy single-SKU placeholder. Still accepted as a 1-Boost pack.
+  /// Fallback SKU used by single-product queries.
   final String androidProductId;
 
-  /// How long an activated Boost lasts. Server uses the same value.
+  /// Default duration when a pack lookup is unavailable.
   final Duration duration;
 
   /// Sort key kept for compatibility with the original single product.
@@ -39,15 +39,12 @@ class BoostProductConfig {
       'BOOST_ANDROID_PRODUCT_ID',
       defaultValue: defaultAndroidProductId,
     );
-    const minutes = int.fromEnvironment(
-      'BOOST_DURATION_MINUTES',
-      defaultValue: 30,
-    );
+    const days = int.fromEnvironment('BOOST_DURATION_DAYS', defaultValue: 7);
     const order = int.fromEnvironment('BOOST_DISPLAY_ORDER', defaultValue: 0);
-    return const BoostProductConfig(
+    return BoostProductConfig(
       iosProductId: ios,
       androidProductId: android,
-      duration: Duration(minutes: minutes < 1 ? 30 : minutes),
+      duration: Duration(days: days < 1 ? 7 : days),
       displayOrder: order,
     );
   }
@@ -72,6 +69,11 @@ class BoostProductConfig {
   Set<String> get allProductIds => {
     iosProductId,
     androidProductId,
+    ...BoostPackCatalog.storefrontSkus,
+  };
+
+  Set<String> get allKnownProductIds => {
+    ...allProductIds,
     ...BoostPackCatalog.skus,
   };
 }

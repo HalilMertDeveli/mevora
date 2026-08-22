@@ -35,7 +35,7 @@ void main() {
     expect(controller.photoDrafts.first.remote?.downloadUrl, isNotNull);
     expect(
       controller.photoDrafts.first.remote?.storagePath,
-      'users/user-a/profile/photos/${controller.photoDrafts.first.id}.jpg',
+      'users/user-a/profile/pending/${controller.photoDrafts.first.id}.jpg',
     );
     expect(controller.canContinuePhotos, isFalse);
   });

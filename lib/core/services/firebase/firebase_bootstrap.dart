@@ -37,7 +37,7 @@ class FirebaseBootstrap {
     if (config.useEmulators) {
       await _connectEmulators(config);
     } else {
-      await _configureLivePhoneAuth();
+      await _configureLivePhoneAuth(config);
     }
 
     await _configureAppCheck(config);
@@ -49,8 +49,12 @@ class FirebaseBootstrap {
     );
     if (!config.environment.isDevelopment) {
       await FirebaseAnalytics.instance.logAppOpen();
+      await FirebaseMessaging.instance.setAutoInitEnabled(true);
+    } else {
+      // A second Flutter isolate for FCM + Play Services at launch is enough
+      // to trip the emulator low-memory killer (seen at ~460MB RSS).
+      await FirebaseMessaging.instance.setAutoInitEnabled(false);
     }
-    await FirebaseMessaging.instance.setAutoInitEnabled(true);
 
     logger.info(
       'Firebase ready (${config.firebaseProjectId}, emulators=${config.useEmulators}, authEmulator=${config.useAuthEmulator})',
@@ -71,7 +75,7 @@ class FirebaseBootstrap {
         'Auth emulator at ${emulators.host}:${emulators.authPort} (no real SMS)',
       );
     } else {
-      await _configureLivePhoneAuth();
+      await _configureLivePhoneAuth(config);
       logger.info(
         'Auth uses live ${config.firebaseProjectId} for Phone Auth SMS',
       );
@@ -93,12 +97,59 @@ class FirebaseBootstrap {
     );
   }
 
-  /// Live Phone Auth needs Play Integrity / reCAPTCHA. Never disable
-  /// verification against production or staging.
-  Future<void> _configureLivePhoneAuth() async {
+  /// Live Phone Auth needs Play Integrity and/or reCAPTCHA.
+  ///
+  /// Development disables app verification by default so Console **test
+  /// numbers** and debug sideloads work. Play Integrity / reCAPTCHA often
+  /// fail or hang on debug builds (empty `taskAffinity` + Custom Tabs).
+  ///
+  /// - `--dart-define=DISABLE_PHONE_APP_VERIFICATION=false` to exercise real
+  ///   verification in development
+  /// - `--dart-define=FORCE_PHONE_RECAPTCHA=true` to force the reCAPTCHA path
+  ///
+  /// Production keeps verification enabled; Firebase picks Play Integrity then
+  /// reCAPTCHA.
+  Future<void> _configureLivePhoneAuth(AppConfig config) async {
     try {
+      const forceRecaptcha = bool.fromEnvironment(
+        'FORCE_PHONE_RECAPTCHA',
+        defaultValue: false,
+      );
+      const disableVerificationOverride = bool.fromEnvironment(
+        'DISABLE_PHONE_APP_VERIFICATION',
+        defaultValue: true,
+      );
+      final appVerificationDisabled = config.environment.isDevelopment
+          ? disableVerificationOverride
+          : false;
+
+      // Console test number on mevora-d6ed0 — auto-retrieves OTP in development
+      // so first-run smoke tests work without waiting for a carrier SMS.
+      // Real numbers still use the normal SMS path.
+      const testPhone = String.fromEnvironment(
+        'PHONE_AUTH_TEST_NUMBER',
+        defaultValue: '+905551112233',
+      );
+      const testSms = String.fromEnvironment(
+        'PHONE_AUTH_TEST_SMS_CODE',
+        defaultValue: '123456',
+      );
+
       await FirebaseAuth.instance.setSettings(
-        appVerificationDisabledForTesting: false,
+        appVerificationDisabledForTesting: appVerificationDisabled,
+        forceRecaptchaFlow: !appVerificationDisabled && forceRecaptcha,
+        phoneNumber: config.environment.isDevelopment && testPhone.isNotEmpty
+            ? testPhone
+            : null,
+        smsCode: config.environment.isDevelopment && testSms.isNotEmpty
+            ? testSms
+            : null,
+      );
+      logger.info(
+        'Live Phone Auth configured '
+        '(appVerificationDisabled=$appVerificationDisabled, '
+        'forceRecaptchaFlow=${!appVerificationDisabled && forceRecaptcha}, '
+        'devTestNumber=${config.environment.isDevelopment && testPhone.isNotEmpty})',
       );
     } on Object catch (error, stackTrace) {
       logger.warning(
@@ -110,15 +161,19 @@ class FirebaseBootstrap {
   }
 
   Future<void> _configureAppCheck(AppConfig config) async {
-    // Development: skip activation so missing debug tokens / disabled App Check
-    // API cannot block Phone Auth. Firebase still may use a placeholder token.
-    if (config.environment.isDevelopment) {
-      logger.info(
-        'App Check skipped in development (non-blocking for Phone Auth)',
-      );
-      return;
-    }
     try {
+      if (config.environment.isDevelopment) {
+        // Debug provider so App Check enforcement (if enabled) does not block
+        // Phone Auth / Auth APIs. Register the logged debug token in Console.
+        await FirebaseAppCheck.instance.activate(
+          providerAndroid: const AndroidDebugProvider(),
+          providerApple: const AppleDebugProvider(),
+        );
+        logger.info(
+          'App Check debug provider active — register debug token in Console if enforcement is on',
+        );
+        return;
+      }
       await FirebaseAppCheck.instance.activate(
         providerAndroid: config.environment.isProduction
             ? const AndroidPlayIntegrityProvider()
@@ -128,8 +183,6 @@ class FirebaseBootstrap {
             : const AppleDebugProvider(),
       );
     } on Object catch (error, stackTrace) {
-      // Non-blocking: Phone Auth and other Firebase calls continue without a
-      // valid App Check token when activation fails.
       logger.warning(
         'App Check was not activated; continuing without enforcement',
         error: error,

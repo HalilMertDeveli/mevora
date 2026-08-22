@@ -115,6 +115,27 @@
       ]
     },
     {
+      "collectionGroup": "music",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "spotifyConnected", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "relationshipMatch",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "eligibleForMatching", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "relationshipMatch",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "compatibilityKey", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "purchases",
       "queryScope": "COLLECTION",
       "fields": [
@@ -127,6 +148,30 @@
     {
       "collectionGroup": "boosts",
       "fieldPath": "status",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "music",
+      "fieldPath": "spotifyConnected",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "relationshipMatch",
+      "fieldPath": "eligibleForMatching",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
+      "collectionGroup": "relationshipMatch",
+      "fieldPath": "compatibilityKey",
       "indexes": [
         { "order": "ASCENDING", "queryScope": "COLLECTION" },
         { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }

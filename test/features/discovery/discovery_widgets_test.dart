@@ -11,7 +11,9 @@ import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart'
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_page.dart';
+import 'package:mevora/features/discovery/presentation/widgets/discovery_card_stack.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_profile_card.dart';
+import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
 import 'package:mevora/features/location/domain/entities/location_flags.dart';
 import 'package:mevora/features/location/presentation/screens/location_permission_screen.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
@@ -67,6 +69,79 @@ void main() {
     expect(find.textContaining('82%'), findsOneWidget);
     expect(find.text('travel'), findsOneWidget);
     expect(find.text('41.0082'), findsNothing);
+  });
+
+  testWidgets('demo profile cards show a portrait, not a numeral placeholder', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrap(
+        const SizedBox(
+          height: 520,
+          width: 360,
+          child: DiscoveryProfileCard(
+            candidate: DiscoveryCandidate(
+              uid: 'mock-08',
+              displayName: 'Burak',
+              age: 28,
+              city: 'Eskisehir',
+              photos: ['assets/images/portraits/mock-08.jpg'],
+              compatibilityScore: 73,
+              bio: 'Mimar.',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Burak, 28'), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+    expect(
+      tester.widgetList<Text>(find.byType(Text)).map((text) => text.data),
+      isNot(contains('0')),
+    );
+  });
+
+  testWidgets('discovery stack paints only the front person', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        SizedBox(
+          height: 520,
+          width: 360,
+          child: DiscoveryCardStack(
+            candidates: const [
+              DiscoveryCandidate(
+                uid: 'mock-08',
+                displayName: 'Burak',
+                age: 28,
+                city: 'Eskisehir',
+                bio: 'Mimar.',
+              ),
+              DiscoveryCandidate(
+                uid: 'mock-09',
+                displayName: 'Ece',
+                age: 30,
+                city: 'İstanbul',
+                bio: 'Proje Yöneticisi',
+              ),
+            ],
+            dragOffset: Offset.zero,
+            swipeDirection: DiscoverySwipeDirection.none,
+            animateOut: false,
+            showLikeBurst: false,
+            onDragUpdate: (_) {},
+            onDragEnd: () {},
+            onCardTap: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(DiscoveryProfileCard), findsOneWidget);
+    expect(find.text('Burak, 28'), findsOneWidget);
+    expect(find.text('Ece, 30'), findsNothing);
+    expect(find.text('İstanbul'), findsNothing);
+    expect(find.text('Proje Yöneticisi'), findsNothing);
   });
 
   testWidgets('GPS disabled shows a non-crashing empty state', (tester) async {

@@ -5,15 +5,13 @@ import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
+import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
+import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
 
 class DiscoveryProfileCard extends StatelessWidget {
-  const DiscoveryProfileCard({
-    super.key,
-    required this.candidate,
-    this.onTap,
-  });
+  const DiscoveryProfileCard({super.key, required this.candidate, this.onTap});
 
   final DiscoveryCandidate candidate;
   final VoidCallback? onTap;
@@ -48,9 +46,9 @@ class DiscoveryProfileCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
+                const ColoredBox(color: AppColors.nightSurface),
                 if (photo == null)
-                  ColoredBox(
-                    color: AppColors.nightSurface,
+                  Center(
                     child: Icon(
                       Icons.person_outline,
                       size: 88,
@@ -100,7 +98,8 @@ class DiscoveryProfileCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (candidate.bio != null && candidate.bio!.isNotEmpty) ...[
+                      if (candidate.bio != null &&
+                          candidate.bio!.isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           candidate.bio!,
@@ -123,6 +122,14 @@ class DiscoveryProfileCard extends StatelessWidget {
                             selected: true,
                             compact: true,
                           ),
+                          if (candidate.musicCompatibilityScore != null)
+                            MusicCompatibilityBadge(
+                              score: candidate.musicCompatibilityScore!,
+                            ),
+                          if (candidate.relationshipCompatibilityScore != null)
+                            RelationshipCompatibilityBadge(
+                              score: candidate.relationshipCompatibilityScore!,
+                            ),
                           if (distance != null && distance.isNotEmpty)
                             MevoraChip(label: distance, compact: true),
                           if (candidate.isDemo)
@@ -151,10 +158,8 @@ class DiscoveryProfileCard extends StatelessWidget {
                           children: candidate.interests
                               .take(3)
                               .map(
-                                (interest) => MevoraChip(
-                                  label: interest,
-                                  compact: true,
-                                ),
+                                (interest) =>
+                                    MevoraChip(label: interest, compact: true),
                               )
                               .toList(),
                         ),

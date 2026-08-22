@@ -106,6 +106,7 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
       lastMessageAt: _date(data['lastMessageAt']),
       unmatchedBy: data['unmatchedBy'] as String?,
       unmatchedAt: _date(data['unmatchedAt']),
+      source: matchSourceFrom(data['source'], matchType: data['matchType']),
     );
   }
 

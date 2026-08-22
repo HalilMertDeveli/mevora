@@ -10,7 +10,8 @@ class BoostProduct {
     required this.available,
     required this.duration,
     this.displayOrder = 0,
-    this.boostCount = 1,
+    this.boostCount = 0,
+    this.featured = false,
     this.fallbackPrice,
   });
 
@@ -28,9 +29,12 @@ class BoostProduct {
   final Duration duration;
   final int displayOrder;
   final int boostCount;
+  final bool featured;
 
   /// Catalog fallback shown only when the store has not returned a price.
   final String? fallbackPrice;
+
+  int get durationDays => duration.inDays;
 
   String get displayPrice =>
       localizedPrice.isNotEmpty ? localizedPrice : (fallbackPrice ?? '');

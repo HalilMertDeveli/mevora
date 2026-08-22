@@ -43,6 +43,7 @@
   "auth": {
     "providers": {
       "emailPassword": true,
+      "phoneNumber": true,
       "googleSignIn": {
         "oAuthBrandDisplayName": "Mevora",
         "supportEmail": "halilmertdeveliii@gmail.com"

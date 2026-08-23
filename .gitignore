@@ -57,11 +57,26 @@ app.*.map.json
 key.properties
 **/serviceAccount*.json
 **/*-service-account.json
+**/credentials.json
+**/secrets.json
+**/secrets/
 *.p8
 *.p12
+*.pem
+*.key
 LIVEKIT_API_KEY=
 LIVEKIT_API_SECRET=
 LIVEKIT_URL=
+SUMSUB_APP_TOKEN=
+SUMSUB_SECRET_KEY=
+SPOTIFY_CLIENT_SECRET=
+
+# Android local / build cache (machine-specific, not source)
+android/.kotlin/
+**/*.salive
+
+# Accidental duplicate Android entrypoint (canonical: com/mevora/app/MainActivity.kt)
+android/app/src/main/kotlin/com/mevora/mevora/
 
 # Firebase emulator / debug output
 firebase-debug.log

@@ -776,5 +776,110 @@
   "relationshipTopicMoney": "Para konusunda benzer düşünüyorsunuz.",
   "relationshipTopicFlirting": "Flört konusunda benzer düşünüyorsunuz.",
   "relationshipTopicExes": "Eski ilişkiler konusunda benzer düşünüyorsunuz.",
-  "relationshipTopicExpectations": "İlişki beklentileri konusunda benzer düşünüyorsunuz."
+  "relationshipTopicExpectations": "İlişki beklentileri konusunda benzer düşünüyorsunuz.",
+  "verifyYourProfile": "Profilini doğrula",
+  "verificationDescription": "Doğrulama, Mevora'yı daha güvenli ve gerçek kullanıcılarla dolu tutmamıza yardımcı olur.",
+  "verificationBenefitFakeProfiles": "Sahte profillere karşı koruma sağlar",
+  "verificationBenefitSpoofing": "Sahteciliği önlemeye yardımcı olur",
+  "verificationBenefitBadge": "Profiline doğrulanmış rozet ekler",
+  "startVerification": "Doğrulamayı başlat",
+  "verificationInProgress": "Doğrulama devam ediyor",
+  "profileVerified": "Profil doğrulandı",
+  "profileVerifiedBadge": "Doğrulandı",
+  "verificationCouldNotComplete": "Doğrulama tamamlanamadı",
+  "tryVerificationAgain": "Tekrar dene",
+  "verificationStarted": "Doğrulama başlatıldı",
+  "verificationPrivacyNote": "Doğrulamanız güvenli bir doğrulama sağlayıcısı tarafından işlenir.",
+  "followVerificationInstructions": "Kendinizi doğrulamak için talimatları izleyin.",
+  "verificationNotConfigured": "Doğrulama geçici olarak kullanılamıyor.",
+  "verificationCooldown": "Tekrar denemeden önce birkaç dakika bekleyin.",
+  "verificationAttemptLimit": "Bugünkü doğrulama limitine ulaştınız. Yarın tekrar deneyin.",
+  "whyYouMatch": "Neden eşleşiyorsunuz?",
+  "compatWhyButton": "Neden?",
+  "compatDiscoverBadge": "%{percent} Uyumlu",
+  "@compatDiscoverBadge": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "compatCalculating": "Hesaplanıyor...",
+  "compatUnavailable": "Uyumluluk hesaplanamadı",
+  "profileEditSectionPhotos": "Fotoğraflar",
+  "profileEditSectionBasic": "Temel bilgiler",
+  "profileEditSectionAbout": "Hakkında",
+  "profileEditSectionInterests": "İlgi alanların",
+  "profileEditSectionLifestyle": "Yaşam tarzı",
+  "profileEditSectionRelationship": "İlişki tercihleri",
+  "profileEditSectionAnswers": "Cevapların",
+  "profileEditDiscoveryPrefs": "Yaş aralığı ve mesafe",
+  "profileEditAnswersSubtitle": "İlişki sorularına verdiğin cevapları güncelle",
+  "saveChanges": "Değişiklikleri kaydet",
+  "discardChangesTitle": "Değişiklikleri kaydetmeden çıkmak istiyor musun?",
+  "discardChangesMessage": "Profil değişikliklerin kaydedilmedi.",
+  "keepEditing": "Düzenlemeye devam et",
+  "discard": "Vazgeç",
+  "interestsMinRequired": "En az 3 ilgi alanı seç",
+  "profileAnswersTitle": "Cevapların",
+  "profileAnswersEmpty": "Henüz ilişki sorusu cevaplamadın.",
+  "profileAnswersEdit": "Düzenle",
+  "compatOverallLabel": "Uyumluluğunuz %{percent}",
+  "@compatOverallLabel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "compatNotEnoughData": "Henüz yeterli veri yok",
+  "compatStrongestConnection": "En güçlü bağ",
+  "compatPotentialDifference": "Potansiyel fark",
+  "compatCategoryOverall": "Genel",
+  "compatCategoryRelationship": "İlişki",
+  "compatCategoryInterests": "İlgi alanları",
+  "compatCategoryLifestyle": "Yaşam tarzı",
+  "compatCategoryQuestions": "Sorular",
+  "compatCategoryMusic": "Müzik",
+  "compatCategoryCommunication": "İletişim",
+  "compatCategoryProximity": "Yakınlık",
+  "compatCategoryActivity": "Aktivite",
+  "compatReasonSameRelationshipGoal": "İkiniz de {goal} ilişki istiyorsunuz",
+  "@compatReasonSameRelationshipGoal": {
+    "placeholders": {
+      "goal": {"type": "String"}
+    }
+  },
+  "compatReasonSharedInterests": "İkiniz de {interests} seviyorsunuz",
+  "@compatReasonSharedInterests": {
+    "placeholders": {
+      "interests": {"type": "String"}
+    }
+  },
+  "compatReasonSimilarLifestyle": "Benzer bir yaşam tarzınız var",
+  "compatReasonSameAnswers": "{shared} sorunun {aligned} tanesine aynı cevabı verdiniz",
+  "@compatReasonSameAnswers": {
+    "placeholders": {
+      "aligned": {"type": "String"},
+      "shared": {"type": "String"}
+    }
+  },
+  "compatReasonSimilarMusic": "Müzik zevkiniz %{score} uyumlu",
+  "@compatReasonSimilarMusic": {
+    "placeholders": {
+      "score": {"type": "String"}
+    }
+  },
+  "compatReasonCommunication": "Benzer iletişim tarzlarınız var",
+  "hiddenCompatTitle": "Biri senin gibi düşünüyor 👀",
+  "hiddenCompatMessage": "Biri seninle aynı şekilde {count} soruya cevap verdi.",
+  "@hiddenCompatMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "hiddenCompatCompatibility": "%{percent} uyumluluk",
+  "@hiddenCompatCompatibility": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "hiddenCompatCta": "Uyumluluğunu keşfet",
+  "hiddenCompatDismiss": "Şimdi değil"
 }

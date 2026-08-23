@@ -26,6 +26,11 @@ void main() {
       expect(rules.contains("'subscriptionStatus'"), isTrue);
       expect(rules.contains("'boostStatus'"), isTrue);
     });
+
+    test('verification subcollection is read-only for clients', () {
+      expect(rules.contains('match /verification/{docId}'), isTrue);
+      expect(rules.contains('allow create, update, delete: if false'), isTrue);
+    });
   });
 
   group('block and report safety', () {

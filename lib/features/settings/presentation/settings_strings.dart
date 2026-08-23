@@ -16,6 +16,7 @@ abstract final class SettingsStrings {
       'first_name_too_long' => l10n.settingsFirstNameTooLong,
       'bio_too_long' => l10n.settingsBioTooLong,
       'interests_too_many' => l10n.settingsInterestsTooMany,
+      'interests_min_required' => l10n.interestsMinRequired,
       'must_be_adult' => l10n.onboardingMustBeAdult,
       'min_age_invalid' => l10n.settingsMinAgeInvalid,
       'max_age_invalid' => l10n.settingsMaxAgeInvalid,

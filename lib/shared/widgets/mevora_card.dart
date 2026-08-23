@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/theme/app_shadows.dart';
 
@@ -34,10 +35,18 @@ class MevoraCard extends StatelessWidget {
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+        color: switch (emphasis) {
+          MevoraCardEmphasis.elevated => theme.colorScheme.surfaceContainerHigh,
+          MevoraCardEmphasis.quiet => theme.colorScheme.surfaceContainer,
+          MevoraCardEmphasis.standard => theme.colorScheme.surfaceContainerLow,
+        },
         borderRadius: BorderRadius.circular(AppRadii.lg),
         border: showBorder
-            ? Border.all(color: theme.colorScheme.outlineVariant)
+            ? Border.all(
+                color: theme.brightness == Brightness.dark
+                    ? AppColors.glassBorder
+                    : theme.colorScheme.outlineVariant,
+              )
             : null,
         boxShadow: showShadow ? AppShadows.card(theme.brightness) : null,
       ),

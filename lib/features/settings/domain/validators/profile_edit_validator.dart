@@ -1,4 +1,5 @@
 import 'package:mevora/core/constants/app_constants.dart';
+import 'package:mevora/features/onboarding/domain/entities/onboarding_config.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 
@@ -53,6 +54,9 @@ abstract final class ProfileEditValidator {
     }
     if (profile.interests.length > maxInterests) {
       return 'interests_too_many';
+    }
+    if (profile.interests.length < OnboardingConfig.minInterests) {
+      return 'interests_min_required';
     }
     if (profile.resolvedAge < AppConstants.minimumAge) {
       return 'must_be_adult';

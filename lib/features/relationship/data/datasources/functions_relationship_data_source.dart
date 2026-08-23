@@ -5,6 +5,7 @@ import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
+import 'package:mevora/features/relationship/data/datasources/firestore_relationship_answers_reader.dart';
 import 'package:mevora/features/relationship/data/datasources/relationship_data_source.dart';
 import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
@@ -64,6 +65,11 @@ class FunctionsRelationshipDataSource implements RelationshipDataSource {
   @override
   Future<List<RelationshipMatchSuggestion>> getSuggestions() async {
     return _parseItems(await _invoke('getRelationshipMatches'));
+  }
+
+  @override
+  Future<Map<String, String>> getSavedAnswers(String uid) {
+    return FirestoreRelationshipAnswersReader().loadAnswers(uid);
   }
 
   Future<Map<String, dynamic>> _invoke(

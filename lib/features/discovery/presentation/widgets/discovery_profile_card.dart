@@ -2,19 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_decorations.dart';
 import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
+import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
 
 class DiscoveryProfileCard extends StatelessWidget {
-  const DiscoveryProfileCard({super.key, required this.candidate, this.onTap});
+  const DiscoveryProfileCard({
+    super.key,
+    required this.candidate,
+    this.onTap,
+    this.onWhyTap,
+  });
 
   final DiscoveryCandidate candidate;
   final VoidCallback? onTap;
+  final VoidCallback? onWhyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +56,7 @@ class DiscoveryProfileCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                const ColoredBox(color: AppColors.nightSurface),
+                const ColoredBox(color: AppColors.card),
                 if (photo == null)
                   Center(
                     child: Icon(
@@ -57,19 +67,9 @@ class DiscoveryProfileCard extends StatelessWidget {
                   )
                 else
                   DiscoveryNetworkImage(url: photo),
-                const DecoratedBox(
+                DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0x33140F16),
-                        Color(0x00140F16),
-                        Color(0xCC140F16),
-                        Color(0xF2140F16),
-                      ],
-                      stops: [0, 0.38, 0.72, 1],
-                    ),
+                    gradient: AppDecorations.photoOverlayGradient(),
                   ),
                 ),
                 Positioned(
@@ -85,16 +85,20 @@ class DiscoveryProfileCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFFF4EEE8),
+                          color: AppColors.primaryText,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (candidate.isVerified) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        const VerifiedProfileBadge(compact: true),
+                      ],
                       if (candidate.city != null) ...[
                         const SizedBox(height: 4),
                         Text(
                           candidate.city!,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFFD8D0DA),
+                            color: AppColors.secondaryText,
                           ),
                         ),
                       ],
@@ -106,7 +110,7 @@ class DiscoveryProfileCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFD8D0DA),
+                            color: AppColors.secondaryText,
                           ),
                         ),
                       ],
@@ -115,13 +119,18 @@ class DiscoveryProfileCard extends StatelessWidget {
                         spacing: AppSpacing.sm,
                         runSpacing: AppSpacing.xs,
                         children: [
-                          MevoraChip(
-                            label: l10n.compatibilityPercent(
-                              candidate.compatibilityScore,
+                          if (candidate.compatibilityStatus ==
+                                  CompatibilityDisplayStatus.calculating ||
+                              candidate.compatibilityStatus ==
+                                  CompatibilityDisplayStatus.unavailable ||
+                              candidate.hasCompatibilityScore)
+                            CompatibilityDiscoverBadge(
+                              score: candidate.compatibilityScore,
+                              status: candidate.compatibilityStatus,
+                              onTap: candidate.hasCompatibilityScore
+                                  ? onWhyTap
+                                  : null,
                             ),
-                            selected: true,
-                            compact: true,
-                          ),
                           if (candidate.musicCompatibilityScore != null)
                             MusicCompatibilityBadge(
                               score: candidate.musicCompatibilityScore!,
@@ -146,7 +155,7 @@ class DiscoveryProfileCard extends StatelessWidget {
                             candidate.sharedInterests.length,
                           ),
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFF4EEE8),
+                            color: AppColors.primaryText,
                           ),
                         ),
                       ],
@@ -171,7 +180,7 @@ class DiscoveryProfileCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFFD8D0DA),
+                            color: AppColors.secondaryText,
                           ),
                         ),
                       ],

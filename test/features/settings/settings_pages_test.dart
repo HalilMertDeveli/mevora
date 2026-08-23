@@ -16,6 +16,7 @@ import 'package:mevora/core/localization/local_language_data_source.dart';
 import 'package:mevora/core/routing/auth_redirector.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/services/app_logger.dart';
+import 'package:mevora/core/services/profile/profile_update_notifier.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/data/services/reauth_service.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_providers.dart';
@@ -112,6 +113,7 @@ SettingsServices _services() {
     ),
     reauthService: _FakeReauth(),
     photoPicker: const StubProfilePhotoPicker(),
+    profileUpdates: ProfileUpdateNotifier(),
   );
 }
 
@@ -225,10 +227,10 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Edit profile'), findsOneWidget);
     expect(find.text('Change password'), findsOneWidget);
+    expect(find.text('Linked accounts'), findsOneWidget);
+    expect(find.text('Delete account'), findsOneWidget);
     expect(find.text('Log out'), findsOneWidget);
     expect(find.text('Connect Spotify'), findsOneWidget);
-    expect(find.text('Delete account'), findsNothing);
-    expect(find.text('Hesabı sil'), findsNothing);
   });
 
   testWidgets('change password validates mismatch', (tester) async {

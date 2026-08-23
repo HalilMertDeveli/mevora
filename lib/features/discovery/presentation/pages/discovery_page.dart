@@ -2,13 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/di/settings_scope.dart';
+import 'package:mevora/core/services/profile/profile_update_notifier.dart';
 import 'package:mevora/core/config/auth_scope.dart';
+import 'package:mevora/features/compatibility/domain/services/compatibility_breakdown_mapper.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_ui.dart';
+import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
+import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
@@ -23,6 +29,7 @@ import 'package:mevora/features/discovery/presentation/widgets/discovery_action_
 import 'package:mevora/features/discovery/presentation/widgets/discovery_card_stack.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_filters_sheet.dart';
 import 'package:mevora/features/location/presentation/screens/location_permission_screen.dart';
+import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
 import 'package:mevora/shared/animations/mevora_match_celebration.dart';
@@ -44,6 +51,7 @@ class DiscoveryPage extends StatefulWidget {
 
 class _DiscoveryPageState extends State<DiscoveryPage> {
   DiscoveryController? _owned;
+  ProfileUpdateNotifier? _profileUpdates;
   Offset _drag = Offset.zero;
   DiscoverySwipeDirection _swipeDirection = DiscoverySwipeDirection.none;
   bool _animateOut = false;
@@ -54,9 +62,26 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     RelationshipScope.controllerOf(context)?.recordDiscoveryActivity();
   }
 
+  void _onProfileUpdated() {
+    final controller = _controller;
+    final uid = AuthScope.maybeOf(context)?.user?.id;
+    if (controller == null || uid == null) {
+      return;
+    }
+    if (_profileUpdates?.lastUpdatedUid == uid) {
+      controller.onProfileUpdated();
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final updates = SettingsScope.maybeOf(context)?.profileUpdates;
+    if (_profileUpdates != updates) {
+      _profileUpdates?.removeListener(_onProfileUpdated);
+      _profileUpdates = updates;
+      _profileUpdates?.addListener(_onProfileUpdated);
+    }
     if (widget.controller != null || _owned != null) {
       return;
     }
@@ -70,6 +95,8 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       discoveryRepository:
           DiscoveryScope.maybeOf(context) ?? InMemoryDiscoveryRepository(),
       purchaseRepository: BoostScope.maybeOf(context)?.repository,
+      viewerProfileLoader: (viewerUid) async =>
+          await SettingsScope.maybeOf(context)?.settingsHub.loadProfile(viewerUid),
     )..addListener(_onController);
     unawaited(_owned!.start());
   }
@@ -104,6 +131,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
 
   @override
   void dispose() {
+    _profileUpdates?.removeListener(_onProfileUpdated);
     widget.controller?.removeListener(_onController);
     _owned?.removeListener(_onController);
     _owned?.dispose();
@@ -120,6 +148,18 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       );
     }
     final state = controller.state;
+    final relationship = RelationshipScope.controllerOf(context);
+    final matchCount =
+        SocialScope.maybeOf(context)?.matchesController.mutualLikeCount ?? 0;
+    Widget body = SafeArea(child: _body(controller, state));
+    if (relationship != null) {
+      body = RelationshipPromptHost(
+        controller: relationship,
+        discoveryVisible: true,
+        normalMatchCount: matchCount,
+        child: body,
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.appName),
@@ -140,7 +180,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
           ),
         ],
       ),
-      body: SafeArea(child: _body(controller, state)),
+      body: body,
     );
   }
 
@@ -179,10 +219,21 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     final l10n = AppLocalizations.of(context);
     if (state.matchedCandidate != null) {
       final match = state.matchedCandidate!;
+      final viewer = _viewerProfile(context);
+      final breakdown = CompatibilityBreakdownMapper.fromCandidate(match);
+      final reasons = CompatibilityBreakdownMapper.reasonsFor(
+        viewer: viewer,
+        candidate: match,
+        breakdown: breakdown,
+      );
       return MevoraMatchCelebration(
         leftName: l10n.you,
         rightName: match.displayName,
         rightImage: MevoraNetworkImages.provider(match.photoUrl),
+        compatibilitySection: WhyYouMatchPanel(
+          breakdown: breakdown,
+          reasons: reasons,
+        ),
         onSendMessage: () {
           final matchId = controller.state.matchedMatchId;
           controller.clearMatch();
@@ -292,6 +343,16 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
+          if (state.hiddenCompatibility != null &&
+              !state.hiddenCompatibilityDismissed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: HiddenCompatibilityCard(
+                insight: state.hiddenCompatibility!,
+                onDiscover: controller.focusHiddenCompatibility,
+                onDismiss: controller.dismissHiddenCompatibility,
+              ),
+            ),
           Expanded(
             child: DiscoveryCardStack(
               candidates: state.stackCandidates,
@@ -305,6 +366,9 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
               },
               onDragEnd: () => unawaited(_finishDrag(controller)),
               onCardTap: (candidate) => _openProfileDetails(candidate),
+              onWhyTap: current.hasCompatibilityScore
+                  ? () => _openCompatibility(context, current)
+                  : null,
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -417,5 +481,39 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       DiscoveryDecision.pass => controller.onPass(current.uid),
       DiscoveryDecision.superLike => controller.onSuperLike(current.uid),
     };
+  }
+
+  UserProfile _viewerProfile(BuildContext context) {
+    final controller = _controller;
+    if (controller?.viewerProfile != null) {
+      return controller!.viewerProfile!;
+    }
+    final auth = AuthScope.maybeOf(context)?.user;
+    return UserProfile(
+      uid: auth?.id ?? 'self',
+      displayName: auth?.displayName ?? 'You',
+    );
+  }
+
+  Future<void> _openCompatibility(
+    BuildContext context,
+    DiscoveryCandidate candidate,
+  ) async {
+    final controller = _controller;
+    if (controller == null) {
+      return;
+    }
+    final viewer = _viewerProfile(context);
+    final breakdown = controller.breakdownFor(candidate);
+    final reasons = CompatibilityBreakdownMapper.reasonsFor(
+      viewer: viewer,
+      candidate: candidate,
+      breakdown: breakdown,
+    );
+    await showCompatibilityBreakdownSheet(
+      context,
+      breakdown: breakdown,
+      reasons: reasons,
+    );
   }
 }

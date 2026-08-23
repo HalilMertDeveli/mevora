@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
@@ -100,6 +99,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    _scroll.removeListener(_onScroll);
     _composer.dispose();
     _scroll.dispose();
     unawaited(_player.dispose());
@@ -123,6 +123,7 @@ class _ChatPageState extends State<ChatPage> {
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
         final presence = controller.presence.labelFor(l10n);
+        final orderedMessages = controller.messages.reversed.toList();
         return Scaffold(
           resizeToAvoidBottomInset: true,
           appBar: AppBar(
@@ -183,10 +184,9 @@ class _ChatPageState extends State<ChatPage> {
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpacing.sm,
                         ),
-                        itemCount: controller.messages.length,
+                        itemCount: orderedMessages.length,
                         itemBuilder: (context, index) {
-                          final ordered = controller.messages.reversed.toList();
-                          final message = ordered[index];
+                          final message = orderedMessages[index];
                           return ChatBubble(
                             message: message,
                             isMine: message.isFrom(controller.uid ?? ''),
@@ -271,19 +271,6 @@ class _ChatPageState extends State<ChatPage> {
         ? PermissionType.camera
         : PermissionType.photos;
     final allowed = await _ensurePermission(type);
-    // #region agent log
-    AgentDebugLog.log(
-      location: 'chat_page.dart:_pick:perm',
-      message: 'image_pick_perm',
-      hypothesisId: 'I3',
-      data: {
-        'source': source.name,
-        'allowed': allowed,
-        'canChat': ctrl.canChat,
-        'isDemoOther': ctrl.otherUid.startsWith('mock-'),
-      },
-    );
-    // #endregion
     if (!allowed || !mounted) {
       return;
     }
@@ -295,27 +282,9 @@ class _ChatPageState extends State<ChatPage> {
         imageQuality: 70,
       );
       if (file == null || !mounted) {
-        // #region agent log
-        AgentDebugLog.log(
-          location: 'chat_page.dart:_pick:cancelled',
-          message: 'image_pick_cancelled',
-          hypothesisId: 'I3',
-        );
-        // #endregion
         return;
       }
       final bytes = await file.readAsBytes();
-      // #region agent log
-      AgentDebugLog.log(
-        location: 'chat_page.dart:_pick:file',
-        message: 'image_picked',
-        hypothesisId: 'I5',
-        data: {
-          'bytes': bytes.length,
-          'mime': file.mimeType ?? 'null',
-        },
-      );
-      // #endregion
       final preview = await MevoraDialog.show(
         context,
         title: AppLocalizations.of(context).previewPhoto,
@@ -323,42 +292,15 @@ class _ChatPageState extends State<ChatPage> {
         confirmLabel: AppLocalizations.of(context).send,
       );
       if (preview != true || !mounted) {
-        // #region agent log
-        AgentDebugLog.log(
-          location: 'chat_page.dart:_pick:preview',
-          message: 'image_preview_skipped',
-          hypothesisId: 'I3',
-          data: {'preview': preview == true},
-        );
-        // #endregion
         return;
       }
-      final result = await ctrl.sendImage(
+      await ctrl.sendImage(
         ChatMediaBytes(
           bytes: Uint8List.fromList(bytes),
           contentType: file.mimeType ?? 'image/jpeg',
         ),
       );
-      // #region agent log
-      AgentDebugLog.log(
-        location: 'chat_page.dart:_pick:sent',
-        message: 'image_send_result',
-        hypothesisId: 'I2',
-        data: {
-          'ok': result.isSuccess,
-          'error': ctrl.error,
-        },
-      );
-      // #endregion
-    } on Object catch (error) {
-      // #region agent log
-      AgentDebugLog.log(
-        location: 'chat_page.dart:_pick:throw',
-        message: 'image_pick_threw',
-        hypothesisId: 'I2',
-        data: {'error': error.runtimeType.toString()},
-      );
-      // #endregion
+    } on Object {
       if (!mounted) {
         return;
       }

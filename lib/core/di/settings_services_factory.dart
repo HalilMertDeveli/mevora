@@ -1,3 +1,4 @@
+import 'package:mevora/core/services/profile/profile_update_notifier.dart';
 import 'package:mevora/features/onboarding/data/services/image_picker_profile_photo_picker.dart';
 import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.dart';
 import 'package:mevora/features/authentication/data/services/reauth_service.dart';
@@ -15,12 +16,14 @@ class SettingsServices {
     required this.photoManager,
     required this.reauthService,
     required this.photoPicker,
+    required this.profileUpdates,
   });
 
   final SettingsHubRepository settingsHub;
   final ProfilePhotoManager photoManager;
   final ReauthPort reauthService;
   final ProfilePhotoPicker photoPicker;
+  final ProfileUpdateNotifier profileUpdates;
 }
 
 SettingsServices createSettingsServices({
@@ -44,5 +47,6 @@ SettingsServices createSettingsServices({
     ),
     reauthService: reauthService,
     photoPicker: photoPicker ?? ImagePickerProfilePhotoPicker(),
+    profileUpdates: ProfileUpdateNotifier(),
   );
 }

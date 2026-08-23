@@ -1,5 +1,4 @@
 import 'package:mevora/core/constants/firestore_paths.dart';
-import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/storage/storage_provider.dart';
@@ -89,13 +88,6 @@ class ChatRepositoryImpl implements ChatRepository {
   }) async {
     final storage = _storage;
     if (storage == null) {
-      // #region agent log
-      AgentDebugLog.log(
-        location: 'chat_repository_impl.dart:_sendUploaded',
-        message: 'chat_storage_missing',
-        hypothesisId: 'I2',
-      );
-      // #endregion
       throw StateError('Chat storage is not configured');
     }
     final ownerUid = _dataSource.currentUid;
@@ -127,28 +119,8 @@ class ChatRepositoryImpl implements ChatRepository {
     );
     switch (uploaded) {
       case Err(:final failure):
-        // #region agent log
-        AgentDebugLog.log(
-          location: 'chat_repository_impl.dart:_sendUploaded',
-          message: 'chat_upload_failed',
-          hypothesisId: 'I2',
-          data: {
-            'failure': failure.runtimeType.toString(),
-            'mime': media.contentType,
-            'bytes': media.bytes.length,
-          },
-        );
-        // #endregion
         throw failure;
       case Success(:final value):
-        // #region agent log
-        AgentDebugLog.log(
-          location: 'chat_repository_impl.dart:_sendUploaded',
-          message: 'chat_upload_ok',
-          hypothesisId: 'I2',
-          data: {'scheme': value.scheme, 'host': value.host},
-        );
-        // #endregion
         return _dataSource.sendMediaMessage(
           matchId: matchId,
           receiverId: receiverId,

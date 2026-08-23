@@ -7,6 +7,15 @@ export {enforceProfilePhotoModeration} from "./moderation/profileModerationGuard
 export {prepareSmokeTestUsers, cleanupSmokeTestUsers} from "./smoke/smokeTestUsers.js";
 export {spotifyCompleteAuth} from "./spotifyAuth";
 export {
+  spotifyLinkMusic,
+  getMusicAccount,
+  syncSpotifyTaste,
+  disconnectMusicAccount,
+  getSameTasteProfiles,
+  getWeeklyMusicStats,
+  aggregateWeeklyMusicStats,
+} from "./spotifyMusic.js";
+export {
   saveRelationshipAnswer,
   getRelationshipAnswered,
   getRelationshipMatches,
@@ -14,3 +23,4 @@ export {
   dismissRelationshipTestOffer,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {createSumsubAccessToken, sumsubWebhook} from "./sumsub/index.js";

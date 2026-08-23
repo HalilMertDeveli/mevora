@@ -33,10 +33,10 @@ class DiscoverySwipeOverlay extends StatelessWidget {
     };
 
     final color = switch (direction) {
-      DiscoverySwipeDirection.like => AppColors.moss,
-      DiscoverySwipeDirection.pass => AppColors.danger,
-      DiscoverySwipeDirection.superLike => AppColors.apricot,
-      DiscoverySwipeDirection.none => AppColors.mutedInk,
+      DiscoverySwipeDirection.like => AppColors.accentPrimary,
+      DiscoverySwipeDirection.pass => AppColors.error,
+      DiscoverySwipeDirection.superLike => AppColors.softPurple,
+      DiscoverySwipeDirection.none => AppColors.mutedText,
     };
 
     final icon = switch (direction) {

@@ -6,6 +6,11 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main_development.dart",
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
       "args": [
         "--flavor",
         "development",
@@ -17,6 +22,11 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main_development.dart",
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
       "args": [
         "--flavor",
         "development",
@@ -29,6 +39,11 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main_development.dart",
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
       "args": [
         "--flavor",
         "development",
@@ -41,6 +56,11 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main_staging.dart",
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
       "args": [
         "--flavor",
         "staging",
@@ -52,6 +72,11 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main_production.dart",
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
       "args": [
         "--flavor",
         "production",

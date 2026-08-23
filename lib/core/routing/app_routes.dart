@@ -19,6 +19,7 @@ abstract final class AppRoutes {
   static const String phoneOtp = '/phone/otp';
   static const String settings = '/settings';
   static const String editProfile = '/settings/edit-profile';
+  static const String profileAnswers = '/settings/profile-answers';
   static const String changePassword = '/settings/change-password';
   static const String discoveryPreferences = '/settings/discovery-preferences';
   static const String locationSettings = '/settings/location';
@@ -26,7 +27,10 @@ abstract final class AppRoutes {
   static const String blockedUsers = '/settings/blocked-users';
   static const String notificationSettings = '/settings/notifications';
   static const String privacyPermissions = '/settings/privacy';
+  static const String accountSettings = '/settings/account';
   static const String boost = '/boost';
+
+  static const String verifyProfile = '/settings/verify-profile';
 
   static String chatPath(String matchId) => '/chat/$matchId';
 

@@ -374,22 +374,26 @@ export const saveRelationshipAnswer = onCall(
       const answerRef = db.doc(`users/${uid}/relationshipAnswers/${questionId}`);
       const summaryRef = db.doc(`users/${uid}/relationshipMatch/summary`);
       const current = await loadAnswers(uid);
-      if (current[questionId]) {
+      if (current[questionId] === answerId) {
         const summary = await loadSummary(uid);
-        relDebug("Answers already saved");
+        relDebug("Answer unchanged");
         return snapshotPayload(current, summary.data());
       }
       current[questionId] = answerId;
       await db.runTransaction(async (tx) => {
         const existing = await tx.get(answerRef);
         if (existing.exists) {
-          return;
+          tx.update(answerRef, {
+            answerId,
+            answeredAt: FieldValue.serverTimestamp(),
+          });
+        } else {
+          tx.create(answerRef, {
+            questionId,
+            answerId,
+            answeredAt: FieldValue.serverTimestamp(),
+          });
         }
-        tx.create(answerRef, {
-          questionId,
-          answerId,
-          answeredAt: FieldValue.serverTimestamp(),
-        });
         tx.set(
           summaryRef,
           {

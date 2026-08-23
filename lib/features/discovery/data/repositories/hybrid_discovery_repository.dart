@@ -105,6 +105,7 @@ class HybridDiscoveryRepository
                 distanceLabel: candidate.distanceLabel,
                 distanceKm: candidate.distanceKm,
                 compatibilityScore: candidate.compatibilityScore,
+                compatibilityStatus: candidate.compatibilityStatus,
                 interests: candidate.interests,
                 sharedInterests: candidate.sharedInterests,
                 compatibilityReasons: candidate.compatibilityReasons,

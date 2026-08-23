@@ -62,7 +62,8 @@ import 'app_localizations_tr.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -70,7 +71,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -82,17 +84,18 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
-    Locale('tr')
+    Locale('tr'),
   ];
 
   /// No description provided for @appName.
@@ -3778,9 +3781,394 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You think similarly about relationship expectations.'**
   String get relationshipTopicExpectations;
+
+  /// No description provided for @verifyYourProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your profile'**
+  String get verifyYourProfile;
+
+  /// No description provided for @verificationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification helps us keep Mevora authentic and safer for everyone.'**
+  String get verificationDescription;
+
+  /// No description provided for @verificationBenefitFakeProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps protect against fake profiles'**
+  String get verificationBenefitFakeProfiles;
+
+  /// No description provided for @verificationBenefitSpoofing.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps prevent spoofing'**
+  String get verificationBenefitSpoofing;
+
+  /// No description provided for @verificationBenefitBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a verified badge to your profile'**
+  String get verificationBenefitBadge;
+
+  /// No description provided for @startVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Start verification'**
+  String get startVerification;
+
+  /// No description provided for @verificationInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification in progress'**
+  String get verificationInProgress;
+
+  /// No description provided for @profileVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile verified'**
+  String get profileVerified;
+
+  /// No description provided for @profileVerifiedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get profileVerifiedBadge;
+
+  /// No description provided for @verificationCouldNotComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification couldn\'t be completed'**
+  String get verificationCouldNotComplete;
+
+  /// No description provided for @tryVerificationAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryVerificationAgain;
+
+  /// No description provided for @verificationStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification started'**
+  String get verificationStarted;
+
+  /// No description provided for @verificationPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your verification is handled securely by our verification provider.'**
+  String get verificationPrivacyNote;
+
+  /// No description provided for @followVerificationInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Please follow the instructions to verify yourself.'**
+  String get followVerificationInstructions;
+
+  /// No description provided for @verificationNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification is temporarily unavailable.'**
+  String get verificationNotConfigured;
+
+  /// No description provided for @verificationCooldown.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait a few minutes before trying again.'**
+  String get verificationCooldown;
+
+  /// No description provided for @verificationAttemptLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached today\'s verification limit. Try again tomorrow.'**
+  String get verificationAttemptLimit;
+
+  /// No description provided for @whyYouMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Why you match'**
+  String get whyYouMatch;
+
+  /// No description provided for @compatWhyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Why?'**
+  String get compatWhyButton;
+
+  /// No description provided for @compatDiscoverBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% Compatible'**
+  String compatDiscoverBadge(int percent);
+
+  /// No description provided for @compatCalculating.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculating...'**
+  String get compatCalculating;
+
+  /// No description provided for @compatUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility unavailable'**
+  String get compatUnavailable;
+
+  /// No description provided for @profileEditSectionPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get profileEditSectionPhotos;
+
+  /// No description provided for @profileEditSectionBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic information'**
+  String get profileEditSectionBasic;
+
+  /// No description provided for @profileEditSectionAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About you'**
+  String get profileEditSectionAbout;
+
+  /// No description provided for @profileEditSectionInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'Your interests'**
+  String get profileEditSectionInterests;
+
+  /// No description provided for @profileEditSectionLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get profileEditSectionLifestyle;
+
+  /// No description provided for @profileEditSectionRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship preferences'**
+  String get profileEditSectionRelationship;
+
+  /// No description provided for @profileEditSectionAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers'**
+  String get profileEditSectionAnswers;
+
+  /// No description provided for @profileEditDiscoveryPrefs.
+  ///
+  /// In en, this message translates to:
+  /// **'Age range & distance'**
+  String get profileEditDiscoveryPrefs;
+
+  /// No description provided for @profileEditAnswersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update how you answer relationship questions'**
+  String get profileEditAnswersSubtitle;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get saveChanges;
+
+  /// No description provided for @discardChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes?'**
+  String get discardChangesTitle;
+
+  /// No description provided for @discardChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile changes haven\'t been saved.'**
+  String get discardChangesMessage;
+
+  /// No description provided for @keepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get keepEditing;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// No description provided for @interestsMinRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least 3 interests'**
+  String get interestsMinRequired;
+
+  /// No description provided for @profileAnswersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers'**
+  String get profileAnswersTitle;
+
+  /// No description provided for @profileAnswersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t answered any relationship questions yet.'**
+  String get profileAnswersEmpty;
+
+  /// No description provided for @profileAnswersEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get profileAnswersEdit;
+
+  /// No description provided for @compatOverallLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re {percent}% compatible'**
+  String compatOverallLabel(int percent);
+
+  /// No description provided for @compatNotEnoughData.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough data yet'**
+  String get compatNotEnoughData;
+
+  /// No description provided for @compatStrongestConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Strongest connection'**
+  String get compatStrongestConnection;
+
+  /// No description provided for @compatPotentialDifference.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential difference'**
+  String get compatPotentialDifference;
+
+  /// No description provided for @compatCategoryOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall'**
+  String get compatCategoryOverall;
+
+  /// No description provided for @compatCategoryRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get compatCategoryRelationship;
+
+  /// No description provided for @compatCategoryInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'Interests'**
+  String get compatCategoryInterests;
+
+  /// No description provided for @compatCategoryLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get compatCategoryLifestyle;
+
+  /// No description provided for @compatCategoryQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions'**
+  String get compatCategoryQuestions;
+
+  /// No description provided for @compatCategoryMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get compatCategoryMusic;
+
+  /// No description provided for @compatCategoryCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication'**
+  String get compatCategoryCommunication;
+
+  /// No description provided for @compatCategoryProximity.
+  ///
+  /// In en, this message translates to:
+  /// **'Proximity'**
+  String get compatCategoryProximity;
+
+  /// No description provided for @compatCategoryActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get compatCategoryActivity;
+
+  /// No description provided for @compatReasonSameRelationshipGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'You both want a {goal} relationship'**
+  String compatReasonSameRelationshipGoal(String goal);
+
+  /// No description provided for @compatReasonSharedInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'You both like {interests}'**
+  String compatReasonSharedInterests(String interests);
+
+  /// No description provided for @compatReasonSimilarLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'You have a similar lifestyle'**
+  String get compatReasonSimilarLifestyle;
+
+  /// No description provided for @compatReasonSameAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'You answered {aligned} of {shared} questions the same way'**
+  String compatReasonSameAnswers(String aligned, String shared);
+
+  /// No description provided for @compatReasonSimilarMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music taste is {score}% aligned'**
+  String compatReasonSimilarMusic(String score);
+
+  /// No description provided for @compatReasonCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'You communicate in similar ways'**
+  String get compatReasonCommunication;
+
+  /// No description provided for @hiddenCompatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone is thinking like you 👀'**
+  String get hiddenCompatTitle;
+
+  /// No description provided for @hiddenCompatMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone answered {count} questions the same way you did.'**
+  String hiddenCompatMessage(int count);
+
+  /// No description provided for @hiddenCompatCompatibility.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% compatibility'**
+  String hiddenCompatCompatibility(int percent);
+
+  /// No description provided for @hiddenCompatCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover who'**
+  String get hiddenCompatCta;
+
+  /// No description provided for @hiddenCompatDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get hiddenCompatDismiss;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -3789,25 +4177,26 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'tr'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'tr'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
-    case 'tr': return AppLocalizationsTr();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'tr':
+      return AppLocalizationsTr();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

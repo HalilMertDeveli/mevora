@@ -1,0 +1,10 @@
+{
+  "dart.env": {
+    "TMP": "D:/Mevora/.tmp",
+    "TEMP": "D:/Mevora/.tmp"
+  },
+  "terminal.integrated.env.windows": {
+    "TMP": "D:/Mevora/.tmp",
+    "TEMP": "D:/Mevora/.tmp"
+  }
+}

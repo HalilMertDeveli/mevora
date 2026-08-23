@@ -2,6 +2,7 @@ import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
@@ -93,7 +94,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
           photoUrls.add(item);
         } else if (item is Map) {
           final url =
-              item['downloadUrl'] as String? ?? item['thumbUrl'] as String?;
+              item['thumbUrl'] as String? ?? item['downloadUrl'] as String?;
           if (url != null) {
             photoUrls.add(url);
           }
@@ -105,6 +106,13 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       photoUrls.add(legacyPhoto);
     }
 
+    final breakdownRaw = raw['compatibilityBreakdown'];
+    final breakdown = breakdownRaw is Map
+        ? Map<String, dynamic>.from(breakdownRaw)
+        : const <String, dynamic>{};
+
+    final compatibilityScore = _parseCompatibilityScore(raw, breakdown);
+
     return DiscoveryCandidate(
       uid: uid,
       displayName: (profile['displayName'] as String?) ?? '',
@@ -112,7 +120,10 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       photos: photoUrls,
       distanceLabel: raw['distanceLabel'] as String?,
       distanceKm: firestoreDouble(raw['distanceKm']),
-      compatibilityScore: firestoreInt(raw['compatibilityScore'], 0),
+      compatibilityScore: compatibilityScore,
+      compatibilityStatus: compatibilityScore > 0
+          ? CompatibilityDisplayStatus.ready
+          : CompatibilityDisplayStatus.calculating,
       interests: firestoreStringList(profile['interests']),
       sharedInterests: firestoreStringList(raw['sharedInterests']),
       compatibilityReasons: firestoreStringList(raw['compatibilityReasons']),
@@ -136,6 +147,40 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       relationshipSummaryTopics: firestoreStringList(
         raw['relationshipSummaryTopics'],
       ),
+      isVerified: profile['isVerified'] == true || raw['isVerified'] == true,
+      categoryRelationshipScore: breakdown['relationshipScore'] == null
+          ? null
+          : firestoreInt(breakdown['relationshipScore'], 0),
+      categoryInterestScore: breakdown['interestScore'] == null
+          ? null
+          : firestoreInt(breakdown['interestScore'], 0),
+      categoryLifestyleScore: breakdown['lifestyleScore'] == null
+          ? null
+          : firestoreInt(breakdown['lifestyleScore'], 0),
+      categoryQuestionScore: breakdown['questionScore'] == null
+          ? null
+          : firestoreInt(breakdown['questionScore'], 0),
+      categoryMusicScore: breakdown['musicScore'] == null
+          ? null
+          : firestoreInt(breakdown['musicScore'], 0),
+      categoryCommunicationScore: breakdown['communicationScore'] == null
+          ? null
+          : firestoreInt(breakdown['communicationScore'], 0),
     );
+  }
+
+  int _parseCompatibilityScore(
+    Map<String, dynamic> raw,
+    Map<String, dynamic> breakdown,
+  ) {
+    final topLevel = firestoreInt(raw['compatibilityScore'], -1);
+    if (topLevel > 0) {
+      return topLevel;
+    }
+    final fromBreakdown = firestoreInt(breakdown['overallScore'], -1);
+    if (fromBreakdown > 0) {
+      return fromBreakdown;
+    }
+    return 0;
   }
 }

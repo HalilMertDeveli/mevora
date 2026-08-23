@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/core/di/verification_scope.dart';
+import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/features/settings/presentation/widgets/language_settings_section.dart';
 import 'package:mevora/features/settings/presentation/widgets/settings_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -21,6 +24,37 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _logoutInFlight = false;
+  ProfileVerificationStatus _verificationStatus =
+      ProfileVerificationStatus.notStarted;
+  StreamSubscription<ProfileVerification>? _verificationSub;
+  String? _verificationUid;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final uid = AuthScope.maybeOf(context)?.user?.id;
+    final repository = VerificationScope.maybeOf(context);
+    if (uid == null || repository == null) {
+      return;
+    }
+    if (uid == _verificationUid && _verificationSub != null) {
+      return;
+    }
+    _verificationUid = uid;
+    _verificationSub?.cancel();
+    _verificationSub = repository.watchVerification(uid).listen((value) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _verificationStatus = value.status);
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_verificationSub?.cancel());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +78,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 SettingsNavTile(
                   title: l10n.settingsChangePassword,
                   onTap: () => context.push(AppRoutes.changePassword),
+                ),
+                SettingsNavTile(
+                  title: l10n.linkedAccounts,
+                  subtitle: l10n.deleteAccount,
+                  onTap: () => context.push(AppRoutes.accountSettings),
                 ),
                 SettingsNavTile(
                   title: l10n.boostHistoryTitle,
@@ -78,6 +117,26 @@ class _SettingsPageState extends State<SettingsPage> {
             SettingsSection(
               title: l10n.settingsPrivacySafety,
               children: [
+                SettingsNavTile(
+                  title: verificationEntryTitle(
+                    l10n,
+                    _verificationStatus,
+                    accountVerified: user?.isVerified ?? false,
+                  ),
+                  subtitle: verificationEntrySubtitle(
+                    l10n,
+                    _verificationStatus,
+                    accountVerified: user?.isVerified ?? false,
+                  ),
+                  trailing: user?.isVerified == true ||
+                          _verificationStatus ==
+                              ProfileVerificationStatus.approved
+                      ? const VerifiedProfileBadge(compact: true)
+                      : null,
+                  onTap: user?.isVerified == true
+                      ? null
+                      : () => context.push(AppRoutes.verifyProfile),
+                ),
                 SettingsNavTile(
                   title: l10n.blockedUsers,
                   onTap: () => context.push(AppRoutes.blockedUsers),

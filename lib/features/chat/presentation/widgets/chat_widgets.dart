@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/chat/data/services/chat_audio_player.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
@@ -157,19 +156,6 @@ class ChatImageBody extends StatelessWidget {
     } else {
       provider = MevoraNetworkImages.provider(url);
     }
-    // #region agent log
-    AgentDebugLog.log(
-      location: 'chat_widgets.dart:ChatImageBody',
-      message: provider == null ? 'image_provider_null' : 'image_provider_ok',
-      hypothesisId: 'I1',
-      data: {
-        'hasLocalBytes': local != null && local.isNotEmpty,
-        'localBytes': local?.length ?? 0,
-        'scheme': Uri.tryParse(url ?? '')?.scheme,
-        'host': Uri.tryParse(url ?? '')?.host,
-      },
-    );
-    // #endregion
     if (provider == null) {
       return Icon(Icons.image_outlined, color: textColor);
     }

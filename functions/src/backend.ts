@@ -31,6 +31,7 @@ import {ensureMatchScore, preservedMatchScoreFields} from "./matchScore.js";
 import {musicScoreForPair} from "./spotifyMusic.js";
 import {relationshipScoreForPair} from "./relationshipMatch.js";
 import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
+import {calculateCompatibility} from "./compatibility/compatibilityEngine.js";
 import {passesSmokeDiscoveryIsolation} from "./smoke/smokeTestUsers.js";
 
 if (getApps().length === 0) {
@@ -69,17 +70,6 @@ function distanceLabel(km: number, lang: "tr" | "en"): {label: string; labelEn: 
   const labelTr =
     km < 1 ? "1 km'den yakın" : km >= 100 ? "100+ km uzakta" : `${Math.round(km)} km uzakta`;
   return {label: lang === "tr" ? labelTr : labelEn, labelEn};
-}
-
-function compatibility(a: DocumentData, b: DocumentData) {
-  const aInterests = new Set<string>((a.interests as string[]) ?? []);
-  const shared = ((b.interests as string[]) ?? []).filter((item) => aInterests.has(item));
-  const sharedScore = Math.min(25, shared.length * 5);
-  const goalScore = a.relationshipGoal && a.relationshipGoal === b.relationshipGoal ? 20 : 0;
-  const reasons: string[] = [];
-  if (shared.length) reasons.push("Shared interests");
-  if (goalScore) reasons.push("Same relationship goal");
-  return {score: Math.round(sharedScore + goalScore), sharedInterests: shared, reasons};
 }
 
 async function isBlocked(a: string, b: string): Promise<boolean> {
@@ -241,24 +231,39 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
         label = distanceLabel(distanceKm, lang).label;
       }
     }
-    const compat = compatibility(prefs, data);
     const music = await musicScoreForPair(uid, doc.id);
     const relationship = await relationshipScoreForPair(uid, doc.id);
-    const reasons = [...compat.reasons];
-    if (music && music.score >= 40) {
-      reasons.push("Similar music taste");
-    }
-    if (relationship && relationship.alignedCount >= 1) {
-      reasons.push("Similar relationship views");
-    }
+    const compat = calculateCompatibility({
+      viewerProfile,
+      candidateProfile: data,
+      relationship: relationship
+        ? {
+            score: relationship.score,
+            alignedCount: relationship.alignedCount,
+            sharedQuestionCount: relationship.sharedQuestionCount,
+            topTopics: relationship.topTopics ?? [],
+          }
+        : null,
+      musicScore: music?.score ?? null,
+    });
     items.push({
       uid: doc.id,
       profile: {
         ...publicProfileProjection({...data, uid: doc.id}),
+        isVerified: accountsByUid.get(doc.id)?.isVerified === true,
       },
       distanceLabel: label,
       distanceKm,
-      compatibilityScore: compat.score,
+      compatibilityScore: compat.overallScore,
+      compatibilityBreakdown: {
+        overallScore: compat.overallScore,
+        relationshipScore: compat.relationshipScore,
+        interestScore: compat.interestScore,
+        lifestyleScore: compat.lifestyleScore,
+        questionScore: compat.questionScore,
+        musicScore: compat.musicScore,
+        communicationScore: compat.communicationScore,
+      },
       musicCompatibilityScore: music?.score ?? null,
       musicRankingBonus: music ? musicRankingBonus(music.score) : 0,
       sharedMusicArtists: music?.sharedArtists.slice(0, 3) ?? [],
@@ -268,7 +273,7 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
       relationshipAlignedCount: relationship?.alignedCount ?? null,
       relationshipSummaryTopics: relationship?.topTopics ?? [],
       sharedInterests: compat.sharedInterests,
-      compatibilityReasons: reasons,
+      compatibilityReasons: compat.reasons,
     });
   }
   const ranked = sortByBoostVisibility(items, boosted).slice(0, limit);

@@ -48,6 +48,7 @@ Match _matchFrom(DocumentSnapshot<Map<String, dynamic>> snap) {
     isNewFor: _stringBoolMap(data['isNewFor']),
     participantNames: _stringStringMap(data['participantNames']),
     participantPhotos: _stringStringMap(data['participantPhotos']),
+    participantVerified: _stringBoolMap(data['participantVerified']),
     source: matchSourceFrom(data['source'], matchType: data['matchType']),
   );
 }
@@ -100,6 +101,7 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
               otherUserId: match.otherUserId(uid),
               name: match.otherName(uid),
               photoUrl: match.otherPhoto(uid),
+              isVerified: match.otherIsVerified(uid),
             );
           }).toList(growable: false);
         });

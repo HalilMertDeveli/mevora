@@ -31,4 +31,7 @@ abstract class RelationshipRepository {
   });
 
   Future<Result<List<RelationshipMatchSuggestion>>> getSuggestions();
+
+  /// Owner-only saved answers (questionId → answerId).
+  Future<Result<Map<String, String>>> getSavedAnswers(String uid);
 }

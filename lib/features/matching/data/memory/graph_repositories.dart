@@ -1,4 +1,3 @@
-import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
 import 'package:mevora/features/calls/domain/services/video_call_provider.dart';
@@ -122,18 +121,6 @@ class GraphChatRepository implements ChatRepository {
       type: MessageType.image,
       bytes: media.bytes,
     );
-    // #region agent log
-    AgentDebugLog.log(
-      location: 'graph_repositories.dart:sendImage',
-      message: 'demo_image_sent',
-      hypothesisId: 'I1',
-      data: {
-        'bytesKept': sent.localMediaBytes?.length ?? 0,
-        'hasUrl': sent.mediaUrl != null,
-        'urlHost': Uri.tryParse(sent.mediaUrl ?? '')?.host,
-      },
-    );
-    // #endregion
     return sent;
   }
 

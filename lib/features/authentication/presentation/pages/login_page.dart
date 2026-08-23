@@ -6,7 +6,8 @@ import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_decorations.dart';
 import 'package:mevora/core/theme/app_typography.dart';
 import 'package:mevora/core/utils/validators.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
@@ -133,7 +134,7 @@ class _LoginPageState extends State<LoginPage>
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF140F16),
+      backgroundColor: AppColors.background,
       body: LoginHeroBackground(
         child: SafeArea(
           child: AnimatedBuilder(
@@ -163,7 +164,7 @@ class _LoginPageState extends State<LoginPage>
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontFamily: AppTypography.displayFontFamily,
-                          color: Color(0xFFF4EEE8),
+                          color: AppColors.primaryText,
                           fontSize: 26,
                           fontWeight: FontWeight.w600,
                           height: 1.25,
@@ -198,8 +199,8 @@ class _LoginPageState extends State<LoginPage>
                           Theme(
                             data: Theme.of(context).copyWith(
                               textTheme: Theme.of(context).textTheme.apply(
-                                bodyColor: const Color(0xFFD8D0DA),
-                                displayColor: const Color(0xFFF4EEE8),
+                                bodyColor: AppColors.secondaryText,
+                                displayColor: AppColors.primaryText,
                               ),
                             ),
                             child: AuthLegalFooter(
@@ -310,11 +311,7 @@ class _EmailSignInPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xE61E1722),
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: const Color(0x33FFFFFF)),
-      ),
+      decoration: AppDecorations.glassCard(),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: AutofillGroup(
@@ -325,7 +322,7 @@ class _EmailSignInPanel extends StatelessWidget {
                 l10n.signInWithEmail,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: const Color(0xFFF4EEE8),
+                  color: AppColors.primaryText,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -389,7 +386,7 @@ class _EmailSignInPanel extends StatelessWidget {
                   Text(
                     l10n.newToMevora,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFFD8D0DA),
+                      color: AppColors.secondaryText,
                     ),
                   ),
                   MevoraButton(

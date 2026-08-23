@@ -95,4 +95,32 @@ void main() {
     expect(controller.state.candidates, hasLength(1));
     expect(controller.state.candidates.first.uid, 'beo');
   });
+
+  test('appends next page when deck runs low', () async {
+    final seeds = List.generate(
+      5,
+      (index) => DiscoverySeed(
+        profile: UserProfile(
+          uid: 'user-$index',
+          displayName: 'User $index',
+          age: 25 + index,
+        ),
+        distanceKm: 3,
+        distanceLabel: '3 km away',
+      ),
+    );
+    final discovery = InMemoryDiscoveryRepository(seeds: seeds);
+    final controller = build(discovery: discovery);
+    await controller.skipLocation();
+    expect(controller.state.candidates.length, lessThanOrEqualTo(5));
+    final initialCount = controller.state.candidates.length;
+    while (controller.state.candidates.length > 1) {
+      await controller.onPass(controller.state.current!.uid);
+    }
+    expect(controller.state.candidates, isNotEmpty);
+    if (initialCount < seeds.length) {
+      await controller.onPass(controller.state.current!.uid);
+      expect(controller.state.candidates, isNotEmpty);
+    }
+  });
 }

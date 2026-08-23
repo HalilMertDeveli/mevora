@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_constants.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_decorations.dart';
 import 'package:mevora/core/theme/app_typography.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_motion_size.dart';
@@ -17,15 +18,9 @@ class SplashPage extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: AppColors.night,
+      backgroundColor: AppColors.background,
       body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF1A1220), AppColors.night, Color(0xFF0E0A10)],
-          ),
-        ),
+        decoration: AppDecorations.ambientScreen(),
         child: SafeArea(
           child: Center(
             child: Padding(
@@ -33,8 +28,6 @@ class SplashPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Splash Rive stays in source so the asset integration is
-                  // not deleted. It is not built on launch (no decode/play).
                   const Visibility(
                     visible: false,
                     replacement: MevoraLogo(
@@ -61,7 +54,7 @@ class SplashPage extends StatelessWidget {
                     AppConstants.appName.toUpperCase(),
                     style: const TextStyle(
                       fontFamily: AppTypography.displayFontFamily,
-                      color: Color(0xFFF4EEE8),
+                      color: AppColors.primaryText,
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 6,
@@ -73,7 +66,7 @@ class SplashPage extends StatelessWidget {
                     l10n.tagline,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: const Color(0xFFD8CFD6),
+                      color: AppColors.secondaryText,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -81,7 +74,7 @@ class SplashPage extends StatelessWidget {
                     l10n.preparingMevora,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFFD8CFD6),
+                      color: AppColors.secondaryText,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),

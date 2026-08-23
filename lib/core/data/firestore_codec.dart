@@ -29,6 +29,16 @@ int firestoreInt(Object? value, int fallback) {
   if (value is num) {
     return value.toInt();
   }
+  if (value is String) {
+    final parsed = int.tryParse(value.trim());
+    if (parsed != null) {
+      return parsed;
+    }
+    final asDouble = double.tryParse(value.trim());
+    if (asDouble != null) {
+      return asDouble.round();
+    }
+  }
   return fallback;
 }
 

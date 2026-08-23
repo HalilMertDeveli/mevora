@@ -1,5 +1,6 @@
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/discovery/domain/compatibility/compatibility_engine.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
@@ -78,6 +79,7 @@ class InMemoryDiscoveryRepository implements DiscoveryRepository {
         distanceLabel: seed.distanceLabel,
         distanceKm: seed.distanceKm,
         compatibilityScore: result.score,
+        compatibilityStatus: CompatibilityDisplayStatus.ready,
         interests: seed.profile.interests,
         sharedInterests: result.sharedInterests,
         compatibilityReasons: result.reasons,

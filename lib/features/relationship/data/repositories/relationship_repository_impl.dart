@@ -48,6 +48,11 @@ class RelationshipRepositoryImpl implements RelationshipRepository {
     return _guard(_dataSource.getSuggestions);
   }
 
+  @override
+  Future<Result<Map<String, String>>> getSavedAnswers(String uid) {
+    return _guard(() => _dataSource.getSavedAnswers(uid));
+  }
+
   Future<Result<T>> _guard<T>(Future<T> Function() action) async {
     try {
       return Success(await action());

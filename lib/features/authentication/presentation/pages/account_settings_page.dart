@@ -13,9 +13,17 @@ import 'package:mevora/features/settings/presentation/widgets/language_settings_
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_dialog.dart';
+import 'package:mevora/shared/widgets/mevora_loading.dart';
 
-class AccountSettingsPage extends StatelessWidget {
+class AccountSettingsPage extends StatefulWidget {
   const AccountSettingsPage({super.key});
+
+  @override
+  State<AccountSettingsPage> createState() => _AccountSettingsPageState();
+}
+
+class _AccountSettingsPageState extends State<AccountSettingsPage> {
+  bool _deleteInFlight = false;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +32,7 @@ class AccountSettingsPage extends StatelessWidget {
     final user = auth.user;
     final providers = user?.authProviders;
     final error = localizeAuthError(l10n, auth);
+    final actionsLocked = auth.isBusy || _deleteInFlight;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.account)),
       body: ListView(
@@ -97,16 +106,19 @@ class AccountSettingsPage extends StatelessWidget {
           MevoraButton(
             label: l10n.logOut,
             variant: MevoraButtonVariant.secondary,
-            onPressed: auth.isBusy ? null : () => unawaited(auth.signOut()),
+            onPressed: actionsLocked ? null : () => unawaited(auth.signOut()),
           ),
           const SizedBox(height: AppSpacing.md),
-          MevoraButton(
-            label: l10n.deleteAccount,
-            variant: MevoraButtonVariant.destructive,
-            onPressed: auth.isBusy
-                ? null
-                : () => unawaited(_confirmDelete(context)),
-          ),
+          if (_deleteInFlight)
+            MevoraLoading(message: l10n.deleteAccount)
+          else
+            MevoraButton(
+              label: l10n.deleteAccount,
+              variant: MevoraButtonVariant.destructive,
+              onPressed: actionsLocked
+                  ? null
+                  : () => unawaited(_confirmDelete(context)),
+            ),
         ],
       ),
     );
@@ -135,6 +147,9 @@ class AccountSettingsPage extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
+    if (_deleteInFlight || AuthScope.of(context).isBusy) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final confirmed = await MevoraDialog.show(
       context,
@@ -143,8 +158,29 @@ class AccountSettingsPage extends StatelessWidget {
       confirmLabel: l10n.deleteConfirm,
       confirmVariant: MevoraButtonVariant.destructive,
     );
-    if (confirmed == true && context.mounted) {
-      await AuthScope.of(context).deleteAccount();
+    if (confirmed != true || !context.mounted) {
+      return;
     }
+    setState(() => _deleteInFlight = true);
+    final auth = AuthScope.of(context);
+    final result = await auth.deleteAccount();
+    if (!context.mounted) {
+      return;
+    }
+    if (result.isSuccess) {
+      context.go(AppRoutes.login);
+      return;
+    }
+    setState(() => _deleteInFlight = false);
+    final message = result.failureOrNull?.message;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          (message != null && message.trim().isNotEmpty)
+              ? message
+              : l10n.authGeneric,
+        ),
+      ),
+    );
   }
 }

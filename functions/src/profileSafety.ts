@@ -84,5 +84,6 @@ export function publicProfileProjection(data: DocumentData): Record<string, unkn
     interests: data.interests ?? [],
     relationshipGoal: data.relationshipGoal ?? null,
     city: data.city ?? null,
+    isVerified: data.isVerified === true,
   };
 }

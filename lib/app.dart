@@ -38,6 +38,8 @@ import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
+import 'package:mevora/core/di/verification_scope.dart';
+import 'package:mevora/features/verification/domain/repositories/verification_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 class MevoraApp extends StatefulWidget {
@@ -55,6 +57,7 @@ class MevoraApp extends StatefulWidget {
     this.locationController,
     this.socialServices,
     this.purchaseRepository,
+    this.verificationRepository,
     this.analytics,
     this.languageController,
     this.permissionService,
@@ -75,6 +78,7 @@ class MevoraApp extends StatefulWidget {
   final LocationController? locationController;
   final SocialServices? socialServices;
   final PurchaseRepository? purchaseRepository;
+  final VerificationRepository? verificationRepository;
   final AnalyticsProvider? analytics;
   final LanguageController? languageController;
   final PermissionService? permissionService;
@@ -277,6 +281,11 @@ class _MevoraAppState extends State<MevoraApp> {
         analytics: widget.analytics,
         child: child,
       );
+    }
+
+    final verification = widget.verificationRepository;
+    if (verification != null) {
+      child = VerificationScope(repository: verification, child: child);
     }
 
     return AppScope(

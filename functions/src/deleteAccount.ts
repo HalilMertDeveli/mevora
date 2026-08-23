@@ -4,6 +4,7 @@ import {FieldValue, getFirestore, type DocumentReference} from "firebase-admin/f
 import {getStorage} from "firebase-admin/storage";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
+import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -53,6 +54,8 @@ export const deleteUserAccount = onCall(
 
     const userSnap = await db.doc(`users/${uid}`).get();
     const spotifyId = userSnap.data()?.spotifyId as string | undefined;
+    const verificationSnap = await db.doc(`users/${uid}/verification/sumsub`).get();
+    const sumsubApplicantId = verificationSnap.data()?.sumsubApplicantId as string | undefined;
     const musicSnap = await db.doc(`users/${uid}/music/summary`).get();
     const musicSpotifyId = musicSnap.data()?.spotifyUserId as string | undefined;
 
@@ -122,6 +125,7 @@ export const deleteUserAccount = onCall(
       db.doc(`users/${uid}`),
       db.doc(`users/${uid}/music/summary`),
       db.doc(`users/${uid}/relationshipMatch/summary`),
+      db.doc(`users/${uid}/verification/sumsub`),
       db.doc(`spotifySecrets/${uid}`),
       db.doc(`profiles/${uid}`),
       db.doc(`userPreferences/${uid}`),
@@ -129,6 +133,10 @@ export const deleteUserAccount = onCall(
       db.doc(`userPrivacy/${uid}`),
       db.doc(`userLocation/${uid}`),
     ]);
+
+    await requestSumsubApplicantDeletion({uid, applicantId: sumsubApplicantId}).catch(
+      (error) => logger.warn("Sumsub applicant cleanup skipped", {uid, error: String(error)}),
+    );
 
     await auth.deleteUser(uid);
     return {ok: true, deleted: true};

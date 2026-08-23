@@ -59,14 +59,17 @@ async function isBlocked(a: string, b: string): Promise<boolean> {
   return first.exists || second.exists || subA.exists || subB.exists;
 }
 
-async function profilePreview(uid: string): Promise<{name: string; photoUrl?: string}> {
-  const snap = await db.doc(`profiles/${uid}`).get();
-  const data = snap.data() ?? {};
-  const userSnap = snap.exists ? snap : await db.doc(`users/${uid}`).get();
-  const merged = userSnap.data() ?? data;
+async function profilePreview(uid: string): Promise<{name: string; photoUrl?: string; isVerified: boolean}> {
+  const [profileSnap, userSnap] = await Promise.all([
+    db.doc(`profiles/${uid}`).get(),
+    db.doc(`users/${uid}`).get(),
+  ]);
+  const data = profileSnap.data() ?? {};
+  const account = userSnap.data() ?? {};
   return {
-    name: String(merged.displayName ?? merged.name ?? "Mevora"),
-    photoUrl: merged.photoUrl as string | undefined,
+    name: String(data.displayName ?? account.displayName ?? account.name ?? "Mevora"),
+    photoUrl: (data.photoUrl ?? account.photoUrl) as string | undefined,
+    isVerified: account.isVerified === true,
   };
 }
 
@@ -187,6 +190,10 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
       participantPhotos: {
         ...(actor.photoUrl ? {[uid]: actor.photoUrl} : {}),
         ...(other.photoUrl ? {[targetUserId]: other.photoUrl} : {}),
+      },
+      participantVerified: {
+        [uid]: actor.isVerified,
+        [targetUserId]: other.isVerified,
       },
       ...preservedMatchScoreFields(previousMatch),
       source: "mutual_like",

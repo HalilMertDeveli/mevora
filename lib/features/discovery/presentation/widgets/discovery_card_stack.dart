@@ -21,6 +21,7 @@ class DiscoveryCardStack extends StatelessWidget {
     required this.onDragUpdate,
     required this.onDragEnd,
     required this.onCardTap,
+    this.onWhyTap,
     this.swipeThreshold = 120,
   });
 
@@ -32,6 +33,7 @@ class DiscoveryCardStack extends StatelessWidget {
   final ValueChanged<Offset> onDragUpdate;
   final VoidCallback onDragEnd;
   final ValueChanged<DiscoveryCandidate> onCardTap;
+  final VoidCallback? onWhyTap;
   final double swipeThreshold;
 
   @override
@@ -57,6 +59,7 @@ class DiscoveryCardStack extends StatelessWidget {
             child: DiscoveryProfileCard(
               candidate: front,
               onTap: () => onCardTap(front),
+              onWhyTap: onWhyTap,
             ),
           ),
         ),

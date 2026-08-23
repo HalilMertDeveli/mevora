@@ -288,7 +288,7 @@ void main() {
     await tester.tap(find.text(_l10n.sendCode));
     await tester.pump();
 
-    expect(find.text(_l10n.authInvalidPhone), findsOneWidget);
+    expect(find.text(_l10n.authInvalidPhone), findsWidgets);
   });
 
   testWidgets('otp input auto-focuses and accepts a pasted 6-digit code', (

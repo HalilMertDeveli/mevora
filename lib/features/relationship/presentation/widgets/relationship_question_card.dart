@@ -18,6 +18,72 @@ import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
 
+class RelationshipDiscoverySync extends StatefulWidget {
+  const RelationshipDiscoverySync({
+    super.key,
+    required this.controller,
+    required this.child,
+    this.discoveryVisible = false,
+    this.normalMatchCount = 0,
+  });
+
+  final RelationshipController controller;
+  final Widget child;
+  final bool discoveryVisible;
+  final int normalMatchCount;
+
+  @override
+  State<RelationshipDiscoverySync> createState() =>
+      _RelationshipDiscoverySyncState();
+}
+
+class _RelationshipDiscoverySyncState extends State<RelationshipDiscoverySync> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_syncHost);
+    unawaited(widget.controller.start());
+    _pushVisibility();
+  }
+
+  @override
+  void didUpdateWidget(RelationshipDiscoverySync oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_syncHost);
+      widget.controller.addListener(_syncHost);
+      unawaited(widget.controller.start());
+    }
+    _pushVisibility();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _pushVisibility();
+  }
+
+  void _pushVisibility() {
+    widget.controller.setNormalMatchCount(widget.normalMatchCount);
+    widget.controller.setDiscoveryVisible(widget.discoveryVisible);
+  }
+
+  void _syncHost() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncHost);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 class RelationshipPromptHost extends StatefulWidget {
   const RelationshipPromptHost({
     super.key,
@@ -83,17 +149,18 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
   Widget build(BuildContext context) {
     final controller = widget.controller;
     final question = controller.currentQuestion;
+    final showPrompt = widget.discoveryVisible;
     return Stack(
       fit: StackFit.expand,
       children: [
         widget.child,
-        if (controller.hasUnavailableFallback)
+        if (showPrompt && controller.hasUnavailableFallback)
           Positioned.fill(
             child: RelationshipQuestionUnavailableCard(
               onDismiss: controller.dismissUnavailable,
             ),
           )
-        else if (controller.isResultVisible)
+        else if (showPrompt && controller.isResultVisible)
           Positioned.fill(
             child: RelationshipTestResultCard(
               results: controller.testResults,
@@ -106,7 +173,7 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
               },
             ),
           )
-        else if (question != null)
+        else if (showPrompt && question != null)
           Positioned.fill(
             child: RelationshipQuestionCard(
               question: question,
@@ -119,7 +186,7 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
               },
             ),
           )
-        else if (controller.isOfferVisible)
+        else if (showPrompt && controller.isOfferVisible)
           Positioned.fill(
             child: RelationshipTestOfferCard(
               onStart: () {

@@ -25,7 +25,7 @@ class DiscoveryActionButtons extends StatelessWidget {
       children: [
         _ActionCircle(
           icon: Icons.close_rounded,
-          color: AppColors.danger,
+          color: AppColors.error,
           tooltip: l10n.pass,
           onPressed: enabled ? onPass : null,
           size: 56,
@@ -33,7 +33,7 @@ class DiscoveryActionButtons extends StatelessWidget {
         const SizedBox(width: AppSpacing.lg),
         _ActionCircle(
           icon: Icons.star_rounded,
-          color: AppColors.apricot,
+          color: AppColors.softPurple,
           tooltip: l10n.superLike,
           onPressed: enabled ? onSuperLike : null,
           size: 64,
@@ -41,7 +41,7 @@ class DiscoveryActionButtons extends StatelessWidget {
         const SizedBox(width: AppSpacing.lg),
         _ActionCircle(
           icon: Icons.favorite_rounded,
-          color: AppColors.moss,
+          color: AppColors.accentPrimary,
           tooltip: l10n.like,
           onPressed: enabled ? onLike : null,
           size: 56,

@@ -21,6 +21,7 @@ class Match {
     this.isNewFor = const {},
     this.participantNames = const {},
     this.participantPhotos = const {},
+    this.participantVerified = const {},
     this.source = MatchSource.mutualLike,
   });
 
@@ -38,6 +39,7 @@ class Match {
   final Map<String, bool> isNewFor;
   final Map<String, String> participantNames;
   final Map<String, String> participantPhotos;
+  final Map<String, bool> participantVerified;
   final MatchSource source;
 
   bool get isRelationshipTest => source == MatchSource.relationshipTest;
@@ -53,6 +55,9 @@ class Match {
       participantNames[otherUserId(uid)] ?? 'Mevora';
 
   String? otherPhoto(String uid) => participantPhotos[otherUserId(uid)];
+
+  bool otherIsVerified(String uid) =>
+      participantVerified[otherUserId(uid)] ?? false;
 
   int unreadFor(String uid) => unreadCounts[uid] ?? 0;
 
@@ -84,6 +89,7 @@ class Match {
       isNewFor: isNewFor ?? this.isNewFor,
       participantNames: participantNames,
       participantPhotos: participantPhotos,
+      participantVerified: participantVerified,
       source: source ?? this.source,
     );
   }

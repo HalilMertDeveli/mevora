@@ -13,6 +13,12 @@ import 'package:mevora/features/discovery/domain/repositories/discovery_reposito
 import 'package:mevora/features/location/domain/entities/location_flags.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/domain/services/location_update_policy.dart';
+import 'package:mevora/features/compatibility/domain/entities/hidden_compatibility_insight.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
+import 'package:mevora/features/compatibility/domain/services/compatibility_score_resolver.dart';
+import 'package:mevora/features/compatibility/domain/services/compatibility_session_cache.dart';
+import 'package:mevora/features/compatibility/domain/services/mevora_compatibility_engine.dart';
+import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 
 enum LocationPromptPhase {
   /// Custom Mevora explanation. Native GPS dialog has not been shown.
@@ -38,6 +44,8 @@ class DiscoveryFeedState {
     this.hasSeenEveryone = false,
     this.isMockMode = false,
     this.hasDiscoveryError = false,
+    this.hiddenCompatibility,
+    this.hiddenCompatibilityDismissed = false,
   });
 
   final LocationPromptPhase phase;
@@ -53,6 +61,8 @@ class DiscoveryFeedState {
   final bool hasSeenEveryone;
   final bool isMockMode;
   final bool hasDiscoveryError;
+  final HiddenCompatibilityInsight? hiddenCompatibility;
+  final bool hiddenCompatibilityDismissed;
 
   DiscoveryCandidate? get current =>
       candidates.isEmpty ? null : candidates.first;
@@ -77,6 +87,9 @@ class DiscoveryFeedState {
     bool? hasSeenEveryone,
     bool? isMockMode,
     bool? hasDiscoveryError,
+    HiddenCompatibilityInsight? hiddenCompatibility,
+    bool clearHiddenCompatibility = false,
+    bool? hiddenCompatibilityDismissed,
   }) {
     return DiscoveryFeedState(
       phase: phase ?? this.phase,
@@ -96,9 +109,17 @@ class DiscoveryFeedState {
       hasSeenEveryone: hasSeenEveryone ?? this.hasSeenEveryone,
       isMockMode: isMockMode ?? this.isMockMode,
       hasDiscoveryError: hasDiscoveryError ?? this.hasDiscoveryError,
+      hiddenCompatibility: clearHiddenCompatibility
+          ? null
+          : (hiddenCompatibility ?? this.hiddenCompatibility),
+      hiddenCompatibilityDismissed:
+          hiddenCompatibilityDismissed ?? this.hiddenCompatibilityDismissed,
     );
   }
 }
+
+/// Loads the signed-in user's profile for client-side compatibility fallback.
+typedef ViewerProfileLoader = Future<UserProfile?> Function(String uid);
 
 /// Presentation talks to repositories only. No GPS APIs, no other-user coords.
 class DiscoveryController extends ChangeNotifier {
@@ -108,12 +129,14 @@ class DiscoveryController extends ChangeNotifier {
     required DiscoveryRepository discoveryRepository,
     PurchaseRepository? purchaseRepository,
     LocationSyncCoordinator? locationSync,
+    ViewerProfileLoader? viewerProfileLoader,
     bool skipExplanationIfAlreadyGranted = true,
     this.swipeThreshold = 120,
   }) : _locationRepository = locationRepository,
        _discoveryRepository = discoveryRepository,
        _purchaseRepository = purchaseRepository,
        _locationSync = locationSync ?? LocationSyncCoordinator(),
+       _viewerProfileLoader = viewerProfileLoader,
        _skipExplanationIfAlreadyGranted = skipExplanationIfAlreadyGranted {
     state = state.copyWith(
       isMockMode:
@@ -127,7 +150,10 @@ class DiscoveryController extends ChangeNotifier {
   final DiscoveryRepository _discoveryRepository;
   final PurchaseRepository? _purchaseRepository;
   final LocationSyncCoordinator _locationSync;
+  final ViewerProfileLoader? _viewerProfileLoader;
   final bool _skipExplanationIfAlreadyGranted;
+
+  UserProfile? _viewerProfile;
 
   /// Minimum drag distance (px) before a swipe action fires.
   final double swipeThreshold;
@@ -141,7 +167,70 @@ class DiscoveryController extends ChangeNotifier {
   final Set<String> _actedUserIds = <String>{};
   bool _isProcessingAction = false;
 
+  static const int _pageLimit = 15;
+  static const int _prefetchThreshold = 3;
+
+  String? _nextCursor;
+  bool _loadingMore = false;
+
   bool get isProcessingAction => _isProcessingAction;
+
+  final _compatibilityCache = CompatibilitySessionCache();
+
+  /// Cached breakdown for Why You Match sheets (invalidated on profile update).
+  CompatibilityBreakdown breakdownFor(DiscoveryCandidate candidate) {
+    final cached = _compatibilityCache.get(uid, candidate.uid);
+    if (cached != null) {
+      return cached;
+    }
+    final viewer = _viewerProfile ?? UserProfile(uid: uid, displayName: 'You');
+    final breakdown = CompatibilityScoreResolver.breakdownFor(
+      viewer: viewer,
+      candidate: candidate,
+      filters: state.filters,
+    );
+    _compatibilityCache.put(uid, candidate.uid, breakdown);
+    return breakdown;
+  }
+
+  UserProfile? get viewerProfile => _viewerProfile;
+
+  /// Clears cached compatibility breakdowns and reloads discover feed.
+  void onProfileUpdated() {
+    _compatibilityCache.invalidateViewer(uid);
+    _viewerProfile = null;
+    unawaited(loadCandidates());
+  }
+
+  Future<UserProfile?> _loadViewerProfile() async {
+    if (_viewerProfile != null) {
+      return _viewerProfile;
+    }
+    final loader = _viewerProfileLoader;
+    if (loader == null) {
+      return null;
+    }
+    _viewerProfile = await loader(uid);
+    return _viewerProfile;
+  }
+
+  List<DiscoveryCandidate> _resolveCompatibility(
+    List<DiscoveryCandidate> candidates,
+    UserProfile? viewer,
+  ) {
+    if (viewer == null) {
+      return candidates;
+    }
+    return candidates
+        .map(
+          (candidate) => CompatibilityScoreResolver.resolve(
+            viewer: viewer,
+            candidate: candidate,
+            filters: state.filters,
+          ),
+        )
+        .toList();
+  }
 
   Future<void> start() async {
     unawaited(refreshBoost());
@@ -262,6 +351,29 @@ class DiscoveryController extends ChangeNotifier {
     await loadCandidates();
   }
 
+  void dismissHiddenCompatibility() {
+    state = state.copyWith(hiddenCompatibilityDismissed: true);
+    notifyListeners();
+  }
+
+  void focusHiddenCompatibility() {
+    final insight = state.hiddenCompatibility;
+    if (insight == null) {
+      return;
+    }
+    final candidates = List<DiscoveryCandidate>.from(state.candidates);
+    final index = candidates.indexWhere((c) => c.uid == insight.candidateUid);
+    if (index > 0) {
+      final candidate = candidates.removeAt(index);
+      candidates.insert(0, candidate);
+    }
+    state = state.copyWith(
+      candidates: candidates,
+      hiddenCompatibilityDismissed: true,
+    );
+    notifyListeners();
+  }
+
   Future<void> exploreAgain() async {
     state = state.copyWith(hasSeenEveryone: false);
     notifyListeners();
@@ -275,43 +387,120 @@ class DiscoveryController extends ChangeNotifier {
     }
     demo.restartDemo();
     _actedUserIds.clear();
+    _nextCursor = null;
     state = state.copyWith(hasSeenEveryone: false, candidates: const []);
     notifyListeners();
     await loadCandidates();
   }
 
-  Future<void> loadCandidates() async {
-    state = state.copyWith(isLoading: true, clearError: true);
-    notifyListeners();
+  Future<void> loadCandidates({bool refresh = true}) async {
+    if (!refresh && (_loadingMore || _nextCursor == null)) {
+      return;
+    }
+
+    if (refresh) {
+      _nextCursor = null;
+      state = state.copyWith(isLoading: true, clearError: true);
+      notifyListeners();
+    } else {
+      _loadingMore = true;
+    }
+
     final result = await _discoveryRepository.getCandidates(
       radius: state.radius,
+      cursor: refresh ? null : _nextCursor,
+      limit: _pageLimit,
     );
+
+    final viewer = await _loadViewerProfile();
+
     switch (result) {
       case Success(:final value):
-        final filtered = _applyFilters(value.candidates);
+        _nextCursor = value.nextCursor;
+        final filtered = _applyFilters(value.candidates)
+            .where((candidate) => !_actedUserIds.contains(candidate.uid))
+            .toList();
+        final ranked =
+            DiscoveryRankingEngine.applyCompatibilityTiebreak(filtered);
+        final resolved = _resolveCompatibility(ranked, viewer);
+        final merged = refresh
+            ? resolved
+            : _mergeCandidates(state.candidates, resolved);
         final demo = _asDemo(_discoveryRepository);
         final seenEveryone =
-            filtered.isEmpty &&
+            merged.isEmpty &&
+            refresh &&
+            _nextCursor == null &&
             demo != null &&
             demo.isExhaustedForRadius(state.radius.kilometers);
+        final hidden = refresh
+            ? MevoraCompatibilityEngine.hiddenInsight(merged)
+            : state.hiddenCompatibility;
         state = state.copyWith(
-          candidates: filtered,
+          candidates: merged,
           isLoading: false,
           hasSeenEveryone: seenEveryone,
           hasDiscoveryError: false,
           clearError: true,
+          hiddenCompatibility: hidden,
+          hiddenCompatibilityDismissed: refresh
+              ? false
+              : state.hiddenCompatibilityDismissed,
+          clearHiddenCompatibility: refresh && hidden == null,
           phase: state.phase == LocationPromptPhase.explanation
               ? LocationPromptPhase.ready
               : state.phase,
         );
       case Err(:final failure):
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: failure.message,
-          hasDiscoveryError: true,
-        );
+        if (refresh) {
+          state = state.copyWith(
+            isLoading: false,
+            errorMessage: failure.message,
+            hasDiscoveryError: true,
+          );
+        }
     }
+    _loadingMore = false;
     notifyListeners();
+  }
+
+  List<DiscoveryCandidate> _mergeCandidates(
+    List<DiscoveryCandidate> existing,
+    List<DiscoveryCandidate> incoming,
+  ) {
+    if (incoming.isEmpty) {
+      return existing;
+    }
+    final seen = existing.map((candidate) => candidate.uid).toSet();
+    final appended = incoming
+        .where((candidate) => !seen.contains(candidate.uid))
+        .toList();
+    if (appended.isEmpty) {
+      return existing;
+    }
+    return [...existing, ...appended];
+  }
+
+  void _maybePrefetchMore() {
+    if (_loadingMore || state.isLoading || _nextCursor == null) {
+      return;
+    }
+    if (state.candidates.length > _prefetchThreshold) {
+      return;
+    }
+    unawaited(loadCandidates(refresh: false));
+  }
+
+  Future<void> _reloadWhenDeckEmpty() async {
+    if (_nextCursor != null) {
+      await loadCandidates(refresh: false);
+      if (state.candidates.isEmpty && _nextCursor != null) {
+        await loadCandidates(refresh: false);
+      }
+    }
+    if (state.candidates.isEmpty) {
+      await loadCandidates(refresh: true);
+    }
   }
 
   Future<void> onLike(String userId) =>
@@ -340,7 +529,9 @@ class DiscoveryController extends ChangeNotifier {
     state = state.copyWith(candidates: remaining);
     notifyListeners();
     if (remaining.isEmpty) {
-      unawaited(loadCandidates());
+      unawaited(_reloadWhenDeckEmpty());
+    } else {
+      _maybePrefetchMore();
     }
   }
 
@@ -401,7 +592,9 @@ class DiscoveryController extends ChangeNotifier {
     _isProcessingAction = false;
 
     if (remaining.isEmpty) {
-      await loadCandidates();
+      await _reloadWhenDeckEmpty();
+    } else {
+      _maybePrefetchMore();
     }
     notifyListeners();
   }

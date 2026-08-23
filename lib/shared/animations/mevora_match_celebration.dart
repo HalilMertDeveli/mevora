@@ -21,6 +21,7 @@ class MevoraMatchCelebration extends StatefulWidget {
     this.onCompleted,
     this.onSendMessage,
     this.onKeepExploring,
+    this.compatibilitySection,
   });
 
   final String leftName;
@@ -32,6 +33,7 @@ class MevoraMatchCelebration extends StatefulWidget {
   final VoidCallback? onCompleted;
   final VoidCallback? onSendMessage;
   final VoidCallback? onKeepExploring;
+  final Widget? compatibilitySection;
 
   @override
   State<MevoraMatchCelebration> createState() => _MevoraMatchCelebrationState();
@@ -158,6 +160,10 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
                         style: theme.textTheme.bodyLarge,
                         textAlign: TextAlign.center,
                       ),
+                      if (widget.compatibilitySection != null) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        widget.compatibilitySection!,
+                      ],
                     ],
                   ),
                 ),

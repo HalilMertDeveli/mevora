@@ -39,6 +39,7 @@ class MatchListTile extends StatelessWidget {
         name: item.name,
         image: MevoraNetworkImages.provider(photo),
         size: 56,
+        isVerified: item.isVerified,
       ),
       title: Text(item.name, style: theme.textTheme.titleMedium),
       subtitle: Text(

@@ -26,9 +26,14 @@ class DiscoveryNetworkImage extends StatelessWidget {
     if (provider == null) {
       return;
     }
-    provider
-        .resolve(const ImageConfiguration())
-        .addListener(ImageStreamListener((_, _) {}));
+    final stream = provider.resolve(const ImageConfiguration());
+    late ImageStreamListener listener;
+    listener = ImageStreamListener((_, _) {
+      stream.removeListener(listener);
+    }, onError: (_, _) {
+      stream.removeListener(listener);
+    });
+    stream.addListener(listener);
   }
 
   @override

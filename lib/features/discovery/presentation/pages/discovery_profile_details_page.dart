@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
 import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
+import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
 
@@ -129,6 +131,10 @@ class _DiscoveryProfileDetailsPageState
               '${candidate.displayName}, ${candidate.age}',
               style: theme.textTheme.headlineSmall,
             ),
+            if (candidate.isVerified) ...[
+              const SizedBox(height: AppSpacing.xs),
+              const VerifiedProfileBadge(),
+            ],
             if (candidate.city != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
@@ -145,12 +151,9 @@ class _DiscoveryProfileDetailsPageState
               children: [
                 if (distance != null && distance.isNotEmpty)
                   MevoraChip(label: distance, compact: true),
-                MevoraChip(
-                  label: l10n.compatibilityPercent(
-                    candidate.compatibilityScore,
-                  ),
-                  selected: true,
-                  compact: true,
+                CompatibilityDiscoverBadge(
+                  score: candidate.compatibilityScore,
+                  status: candidate.compatibilityStatus,
                 ),
                 if (candidate.musicCompatibilityScore != null)
                   MusicCompatibilityBadge(
@@ -192,10 +195,16 @@ class _DiscoveryProfileDetailsPageState
             const SizedBox(height: AppSpacing.lg),
             Text(l10n.whyYoureSeeingThis, style: theme.textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
-            MevoraChip(
-              label: l10n.compatibilityPercent(candidate.compatibilityScore),
-              selected: true,
-            ),
+            if (candidate.hasCompatibilityScore)
+              MevoraChip(
+                label: l10n.compatDiscoverBadge(candidate.compatibilityScore),
+                selected: true,
+              )
+            else
+              CompatibilityDiscoverBadge(
+                score: candidate.compatibilityScore,
+                status: candidate.compatibilityStatus,
+              ),
             if (candidate.musicCompatibilityScore != null) ...[
               const SizedBox(height: AppSpacing.sm),
               MusicCompatibilityBadge(

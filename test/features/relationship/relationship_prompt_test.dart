@@ -15,8 +15,11 @@ import 'package:mevora/features/relationship/domain/services/relationship_compat
 import 'package:mevora/features/relationship/domain/services/relationship_question_sets.dart';
 import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
+import 'package:mevora/l10n/app_localizations.dart';
 
 import '../../helpers/pump_app.dart';
+
+final _l10n = lookupAppLocalizations(const Locale('en'));
 
 RelationshipController _controller({
   RelationshipRepository? repository,
@@ -289,9 +292,9 @@ void main() {
         RelationshipTestOfferCard(onStart: () {}, onLater: () {}),
       ),
     );
-    expect(find.text('We haven\'t found a match for you yet.'), findsOneWidget);
-    expect(find.text('Start the Relationship Test'), findsOneWidget);
-    expect(find.text('Not now'), findsOneWidget);
+    expect(find.text(_l10n.relationshipTestHeadline), findsOneWidget);
+    expect(find.text(_l10n.relationshipTestStart), findsOneWidget);
+    expect(find.text(_l10n.relationshipTestLater), findsOneWidget);
   });
 
   testWidgets('result card shows the nearest match and profile action', (
@@ -321,10 +324,10 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Your relationship test is complete'), findsOneWidget);
+    expect(find.text(_l10n.relationshipTestDoneTitle), findsOneWidget);
     expect(find.text('Ada'), findsOneWidget);
-    expect(find.text('View profile'), findsOneWidget);
-    expect(find.text('Open chat'), findsOneWidget);
+    expect(find.text(_l10n.relationshipTestViewProfile), findsOneWidget);
+    expect(find.text(_l10n.relationshipTestOpenChat), findsOneWidget);
   });
 
   testWidgets('matches tile shows a relationship test badge', (tester) async {
@@ -371,12 +374,12 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('Start the Relationship Test'), findsNothing);
+    expect(find.text(_l10n.relationshipTestStart), findsNothing);
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
     expect(controller.isOfferVisible, isTrue);
-    expect(find.text('Start the Relationship Test'), findsOneWidget);
-    expect(find.text('We haven\'t found a match for you yet.'), findsOneWidget);
+    expect(find.text(_l10n.relationshipTestStart), findsOneWidget);
+    expect(find.text(_l10n.relationshipTestHeadline), findsOneWidget);
     controller.pause();
   });
 }

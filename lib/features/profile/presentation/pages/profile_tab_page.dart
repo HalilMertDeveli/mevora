@@ -7,11 +7,14 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
+import 'package:mevora/core/di/verification_scope.dart';
+import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
 import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
+import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
@@ -43,6 +46,7 @@ class ProfileTabPage extends StatelessWidget {
               name: user?.displayName ?? l10n.appName,
               image: MevoraNetworkImages.provider(user?.photoUrl),
               size: 96,
+              isVerified: user?.isVerified ?? false,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -62,6 +66,7 @@ class ProfileTabPage extends StatelessWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.xl),
+          const _ProfileVerificationTile(),
           const _ProfileBoostTile(),
           const _ProfileMatchScoreTile(),
           const _ProfileRelationshipTile(),
@@ -97,6 +102,59 @@ class ProfileTabPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileVerificationTile extends StatefulWidget {
+  const _ProfileVerificationTile();
+
+  @override
+  State<_ProfileVerificationTile> createState() =>
+      _ProfileVerificationTileState();
+}
+
+class _ProfileVerificationTileState extends State<_ProfileVerificationTile> {
+  StreamSubscription<ProfileVerification>? _subscription;
+  ProfileVerificationStatus _status = ProfileVerificationStatus.notStarted;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final uid = AuthScope.maybeOf(context)?.user?.id;
+    final repository = VerificationScope.maybeOf(context);
+    if (uid == null || repository == null) {
+      return;
+    }
+    _subscription?.cancel();
+    _subscription = repository.watchVerification(uid).listen(
+      (value) {
+        if (!mounted) {
+          return;
+        }
+        setState(() => _status = value.status);
+      },
+      onError: (_, _) {
+        if (!mounted) {
+          return;
+        }
+        setState(() => _status = ProfileVerificationStatus.notStarted);
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_subscription?.cancel());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = AuthScope.maybeOf(context)?.user;
+    return VerificationEntryTile(
+      status: _status,
+      accountVerified: user?.isVerified ?? false,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_constants.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/theme/app_typography.dart';
 
@@ -18,10 +19,10 @@ class MevoraLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final markColor = onDark ? const Color(0xFFF4EEE8) : colors.primary;
-    final onMark = onDark ? const Color(0xFF1C1420) : colors.onPrimary;
+    final markColor = onDark ? AppColors.primaryText : colors.primary;
+    final onMark = onDark ? AppColors.background : colors.onPrimary;
     final wordmarkColor = onDark
-        ? const Color(0xFFF4EEE8)
+        ? AppColors.primaryText
         : (Theme.of(context).textTheme.titleMedium?.color ?? colors.onSurface);
 
     return Column(

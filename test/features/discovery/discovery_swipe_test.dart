@@ -4,6 +4,7 @@ import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/discovery/data/repositories/mock_discovery_repository.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
@@ -34,6 +35,7 @@ void main() {
       city: 'Istanbul',
       bio: 'Coffee lover',
       compatibilityScore: 88,
+      compatibilityStatus: CompatibilityDisplayStatus.ready,
       interests: ['art', 'coffee'],
       compatibilityReasons: ['Shared interest in coffee culture'],
     );
@@ -43,7 +45,7 @@ void main() {
     );
     expect(find.text('Elif, 26'), findsOneWidget);
     expect(find.text('Istanbul'), findsOneWidget);
-    expect(find.textContaining('88%'), findsOneWidget);
+    expect(find.text(_en.compatDiscoverBadge(88)), findsOneWidget);
     expect(find.text('Coffee lover'), findsOneWidget);
   });
 
@@ -92,6 +94,7 @@ void main() {
       age: 25,
       city: 'Istanbul',
       compatibilityScore: 91,
+      compatibilityStatus: CompatibilityDisplayStatus.ready,
       sharedInterests: ['coffee', 'film'],
       compatibilityReasons: [
         'Strong shared interests in film',
@@ -109,10 +112,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text(_en.whyYoureSeeingThis), findsOneWidget);
-    expect(
-      find.text(_en.compatibilityPercent(candidate.compatibilityScore)),
-      findsWidgets,
-    );
+    expect(find.text(_en.compatDiscoverBadge(91)), findsWidgets);
   });
 
   testWidgets('discovery supports dark theme layout', (tester) async {
@@ -121,6 +121,7 @@ void main() {
       displayName: 'Deniz',
       age: 29,
       compatibilityScore: 76,
+      compatibilityStatus: CompatibilityDisplayStatus.ready,
     );
     await tester.pumpWidget(
       MaterialApp(

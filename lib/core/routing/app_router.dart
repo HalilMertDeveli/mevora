@@ -10,9 +10,11 @@ import 'package:mevora/features/settings/presentation/pages/blocked_users_page.d
 import 'package:mevora/features/settings/presentation/pages/change_password_page.dart';
 import 'package:mevora/features/settings/presentation/pages/discovery_preferences_page.dart';
 import 'package:mevora/features/settings/presentation/pages/edit_profile_page.dart';
+import 'package:mevora/features/settings/presentation/pages/profile_answers_page.dart';
 import 'package:mevora/features/settings/presentation/pages/location_settings_page.dart';
 import 'package:mevora/features/settings/presentation/pages/privacy_settings_page.dart';
 import 'package:mevora/features/settings/presentation/pages/settings_page.dart';
+import 'package:mevora/features/authentication/presentation/pages/account_settings_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/login_page.dart';
 import 'package:mevora/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/password_reset_page.dart';
@@ -32,6 +34,7 @@ import 'package:mevora/features/music/presentation/pages/music_page.dart';
 import 'package:mevora/features/notifications/presentation/pages/notification_settings_page.dart';
 import 'package:mevora/features/permissions/presentation/pages/privacy_permissions_page.dart';
 import 'package:mevora/features/profile/presentation/pages/profile_tab_page.dart';
+import 'package:mevora/features/verification/presentation/pages/verify_profile_screen.dart';
 import 'package:mevora/features/safety/presentation/pages/report_page.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
 
@@ -240,6 +243,13 @@ GoRouter createAppRouter({
             ),
           ),
           GoRoute(
+            path: 'profile-answers',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const ProfileAnswersPage(),
+            ),
+          ),
+          GoRoute(
             path: 'change-password',
             pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
               key: state.pageKey,
@@ -272,6 +282,20 @@ GoRouter createAppRouter({
             pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
               key: state.pageKey,
               child: const BlockedUsersPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'verify-profile',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const VerifyProfileScreen(),
+            ),
+          ),
+          GoRoute(
+            path: 'account',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const AccountSettingsPage(),
             ),
           ),
         ],

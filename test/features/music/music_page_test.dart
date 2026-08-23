@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/theme/app_theme.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_profile_details_page.dart';
 import 'package:mevora/features/music/data/datasources/mock_music_data_source.dart';
@@ -65,6 +66,7 @@ void main() {
       displayName: 'Ada',
       age: 27,
       compatibilityScore: 78,
+      compatibilityStatus: CompatibilityDisplayStatus.ready,
       musicCompatibilityScore: 91,
     );
     await tester.pumpWidget(
@@ -74,6 +76,6 @@ void main() {
 
     expect(find.text(_en.musicCompatibilityPercent(91)), findsOneWidget);
     expect(find.text(_en.musicCompatibilityShort(91)), findsOneWidget);
-    expect(find.textContaining('78%'), findsWidgets);
+    expect(find.text(_en.compatDiscoverBadge(78)), findsWidgets);
   });
 }

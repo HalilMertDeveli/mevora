@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_press_scale.dart';
@@ -57,7 +58,7 @@ class WelcomeAuthButtons extends StatelessWidget {
           leading: const Icon(
             Icons.phone_iphone_rounded,
             size: 20,
-            color: Color(0xFFF4EEE8),
+            color: AppColors.primaryText,
           ),
           style: _WelcomeButtonStyle.glass,
         ),
@@ -79,7 +80,7 @@ class WelcomeAuthButtons extends StatelessWidget {
           leading: const Icon(
             Icons.mail_outline_rounded,
             size: 20,
-            color: Color(0xFFF4EEE8),
+            color: AppColors.primaryText,
           ),
           style: _WelcomeButtonStyle.glass,
         ),
@@ -179,9 +180,9 @@ class _WelcomeProviderButton extends StatelessWidget {
         border: const Color(0x00FFFFFF),
       ),
       _WelcomeButtonStyle.filledDark => (
-        background: const Color(0xFF1C1420),
-        foreground: const Color(0xFFF4EEE8),
-        border: const Color(0x33FFFFFF),
+        background: AppColors.card,
+        foreground: AppColors.primaryText,
+        border: AppColors.glassBorder,
       ),
       _WelcomeButtonStyle.spotify => (
         background: const Color(0xFF1DB954),
@@ -189,9 +190,9 @@ class _WelcomeProviderButton extends StatelessWidget {
         border: const Color(0x00FFFFFF),
       ),
       _WelcomeButtonStyle.glass => (
-        background: const Color(0x33FFFFFF),
-        foreground: const Color(0xFFF4EEE8),
-        border: const Color(0x55FFFFFF),
+        background: AppColors.glassFill.withValues(alpha: 0.45),
+        foreground: AppColors.primaryText,
+        border: AppColors.glassBorder,
       ),
     };
   }

@@ -76,7 +76,7 @@ class MockRelationshipDataSource implements RelationshipDataSource {
     )) {
       throw StateError('invalid-relationship-answer');
     }
-    if (_answers.containsKey(questionId)) {
+    if (_answers.containsKey(questionId) && _answers[questionId] == answerId) {
       return _snapshot();
     }
     _answers[questionId] = answerId;
@@ -103,6 +103,14 @@ class MockRelationshipDataSource implements RelationshipDataSource {
       RelationshipQuestionConfig.declinedCooldown,
     );
     return _exactSuggestions(questionIds);
+  }
+
+  @override
+  Future<Map<String, String>> getSavedAnswers(String uid) async {
+    if (uid != selfUid) {
+      return const {};
+    }
+    return Map<String, String>.from(_answers);
   }
 
   @override

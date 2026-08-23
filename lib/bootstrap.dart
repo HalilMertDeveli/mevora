@@ -15,6 +15,7 @@ import 'package:mevora/core/di/match_score_services_factory.dart';
 import 'package:mevora/core/di/music_services_factory.dart';
 import 'package:mevora/core/di/relationship_services_factory.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
+import 'package:mevora/core/di/verification_services_factory.dart';
 import 'package:mevora/core/di/social_services_factory.dart';
 import 'package:mevora/core/errors/error_handler.dart';
 import 'package:mevora/core/identity/firebase_auth_uid_source.dart';
@@ -117,6 +118,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
     uidSource: FirebaseAuthUidSource(),
     logger: logger,
   );
+  final verificationServices = createVerificationServices();
   final languageController = LanguageController(
     repository: LanguageRepository(
       local: SharedPreferencesLanguageDataSource(
@@ -145,6 +147,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       matchScoreRepository: matchScoreServices.repository,
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,
+      verificationRepository: verificationServices.repository,
       analytics: analytics,
       languageController: languageController,
       permissionService: permissionService,

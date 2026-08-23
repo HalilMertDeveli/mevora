@@ -5,18 +5,20 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
-import 'package:mevora/features/onboarding/domain/entities/onboarding_enums.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
-import 'package:mevora/features/onboarding/domain/entities/interest_option.dart';
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo_grid.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_gender_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_interest_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_lifestyle_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_relationship_goal_picker.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_motion_size.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/turkish_province_picker.dart';
-import 'package:mevora/shared/widgets/mevora_chip.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
 
@@ -172,14 +174,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: [
-              for (final value in OnboardingGender.values)
-                MevoraChip(
-                  label: _genderLabel(l10n, value),
-                  selected: profile.gender == value,
-                  onSelected: (_) => _controller.updateDraft(
-                    (current) => current.copyWith(gender: value),
-                  ),
+              ProfileGenderPicker(
+                value: profile.gender,
+                onChanged: (value) => _controller.updateDraft(
+                  (current) => current.copyWith(gender: value),
                 ),
+                enabled: !_controller.isSaving,
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -188,19 +189,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final value in OnboardingInterestedIn.values)
-                MevoraChip(
-                  label: _interestedLabel(l10n, value),
-                  selected: profile.interestedIn == value,
-                  onSelected: (_) => _controller.updateDraft(
-                    (current) => current.copyWith(interestedIn: value),
-                  ),
-                ),
-            ],
+          ProfileInterestedInPicker(
+            value: profile.interestedIn,
+            onChanged: (value) => _controller.updateDraft(
+              (current) => current.copyWith(interestedIn: value),
+            ),
+            enabled: !_controller.isSaving,
           ),
           const SizedBox(height: AppSpacing.md),
           MevoraTextField(
@@ -224,34 +218,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
-      child: ListView(
-        children: [
-          Text(l10n.onboardingInterestsHint),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final option in InterestCatalog.options)
-                MevoraChip(
-                  label: _interestLabel(l10n, option.id),
-                  avatar: Icon(option.icon, size: 18),
-                  selected: selected.contains(option.id),
-                  onSelected: (value) {
-                    _controller.updateDraft((current) {
-                      final next = {...current.interests};
-                      if (value) {
-                        next.add(option.id);
-                      } else {
-                        next.remove(option.id);
-                      }
-                      return current.copyWith(interests: next.toList());
-                    });
-                  },
-                ),
-            ],
-          ),
-        ],
+      child: ProfileInterestPicker(
+        selected: selected,
+        onChanged: (next) => _controller.updateDraft(
+          (current) => current.copyWith(interests: next.toList()),
+        ),
+        enabled: !_controller.isSaving,
       ),
     );
   }
@@ -265,20 +237,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
-      child: ListView(
-        children: [
-          for (final value in OnboardingEducation.values)
-            RadioListTile<String>(
-              value: value,
-              groupValue: education,
-              title: Text(_educationLabel(l10n, value)),
-              onChanged: _controller.isSaving
-                  ? null
-                  : (next) => _controller.updateDraft(
-                      (current) => current.copyWith(education: next),
-                    ),
-            ),
-        ],
+      child: ProfileEducationPicker(
+        value: education,
+        onChanged: (next) => _controller.updateDraft(
+          (current) => current.copyWith(education: next),
+        ),
+        enabled: !_controller.isSaving,
       ),
     );
   }
@@ -292,20 +256,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
-      child: ListView(
-        children: [
-          for (final value in OnboardingRelationshipGoal.values)
-            RadioListTile<String>(
-              value: value,
-              groupValue: goal,
-              title: Text(_relationshipLabel(l10n, value)),
-              onChanged: _controller.isSaving
-                  ? null
-                  : (next) => _controller.updateDraft(
-                      (current) => current.copyWith(relationshipGoal: next),
-                    ),
-            ),
-        ],
+      child: ProfileRelationshipGoalPicker(
+        value: goal,
+        onChanged: (next) => _controller.updateDraft(
+          (current) => current.copyWith(relationshipGoal: next),
+        ),
+        enabled: !_controller.isSaving,
       ),
     );
   }
@@ -319,92 +275,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
-      child: ListView(
-        children: [
-          _lifestyleGroup(
-            l10n.onboardingSmoking,
-            lifestyle.smoking,
-            OnboardingLifestyleOption.habitValues,
-            (value) => _controller.updateDraft(
-              (current) => current.copyWith(
-                lifestyleProfile: current.lifestyleProfile.copyWith(
-                  smoking: value,
-                ),
-              ),
-            ),
-            l10n,
-          ),
-          _lifestyleGroup(
-            l10n.onboardingDrinking,
-            lifestyle.drinking,
-            OnboardingLifestyleOption.habitValues,
-            (value) => _controller.updateDraft(
-              (current) => current.copyWith(
-                lifestyleProfile: current.lifestyleProfile.copyWith(
-                  drinking: value,
-                ),
-              ),
-            ),
-            l10n,
-          ),
-          _lifestyleGroup(
-            l10n.onboardingExercise,
-            lifestyle.exercise,
-            OnboardingLifestyleOption.habitValues,
-            (value) => _controller.updateDraft(
-              (current) => current.copyWith(
-                lifestyleProfile: current.lifestyleProfile.copyWith(
-                  exercise: value,
-                ),
-              ),
-            ),
-            l10n,
-          ),
-          _lifestyleGroup(
-            l10n.onboardingPets,
-            lifestyle.pets,
-            OnboardingLifestyleOption.petValues,
-            (value) => _controller.updateDraft(
-              (current) => current.copyWith(
-                lifestyleProfile: current.lifestyleProfile.copyWith(
-                  pets: value,
-                ),
-              ),
-            ),
-            l10n,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _lifestyleGroup(
-    String title,
-    String? selected,
-    List<String> values,
-    ValueChanged<String> onChanged,
-    AppLocalizations l10n,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final value in values)
-                MevoraChip(
-                  label: _lifestyleLabel(l10n, value),
-                  selected: selected == value,
-                  onSelected: (_) => onChanged(value),
-                ),
-            ],
-          ),
-        ],
+      child: ProfileLifestylePicker(
+        profile: lifestyle,
+        onChanged: (next) => _controller.updateDraft(
+          (current) => current.copyWith(lifestyleProfile: next),
+        ),
+        enabled: !_controller.isSaving,
       ),
     );
   }
@@ -536,92 +412,5 @@ class _OnboardingPageState extends State<OnboardingPage> {
       return;
     }
     AuthScope.of(context).applyOnboardingComplete();
-  }
-
-  String _genderLabel(AppLocalizations l10n, String value) {
-    return switch (value) {
-      OnboardingGender.man => l10n.onboardingGenderMan,
-      OnboardingGender.woman => l10n.onboardingGenderWoman,
-      OnboardingGender.nonBinary => l10n.onboardingGenderNonBinary,
-      _ => value,
-    };
-  }
-
-  String _interestedLabel(AppLocalizations l10n, String value) {
-    return switch (value) {
-      OnboardingInterestedIn.men => l10n.onboardingInterestedMen,
-      OnboardingInterestedIn.women => l10n.onboardingInterestedWomen,
-      OnboardingInterestedIn.everyone => l10n.onboardingInterestedEveryone,
-      _ => value,
-    };
-  }
-
-  String _interestLabel(AppLocalizations l10n, String id) {
-    return switch (id) {
-      'music' => l10n.interestMusic,
-      'travel' => l10n.interestTravel,
-      'fitness' => l10n.interestFitness,
-      'food' => l10n.interestFood,
-      'art' => l10n.interestArt,
-      'movies' => l10n.interestMovies,
-      'books' => l10n.interestBooks,
-      'gaming' => l10n.interestGaming,
-      'nature' => l10n.interestNature,
-      'photography' => l10n.interestPhotography,
-      'coffee' => l10n.interestCoffee,
-      'dancing' => l10n.interestDancing,
-      'yoga' => l10n.interestYoga,
-      'tech' => l10n.interestTech,
-      'fashion' => l10n.interestFashion,
-      'pets' => l10n.interestPets,
-      'sports' => l10n.interestSports,
-      'cooking' => l10n.interestCooking,
-      _ => id,
-    };
-  }
-
-  String _educationLabel(AppLocalizations l10n, String value) {
-    return switch (value) {
-      OnboardingEducation.highSchool => l10n.onboardingEducationHighSchool,
-      OnboardingEducation.someCollege => l10n.onboardingEducationSomeCollege,
-      OnboardingEducation.bachelors => l10n.onboardingEducationBachelors,
-      OnboardingEducation.masters => l10n.onboardingEducationMasters,
-      OnboardingEducation.phd => l10n.onboardingEducationPhd,
-      OnboardingEducation.preferNotToSay =>
-        l10n.onboardingEducationPreferNotToSay,
-      _ => value,
-    };
-  }
-
-  String _relationshipLabel(AppLocalizations l10n, String value) {
-    return switch (value) {
-      OnboardingRelationshipGoal.longTerm =>
-        l10n.onboardingRelationshipLongTerm,
-      OnboardingRelationshipGoal.shortTerm =>
-        l10n.onboardingRelationshipShortTerm,
-      OnboardingRelationshipGoal.friendship =>
-        l10n.onboardingRelationshipFriendship,
-      OnboardingRelationshipGoal.notSure => l10n.onboardingRelationshipNotSure,
-      OnboardingRelationshipGoal.preferNotToSay =>
-        l10n.onboardingRelationshipPreferNotToSay,
-      _ => value,
-    };
-  }
-
-  String _lifestyleLabel(AppLocalizations l10n, String value) {
-    return switch (value) {
-      OnboardingLifestyleOption.never => l10n.onboardingLifestyleNever,
-      OnboardingLifestyleOption.sometimes => l10n.onboardingLifestyleSometimes,
-      OnboardingLifestyleOption.regularly => l10n.onboardingLifestyleRegularly,
-      OnboardingLifestyleOption.daily => l10n.onboardingLifestyleDaily,
-      OnboardingLifestyleOption.none => l10n.onboardingLifestyleNone,
-      OnboardingLifestyleOption.cat => l10n.onboardingLifestyleCat,
-      OnboardingLifestyleOption.dog => l10n.onboardingLifestyleDog,
-      OnboardingLifestyleOption.both => l10n.onboardingLifestyleBoth,
-      OnboardingLifestyleOption.other => l10n.onboardingLifestyleOther,
-      OnboardingLifestyleOption.preferNotToSay =>
-        l10n.onboardingEducationPreferNotToSay,
-      _ => value,
-    };
   }
 }

@@ -21,17 +21,20 @@ class MevoraChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colors = theme.colorScheme;
 
-    final Color bgColor =
-        selected ? (isDark ? AppColors.blossom : AppColors.mulberry) : Colors.transparent;
+    final Color bgColor = selected
+        ? (isDark ? colors.primary : AppColors.mulberry)
+        : Colors.transparent;
     final Color textColor = selected
-        ? (isDark ? AppColors.ink : Colors.white)
-        : (isDark ? const Color(0xFFF4EEE8) : AppColors.ink);
+        ? (isDark ? colors.onPrimary : Colors.white)
+        : (isDark ? AppColors.primaryText : AppColors.ink);
     final Border? border = selected
         ? null
         : Border.all(
-            color: isDark ? const Color(0x55FFFFFF) : AppColors.outline,
+            color: isDark ? AppColors.glassBorder : AppColors.outline,
           );
 
     return MevoraPressScale(

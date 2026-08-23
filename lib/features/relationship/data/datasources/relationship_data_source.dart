@@ -16,4 +16,7 @@ abstract class RelationshipDataSource {
   });
 
   Future<List<RelationshipMatchSuggestion>> getSuggestions();
+
+  /// Owner-only saved answers map (questionId → answerId).
+  Future<Map<String, String>> getSavedAnswers(String uid);
 }

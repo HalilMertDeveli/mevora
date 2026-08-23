@@ -5,6 +5,7 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
@@ -58,6 +59,7 @@ void main() {
               age: 27,
               distanceLabel: '3.8 km away',
               compatibilityScore: 82,
+              compatibilityStatus: CompatibilityDisplayStatus.ready,
               interests: ['travel', 'music'],
             ),
           ),
@@ -66,7 +68,7 @@ void main() {
     );
     expect(find.text('Ada, 27'), findsOneWidget);
     expect(find.textContaining('3.8 km away'), findsOneWidget);
-    expect(find.textContaining('82%'), findsOneWidget);
+    expect(find.text(_en.compatDiscoverBadge(82)), findsOneWidget);
     expect(find.text('travel'), findsOneWidget);
     expect(find.text('41.0082'), findsNothing);
   });

@@ -8,10 +8,13 @@ abstract final class AppTypography {
 
   static TextTheme textTheme(Brightness brightness) {
     final color = brightness == Brightness.dark
-        ? const Color(0xFFF4EEE8)
+        ? AppColors.primaryText
         : AppColors.ink;
     final muted = brightness == Brightness.dark
-        ? const Color(0xFFB7AFC0)
+        ? AppColors.secondaryText
+        : AppColors.mutedInk;
+    final subtle = brightness == Brightness.dark
+        ? AppColors.mutedText
         : AppColors.mutedInk;
 
     return TextTheme(
@@ -86,7 +89,7 @@ abstract final class AppTypography {
         fontSize: 12,
         fontWeight: FontWeight.w400,
         height: 1.4,
-        color: muted,
+        color: subtle,
       ),
       labelLarge: TextStyle(
         fontFamily: fontFamily,
@@ -107,7 +110,7 @@ abstract final class AppTypography {
         fontSize: 11,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.6,
-        color: muted,
+        color: subtle,
       ),
     );
   }

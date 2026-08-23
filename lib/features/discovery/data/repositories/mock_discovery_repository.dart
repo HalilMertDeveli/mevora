@@ -1,5 +1,6 @@
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/errors/result.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/discovery/data/datasources/mock_discovery_data_source.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
@@ -163,6 +164,9 @@ class MockDiscoveryRepository
       distanceLabel: seed.distanceLabel,
       distanceKm: seed.distanceKm,
       compatibilityScore: seed.compatibilityScore,
+      compatibilityStatus: seed.compatibilityScore > 0
+          ? CompatibilityDisplayStatus.ready
+          : CompatibilityDisplayStatus.calculating,
       interests: profile.interests,
       sharedInterests: seed.sharedInterests,
       compatibilityReasons: seed.compatibilityReasons,

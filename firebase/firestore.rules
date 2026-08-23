@@ -241,6 +241,11 @@ service cloud.firestore {
       match /rateLimits/{docId} {
         allow read, write: if false;
       }
+
+      match /verification/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
     }
 
     // -----------------------------------------------------------

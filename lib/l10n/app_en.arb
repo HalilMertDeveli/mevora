@@ -776,5 +776,110 @@
   "relationshipTopicMoney": "You think similarly about money.",
   "relationshipTopicFlirting": "You think similarly about flirting.",
   "relationshipTopicExes": "You think similarly about past relationships.",
-  "relationshipTopicExpectations": "You think similarly about relationship expectations."
+  "relationshipTopicExpectations": "You think similarly about relationship expectations.",
+  "verifyYourProfile": "Verify your profile",
+  "verificationDescription": "Verification helps us keep Mevora authentic and safer for everyone.",
+  "verificationBenefitFakeProfiles": "Helps protect against fake profiles",
+  "verificationBenefitSpoofing": "Helps prevent spoofing",
+  "verificationBenefitBadge": "Adds a verified badge to your profile",
+  "startVerification": "Start verification",
+  "verificationInProgress": "Verification in progress",
+  "profileVerified": "Profile verified",
+  "profileVerifiedBadge": "Verified",
+  "verificationCouldNotComplete": "Verification couldn't be completed",
+  "tryVerificationAgain": "Try again",
+  "verificationStarted": "Verification started",
+  "verificationPrivacyNote": "Your verification is handled securely by our verification provider.",
+  "followVerificationInstructions": "Please follow the instructions to verify yourself.",
+  "verificationNotConfigured": "Verification is temporarily unavailable.",
+  "verificationCooldown": "Please wait a few minutes before trying again.",
+  "verificationAttemptLimit": "You've reached today's verification limit. Try again tomorrow.",
+  "whyYouMatch": "Why you match",
+  "compatWhyButton": "Why?",
+  "compatDiscoverBadge": "{percent}% Compatible",
+  "@compatDiscoverBadge": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "compatCalculating": "Calculating...",
+  "compatUnavailable": "Compatibility unavailable",
+  "profileEditSectionPhotos": "Photos",
+  "profileEditSectionBasic": "Basic information",
+  "profileEditSectionAbout": "About you",
+  "profileEditSectionInterests": "Your interests",
+  "profileEditSectionLifestyle": "Lifestyle",
+  "profileEditSectionRelationship": "Relationship preferences",
+  "profileEditSectionAnswers": "Your answers",
+  "profileEditDiscoveryPrefs": "Age range & distance",
+  "profileEditAnswersSubtitle": "Update how you answer relationship questions",
+  "saveChanges": "Save changes",
+  "discardChangesTitle": "Discard changes?",
+  "discardChangesMessage": "Your profile changes haven't been saved.",
+  "keepEditing": "Keep editing",
+  "discard": "Discard",
+  "interestsMinRequired": "Select at least 3 interests",
+  "profileAnswersTitle": "Your answers",
+  "profileAnswersEmpty": "You haven't answered any relationship questions yet.",
+  "profileAnswersEdit": "Edit",
+  "compatOverallLabel": "You're {percent}% compatible",
+  "@compatOverallLabel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "compatNotEnoughData": "Not enough data yet",
+  "compatStrongestConnection": "Strongest connection",
+  "compatPotentialDifference": "Potential difference",
+  "compatCategoryOverall": "Overall",
+  "compatCategoryRelationship": "Relationship",
+  "compatCategoryInterests": "Interests",
+  "compatCategoryLifestyle": "Lifestyle",
+  "compatCategoryQuestions": "Questions",
+  "compatCategoryMusic": "Music",
+  "compatCategoryCommunication": "Communication",
+  "compatCategoryProximity": "Proximity",
+  "compatCategoryActivity": "Activity",
+  "compatReasonSameRelationshipGoal": "You both want a {goal} relationship",
+  "@compatReasonSameRelationshipGoal": {
+    "placeholders": {
+      "goal": {"type": "String"}
+    }
+  },
+  "compatReasonSharedInterests": "You both like {interests}",
+  "@compatReasonSharedInterests": {
+    "placeholders": {
+      "interests": {"type": "String"}
+    }
+  },
+  "compatReasonSimilarLifestyle": "You have a similar lifestyle",
+  "compatReasonSameAnswers": "You answered {aligned} of {shared} questions the same way",
+  "@compatReasonSameAnswers": {
+    "placeholders": {
+      "aligned": {"type": "String"},
+      "shared": {"type": "String"}
+    }
+  },
+  "compatReasonSimilarMusic": "Your music taste is {score}% aligned",
+  "@compatReasonSimilarMusic": {
+    "placeholders": {
+      "score": {"type": "String"}
+    }
+  },
+  "compatReasonCommunication": "You communicate in similar ways",
+  "hiddenCompatTitle": "Someone is thinking like you 👀",
+  "hiddenCompatMessage": "Someone answered {count} questions the same way you did.",
+  "@hiddenCompatMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "hiddenCompatCompatibility": "{percent}% compatibility",
+  "@hiddenCompatCompatibility": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "hiddenCompatCta": "Discover who",
+  "hiddenCompatDismiss": "Not now"
 }

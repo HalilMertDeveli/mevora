@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_decorations.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 
@@ -116,18 +117,10 @@ class _LoginGradientOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DecoratedBox(
+    return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0x66140F16),
-            Color(0x33140F16),
-            Color(0xCC140F16),
-            Color(0xF2140F16),
-          ],
-          stops: [0.0, 0.28, 0.62, 1.0],
+        gradient: AppDecorations.photoOverlayGradient(
+          stops: const [0.0, 0.28, 0.62, 1.0],
         ),
       ),
     );

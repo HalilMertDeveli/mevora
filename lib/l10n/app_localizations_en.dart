@@ -951,6 +951,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messageDeleted => 'Message deleted';
 
   @override
+  String get messageDecryptFailed => 'Could not decrypt this message.';
+
+  @override
+  String get chatE2eeTitle => 'End-to-end encrypted';
+
+  @override
+  String get chatE2eeSubtitle =>
+      'Only you and this person can read your messages.';
+
+  @override
   String get deleteMessage => 'Delete';
 
   @override
@@ -1082,6 +1092,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get presenceOffline => 'Offline';
+
+  @override
+  String get presenceTyping => 'typing...';
+
+  @override
+  String lastSeenToday(String time) {
+    return 'Last seen today at $time';
+  }
+
+  @override
+  String lastSeenYesterday(String time) {
+    return 'Last seen yesterday at $time';
+  }
+
+  @override
+  String lastSeenOnDate(String date, String time) {
+    return 'Last seen $date at $time';
+  }
 
   @override
   String get timeNow => 'now';
@@ -1390,6 +1418,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boostActiveBadge => 'Boost on';
 
   @override
+  String get boostDiscoverBadge => 'BOOST';
+
+  @override
   String get boostActivating => 'Turning Boost on...';
 
   @override
@@ -1653,6 +1684,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsShowOnlineStatus => 'Show online status';
+
+  @override
+  String get settingsShowLastSeen => 'Show last seen';
+
+  @override
+  String get settingsShowTypingStatus => 'Show typing status';
 
   @override
   String get settingsShowDistance => 'Show distance';

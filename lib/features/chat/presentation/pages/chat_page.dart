@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/permission_scope.dart';
+import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
@@ -18,7 +19,6 @@ import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
 import 'package:mevora/features/chat/domain/services/chat_voice_recorder.dart';
 import 'package:mevora/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:mevora/features/chat/presentation/widgets/chat_widgets.dart';
-import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/match_score/presentation/widgets/match_feedback_prompt.dart';
 import 'package:mevora/features/profile/data/services/profile_image_pipeline.dart';
 import 'package:mevora/features/safety/presentation/widgets/chat_more_sheet.dart';
@@ -75,6 +75,7 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
     final social = SocialScope.of(context);
+    final settingsHub = SettingsScope.maybeOf(context)?.settingsHub;
     _controller = widget.controller ??
         ChatController(
           matchId: widget.matchId,
@@ -83,6 +84,7 @@ class _ChatPageState extends State<ChatPage> {
           safetyRepository: social.safetyRepository,
           presenceRepository: social.presenceRepository,
           uidSource: social.uidSource,
+          settingsHub: settingsHub,
         );
     _scroll.addListener(_onScroll);
     unawaited(ctrl.start());
@@ -122,7 +124,7 @@ class _ChatPageState extends State<ChatPage> {
       animation: controller,
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
-        final presence = controller.presence.labelFor(l10n);
+        final subtitle = controller.headerSubtitle(l10n);
         final orderedMessages = controller.messages.reversed.toList();
         return Scaffold(
           resizeToAvoidBottomInset: true,
@@ -131,9 +133,9 @@ class _ChatPageState extends State<ChatPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(controller.otherName),
-                if (presence.isNotEmpty)
+                if (subtitle != null && subtitle.isNotEmpty)
                   Text(
-                    presence,
+                    subtitle,
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
               ],

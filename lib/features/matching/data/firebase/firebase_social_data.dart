@@ -462,17 +462,35 @@ class FirebasePresenceRepository implements PresenceRepository {
     return _db.doc(FirestorePaths.presence(uid)).snapshots().map((snap) {
       final data = snap.data() ?? const <String, dynamic>{};
       return PresenceWatch(
+        isOnline: data['isOnline'] == true,
         updatedAt: _time(data['updatedAt']),
-        hideOnlineStatus: data['hideOnlineStatus'] == true,
+        lastSeenAt: _time(data['lastSeenAt']),
       );
     });
   }
 
   @override
-  Future<void> heartbeat(String uid, {required bool hideOnlineStatus}) {
+  Future<void> setOnline(String uid) {
     return _db.doc(FirestorePaths.presence(uid)).set({
+      'isOnline': true,
       'updatedAt': FieldValue.serverTimestamp(),
-      'hideOnlineStatus': hideOnlineStatus,
+    }, SetOptions(merge: true));
+  }
+
+  @override
+  Future<void> setOffline(String uid) {
+    return _db.doc(FirestorePaths.presence(uid)).set({
+      'isOnline': false,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'lastSeenAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  @override
+  Future<void> heartbeat(String uid) {
+    return _db.doc(FirestorePaths.presence(uid)).set({
+      'isOnline': true,
+      'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 }

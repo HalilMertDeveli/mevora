@@ -309,16 +309,38 @@ class GraphPresenceRepository implements PresenceRepository {
   final InMemorySocialGraph graph;
 
   @override
-  Stream<PresenceWatch> watch(String uid) async* {
-    yield graph.presence[uid] ??
-        const PresenceWatch(updatedAt: null, hideOnlineStatus: false);
+  Stream<PresenceWatch> watch(String uid) {
+    return graph.watchPresence(uid);
   }
 
   @override
-  Future<void> heartbeat(String uid, {required bool hideOnlineStatus}) async {
+  Future<void> setOnline(String uid) async {
     graph.presence[uid] = PresenceWatch(
+      isOnline: true,
       updatedAt: DateTime.now(),
-      hideOnlineStatus: hideOnlineStatus,
+      lastSeenAt: graph.presence[uid]?.lastSeenAt,
     );
+    graph.emitPresence(uid);
+  }
+
+  @override
+  Future<void> setOffline(String uid) async {
+    final now = DateTime.now();
+    graph.presence[uid] = PresenceWatch(
+      isOnline: false,
+      updatedAt: now,
+      lastSeenAt: now,
+    );
+    graph.emitPresence(uid);
+  }
+
+  @override
+  Future<void> heartbeat(String uid) async {
+    graph.presence[uid] = PresenceWatch(
+      isOnline: true,
+      updatedAt: DateTime.now(),
+      lastSeenAt: graph.presence[uid]?.lastSeenAt,
+    );
+    graph.emitPresence(uid);
   }
 }

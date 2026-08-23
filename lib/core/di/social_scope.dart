@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/calls/domain/services/video_call_provider.dart';
 import 'package:mevora/features/calls/presentation/controllers/call_controller.dart';
@@ -9,6 +10,7 @@ import 'package:mevora/features/matching/domain/repositories/match_repository.da
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
 import 'package:mevora/features/safety/domain/safety_policy.dart';
+import 'package:mevora/features/settings/domain/repositories/settings_hub_repository.dart';
 
 class SocialServices {
   const SocialServices({
@@ -85,6 +87,7 @@ class SocialScopeState extends State<SocialScope> {
     super.initState();
     matchesController = MatchesController(
       matchRepository: widget.services.matchRepository,
+      presenceRepository: widget.services.presenceRepository,
       uidSource: widget.services.uidSource,
     )..start();
     callController = CallController(
@@ -114,6 +117,14 @@ class SocialScopeState extends State<SocialScope> {
     matchesController.dispose();
     callController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    matchesController.attachSettingsHub(
+      SettingsScope.maybeOf(context)?.settingsHub,
+    );
   }
 
   @override

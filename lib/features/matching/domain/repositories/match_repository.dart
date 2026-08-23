@@ -13,12 +13,14 @@ class SwipeResultWrapper {
 
 class PresenceWatch {
   const PresenceWatch({
+    this.isOnline = false,
     required this.updatedAt,
-    this.hideOnlineStatus = false,
+    this.lastSeenAt,
   });
 
+  final bool isOnline;
   final DateTime? updatedAt;
-  final bool hideOnlineStatus;
+  final DateTime? lastSeenAt;
 }
 
 abstract class MatchRepository {
@@ -45,5 +47,9 @@ abstract class DiscoveryExclusionSource {
 abstract class PresenceRepository {
   Stream<PresenceWatch> watch(String uid);
 
-  Future<void> heartbeat(String uid, {required bool hideOnlineStatus});
+  Future<void> setOnline(String uid);
+
+  Future<void> setOffline(String uid);
+
+  Future<void> heartbeat(String uid);
 }

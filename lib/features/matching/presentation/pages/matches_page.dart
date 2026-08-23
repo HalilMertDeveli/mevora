@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
@@ -5,6 +7,7 @@ import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
+import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
@@ -19,11 +22,13 @@ class MatchListTile extends StatelessWidget {
     super.key,
     required this.item,
     required this.currentUid,
+    this.showOnlineIndicator = false,
     this.onTap,
   });
 
   final MatchListItem item;
   final String currentUid;
+  final bool showOnlineIndicator;
   final VoidCallback? onTap;
 
   @override
@@ -40,6 +45,7 @@ class MatchListTile extends StatelessWidget {
         image: MevoraNetworkImages.provider(photo),
         size: 56,
         isVerified: item.isVerified,
+        showOnlineIndicator: showOnlineIndicator,
       ),
       title: Text(item.name, style: theme.textTheme.titleMedium),
       subtitle: Text(
@@ -57,7 +63,7 @@ class MatchListTile extends StatelessWidget {
           Text(
             L10nFormat.compactDate(
               l10n,
-              item.match.lastMessageAt ?? item.match.createdAt,
+              item.match.occurredAt,
             ),
             style: theme.textTheme.labelSmall,
           ),
@@ -101,13 +107,37 @@ class MatchesRoutePage extends StatelessWidget {
   }
 }
 
-class MatchesPage extends StatelessWidget {
+class MatchesPage extends StatefulWidget {
   const MatchesPage({super.key, required this.controller});
 
   final MatchesController controller;
 
   @override
+  State<MatchesPage> createState() => _MatchesPageState();
+}
+
+class _MatchesPageState extends State<MatchesPage> {
+  Timer? _elapsedTicker;
+
+  @override
+  void initState() {
+    super.initState();
+    _elapsedTicker = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _elapsedTicker?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
@@ -138,6 +168,9 @@ class MatchesPage extends StatelessWidget {
                       (item) => MatchListTile(
                         item: item,
                         currentUid: uid,
+                        showOnlineIndicator:
+                            controller.presenceFor(item.otherUserId) ==
+                            PresenceStatus.online,
                         onTap: () =>
                             context.push(AppRoutes.chatPath(item.match.id)),
                       ),

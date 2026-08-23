@@ -350,6 +350,9 @@
   "pauseVoice": "Pause",
   "previewPhoto": "Send this photo?",
   "messageDeleted": "Message deleted",
+  "messageDecryptFailed": "Could not decrypt this message.",
+  "chatE2eeTitle": "End-to-end encrypted",
+  "chatE2eeSubtitle": "Only you and this person can read your messages.",
   "deleteMessage": "Delete",
   "deleteMessageConfirm": "Delete this message? The other person will no longer see it.",
   "micDeniedChat": "Microphone permission is needed to send a voice message.",
@@ -393,6 +396,26 @@
   "presenceOnline": "Online",
   "presenceRecentlyActive": "Active recently",
   "presenceOffline": "Offline",
+  "presenceTyping": "typing...",
+  "lastSeenToday": "Last seen today at {time}",
+  "@lastSeenToday": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "lastSeenYesterday": "Last seen yesterday at {time}",
+  "@lastSeenYesterday": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "lastSeenOnDate": "Last seen {date} at {time}",
+  "@lastSeenOnDate": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "timeNow": "now",
   "timeMinutes": "{count}m",
   "@timeMinutes": {
@@ -529,6 +552,7 @@
   "boostHistoryPlatformIos": "App Store",
   "boostHistoryPlatformAndroid": "Google Play",
   "boostActiveBadge": "Boost on",
+  "boostDiscoverBadge": "BOOST",
   "boostActivating": "Turning Boost on...",
   "boostNoBalance": "Choose a pack to Boost your profile.",
   "boostPriceUnavailable": "Price unavailable",
@@ -620,6 +644,8 @@
   "settingsBlockedEmptyTitle": "No blocked users",
   "settingsBlockedEmptyMessage": "People you block will appear here.",
   "settingsShowOnlineStatus": "Show online status",
+  "settingsShowLastSeen": "Show last seen",
+  "settingsShowTypingStatus": "Show typing status",
   "settingsShowDistance": "Show distance",
   "settingsShowActivity": "Show activity status",
   "settingsPushNotifications": "Push notifications",

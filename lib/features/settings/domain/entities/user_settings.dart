@@ -69,6 +69,8 @@ class UserPrivacy {
   const UserPrivacy({
     required this.uid,
     this.showOnlineStatus = true,
+    this.showLastSeen = true,
+    this.showTypingStatus = true,
     this.showDistance = true,
     this.showAge = true,
     this.showActivity = true,
@@ -79,10 +81,38 @@ class UserPrivacy {
 
   final String uid;
   final bool showOnlineStatus;
+  final bool showLastSeen;
+  final bool showTypingStatus;
   final bool showDistance;
   final bool showAge;
   final bool showActivity;
   final bool allowNotifications;
   final bool allowCalls;
   final bool allowMessages;
+
+  UserPrivacy copyWith({
+    String? uid,
+    bool? showOnlineStatus,
+    bool? showLastSeen,
+    bool? showTypingStatus,
+    bool? showDistance,
+    bool? showAge,
+    bool? showActivity,
+    bool? allowNotifications,
+    bool? allowCalls,
+    bool? allowMessages,
+  }) {
+    return UserPrivacy(
+      uid: uid ?? this.uid,
+      showOnlineStatus: showOnlineStatus ?? this.showOnlineStatus,
+      showLastSeen: showLastSeen ?? this.showLastSeen,
+      showTypingStatus: showTypingStatus ?? this.showTypingStatus,
+      showDistance: showDistance ?? this.showDistance,
+      showAge: showAge ?? this.showAge,
+      showActivity: showActivity ?? this.showActivity,
+      allowNotifications: allowNotifications ?? this.allowNotifications,
+      allowCalls: allowCalls ?? this.allowCalls,
+      allowMessages: allowMessages ?? this.allowMessages,
+    );
+  }
 }

@@ -1862,6 +1862,24 @@ abstract class AppLocalizations {
   /// **'Message deleted'**
   String get messageDeleted;
 
+  /// No description provided for @messageDecryptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not decrypt this message.'**
+  String get messageDecryptFailed;
+
+  /// No description provided for @chatE2eeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'End-to-end encrypted'**
+  String get chatE2eeTitle;
+
+  /// No description provided for @chatE2eeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you and this person can read your messages.'**
+  String get chatE2eeSubtitle;
+
   /// No description provided for @deleteMessage.
   ///
   /// In en, this message translates to:
@@ -2119,6 +2137,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Offline'**
   String get presenceOffline;
+
+  /// No description provided for @presenceTyping.
+  ///
+  /// In en, this message translates to:
+  /// **'typing...'**
+  String get presenceTyping;
+
+  /// No description provided for @lastSeenToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen today at {time}'**
+  String lastSeenToday(String time);
+
+  /// No description provided for @lastSeenYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen yesterday at {time}'**
+  String lastSeenYesterday(String time);
+
+  /// No description provided for @lastSeenOnDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen {date} at {time}'**
+  String lastSeenOnDate(String date, String time);
 
   /// No description provided for @timeNow.
   ///
@@ -2666,6 +2708,12 @@ abstract class AppLocalizations {
   /// **'Boost on'**
   String get boostActiveBadge;
 
+  /// No description provided for @boostDiscoverBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'BOOST'**
+  String get boostDiscoverBadge;
+
   /// No description provided for @boostActivating.
   ///
   /// In en, this message translates to:
@@ -3151,6 +3199,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show online status'**
   String get settingsShowOnlineStatus;
+
+  /// No description provided for @settingsShowLastSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Show last seen'**
+  String get settingsShowLastSeen;
+
+  /// No description provided for @settingsShowTypingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Show typing status'**
+  String get settingsShowTypingStatus;
 
   /// No description provided for @settingsShowDistance.
   ///

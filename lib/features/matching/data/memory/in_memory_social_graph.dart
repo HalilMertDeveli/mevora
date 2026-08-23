@@ -48,6 +48,7 @@ class InMemorySocialGraph {
       <String, StreamController<Map<String, DateTime>>>{};
   final _incomingControllers = <String, StreamController<List<CallSession>>>{};
   final _callControllers = <String, StreamController<CallSession?>>{};
+  final _presenceControllers = <String, StreamController<PresenceWatch>>{};
 
   DateTime get _now => now?.call() ?? DateTime.now();
 
@@ -623,6 +624,25 @@ class InMemorySocialGraph {
     );
     scheduleMicrotask(() => controller.add(typing[matchId] ?? {}));
     return controller.stream;
+  }
+
+  Stream<PresenceWatch> watchPresence(String uid) {
+    final controller = _presenceControllers.putIfAbsent(
+      uid,
+      () => StreamController<PresenceWatch>.broadcast(),
+    );
+    scheduleMicrotask(
+      () => controller.add(
+        presence[uid] ?? const PresenceWatch(updatedAt: null),
+      ),
+    );
+    return controller.stream;
+  }
+
+  void emitPresence(String uid) {
+    _presenceControllers[uid]?.add(
+      presence[uid] ?? const PresenceWatch(updatedAt: null),
+    );
   }
 
   Stream<List<CallSession>> watchIncoming(String uid) {

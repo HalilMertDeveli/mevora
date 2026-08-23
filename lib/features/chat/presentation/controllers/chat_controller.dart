@@ -12,7 +12,11 @@ import 'package:mevora/features/chat/presentation/chat_strings.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
+import 'package:mevora/features/matching/domain/services/presence_subtitle.dart';
 import 'package:mevora/features/safety/domain/safety_policy.dart';
+import 'package:mevora/features/settings/domain/entities/user_settings.dart';
+import 'package:mevora/features/settings/domain/repositories/settings_hub_repository.dart';
+import 'package:mevora/l10n/app_localizations.dart';
 
 class ChatController extends ChangeNotifier {
   ChatController({
@@ -22,11 +26,13 @@ class ChatController extends ChangeNotifier {
     required SafetyRepository safetyRepository,
     required PresenceRepository presenceRepository,
     required AuthUidSource uidSource,
+    SettingsHubRepository? settingsHub,
   }) : _chat = chatRepository,
        _matches = matchRepository,
        _safety = safetyRepository,
        _presence = presenceRepository,
-       _uidSource = uidSource;
+       _uidSource = uidSource,
+       _settingsHub = settingsHub;
 
   final String matchId;
   final ChatRepository _chat;
@@ -34,10 +40,14 @@ class ChatController extends ChangeNotifier {
   final SafetyRepository _safety;
   final PresenceRepository _presence;
   final AuthUidSource _uidSource;
+  final SettingsHubRepository? _settingsHub;
 
   final List<ChatMessage> messages = [];
   Match? match;
   PresenceStatus presence = PresenceStatus.offline;
+  PresenceWatch? presenceWatch;
+  UserPrivacy? otherPrivacy;
+  UserPrivacy? ownPrivacy;
   String? typingUid;
   String? error;
   bool sending = false;
@@ -48,6 +58,8 @@ class ChatController extends ChangeNotifier {
   StreamSubscription<List<ChatMessage>>? _messageSub;
   StreamSubscription<Map<String, DateTime>>? _typingSub;
   StreamSubscription<PresenceWatch>? _presenceSub;
+  StreamSubscription<UserPrivacy>? _otherPrivacySub;
+  StreamSubscription<UserPrivacy>? _ownPrivacySub;
   StreamSubscription<Match?>? _matchSub;
   Timer? _typingDebounce;
   Timer? _typingIdle;
@@ -81,6 +93,15 @@ class ChatController extends ChangeNotifier {
       uid != null;
 
   bool get canCall => canChat;
+
+  String? headerSubtitle(AppLocalizations l10n) {
+    return PresenceSubtitle.chatHeader(
+      l10n: l10n,
+      presence: presenceWatch,
+      privacy: otherPrivacy,
+      isTyping: typingUid == otherUid && otherUid.isNotEmpty,
+    );
+  }
 
   Future<void> start() async {
     final current = uid;
@@ -126,16 +147,34 @@ class ChatController extends ChangeNotifier {
     _typingSub = _chat.watchTyping(matchId).listen((value) {
       final other = otherUid;
       final at = value[other];
-      typingUid = ChatPolicy.isTypingFresh(at) ? other : null;
+      final typingAllowed = PresenceSubtitle.showsTyping(otherPrivacy);
+      typingUid =
+          typingAllowed && ChatPolicy.isTypingFresh(at) ? other : null;
       notifyListeners();
     }, onError: (_) {});
     _presenceSub = _presence.watch(otherUid).listen((value) {
-      presence = PresenceStatusX.fromUpdatedAt(
-        updatedAt: value.updatedAt,
-        hideOnlineStatus: value.hideOnlineStatus,
+      presenceWatch = value;
+      presence = PresenceSubtitle.listBadge(
+        presence: value,
+        privacy: otherPrivacy,
       );
       notifyListeners();
     }, onError: (_) {});
+    final hub = _settingsHub;
+    if (hub != null && otherUid.isNotEmpty) {
+      _otherPrivacySub = hub.watchPrivacy(otherUid).listen((value) {
+        otherPrivacy = value;
+        presence = PresenceSubtitle.listBadge(
+          presence: presenceWatch,
+          privacy: value,
+        );
+        notifyListeners();
+      }, onError: (_) {});
+      _ownPrivacySub = hub.watchPrivacy(current).listen((value) {
+        ownPrivacy = value;
+        notifyListeners();
+      }, onError: (_) {});
+    }
     notifyListeners();
   }
 
@@ -170,7 +209,11 @@ class ChatController extends ChangeNotifier {
   void onComposerChanged(String text) {
     _typingDebounce?.cancel();
     _typingIdle?.cancel();
-    if (!canChat) {
+    if (!canChat || !PresenceSubtitle.showsTyping(ownPrivacy)) {
+      if (_typingSent) {
+        _typingSent = false;
+        unawaited(_chat.setTyping(matchId: matchId, isTyping: false));
+      }
       return;
     }
     _typingDebounce = Timer(ChatPolicy.typingDebounce, () {
@@ -298,6 +341,8 @@ class ChatController extends ChangeNotifier {
     unawaited(_messageSub?.cancel());
     unawaited(_typingSub?.cancel());
     unawaited(_presenceSub?.cancel());
+    unawaited(_otherPrivacySub?.cancel());
+    unawaited(_ownPrivacySub?.cancel());
     unawaited(_matchSub?.cancel());
     if (_typingSent) {
       unawaited(_chat.setTyping(matchId: matchId, isTyping: false));

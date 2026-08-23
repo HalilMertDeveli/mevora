@@ -8,12 +8,14 @@ class MevoraAvatar extends StatelessWidget {
     this.name,
     this.size = 56,
     this.isVerified = false,
+    this.showOnlineIndicator = false,
   });
 
   final ImageProvider? image;
   final String? name;
   final double size;
   final bool isVerified;
+  final bool showOnlineIndicator;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +81,20 @@ class MevoraAvatar extends StatelessWidget {
                     size: size * 0.32,
                     color: colors.tertiary,
                   ),
+                ),
+              ),
+            ),
+          if (showOnlineIndicator)
+            Positioned(
+              right: isVerified ? size * 0.18 : 0,
+              bottom: 0,
+              child: Container(
+                width: size * 0.22,
+                height: size * 0.22,
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colors.surface, width: 2),
                 ),
               ),
             ),

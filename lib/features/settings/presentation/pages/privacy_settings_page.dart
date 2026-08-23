@@ -45,16 +45,27 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                       onChanged: (value) => unawaited(
                         _save(
                           settings,
-                          UserPrivacy(
-                            uid: uid,
-                            showOnlineStatus: value,
-                            showDistance: privacy.showDistance,
-                            showAge: privacy.showAge,
-                            showActivity: privacy.showActivity,
-                            allowNotifications: privacy.allowNotifications,
-                            allowCalls: privacy.allowCalls,
-                            allowMessages: privacy.allowMessages,
-                          ),
+                          privacy.copyWith(showOnlineStatus: value),
+                        ),
+                      ),
+                    ),
+                    SwitchListTile(
+                      title: Text(l10n.settingsShowLastSeen),
+                      value: privacy.showLastSeen,
+                      onChanged: (value) => unawaited(
+                        _save(
+                          settings,
+                          privacy.copyWith(showLastSeen: value),
+                        ),
+                      ),
+                    ),
+                    SwitchListTile(
+                      title: Text(l10n.settingsShowTypingStatus),
+                      value: privacy.showTypingStatus,
+                      onChanged: (value) => unawaited(
+                        _save(
+                          settings,
+                          privacy.copyWith(showTypingStatus: value),
                         ),
                       ),
                     ),
@@ -64,16 +75,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                       onChanged: (value) => unawaited(
                         _save(
                           settings,
-                          UserPrivacy(
-                            uid: uid,
-                            showOnlineStatus: privacy.showOnlineStatus,
-                            showDistance: value,
-                            showAge: privacy.showAge,
-                            showActivity: privacy.showActivity,
-                            allowNotifications: privacy.allowNotifications,
-                            allowCalls: privacy.allowCalls,
-                            allowMessages: privacy.allowMessages,
-                          ),
+                          privacy.copyWith(showDistance: value),
                         ),
                       ),
                     ),
@@ -83,16 +85,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                       onChanged: (value) => unawaited(
                         _save(
                           settings,
-                          UserPrivacy(
-                            uid: uid,
-                            showOnlineStatus: privacy.showOnlineStatus,
-                            showDistance: privacy.showDistance,
-                            showAge: privacy.showAge,
-                            showActivity: value,
-                            allowNotifications: privacy.allowNotifications,
-                            allowCalls: privacy.allowCalls,
-                            allowMessages: privacy.allowMessages,
-                          ),
+                          privacy.copyWith(showActivity: value),
                         ),
                       ),
                     ),

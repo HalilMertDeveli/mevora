@@ -33,6 +33,7 @@ import 'package:mevora/features/discovery/domain/repositories/discovery_reposito
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
 import 'package:mevora/features/match_score/domain/repositories/match_score_repository.dart';
+import 'package:mevora/features/matching/presentation/controllers/presence_lifecycle_controller.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
@@ -103,6 +104,7 @@ class _MevoraAppState extends State<MevoraApp> {
   late final OnboardingServices _onboardingServices;
   bool _ownsOnboardingServices = false;
   RelationshipController? _relationshipController;
+  PresenceLifecycleController? _presenceLifecycleController;
 
   @override
   void initState() {
@@ -170,6 +172,10 @@ class _MevoraAppState extends State<MevoraApp> {
         );
     final social = widget.socialServices;
     if (social != null) {
+      _presenceLifecycleController = PresenceLifecycleController(
+        presenceRepository: social.presenceRepository,
+        uidSource: social.uidSource,
+      )..attach();
       _pushBinder = FcmPushBinder(router: _router, services: social);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         unawaited(_pushBinder?.attach());
@@ -313,6 +319,7 @@ class _MevoraAppState extends State<MevoraApp> {
       _onboardingServices.controller.dispose();
     }
     _relationshipController?.dispose();
+    _presenceLifecycleController?.dispose();
     _router.dispose();
     super.dispose();
   }

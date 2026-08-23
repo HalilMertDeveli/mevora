@@ -350,6 +350,9 @@
   "pauseVoice": "Duraklat",
   "previewPhoto": "Bu fotoğraf gönderilsin mi?",
   "messageDeleted": "Mesaj silindi",
+  "messageDecryptFailed": "Bu mesaj çözülemedi.",
+  "chatE2eeTitle": "Uçtan uca şifreli",
+  "chatE2eeSubtitle": "Mesajlarınızı yalnızca siz ve bu kişi okuyabilir.",
   "deleteMessage": "Sil",
   "deleteMessageConfirm": "Bu mesaj silinsin mi? Karşı taraf artık göremez.",
   "micDeniedChat": "Sesli mesaj için mikrofon izni gerekir.",
@@ -393,6 +396,26 @@
   "presenceOnline": "Çevrimiçi",
   "presenceRecentlyActive": "Yakınlarda aktif",
   "presenceOffline": "Çevrimdışı",
+  "presenceTyping": "yazıyor...",
+  "lastSeenToday": "Son görülme bugün {time}",
+  "@lastSeenToday": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "lastSeenYesterday": "Son görülme dün {time}",
+  "@lastSeenYesterday": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "lastSeenOnDate": "Son görülme {date} {time}",
+  "@lastSeenOnDate": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
   "timeNow": "şimdi",
   "timeMinutes": "{count} dk",
   "@timeMinutes": {
@@ -529,6 +552,7 @@
   "boostHistoryPlatformIos": "App Store",
   "boostHistoryPlatformAndroid": "Google Play",
   "boostActiveBadge": "Boost aktif",
+  "boostDiscoverBadge": "ÖNE ÇIKARILDI",
   "boostActivating": "Boost aktif ediliyor...",
   "boostNoBalance": "Profilini öne çıkarmak için bir paket seç.",
   "boostPriceUnavailable": "Fiyat yüklenemedi",
@@ -620,6 +644,8 @@
   "settingsBlockedEmptyTitle": "Engellenen yok",
   "settingsBlockedEmptyMessage": "Engellediğin kişiler burada görünür.",
   "settingsShowOnlineStatus": "Çevrimiçi durumunu göster",
+  "settingsShowLastSeen": "Son görülmemi göster",
+  "settingsShowTypingStatus": "Yazıyor durumunu göster",
   "settingsShowDistance": "Mesafeyi göster",
   "settingsShowActivity": "Aktivite durumunu göster",
   "settingsPushNotifications": "Anlık bildirimler",

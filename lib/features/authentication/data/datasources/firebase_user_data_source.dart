@@ -274,8 +274,11 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
   Map<String, dynamic> _defaultPrivacy(FieldValue now) {
     return {
       'showOnlineStatus': true,
+      'showLastSeen': true,
+      'showTypingStatus': true,
       'showDistance': true,
       'showAge': true,
+      'showActivity': true,
       'allowNotifications': true,
       'allowCalls': true,
       'allowMessages': true,

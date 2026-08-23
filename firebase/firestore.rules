@@ -20,6 +20,31 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function userPrivacyData(userId) {
+      return exists(/databases/$(database)/documents/userPrivacy/$(userId))
+        ? get(/databases/$(database)/documents/userPrivacy/$(userId)).data
+        : {};
+    }
+
+    function privacyFlag(userId, field, fallback) {
+      return userPrivacyData(userId).get(field, fallback);
+    }
+
+    function canReadPresence(userId) {
+      return isOwner(userId)
+        || (
+          isAuthenticated()
+          && (
+            privacyFlag(userId, 'showOnlineStatus', true) == true
+            || privacyFlag(
+              userId,
+              'showLastSeen',
+              privacyFlag(userId, 'showActivity', true),
+            ) == true
+          )
+        );
+    }
+
     function isMatchParticipant(matchId) {
       return isAuthenticated()
         && exists(/databases/$(database)/documents/matches/$(matchId))
@@ -180,12 +205,14 @@ service cloud.firestore {
       }
 
       match /presence/current {
-        allow write: if isOwner(userId);
-        allow read: if isOwner(userId)
-          || (
-            isAuthenticated()
-            && get(/databases/$(database)/documents/userPrivacy/$(userId)).data.get('showOnlineStatus', false) == true
+        allow write: if isOwner(userId)
+          && request.resource.data.isOnline is bool
+          && request.resource.data.updatedAt == request.time
+          && (
+            !('lastSeenAt' in request.resource.data)
+            || request.resource.data.lastSeenAt == request.time
           );
+        allow read: if canReadPresence(userId);
       }
 
       match /boosts/{boostId} {
@@ -313,7 +340,9 @@ service cloud.firestore {
     }
 
     match /userPrivacy/{userId} {
-      allow read, write: if isOwner(userId);
+      allow get: if isOwner(userId) || isAuthenticated();
+      allow list: if isOwner(userId);
+      allow create, update, delete: if isOwner(userId);
     }
 
     match /userLocation/{userId} {

@@ -31,13 +31,24 @@ abstract final class L10nFormat {
     if (value == null) {
       return '';
     }
-    final current = now ?? DateTime.now();
-    final delta = current.difference(value);
+    final current = (now ?? DateTime.now()).toLocal();
+    final instant = value.toLocal();
+    var delta = current.difference(instant);
+    if (delta.isNegative) {
+      assert(() {
+        debugPrint(
+          'L10nFormat.compactDate: future timestamp $instant (now $current)',
+        );
+        return true;
+      }());
+      delta = Duration.zero;
+    }
     if (delta.inSeconds < 45) {
       return l10n.timeNow;
     }
     if (delta.inMinutes < 60) {
-      return l10n.timeMinutes(delta.inMinutes);
+      final minutes = delta.inMinutes == 0 ? 1 : delta.inMinutes;
+      return l10n.timeMinutes(minutes);
     }
     if (delta.inHours < 24) {
       return l10n.timeHours(delta.inHours);
@@ -50,5 +61,24 @@ abstract final class L10nFormat {
 
   static String mediumDate(AppLocalizations l10n, DateTime value) {
     return DateFormat.yMMMd(l10n.localeName).format(value.toLocal());
+  }
+
+  static String lastSeen(AppLocalizations l10n, DateTime value, {DateTime? now}) {
+    final local = value.toLocal();
+    final current = (now ?? DateTime.now()).toLocal();
+    final time = DateFormat.jm(l10n.localeName).format(local);
+    if (_isSameDay(local, current)) {
+      return l10n.lastSeenToday(time);
+    }
+    final yesterday = current.subtract(const Duration(days: 1));
+    if (_isSameDay(local, yesterday)) {
+      return l10n.lastSeenYesterday(time);
+    }
+    final date = DateFormat.MMMd(l10n.localeName).format(local);
+    return l10n.lastSeenOnDate(date, time);
+  }
+
+  static bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }

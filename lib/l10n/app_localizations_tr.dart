@@ -949,6 +949,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get messageDeleted => 'Mesaj silindi';
 
   @override
+  String get messageDecryptFailed => 'Bu mesaj çözülemedi.';
+
+  @override
+  String get chatE2eeTitle => 'Uçtan uca şifreli';
+
+  @override
+  String get chatE2eeSubtitle =>
+      'Mesajlarınızı yalnızca siz ve bu kişi okuyabilir.';
+
+  @override
   String get deleteMessage => 'Sil';
 
   @override
@@ -1079,6 +1089,24 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get presenceOffline => 'Çevrimdışı';
+
+  @override
+  String get presenceTyping => 'yazıyor...';
+
+  @override
+  String lastSeenToday(String time) {
+    return 'Son görülme bugün $time';
+  }
+
+  @override
+  String lastSeenYesterday(String time) {
+    return 'Son görülme dün $time';
+  }
+
+  @override
+  String lastSeenOnDate(String date, String time) {
+    return 'Son görülme $date $time';
+  }
 
   @override
   String get timeNow => 'şimdi';
@@ -1385,6 +1413,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostActiveBadge => 'Boost aktif';
 
   @override
+  String get boostDiscoverBadge => 'ÖNE ÇIKARILDI';
+
+  @override
   String get boostActivating => 'Boost aktif ediliyor...';
 
   @override
@@ -1648,6 +1679,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsShowOnlineStatus => 'Çevrimiçi durumunu göster';
+
+  @override
+  String get settingsShowLastSeen => 'Son görülmemi göster';
+
+  @override
+  String get settingsShowTypingStatus => 'Yazıyor durumunu göster';
 
   @override
   String get settingsShowDistance => 'Mesafeyi göster';

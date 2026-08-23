@@ -63,6 +63,11 @@ class FirebaseSettingsDataSource {
     return UserPrivacy(
       uid: uid,
       showOnlineStatus: data['showOnlineStatus'] as bool? ?? true,
+      showLastSeen:
+          data['showLastSeen'] as bool? ??
+          data['showActivity'] as bool? ??
+          true,
+      showTypingStatus: data['showTypingStatus'] as bool? ?? true,
       showDistance: data['showDistance'] as bool? ?? true,
       showAge: data['showAge'] as bool? ?? true,
       showActivity: data['showActivity'] as bool? ?? true,
@@ -75,6 +80,8 @@ class FirebaseSettingsDataSource {
   Future<void> savePrivacy(UserPrivacy privacy) {
     return _firestore.collection(FirestorePaths.userPrivacy).doc(privacy.uid).set({
       'showOnlineStatus': privacy.showOnlineStatus,
+      'showLastSeen': privacy.showLastSeen,
+      'showTypingStatus': privacy.showTypingStatus,
       'showDistance': privacy.showDistance,
       'showAge': privacy.showAge,
       'showActivity': privacy.showActivity,

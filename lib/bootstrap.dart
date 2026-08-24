@@ -15,8 +15,9 @@ import 'package:mevora/core/di/match_score_services_factory.dart';
 import 'package:mevora/core/di/music_services_factory.dart';
 import 'package:mevora/core/di/relationship_services_factory.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
-import 'package:mevora/core/di/verification_services_factory.dart';
 import 'package:mevora/core/di/social_services_factory.dart';
+import 'package:mevora/core/di/support_scope.dart';
+import 'package:mevora/core/di/verification_services_factory.dart';
 import 'package:mevora/core/errors/error_handler.dart';
 import 'package:mevora/core/identity/firebase_auth_uid_source.dart';
 import 'package:mevora/core/localization/language_controller.dart';
@@ -107,6 +108,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
     uidSource: uidSource,
     demoHub: demoHub,
   );
+  final supportServices = createSupportServices();
   final analytics = environment.isProduction
       ? FirebaseAnalyticsAdapter()
       : NoopAnalyticsProvider(logger: logger);
@@ -144,6 +146,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       discoveryRepository: discoveryServices.discoveryRepository,
       musicRepository: musicServices.repository,
       relationshipRepository: relationshipServices.repository,
+      profileQuestionAnswerRepository: relationshipServices.profileAnswers,
       matchScoreRepository: matchScoreServices.repository,
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,
@@ -152,6 +155,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       languageController: languageController,
       permissionService: permissionService,
       settingsServices: settingsServices,
+      supportServices: supportServices,
     ),
   );
 }

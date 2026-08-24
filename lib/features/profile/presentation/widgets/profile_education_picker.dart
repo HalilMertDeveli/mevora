@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_enums.dart';
 import 'package:mevora/features/onboarding/presentation/onboarding_labels.dart';

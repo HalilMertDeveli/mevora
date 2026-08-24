@@ -11,6 +11,7 @@ class MevoraChip extends StatelessWidget {
     this.onSelected,
     this.avatar,
     this.compact = false,
+    this.wrapLabel = false,
   });
 
   final String label;
@@ -18,6 +19,9 @@ class MevoraChip extends StatelessWidget {
   final ValueChanged<bool>? onSelected;
   final Widget? avatar;
   final bool compact;
+
+  /// When true, long labels wrap instead of ellipsizing to one line.
+  final bool wrapLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +41,48 @@ class MevoraChip extends StatelessWidget {
             color: isDark ? AppColors.glassBorder : AppColors.outline,
           );
 
+    final text = Text(
+      label,
+      maxLines: wrapLabel ? null : 1,
+      overflow: wrapLabel ? TextOverflow.visible : TextOverflow.ellipsis,
+      softWrap: true,
+      style: TextStyle(
+        fontFamily: 'Manrope',
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+      ),
+    );
+
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: wrapLabel
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
+      children: [
+        if (avatar != null) ...[
+          IconTheme(
+            data: IconThemeData(color: textColor, size: 18),
+            child: avatar!,
+          ),
+          const SizedBox(width: 6),
+        ],
+        if (wrapLabel)
+          Flexible(child: text)
+        else
+          Flexible(child: text),
+      ],
+    );
+
+    final body = wrapLabel
+        ? ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width - 64,
+            ),
+            child: content,
+          )
+        : content;
+
     return MevoraPressScale(
       enabled: onSelected != null,
       child: GestureDetector(
@@ -50,34 +96,12 @@ class MevoraChip extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(AppRadii.pill),
+            borderRadius: BorderRadius.circular(
+              wrapLabel ? AppRadii.md : AppRadii.pill,
+            ),
             border: border,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (avatar != null) ...[
-                IconTheme(
-                  data: IconThemeData(color: textColor, size: 18),
-                  child: avatar!,
-                ),
-                const SizedBox(width: 6),
-              ],
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: textColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: body,
         ),
       ),
     );

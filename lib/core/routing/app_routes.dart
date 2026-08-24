@@ -32,6 +32,22 @@ abstract final class AppRoutes {
 
   static const String verifyProfile = '/settings/verify-profile';
 
+  static const String supportCenter = '/settings/support';
+  static const String supportFaq = '/settings/support/faq';
+  static const String supportTicketCreate = '/settings/support/ticket/create';
+  static const String supportTickets = '/settings/support/tickets';
+  static const String supportTicketDetail = '/settings/support/tickets/:ticketId';
+  static const String communityGuidelines = '/settings/support/guidelines';
+  static const String termsOfService = '/settings/support/terms';
+  static const String privacyPolicy = '/settings/support/privacy';
+
+  static const String legalTerms = '/legal/terms';
+  static const String legalPrivacy = '/legal/privacy';
+  static const String legalGuidelines = '/legal/guidelines';
+
+  static String supportTicketDetailPath(String ticketId) =>
+      '/settings/support/tickets/$ticketId';
+
   static String chatPath(String matchId) => '/chat/$matchId';
 
   static String incomingCallPath(String callId) => '/call/incoming/$callId';

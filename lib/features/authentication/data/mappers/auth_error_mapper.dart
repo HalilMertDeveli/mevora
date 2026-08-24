@@ -14,6 +14,7 @@ abstract final class AuthErrorMapper {
         AuthMessages.billingNotEnabled,
         kind: AuthErrorKind.billingNotEnabled,
         cause: error,
+        code: 'billing-not-enabled',
       );
     }
     if (_looksLikeAppVerification(error)) {
@@ -21,6 +22,7 @@ abstract final class AuthErrorMapper {
         AuthMessages.appVerification,
         kind: AuthErrorKind.appVerification,
         cause: error,
+        code: _codeOf(error) ?? 'app-verification-failed',
       );
     }
     final code = _codeOf(error);
@@ -55,6 +57,7 @@ abstract final class AuthErrorMapper {
       _messageFor(kind),
       kind: kind,
       cause: cause,
+      code: normalized.isEmpty ? null : normalized,
       isCancelled: kind == AuthErrorKind.cancelled,
     );
   }
@@ -87,7 +90,7 @@ abstract final class AuthErrorMapper {
       'missing-verification-id' =>
         AuthErrorKind.invalidOtp,
       'code-expired' => AuthErrorKind.expiredOtp,
-      'session-expired' => AuthErrorKind.sessionExpired,
+      'session-expired' => AuthErrorKind.expiredOtp,
       'quota-exceeded' => AuthErrorKind.smsQuota,
       'too-many-requests' ||
       'resource-exhausted' =>

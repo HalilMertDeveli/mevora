@@ -12,14 +12,19 @@ import 'package:mevora/core/services/permissions/permission_type.dart';
 import 'package:mevora/features/permissions/presentation/pages/permission_prompt_page.dart';
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/profile/domain/services/profile_completion_calculator.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_completion_banner.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_extended_lifestyle_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_height_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_hobby_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_language_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_gender_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_interest_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_lifestyle_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_relationship_goal_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_section_header.dart';
-import 'package:mevora/core/di/relationship_scope.dart';
-import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 import 'package:mevora/features/settings/domain/validators/profile_edit_validator.dart';
 import 'package:mevora/features/settings/presentation/settings_strings.dart';
@@ -42,12 +47,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _bioController = TextEditingController();
   final _cityController = TextEditingController();
 
+  final _occupationController = TextEditingController();
   UserProfile? _baseline;
   String? _gender;
   String? _interestedIn;
   String? _relationshipGoal;
   String? _education;
+  int? _heightCm;
   Set<String> _interests = {};
+  Set<String> _languages = {};
+  Set<String> _hobbies = {};
   ProfileLifestyle _lifestyle = const ProfileLifestyle();
   String? _errorKey;
   var _saving = false;
@@ -58,6 +67,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _firstNameController.dispose();
     _bioController.dispose();
     _cityController.dispose();
+    _occupationController.dispose();
     super.dispose();
   }
 
@@ -103,6 +113,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     child: ListView(
                       padding: const EdgeInsets.all(AppSpacing.screenPadding),
                       children: [
+                        ProfileCompletionBanner(
+                          result: ProfileCompletionCalculator.calculate(profile),
+                        ),
                         ProfileSectionHeader(title: l10n.profileEditSectionPhotos),
                         PhotoGridEditor(
                           photos: profile.photos,
@@ -149,6 +162,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           enabled: !_saving,
                         ),
                         const SizedBox(height: AppSpacing.md),
+                        Text(
+                          l10n.profileHeightLabel,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        ProfileHeightPicker(
+                          valueCm: _heightCm,
+                          onChanged: (value) =>
+                              setState(() => _heightCm = value),
+                          enabled: !_saving,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
                         MevoraTextField(
                           controller: _cityController,
                           label: l10n.settingsCity,
@@ -186,6 +211,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               setState(() => _education = value),
                           enabled: !_saving,
                         ),
+                        const SizedBox(height: AppSpacing.md),
+                        MevoraTextField(
+                          controller: _occupationController,
+                          label: l10n.profileOccupationLabel,
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        ProfileSectionHeader(
+                          title: l10n.profileEditSectionLanguages,
+                          subtitle: l10n.profileLanguagesHint,
+                        ),
+                        ProfileLanguagePicker(
+                          selected: _languages,
+                          onChanged: (value) =>
+                              setState(() => _languages = value),
+                          enabled: !_saving,
+                          showHint: false,
+                        ),
                         const SizedBox(height: AppSpacing.lg),
                         ProfileSectionHeader(
                           title: l10n.profileEditSectionInterests,
@@ -210,6 +253,28 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         ProfileSectionHeader(
+                          title: l10n.profileEditSectionExtended,
+                        ),
+                        ProfileExtendedLifestylePicker(
+                          profile: _lifestyle,
+                          onChanged: (value) =>
+                              setState(() => _lifestyle = value),
+                          enabled: !_saving,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        ProfileSectionHeader(
+                          title: l10n.profileEditSectionHobbies,
+                          subtitle: l10n.profileHobbiesHint,
+                        ),
+                        ProfileHobbyPicker(
+                          selected: _hobbies,
+                          onChanged: (value) =>
+                              setState(() => _hobbies = value),
+                          enabled: !_saving,
+                          showHint: false,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        ProfileSectionHeader(
                           title: l10n.profileEditSectionRelationship,
                         ),
                         ProfileRelationshipGoalPicker(
@@ -231,7 +296,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           title: l10n.profileEditSectionAnswers,
                           subtitle: l10n.profileEditAnswersSubtitle,
                         ),
-                        _ProfileAnswersPreview(uid: uid),
+                        ProfileQuestionAnswersSection(
+                          uid: uid,
+                          isOwner: true,
+                          showEditAction: true,
+                        ),
                         if (_errorKey != null) ...[
                           const SizedBox(height: AppSpacing.sm),
                           Text(
@@ -267,7 +336,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _interestedIn = profile.interestedIn;
     _relationshipGoal = profile.relationshipGoal;
     _education = profile.education;
+    _heightCm = profile.heightCm;
+    _occupationController.text = profile.occupation ?? '';
     _interests = profile.interests.toSet();
+    _languages = profile.languages.toSet();
+    _hobbies = profile.hobbies.toSet();
     _lifestyle = profile.lifestyleProfile;
     _hydrated = true;
   }
@@ -280,7 +353,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       interestedIn: _interestedIn,
       city: _cityController.text.trim(),
       education: _education,
+      occupation: _occupationController.text.trim().isEmpty
+          ? null
+          : _occupationController.text.trim(),
+      heightCm: _heightCm,
       interests: _interests.toList(),
+      languages: _languages.toList(),
+      hobbies: _hobbies.toList(),
       relationshipGoal: _relationshipGoal,
       lifestyleProfile: _lifestyle,
       lifestyle: _lifestyle.toTags(),
@@ -294,12 +373,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
         a.interestedIn == b.interestedIn &&
         (a.city ?? '') == (b.city ?? '') &&
         a.education == b.education &&
+        (a.occupation ?? '') == (b.occupation ?? '') &&
+        a.heightCm == b.heightCm &&
         a.relationshipGoal == b.relationshipGoal &&
         _setEquals(a.interests.toSet(), b.interests.toSet()) &&
+        _setEquals(a.languages.toSet(), b.languages.toSet()) &&
+        _setEquals(a.hobbies.toSet(), b.hobbies.toSet()) &&
         a.lifestyleProfile.smoking == b.lifestyleProfile.smoking &&
         a.lifestyleProfile.drinking == b.lifestyleProfile.drinking &&
         a.lifestyleProfile.exercise == b.lifestyleProfile.exercise &&
-        a.lifestyleProfile.pets == b.lifestyleProfile.pets;
+        a.lifestyleProfile.pets == b.lifestyleProfile.pets &&
+        a.lifestyleProfile.partnerSmokingPref ==
+            b.lifestyleProfile.partnerSmokingPref &&
+        a.lifestyleProfile.partnerDrinkingPref ==
+            b.lifestyleProfile.partnerDrinkingPref &&
+        a.lifestyleProfile.childrenPreference ==
+            b.lifestyleProfile.childrenPreference &&
+        a.lifestyleProfile.partnerChildrenPref ==
+            b.lifestyleProfile.partnerChildrenPref &&
+        a.lifestyleProfile.socialRhythm == b.lifestyleProfile.socialRhythm &&
+        a.lifestyleProfile.socialLevel == b.lifestyleProfile.socialLevel &&
+        _setEquals(
+          a.lifestyleProfile.weekendPreferences.toSet(),
+          b.lifestyleProfile.weekendPreferences.toSet(),
+        ) &&
+        a.lifestyleProfile.cohabitationPreference ==
+            b.lifestyleProfile.cohabitationPreference;
   }
 
   bool _setEquals<T>(Set<T> a, Set<T> b) {
@@ -479,70 +578,3 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 }
 
-class _ProfileAnswersPreview extends StatelessWidget {
-  const _ProfileAnswersPreview({required this.uid});
-
-  final String uid;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final locale = Localizations.localeOf(context).languageCode;
-    final repository = RelationshipScope.maybeOf(context);
-    if (repository == null) {
-      return Text(l10n.profileAnswersEmpty);
-    }
-    return FutureBuilder(
-      future: repository.getSavedAnswers(uid),
-      builder: (context, snapshot) {
-        final answers = snapshot.data?.valueOrNull ?? const <String, String>{};
-        if (answers.isEmpty) {
-          return Text(l10n.profileAnswersEmpty);
-        }
-        final entries = answers.entries.take(3).toList();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < entries.length; i++)
-              _answerTile(
-                context,
-                index: i + 1,
-                questionId: entries[i].key,
-                answerId: entries[i].value,
-                locale: locale,
-              ),
-            const SizedBox(height: AppSpacing.sm),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: () => context.push(AppRoutes.profileAnswers),
-                child: Text(l10n.profileAnswersEdit),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _answerTile(
-    BuildContext context, {
-    required int index,
-    required String questionId,
-    required String answerId,
-    required String locale,
-  }) {
-    final question = RelationshipQuestionCatalog.byId(questionId);
-    if (question == null) {
-      return const SizedBox.shrink();
-    }
-    final answer = question.answers
-        .where((item) => item.id == answerId)
-        .firstOrNull;
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text('$index. ${question.promptFor(locale)}'),
-      subtitle: Text(answer?.labelFor(locale) ?? answerId),
-    );
-  }
-}

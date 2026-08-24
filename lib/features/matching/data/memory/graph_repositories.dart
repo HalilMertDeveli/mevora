@@ -79,6 +79,13 @@ class GraphChatRepository implements ChatRepository {
   String get _uid => auth.currentUid ?? '';
 
   @override
+  Future<bool> isE2eeActive({
+    required String matchId,
+    required String peerUid,
+  }) async =>
+      false;
+
+  @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30}) {
     return graph.watchMessages(matchId);
   }

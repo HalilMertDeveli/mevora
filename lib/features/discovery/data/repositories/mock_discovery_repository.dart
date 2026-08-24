@@ -5,6 +5,7 @@ import 'package:mevora/features/discovery/data/datasources/mock_discovery_data_s
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
+import 'package:mevora/features/discovery/domain/services/discovery_boost_ranking.dart';
 import 'package:mevora/features/discovery/domain/services/discovery_candidate_filter.dart';
 
 /// Mock discovery for development and tests. Never touches Firestore.
@@ -66,35 +67,56 @@ class MockDiscoveryRepository
     required DiscoveryRadius radius,
     String? cursor,
     int limit = 10,
+    bool expandDistance = false,
   }) async {
-    final visible = DiscoveryCandidateFilter.apply(
+    var visible = DiscoveryCandidateFilter.apply(
       seeds: _profiles,
       selfUid: _actorUid,
       blocked: blocked,
       liked: liked,
       passed: passed,
       radiusKm: radius.kilometers,
+      boostedUids: boostedUids,
+      expandDistance: false,
       uidOf: (seed) => seed.uid,
       distanceKmOf: (seed) => seed.distanceKm,
       lastActiveAtOf: (seed) => seed.profile.lastActiveAt,
       clock: _clock,
     );
-    if (boostedUids.isNotEmpty) {
-      visible.sort((a, b) {
-        final aBoost = boostedUids.contains(a.uid) ? 1 : 0;
-        final bBoost = boostedUids.contains(b.uid) ? 1 : 0;
-        if (aBoost != bBoost) {
-          return bBoost - aBoost;
-        }
-        return b.compatibilityScore.compareTo(a.compatibilityScore);
-      });
+    if (visible.isEmpty || expandDistance) {
+      visible = DiscoveryCandidateFilter.apply(
+        seeds: _profiles,
+        selfUid: _actorUid,
+        blocked: blocked,
+        liked: liked,
+        passed: passed,
+        radiusKm: radius.kilometers,
+        boostedUids: boostedUids,
+        expandDistance: true,
+        limit: _profiles.length,
+        uidOf: (seed) => seed.uid,
+        distanceKmOf: (seed) => seed.distanceKm,
+        lastActiveAtOf: (seed) => seed.profile.lastActiveAt,
+        clock: _clock,
+      );
     }
+    final ranked = DiscoveryBoostRanking.sortCandidates(
+      items: visible,
+      boostedUids: boostedUids,
+      radiusKm: radius.kilometers,
+      uidOf: (seed) => seed.uid,
+      compatibilityOf: (seed) => seed.compatibilityScore,
+      musicBonusOf: (_) => 0,
+      distanceOf: (seed) => seed.distanceKm,
+      tieBreak: (a, b) =>
+          b.compatibilityScore.compareTo(a.compatibilityScore),
+    );
     final start = cursor == null
         ? 0
-        : visible.indexWhere((seed) => seed.uid == cursor) + 1;
-    final slice = visible.skip(start < 0 ? 0 : start).take(limit).toList();
+        : ranked.indexWhere((seed) => seed.uid == cursor) + 1;
+    final slice = ranked.skip(start < 0 ? 0 : start).take(limit).toList();
     final candidates = slice.map(_toCandidate).toList();
-    final next = start + slice.length < visible.length && slice.isNotEmpty
+    final next = start + slice.length < ranked.length && slice.isNotEmpty
         ? slice.last.uid
         : null;
     return Success(
@@ -175,6 +197,7 @@ class MockDiscoveryRepository
       gender: profile.gender,
       relationshipGoal: profile.relationshipGoal,
       isDemo: true,
+      isBoosted: boostedUids.contains(seed.uid),
     );
   }
 }

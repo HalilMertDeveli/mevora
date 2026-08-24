@@ -6,6 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:mevora/features/chat/domain/services/chat_voice_recorder.dart';
 
+/// Minimum captured audio length we treat as intentional (ms).
+const int kMinVoiceDurationMs = 400;
+
 class RecordChatVoiceRecorder implements ChatVoiceRecorder {
   RecordChatVoiceRecorder({AudioRecorder? recorder})
     : _recorder = recorder ?? AudioRecorder();
@@ -25,7 +28,8 @@ class RecordChatVoiceRecorder implements ChatVoiceRecorder {
       throw const ChatMicDenied();
     }
     final dir = await getTemporaryDirectory();
-    _path = '${dir.path}/mevora-voice-${DateTime.now().millisecondsSinceEpoch}.m4a';
+    _path =
+        '${dir.path}/mevora-voice-${DateTime.now().millisecondsSinceEpoch}.m4a';
     _startedAt = DateTime.now();
     await _recorder.start(
       const RecordConfig(
@@ -42,8 +46,9 @@ class RecordChatVoiceRecorder implements ChatVoiceRecorder {
   @override
   Future<RecordedVoice?> stop() async {
     _recording = false;
-    final path = await _recorder.stop() ?? _path;
     final started = _startedAt;
+    final stoppedAt = DateTime.now();
+    final path = await _recorder.stop() ?? _path;
     _path = null;
     _startedAt = null;
     if (path == null) {
@@ -59,13 +64,19 @@ class RecordChatVoiceRecorder implements ChatVoiceRecorder {
     } on Object {
       // Temp cleanup is best-effort.
     }
-    final duration = started == null
-        ? 1000
-        : DateTime.now().difference(started).inMilliseconds.clamp(400, 120000);
+    if (bytes.isEmpty) {
+      return null;
+    }
+    final durationMs = started == null
+        ? kMinVoiceDurationMs
+        : stoppedAt.difference(started).inMilliseconds;
+    if (durationMs < kMinVoiceDurationMs) {
+      return null;
+    }
     return RecordedVoice(
       bytes: bytes,
       contentType: 'audio/mp4',
-      durationMs: duration,
+      durationMs: durationMs.clamp(kMinVoiceDurationMs, 120000),
     );
   }
 

@@ -47,7 +47,7 @@ class FirebaseMatchScoreDataSource implements MatchScoreDataSource {
         .map((snap) {
           return snap.docs.map(_pendingFrom).toList(growable: false);
         })
-        .handleError((Object _, StackTrace __) {
+        .handleError((Object _, StackTrace _) {
           // Owner list can fail briefly after Google sign-in (token / App Check).
         });
   }

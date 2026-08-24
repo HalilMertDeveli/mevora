@@ -28,7 +28,7 @@ class FirebaseVerificationDataSource {
     final data = await backend.invoke('createSumsubAccessToken');
     final token = data['token'] as String?;
     if (token == null || token.isEmpty) {
-      throw FormatException('Missing Sumsub access token');
+      throw const FormatException('Missing Sumsub access token');
     }
     return token;
   }

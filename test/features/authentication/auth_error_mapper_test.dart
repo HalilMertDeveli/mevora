@@ -80,11 +80,11 @@ void main() {
     );
     expect(
       AuthErrorMapper.fromCode('session-expired').kind,
-      AuthErrorKind.sessionExpired,
+      AuthErrorKind.expiredOtp,
     );
     expect(
       AuthErrorMapper.fromCode('session-expired').message,
-      AuthMessages.sessionExpired,
+      AuthMessages.expiredOtp,
     );
     expect(
       AuthErrorMapper.fromCode('too-many-requests').kind,

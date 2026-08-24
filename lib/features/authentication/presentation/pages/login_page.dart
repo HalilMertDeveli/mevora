@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
@@ -20,7 +19,6 @@ import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/components/mevora_logo.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -48,6 +46,7 @@ class _LoginPageState extends State<LoginPage>
   String? _emailError;
   String? _passwordError;
   bool _viewLogged = false;
+  bool _autoGoogleTriggered = false;
 
   @override
   void initState() {
@@ -96,6 +95,13 @@ class _LoginPageState extends State<LoginPage>
       _viewLogged = true;
       unawaited(AuthScope.of(context).reportLoginScreenViewed());
     }
+    // #region agent log
+    const autoGoogle = bool.fromEnvironment('AUTO_TEST_GOOGLE_SIGNIN');
+    if (autoGoogle && !_autoGoogleTriggered) {
+      _autoGoogleTriggered = true;
+      unawaited(AuthScope.of(context).signInWithGoogle());
+    }
+    // #endregion
   }
 
   @override
@@ -124,7 +130,6 @@ class _LoginPageState extends State<LoginPage>
   @override
   Widget build(BuildContext context) {
     final auth = AuthScope.of(context);
-    final config = AppScope.of(context).config;
     final l10n = AppLocalizations.of(context);
     final error = localizeAuthError(l10n, auth);
     final busyProvider = switch (auth.status) {
@@ -204,12 +209,9 @@ class _LoginPageState extends State<LoginPage>
                               ),
                             ),
                             child: AuthLegalFooter(
-                              onTerms: () => unawaited(
-                                launchUrl(Uri.parse(config.termsOfServiceUrl)),
-                              ),
-                              onPrivacy: () => unawaited(
-                                launchUrl(Uri.parse(config.privacyPolicyUrl)),
-                              ),
+                              onTerms: () => context.push(AppRoutes.legalTerms),
+                              onPrivacy: () =>
+                                  context.push(AppRoutes.legalPrivacy),
                             ),
                           ),
                         ],

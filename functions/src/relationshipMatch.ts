@@ -76,6 +76,40 @@ function snapshotPayload(
   return payload;
 }
 
+function profileQuestionAnswerRef(uid: string, questionId: string) {
+  return db.doc(`users/${uid}/questionAnswers/${questionId}`);
+}
+
+function profileAnswerVisible(data?: DocumentData | null): boolean {
+  return data?.isVisible !== false;
+}
+
+async function upsertProfileQuestionAnswer(input: {
+  uid: string;
+  questionId: string;
+  answerId: string;
+  existing?: DocumentData | null;
+}): Promise<void> {
+  const ref = profileQuestionAnswerRef(input.uid, input.questionId);
+  const isVisible = profileAnswerVisible(input.existing);
+  if (input.existing) {
+    await ref.update({
+      questionId: input.questionId,
+      answerId: input.answerId,
+      isVisible,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+  await ref.set({
+    questionId: input.questionId,
+    answerId: input.answerId,
+    isVisible: true,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+}
+
 async function loadSummary(uid: string) {
   return db.doc(`users/${uid}/relationshipMatch/summary`).get();
 }
@@ -373,15 +407,25 @@ export const saveRelationshipAnswer = onCall(
       }
       const answerRef = db.doc(`users/${uid}/relationshipAnswers/${questionId}`);
       const summaryRef = db.doc(`users/${uid}/relationshipMatch/summary`);
+      const profileRef = profileQuestionAnswerRef(uid, questionId);
       const current = await loadAnswers(uid);
       if (current[questionId] === answerId) {
         const summary = await loadSummary(uid);
+        const profileSnap = await profileRef.get();
+        if (!profileSnap.exists) {
+          await upsertProfileQuestionAnswer({
+            uid,
+            questionId,
+            answerId,
+          });
+        }
         relDebug("Answer unchanged");
         return snapshotPayload(current, summary.data());
       }
       current[questionId] = answerId;
       await db.runTransaction(async (tx) => {
         const existing = await tx.get(answerRef);
+        const existingProfile = await tx.get(profileRef);
         if (existing.exists) {
           tx.update(answerRef, {
             answerId,
@@ -392,6 +436,25 @@ export const saveRelationshipAnswer = onCall(
             questionId,
             answerId,
             answeredAt: FieldValue.serverTimestamp(),
+          });
+        }
+        const profileVisible = existingProfile.exists
+          ? profileAnswerVisible(existingProfile.data())
+          : true;
+        if (existingProfile.exists) {
+          tx.update(profileRef, {
+            questionId,
+            answerId,
+            isVisible: profileVisible,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        } else {
+          tx.create(profileRef, {
+            questionId,
+            answerId,
+            isVisible: true,
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
           });
         }
         tx.set(
@@ -531,6 +594,73 @@ export const getRelationshipMatches = onCall(
     }
     const items = await findExactCandidates(uid, questionIds, compatibilityKey);
     return {items};
+  },
+);
+
+export const syncProfileQuestionAnswers = onCall(
+  callableOptions,
+  async (request) => {
+    const uid = requireUid(request);
+    const answers = await loadAnswers(uid);
+    const entries = Object.entries(answers);
+    if (entries.length === 0) {
+      return {synced: 0};
+    }
+    const batch = db.batch();
+    for (const [questionId, answerId] of entries) {
+      const ref = profileQuestionAnswerRef(uid, questionId);
+      const existing = await ref.get();
+      batch.set(
+        ref,
+        {
+          questionId,
+          answerId,
+          isVisible: existing.exists ? profileAnswerVisible(existing.data()) : true,
+          createdAt: existing.exists
+            ? existing.data()?.createdAt ?? FieldValue.serverTimestamp()
+            : FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        {merge: true},
+      );
+    }
+    await batch.commit();
+    relDebug(`Profile question answers synced: ${entries.length}`);
+    return {synced: entries.length};
+  },
+);
+
+export const updateQuestionAnswerVisibility = onCall(
+  callableOptions,
+  async (request) => {
+    const uid = requireUid(request);
+    const questionId = String(request.data?.questionId ?? "");
+    const isVisible = request.data?.isVisible === true;
+    if (!/^rq_\d{3}$/.test(questionId)) {
+      throw new HttpsError("invalid-argument", "invalid-question");
+    }
+    const ref = profileQuestionAnswerRef(uid, questionId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      const answers = await loadAnswers(uid);
+      const answerId = answers[questionId];
+      if (!answerId) {
+        throw new HttpsError("not-found", "answer-not-found");
+      }
+      await ref.set({
+        questionId,
+        answerId,
+        isVisible,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return {ok: true};
+    }
+    await ref.update({
+      isVisible,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return {ok: true};
   },
 );
 

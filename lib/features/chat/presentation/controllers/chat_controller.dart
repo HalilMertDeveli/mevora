@@ -5,6 +5,7 @@ import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/errors/social_error_mapper.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
+import 'package:mevora/features/chat/debug/chat_debug_log.dart';
 import 'package:mevora/features/chat/domain/chat_policy.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
@@ -137,10 +138,29 @@ class ChatController extends ChangeNotifier {
     } on Object {
       // Demo matches and offline clients still open the thread.
     }
+    if (match != null && otherUid.isNotEmpty) {
+      unawaited(_warmE2eeSession(current, otherUid));
+    }
+    ChatDebugLog.event(
+      'chat_started',
+      fields: {
+        'matchId': matchId,
+        'uid': current,
+        'otherUid': otherUid,
+        'canChat': canChat,
+      },
+    );
     _messageSub = _chat.watchLatest(matchId).listen((value) {
       messages
         ..clear()
         ..addAll(value);
+      if (value.isNotEmpty) {
+        ChatDebugLog.messageSnapshot(
+          action: 'messages_snapshot',
+          matchId: matchId,
+          message: value.last,
+        );
+      }
       unawaited(_acknowledge(value));
       notifyListeners();
     }, onError: (_) {});
@@ -176,6 +196,29 @@ class ChatController extends ChangeNotifier {
       }, onError: (_) {});
     }
     notifyListeners();
+  }
+
+  Future<void> _warmE2eeSession(String current, String peerUid) async {
+    try {
+      final active = await _chat.isE2eeActive(
+        matchId: matchId,
+        peerUid: peerUid,
+      );
+      ChatDebugLog.event(
+        'e2ee_session_warmup',
+        fields: {
+          'matchId': matchId,
+          'uid': current,
+          'peerUid': peerUid,
+          'active': active,
+        },
+      );
+    } on Object {
+      ChatDebugLog.event(
+        'e2ee_session_warmup_failed',
+        fields: {'matchId': matchId, 'peerUid': peerUid},
+      );
+    }
   }
 
   Future<void> _acknowledge(List<ChatMessage> value) async {
@@ -245,10 +288,15 @@ class ChatController extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      await _chat.sendText(
+      final sent = await _chat.sendText(
         matchId: matchId,
         receiverId: otherUid,
         text: text,
+      );
+      ChatDebugLog.messageSnapshot(
+        action: 'message_sent',
+        matchId: matchId,
+        message: sent,
       );
       _typingSent = false;
       unawaited(_chat.setTyping(matchId: matchId, isTyping: false));

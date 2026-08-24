@@ -30,14 +30,16 @@ class ProfileLifestylePicker extends StatelessWidget {
           OnboardingLifestyleOption.habitValues,
           (value) => onChanged(profile.copyWith(smoking: value)),
           l10n,
+          OnboardingLabels.lifestyle,
         ),
         _group(
           context,
           l10n.onboardingDrinking,
           profile.drinking,
-          OnboardingLifestyleOption.habitValues,
+          OnboardingLifestyleOption.drinkingValues,
           (value) => onChanged(profile.copyWith(drinking: value)),
           l10n,
+          OnboardingLabels.alcohol,
         ),
         _group(
           context,
@@ -46,6 +48,7 @@ class ProfileLifestylePicker extends StatelessWidget {
           OnboardingLifestyleOption.habitValues,
           (value) => onChanged(profile.copyWith(exercise: value)),
           l10n,
+          OnboardingLabels.lifestyle,
         ),
         _group(
           context,
@@ -54,6 +57,7 @@ class ProfileLifestylePicker extends StatelessWidget {
           OnboardingLifestyleOption.petValues,
           (value) => onChanged(profile.copyWith(pets: value)),
           l10n,
+          OnboardingLabels.lifestyle,
         ),
       ],
     );
@@ -66,6 +70,7 @@ class ProfileLifestylePicker extends StatelessWidget {
     List<String> values,
     ValueChanged<String> onChanged,
     AppLocalizations l10n,
+    String Function(AppLocalizations l10n, String? value) labelForValue,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -80,7 +85,7 @@ class ProfileLifestylePicker extends StatelessWidget {
             children: [
               for (final value in values)
                 MevoraChip(
-                  label: OnboardingLabels.lifestyle(l10n, value),
+                  label: labelForValue(l10n, value),
                   selected: selected == value,
                   onSelected: enabled ? (_) => onChanged(value) : null,
                 ),

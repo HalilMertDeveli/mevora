@@ -8,6 +8,7 @@ class MusicTasteSnapshot {
     this.genres = const [],
     this.recentTrackIds = const [],
     this.recentArtistIds = const [],
+    this.playlistTrackIds = const [],
   });
 
   final List<String> trackIds;
@@ -16,12 +17,16 @@ class MusicTasteSnapshot {
   final List<String> recentTrackIds;
   final List<String> recentArtistIds;
 
+  /// Spotify playlist track IDs only when playlist scope was granted.
+  final List<String> playlistTrackIds;
+
   bool get isEmpty =>
       trackIds.isEmpty &&
       artistIds.isEmpty &&
       genres.isEmpty &&
       recentTrackIds.isEmpty &&
-      recentArtistIds.isEmpty;
+      recentArtistIds.isEmpty &&
+      playlistTrackIds.isEmpty;
 }
 
 /// Owner-visible music profile. Full listen history stays on the server.

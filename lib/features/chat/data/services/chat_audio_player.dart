@@ -1,12 +1,24 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:audioplayers/audioplayers.dart';
 
 /// Playback port for voice bubbles. UI never imports audioplayers.
 abstract class ChatAudioPlayer {
-  Future<void> play(String url);
+  /// Plays a voice bubble. [messageId] must be stable (Firestore message id).
+  /// Either [url] (Firebase) or [bytes] (in-memory demo) must be provided.
+  Future<void> playMessage({
+    required String messageId,
+    String? url,
+    Uint8List? bytes,
+  });
 
   Future<void> pause();
 
   Future<void> stop();
+
+  /// Emits the message id currently playing, or null when idle.
+  Stream<String?> watchActiveMessageId();
 
   Stream<Duration> watchPosition();
 
@@ -16,54 +28,115 @@ abstract class ChatAudioPlayer {
 }
 
 class PlayerComplete {
-  const PlayerComplete();
+  const PlayerComplete({this.messageId});
+
+  final String? messageId;
 }
 
 class AudioplayersChatAudioPlayer implements ChatAudioPlayer {
   AudioplayersChatAudioPlayer({AudioPlayer? player})
-    : _player = player ?? AudioPlayer();
+    : _player = player ?? AudioPlayer(),
+      _activeMessageId = StreamController<String?>.broadcast(
+        onListen: () {},
+      );
 
   final AudioPlayer _player;
+  final StreamController<String?> _activeMessageId;
+  String? _currentMessageId;
+  StreamSubscription<void>? _completeSub;
 
   @override
-  Future<void> play(String url) {
-    return _player.play(UrlSource(url));
+  Stream<String?> watchActiveMessageId() => _activeMessageId.stream;
+
+  @override
+  Future<void> playMessage({
+    required String messageId,
+    String? url,
+    Uint8List? bytes,
+  }) async {
+    if (url == null && (bytes == null || bytes.isEmpty)) {
+      return;
+    }
+    if (_currentMessageId != null && _currentMessageId != messageId) {
+      await _player.stop();
+    }
+    _currentMessageId = messageId;
+    _activeMessageId.add(messageId);
+    await _completeSub?.cancel();
+    _completeSub = _player.onPlayerComplete.listen((_) {
+      _currentMessageId = null;
+      _activeMessageId.add(null);
+    });
+    if (bytes != null && bytes.isNotEmpty) {
+      await _player.play(BytesSource(bytes));
+      return;
+    }
+    await _player.play(UrlSource(url!));
   }
 
   @override
   Future<void> pause() => _player.pause();
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> stop() async {
+    _currentMessageId = null;
+    _activeMessageId.add(null);
+    await _player.stop();
+  }
 
   @override
   Stream<Duration> watchPosition() => _player.onPositionChanged;
 
   @override
   Stream<PlayerComplete> watchComplete() {
-    return _player.onPlayerComplete.map((_) => const PlayerComplete());
+    return _player.onPlayerComplete.map(
+      (_) => PlayerComplete(messageId: _currentMessageId),
+    );
   }
 
   @override
-  Future<void> dispose() => _player.dispose();
+  Future<void> dispose() async {
+    await _completeSub?.cancel();
+    await _activeMessageId.close();
+    await _player.dispose();
+  }
 }
 
 class FakeChatAudioPlayer implements ChatAudioPlayer {
-  bool playing = false;
+  FakeChatAudioPlayer() : _active = StreamController<String?>.broadcast();
+
+  String? playingMessageId;
+  String? lastUrl;
+  Uint8List? lastBytes;
+  final StreamController<String?> _active;
 
   @override
-  Future<void> play(String url) async {
-    playing = true;
+  Stream<String?> watchActiveMessageId() => _active.stream;
+
+  @override
+  Future<void> playMessage({
+    required String messageId,
+    String? url,
+    Uint8List? bytes,
+  }) async {
+    if (playingMessageId != null && playingMessageId != messageId) {
+      _active.add(null);
+    }
+    playingMessageId = messageId;
+    lastUrl = url;
+    lastBytes = bytes;
+    _active.add(messageId);
   }
 
   @override
   Future<void> pause() async {
-    playing = false;
+    _active.add(null);
   }
 
   @override
   Future<void> stop() async {
-    playing = false;
+    playingMessageId = null;
+    _active.add(null);
   }
 
   @override
@@ -73,5 +146,7 @@ class FakeChatAudioPlayer implements ChatAudioPlayer {
   Stream<PlayerComplete> watchComplete() => const Stream.empty();
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    await _active.close();
+  }
 }

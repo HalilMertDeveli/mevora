@@ -33,15 +33,49 @@ abstract final class RelationshipQuestionSets {
   }
 
   static List<RelationshipQuestion>? nextUnanswered(Set<String> answeredIds) {
+    final blocked = RelationshipQuestionCatalog.blockedQuestionIds(answeredIds);
     for (final ids in sets) {
-      if (ids.every((id) => !answeredIds.contains(id))) {
-        return [
-          for (final id in ids)
-            RelationshipQuestionCatalog.byId(id),
+      if (ids.every((id) => !blocked.contains(id))) {
+        final questions = [
+          for (final id in ids) RelationshipQuestionCatalog.byId(id),
         ].whereType<RelationshipQuestion>().toList(growable: false);
+        if (questions.length == RelationshipQuestionConfig.questionsPerSession) {
+          return questions;
+        }
       }
     }
-    return null;
+    // Fallback: build a diverse triple from remaining catalog.
+    final remaining = RelationshipQuestionCatalog.unanswered(answeredIds);
+    if (remaining.length < RelationshipQuestionConfig.questionsPerSession) {
+      return null;
+    }
+    return _pickDiverseTriple(remaining);
+  }
+
+  static List<RelationshipQuestion> _pickDiverseTriple(
+    List<RelationshipQuestion> pool,
+  ) {
+    final picked = <RelationshipQuestion>[];
+    final usedCategories = <RelationshipContentCategory>{};
+    for (final question in pool) {
+      if (picked.length >= RelationshipQuestionConfig.questionsPerSession) {
+        break;
+      }
+      if (usedCategories.add(question.category) ||
+          usedCategories.length >= RelationshipContentCategory.values.length) {
+        picked.add(question);
+      }
+    }
+    while (picked.length < RelationshipQuestionConfig.questionsPerSession &&
+        picked.length < pool.length) {
+      for (final question in pool) {
+        if (!picked.contains(question)) {
+          picked.add(question);
+          break;
+        }
+      }
+    }
+    return picked;
   }
 
   static bool _same(List<String> a, List<String> b) {

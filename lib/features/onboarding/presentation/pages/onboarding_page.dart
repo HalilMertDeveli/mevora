@@ -9,6 +9,8 @@ import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart'
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo_grid.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_height_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_language_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_gender_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_interest_picker.dart';
@@ -35,20 +37,22 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final _cityController = TextEditingController();
   final _bioController = TextEditingController();
   DateTime? _birthDate;
-  bool _initialized = false;
+  bool _listenerAttached = false;
+  String? _initializedUid;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_initialized) {
-      return;
+    if (!_listenerAttached) {
+      _controller = OnboardingScope.of(context).controller;
+      _controller.addListener(_syncFields);
+      _listenerAttached = true;
     }
-    _initialized = true;
-    _controller = OnboardingScope.of(context).controller;
-    _controller.addListener(_syncFields);
     final user = AuthScope.of(context).user;
-    if (user != null) {
-      unawaited(_controller.initialize(user));
+    final uid = user?.id;
+    if (uid != null && uid != _initializedUid) {
+      _initializedUid = uid;
+      unawaited(_controller.initialize(user!));
     }
   }
 
@@ -76,7 +80,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   void dispose() {
-    _controller.removeListener(_syncFields);
+    if (_listenerAttached) {
+      _controller.removeListener(_syncFields);
+    }
     _firstNameController.dispose();
     _cityController.dispose();
     _bioController.dispose();
@@ -195,6 +201,33 @@ class _OnboardingPageState extends State<OnboardingPage> {
               (current) => current.copyWith(interestedIn: value),
             ),
             enabled: !_controller.isSaving,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.onboardingHeight,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ProfileHeightPicker(
+            valueCm: profile.heightCm,
+            onChanged: (value) => _controller.updateDraft(
+              (current) => current.copyWith(heightCm: value),
+            ),
+            enabled: !_controller.isSaving,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.onboardingLanguages,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ProfileLanguagePicker(
+            selected: profile.languages.toSet(),
+            onChanged: (next) => _controller.updateDraft(
+              (current) => current.copyWith(languages: next.toList()),
+            ),
+            enabled: !_controller.isSaving,
+            showHint: true,
           ),
           const SizedBox(height: AppSpacing.md),
           MevoraTextField(

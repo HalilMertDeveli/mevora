@@ -52,9 +52,29 @@ function validateOnboardingProfile(data: DocumentData): void {
     throw new HttpsError("failed-precondition", "interests-required");
   }
 
-  const lifestyle = (data.lifestyleProfile as DocumentData | undefined) ?? {};
+  // Preferred source: structured `lifestyleProfile` map.
+  // Fallback source (legacy / older clients / schema drift): `lifestyle` tag list.
+  const lifestyleProfile = (data.lifestyleProfile as DocumentData | undefined) ?? {};
+  const lifestyleTags = Array.isArray(data.lifestyle) ? data.lifestyle : [];
+  const lifestyleFromTags: Record<string, string> = {};
+
+  for (const tag of lifestyleTags) {
+    if (typeof tag !== "string") {
+      continue;
+    }
+    const [key, ...rest] = tag.split(":");
+    const value = rest.join(":");
+    if (!key || !value) {
+      continue;
+    }
+    lifestyleFromTags[key] = value;
+  }
+
   for (const field of ["smoking", "drinking", "exercise", "pets"]) {
-    requireString(lifestyle[field], field);
+    const value =
+      (lifestyleProfile as Record<string, unknown>)[field] ??
+      lifestyleFromTags[field];
+    requireString(value, field);
   }
 
   if (!isAdultProfile(data)) {

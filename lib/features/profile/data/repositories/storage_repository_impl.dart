@@ -24,6 +24,10 @@ class StorageRepositoryImpl implements StorageRepository {
   }
 
   @override
+  Future<Result<List<int>>> downloadBytes(String path) =>
+      _dataSource.downloadBytes(path);
+
+  @override
   Future<Result<void>> delete(String path) => _dataSource.delete(path);
 
   @override

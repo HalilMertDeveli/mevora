@@ -12,6 +12,7 @@ import 'package:mevora/features/chat/data/datasources/firebase_chat_data_source.
 import 'package:mevora/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
+import 'package:mevora/features/chat/e2ee/services/e2ee_chat_service.dart';
 import 'package:mevora/features/profile/data/datasources/firebase_storage_data_source.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
@@ -169,16 +170,30 @@ class FirebaseChatRepository implements ChatRepository {
     required this.uidSource,
     FirebaseFirestore? firestore,
     StorageProvider? storage,
+    E2eeChatService? e2ee,
   }) : _inner = ChatRepositoryImpl(
          dataSource: FirebaseChatDataSource(
            uidSource: uidSource,
            firestore: firestore,
          ),
          storage: storage ?? FirebaseStorageDataSource(),
+         e2ee: e2ee ??
+             E2eeChatService(
+               storage: storage ?? FirebaseStorageDataSource(),
+             ),
+         uidSource: uidSource,
        );
 
   final AuthUidSource uidSource;
   final ChatRepository _inner;
+
+  @override
+  Future<bool> isE2eeActive({
+    required String matchId,
+    required String peerUid,
+  }) {
+    return _inner.isE2eeActive(matchId: matchId, peerUid: peerUid);
+  }
 
   @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30}) {

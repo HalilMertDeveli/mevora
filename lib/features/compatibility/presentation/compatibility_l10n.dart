@@ -13,6 +13,14 @@ abstract final class CompatibilityL10n {
         return l10n.compatReasonSharedInterests(
           reason.messageArgs.join(', '),
         );
+      case 'compatReasonSharedLanguages':
+        return l10n.compatReasonSharedLanguages(
+          reason.messageArgs.first,
+        );
+      case 'compatReasonSharedHobbies':
+        return l10n.compatReasonSharedHobbies(
+          reason.messageArgs.first,
+        );
       case 'compatReasonSimilarLifestyle':
         return l10n.compatReasonSimilarLifestyle;
       case 'compatReasonSameAnswers':
@@ -34,7 +42,10 @@ abstract final class CompatibilityL10n {
       CompatibilityCategory.overall => l10n.compatCategoryOverall,
       CompatibilityCategory.relationship => l10n.compatCategoryRelationship,
       CompatibilityCategory.interests => l10n.compatCategoryInterests,
+      CompatibilityCategory.languages => l10n.compatCategoryLanguages,
+      CompatibilityCategory.hobbies => l10n.compatCategoryHobbies,
       CompatibilityCategory.lifestyle => l10n.compatCategoryLifestyle,
+      CompatibilityCategory.lifeValues => l10n.compatCategoryValues,
       CompatibilityCategory.questions => l10n.compatCategoryQuestions,
       CompatibilityCategory.music => l10n.compatCategoryMusic,
       CompatibilityCategory.communication => l10n.compatCategoryCommunication,

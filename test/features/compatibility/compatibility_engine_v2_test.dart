@@ -12,18 +12,18 @@ void main() {
     uid: 'a',
     displayName: 'Ada',
     age: 27,
-    interests: const ['travel', 'music', 'coffee'],
+    interests: ['travel', 'music', 'coffee'],
     relationshipGoal: 'longTerm',
-    lifestyle: const ['smoking:none'],
+    lifestyle: ['smoking:none'],
   );
 
   const candidate = UserProfile(
     uid: 'b',
     displayName: 'Burak',
     age: 28,
-    interests: const ['travel', 'music', 'design'],
+    interests: ['travel', 'music', 'design'],
     relationshipGoal: 'longTerm',
-    lifestyle: const ['smoking:none'],
+    lifestyle: ['smoking:none'],
   );
 
   test('overall score increases with shared interests and goals', () {

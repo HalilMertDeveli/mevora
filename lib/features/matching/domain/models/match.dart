@@ -13,6 +13,7 @@ class Match {
     required this.userIds,
     required this.createdAt,
     required this.isActive,
+    this.matchedAt,
     this.lastMessage,
     this.lastMessageAt,
     this.unmatchedBy,
@@ -31,6 +32,11 @@ class Match {
   final List<String> userIds;
   final DateTime createdAt;
   final bool isActive;
+
+  /// Canonical match time from Firestore (`matchedAt` or `createdAt`).
+  DateTime get occurredAt => matchedAt ?? createdAt;
+
+  final DateTime? matchedAt;
   final String? lastMessage;
   final DateTime? lastMessageAt;
   final String? unmatchedBy;
@@ -68,6 +74,7 @@ class Match {
 
   Match copyWith({
     bool? isActive,
+    DateTime? matchedAt,
     String? lastMessage,
     DateTime? lastMessageAt,
     String? unmatchedBy,
@@ -81,6 +88,7 @@ class Match {
       userIds: userIds,
       createdAt: createdAt,
       isActive: isActive ?? this.isActive,
+      matchedAt: matchedAt ?? this.matchedAt,
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
       unmatchedBy: unmatchedBy ?? this.unmatchedBy,

@@ -35,6 +35,7 @@ migrate_working_dir/
 /build/
 /coverage/
 .tmp/
+tool/app_check_debug_token.local
 
 # Symbolication related
 app.*.symbols

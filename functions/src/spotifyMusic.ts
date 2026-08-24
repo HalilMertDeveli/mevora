@@ -4,12 +4,15 @@ import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/ht
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {logger} from "firebase-functions";
 import {
+  enrichMusicCompatibility,
   isoWeekId,
   interestedInAllows,
   isTasteEmpty,
+  MUSIC_PROFILE_VERSION,
   scoreMusicCompatibility,
   SYNC_MIN_INTERVAL_MS,
   type MusicTaste,
+  type NamedMusicItem,
 } from "./musicCompatibility.js";
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
@@ -93,7 +96,108 @@ function tasteFromSummary(data: DocumentData | undefined): MusicTaste | null {
     genres,
     recentTrackIds: asStringList(profile.recentTrackIds),
     recentArtistIds: asStringList(profile.recentArtistIds),
+    playlistTrackIds: asStringList(profile.playlistTrackIds),
   };
+}
+
+function catalogFromSummary(data: DocumentData | undefined): NamedMusicItem[] {
+  if (!data) return [];
+  const out: NamedMusicItem[] = [];
+  for (const key of ["topTracks", "recentlyPlayed"] as const) {
+    const list = Array.isArray(data[key]) ? data[key] : [];
+    for (const item of list) {
+      if (!item || typeof item !== "object") continue;
+      const id = String((item as NamedItem).id ?? "");
+      const name = String((item as NamedItem).name ?? "");
+      if (!id || !name) continue;
+      out.push({
+        id,
+        name,
+        artist: typeof (item as NamedItem).artist === "string" ? (item as NamedItem).artist : undefined,
+      });
+    }
+  }
+  const artists = Array.isArray(data.topArtists) ? data.topArtists : [];
+  for (const item of artists) {
+    if (!item || typeof item !== "object") continue;
+    const id = String((item as NamedItem).id ?? "");
+    const name = String((item as NamedItem).name ?? "");
+    if (!id || !name) continue;
+    out.push({id, name});
+  }
+  return out;
+}
+
+function hasPlaylistScope(scope: string | undefined): boolean {
+  if (!scope) return false;
+  return scope.includes("playlist-read-private") || scope.includes("playlist-read-collaborative");
+}
+
+async function fetchPlaylistTaste(
+  accessToken: string,
+  scope: string | undefined,
+): Promise<{
+  playlistTrackIds: string[];
+  playlists: Array<{id: string; name: string; trackCount: number}>;
+}> {
+  if (!hasPlaylistScope(scope)) {
+    return {playlistTrackIds: [], playlists: []};
+  }
+  try {
+    type PlaylistPage = {
+      items?: Array<{
+        id?: string;
+        name?: string;
+        tracks?: {total?: number; href?: string};
+      }>;
+    };
+    type TracksPage = {
+      items?: Array<{track?: {id?: string} | null}>;
+    };
+    const page = await spotifyGet<PlaylistPage>(
+      accessToken,
+      "/me/playlists?limit=10",
+    );
+    const playlists: Array<{id: string; name: string; trackCount: number}> = [];
+    const trackIds: string[] = [];
+    const seen = new Set<string>();
+    for (const playlist of page.items ?? []) {
+      const id = typeof playlist.id === "string" ? playlist.id : "";
+      const name = typeof playlist.name === "string" ? playlist.name.trim() : "";
+      if (!id || !name) continue;
+      const trackCount = typeof playlist.tracks?.total === "number"
+        ? playlist.tracks.total
+        : 0;
+      if (playlists.length < 10) {
+        playlists.push({id, name, trackCount});
+      }
+      if (playlists.length > 5 || trackIds.length >= 200) {
+        continue;
+      }
+      try {
+        const tracks = await spotifyGet<TracksPage>(
+          accessToken,
+          `/playlists/${id}/tracks?fields=items(track(id))&limit=50`,
+        );
+        for (const row of tracks.items ?? []) {
+          const trackId = row.track?.id;
+          if (!trackId || seen.has(trackId)) continue;
+          seen.add(trackId);
+          trackIds.push(trackId);
+          if (trackIds.length >= 200) break;
+        }
+      } catch (error) {
+        logger.warn("playlist tracks fetch failed", {playlistId: id, error});
+      }
+    }
+    return {
+      playlistTrackIds: trackIds.slice(0, 200),
+      playlists: playlists.slice(0, 10),
+    };
+  } catch (error) {
+    logger.warn("playlist taste unavailable", {error});
+    return {playlistTrackIds: [], playlists: []};
+  }
 }
 
 async function exchangeAuthorizationCode(input: {
@@ -298,10 +402,11 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
   if (!me.id) {
     throw new HttpsError("unauthenticated", "oauth");
   }
-  const [topTracks, topArtists, recentlyPlayed] = await Promise.all([
+  const [topTracks, topArtists, recentlyPlayed, playlistTaste] = await Promise.all([
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/tracks?time_range=medium_term&limit=50"),
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/artists?time_range=medium_term&limit=50"),
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/player/recently-played?limit=50"),
+    fetchPlaylistTaste(tokens.accessToken, tokens.scope),
   ]);
   const tracks = summarizeTracks(topTracks.items ?? []);
   const artists = summarizeArtists(topArtists.items ?? []);
@@ -321,6 +426,8 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
           return list.map((artist: DocumentData) => String(artist.id ?? "")).filter(Boolean);
         }),
     )].slice(0, 30),
+    playlistTrackIds: playlistTaste.playlistTrackIds,
+    playlists: playlistTaste.playlists,
   };
   const summaryRef = db.doc(`users/${uid}/music/summary`);
   const existing = await summaryRef.get();
@@ -331,7 +438,9 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
     topTracks: tracks,
     topArtists: artists,
     recentlyPlayed: recent,
+    playlists: playlistTaste.playlists,
     musicProfile,
+    musicProfileVersion: MUSIC_PROFILE_VERSION,
     lastSyncedAt: FieldValue.serverTimestamp(),
     ...(existing.data()?.connectedAt ? {} : {connectedAt: FieldValue.serverTimestamp()}),
   };
@@ -358,7 +467,9 @@ function toClientProfile(data: DocumentData | undefined): Record<string, unknown
     topTracks: data.topTracks ?? [],
     topArtists: data.topArtists ?? [],
     recentlyPlayed: data.recentlyPlayed ?? [],
+    playlists: data.playlists ?? data.musicProfile?.playlists ?? [],
     musicProfile: data.musicProfile ?? {},
+    musicProfileVersion: data.musicProfileVersion ?? MUSIC_PROFILE_VERSION,
     lastSyncedAt: data.lastSyncedAt ?? null,
     connectedAt: data.connectedAt ?? null,
   };
@@ -463,6 +574,10 @@ export const getSameTasteProfiles = onCall(
       if (!otherTaste || isTasteEmpty(otherTaste)) continue;
       const music = scoreMusicCompatibility(viewerTaste, otherTaste);
       if (music.score <= 0) continue;
+      const enriched = enrichMusicCompatibility(music, [
+        ...catalogFromSummary(viewerSnap.data()),
+        ...catalogFromSummary(doc.data()),
+      ]);
       const otherProfile = await db.doc(`profiles/${otherUid}`).get();
       if (!otherProfile.exists) continue;
       const data = otherProfile.data() ?? {};
@@ -472,13 +587,17 @@ export const getSameTasteProfiles = onCall(
       if (!interestedInAllows(otherPrefs.interestedIn, viewerGender)) continue;
       scored.push({
         uid: otherUid,
-        musicScore: music.score,
-        sharedArtists: music.sharedArtists.slice(0, 3),
-        sharedTracks: music.sharedTracks.slice(0, 3),
-        sharedGenres: music.sharedGenres.slice(0, 3),
-        sharedArtistCount: music.sharedArtists.length,
-        sharedTrackCount: music.sharedTracks.length,
-        sharedGenreCount: music.sharedGenres.length,
+        musicScore: enriched.score,
+        sharedArtists: enriched.sharedArtistNames.slice(0, 5),
+        sharedTracks: enriched.sharedTrackNames.slice(0, 5),
+        sharedGenres: enriched.sharedGenres.slice(0, 3),
+        sharedArtistCount: enriched.sharedArtists.length,
+        sharedTrackCount: enriched.sharedTracks.length,
+        sharedGenreCount: enriched.sharedGenres.length,
+        sharedPlaylistTrackCount: enriched.sharedPlaylistTracks.length,
+        sharedRecentTrackCount: enriched.sharedRecentTracks.length,
+        musicInsights: enriched.insights,
+        musicBreakdown: enriched.breakdown,
         profile: {
           uid: otherUid,
           displayName: data.displayName ?? "",
@@ -551,7 +670,7 @@ export const aggregateWeeklyMusicStats = onSchedule(
 export async function musicScoreForPair(
   viewerUid: string,
   candidateUid: string,
-): Promise<ReturnType<typeof scoreMusicCompatibility> | null> {
+): Promise<(ReturnType<typeof enrichMusicCompatibility>) | null> {
   const [viewer, candidate] = await Promise.all([
     db.doc(`users/${viewerUid}/music/summary`).get(),
     db.doc(`users/${candidateUid}/music/summary`).get(),
@@ -561,5 +680,9 @@ export async function musicScoreForPair(
   if (!viewerTaste || !candidateTaste || isTasteEmpty(viewerTaste) || isTasteEmpty(candidateTaste)) {
     return null;
   }
-  return scoreMusicCompatibility(viewerTaste, candidateTaste);
+  const scored = scoreMusicCompatibility(viewerTaste, candidateTaste);
+  return enrichMusicCompatibility(scored, [
+    ...catalogFromSummary(viewer.data()),
+    ...catalogFromSummary(candidate.data()),
+  ]);
 }

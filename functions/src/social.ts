@@ -473,13 +473,16 @@ export const sendMessageNotification = onDocumentCreated(
       return;
     }
     const type = String(data.type ?? "text");
+    const encrypted = data.encrypted === true;
     const lastMessage = data.deleted === true
       ? ""
       : type === "image"
         ? "📷"
         : type === "voice"
           ? "🎤"
-          : previewText(String(data.text ?? ""));
+          : encrypted
+            ? "🔒"
+            : previewText(String(data.text ?? ""));
     await applyMessageSideEffects({
       matchId,
       senderId,

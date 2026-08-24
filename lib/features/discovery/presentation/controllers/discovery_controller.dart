@@ -10,6 +10,7 @@ import 'package:mevora/features/discovery/domain/entities/discovery_candidate.da
 import 'package:mevora/features/discovery/domain/entities/discovery_filters.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
+import 'package:mevora/features/discovery/domain/services/discovery_fallback.dart';
 import 'package:mevora/features/location/domain/entities/location_flags.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/domain/services/location_update_policy.dart';
@@ -172,6 +173,7 @@ class DiscoveryController extends ChangeNotifier {
 
   String? _nextCursor;
   bool _loadingMore = false;
+  bool _expandDistance = false;
 
   bool get isProcessingAction => _isProcessingAction;
 
@@ -393,23 +395,46 @@ class DiscoveryController extends ChangeNotifier {
     await loadCandidates();
   }
 
-  Future<void> loadCandidates({bool refresh = true}) async {
+  Future<void> loadCandidates({
+    bool refresh = true,
+    bool resetFallback = true,
+  }) async {
     if (!refresh && (_loadingMore || _nextCursor == null)) {
       return;
     }
 
     if (refresh) {
       _nextCursor = null;
+      if (resetFallback) {
+        _expandDistance = false;
+      }
       state = state.copyWith(isLoading: true, clearError: true);
       notifyListeners();
     } else {
       _loadingMore = true;
     }
 
+    await _fetchAndApply(refresh: refresh);
+
+    // Controlled fallback: escalate radius / soft distance when deck is empty.
+    if (refresh && state.candidates.isEmpty && !state.hasDiscoveryError) {
+      await _escalateUntilCandidatesFound();
+    }
+
+    _loadingMore = false;
+    notifyListeners();
+  }
+
+  Future<void> _fetchAndApply({required bool refresh}) async {
+    _discoverLog(
+      'Fetching candidates radius=${state.radius.kilometers} '
+      'expand=$_expandDistance cursor=${refresh ? 'null' : _nextCursor}',
+    );
     final result = await _discoveryRepository.getCandidates(
       radius: state.radius,
       cursor: refresh ? null : _nextCursor,
       limit: _pageLimit,
+      expandDistance: _expandDistance,
     );
 
     final viewer = await _loadViewerProfile();
@@ -417,9 +442,21 @@ class DiscoveryController extends ChangeNotifier {
     switch (result) {
       case Success(:final value):
         _nextCursor = value.nextCursor;
-        final filtered = _applyFilters(value.candidates)
-            .where((candidate) => !_actedUserIds.contains(candidate.uid))
-            .toList();
+        _discoverLog('Server returned ${value.candidates.length} candidates');
+        var filtered = _applyFilters(
+          value.candidates,
+          relaxDistance: _expandDistance,
+        ).where((candidate) => !_actedUserIds.contains(candidate.uid)).toList();
+        if (filtered.isEmpty && value.candidates.isNotEmpty) {
+          _discoverLog(
+            'Strict client filters emptied deck — relaxing distance/goal',
+          );
+          filtered = _applyFilters(
+            value.candidates,
+            relaxDistance: true,
+            relaxSecondary: true,
+          ).where((candidate) => !_actedUserIds.contains(candidate.uid)).toList();
+        }
         final ranked =
             DiscoveryRankingEngine.applyCompatibilityTiebreak(filtered);
         final resolved = _resolveCompatibility(ranked, viewer);
@@ -436,6 +473,7 @@ class DiscoveryController extends ChangeNotifier {
         final hidden = refresh
             ? MevoraCompatibilityEngine.hiddenInsight(merged)
             : state.hiddenCompatibility;
+        _discoverLog('Final candidates: ${merged.length}');
         state = state.copyWith(
           candidates: merged,
           isLoading: false,
@@ -460,8 +498,38 @@ class DiscoveryController extends ChangeNotifier {
           );
         }
     }
-    _loadingMore = false;
-    notifyListeners();
+  }
+
+  Future<void> _escalateUntilCandidatesFound() async {
+    // Step 1: ask server for soft distance tiers at current radius.
+    if (!_expandDistance) {
+      _discoverLog('Expanding distance soft tiers...');
+      _expandDistance = true;
+      await _fetchAndApply(refresh: true);
+      if (state.candidates.isNotEmpty || state.hasDiscoveryError) {
+        return;
+      }
+    }
+
+    // Step 2: walk the radius ladder (25 → 50 → 100).
+    while (state.candidates.isEmpty && !state.hasDiscoveryError) {
+      final nextKm = DiscoveryFallback.nextRadiusKm(state.radius.kilometers);
+      if (nextKm == null) {
+        _discoverLog('All fallback levels exhausted — empty state');
+        break;
+      }
+      _discoverLog('Escalating radius to ${nextKm}km');
+      state = state.copyWith(radius: DiscoveryRadius.fromKilometers(nextKm));
+      _expandDistance = true;
+      await _fetchAndApply(refresh: true);
+    }
+  }
+
+  void _discoverLog(String message) {
+    if (!kDebugMode) {
+      return;
+    }
+    debugPrint('[DISCOVER] $message');
   }
 
   List<DiscoveryCandidate> _mergeCandidates(
@@ -499,8 +567,46 @@ class DiscoveryController extends ChangeNotifier {
       }
     }
     if (state.candidates.isEmpty) {
-      await loadCandidates(refresh: true);
+      _expandDistance = true;
+      await loadCandidates(refresh: true, resetFallback: false);
     }
+  }
+
+  List<DiscoveryCandidate> _applyFilters(
+    List<DiscoveryCandidate> items, {
+    bool relaxDistance = false,
+    bool relaxSecondary = false,
+  }) {
+    final filters = state.filters;
+    return items.where((candidate) {
+      // Age safety: never show under 18. Upper bound may soft-relax.
+      if (candidate.age > 0 && candidate.age < 18) {
+        return false;
+      }
+      if (candidate.age > 0 &&
+          (candidate.age < filters.minAge ||
+              (!relaxSecondary && candidate.age > filters.maxAge))) {
+        return false;
+      }
+      if (!relaxDistance &&
+          candidate.distanceKm != null &&
+          candidate.distanceKm! > filters.maxDistanceKm) {
+        return false;
+      }
+      if (!relaxSecondary &&
+          filters.gender != null &&
+          candidate.gender != null &&
+          candidate.gender != filters.gender) {
+        return false;
+      }
+      if (!relaxSecondary &&
+          filters.relationshipGoal != null &&
+          candidate.relationshipGoal != null &&
+          candidate.relationshipGoal != filters.relationshipGoal) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 
   Future<void> onLike(String userId) =>
@@ -648,31 +754,6 @@ class DiscoveryController extends ChangeNotifier {
     }
     state = state.copyWith(activeBoost: boost);
     notifyListeners();
-  }
-
-  List<DiscoveryCandidate> _applyFilters(List<DiscoveryCandidate> items) {
-    final filters = state.filters;
-    return items.where((candidate) {
-      if (candidate.age > 0 &&
-          (candidate.age < filters.minAge || candidate.age > filters.maxAge)) {
-        return false;
-      }
-      if (candidate.distanceKm != null &&
-          candidate.distanceKm! > filters.maxDistanceKm) {
-        return false;
-      }
-      if (filters.gender != null &&
-          candidate.gender != null &&
-          candidate.gender != filters.gender) {
-        return false;
-      }
-      if (filters.relationshipGoal != null &&
-          candidate.relationshipGoal != null &&
-          candidate.relationshipGoal != filters.relationshipGoal) {
-        return false;
-      }
-      return true;
-    }).toList();
   }
 
   LocationPromptPhase _phaseFor(LocationErrorKind kind) {

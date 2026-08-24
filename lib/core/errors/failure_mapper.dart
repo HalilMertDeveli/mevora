@@ -17,6 +17,7 @@ abstract final class FailureMapper {
       return AuthFailure(
         error.message,
         kind: error.kind,
+        code: error.code,
         isCancelled:
             error.isCancelled || error.kind == AuthErrorKind.cancelled,
       );

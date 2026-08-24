@@ -63,7 +63,12 @@ SocialServices createFirebaseSocialServices({
             ),
             hub: demoHub,
           ),
-    presenceRepository: FirebasePresenceRepository(),
+    presenceRepository: demoHub == null
+        ? FirebasePresenceRepository()
+        : OverlayPresenceRepository(
+            remote: FirebasePresenceRepository(),
+            local: GraphPresenceRepository(demoHub.graph),
+          ),
     callRepository: calls,
     videoCallService: VideoCallServiceImpl(calls),
     videoCallProvider: LiveKitVideoCallProvider(),

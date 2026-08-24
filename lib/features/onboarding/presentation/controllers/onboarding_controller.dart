@@ -9,7 +9,6 @@ import 'package:mevora/features/onboarding/domain/entities/onboarding_config.dar
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
 import 'package:mevora/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.dart';
-import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
@@ -124,6 +123,9 @@ class OnboardingController extends ChangeNotifier {
   }
 
   Future<Result<void>> continueStep() async {
+    if (isSaving) {
+      return const Err(ValidationFailure('Request already in progress'));
+    }
     final uid = _uid;
     if (profile == null || uid == null) {
       return const Err(ValidationFailure('Profile is not ready yet'));
@@ -171,6 +173,9 @@ class OnboardingController extends ChangeNotifier {
   }
 
   Future<Result<void>> complete() async {
+    if (isSaving) {
+      return const Err(ValidationFailure('Request already in progress'));
+    }
     final uid = _uid;
     if (profile == null || uid == null) {
       return const Err(ValidationFailure('Profile is not ready yet'));

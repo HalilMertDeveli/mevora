@@ -285,6 +285,6 @@ void main() {
     await controller.verifyPhoneCode('000000');
 
     expect(controller.status, isA<PhoneVerificationRequired>());
-    expect(controller.errorMessage, 'Doğrulama kodu geçersiz.');
+    expect(controller.errorMessage, 'Doğrulama kodu hatalı.');
   });
 }

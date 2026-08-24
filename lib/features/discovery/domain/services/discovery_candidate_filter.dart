@@ -1,8 +1,9 @@
 import 'package:mevora/features/discovery/domain/services/discovery_activity_policy.dart';
+import 'package:mevora/features/discovery/domain/services/discovery_boost_ranking.dart';
+import 'package:mevora/features/discovery/domain/services/discovery_fallback.dart';
 
-/// Backend-style exclusion + radius + last-active filtering. Used by the
-/// in-memory discovery stand-in and unit tests so the client never scans
-/// every user or hide inactive profiles in the UI.
+/// Backend-style exclusion + soft distance tiers. Used by the in-memory
+/// discovery stand-in and unit tests so the client never scans every user.
 abstract final class DiscoveryCandidateFilter {
   static List<T> apply<T extends Object>({
     required List<T> seeds,
@@ -11,10 +12,13 @@ abstract final class DiscoveryCandidateFilter {
     required Set<String> liked,
     required Set<String> passed,
     required int radiusKm,
+    Set<String>? boostedUids,
     String Function(T seed)? uidOf,
     double? Function(T seed)? distanceKmOf,
     DateTime? Function(T seed)? lastActiveAtOf,
     DateTime Function()? clock,
+    bool expandDistance = false,
+    int? limit,
   }) {
     String idOf(T seed) {
       if (uidOf != null) {
@@ -36,27 +40,57 @@ abstract final class DiscoveryCandidateFilter {
       }
     }
 
-    return seeds.where((seed) {
+    final buckets = <DiscoveryDistanceTier, List<T>>{
+      DiscoveryDistanceTier.nearby: <T>[],
+      DiscoveryDistanceTier.extended: <T>[],
+      DiscoveryDistanceTier.far: <T>[],
+      DiscoveryDistanceTier.noLocation: <T>[],
+    };
+
+    for (final seed in seeds) {
       final uid = idOf(seed);
       if (uid == selfUid) {
-        return false;
+        continue;
       }
       if (blocked.contains(uid) ||
           liked.contains(uid) ||
           passed.contains(uid)) {
-        return false;
-      }
-      final distance = kmOf(seed);
-      if (distance != null && distance > radiusKm) {
-        return false;
+        continue;
       }
       if (!DiscoveryActivityPolicy.isEligible(
         lastActiveAtOf?.call(seed),
         now: clock?.call(),
       )) {
-        return false;
+        continue;
       }
-      return true;
-    }).toList();
+      final distance = kmOf(seed);
+      final boosted = boostedUids?.contains(uid) == true;
+      if (!expandDistance && distance != null) {
+        final maxKm = boosted
+            ? DiscoveryBoostRanking.effectiveRadiusKm(radiusKm, boosted: true)
+            : radiusKm.toDouble();
+        if (distance > maxKm) {
+          // Soft-drop only when expand is off — matches legacy strict radius.
+          // With expandDistance, far candidates fill empty decks.
+          continue;
+        }
+        buckets[DiscoveryDistanceTier.nearby]!.add(seed);
+        continue;
+      }
+      final tier = DiscoveryFallback.classify(
+        distanceKm: distance,
+        radiusKm: radiusKm,
+        boosted: boosted,
+      );
+      buckets[tier]!.add(seed);
+    }
+
+    if (!expandDistance) {
+      return buckets[DiscoveryDistanceTier.nearby]!;
+    }
+    return DiscoveryFallback.fillFromTiers(
+      buckets: buckets,
+      limit: limit ?? seeds.length,
+    );
   }
 }

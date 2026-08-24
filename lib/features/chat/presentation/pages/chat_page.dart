@@ -21,6 +21,7 @@ import 'package:mevora/features/chat/presentation/controllers/chat_controller.da
 import 'package:mevora/features/chat/presentation/widgets/chat_widgets.dart';
 import 'package:mevora/features/match_score/presentation/widgets/match_feedback_prompt.dart';
 import 'package:mevora/features/profile/data/services/profile_image_pipeline.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/safety/presentation/widgets/chat_more_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
@@ -88,6 +89,33 @@ class _ChatPageState extends State<ChatPage> {
         );
     _scroll.addListener(_onScroll);
     unawaited(ctrl.start());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_maybePromptNotifications());
+    });
+  }
+
+  Future<void> _maybePromptNotifications() async {
+    if (!mounted) {
+      return;
+    }
+    final permissions = PermissionScope.maybeOf(context)?.controller;
+    if (permissions == null) {
+      return;
+    }
+    final status = await permissions.check(PermissionType.notifications);
+    if (!mounted || status.isUsable) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.permissionNotificationsDescription),
+        action: SnackBarAction(
+          label: l10n.enableDeviceNotifications,
+          onPressed: () => unawaited(permissions.request(PermissionType.notifications)),
+        ),
+      ),
+    );
   }
 
   void _onScroll() {
@@ -166,6 +194,22 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               if (!controller.canChat)
                 MatchFeedbackForChat(matchId: controller.matchId),
+              if (controller.canChat && controller.otherUid.isNotEmpty)
+                Material(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.quiz_outlined),
+                    title: Text(l10n.chatDiscoverAnswersPrompt),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => unawaited(
+                      showMatchedProfileAnswersSheet(
+                        context,
+                        otherUid: controller.otherUid,
+                      ),
+                    ),
+                  ),
+                ),
               if (controller.error != null)
                 MevoraErrorView(
                   message: L10nErrors.message(l10n, controller.error),

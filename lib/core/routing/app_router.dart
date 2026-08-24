@@ -36,6 +36,13 @@ import 'package:mevora/features/permissions/presentation/pages/privacy_permissio
 import 'package:mevora/features/profile/presentation/pages/profile_tab_page.dart';
 import 'package:mevora/features/verification/presentation/pages/verify_profile_screen.dart';
 import 'package:mevora/features/safety/presentation/pages/report_page.dart';
+import 'package:mevora/features/support/domain/models/support_ticket.dart';
+import 'package:mevora/features/support/presentation/pages/faq_page.dart';
+import 'package:mevora/features/support/presentation/pages/legal_pages.dart';
+import 'package:mevora/features/support/presentation/pages/support_center_page.dart';
+import 'package:mevora/features/support/presentation/pages/support_ticket_detail_page.dart';
+import 'package:mevora/features/support/presentation/pages/support_ticket_form_page.dart';
+import 'package:mevora/features/support/presentation/pages/support_tickets_page.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
 
 GoRouter createAppRouter({
@@ -208,6 +215,27 @@ GoRouter createAppRouter({
         ),
       ),
       GoRoute(
+        path: AppRoutes.legalTerms,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const TermsOfServicePage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.legalPrivacy,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const PrivacyPolicyPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.legalGuidelines,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const CommunityGuidelinesPage(),
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.report,
         pageBuilder: (context, state) {
           final params = state.uri.queryParameters;
@@ -297,6 +325,84 @@ GoRouter createAppRouter({
               key: state.pageKey,
               child: const AccountSettingsPage(),
             ),
+          ),
+          GoRoute(
+            path: 'support',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const SupportCenterPage(),
+            ),
+            routes: [
+              GoRoute(
+                path: 'faq',
+                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+                  key: state.pageKey,
+                  child: FaqPage(
+                    initialCategory: state.uri.queryParameters['category'],
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: 'ticket/create',
+                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+                  key: state.pageKey,
+                  child: const SupportTicketFormPage(),
+                ),
+              ),
+              GoRoute(
+                path: 'tickets',
+                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+                  key: state.pageKey,
+                  child: const SupportTicketsPage(),
+                ),
+                routes: [
+                  GoRoute(
+                    path: ':ticketId',
+                    pageBuilder: (context, state) {
+                      final ticket = state.extra as SupportTicket?;
+                      return MevoraPageTransitions.fadeSlide(
+                        key: state.pageKey,
+                        child: SupportTicketDetailPage(
+                          ticket: ticket ??
+                              SupportTicket(
+                                id: state.pathParameters['ticketId'] ?? '',
+                                userId: '',
+                                category: 'other',
+                                subject: '',
+                                message: '',
+                                attachments: const [],
+                                status: SupportTicketStatus.open,
+                                createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                                updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+                              ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: 'guidelines',
+                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+                  key: state.pageKey,
+                  child: const CommunityGuidelinesPage(),
+                ),
+              ),
+              GoRoute(
+                path: 'terms',
+                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+                  key: state.pageKey,
+                  child: const TermsOfServicePage(),
+                ),
+              ),
+              GoRoute(
+                path: 'privacy',
+                pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+                  key: state.pageKey,
+                  child: const PrivacyPolicyPage(),
+                ),
+              ),
+            ],
           ),
         ],
       ),

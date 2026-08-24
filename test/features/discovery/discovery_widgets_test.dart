@@ -224,6 +224,7 @@ class _OfflineDiscovery implements DiscoveryRepository {
     required DiscoveryRadius radius,
     String? cursor,
     int limit = 10,
+    bool expandDistance = false,
   }) async {
     return Err(NetworkFailure(_en.networkError));
   }

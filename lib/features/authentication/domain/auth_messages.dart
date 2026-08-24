@@ -39,18 +39,18 @@ abstract final class AuthMessages {
   static const String cancel = 'Cancel';
 
   static const String cancelled = 'Giriş iptal edildi.';
-  static const String invalidPhone = 'Geçerli bir telefon numarası gir.';
+  static const String invalidPhone = 'Telefon numarası geçersiz.';
   static const String smsFailed =
       'SMS gönderilemedi. Lütfen tekrar dene.';
   static const String appVerification =
-      'Uygulama doğrulaması tamamlanamadı. SHA kayıtlarını kontrol et, gerçek cihazda dene veya Firebase Console’da test numarası kullan.';
-  static const String invalidOtp = 'Doğrulama kodu geçersiz.';
+      'Uygulama doğrulaması tamamlanamadı. İnternet bağlantını kontrol et, gerçek bir cihazda dene ve birkaç saniye sonra yeniden dene.';
+  static const String invalidOtp = 'Doğrulama kodu hatalı.';
   static const String expiredOtp =
-      'Doğrulama kodunun süresi doldu. Yeni kod iste.';
+      'Doğrulama kodunun süresi doldu. Yeni kod isteyin.';
   static const String sessionExpired =
       'Oturumun süresi doldu. Lütfen numarayı tekrar gir.';
   static const String tooManyAttempts =
-      'Çok fazla hatalı deneme yaptınız. Lütfen daha sonra tekrar deneyin.';
+      'Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.';
   static const String smsQuota =
       'SMS gönderim limiti aşıldı. Lütfen daha sonra tekrar deneyin.';
   static const String firebaseUnavailable =

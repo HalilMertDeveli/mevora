@@ -362,7 +362,14 @@ class _SameTasteTile extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
-                  MusicCompatibilityBadge(score: match.musicScore),
+                  MusicCompatibilityBadge(
+                    score: match.musicScore,
+                    sharedTracks: match.sharedTracks,
+                    sharedArtists: match.sharedArtists,
+                    sharedGenres: match.sharedGenres,
+                    sharedTrackCount: match.sharedTrackCount,
+                    sharedArtistCount: match.sharedArtistCount,
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     l10n.musicSharedCounts(

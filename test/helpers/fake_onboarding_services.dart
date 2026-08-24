@@ -62,6 +62,10 @@ class FakeStorageRepository implements StorageRepository {
   Future<Result<void>> delete(String path) async => const Success(null);
 
   @override
+  Future<Result<List<int>>> downloadBytes(String path) async =>
+      const Success(<int>[]);
+
+  @override
   Future<Result<Uri>> uploadProfileImage({
     required String ownerUid,
     required String imageId,

@@ -75,7 +75,21 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     final generation = ++_syncGeneration;
+    final userChanged = uid != _uid;
     _uid = uid;
+
+    // Hard reset UI state on uid changes so no previous user's location gate
+    // state can leak into the next session.
+    if (userChanged) {
+      errorMessage = null;
+      selectedCity = null;
+      screen = LocationScreenState.prompt;
+      reducedAccuracy = false;
+      onboardingNeeded = false;
+      isResolved = false;
+      _nativePromptedThisSession = false;
+      notifyListeners();
+    }
     if (uid == null) {
       onboardingNeeded = false;
       isResolved = true;
@@ -85,6 +99,7 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
+    // Note: on uid changes, reset already happened above.
     isResolved = false;
     onboardingNeeded = false;
     notifyListeners();
@@ -111,7 +126,7 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
       }
       isResolved = true;
       notifyListeners();
-    } on Object catch (error) {
+    } on Object {
       if (generation != _syncGeneration) {
         return;
       }

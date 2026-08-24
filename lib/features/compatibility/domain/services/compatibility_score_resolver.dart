@@ -15,8 +15,9 @@ abstract final class CompatibilityScoreResolver {
     required DiscoveryCandidate candidate,
     DiscoveryFilters filters = const DiscoveryFilters(),
   }) {
-    final serverScore = _serverOverallScore(candidate);
-    if (serverScore != null && serverScore > 0) {
+    if (candidate.hasCompleteCoreCategoryBreakdown &&
+        _serverOverallScore(candidate) != null) {
+      final serverScore = _serverOverallScore(candidate)!;
       return candidate.copyWith(
         compatibilityScore: serverScore,
         compatibilityStatus: CompatibilityDisplayStatus.ready,
@@ -69,12 +70,14 @@ abstract final class CompatibilityScoreResolver {
     required DiscoveryCandidate candidate,
     DiscoveryFilters filters = const DiscoveryFilters(),
   }) {
-    final serverScore = _serverOverallScore(candidate);
-    if (serverScore != null &&
-        serverScore > 0 &&
-        candidate.categoryRelationshipScore != null) {
-      return CompatibilityBreakdownMapper.fromCandidate(candidate).copyWith(
-        overallScore: serverScore,
+    final serverMapped =
+        CompatibilityBreakdownMapper.fromCandidateIfComplete(candidate);
+    if (serverMapped != null) {
+      final serverScore = _serverOverallScore(candidate);
+      return serverMapped.copyWith(
+        overallScore: serverScore != null && serverScore > 0
+            ? serverScore
+            : serverMapped.overallScore,
         dataQuality: CompatibilityDataQuality.sufficient,
       );
     }

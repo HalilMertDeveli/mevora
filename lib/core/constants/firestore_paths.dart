@@ -17,6 +17,7 @@ abstract final class FirestorePaths {
   static const String boosts = 'boosts';
   static const String boostWallet = 'boostWallet';
   static const String boostProducts = 'boostProducts';
+  static const String supportTickets = 'supportTickets';
 
   static const String devices = 'devices';
   static const String blockedUsers = 'blockedUsers';
@@ -28,6 +29,9 @@ abstract final class FirestorePaths {
   static const String relationshipAnswers = 'relationshipAnswers';
   static const String relationshipMatch = 'relationshipMatch';
   static const String relationshipSeen = 'relationshipSeen';
+  static const String questionAnswers = 'questionAnswers';
+
+  static String supportTicket(String ticketId) => '$supportTickets/$ticketId';
 
   static String user(String uid) => '$users/$uid';
 
@@ -104,6 +108,12 @@ abstract final class FirestorePaths {
 
   static String relationshipSeenDoc(String uid, String otherUid) =>
       '$users/$uid/$relationshipSeen/$otherUid';
+
+  static String questionAnswer(String uid, String questionId) =>
+      '$users/$uid/$questionAnswers/$questionId';
+
+  static String userQuestionAnswers(String uid) =>
+      '$users/$uid/$questionAnswers';
 }
 
 abstract final class StoragePaths {
@@ -168,4 +178,12 @@ abstract final class StoragePaths {
     'audio/mpeg',
     'audio/wav',
   };
+
+  static const int maxSupportAttachmentBytes = 5 * 1024 * 1024;
+
+  static String supportAttachment({
+    required String ownerUid,
+    required String ticketId,
+    required String fileName,
+  }) => 'users/$ownerUid/support/$ticketId/$fileName';
 }

@@ -10,7 +10,6 @@ import 'package:mevora/features/matching/domain/repositories/match_repository.da
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
 import 'package:mevora/features/safety/domain/safety_policy.dart';
-import 'package:mevora/features/settings/domain/repositories/settings_hub_repository.dart';
 
 class SocialServices {
   const SocialServices({

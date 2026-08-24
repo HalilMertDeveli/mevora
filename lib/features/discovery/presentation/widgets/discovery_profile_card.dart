@@ -7,6 +7,7 @@ import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
+import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
@@ -72,6 +73,12 @@ class DiscoveryProfileCard extends StatelessWidget {
                     gradient: AppDecorations.photoOverlayGradient(),
                   ),
                 ),
+                if (candidate.isBoosted)
+                  const Positioned(
+                    top: AppSpacing.md,
+                    left: AppSpacing.md,
+                    child: DiscoveryBoostBadge(),
+                  ),
                 Positioned(
                   left: AppSpacing.md,
                   right: AppSpacing.md,
@@ -134,6 +141,15 @@ class DiscoveryProfileCard extends StatelessWidget {
                           if (candidate.musicCompatibilityScore != null)
                             MusicCompatibilityBadge(
                               score: candidate.musicCompatibilityScore!,
+                              sharedTracks: candidate.sharedMusicTracks,
+                              sharedArtists: candidate.sharedMusicArtists,
+                              sharedGenres: candidate.sharedMusicGenres,
+                              insights: candidate.musicInsights,
+                              sharedTrackCount: candidate.sharedMusicTrackCount,
+                              sharedArtistCount:
+                                  candidate.sharedMusicArtistCount,
+                              sharedPlaylistTrackCount:
+                                  candidate.sharedMusicPlaylistTrackCount,
                             ),
                           if (candidate.relationshipCompatibilityScore != null)
                             RelationshipCompatibilityBadge(

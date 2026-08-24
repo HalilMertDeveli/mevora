@@ -8,10 +8,11 @@ sealed class PhoneAuthState {
 }
 
 final class PhoneNumberEntering extends PhoneAuthState {
-  const PhoneNumberEntering({this.message, this.kind});
+  const PhoneNumberEntering({this.message, this.kind, this.firebaseCode});
 
   final String? message;
   final AuthErrorKind? kind;
+  final String? firebaseCode;
 }
 
 final class SendingOtp extends PhoneAuthState {
@@ -42,23 +43,27 @@ final class OtpError extends PhoneAuthState {
     required this.challenge,
     required this.message,
     this.kind,
+    this.firebaseCode,
   });
 
   final PhoneChallenge challenge;
   final String message;
   final AuthErrorKind? kind;
+  final String? firebaseCode;
 }
 
 final class SmsSendError extends PhoneAuthState {
-  const SmsSendError(this.message, {this.kind});
+  const SmsSendError(this.message, {this.kind, this.firebaseCode});
 
   final String message;
   final AuthErrorKind? kind;
+  final String? firebaseCode;
 }
 
 final class TooManyAttempts extends PhoneAuthState {
-  const TooManyAttempts(this.message, {this.kind});
+  const TooManyAttempts(this.message, {this.kind, this.firebaseCode});
 
   final String message;
   final AuthErrorKind? kind;
+  final String? firebaseCode;
 }

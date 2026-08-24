@@ -121,6 +121,7 @@ class FunctionsMusicDataSource implements MusicDataSource {
       genres: firestoreStringList(map['genreNames'] ?? map['genres']),
       recentTrackIds: firestoreStringList(map['recentTrackIds']),
       recentArtistIds: firestoreStringList(map['recentArtistIds']),
+      playlistTrackIds: firestoreStringList(map['playlistTrackIds']),
     );
   }
 

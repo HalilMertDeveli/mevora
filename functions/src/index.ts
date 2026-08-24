@@ -21,6 +21,8 @@ export {
   getRelationshipMatches,
   completeRelationshipTest,
   dismissRelationshipTestOffer,
+  syncProfileQuestionAnswers,
+  updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
 export {createSumsubAccessToken, sumsubWebhook} from "./sumsub/index.js";

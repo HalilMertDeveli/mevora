@@ -29,7 +29,7 @@ abstract final class MevoraCompatibilityEngine {
     );
     final engine = CompatibilityEngine.standard();
     final profileResult = engine.evaluate(context);
-    final categoryScores = _profileCategoryScores(engine, context);
+    final categoryScores = _profileCategoryScores(engine, context, profileResult);
 
     final questionScore = relationshipCompatibilityScore;
     final musicScore = musicCompatibilityScore;
@@ -73,7 +73,13 @@ abstract final class MevoraCompatibilityEngine {
     final categories = <CompatibilityCategory, int>{
       CompatibilityCategory.relationship: categoryScores.relationship,
       CompatibilityCategory.interests: categoryScores.interests,
+      if (categoryScores.languages != null)
+        CompatibilityCategory.languages: categoryScores.languages!,
+      if (categoryScores.hobbies != null)
+        CompatibilityCategory.hobbies: categoryScores.hobbies!,
       CompatibilityCategory.lifestyle: categoryScores.lifestyle,
+      if (categoryScores.values != null)
+        CompatibilityCategory.lifeValues: categoryScores.values!,
       CompatibilityCategory.proximity: categoryScores.proximity,
       CompatibilityCategory.activity: categoryScores.activity,
       if (questionScore != null)
@@ -91,6 +97,9 @@ abstract final class MevoraCompatibilityEngine {
       relationshipScore: categoryScores.relationship,
       interestScore: categoryScores.interests,
       lifestyleScore: categoryScores.lifestyle,
+      languageScore: categoryScores.languages,
+      hobbyScore: categoryScores.hobbies,
+      valuesScore: categoryScores.values,
       questionScore: questionScore,
       musicScore: musicScore,
       communicationScore: communicationScore,
@@ -105,37 +114,27 @@ abstract final class MevoraCompatibilityEngine {
     );
   }
 
-  /// Build breakdown from a discovery card (server-authoritative fields).
+  /// Build breakdown from a discovery card (server fields when complete, else engine).
   static CompatibilityBreakdown fromCandidate({
     required UserProfile viewer,
     required DiscoveryCandidate candidate,
     DiscoveryPreferences preferences = const DiscoveryPreferences(),
   }) {
-    final hasServerCategories = candidate.categoryRelationshipScore != null ||
-        candidate.categoryInterestScore != null;
-    if (candidate.hasCompatibilityScore || hasServerCategories) {
-      final mapped = CompatibilityBreakdownMapper.fromCandidate(candidate);
+    final serverMapped =
+        CompatibilityBreakdownMapper.fromCandidateIfComplete(candidate);
+    if (serverMapped != null) {
       final overall = candidate.hasCompatibilityScore
           ? candidate.compatibilityScore
-          : _overallFromCategories(candidate);
-      if (overall > 0) {
-        return mapped.copyWith(
-          overallScore: overall,
-          dataQuality: CompatibilityDataQuality.sufficient,
-        );
-      }
+          : serverMapped.overallScore;
+      return serverMapped.copyWith(
+        overallScore: overall > 0 ? overall : serverMapped.overallScore,
+        dataQuality: CompatibilityDataQuality.sufficient,
+      );
     }
 
-    return calculate(
+    final computed = calculate(
       viewer: viewer,
-      candidate: UserProfile(
-        uid: candidate.uid,
-        displayName: candidate.displayName,
-        age: candidate.age,
-        interests: candidate.interests,
-        relationshipGoal: candidate.relationshipGoal,
-        city: candidate.city,
-      ),
+      candidate: _profileFromCandidate(candidate),
       preferences: preferences,
       distanceKm: candidate.distanceKm,
       relationshipCompatibilityScore: candidate.relationshipCompatibilityScore,
@@ -144,29 +143,45 @@ abstract final class MevoraCompatibilityEngine {
       relationshipSummaryTopics: candidate.relationshipSummaryTopics,
       musicCompatibilityScore: candidate.musicCompatibilityScore,
     );
+
+    if (!candidate.hasCompleteCoreCategoryBreakdown) {
+      return computed.copyWith(
+        overallScore: candidate.hasCompatibilityScore
+            ? candidate.compatibilityScore
+            : computed.overallScore,
+        relationshipScore:
+            candidate.categoryRelationshipScore ?? computed.relationshipScore,
+        interestScore:
+            candidate.categoryInterestScore ?? computed.interestScore,
+        lifestyleScore:
+            candidate.categoryLifestyleScore ?? computed.lifestyleScore,
+        questionScore:
+            candidate.categoryQuestionScore ?? computed.questionScore,
+        musicScore: candidate.categoryMusicScore ?? computed.musicScore,
+        communicationScore:
+            candidate.categoryCommunicationScore ?? computed.communicationScore,
+        sharedInterests: candidate.sharedInterests.isNotEmpty
+            ? candidate.sharedInterests
+            : computed.sharedInterests,
+      );
+    }
+
+    return computed;
   }
 
-  static int _overallFromCategories(DiscoveryCandidate candidate) {
-    final parts = <double>[];
-    var weightSum = 0.0;
-    void add(int? value, double weight) {
-      if (value != null && value > 0) {
-        parts.add(value * weight);
-        weightSum += weight;
-      }
-    }
-
-    add(candidate.categoryInterestScore, 0.35);
-    add(candidate.categoryRelationshipScore, 0.25);
-    add(candidate.categoryLifestyleScore, 0.2);
-    add(candidate.categoryQuestionScore, 0.15);
-    add(candidate.categoryMusicScore, 0.15);
-    if (weightSum <= 0) {
-      return 0;
-    }
-    return (parts.fold<double>(0, (a, b) => a + b) / weightSum)
-        .round()
-        .clamp(1, 100);
+  static UserProfile _profileFromCandidate(DiscoveryCandidate candidate) {
+    return UserProfile(
+      uid: candidate.uid,
+      displayName: candidate.displayName,
+      age: candidate.age,
+      interests: candidate.interests,
+      relationshipGoal: candidate.relationshipGoal,
+      city: candidate.city,
+      languages: candidate.languages,
+      hobbies: candidate.hobbies,
+      lifestyleProfile: candidate.lifestyleProfile,
+      lifestyle: candidate.lifestyle,
+    );
   }
 
   static HiddenCompatibilityInsight? hiddenInsight(
@@ -232,24 +247,30 @@ abstract final class MevoraCompatibilityEngine {
   static _CategoryScores _profileCategoryScores(
     CompatibilityEngine engine,
     CompatibilityContext context,
+    CompatibilityResult profileResult,
   ) {
     int toPercent(double raw) => (raw.clamp(0, 1) * 100).round();
     final strategies = engine.strategies;
-    double scoreFor(String id) {
+    int scoreFor(String id) {
       for (final strategy in strategies) {
-        if (strategy.id == id) {
-          return strategy.score(context);
+        if (strategy.id == id && strategy.applies(context)) {
+          return toPercent(strategy.score(context));
         }
       }
-      return 0.5;
+      return 50;
     }
 
+    int? optionalScore(String id) => profileResult.categoryScores[id];
+
     return _CategoryScores(
-      relationship: toPercent(scoreFor('relationshipGoal')),
-      interests: toPercent(scoreFor('interests')),
-      lifestyle: toPercent(scoreFor('lifestyle')),
-      proximity: toPercent(scoreFor('distance')),
-      activity: toPercent(scoreFor('activity')),
+      relationship: optionalScore('relationshipGoal') ?? scoreFor('relationshipGoal'),
+      interests: optionalScore('interests') ?? scoreFor('interests'),
+      languages: optionalScore('languages'),
+      hobbies: optionalScore('hobbies'),
+      lifestyle: optionalScore('lifestyle') ?? scoreFor('lifestyle'),
+      values: optionalScore('values'),
+      proximity: optionalScore('distance') ?? scoreFor('distance'),
+      activity: optionalScore('activity') ?? scoreFor('activity'),
     );
   }
 
@@ -289,6 +310,9 @@ class _CategoryScores {
     required this.lifestyle,
     required this.proximity,
     required this.activity,
+    this.languages,
+    this.hobbies,
+    this.values,
   });
 
   final int relationship;
@@ -296,4 +320,7 @@ class _CategoryScores {
   final int lifestyle;
   final int proximity;
   final int activity;
+  final int? languages;
+  final int? hobbies;
+  final int? values;
 }

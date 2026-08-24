@@ -4,6 +4,8 @@ import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/chat/domain/chat_policy.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
+import 'package:mevora/features/chat/e2ee/models/e2ee_identity.dart';
+import 'package:mevora/features/chat/e2ee/services/e2ee_chat_service.dart';
 
 /// Chat listener is scoped to the open conversation only.
 class FirebaseChatDataSource implements ChatRepository {
@@ -21,6 +23,13 @@ class FirebaseChatDataSource implements ChatRepository {
   CollectionReference<Map<String, dynamic>> _messages(String matchId) {
     return _firestore.collection(FirestorePaths.matchMessages(matchId));
   }
+
+  @override
+  Future<bool> isE2eeActive({
+    required String matchId,
+    required String peerUid,
+  }) async =>
+      false;
 
   @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = ChatPolicy.pageSize}) {
@@ -94,11 +103,39 @@ class FirebaseChatDataSource implements ChatRepository {
     throw UnsupportedError('Use ChatRepositoryImpl for voice uploads');
   }
 
+  Future<ChatMessage> sendEncryptedMessage({
+    required String matchId,
+    required String receiverId,
+    required MessageType type,
+    required E2eeEncryptedPayload payload,
+    E2eeMediaEnvelopeFields? mediaEnvelope,
+    String? imageStoragePath,
+    String? voiceStoragePath,
+    String? mediaUrl,
+    int? durationMs,
+    String? messageId,
+  }) {
+    return sendMediaMessage(
+      matchId: matchId,
+      receiverId: receiverId,
+      type: type,
+      encryptedPayload: payload,
+      mediaEnvelope: mediaEnvelope,
+      imageStoragePath: imageStoragePath,
+      voiceStoragePath: voiceStoragePath,
+      mediaUrl: mediaUrl,
+      durationMs: durationMs,
+      messageId: messageId,
+    );
+  }
+
   Future<ChatMessage> sendMediaMessage({
     required String matchId,
     required String receiverId,
     required MessageType type,
     String text = '',
+    E2eeEncryptedPayload? encryptedPayload,
+    E2eeMediaEnvelopeFields? mediaEnvelope,
     String? imageStoragePath,
     String? voiceStoragePath,
     String? mediaUrl,
@@ -112,17 +149,20 @@ class FirebaseChatDataSource implements ChatRepository {
     final ref = messageId == null
         ? _messages(matchId).doc()
         : _messages(matchId).doc(messageId);
+    final encrypted = encryptedPayload != null;
     final payload = <String, dynamic>{
       'id': ref.id,
       'senderId': senderId,
       'receiverId': receiverId,
       'type': type.firestoreValue,
-      'text': text,
+      'text': encrypted ? '' : text,
       'createdAt': FieldValue.serverTimestamp(),
       'isRead': false,
       'readAt': null,
       'deleted': false,
       'status': MessageStatus.sent.firestoreValue,
+      if (encrypted) ...encryptedPayload!.toFirestore(),
+      if (mediaEnvelope != null) ...mediaEnvelope.toFirestore(),
       if (imageStoragePath != null) 'imageStoragePath': imageStoragePath,
       if (voiceStoragePath != null) 'voiceStoragePath': voiceStoragePath,
       if (mediaUrl != null) 'mediaUrl': mediaUrl,
@@ -132,7 +172,7 @@ class FirebaseChatDataSource implements ChatRepository {
     final preview = switch (type) {
       MessageType.image => '📷',
       MessageType.voice => '🎤',
-      _ => text,
+      _ => encrypted ? '🔒' : text,
     };
     await _firestore.collection(FirestorePaths.matches).doc(matchId).set({
       'lastMessage': preview,
@@ -143,7 +183,7 @@ class FirebaseChatDataSource implements ChatRepository {
       id: ref.id,
       senderId: senderId,
       receiverId: receiverId,
-      text: text,
+      text: encrypted ? '' : text,
       type: type,
       createdAt: DateTime.now(),
       status: MessageStatus.sent,
@@ -151,6 +191,9 @@ class FirebaseChatDataSource implements ChatRepository {
       voiceStoragePath: voiceStoragePath,
       mediaUrl: mediaUrl,
       durationMs: durationMs,
+      isEncrypted: encrypted,
+      encryptedPayload: encryptedPayload,
+      mediaEnvelope: mediaEnvelope,
     );
   }
 
@@ -236,11 +279,14 @@ class FirebaseChatDataSource implements ChatRepository {
   }
 
   ChatMessage _fromMap(String id, Map<String, dynamic> data) {
+    final encryptedPayload = E2eeEncryptedPayload.fromFirestore(data);
+    final mediaEnvelope = E2eeMediaEnvelopeFields.fromFirestore(data);
+    final encrypted = encryptedPayload != null || mediaEnvelope != null;
     return ChatMessage(
       id: (data['id'] as String?) ?? id,
       senderId: (data['senderId'] as String?) ?? '',
       receiverId: (data['receiverId'] as String?) ?? '',
-      text: (data['text'] as String?) ?? '',
+      text: encrypted ? '' : ((data['text'] as String?) ?? ''),
       type: MessageTypeX.fromFirestore(data['type'] as String?),
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
@@ -255,6 +301,9 @@ class FirebaseChatDataSource implements ChatRepository {
       voiceStoragePath: data['voiceStoragePath'] as String?,
       mediaUrl: data['mediaUrl'] as String?,
       durationMs: (data['durationMs'] as num?)?.toInt(),
+      isEncrypted: encrypted,
+      encryptedPayload: encryptedPayload,
+      mediaEnvelope: mediaEnvelope,
     );
   }
 }

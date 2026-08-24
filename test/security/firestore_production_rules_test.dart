@@ -31,6 +31,16 @@ void main() {
       expect(rules.contains('match /verification/{docId}'), isTrue);
       expect(rules.contains('allow create, update, delete: if false'), isTrue);
     });
+
+    test('profile question answers are readable only when visible to others', () {
+      expect(rules.contains('match /questionAnswers/{questionId}'), isTrue);
+      expect(rules.contains('function hasActiveMatchWith(otherUid)'), isTrue);
+      expect(rules.contains('function canonicalMatchId(uidA, uidB)'), isTrue);
+      expect(
+        rules.contains("resource.data.get('isVisible', false) == true"),
+        isTrue,
+      );
+    });
   });
 
   group('block and report safety', () {
@@ -45,6 +55,12 @@ void main() {
       expect(rules.contains('resource.data.reporterId == request.auth.uid'), isTrue);
       expect(rules.contains('request.resource.data.status == \'open\''), isTrue);
       expect(rules.contains('allow update, delete: if false'), isTrue);
+    });
+
+    test('support tickets are owner-read and create-only', () {
+      expect(rules.contains('match /supportTickets/{ticketId}'), isTrue);
+      expect(rules.contains('resource.data.userId == request.auth.uid'), isTrue);
+      expect(rules.contains('request.resource.data.userId == request.auth.uid'), isTrue);
     });
   });
 

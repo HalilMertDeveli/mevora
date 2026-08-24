@@ -34,17 +34,33 @@ class InMemoryDiscoveryRepository implements DiscoveryRepository {
     required DiscoveryRadius radius,
     String? cursor,
     int limit = 10,
+    bool expandDistance = false,
   }) async {
-    final visible = DiscoveryCandidateFilter.apply(
+    var visible = DiscoveryCandidateFilter.apply(
       seeds: _seeds,
       selfUid: selfUid,
       blocked: blocked,
       liked: liked,
       passed: passed,
       radiusKm: radius.kilometers,
+      expandDistance: false,
       lastActiveAtOf: (seed) => seed.profile.lastActiveAt,
       clock: _clock,
     );
+    if (visible.isEmpty || expandDistance) {
+      visible = DiscoveryCandidateFilter.apply(
+        seeds: _seeds,
+        selfUid: selfUid,
+        blocked: blocked,
+        liked: liked,
+        passed: passed,
+        radiusKm: radius.kilometers,
+        expandDistance: true,
+        limit: _seeds.length,
+        lastActiveAtOf: (seed) => seed.profile.lastActiveAt,
+        clock: _clock,
+      );
+    }
     final start = cursor == null
         ? 0
         : visible.indexWhere((seed) => seed.uid == cursor) + 1;

@@ -6,8 +6,10 @@ import 'package:mevora/features/compatibility/presentation/widgets/compatibility
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
 import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
+import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -135,6 +137,10 @@ class _DiscoveryProfileDetailsPageState
               const SizedBox(height: AppSpacing.xs),
               const VerifiedProfileBadge(),
             ],
+            if (candidate.isBoosted) ...[
+              const SizedBox(height: AppSpacing.xs),
+              const DiscoveryBoostBadge(compact: false),
+            ],
             if (candidate.city != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
@@ -158,6 +164,14 @@ class _DiscoveryProfileDetailsPageState
                 if (candidate.musicCompatibilityScore != null)
                   MusicCompatibilityBadge(
                     score: candidate.musicCompatibilityScore!,
+                    sharedTracks: candidate.sharedMusicTracks,
+                    sharedArtists: candidate.sharedMusicArtists,
+                    sharedGenres: candidate.sharedMusicGenres,
+                    insights: candidate.musicInsights,
+                    sharedTrackCount: candidate.sharedMusicTrackCount,
+                    sharedArtistCount: candidate.sharedMusicArtistCount,
+                    sharedPlaylistTrackCount:
+                        candidate.sharedMusicPlaylistTrackCount,
                   ),
                 if (candidate.relationshipCompatibilityScore != null)
                   RelationshipCompatibilityBadge(
@@ -192,6 +206,8 @@ class _DiscoveryProfileDetailsPageState
                     .toList(),
               ),
             ],
+            const SizedBox(height: AppSpacing.md),
+            ProfileQuestionAnswersSection(uid: candidate.uid),
             const SizedBox(height: AppSpacing.lg),
             Text(l10n.whyYoureSeeingThis, style: theme.textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
@@ -210,7 +226,28 @@ class _DiscoveryProfileDetailsPageState
               MusicCompatibilityBadge(
                 score: candidate.musicCompatibilityScore!,
                 compact: false,
+                sharedTracks: candidate.sharedMusicTracks,
+                sharedArtists: candidate.sharedMusicArtists,
+                sharedGenres: candidate.sharedMusicGenres,
+                insights: candidate.musicInsights,
+                sharedTrackCount: candidate.sharedMusicTrackCount,
+                sharedArtistCount: candidate.sharedMusicArtistCount,
+                sharedPlaylistTrackCount:
+                    candidate.sharedMusicPlaylistTrackCount,
               ),
+              if (candidate.sharedMusicTracks.isNotEmpty ||
+                  candidate.sharedMusicArtists.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.musicSharedCounts(
+                    candidate.sharedMusicTrackCount ??
+                        candidate.sharedMusicTracks.length,
+                    candidate.sharedMusicArtistCount ??
+                        candidate.sharedMusicArtists.length,
+                  ),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
             ],
             if (candidate.relationshipCompatibilityScore != null) ...[
               const SizedBox(height: AppSpacing.sm),

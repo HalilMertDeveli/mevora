@@ -106,16 +106,27 @@ class ChatBubble extends StatelessWidget {
         ),
       );
     }
+    if (message.decryptFailed) {
+      return Text(
+        l10n.messageDecryptFailed,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: textColor.withValues(alpha: 0.8),
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
     if (message.type == MessageType.image) {
       return ChatImageBody(
-        url: message.mediaUrl,
+        url: message.isEncrypted ? null : message.mediaUrl,
         bytes: message.localMediaBytes,
         textColor: textColor,
       );
     }
     if (message.type == MessageType.voice) {
       return ChatVoiceBody(
-        url: message.mediaUrl,
+        messageId: message.id,
+        url: message.isEncrypted ? null : message.mediaUrl,
+        localBytes: message.localMediaBytes,
         durationMs: message.durationMs ?? 0,
         textColor: textColor,
         player: audioPlayer,
@@ -181,16 +192,29 @@ class ChatImageBody extends StatelessWidget {
 class ChatVoiceBody extends StatefulWidget {
   const ChatVoiceBody({
     super.key,
+    required this.messageId,
     required this.url,
     required this.durationMs,
     required this.textColor,
+    this.localBytes,
     this.player,
   });
 
+  final String messageId;
   final String? url;
+  final List<int>? localBytes;
   final int durationMs;
   final Color textColor;
   final ChatAudioPlayer? player;
+
+  bool get hasPlayableSource {
+    final local = localBytes;
+    if (local != null && local.isNotEmpty) {
+      return true;
+    }
+    final remote = url;
+    return remote != null && remote.isNotEmpty;
+  }
 
   @override
   State<ChatVoiceBody> createState() => _ChatVoiceBodyState();
@@ -198,32 +222,63 @@ class ChatVoiceBody extends StatefulWidget {
 
 class _ChatVoiceBodyState extends State<ChatVoiceBody> {
   bool _playing = false;
-  StreamSubscription<Duration>? _posSub;
+  StreamSubscription<String?>? _activeSub;
   StreamSubscription<PlayerComplete>? _doneSub;
 
   @override
+  void initState() {
+    super.initState();
+    final player = widget.player;
+    if (player != null) {
+      _activeSub = player.watchActiveMessageId().listen((activeId) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _playing = activeId == widget.messageId;
+        });
+      });
+    }
+  }
+
+  @override
   void dispose() {
-    unawaited(_posSub?.cancel());
+    unawaited(_activeSub?.cancel());
     unawaited(_doneSub?.cancel());
     super.dispose();
   }
 
   Future<void> _toggle() async {
     final player = widget.player;
-    final url = widget.url;
-    if (player == null || url == null || url.isEmpty) {
+    if (player == null || !widget.hasPlayableSource) {
       return;
     }
     if (_playing) {
       await player.pause();
-      setState(() => _playing = false);
+      if (mounted) {
+        setState(() => _playing = false);
+      }
       return;
     }
-    await player.play(url);
+    await player.stop();
+    final local = widget.localBytes;
+    await player.playMessage(
+      messageId: widget.messageId,
+      url: widget.url,
+      bytes: local == null || local.isEmpty
+          ? null
+          : Uint8List.fromList(local),
+    );
+    if (!mounted) {
+      return;
+    }
     setState(() => _playing = true);
     unawaited(_doneSub?.cancel());
-    _doneSub = player.watchComplete().listen((_) {
-      if (mounted) {
+    _doneSub = player.watchComplete().listen((event) {
+      if (!mounted) {
+        return;
+      }
+      if (event.messageId == null || event.messageId == widget.messageId) {
         setState(() => _playing = false);
       }
     });
@@ -237,7 +292,9 @@ class _ChatVoiceBodyState extends State<ChatVoiceBody> {
       children: [
         IconButton(
           visualDensity: VisualDensity.compact,
-          onPressed: widget.url == null ? null : () => unawaited(_toggle()),
+          onPressed: widget.hasPlayableSource
+              ? () => unawaited(_toggle())
+              : null,
           tooltip: _playing
               ? AppLocalizations.of(context).pauseVoice
               : AppLocalizations.of(context).playVoice,
@@ -333,7 +390,9 @@ class ChatComposer extends StatefulWidget {
     this.onAttachCamera,
     this.onVoiceStart,
     this.onVoiceEnd,
+    this.onVoiceCancel,
     this.recording = false,
+    this.recordingSeconds = 0,
     this.uploading = false,
   });
 
@@ -345,7 +404,9 @@ class ChatComposer extends StatefulWidget {
   final VoidCallback? onAttachCamera;
   final VoidCallback? onVoiceStart;
   final VoidCallback? onVoiceEnd;
+  final VoidCallback? onVoiceCancel;
   final bool recording;
+  final int recordingSeconds;
   final bool uploading;
 
   @override
@@ -355,8 +416,11 @@ class ChatComposer extends StatefulWidget {
 class _ChatComposerState extends State<ChatComposer> {
   static const double _actionSize = 44;
   static const int _maxInputLines = 5;
+  static const double _cancelDragThreshold = 72;
 
   bool get _hasText => widget.controller.text.trim().isNotEmpty;
+  double _dragLeft = 0;
+  bool _cancelArmed = false;
 
   @override
   void initState() {
@@ -383,6 +447,26 @@ class _ChatComposerState extends State<ChatComposer> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _resetRecordingGesture() {
+    _dragLeft = 0;
+    _cancelArmed = false;
+  }
+
+  void _finishRecording({required bool cancel}) {
+    _resetRecordingGesture();
+    if (cancel) {
+      widget.onVoiceCancel?.call();
+    } else {
+      widget.onVoiceEnd?.call();
+    }
+  }
+
+  String _formatRecordingClock(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -412,9 +496,24 @@ class _ChatComposerState extends State<ChatComposer> {
           child: widget.recording
               ? Listener(
                   behavior: HitTestBehavior.translucent,
-                  onPointerUp: (_) => widget.onVoiceEnd?.call(),
-                  onPointerCancel: (_) => widget.onVoiceEnd?.call(),
-                  child: _RecordingBar(label: l10n.holdToRecord),
+                  onPointerMove: (event) {
+                    if (event.delta.dx < 0) {
+                      setState(() {
+                        _dragLeft += -event.delta.dx;
+                        _cancelArmed = _dragLeft >= _cancelDragThreshold;
+                      });
+                    }
+                  },
+                  onPointerUp: (_) =>
+                      _finishRecording(cancel: _cancelArmed),
+                  onPointerCancel: (_) =>
+                      _finishRecording(cancel: _cancelArmed),
+                  child: _RecordingBar(
+                    label: widget.recordingSeconds > 0
+                        ? '${_formatRecordingClock(widget.recordingSeconds)} · ${l10n.holdToRecord}'
+                        : l10n.holdToRecord,
+                    cancelHint: _cancelArmed ? l10n.cancel : null,
+                  ),
                 )
               : Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -678,19 +777,26 @@ class _VoiceButton extends StatelessWidget {
 }
 
 class _RecordingBar extends StatelessWidget {
-  const _RecordingBar({required this.label});
+  const _RecordingBar({
+    required this.label,
+    this.cancelHint,
+  });
 
   final String label;
+  final String? cancelHint;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final cancelling = cancelHint != null;
     return SizedBox(
       height: _ChatComposerState._actionSize + 4,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colors.errorContainer.withValues(alpha: 0.55),
+          color: cancelling
+              ? colors.errorContainer.withValues(alpha: 0.75)
+              : colors.errorContainer.withValues(alpha: 0.55),
           borderRadius: BorderRadius.circular(AppRadii.lg),
         ),
         child: Row(
@@ -700,7 +806,7 @@ class _RecordingBar extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
-                label,
+                cancelling ? cancelHint! : label,
                 style: textTheme.bodyMedium?.copyWith(
                   color: colors.onErrorContainer,
                   fontWeight: FontWeight.w600,
@@ -710,7 +816,7 @@ class _RecordingBar extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: AppSpacing.md),
               child: Icon(
-                Icons.mic_rounded,
+                cancelling ? Icons.close_rounded : Icons.mic_rounded,
                 color: colors.error,
                 size: 26,
               ),
@@ -764,6 +870,57 @@ class _RecordingPulseState extends State<_RecordingPulse>
           ),
         );
       },
+    );
+  }
+}
+
+class ChatE2eeBanner extends StatelessWidget {
+  const ChatE2eeBanner({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      color: colors.surfaceContainerLow,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_outline, size: 18, color: colors.primary),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: colors.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

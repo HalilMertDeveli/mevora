@@ -58,6 +58,20 @@ service cloud.firestore {
         || exists(/databases/$(database)/documents/blocks/$(b + '_' + a));
     }
 
+    function canonicalMatchId(uidA, uidB) {
+      return uidA < uidB ? uidA + '_' + uidB : uidB + '_' + uidA;
+    }
+
+    function hasActiveMatchWith(otherUid) {
+      return isAuthenticated()
+        && otherUid != request.auth.uid
+        && !isBlockedPair(request.auth.uid, otherUid)
+        && exists(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid)))
+        && get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.isActive == true
+        && request.auth.uid in get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.userIds
+        && otherUid in get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.userIds;
+    }
+
     function unchangedOrFalse(key) {
       return request.resource.data.get(key, false) == resource.data.get(key, false)
         || request.resource.data.get(key, false) == false;
@@ -204,6 +218,18 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      match /crypto/{docId} {
+        allow read: if isAuthenticated();
+        allow create, update: if isOwner(userId)
+          && docId == 'identity'
+          && request.resource.data.publicKey is string
+          && request.resource.data.publicKey.size() > 0
+          && request.resource.data.publicKey.size() <= 256
+          && request.resource.data.algorithm is string
+          && !request.resource.data.keys().hasAny(['privateKey']);
+        allow delete: if false;
+      }
+
       match /presence/current {
         allow write: if isOwner(userId)
           && request.resource.data.isOnline is bool
@@ -246,6 +272,14 @@ service cloud.firestore {
 
       match /relationshipSeen/{otherUid} {
         allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Profile question answers: owner or actively matched users (visible only).
+      match /questionAnswers/{questionId} {
+        allow read: if isOwner(userId)
+          || (hasActiveMatchWith(userId)
+            && resource.data.get('isVisible', false) == true);
         allow create, update, delete: if false;
       }
 
@@ -446,6 +480,23 @@ service cloud.firestore {
         && request.resource.data.reporterId == request.auth.uid
         && request.resource.data.reportedUserId != request.auth.uid
         && request.resource.data.status == 'open';
+      allow update, delete: if false;
+    }
+
+    match /supportTickets/{ticketId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.category is string
+        && request.resource.data.subject is string
+        && request.resource.data.subject.size() > 0
+        && request.resource.data.subject.size() <= 120
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 4000
+        && request.resource.data.attachments is list
+        && request.resource.data.attachments.size() <= 3;
       allow update, delete: if false;
     }
 

@@ -21,6 +21,7 @@ class MevoraMatchCelebration extends StatefulWidget {
     this.onCompleted,
     this.onSendMessage,
     this.onKeepExploring,
+    this.onViewAnswers,
     this.compatibilitySection,
   });
 
@@ -33,6 +34,7 @@ class MevoraMatchCelebration extends StatefulWidget {
   final VoidCallback? onCompleted;
   final VoidCallback? onSendMessage;
   final VoidCallback? onKeepExploring;
+  final VoidCallback? onViewAnswers;
   final Widget? compatibilitySection;
 
   @override
@@ -173,6 +175,14 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
                     label: l10n.sendMessage,
                     onPressed: widget.onSendMessage,
                   ),
+                if (widget.onViewAnswers != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  MevoraButton(
+                    label: l10n.matchViewAnswers,
+                    variant: MevoraButtonVariant.secondary,
+                    onPressed: widget.onViewAnswers,
+                  ),
+                ],
                 if (widget.onKeepExploring != null) ...[
                   const SizedBox(height: AppSpacing.sm),
                   MevoraButton(

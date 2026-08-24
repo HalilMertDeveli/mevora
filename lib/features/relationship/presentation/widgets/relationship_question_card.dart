@@ -236,72 +236,81 @@ class RelationshipQuestionCard extends StatelessWidget {
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: MevoraCard(
                 emphasis: MevoraCardEmphasis.elevated,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      l10n.relationshipPromptTitle,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      question.promptFor(locale),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontSize: 22,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    for (final answer in question.answers) ...[
-                      MevoraButton(
-                        label: answer.labelFor(locale),
-                        variant: MevoraButtonVariant.secondary,
-                        onPressed: submitting
-                            ? null
-                            : () => onAnswer(answer.id),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                    ],
-                    const SizedBox(height: AppSpacing.xs),
-                    if (submitting)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: MevoraRiveAnimation(
-                          asset: MevoraRiveAssets.loading,
-                          width: 36,
-                          height: 36,
-                          semanticsLabel: l10n.loading,
-                          fallback: SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.2,
-                              color: theme.colorScheme.primary,
-                            ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          l10n.relationshipPromptTitle,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          question.promptFor(locale),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontSize: 22,
                           ),
                         ),
-                      ),
-                    if (lastError != null && lastError!.isNotEmpty) ...[
-                      Text(
-                        lastError!,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.error,
+                        const SizedBox(height: AppSpacing.lg),
+                        for (final answer in question.answers)
+                          if (answer.labelFor(locale).trim().isNotEmpty) ...[
+                            MevoraButton(
+                              label: answer.labelFor(locale),
+                              variant: MevoraButtonVariant.secondary,
+                              wrapLabel: true,
+                              onPressed: submitting
+                                  ? null
+                                  : () => onAnswer(answer.id),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                          ],
+                        const SizedBox(height: AppSpacing.xs),
+                        if (submitting)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            child: MevoraRiveAnimation(
+                              asset: MevoraRiveAssets.loading,
+                              width: 36,
+                              height: 36,
+                              semanticsLabel: l10n.loading,
+                              fallback: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (lastError != null && lastError!.isNotEmpty) ...[
+                          Text(
+                            lastError!,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                        ],
+                        Text(
+                          l10n.relationshipPromptProgress(
+                            answeredCount.clamp(1, totalCount),
+                            totalCount,
+                          ),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                    ],
-                    Text(
-                      l10n.relationshipPromptProgress(
-                        answeredCount.clamp(1, totalCount),
-                        totalCount,
-                      ),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

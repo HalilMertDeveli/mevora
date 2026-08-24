@@ -54,11 +54,29 @@ class WhyYouMatchPanel extends StatelessWidget {
           score: breakdown.interestScore,
           icon: Icons.interests_outlined,
         ),
+        if (breakdown.languageScore != null)
+          _CategoryRow(
+            label: l10n.compatCategoryLanguages,
+            score: breakdown.languageScore!,
+            icon: Icons.translate_outlined,
+          ),
+        if (breakdown.hobbyScore != null)
+          _CategoryRow(
+            label: l10n.compatCategoryHobbies,
+            score: breakdown.hobbyScore!,
+            icon: Icons.sports_kabaddi_outlined,
+          ),
         _CategoryRow(
           label: l10n.compatCategoryLifestyle,
           score: breakdown.lifestyleScore,
           icon: Icons.self_improvement_outlined,
         ),
+        if (breakdown.valuesScore != null)
+          _CategoryRow(
+            label: l10n.compatCategoryValues,
+            score: breakdown.valuesScore!,
+            icon: Icons.favorite_border_outlined,
+          ),
         if (breakdown.questionScore != null)
           _CategoryRow(
             label: l10n.compatCategoryQuestions,
@@ -204,7 +222,7 @@ Future<void> showCompatibilityBreakdownSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    shape: RoundedRectangleBorder(
+    shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
     ),
     builder: (context) {

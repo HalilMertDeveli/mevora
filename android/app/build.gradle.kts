@@ -9,7 +9,8 @@ plugins {
 
 android {
     namespace = "com.mevora.app"
-    compileSdk = flutter.compileSdkVersion
+  // flutter_secure_storage 11.x requires API 37; SDK folder is android-37.0 (junction android-37).
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -24,7 +25,7 @@ android {
     defaultConfig {
         applicationId = "com.mevora.app"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 37
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

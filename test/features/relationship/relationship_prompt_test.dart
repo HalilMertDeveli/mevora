@@ -303,9 +303,9 @@ void main() {
     await tester.pumpWidget(
       wrapWithApp(
         RelationshipTestResultCard(
-          results: [
+          results: const [
             RelationshipMatchSuggestion(
-              candidate: const DiscoveryCandidate(
+              candidate: DiscoveryCandidate(
                 uid: 'rel-ada',
                 displayName: 'Ada',
                 age: 27,

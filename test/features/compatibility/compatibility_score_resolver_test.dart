@@ -66,11 +66,11 @@ void main() {
   test('question overlap increases score when provided', () {
     final resolved = CompatibilityScoreResolver.resolve(
       viewer: viewer,
-      candidate: DiscoveryCandidate(
+      candidate: const DiscoveryCandidate(
         uid: 'b',
         displayName: 'Burak',
         age: 28,
-        interests: const ['travel'],
+        interests: ['travel'],
         relationshipGoal: 'longTerm',
         relationshipCompatibilityScore: 90,
         relationshipAlignedCount: 2,
@@ -176,5 +176,88 @@ void main() {
     );
     expect(resolved.compatibilityStatus, CompatibilityDisplayStatus.unavailable);
     expect(resolved.hasCompatibilityScore, isFalse);
+  });
+
+  test('server overall without category breakdown computes real category scores', () {
+    const viewer = UserProfile(
+      uid: 'a',
+      displayName: 'Ada',
+      age: 27,
+      interests: ['coffee', 'film'],
+      relationshipGoal: 'longTerm',
+    );
+    const aligned = DiscoveryCandidate(
+      uid: 'b',
+      displayName: 'Burak',
+      age: 28,
+      compatibilityScore: 87,
+      compatibilityStatus: CompatibilityDisplayStatus.ready,
+      interests: ['coffee', 'film'],
+      relationshipGoal: 'longTerm',
+      sharedInterests: ['coffee', 'film'],
+    );
+    final breakdown = CompatibilityScoreResolver.breakdownFor(
+      viewer: viewer,
+      candidate: aligned,
+    );
+    expect(breakdown.interestScore, greaterThan(0));
+    expect(breakdown.relationshipScore, greaterThan(0));
+    expect(breakdown.lifestyleScore, greaterThan(0));
+  });
+
+  test('shared interests score higher than unrelated interests', () {
+    const viewer = UserProfile(
+      uid: 'a',
+      displayName: 'Ada',
+      interests: ['coffee', 'film'],
+      relationshipGoal: 'longTerm',
+    );
+    final aligned = CompatibilityScoreResolver.breakdownFor(
+      viewer: viewer,
+      candidate: const DiscoveryCandidate(
+        uid: 'b1',
+        displayName: 'Burak',
+        age: 28,
+        compatibilityScore: 80,
+        compatibilityStatus: CompatibilityDisplayStatus.ready,
+        interests: ['coffee', 'film'],
+        relationshipGoal: 'longTerm',
+        sharedInterests: ['coffee', 'film'],
+      ),
+    );
+    final unrelated = CompatibilityScoreResolver.breakdownFor(
+      viewer: viewer,
+      candidate: const DiscoveryCandidate(
+        uid: 'b2',
+        displayName: 'Can',
+        age: 28,
+        compatibilityScore: 80,
+        compatibilityStatus: CompatibilityDisplayStatus.ready,
+        interests: ['football'],
+        relationshipGoal: 'casual',
+      ),
+    );
+    expect(aligned.interestScore, greaterThan(unrelated.interestScore));
+    expect(aligned.relationshipScore, greaterThan(unrelated.relationshipScore));
+  });
+
+  test('resolve backfills category scores when server only sends overall', () {
+    final resolved = CompatibilityScoreResolver.resolve(
+      viewer: viewer,
+      candidate: const DiscoveryCandidate(
+        uid: 'b',
+        displayName: 'Burak',
+        age: 28,
+        compatibilityScore: 87,
+        compatibilityStatus: CompatibilityDisplayStatus.ready,
+        interests: ['travel', 'music'],
+        relationshipGoal: 'longTerm',
+        sharedInterests: ['travel', 'music'],
+      ),
+    );
+    expect(resolved.categoryInterestScore, greaterThan(0));
+    expect(resolved.categoryRelationshipScore, greaterThan(0));
+    expect(resolved.categoryLifestyleScore, greaterThan(0));
+    expect(resolved.compatibilityScore, 87);
   });
 }

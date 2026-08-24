@@ -27,6 +27,11 @@ class ChatMediaBytes {
 abstract class ChatRepository {
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30});
 
+  Future<bool> isE2eeActive({
+    required String matchId,
+    required String peerUid,
+  });
+
   Future<ChatPage> loadOlder({
     required String matchId,
     required ChatMessage before,

@@ -39,9 +39,15 @@ service firebase.storage {
         || request.resource.contentType.matches('audio/mpeg');
     }
 
+    function isEncryptedChatBlob() {
+      return request.resource.contentType == 'application/octet-stream'
+        && request.resource.size < 25 * 1024 * 1024;
+    }
+
     function isChatMediaOk() {
       return (isImage() && isSmallEnough())
-        || (isAudio() && request.resource.size < 8 * 1024 * 1024);
+        || (isAudio() && request.resource.size < 8 * 1024 * 1024)
+        || isEncryptedChatBlob();
     }
 
     function isActiveMatch(matchId) {
@@ -75,6 +81,12 @@ service firebase.storage {
         && isMatchParticipant(matchId)
         && isActiveMatch(matchId)
         && isChatMediaOk();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/support/{ticketId}/{fileId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
       allow delete: if isOwner(userId);
     }
 

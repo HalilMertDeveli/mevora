@@ -118,6 +118,26 @@ class FirebaseStorageDataSource implements StorageRepository {
   }
 
   @override
+  Future<Result<List<int>>> downloadBytes(String path) async {
+    try {
+      final data = await _storage.ref(path).getData();
+      if (data == null) {
+        return const Err(NetworkFailure(PhotoUploadMessages.failed));
+      }
+      return Success(data);
+    } on FirebaseException catch (error) {
+      _logError(error.message ?? error.code, code: error.code);
+      return const Err(NetworkFailure(PhotoUploadMessages.failed));
+    } on Object catch (error) {
+      return Err(
+        FailureMapper.from(
+          NetworkException(PhotoUploadMessages.failed, cause: error),
+        ),
+      );
+    }
+  }
+
+  @override
   Future<Result<Uri>> uploadProfileImage({
     required String ownerUid,
     required String imageId,

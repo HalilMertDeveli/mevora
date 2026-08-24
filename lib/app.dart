@@ -16,6 +16,7 @@ import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
+import 'package:mevora/core/di/support_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/language_controller.dart';
@@ -33,10 +34,12 @@ import 'package:mevora/features/discovery/domain/repositories/discovery_reposito
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
 import 'package:mevora/features/match_score/domain/repositories/match_score_repository.dart';
+import 'package:mevora/features/chat/e2ee/services/e2ee_bootstrap_controller.dart';
 import 'package:mevora/features/matching/presentation/controllers/presence_lifecycle_controller.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
+import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/core/di/verification_scope.dart';
@@ -55,6 +58,7 @@ class MevoraApp extends StatefulWidget {
     this.musicRepository,
     this.matchScoreRepository,
     this.relationshipRepository,
+    this.profileQuestionAnswerRepository,
     this.locationController,
     this.socialServices,
     this.purchaseRepository,
@@ -65,6 +69,7 @@ class MevoraApp extends StatefulWidget {
     this.permissionController,
     this.onboardingServices,
     this.settingsServices,
+    this.supportServices,
   });
 
   final AppConfig config;
@@ -76,6 +81,7 @@ class MevoraApp extends StatefulWidget {
   final MusicRepository? musicRepository;
   final MatchScoreRepository? matchScoreRepository;
   final RelationshipRepository? relationshipRepository;
+  final ProfileQuestionAnswerRepository? profileQuestionAnswerRepository;
   final LocationController? locationController;
   final SocialServices? socialServices;
   final PurchaseRepository? purchaseRepository;
@@ -85,6 +91,7 @@ class MevoraApp extends StatefulWidget {
   final PermissionService? permissionService;
   final PermissionController? permissionController;
   final SettingsServices? settingsServices;
+  final SupportServices? supportServices;
   final OnboardingServices? onboardingServices;
 
   @override
@@ -105,6 +112,7 @@ class _MevoraAppState extends State<MevoraApp> {
   bool _ownsOnboardingServices = false;
   RelationshipController? _relationshipController;
   PresenceLifecycleController? _presenceLifecycleController;
+  E2eeBootstrapController? _e2eeBootstrapController;
 
   @override
   void initState() {
@@ -176,6 +184,9 @@ class _MevoraAppState extends State<MevoraApp> {
         presenceRepository: social.presenceRepository,
         uidSource: social.uidSource,
       )..attach();
+      _e2eeBootstrapController = E2eeBootstrapController(
+        uidSource: social.uidSource,
+      )..attach();
       _pushBinder = FcmPushBinder(router: _router, services: social);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         unawaited(_pushBinder?.attach());
@@ -239,6 +250,14 @@ class _MevoraAppState extends State<MevoraApp> {
       child = SettingsScope(services: settingsServices, child: child);
     }
 
+    final supportServices = widget.supportServices;
+    if (supportServices != null) {
+      child = SupportScope(
+        repository: supportServices.repository,
+        child: child,
+      );
+    }
+
     final social = widget.socialServices;
     if (social != null) {
       child = SocialScope(services: social, child: child);
@@ -255,10 +274,14 @@ class _MevoraAppState extends State<MevoraApp> {
     }
 
     final relationship = widget.relationshipRepository;
+    final profileAnswers = widget.profileQuestionAnswerRepository;
     final relationshipController = _relationshipController;
-    if (relationship != null && relationshipController != null) {
+    if (relationship != null &&
+        profileAnswers != null &&
+        relationshipController != null) {
       child = RelationshipScope(
         repository: relationship,
+        profileAnswers: profileAnswers,
         controller: relationshipController,
         child: child,
       );
@@ -320,6 +343,7 @@ class _MevoraAppState extends State<MevoraApp> {
     }
     _relationshipController?.dispose();
     _presenceLifecycleController?.dispose();
+    _e2eeBootstrapController?.dispose();
     _router.dispose();
     super.dispose();
   }

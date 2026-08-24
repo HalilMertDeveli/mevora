@@ -29,6 +29,7 @@ import 'package:mevora/features/discovery/presentation/widgets/discovery_action_
 import 'package:mevora/features/discovery/presentation/widgets/discovery_card_stack.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_filters_sheet.dart';
 import 'package:mevora/features/location/presentation/screens/location_permission_screen.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
@@ -82,23 +83,38 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
       _profileUpdates = updates;
       _profileUpdates?.addListener(_onProfileUpdated);
     }
-    if (widget.controller != null || _owned != null) {
+
+    // Always read AuthScope so didChangeDependencies triggers on login/logout.
+    final uid = AuthScope.maybeOf(context)?.user?.id ?? 'local';
+
+    // If caller injects a controller (tests), we don't manage lifecycle.
+    if (widget.controller != null) {
       return;
     }
-    final auth = AuthScope.maybeOf(context);
-    final uid = auth?.user?.id ?? 'local';
-    _owned = DiscoveryController(
-      uid: uid,
-      locationRepository:
-          LocationScope.maybeOf(context)?.repository ??
-          FakeLocationRepository(),
-      discoveryRepository:
-          DiscoveryScope.maybeOf(context) ?? InMemoryDiscoveryRepository(),
-      purchaseRepository: BoostScope.maybeOf(context)?.repository,
-      viewerProfileLoader: (viewerUid) async =>
-          await SettingsScope.maybeOf(context)?.settingsHub.loadProfile(viewerUid),
-    )..addListener(_onController);
-    unawaited(_owned!.start());
+
+    // Re-create the discovery controller on auth uid changes.
+    // The controller keeps user-specific state (cursors/candidates/compat cache),
+    // so it must not survive logout -> login.
+    if (_owned != null && _owned!.uid != uid) {
+      _owned!.removeListener(_onController);
+      _owned!.dispose();
+      _owned = null;
+    }
+
+    if (_owned == null) {
+      _owned = DiscoveryController(
+        uid: uid,
+        locationRepository:
+            LocationScope.maybeOf(context)?.repository ??
+            FakeLocationRepository(),
+        discoveryRepository:
+            DiscoveryScope.maybeOf(context) ?? InMemoryDiscoveryRepository(),
+        purchaseRepository: BoostScope.maybeOf(context)?.repository,
+        viewerProfileLoader: (viewerUid) async =>
+            await SettingsScope.maybeOf(context)?.settingsHub.loadProfile(viewerUid),
+      )..addListener(_onController);
+      unawaited(_owned!.start());
+    }
   }
 
   void _onController() {
@@ -220,7 +236,7 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     if (state.matchedCandidate != null) {
       final match = state.matchedCandidate!;
       final viewer = _viewerProfile(context);
-      final breakdown = CompatibilityBreakdownMapper.fromCandidate(match);
+      final breakdown = controller.breakdownFor(match);
       final reasons = CompatibilityBreakdownMapper.reasonsFor(
         viewer: viewer,
         candidate: match,
@@ -242,6 +258,11 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
           } else {
             context.go(AppRoutes.matches);
           }
+        },
+        onViewAnswers: () {
+          final otherUid = match.uid;
+          controller.clearMatch();
+          unawaited(showMatchedProfileAnswersSheet(context, otherUid: otherUid));
         },
         onKeepExploring: controller.clearMatch,
       );

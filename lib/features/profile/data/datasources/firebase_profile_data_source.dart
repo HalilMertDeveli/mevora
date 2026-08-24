@@ -110,6 +110,10 @@ class FirebaseProfileDataSource {
       occupation: data['occupation'] as String?,
       education: data['education'] as String?,
       languages: firestoreStringList(data['languages']),
+      hobbies: firestoreStringList(data['hobbies']),
+      heightCm: firestoreInt(data['heightCm'], 0) == 0
+          ? null
+          : firestoreInt(data['heightCm'], 0),
       city: data['city'] as String?,
       lifestyle: firestoreStringList(data['lifestyle']),
       lifestyleProfile: ProfileLifestyle.fromMap(
@@ -155,6 +159,8 @@ class FirebaseProfileDataSource {
       'occupation': profile.occupation,
       'education': profile.education,
       'languages': profile.languages,
+      'hobbies': profile.hobbies,
+      if (profile.heightCm != null) 'heightCm': profile.heightCm,
       'city': profile.city,
       'lifestyle': profile.lifestyle.isNotEmpty
           ? profile.lifestyle

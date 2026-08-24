@@ -91,21 +91,38 @@ class _ReportPageState extends State<ReportPage> {
 
   Future<void> _submit() async {
     setState(() => _sending = true);
-    await SocialScope.of(context).safetyRepository.reportUser(
-      userId: widget.userId,
-      reason: _reason.firestoreValue,
-      matchId: widget.matchId,
-      messageId: widget.messageId,
-      description: _description.text,
-    );
-    await BoostScope.maybeOf(context)?.analytics?.logEvent(
-      AnalyticsEvents.reportSubmitted,
-    );
+    final l10n = AppLocalizations.of(context);
+    try {
+      await SocialScope.of(context).safetyRepository.reportUser(
+        userId: widget.userId,
+        reason: _reason.firestoreValue,
+        matchId: widget.matchId,
+        messageId: widget.messageId,
+        description: _description.text,
+      );
+      await BoostScope.maybeOf(context)?.analytics?.logEvent(
+        AnalyticsEvents.reportSubmitted,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.reportThanks)),
+      );
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.somethingWentWrong)),
+      );
+      return;
+    }
     if (!mounted) {
       return;
     }
     setState(() => _sending = false);
-    final l10n = AppLocalizations.of(context);
     final block = await MevoraDialog.show(
       context,
       title: l10n.offerBlockTitle,

@@ -237,7 +237,7 @@ abstract final class AppTheme {
         showDragHandle: true,
         dragHandleColor: isDark ? AppColors.iconMuted : scheme.outline,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
           side: isDark
               ? const BorderSide(color: AppColors.glassBorder)
               : BorderSide.none,

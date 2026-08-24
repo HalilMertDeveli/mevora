@@ -1,7 +1,7 @@
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_reason.dart';
+import 'package:mevora/features/discovery/domain/compatibility/compatibility_engine.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
-
 /// Deterministic "Why you match" reasons from real profile + breakdown data.
 abstract final class CompatibilityReasonEngine {
   static List<CompatibilityReason> build({
@@ -12,8 +12,11 @@ abstract final class CompatibilityReasonEngine {
     final reasons = <CompatibilityReason>[];
 
     if (breakdown.relationshipScore >= 85 &&
-        viewer.relationshipGoal != null &&
-        viewer.relationshipGoal == candidate.relationshipGoal) {
+        CompatibilityScoring.normalizeRelationshipGoal(viewer.relationshipGoal) ==
+            CompatibilityScoring.normalizeRelationshipGoal(
+              candidate.relationshipGoal,
+            ) &&
+        viewer.relationshipGoal != null) {
       reasons.add(
         CompatibilityReason(
           messageKey: 'compatReasonSameRelationshipGoal',
@@ -33,6 +36,32 @@ abstract final class CompatibilityReasonEngine {
           category: CompatibilityCategory.interests,
           priority: CompatibilityReasonPriority.high,
           iconName: 'interests',
+        ),
+      );
+    }
+
+    final sharedLanguages = _sharedLanguages(viewer, candidate);
+    if (sharedLanguages.isNotEmpty && (breakdown.languageScore ?? 0) >= 50) {
+      reasons.add(
+        CompatibilityReason(
+          messageKey: 'compatReasonSharedLanguages',
+          messageArgs: [sharedLanguages.take(3).join(', ')],
+          category: CompatibilityCategory.languages,
+          priority: CompatibilityReasonPriority.high,
+          iconName: 'translate',
+        ),
+      );
+    }
+
+    final sharedHobbies = _sharedHobbies(viewer, candidate);
+    if (sharedHobbies.isNotEmpty && (breakdown.hobbyScore ?? 0) >= 50) {
+      reasons.add(
+        CompatibilityReason(
+          messageKey: 'compatReasonSharedHobbies',
+          messageArgs: [sharedHobbies.take(3).join(', ')],
+          category: CompatibilityCategory.hobbies,
+          priority: CompatibilityReasonPriority.medium,
+          iconName: 'hobbies',
         ),
       );
     }
@@ -81,7 +110,7 @@ abstract final class CompatibilityReasonEngine {
     if (breakdown.communicationScore != null &&
         breakdown.communicationScore! >= 75) {
       reasons.add(
-        CompatibilityReason(
+        const CompatibilityReason(
           messageKey: 'compatReasonCommunication',
           category: CompatibilityCategory.communication,
           priority: CompatibilityReasonPriority.medium,
@@ -103,16 +132,25 @@ abstract final class CompatibilityReasonEngine {
   }
 
   static String _goalLabel(String goal) {
-    switch (goal) {
-      case 'longTerm':
-        return 'longTerm';
-      case 'casual':
-        return 'casual';
-      case 'figuringOut':
-        return 'figuringOut';
-      default:
-        return goal;
+    final normalized = goal.replaceAll('_', '').toLowerCase();
+    if (normalized == 'longterm') {
+      return 'longTerm';
     }
+    return goal;
+  }
+
+  static List<String> _sharedLanguages(UserProfile a, UserProfile b) {
+    final viewer = a.languages.map((e) => e.trim().toLowerCase()).toSet();
+    return b.languages
+        .where((lang) => viewer.contains(lang.trim().toLowerCase()))
+        .toList();
+  }
+
+  static List<String> _sharedHobbies(UserProfile a, UserProfile b) {
+    final viewer = a.hobbies.map((e) => e.trim().toLowerCase()).toSet();
+    return b.hobbies
+        .where((hobby) => viewer.contains(hobby.trim().toLowerCase()))
+        .toList();
   }
 
   static String categoryLabelKey(CompatibilityCategory category) {
@@ -120,7 +158,10 @@ abstract final class CompatibilityReasonEngine {
       CompatibilityCategory.overall => 'compatCategoryOverall',
       CompatibilityCategory.relationship => 'compatCategoryRelationship',
       CompatibilityCategory.interests => 'compatCategoryInterests',
+      CompatibilityCategory.languages => 'compatCategoryLanguages',
+      CompatibilityCategory.hobbies => 'compatCategoryHobbies',
       CompatibilityCategory.lifestyle => 'compatCategoryLifestyle',
+      CompatibilityCategory.lifeValues => 'compatCategoryValues',
       CompatibilityCategory.questions => 'compatCategoryQuestions',
       CompatibilityCategory.music => 'compatCategoryMusic',
       CompatibilityCategory.communication => 'compatCategoryCommunication',

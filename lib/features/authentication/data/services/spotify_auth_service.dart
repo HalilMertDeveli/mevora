@@ -76,7 +76,8 @@ class SpotifyAuthService {
   static const loginScopes = 'user-read-private';
 
   /// Taste analysis only. No streaming, playback, or playlist modification.
-  static const musicScopes = 'user-top-read user-read-recently-played';
+  static const musicScopes =
+      'user-top-read user-read-recently-played playlist-read-private';
 
   Future<AuthSession> signIn({required bool linkToCurrentUser}) async {
     final completer = Completer<AuthSession>();

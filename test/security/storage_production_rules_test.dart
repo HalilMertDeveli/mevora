@@ -27,9 +27,9 @@ void main() {
   });
 
   test('only safe image formats are allowed for profile pending uploads', () {
-    expect(rules.contains("image/jpeg"), isTrue);
-    expect(rules.contains("image/png"), isTrue);
-    expect(rules.contains("image/webp"), isTrue);
+    expect(rules.contains('image/jpeg'), isTrue);
+    expect(rules.contains('image/png'), isTrue);
+    expect(rules.contains('image/webp'), isTrue);
     expect(rules.contains('5 * 1024 * 1024'), isTrue);
   });
 }

@@ -21,10 +21,17 @@ class LocationSettingsPage extends StatefulWidget {
 }
 
 class _LocationSettingsPageState extends State<LocationSettingsPage> {
+  var _didBootstrap = false;
+
   @override
-  void initState() {
-    super.initState();
-    final controller = widget.controller ?? PermissionScope.maybeOf(context)?.controller;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didBootstrap) {
+      return;
+    }
+    _didBootstrap = true;
+    final controller =
+        widget.controller ?? PermissionScope.maybeOf(context)?.controller;
     if (controller != null) {
       unawaited(controller.check(PermissionType.location));
     }
@@ -40,7 +47,7 @@ class _LocationSettingsPageState extends State<LocationSettingsPage> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsLocation)),
       body: controller == null
-          ? const SizedBox.shrink()
+          ? Center(child: Text(l10n.permissionStatusUnknown))
           : ListenableBuilder(
               listenable: controller,
               builder: (context, _) {
@@ -61,13 +68,15 @@ class _LocationSettingsPageState extends State<LocationSettingsPage> {
                       const SizedBox(height: AppSpacing.lg),
                       MevoraButton(
                         label: l10n.useMyLocation,
-                        onPressed: () => unawaited(
-                          PermissionPromptPage.show(
-                            context,
-                            type: PermissionType.location,
-                            controller: controller,
-                          ),
-                        ),
+                        onPressed: () {
+                          unawaited(
+                            PermissionPromptPage.show(
+                              context,
+                              type: PermissionType.location,
+                              controller: controller,
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: AppSpacing.md),
                       MevoraButton(

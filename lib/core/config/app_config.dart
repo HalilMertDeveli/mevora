@@ -111,12 +111,12 @@ class AppConfig {
 
   String get termsOfServiceUrl => const String.fromEnvironment(
     'TERMS_URL',
-    defaultValue: 'https://mevora.app/terms',
+    defaultValue: 'https://mevora-d6ed0.web.app/terms',
   );
 
   String get privacyPolicyUrl => const String.fromEnvironment(
     'PRIVACY_URL',
-    defaultValue: 'https://mevora.app/privacy',
+    defaultValue: 'https://mevora-d6ed0.web.app/privacy',
   );
 
   String get functionsRegion => const String.fromEnvironment(

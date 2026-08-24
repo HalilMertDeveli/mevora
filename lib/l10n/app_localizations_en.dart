@@ -303,20 +303,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authCancelled => 'Sign-in was cancelled.';
 
   @override
-  String get authInvalidPhone => 'Enter a valid phone number.';
+  String get authInvalidPhone => 'Phone number is invalid.';
 
   @override
   String get authSmsFailed => 'We could not send the SMS. Please try again.';
 
   @override
   String get authAppVerification =>
-      'App verification failed. Check SHA certificates, try a physical device, or use a Firebase Console test phone number.';
+      'App verification failed. Check your connection, try on a physical device, then request a new code.';
 
   @override
-  String get authInvalidOtp => 'Invalid verification code.';
+  String get authInvalidOtp => 'The verification code is incorrect.';
 
   @override
-  String get authExpiredOtp => 'That code has expired. Request a new one.';
+  String get authExpiredOtp =>
+      'The verification code expired. Request a new one.';
 
   @override
   String get authSessionExpired =>
@@ -324,7 +325,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authTooManyAttempts =>
-      'Too many attempts. Please wait and try again.';
+      'Too many attempts. Please try again later.';
 
   @override
   String get authSmsQuota =>
@@ -540,7 +541,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingRelationshipLongTerm => 'Long-term relationship';
 
   @override
-  String get onboardingRelationshipShortTerm => 'Short-term connection';
+  String get onboardingRelationshipShortTerm => 'Short-term relationship';
 
   @override
   String get onboardingRelationshipFriendship => 'New friends';
@@ -577,6 +578,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingLifestyleOther => 'Other';
+
+  @override
+  String get onboardingAlcoholNone => 'None';
+
+  @override
+  String get onboardingAlcoholRarely => 'Rarely';
+
+  @override
+  String get onboardingAlcoholSocial => 'Socially';
+
+  @override
+  String get onboardingAlcoholSpecialOccasion => 'Special occasions';
+
+  @override
+  String get onboardingAlcoholFrequently => 'Frequently';
 
   @override
   String get interestMusic => 'Music';
@@ -2187,6 +2203,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileAnswersEdit => 'Edit';
 
   @override
+  String get questionAnswersTitle => 'Question & Answers';
+
+  @override
+  String get questionAnswersEmpty => 'You haven\'t answered any questions yet.';
+
+  @override
+  String seeAllAnswers(int count) {
+    return '$count more answers';
+  }
+
+  @override
+  String get showOnProfile => 'Show on profile';
+
+  @override
+  String get questionAnswersLoadError =>
+      'Something went wrong while loading answers.';
+
+  @override
+  String get questionAnswersMatchRequired =>
+      'Match with this person to see their answers.';
+
+  @override
+  String get questionAnswersMatchedSubtitle =>
+      'Discover what you have in common.';
+
+  @override
+  String get matchViewAnswers => 'View answers';
+
+  @override
+  String get chatDiscoverAnswersPrompt => 'Learn more about them';
+
+  @override
   String compatOverallLabel(int percent) {
     return 'You\'re $percent% compatible';
   }
@@ -2271,4 +2319,923 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hiddenCompatDismiss => 'Not now';
+
+  @override
+  String get supportCenterTitle => 'Help & Support';
+
+  @override
+  String get supportCenterSubtitle =>
+      'Find answers, review policies, or contact our team.';
+
+  @override
+  String get supportHelpSection => 'Help';
+
+  @override
+  String get supportTopicsSection => 'Topics';
+
+  @override
+  String get supportFaqTitle => 'Frequently Asked Questions';
+
+  @override
+  String get supportFaqSubtitle => 'Quick answers to common questions';
+
+  @override
+  String get supportFaqSearchHint => 'Search questions';
+
+  @override
+  String get supportFaqEmpty => 'No questions matched your search.';
+
+  @override
+  String get supportCreateTicket => 'Create Support Request';
+
+  @override
+  String get supportCreateTicketSubtitle =>
+      'Describe your issue and optionally attach a screenshot';
+
+  @override
+  String get supportMyTickets => 'My Support Requests';
+
+  @override
+  String get supportTicketsEmptyTitle => 'No support requests yet';
+
+  @override
+  String get supportTicketsEmptyMessage =>
+      'When you contact support, your requests will appear here.';
+
+  @override
+  String get supportTicketCategory => 'Category';
+
+  @override
+  String get supportTicketSubject => 'Subject';
+
+  @override
+  String get supportTicketMessage => 'Message';
+
+  @override
+  String get supportTicketAddScreenshot => 'Add screenshot (optional)';
+
+  @override
+  String get supportTicketScreenshotAttached => 'Screenshot attached';
+
+  @override
+  String get supportTicketSubmit => 'Send request';
+
+  @override
+  String get supportTicketSubmitted => 'Your support request was sent.';
+
+  @override
+  String get supportTicketFailed =>
+      'We could not send your request. Try again.';
+
+  @override
+  String get supportTicketValidation => 'Subject and message are required.';
+
+  @override
+  String get supportTicketDetailTitle => 'Support request';
+
+  @override
+  String get supportTicketStatusLabel => 'Status';
+
+  @override
+  String get supportTicketAttachments => 'Attachments';
+
+  @override
+  String get supportTicketStatusOpen => 'Open';
+
+  @override
+  String get supportTicketStatusInProgress => 'In progress';
+
+  @override
+  String get supportTicketStatusResolved => 'Resolved';
+
+  @override
+  String get supportTicketStatusClosed => 'Closed';
+
+  @override
+  String get supportCategoryAccount => 'Account & profile';
+
+  @override
+  String get supportCategoryMatches => 'Matches';
+
+  @override
+  String get supportCategoryMessaging => 'Messaging';
+
+  @override
+  String get supportCategoryPhotos => 'Photos & profile';
+
+  @override
+  String get supportCategorySafety => 'Reporting & blocking';
+
+  @override
+  String get supportCategoryTechnical => 'Technical issues';
+
+  @override
+  String get supportCategoryOther => 'Other';
+
+  @override
+  String get faqDeleteAccountQ => 'How do I delete my account?';
+
+  @override
+  String get faqDeleteAccountA =>
+      'Go to Settings → Account → Delete Account. Confirm the dialog to permanently delete your Mevora account and associated data. This cannot be undone.';
+
+  @override
+  String get faqChangePhotoQ => 'How do I change my profile photo?';
+
+  @override
+  String get faqChangePhotoA =>
+      'Open Settings → Edit Profile. You can add, remove, or replace photos from your gallery or camera. Photos may be reviewed before they appear to others.';
+
+  @override
+  String get faqCloseAccountQ => 'How do I close my account?';
+
+  @override
+  String get faqCloseAccountA =>
+      'Closing your account is the same as deleting it. Use Settings → Account → Delete Account. Logging out alone does not delete your data.';
+
+  @override
+  String get faqHowMatchQ => 'How does matching work?';
+
+  @override
+  String get faqHowMatchA =>
+      'When you and another person both like each other in Discover, Mevora creates a mutual match. You can then chat from the Matches tab.';
+
+  @override
+  String get faqMatchPercentQ => 'What does the match percentage mean?';
+
+  @override
+  String get faqMatchPercentA =>
+      'It is a compatibility estimate based on profile answers, interests, lifestyle, music taste, and other signals Mevora uses. It helps you understand why you might connect, but it is not a guarantee.';
+
+  @override
+  String get faqCantMessageQ => 'Why can\'t I send a message?';
+
+  @override
+  String get faqCantMessageA =>
+      'Messaging is only available in active mutual matches. You cannot message if the match ended, you blocked each other, or the conversation was closed.';
+
+  @override
+  String get faqNotificationsQ => 'How do I manage notifications?';
+
+  @override
+  String get faqNotificationsA =>
+      'Open Settings → Notifications to control match, message, and other alerts. You may also need to allow notifications in your device settings.';
+
+  @override
+  String get faqBlockQ => 'How do I block someone?';
+
+  @override
+  String get faqBlockA =>
+      'From a chat, tap More → Block. From a profile, open the safety menu → Block. Blocked users cannot message you or appear in your matches.';
+
+  @override
+  String get faqReportQ => 'How do I report someone?';
+
+  @override
+  String get faqReportA =>
+      'From a chat or profile safety menu, choose Report, select a reason, and optionally add details. Reports are reviewed by our team.';
+
+  @override
+  String get faqStaySafeQ => 'How can I stay safe on Mevora?';
+
+  @override
+  String get faqStaySafeA =>
+      'Meet in public places, keep personal details private until you trust someone, use block and report tools, and review our Community Guidelines.';
+
+  @override
+  String get guidelinesIntro =>
+      'Mevora is built for respectful connections. These rules apply to profiles, messages, calls, and all in-app behavior.';
+
+  @override
+  String get guidelinesRespectTitle => 'Respectful communication';
+
+  @override
+  String get guidelinesRespectBody =>
+      'Treat others with respect. Disagreement is not an excuse for insults, bullying, or degrading language.';
+
+  @override
+  String get guidelinesHarassmentTitle => 'No harassment or bullying';
+
+  @override
+  String get guidelinesHarassmentBody =>
+      'Repeated unwanted contact, intimidation, stalking, or pressuring someone is not allowed.';
+
+  @override
+  String get guidelinesHateTitle => 'No hate speech';
+
+  @override
+  String get guidelinesHateBody =>
+      'Content attacking people based on protected characteristics is prohibited.';
+
+  @override
+  String get guidelinesThreatsTitle => 'No threats or violence';
+
+  @override
+  String get guidelinesThreatsBody =>
+      'Threats, glorification of violence, or encouragement of self-harm are forbidden.';
+
+  @override
+  String get guidelinesSpamTitle => 'No spam';
+
+  @override
+  String get guidelinesSpamBody =>
+      'Unsolicited promotions, repetitive messages, or automated solicitation are not allowed.';
+
+  @override
+  String get guidelinesFakeTitle => 'No fake accounts';
+
+  @override
+  String get guidelinesFakeBody =>
+      'Impersonation, misleading identity, or profiles that are not authentically you are prohibited.';
+
+  @override
+  String get guidelinesScamTitle => 'No fraud';
+
+  @override
+  String get guidelinesScamBody =>
+      'Scams, financial fraud, phishing, or asking for money or sensitive financial data are forbidden.';
+
+  @override
+  String get guidelinesInappropriateTitle => 'No inappropriate content';
+
+  @override
+  String get guidelinesInappropriateBody =>
+      'Offensive, graphic, or otherwise unsuitable content is not allowed in profiles or messages.';
+
+  @override
+  String get guidelinesSexualTitle => 'Sexual content and exploitation';
+
+  @override
+  String get guidelinesSexualBody =>
+      'Non-consensual sexual content, exploitation, or sexual content involving minors is strictly prohibited and will be reported to authorities.';
+
+  @override
+  String get guidelinesMinorsTitle => 'Protecting minors';
+
+  @override
+  String get guidelinesMinorsBody =>
+      'Mevora is for adults 18+. Profiles or behavior targeting minors are banned.';
+
+  @override
+  String get guidelinesPrivacyTitle => 'Protect personal information';
+
+  @override
+  String get guidelinesPrivacyBody =>
+      'Do not share another person\'s private contact details, address, documents, or passwords without consent.';
+
+  @override
+  String get guidelinesMisuseTitle => 'No platform misuse';
+
+  @override
+  String get guidelinesMisuseBody =>
+      'Do not attempt to bypass safety systems, scrape data, or use Mevora for unauthorized commercial activity.';
+
+  @override
+  String get guidelinesReportTitle => 'How to report';
+
+  @override
+  String get guidelinesReportBody =>
+      'Use Report from a profile or chat. Choose the closest reason and add context. You can also contact support from Settings.';
+
+  @override
+  String get guidelinesEnforcementTitle => 'Enforcement';
+
+  @override
+  String get guidelinesEnforcementBody =>
+      'Violations may result in warnings, feature limits, suspension, or permanent removal. Serious violations may be reported to law enforcement.';
+
+  @override
+  String get termsIntro =>
+      'These Terms of Service govern your use of the Mevora mobile application and related services.';
+
+  @override
+  String get termsScopeTitle => 'Scope of service';
+
+  @override
+  String get termsScopeBody =>
+      'Mevora helps adults discover compatible people, match through mutual likes, chat, and use optional features such as Boost and profile verification.';
+
+  @override
+  String get termsAccountTitle => 'Your account';
+
+  @override
+  String get termsAccountBody =>
+      'You must be at least 18 years old. You are responsible for keeping your login credentials secure and for activity on your account.';
+
+  @override
+  String get termsResponsibilitiesTitle => 'Your responsibilities';
+
+  @override
+  String get termsResponsibilitiesBody =>
+      'You agree to provide accurate information, follow applicable laws, and use Mevora respectfully and safely.';
+
+  @override
+  String get termsContentTitle => 'Profile and content';
+
+  @override
+  String get termsContentBody =>
+      'You own the content you submit, but grant Mevora a license to host, display, and process it to operate the service, including moderation and safety review.';
+
+  @override
+  String get termsProhibitedTitle => 'Prohibited behavior';
+
+  @override
+  String get termsProhibitedBody =>
+      'Harassment, hate speech, scams, fake profiles, sexual exploitation, spam, and attempts to harm other users or the platform are prohibited.';
+
+  @override
+  String get termsMatchingTitle => 'Matching and messaging';
+
+  @override
+  String get termsMatchingBody =>
+      'Matches are created through mutual likes. Messaging is available only in active matches and may be limited by safety, blocking, or moderation actions.';
+
+  @override
+  String get termsSafetyTitle => 'Safety tools';
+
+  @override
+  String get termsSafetyBody =>
+      'You can block and report users. We may review reports and take action to protect the community.';
+
+  @override
+  String get termsSuspensionTitle => 'Suspension or termination';
+
+  @override
+  String get termsSuspensionBody =>
+      'We may suspend or terminate accounts that violate these Terms or create risk for other users.';
+
+  @override
+  String get termsDeletionTitle => 'Account deletion';
+
+  @override
+  String get termsDeletionBody =>
+      'You may delete your account in Settings → Account → Delete Account. Deletion is permanent and removes your profile and associated app data subject to legal retention limits.';
+
+  @override
+  String get termsPaidTitle => 'Paid features';
+
+  @override
+  String get termsPaidBody =>
+      'Boost and other purchases are processed through your app store. Refunds follow the store\'s policies unless required otherwise by law.';
+
+  @override
+  String get termsThirdPartyTitle => 'Third-party services';
+
+  @override
+  String get termsThirdPartyBody =>
+      'Mevora may integrate with services such as Google Sign-In, Apple Sign-In, Spotify, Firebase, and identity verification providers. Their terms also apply.';
+
+  @override
+  String get termsAvailabilityTitle => 'Service availability';
+
+  @override
+  String get termsAvailabilityBody =>
+      'We strive for reliable service but do not guarantee uninterrupted availability. Features may change or be discontinued.';
+
+  @override
+  String get termsLiabilityTitle => 'Limitation of liability';
+
+  @override
+  String get termsLiabilityBody =>
+      'To the extent permitted by law, Mevora is provided as is. We are not liable for user conduct or offline interactions between users.';
+
+  @override
+  String get termsChangesTitle => 'Changes';
+
+  @override
+  String get termsChangesBody =>
+      'We may update these Terms. Material changes will be communicated in the app or on our policy pages.';
+
+  @override
+  String get termsContactTitle => 'Contact';
+
+  @override
+  String get termsContactBody =>
+      'For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.';
+
+  @override
+  String get termsEffectiveTitle => 'Effective date';
+
+  @override
+  String get termsEffectiveBody =>
+      'These Terms are effective as of August 23, 2026.';
+
+  @override
+  String get privacyIntroTitle => 'Introduction';
+
+  @override
+  String get privacyIntroBody =>
+      'This Privacy Policy explains how Mevora collects, uses, stores, and deletes personal data when you use our app.';
+
+  @override
+  String get privacyDataCollectedTitle => 'Overview';
+
+  @override
+  String get privacyDataCollectedBody =>
+      'We collect only data needed to operate matching, messaging, safety, optional music features, and account management.';
+
+  @override
+  String get privacyAuthTitle => 'Account and authentication data';
+
+  @override
+  String get privacyAuthBody =>
+      'Depending on how you sign in, we may process email, phone number, authentication provider identifiers (Google, Apple, Spotify), and Firebase Authentication user ID.';
+
+  @override
+  String get privacyProfileTitle => 'Profile data and photos';
+
+  @override
+  String get privacyProfileBody =>
+      'Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.';
+
+  @override
+  String get privacyLocationTitle => 'Location data';
+
+  @override
+  String get privacyLocationBody =>
+      'With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.';
+
+  @override
+  String get privacyMessagingTitle => 'Messages and calls';
+
+  @override
+  String get privacyMessagingBody =>
+      'Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.';
+
+  @override
+  String get privacyMatchingTitle => 'Matching and interactions';
+
+  @override
+  String get privacyMatchingBody =>
+      'Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.';
+
+  @override
+  String get privacyPreferencesTitle => 'Settings and preferences';
+
+  @override
+  String get privacyPreferencesBody =>
+      'Notification preferences, privacy controls (online status, last seen, typing), discovery filters, and language settings are stored to honor your choices.';
+
+  @override
+  String get privacySpotifyTitle => 'Spotify data';
+
+  @override
+  String get privacySpotifyBody =>
+      'If you connect Spotify, we store linked account metadata and music taste signals used for compatibility and music features. You can disconnect Spotify in settings.';
+
+  @override
+  String get privacyDeviceTitle => 'Device and technical data';
+
+  @override
+  String get privacyDeviceBody =>
+      'We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.';
+
+  @override
+  String get privacyWhyTitle => 'Why we use data';
+
+  @override
+  String get privacyWhyBody =>
+      'To authenticate you, show matches, deliver messages, improve safety, provide support, process optional purchases, and comply with law.';
+
+  @override
+  String get privacyStorageTitle => 'Where data is stored';
+
+  @override
+  String get privacyStorageBody =>
+      'Data is primarily stored in Google Firebase (Firestore, Storage, Authentication, Cloud Functions) in the EU region where configured.';
+
+  @override
+  String get privacyRetentionTitle => 'Retention';
+
+  @override
+  String get privacyRetentionBody =>
+      'We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.';
+
+  @override
+  String get privacySharingTitle => 'Sharing';
+
+  @override
+  String get privacySharingBody =>
+      'We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.';
+
+  @override
+  String get privacyRightsTitle => 'Your rights';
+
+  @override
+  String get privacyRightsBody =>
+      'Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.';
+
+  @override
+  String get privacyDeletionTitle => 'Deleting your data';
+
+  @override
+  String get privacyDeletionBody =>
+      'Use Settings → Account → Delete Account for permanent deletion. Support tickets you created are also removed as part of account deletion.';
+
+  @override
+  String get privacySecurityTitle => 'Security';
+
+  @override
+  String get privacySecurityBody =>
+      'We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.';
+
+  @override
+  String get privacyChildrenTitle => 'Children';
+
+  @override
+  String get privacyChildrenBody =>
+      'Mevora is not for users under 18. We delete accounts identified as underage.';
+
+  @override
+  String get privacyChangesTitle => 'Policy changes';
+
+  @override
+  String get privacyChangesBody =>
+      'We may update this policy. The latest version is always available in the app and on our public policy page.';
+
+  @override
+  String get privacyContactTitle => 'Contact';
+
+  @override
+  String get privacyContactBody =>
+      'Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.';
+
+  @override
+  String musicMatchTitle(int percent) {
+    return '🎵 Music Match — $percent%';
+  }
+
+  @override
+  String get musicInsightBandHigh => 'Your music tastes are quite similar.';
+
+  @override
+  String get musicInsightBandMid => 'You share some strong music tastes.';
+
+  @override
+  String get musicInsightBandLow =>
+      'Your music tastes differ, but you still share a few artists.';
+
+  @override
+  String musicInsightSharedTracks(int count) {
+    return '🎵 You have $count shared songs.';
+  }
+
+  @override
+  String musicInsightSharedArtists(int count) {
+    return '🎤 You have $count shared artists.';
+  }
+
+  @override
+  String musicInsightSharedPlaylistTracks(int count) {
+    return '🎧 Your playlists share $count songs.';
+  }
+
+  @override
+  String musicInsightSharedRecentTracks(int count) {
+    return '🎵 You recently listened to $count of the same songs.';
+  }
+
+  @override
+  String musicInsightTopSharedArtist(String name) {
+    return '🎵 You both listen to $name a lot.';
+  }
+
+  @override
+  String musicInsightTopSharedGenres(String genres) {
+    return '🎶 Your tastes overlap most in $genres.';
+  }
+
+  @override
+  String get musicInsightDataUnavailable =>
+      'Not enough Spotify taste data to compare yet.';
+
+  @override
+  String get musicSpotifyNotConnected => 'Spotify not connected';
+
+  @override
+  String get musicSharedTracksHeading => '🎵 Songs you both like';
+
+  @override
+  String get musicSharedArtistsHeading => '🎤 Artists you both like';
+
+  @override
+  String get musicSharedGenresHeading => '🎶 Shared genres';
+
+  @override
+  String musicViewAllShared(int count) {
+    return 'View all ($count)';
+  }
+
+  @override
+  String get musicMatchDetailsCta => 'Why this music match?';
+
+  @override
+  String get profileEditSectionLanguages => 'Languages you speak';
+
+  @override
+  String get profileEditSectionHobbies => 'Hobbies';
+
+  @override
+  String get profileEditSectionExtended => 'Complete your profile';
+
+  @override
+  String get profileLanguagesHint => 'Select the languages you speak.';
+
+  @override
+  String get profileHobbiesHint => 'Pick hobbies that describe you.';
+
+  @override
+  String get profileHeightLabel => 'Height';
+
+  @override
+  String profileHeightCm(int cm) {
+    return '$cm cm';
+  }
+
+  @override
+  String get profileHeight200Plus => '220+ cm';
+
+  @override
+  String get profileOccupationLabel => 'Occupation';
+
+  @override
+  String profileCompletionTitle(int percent) {
+    return 'Your profile is $percent% complete';
+  }
+
+  @override
+  String profileCompletionMissing(String fields) {
+    return 'Still missing: $fields';
+  }
+
+  @override
+  String get profileFieldDisplayName => 'Name';
+
+  @override
+  String get profileFieldBirthDate => 'Birth date';
+
+  @override
+  String get profileFieldGender => 'Gender';
+
+  @override
+  String get profileFieldInterestedIn => 'Interested in';
+
+  @override
+  String get profileFieldCity => 'City';
+
+  @override
+  String get profileFieldPhotos => 'Photos';
+
+  @override
+  String get profileFieldInterests => 'Interests';
+
+  @override
+  String get profileFieldRelationshipGoal => 'Relationship goal';
+
+  @override
+  String get profileFieldLanguages => 'Languages';
+
+  @override
+  String get profileFieldHeightCm => 'Height';
+
+  @override
+  String get profileFieldBio => 'Bio';
+
+  @override
+  String get profileFieldEducation => 'Education';
+
+  @override
+  String get profileFieldOccupation => 'Occupation';
+
+  @override
+  String get profileFieldHobbies => 'Hobbies';
+
+  @override
+  String get profileFieldLifestyleHabits => 'Lifestyle habits';
+
+  @override
+  String get profileFieldLifestyleValues => 'Future preferences';
+
+  @override
+  String get onboardingHeight => 'Height';
+
+  @override
+  String get onboardingLanguages => 'Languages';
+
+  @override
+  String get profilePartnerSmokingPref => 'Partner smoking preference';
+
+  @override
+  String get profilePartnerDrinkingPref => 'Partner drinking preference';
+
+  @override
+  String get profileChildrenPreference => 'Do you want children?';
+
+  @override
+  String get profilePartnerChildrenPref => 'Partner children preference';
+
+  @override
+  String get profileSocialRhythm => 'Morning or night person?';
+
+  @override
+  String get profileSocialLevel => 'Social life';
+
+  @override
+  String get profileWeekendPreferences => 'Weekend preferences';
+
+  @override
+  String get profileCohabitationPreference => 'Living together';
+
+  @override
+  String get partnerPrefNoIssue => 'Not important';
+
+  @override
+  String get partnerPrefPrefer => 'Prefer';
+
+  @override
+  String get partnerPrefPreferNot => 'Prefer not';
+
+  @override
+  String get partnerPrefNever => 'Dealbreaker';
+
+  @override
+  String get childrenPrefYes => 'Yes';
+
+  @override
+  String get childrenPrefNo => 'No';
+
+  @override
+  String get childrenPrefMaybe => 'Maybe';
+
+  @override
+  String get childrenPrefUndecided => 'Not decided yet';
+
+  @override
+  String get socialRhythmMorning => 'Morning person';
+
+  @override
+  String get socialRhythmNight => 'Night owl';
+
+  @override
+  String get socialRhythmVaries => 'It varies';
+
+  @override
+  String get socialLevelVerySocial => 'Very social';
+
+  @override
+  String get socialLevelBalanced => 'Balanced';
+
+  @override
+  String get socialLevelQuiet => 'More quiet';
+
+  @override
+  String get weekendFriendsOut => 'Going out with friends';
+
+  @override
+  String get weekendHomeRelax => 'Relaxing at home';
+
+  @override
+  String get weekendSports => 'Sports';
+
+  @override
+  String get weekendTravel => 'Travel';
+
+  @override
+  String get weekendNature => 'Nature';
+
+  @override
+  String get weekendParty => 'Parties';
+
+  @override
+  String get weekendFamily => 'Family time';
+
+  @override
+  String get weekendMovies => 'Movies & series';
+
+  @override
+  String get cohabitationYes => 'Yes';
+
+  @override
+  String get cohabitationMaybeLater => 'Maybe later';
+
+  @override
+  String get cohabitationUnsure => 'Not sure';
+
+  @override
+  String get cohabitationNo => 'No';
+
+  @override
+  String get languageGerman => 'German';
+
+  @override
+  String get languageFrench => 'French';
+
+  @override
+  String get languageSpanish => 'Spanish';
+
+  @override
+  String get languageItalian => 'Italian';
+
+  @override
+  String get languageRussian => 'Russian';
+
+  @override
+  String get languageArabic => 'Arabic';
+
+  @override
+  String get languagePersian => 'Persian';
+
+  @override
+  String get languageKurdish => 'Kurdish';
+
+  @override
+  String get languageGreek => 'Greek';
+
+  @override
+  String get languageDutch => 'Dutch';
+
+  @override
+  String get languagePortuguese => 'Portuguese';
+
+  @override
+  String get languageChinese => 'Chinese';
+
+  @override
+  String get languageJapanese => 'Japanese';
+
+  @override
+  String get languageKorean => 'Korean';
+
+  @override
+  String get hobbyWorkingOut => 'Working out';
+
+  @override
+  String get hobbyRunning => 'Running';
+
+  @override
+  String get hobbyFitness => 'Fitness';
+
+  @override
+  String get hobbySwimming => 'Swimming';
+
+  @override
+  String get hobbyDancing => 'Dancing';
+
+  @override
+  String get hobbyPhotography => 'Photography';
+
+  @override
+  String get hobbyPainting => 'Painting';
+
+  @override
+  String get hobbyGaming => 'Gaming';
+
+  @override
+  String get hobbyCoding => 'Coding';
+
+  @override
+  String get hobbyCooking => 'Cooking';
+
+  @override
+  String get hobbyTravel => 'Travel';
+
+  @override
+  String get hobbyCamping => 'Camping';
+
+  @override
+  String get hobbyHiking => 'Hiking';
+
+  @override
+  String get hobbyPlayingInstrument => 'Playing an instrument';
+
+  @override
+  String get hobbyReading => 'Reading';
+
+  @override
+  String get hobbyYoga => 'Yoga';
+
+  @override
+  String get hobbyCycling => 'Cycling';
+
+  @override
+  String get hobbyTeamSports => 'Team sports';
+
+  @override
+  String get compatCategoryLanguages => 'Languages';
+
+  @override
+  String get compatCategoryHobbies => 'Hobbies';
+
+  @override
+  String get compatCategoryValues => 'Values & future';
+
+  @override
+  String compatReasonSharedLanguages(String languages) {
+    return 'You both speak $languages';
+  }
+
+  @override
+  String compatReasonSharedHobbies(String hobbies) {
+    return 'You both enjoy $hobbies';
+  }
 }

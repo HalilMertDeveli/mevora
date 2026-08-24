@@ -653,7 +653,7 @@ abstract class AppLocalizations {
   /// No description provided for @authInvalidPhone.
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid phone number.'**
+  /// **'Phone number is invalid.'**
   String get authInvalidPhone;
 
   /// No description provided for @authSmsFailed.
@@ -665,19 +665,19 @@ abstract class AppLocalizations {
   /// No description provided for @authAppVerification.
   ///
   /// In en, this message translates to:
-  /// **'App verification failed. Check SHA certificates, try a physical device, or use a Firebase Console test phone number.'**
+  /// **'App verification failed. Check your connection, try on a physical device, then request a new code.'**
   String get authAppVerification;
 
   /// No description provided for @authInvalidOtp.
   ///
   /// In en, this message translates to:
-  /// **'Invalid verification code.'**
+  /// **'The verification code is incorrect.'**
   String get authInvalidOtp;
 
   /// No description provided for @authExpiredOtp.
   ///
   /// In en, this message translates to:
-  /// **'That code has expired. Request a new one.'**
+  /// **'The verification code expired. Request a new one.'**
   String get authExpiredOtp;
 
   /// No description provided for @authSessionExpired.
@@ -689,7 +689,7 @@ abstract class AppLocalizations {
   /// No description provided for @authTooManyAttempts.
   ///
   /// In en, this message translates to:
-  /// **'Too many attempts. Please wait and try again.'**
+  /// **'Too many attempts. Please try again later.'**
   String get authTooManyAttempts;
 
   /// No description provided for @authSmsQuota.
@@ -1085,7 +1085,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingRelationshipShortTerm.
   ///
   /// In en, this message translates to:
-  /// **'Short-term connection'**
+  /// **'Short-term relationship'**
   String get onboardingRelationshipShortTerm;
 
   /// No description provided for @onboardingRelationshipFriendship.
@@ -1159,6 +1159,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other'**
   String get onboardingLifestyleOther;
+
+  /// No description provided for @onboardingAlcoholNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get onboardingAlcoholNone;
+
+  /// No description provided for @onboardingAlcoholRarely.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarely'**
+  String get onboardingAlcoholRarely;
+
+  /// No description provided for @onboardingAlcoholSocial.
+  ///
+  /// In en, this message translates to:
+  /// **'Socially'**
+  String get onboardingAlcoholSocial;
+
+  /// No description provided for @onboardingAlcoholSpecialOccasion.
+  ///
+  /// In en, this message translates to:
+  /// **'Special occasions'**
+  String get onboardingAlcoholSpecialOccasion;
+
+  /// No description provided for @onboardingAlcoholFrequently.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently'**
+  String get onboardingAlcoholFrequently;
 
   /// No description provided for @interestMusic.
   ///
@@ -4082,6 +4112,60 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get profileAnswersEdit;
 
+  /// No description provided for @questionAnswersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Question & Answers'**
+  String get questionAnswersTitle;
+
+  /// No description provided for @questionAnswersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t answered any questions yet.'**
+  String get questionAnswersEmpty;
+
+  /// No description provided for @seeAllAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more answers'**
+  String seeAllAnswers(int count);
+
+  /// No description provided for @showOnProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on profile'**
+  String get showOnProfile;
+
+  /// No description provided for @questionAnswersLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while loading answers.'**
+  String get questionAnswersLoadError;
+
+  /// No description provided for @questionAnswersMatchRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Match with this person to see their answers.'**
+  String get questionAnswersMatchRequired;
+
+  /// No description provided for @questionAnswersMatchedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover what you have in common.'**
+  String get questionAnswersMatchedSubtitle;
+
+  /// No description provided for @matchViewAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'View answers'**
+  String get matchViewAnswers;
+
+  /// No description provided for @chatDiscoverAnswersPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more about them'**
+  String get chatDiscoverAnswersPrompt;
+
   /// No description provided for @compatOverallLabel.
   ///
   /// In en, this message translates to:
@@ -4225,6 +4309,1656 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not now'**
   String get hiddenCompatDismiss;
+
+  /// No description provided for @supportCenterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & Support'**
+  String get supportCenterTitle;
+
+  /// No description provided for @supportCenterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find answers, review policies, or contact our team.'**
+  String get supportCenterSubtitle;
+
+  /// No description provided for @supportHelpSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get supportHelpSection;
+
+  /// No description provided for @supportTopicsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics'**
+  String get supportTopicsSection;
+
+  /// No description provided for @supportFaqTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently Asked Questions'**
+  String get supportFaqTitle;
+
+  /// No description provided for @supportFaqSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick answers to common questions'**
+  String get supportFaqSubtitle;
+
+  /// No description provided for @supportFaqSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search questions'**
+  String get supportFaqSearchHint;
+
+  /// No description provided for @supportFaqEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No questions matched your search.'**
+  String get supportFaqEmpty;
+
+  /// No description provided for @supportCreateTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Support Request'**
+  String get supportCreateTicket;
+
+  /// No description provided for @supportCreateTicketSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe your issue and optionally attach a screenshot'**
+  String get supportCreateTicketSubtitle;
+
+  /// No description provided for @supportMyTickets.
+  ///
+  /// In en, this message translates to:
+  /// **'My Support Requests'**
+  String get supportMyTickets;
+
+  /// No description provided for @supportTicketsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No support requests yet'**
+  String get supportTicketsEmptyTitle;
+
+  /// No description provided for @supportTicketsEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'When you contact support, your requests will appear here.'**
+  String get supportTicketsEmptyMessage;
+
+  /// No description provided for @supportTicketCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get supportTicketCategory;
+
+  /// No description provided for @supportTicketSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject'**
+  String get supportTicketSubject;
+
+  /// No description provided for @supportTicketMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get supportTicketMessage;
+
+  /// No description provided for @supportTicketAddScreenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Add screenshot (optional)'**
+  String get supportTicketAddScreenshot;
+
+  /// No description provided for @supportTicketScreenshotAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot attached'**
+  String get supportTicketScreenshotAttached;
+
+  /// No description provided for @supportTicketSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get supportTicketSubmit;
+
+  /// No description provided for @supportTicketSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your support request was sent.'**
+  String get supportTicketSubmitted;
+
+  /// No description provided for @supportTicketFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not send your request. Try again.'**
+  String get supportTicketFailed;
+
+  /// No description provided for @supportTicketValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject and message are required.'**
+  String get supportTicketValidation;
+
+  /// No description provided for @supportTicketDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support request'**
+  String get supportTicketDetailTitle;
+
+  /// No description provided for @supportTicketStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get supportTicketStatusLabel;
+
+  /// No description provided for @supportTicketAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get supportTicketAttachments;
+
+  /// No description provided for @supportTicketStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get supportTicketStatusOpen;
+
+  /// No description provided for @supportTicketStatusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get supportTicketStatusInProgress;
+
+  /// No description provided for @supportTicketStatusResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get supportTicketStatusResolved;
+
+  /// No description provided for @supportTicketStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get supportTicketStatusClosed;
+
+  /// No description provided for @supportCategoryAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account & profile'**
+  String get supportCategoryAccount;
+
+  /// No description provided for @supportCategoryMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches'**
+  String get supportCategoryMatches;
+
+  /// No description provided for @supportCategoryMessaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Messaging'**
+  String get supportCategoryMessaging;
+
+  /// No description provided for @supportCategoryPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos & profile'**
+  String get supportCategoryPhotos;
+
+  /// No description provided for @supportCategorySafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Reporting & blocking'**
+  String get supportCategorySafety;
+
+  /// No description provided for @supportCategoryTechnical.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical issues'**
+  String get supportCategoryTechnical;
+
+  /// No description provided for @supportCategoryOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get supportCategoryOther;
+
+  /// No description provided for @faqDeleteAccountQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I delete my account?'**
+  String get faqDeleteAccountQ;
+
+  /// No description provided for @faqDeleteAccountA.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Settings → Account → Delete Account. Confirm the dialog to permanently delete your Mevora account and associated data. This cannot be undone.'**
+  String get faqDeleteAccountA;
+
+  /// No description provided for @faqChangePhotoQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I change my profile photo?'**
+  String get faqChangePhotoQ;
+
+  /// No description provided for @faqChangePhotoA.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings → Edit Profile. You can add, remove, or replace photos from your gallery or camera. Photos may be reviewed before they appear to others.'**
+  String get faqChangePhotoA;
+
+  /// No description provided for @faqCloseAccountQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I close my account?'**
+  String get faqCloseAccountQ;
+
+  /// No description provided for @faqCloseAccountA.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing your account is the same as deleting it. Use Settings → Account → Delete Account. Logging out alone does not delete your data.'**
+  String get faqCloseAccountA;
+
+  /// No description provided for @faqHowMatchQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How does matching work?'**
+  String get faqHowMatchQ;
+
+  /// No description provided for @faqHowMatchA.
+  ///
+  /// In en, this message translates to:
+  /// **'When you and another person both like each other in Discover, Mevora creates a mutual match. You can then chat from the Matches tab.'**
+  String get faqHowMatchA;
+
+  /// No description provided for @faqMatchPercentQ.
+  ///
+  /// In en, this message translates to:
+  /// **'What does the match percentage mean?'**
+  String get faqMatchPercentQ;
+
+  /// No description provided for @faqMatchPercentA.
+  ///
+  /// In en, this message translates to:
+  /// **'It is a compatibility estimate based on profile answers, interests, lifestyle, music taste, and other signals Mevora uses. It helps you understand why you might connect, but it is not a guarantee.'**
+  String get faqMatchPercentA;
+
+  /// No description provided for @faqCantMessageQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Why can\'t I send a message?'**
+  String get faqCantMessageQ;
+
+  /// No description provided for @faqCantMessageA.
+  ///
+  /// In en, this message translates to:
+  /// **'Messaging is only available in active mutual matches. You cannot message if the match ended, you blocked each other, or the conversation was closed.'**
+  String get faqCantMessageA;
+
+  /// No description provided for @faqNotificationsQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I manage notifications?'**
+  String get faqNotificationsQ;
+
+  /// No description provided for @faqNotificationsA.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings → Notifications to control match, message, and other alerts. You may also need to allow notifications in your device settings.'**
+  String get faqNotificationsA;
+
+  /// No description provided for @faqBlockQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I block someone?'**
+  String get faqBlockQ;
+
+  /// No description provided for @faqBlockA.
+  ///
+  /// In en, this message translates to:
+  /// **'From a chat, tap More → Block. From a profile, open the safety menu → Block. Blocked users cannot message you or appear in your matches.'**
+  String get faqBlockA;
+
+  /// No description provided for @faqReportQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I report someone?'**
+  String get faqReportQ;
+
+  /// No description provided for @faqReportA.
+  ///
+  /// In en, this message translates to:
+  /// **'From a chat or profile safety menu, choose Report, select a reason, and optionally add details. Reports are reviewed by our team.'**
+  String get faqReportA;
+
+  /// No description provided for @faqStaySafeQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How can I stay safe on Mevora?'**
+  String get faqStaySafeQ;
+
+  /// No description provided for @faqStaySafeA.
+  ///
+  /// In en, this message translates to:
+  /// **'Meet in public places, keep personal details private until you trust someone, use block and report tools, and review our Community Guidelines.'**
+  String get faqStaySafeA;
+
+  /// No description provided for @guidelinesIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora is built for respectful connections. These rules apply to profiles, messages, calls, and all in-app behavior.'**
+  String get guidelinesIntro;
+
+  /// No description provided for @guidelinesRespectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Respectful communication'**
+  String get guidelinesRespectTitle;
+
+  /// No description provided for @guidelinesRespectBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Treat others with respect. Disagreement is not an excuse for insults, bullying, or degrading language.'**
+  String get guidelinesRespectBody;
+
+  /// No description provided for @guidelinesHarassmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No harassment or bullying'**
+  String get guidelinesHarassmentTitle;
+
+  /// No description provided for @guidelinesHarassmentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeated unwanted contact, intimidation, stalking, or pressuring someone is not allowed.'**
+  String get guidelinesHarassmentBody;
+
+  /// No description provided for @guidelinesHateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No hate speech'**
+  String get guidelinesHateTitle;
+
+  /// No description provided for @guidelinesHateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Content attacking people based on protected characteristics is prohibited.'**
+  String get guidelinesHateBody;
+
+  /// No description provided for @guidelinesThreatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No threats or violence'**
+  String get guidelinesThreatsTitle;
+
+  /// No description provided for @guidelinesThreatsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Threats, glorification of violence, or encouragement of self-harm are forbidden.'**
+  String get guidelinesThreatsBody;
+
+  /// No description provided for @guidelinesSpamTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No spam'**
+  String get guidelinesSpamTitle;
+
+  /// No description provided for @guidelinesSpamBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsolicited promotions, repetitive messages, or automated solicitation are not allowed.'**
+  String get guidelinesSpamBody;
+
+  /// No description provided for @guidelinesFakeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No fake accounts'**
+  String get guidelinesFakeTitle;
+
+  /// No description provided for @guidelinesFakeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Impersonation, misleading identity, or profiles that are not authentically you are prohibited.'**
+  String get guidelinesFakeBody;
+
+  /// No description provided for @guidelinesScamTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No fraud'**
+  String get guidelinesScamTitle;
+
+  /// No description provided for @guidelinesScamBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Scams, financial fraud, phishing, or asking for money or sensitive financial data are forbidden.'**
+  String get guidelinesScamBody;
+
+  /// No description provided for @guidelinesInappropriateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No inappropriate content'**
+  String get guidelinesInappropriateTitle;
+
+  /// No description provided for @guidelinesInappropriateBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Offensive, graphic, or otherwise unsuitable content is not allowed in profiles or messages.'**
+  String get guidelinesInappropriateBody;
+
+  /// No description provided for @guidelinesSexualTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sexual content and exploitation'**
+  String get guidelinesSexualTitle;
+
+  /// No description provided for @guidelinesSexualBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-consensual sexual content, exploitation, or sexual content involving minors is strictly prohibited and will be reported to authorities.'**
+  String get guidelinesSexualBody;
+
+  /// No description provided for @guidelinesMinorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protecting minors'**
+  String get guidelinesMinorsTitle;
+
+  /// No description provided for @guidelinesMinorsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora is for adults 18+. Profiles or behavior targeting minors are banned.'**
+  String get guidelinesMinorsBody;
+
+  /// No description provided for @guidelinesPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Protect personal information'**
+  String get guidelinesPrivacyTitle;
+
+  /// No description provided for @guidelinesPrivacyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not share another person\'s private contact details, address, documents, or passwords without consent.'**
+  String get guidelinesPrivacyBody;
+
+  /// No description provided for @guidelinesMisuseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No platform misuse'**
+  String get guidelinesMisuseTitle;
+
+  /// No description provided for @guidelinesMisuseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not attempt to bypass safety systems, scrape data, or use Mevora for unauthorized commercial activity.'**
+  String get guidelinesMisuseBody;
+
+  /// No description provided for @guidelinesReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How to report'**
+  String get guidelinesReportTitle;
+
+  /// No description provided for @guidelinesReportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Report from a profile or chat. Choose the closest reason and add context. You can also contact support from Settings.'**
+  String get guidelinesReportBody;
+
+  /// No description provided for @guidelinesEnforcementTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enforcement'**
+  String get guidelinesEnforcementTitle;
+
+  /// No description provided for @guidelinesEnforcementBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Violations may result in warnings, feature limits, suspension, or permanent removal. Serious violations may be reported to law enforcement.'**
+  String get guidelinesEnforcementBody;
+
+  /// No description provided for @termsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'These Terms of Service govern your use of the Mevora mobile application and related services.'**
+  String get termsIntro;
+
+  /// No description provided for @termsScopeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope of service'**
+  String get termsScopeTitle;
+
+  /// No description provided for @termsScopeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora helps adults discover compatible people, match through mutual likes, chat, and use optional features such as Boost and profile verification.'**
+  String get termsScopeBody;
+
+  /// No description provided for @termsAccountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account'**
+  String get termsAccountTitle;
+
+  /// No description provided for @termsAccountBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You must be at least 18 years old. You are responsible for keeping your login credentials secure and for activity on your account.'**
+  String get termsAccountBody;
+
+  /// No description provided for @termsResponsibilitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your responsibilities'**
+  String get termsResponsibilitiesTitle;
+
+  /// No description provided for @termsResponsibilitiesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You agree to provide accurate information, follow applicable laws, and use Mevora respectfully and safely.'**
+  String get termsResponsibilitiesBody;
+
+  /// No description provided for @termsContentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile and content'**
+  String get termsContentTitle;
+
+  /// No description provided for @termsContentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You own the content you submit, but grant Mevora a license to host, display, and process it to operate the service, including moderation and safety review.'**
+  String get termsContentBody;
+
+  /// No description provided for @termsProhibitedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prohibited behavior'**
+  String get termsProhibitedTitle;
+
+  /// No description provided for @termsProhibitedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Harassment, hate speech, scams, fake profiles, sexual exploitation, spam, and attempts to harm other users or the platform are prohibited.'**
+  String get termsProhibitedBody;
+
+  /// No description provided for @termsMatchingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching and messaging'**
+  String get termsMatchingTitle;
+
+  /// No description provided for @termsMatchingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches are created through mutual likes. Messaging is available only in active matches and may be limited by safety, blocking, or moderation actions.'**
+  String get termsMatchingBody;
+
+  /// No description provided for @termsSafetyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety tools'**
+  String get termsSafetyTitle;
+
+  /// No description provided for @termsSafetyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You can block and report users. We may review reports and take action to protect the community.'**
+  String get termsSafetyBody;
+
+  /// No description provided for @termsSuspensionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspension or termination'**
+  String get termsSuspensionTitle;
+
+  /// No description provided for @termsSuspensionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We may suspend or terminate accounts that violate these Terms or create risk for other users.'**
+  String get termsSuspensionBody;
+
+  /// No description provided for @termsDeletionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion'**
+  String get termsDeletionTitle;
+
+  /// No description provided for @termsDeletionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You may delete your account in Settings → Account → Delete Account. Deletion is permanent and removes your profile and associated app data subject to legal retention limits.'**
+  String get termsDeletionBody;
+
+  /// No description provided for @termsPaidTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid features'**
+  String get termsPaidTitle;
+
+  /// No description provided for @termsPaidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost and other purchases are processed through your app store. Refunds follow the store\'s policies unless required otherwise by law.'**
+  String get termsPaidBody;
+
+  /// No description provided for @termsThirdPartyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party services'**
+  String get termsThirdPartyTitle;
+
+  /// No description provided for @termsThirdPartyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora may integrate with services such as Google Sign-In, Apple Sign-In, Spotify, Firebase, and identity verification providers. Their terms also apply.'**
+  String get termsThirdPartyBody;
+
+  /// No description provided for @termsAvailabilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Service availability'**
+  String get termsAvailabilityTitle;
+
+  /// No description provided for @termsAvailabilityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We strive for reliable service but do not guarantee uninterrupted availability. Features may change or be discontinued.'**
+  String get termsAvailabilityBody;
+
+  /// No description provided for @termsLiabilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Limitation of liability'**
+  String get termsLiabilityTitle;
+
+  /// No description provided for @termsLiabilityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To the extent permitted by law, Mevora is provided as is. We are not liable for user conduct or offline interactions between users.'**
+  String get termsLiabilityBody;
+
+  /// No description provided for @termsChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes'**
+  String get termsChangesTitle;
+
+  /// No description provided for @termsChangesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We may update these Terms. Material changes will be communicated in the app or on our policy pages.'**
+  String get termsChangesBody;
+
+  /// No description provided for @termsContactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get termsContactTitle;
+
+  /// No description provided for @termsContactBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.'**
+  String get termsContactBody;
+
+  /// No description provided for @termsEffectiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective date'**
+  String get termsEffectiveTitle;
+
+  /// No description provided for @termsEffectiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These Terms are effective as of August 23, 2026.'**
+  String get termsEffectiveBody;
+
+  /// No description provided for @privacyIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Introduction'**
+  String get privacyIntroTitle;
+
+  /// No description provided for @privacyIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This Privacy Policy explains how Mevora collects, uses, stores, and deletes personal data when you use our app.'**
+  String get privacyIntroBody;
+
+  /// No description provided for @privacyDataCollectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get privacyDataCollectedTitle;
+
+  /// No description provided for @privacyDataCollectedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We collect only data needed to operate matching, messaging, safety, optional music features, and account management.'**
+  String get privacyDataCollectedBody;
+
+  /// No description provided for @privacyAuthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account and authentication data'**
+  String get privacyAuthTitle;
+
+  /// No description provided for @privacyAuthBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Depending on how you sign in, we may process email, phone number, authentication provider identifiers (Google, Apple, Spotify), and Firebase Authentication user ID.'**
+  String get privacyAuthBody;
+
+  /// No description provided for @privacyProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile data and photos'**
+  String get privacyProfileTitle;
+
+  /// No description provided for @privacyProfileBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.'**
+  String get privacyProfileBody;
+
+  /// No description provided for @privacyLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location data'**
+  String get privacyLocationTitle;
+
+  /// No description provided for @privacyLocationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.'**
+  String get privacyLocationBody;
+
+  /// No description provided for @privacyMessagingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages and calls'**
+  String get privacyMessagingTitle;
+
+  /// No description provided for @privacyMessagingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.'**
+  String get privacyMessagingBody;
+
+  /// No description provided for @privacyMatchingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching and interactions'**
+  String get privacyMatchingTitle;
+
+  /// No description provided for @privacyMatchingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.'**
+  String get privacyMatchingBody;
+
+  /// No description provided for @privacyPreferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings and preferences'**
+  String get privacyPreferencesTitle;
+
+  /// No description provided for @privacyPreferencesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification preferences, privacy controls (online status, last seen, typing), discovery filters, and language settings are stored to honor your choices.'**
+  String get privacyPreferencesBody;
+
+  /// No description provided for @privacySpotifyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify data'**
+  String get privacySpotifyTitle;
+
+  /// No description provided for @privacySpotifyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If you connect Spotify, we store linked account metadata and music taste signals used for compatibility and music features. You can disconnect Spotify in settings.'**
+  String get privacySpotifyBody;
+
+  /// No description provided for @privacyDeviceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Device and technical data'**
+  String get privacyDeviceTitle;
+
+  /// No description provided for @privacyDeviceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.'**
+  String get privacyDeviceBody;
+
+  /// No description provided for @privacyWhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why we use data'**
+  String get privacyWhyTitle;
+
+  /// No description provided for @privacyWhyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To authenticate you, show matches, deliver messages, improve safety, provide support, process optional purchases, and comply with law.'**
+  String get privacyWhyBody;
+
+  /// No description provided for @privacyStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where data is stored'**
+  String get privacyStorageTitle;
+
+  /// No description provided for @privacyStorageBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Data is primarily stored in Google Firebase (Firestore, Storage, Authentication, Cloud Functions) in the EU region where configured.'**
+  String get privacyStorageBody;
+
+  /// No description provided for @privacyRetentionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Retention'**
+  String get privacyRetentionTitle;
+
+  /// No description provided for @privacyRetentionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.'**
+  String get privacyRetentionBody;
+
+  /// No description provided for @privacySharingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing'**
+  String get privacySharingTitle;
+
+  /// No description provided for @privacySharingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.'**
+  String get privacySharingBody;
+
+  /// No description provided for @privacyRightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rights'**
+  String get privacyRightsTitle;
+
+  /// No description provided for @privacyRightsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.'**
+  String get privacyRightsBody;
+
+  /// No description provided for @privacyDeletionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your data'**
+  String get privacyDeletionTitle;
+
+  /// No description provided for @privacyDeletionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Settings → Account → Delete Account for permanent deletion. Support tickets you created are also removed as part of account deletion.'**
+  String get privacyDeletionBody;
+
+  /// No description provided for @privacySecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get privacySecurityTitle;
+
+  /// No description provided for @privacySecurityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.'**
+  String get privacySecurityBody;
+
+  /// No description provided for @privacyChildrenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Children'**
+  String get privacyChildrenTitle;
+
+  /// No description provided for @privacyChildrenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora is not for users under 18. We delete accounts identified as underage.'**
+  String get privacyChildrenBody;
+
+  /// No description provided for @privacyChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Policy changes'**
+  String get privacyChangesTitle;
+
+  /// No description provided for @privacyChangesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We may update this policy. The latest version is always available in the app and on our public policy page.'**
+  String get privacyChangesBody;
+
+  /// No description provided for @privacyContactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get privacyContactTitle;
+
+  /// No description provided for @privacyContactBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.'**
+  String get privacyContactBody;
+
+  /// No description provided for @musicMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'🎵 Music Match — {percent}%'**
+  String musicMatchTitle(int percent);
+
+  /// No description provided for @musicInsightBandHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music tastes are quite similar.'**
+  String get musicInsightBandHigh;
+
+  /// No description provided for @musicInsightBandMid.
+  ///
+  /// In en, this message translates to:
+  /// **'You share some strong music tastes.'**
+  String get musicInsightBandMid;
+
+  /// No description provided for @musicInsightBandLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music tastes differ, but you still share a few artists.'**
+  String get musicInsightBandLow;
+
+  /// No description provided for @musicInsightSharedTracks.
+  ///
+  /// In en, this message translates to:
+  /// **'🎵 You have {count} shared songs.'**
+  String musicInsightSharedTracks(int count);
+
+  /// No description provided for @musicInsightSharedArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'🎤 You have {count} shared artists.'**
+  String musicInsightSharedArtists(int count);
+
+  /// No description provided for @musicInsightSharedPlaylistTracks.
+  ///
+  /// In en, this message translates to:
+  /// **'🎧 Your playlists share {count} songs.'**
+  String musicInsightSharedPlaylistTracks(int count);
+
+  /// No description provided for @musicInsightSharedRecentTracks.
+  ///
+  /// In en, this message translates to:
+  /// **'🎵 You recently listened to {count} of the same songs.'**
+  String musicInsightSharedRecentTracks(int count);
+
+  /// No description provided for @musicInsightTopSharedArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'🎵 You both listen to {name} a lot.'**
+  String musicInsightTopSharedArtist(String name);
+
+  /// No description provided for @musicInsightTopSharedGenres.
+  ///
+  /// In en, this message translates to:
+  /// **'🎶 Your tastes overlap most in {genres}.'**
+  String musicInsightTopSharedGenres(String genres);
+
+  /// No description provided for @musicInsightDataUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough Spotify taste data to compare yet.'**
+  String get musicInsightDataUnavailable;
+
+  /// No description provided for @musicSpotifyNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify not connected'**
+  String get musicSpotifyNotConnected;
+
+  /// No description provided for @musicSharedTracksHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'🎵 Songs you both like'**
+  String get musicSharedTracksHeading;
+
+  /// No description provided for @musicSharedArtistsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'🎤 Artists you both like'**
+  String get musicSharedArtistsHeading;
+
+  /// No description provided for @musicSharedGenresHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'🎶 Shared genres'**
+  String get musicSharedGenresHeading;
+
+  /// No description provided for @musicViewAllShared.
+  ///
+  /// In en, this message translates to:
+  /// **'View all ({count})'**
+  String musicViewAllShared(int count);
+
+  /// No description provided for @musicMatchDetailsCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Why this music match?'**
+  String get musicMatchDetailsCta;
+
+  /// No description provided for @profileEditSectionLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages you speak'**
+  String get profileEditSectionLanguages;
+
+  /// No description provided for @profileEditSectionHobbies.
+  ///
+  /// In en, this message translates to:
+  /// **'Hobbies'**
+  String get profileEditSectionHobbies;
+
+  /// No description provided for @profileEditSectionExtended.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your profile'**
+  String get profileEditSectionExtended;
+
+  /// No description provided for @profileLanguagesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the languages you speak.'**
+  String get profileLanguagesHint;
+
+  /// No description provided for @profileHobbiesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick hobbies that describe you.'**
+  String get profileHobbiesHint;
+
+  /// No description provided for @profileHeightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get profileHeightLabel;
+
+  /// No description provided for @profileHeightCm.
+  ///
+  /// In en, this message translates to:
+  /// **'{cm} cm'**
+  String profileHeightCm(int cm);
+
+  /// No description provided for @profileHeight200Plus.
+  ///
+  /// In en, this message translates to:
+  /// **'220+ cm'**
+  String get profileHeight200Plus;
+
+  /// No description provided for @profileOccupationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupation'**
+  String get profileOccupationLabel;
+
+  /// No description provided for @profileCompletionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is {percent}% complete'**
+  String profileCompletionTitle(int percent);
+
+  /// No description provided for @profileCompletionMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Still missing: {fields}'**
+  String profileCompletionMissing(String fields);
+
+  /// No description provided for @profileFieldDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get profileFieldDisplayName;
+
+  /// No description provided for @profileFieldBirthDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Birth date'**
+  String get profileFieldBirthDate;
+
+  /// No description provided for @profileFieldGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get profileFieldGender;
+
+  /// No description provided for @profileFieldInterestedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Interested in'**
+  String get profileFieldInterestedIn;
+
+  /// No description provided for @profileFieldCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get profileFieldCity;
+
+  /// No description provided for @profileFieldPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get profileFieldPhotos;
+
+  /// No description provided for @profileFieldInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'Interests'**
+  String get profileFieldInterests;
+
+  /// No description provided for @profileFieldRelationshipGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship goal'**
+  String get profileFieldRelationshipGoal;
+
+  /// No description provided for @profileFieldLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages'**
+  String get profileFieldLanguages;
+
+  /// No description provided for @profileFieldHeightCm.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get profileFieldHeightCm;
+
+  /// No description provided for @profileFieldBio.
+  ///
+  /// In en, this message translates to:
+  /// **'Bio'**
+  String get profileFieldBio;
+
+  /// No description provided for @profileFieldEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get profileFieldEducation;
+
+  /// No description provided for @profileFieldOccupation.
+  ///
+  /// In en, this message translates to:
+  /// **'Occupation'**
+  String get profileFieldOccupation;
+
+  /// No description provided for @profileFieldHobbies.
+  ///
+  /// In en, this message translates to:
+  /// **'Hobbies'**
+  String get profileFieldHobbies;
+
+  /// No description provided for @profileFieldLifestyleHabits.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle habits'**
+  String get profileFieldLifestyleHabits;
+
+  /// No description provided for @profileFieldLifestyleValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Future preferences'**
+  String get profileFieldLifestyleValues;
+
+  /// No description provided for @onboardingHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get onboardingHeight;
+
+  /// No description provided for @onboardingLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages'**
+  String get onboardingLanguages;
+
+  /// No description provided for @profilePartnerSmokingPref.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner smoking preference'**
+  String get profilePartnerSmokingPref;
+
+  /// No description provided for @profilePartnerDrinkingPref.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner drinking preference'**
+  String get profilePartnerDrinkingPref;
+
+  /// No description provided for @profileChildrenPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Do you want children?'**
+  String get profileChildrenPreference;
+
+  /// No description provided for @profilePartnerChildrenPref.
+  ///
+  /// In en, this message translates to:
+  /// **'Partner children preference'**
+  String get profilePartnerChildrenPref;
+
+  /// No description provided for @profileSocialRhythm.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning or night person?'**
+  String get profileSocialRhythm;
+
+  /// No description provided for @profileSocialLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Social life'**
+  String get profileSocialLevel;
+
+  /// No description provided for @profileWeekendPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekend preferences'**
+  String get profileWeekendPreferences;
+
+  /// No description provided for @profileCohabitationPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Living together'**
+  String get profileCohabitationPreference;
+
+  /// No description provided for @partnerPrefNoIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Not important'**
+  String get partnerPrefNoIssue;
+
+  /// No description provided for @partnerPrefPrefer.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer'**
+  String get partnerPrefPrefer;
+
+  /// No description provided for @partnerPrefPreferNot.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer not'**
+  String get partnerPrefPreferNot;
+
+  /// No description provided for @partnerPrefNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Dealbreaker'**
+  String get partnerPrefNever;
+
+  /// No description provided for @childrenPrefYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get childrenPrefYes;
+
+  /// No description provided for @childrenPrefNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get childrenPrefNo;
+
+  /// No description provided for @childrenPrefMaybe.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe'**
+  String get childrenPrefMaybe;
+
+  /// No description provided for @childrenPrefUndecided.
+  ///
+  /// In en, this message translates to:
+  /// **'Not decided yet'**
+  String get childrenPrefUndecided;
+
+  /// No description provided for @socialRhythmMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning person'**
+  String get socialRhythmMorning;
+
+  /// No description provided for @socialRhythmNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Night owl'**
+  String get socialRhythmNight;
+
+  /// No description provided for @socialRhythmVaries.
+  ///
+  /// In en, this message translates to:
+  /// **'It varies'**
+  String get socialRhythmVaries;
+
+  /// No description provided for @socialLevelVerySocial.
+  ///
+  /// In en, this message translates to:
+  /// **'Very social'**
+  String get socialLevelVerySocial;
+
+  /// No description provided for @socialLevelBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced'**
+  String get socialLevelBalanced;
+
+  /// No description provided for @socialLevelQuiet.
+  ///
+  /// In en, this message translates to:
+  /// **'More quiet'**
+  String get socialLevelQuiet;
+
+  /// No description provided for @weekendFriendsOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Going out with friends'**
+  String get weekendFriendsOut;
+
+  /// No description provided for @weekendHomeRelax.
+  ///
+  /// In en, this message translates to:
+  /// **'Relaxing at home'**
+  String get weekendHomeRelax;
+
+  /// No description provided for @weekendSports.
+  ///
+  /// In en, this message translates to:
+  /// **'Sports'**
+  String get weekendSports;
+
+  /// No description provided for @weekendTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get weekendTravel;
+
+  /// No description provided for @weekendNature.
+  ///
+  /// In en, this message translates to:
+  /// **'Nature'**
+  String get weekendNature;
+
+  /// No description provided for @weekendParty.
+  ///
+  /// In en, this message translates to:
+  /// **'Parties'**
+  String get weekendParty;
+
+  /// No description provided for @weekendFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family time'**
+  String get weekendFamily;
+
+  /// No description provided for @weekendMovies.
+  ///
+  /// In en, this message translates to:
+  /// **'Movies & series'**
+  String get weekendMovies;
+
+  /// No description provided for @cohabitationYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get cohabitationYes;
+
+  /// No description provided for @cohabitationMaybeLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe later'**
+  String get cohabitationMaybeLater;
+
+  /// No description provided for @cohabitationUnsure.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure'**
+  String get cohabitationUnsure;
+
+  /// No description provided for @cohabitationNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get cohabitationNo;
+
+  /// No description provided for @languageGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'German'**
+  String get languageGerman;
+
+  /// No description provided for @languageFrench.
+  ///
+  /// In en, this message translates to:
+  /// **'French'**
+  String get languageFrench;
+
+  /// No description provided for @languageSpanish.
+  ///
+  /// In en, this message translates to:
+  /// **'Spanish'**
+  String get languageSpanish;
+
+  /// No description provided for @languageItalian.
+  ///
+  /// In en, this message translates to:
+  /// **'Italian'**
+  String get languageItalian;
+
+  /// No description provided for @languageRussian.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get languageRussian;
+
+  /// No description provided for @languageArabic.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic'**
+  String get languageArabic;
+
+  /// No description provided for @languagePersian.
+  ///
+  /// In en, this message translates to:
+  /// **'Persian'**
+  String get languagePersian;
+
+  /// No description provided for @languageKurdish.
+  ///
+  /// In en, this message translates to:
+  /// **'Kurdish'**
+  String get languageKurdish;
+
+  /// No description provided for @languageGreek.
+  ///
+  /// In en, this message translates to:
+  /// **'Greek'**
+  String get languageGreek;
+
+  /// No description provided for @languageDutch.
+  ///
+  /// In en, this message translates to:
+  /// **'Dutch'**
+  String get languageDutch;
+
+  /// No description provided for @languagePortuguese.
+  ///
+  /// In en, this message translates to:
+  /// **'Portuguese'**
+  String get languagePortuguese;
+
+  /// No description provided for @languageChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese'**
+  String get languageChinese;
+
+  /// No description provided for @languageJapanese.
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese'**
+  String get languageJapanese;
+
+  /// No description provided for @languageKorean.
+  ///
+  /// In en, this message translates to:
+  /// **'Korean'**
+  String get languageKorean;
+
+  /// No description provided for @hobbyWorkingOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Working out'**
+  String get hobbyWorkingOut;
+
+  /// No description provided for @hobbyRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get hobbyRunning;
+
+  /// No description provided for @hobbyFitness.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness'**
+  String get hobbyFitness;
+
+  /// No description provided for @hobbySwimming.
+  ///
+  /// In en, this message translates to:
+  /// **'Swimming'**
+  String get hobbySwimming;
+
+  /// No description provided for @hobbyDancing.
+  ///
+  /// In en, this message translates to:
+  /// **'Dancing'**
+  String get hobbyDancing;
+
+  /// No description provided for @hobbyPhotography.
+  ///
+  /// In en, this message translates to:
+  /// **'Photography'**
+  String get hobbyPhotography;
+
+  /// No description provided for @hobbyPainting.
+  ///
+  /// In en, this message translates to:
+  /// **'Painting'**
+  String get hobbyPainting;
+
+  /// No description provided for @hobbyGaming.
+  ///
+  /// In en, this message translates to:
+  /// **'Gaming'**
+  String get hobbyGaming;
+
+  /// No description provided for @hobbyCoding.
+  ///
+  /// In en, this message translates to:
+  /// **'Coding'**
+  String get hobbyCoding;
+
+  /// No description provided for @hobbyCooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooking'**
+  String get hobbyCooking;
+
+  /// No description provided for @hobbyTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get hobbyTravel;
+
+  /// No description provided for @hobbyCamping.
+  ///
+  /// In en, this message translates to:
+  /// **'Camping'**
+  String get hobbyCamping;
+
+  /// No description provided for @hobbyHiking.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiking'**
+  String get hobbyHiking;
+
+  /// No description provided for @hobbyPlayingInstrument.
+  ///
+  /// In en, this message translates to:
+  /// **'Playing an instrument'**
+  String get hobbyPlayingInstrument;
+
+  /// No description provided for @hobbyReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading'**
+  String get hobbyReading;
+
+  /// No description provided for @hobbyYoga.
+  ///
+  /// In en, this message translates to:
+  /// **'Yoga'**
+  String get hobbyYoga;
+
+  /// No description provided for @hobbyCycling.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycling'**
+  String get hobbyCycling;
+
+  /// No description provided for @hobbyTeamSports.
+  ///
+  /// In en, this message translates to:
+  /// **'Team sports'**
+  String get hobbyTeamSports;
+
+  /// No description provided for @compatCategoryLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages'**
+  String get compatCategoryLanguages;
+
+  /// No description provided for @compatCategoryHobbies.
+  ///
+  /// In en, this message translates to:
+  /// **'Hobbies'**
+  String get compatCategoryHobbies;
+
+  /// No description provided for @compatCategoryValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Values & future'**
+  String get compatCategoryValues;
+
+  /// No description provided for @compatReasonSharedLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'You both speak {languages}'**
+  String compatReasonSharedLanguages(String languages);
+
+  /// No description provided for @compatReasonSharedHobbies.
+  ///
+  /// In en, this message translates to:
+  /// **'You both enjoy {hobbies}'**
+  String compatReasonSharedHobbies(String hobbies);
 }
 
 class _AppLocalizationsDelegate

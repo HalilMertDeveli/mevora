@@ -39,12 +39,14 @@ class HybridDiscoveryRepository
     required DiscoveryRadius radius,
     String? cursor,
     int limit = 10,
+    bool expandDistance = false,
   }) async {
     final uid = _currentUid();
     final remoteResult = await _remote.getCandidates(
       radius: radius,
       cursor: cursor,
       limit: limit,
+      expandDistance: expandDistance,
     );
 
     final demo = allowDemoFallback
@@ -114,6 +116,17 @@ class HybridDiscoveryRepository
                 gender: candidate.gender,
                 relationshipGoal: candidate.relationshipGoal,
                 musicCompatibilityScore: candidate.musicCompatibilityScore,
+                sharedMusicTracks: candidate.sharedMusicTracks,
+                sharedMusicArtists: candidate.sharedMusicArtists,
+                sharedMusicGenres: candidate.sharedMusicGenres,
+                sharedMusicTrackCount: candidate.sharedMusicTrackCount,
+                sharedMusicArtistCount: candidate.sharedMusicArtistCount,
+                sharedMusicGenreCount: candidate.sharedMusicGenreCount,
+                sharedMusicPlaylistTrackCount:
+                    candidate.sharedMusicPlaylistTrackCount,
+                sharedMusicRecentTrackCount:
+                    candidate.sharedMusicRecentTrackCount,
+                musicInsights: candidate.musicInsights,
                 relationshipCompatibilityScore:
                     candidate.relationshipCompatibilityScore,
                 relationshipSharedViewCount:
@@ -121,6 +134,12 @@ class HybridDiscoveryRepository
                 relationshipAlignedCount: candidate.relationshipAlignedCount,
                 relationshipSummaryTopics: candidate.relationshipSummaryTopics,
                 isDemo: true,
+                categoryRelationshipScore: candidate.categoryRelationshipScore,
+                categoryInterestScore: candidate.categoryInterestScore,
+                categoryLifestyleScore: candidate.categoryLifestyleScore,
+                categoryQuestionScore: candidate.categoryQuestionScore,
+                categoryMusicScore: candidate.categoryMusicScore,
+                categoryCommunicationScore: candidate.categoryCommunicationScore,
               ),
             )
             .toList() ??
@@ -170,8 +189,14 @@ class FallbackOnlyDiscoveryRepository
     required DiscoveryRadius radius,
     String? cursor,
     int limit = 10,
+    bool expandDistance = false,
   }) {
-    return _local.getCandidates(radius: radius, cursor: cursor, limit: limit);
+    return _local.getCandidates(
+      radius: radius,
+      cursor: cursor,
+      limit: limit,
+      expandDistance: expandDistance,
+    );
   }
 
   @override

@@ -15,6 +15,13 @@ class FakeChatRepository implements ChatRepository {
   int _seq = 0;
 
   @override
+  Future<bool> isE2eeActive({
+    required String matchId,
+    required String peerUid,
+  }) async =>
+      false;
+
+  @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30}) {
     return _messagesController(matchId).stream;
   }

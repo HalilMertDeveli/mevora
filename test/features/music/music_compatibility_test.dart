@@ -9,6 +9,7 @@ void main() {
     List<String> genres = const [],
     List<String> recentTracks = const [],
     List<String> recentArtists = const [],
+    List<String> playlistTracks = const [],
   }) {
     return MusicTasteSnapshot(
       trackIds: tracks,
@@ -16,6 +17,7 @@ void main() {
       genres: genres,
       recentTrackIds: recentTracks,
       recentArtistIds: recentArtists,
+      playlistTrackIds: playlistTracks,
     );
   }
 
@@ -28,7 +30,7 @@ void main() {
     expect(result.hasSignal, isFalse);
   });
 
-  test('identical taste scores very high', () {
+  test('identical taste scores very high and is deterministic', () {
     final shared = taste(
       tracks: ['t1', 't2', 't3'],
       artists: ['a1', 'a2'],
@@ -36,13 +38,18 @@ void main() {
       recentTracks: ['t1'],
       recentArtists: ['a1'],
     );
-    final result = MusicCompatibilityCalculator.score(
+    final a = MusicCompatibilityCalculator.score(
       viewer: shared,
       candidate: shared,
     );
-    expect(result.score, 100);
-    expect(result.band, MusicCompatibilityBand.veryHigh);
-    expect(result.sharedTracks, containsAll(['t1', 't2', 't3']));
+    final b = MusicCompatibilityCalculator.score(
+      viewer: shared,
+      candidate: shared,
+    );
+    expect(a.score, 100);
+    expect(a.score, b.score);
+    expect(a.band, MusicCompatibilityBand.veryHigh);
+    expect(a.sharedTracks, containsAll(['t1', 't2', 't3']));
   });
 
   test('partial overlap lands in mid band', () {
@@ -60,6 +67,55 @@ void main() {
     );
     expect(result.score, inInclusiveRange(40, 70));
     expect(result.band, MusicCompatibilityBand.mid);
+  });
+
+  test('playlist overlap contributes only when both sides have playlist ids', () {
+    final withPlaylist = MusicCompatibilityCalculator.score(
+      viewer: taste(
+        tracks: ['t1'],
+        artists: ['a1'],
+        genres: ['pop'],
+        playlistTracks: ['p1', 'p2', 'p3', 'p4'],
+      ),
+      candidate: taste(
+        tracks: ['t1'],
+        artists: ['a1'],
+        genres: ['pop'],
+        playlistTracks: ['p1', 'p2', 'x', 'y'],
+      ),
+    );
+    expect(withPlaylist.sharedPlaylistTracks.length, 2);
+    expect(withPlaylist.breakdown.playlist, greaterThan(0));
+    expect(
+      withPlaylist.insights.any(
+        (item) => item.code == MusicInsightCode.sharedPlaylistTracks,
+      ),
+      isTrue,
+    );
+  });
+
+  test('does not invent play counts in insights', () {
+    final result = MusicCompatibilityCalculator.score(
+      viewer: taste(tracks: ['t1'], artists: ['a1'], genres: ['r&b']),
+      candidate: taste(tracks: ['t1'], artists: ['a1'], genres: ['r&b']),
+      artistNames: ['The Weeknd'],
+      trackNames: ['Blinding Lights'],
+    );
+    expect(result.sharedTrackNames, ['Blinding Lights']);
+    expect(
+      result.insights.any(
+        (item) =>
+            item.code == MusicInsightCode.topSharedArtist &&
+            item.params['name'] == 'The Weeknd',
+      ),
+      isTrue,
+    );
+    expect(
+      result.insights.any(
+        (item) => item.params.keys.any((key) => key.contains('play')),
+      ),
+      isFalse,
+    );
   });
 
   test('music ranking bonus never replaces dating score', () {

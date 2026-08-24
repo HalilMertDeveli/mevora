@@ -44,7 +44,9 @@
   "passwordMinLength": "Şifre en az {min} karakter olmalı",
   "@passwordMinLength": {
     "placeholders": {
-      "min": {"type": "int"}
+      "min": {
+        "type": "int"
+      }
     }
   },
   "confirmPassword": "Şifreyi doğrula",
@@ -52,14 +54,20 @@
   "fieldRequired": "{field} gerekli",
   "@fieldRequired": {
     "placeholders": {
-      "field": {"type": "String"}
+      "field": {
+        "type": "String"
+      }
     }
   },
   "fieldMinLength": "{field} en az {min} karakter olmalı",
   "@fieldMinLength": {
     "placeholders": {
-      "field": {"type": "String"},
-      "min": {"type": "int"}
+      "field": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      }
     }
   },
   "phoneRequired": "Telefon gerekli",
@@ -110,24 +118,28 @@
   "otpSentTo": "{phone} numarasına gönderilen 6 haneli kodu gir.",
   "@otpSentTo": {
     "placeholders": {
-      "phone": {"type": "String"}
+      "phone": {
+        "type": "String"
+      }
     }
   },
   "resendCountdown": "Yeni kodu {seconds} saniye sonra gönderebilirsin.",
   "@resendCountdown": {
     "placeholders": {
-      "seconds": {"type": "int"}
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "enterOtp": "Doğrulama kodunu gir.",
   "authCancelled": "Giriş iptal edildi.",
-  "authInvalidPhone": "Geçerli bir telefon numarası gir.",
+  "authInvalidPhone": "Telefon numarası geçersiz.",
   "authSmsFailed": "SMS gönderilemedi. Lütfen tekrar dene.",
-  "authAppVerification": "Uygulama doğrulaması tamamlanamadı. SHA kayıtlarını kontrol et, gerçek cihazda dene veya Firebase Console’da test numarası kullan.",
-  "authInvalidOtp": "Doğrulama kodu geçersiz.",
-  "authExpiredOtp": "Doğrulama kodunun süresi doldu. Yeni kod iste.",
+  "authAppVerification": "Uygulama doğrulaması tamamlanamadı. İnternet bağlantını kontrol et, gerçek bir cihazda dene ve birkaç saniye sonra yeniden dene.",
+  "authInvalidOtp": "Doğrulama kodu hatalı.",
+  "authExpiredOtp": "Doğrulama kodunun süresi doldu. Yeni kod isteyin.",
   "authSessionExpired": "Oturumun süresi doldu. Lütfen numarayı tekrar gir.",
-  "authTooManyAttempts": "Çok fazla hatalı deneme yaptınız. Lütfen daha sonra tekrar deneyin.",
+  "authTooManyAttempts": "Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.",
   "authSmsQuota": "SMS gönderim limiti aşıldı. Lütfen daha sonra tekrar deneyin.",
   "authFirebaseUnavailable": "Doğrulama servisine şu anda ulaşılamıyor. Lütfen daha sonra tekrar dene.",
   "authNetwork": "İnternet bağlantını kontrol et.",
@@ -166,8 +178,12 @@
   "onboardingStepProgress": "Adım {current} / {total}",
   "@onboardingStepProgress": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "onboardingBack": "Geri",
@@ -185,7 +201,9 @@
   "onboardingPhotoNumber": "Fotoğraf {number}",
   "@onboardingPhotoNumber": {
     "placeholders": {
-      "number": {"type": "int"}
+      "number": {
+        "type": "int"
+      }
     }
   },
   "onboardingCompleteTitle": "Hazırsın",
@@ -204,7 +222,7 @@
   "onboardingEducationPhd": "Doktora",
   "onboardingEducationPreferNotToSay": "Belirtmek istemiyorum",
   "onboardingRelationshipLongTerm": "Uzun süreli ilişki",
-  "onboardingRelationshipShortTerm": "Kısa süreli bağ",
+  "onboardingRelationshipShortTerm": "Kısa süreli ilişki",
   "onboardingRelationshipFriendship": "Yeni arkadaşlar",
   "onboardingRelationshipNotSure": "Henüz emin değilim",
   "onboardingRelationshipPreferNotToSay": "Belirtmek istemiyorum",
@@ -217,6 +235,11 @@
   "onboardingLifestyleDog": "Köpek",
   "onboardingLifestyleBoth": "İkisi de",
   "onboardingLifestyleOther": "Diğer",
+  "onboardingAlcoholNone": "Hiç kullanmıyorum",
+  "onboardingAlcoholRarely": "Nadiren",
+  "onboardingAlcoholSocial": "Sosyal olarak",
+  "onboardingAlcoholSpecialOccasion": "Özel günlerde",
+  "onboardingAlcoholFrequently": "Sık sık",
   "interestMusic": "Müzik",
   "interestTravel": "Seyahat",
   "interestFitness": "Fitness",
@@ -284,8 +307,12 @@
   "photoCounter": "{current} / {total}",
   "@photoCounter": {
     "placeholders": {
-      "current": {"type": "int"},
-      "total": {"type": "int"}
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "tabDiscovery": "Keşfet",
@@ -295,7 +322,9 @@
   "distanceAway": "{distance} km uzakta",
   "@distanceAway": {
     "placeholders": {
-      "distance": {"type": "String"}
+      "distance": {
+        "type": "String"
+      }
     }
   },
   "distanceLessThanOne": "1 km'den yakın",
@@ -303,7 +332,9 @@
   "compatibilityPercent": "Önerilen · %{percent} uyum",
   "@compatibilityPercent": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "like": "Beğen",
@@ -400,39 +431,53 @@
   "lastSeenToday": "Son görülme bugün {time}",
   "@lastSeenToday": {
     "placeholders": {
-      "time": {"type": "String"}
+      "time": {
+        "type": "String"
+      }
     }
   },
   "lastSeenYesterday": "Son görülme dün {time}",
   "@lastSeenYesterday": {
     "placeholders": {
-      "time": {"type": "String"}
+      "time": {
+        "type": "String"
+      }
     }
   },
   "lastSeenOnDate": "Son görülme {date} {time}",
   "@lastSeenOnDate": {
     "placeholders": {
-      "date": {"type": "String"},
-      "time": {"type": "String"}
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "timeNow": "şimdi",
   "timeMinutes": "{count} dk",
   "@timeMinutes": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeHours": "{count} sa",
   "@timeHours": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeDays": "{count} g",
   "@timeDays": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "unmatch": "Eşleşmeyi kaldır",
@@ -498,19 +543,25 @@
   "boostRemainingMinutes": "{minutes} dk kaldı",
   "@boostRemainingMinutes": {
     "placeholders": {
-      "minutes": {"type": "int"}
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "boostRemainingDays": "{days} gün kaldı",
   "@boostRemainingDays": {
     "placeholders": {
-      "days": {"type": "int"}
+      "days": {
+        "type": "int"
+      }
     }
   },
   "boostRemainingHours": "{hours} saat kaldı",
   "@boostRemainingHours": {
     "placeholders": {
-      "hours": {"type": "int"}
+      "hours": {
+        "type": "int"
+      }
     }
   },
   "boostSpotlight": "Öne Çıkar",
@@ -520,7 +571,9 @@
   "boostPackCount": "{count} Boost",
   "@boostPackCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "boostPackWeek": "1 Hafta",
@@ -533,7 +586,9 @@
   "boostBalance": "{count} kalan Boost",
   "@boostBalance": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "boostBuyPack": "Satın al",
@@ -541,7 +596,9 @@
   "boostCreditedMessage": "{count} Boost hesabına tanımlandı. Hazır olduğunda aktif et.",
   "@boostCreditedMessage": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "boostInsufficientBalance": "Aktif etmek için Boost bakiyen yok.",
@@ -560,7 +617,9 @@
   "radiusKm": "{km} km",
   "@radiusKm": {
     "placeholders": {
-      "km": {"type": "int"}
+      "km": {
+        "type": "int"
+      }
     }
   },
   "paymentTitle": "Ödeme",
@@ -601,7 +660,9 @@
   "photoUploadingPercent": "Fotoğraf yükleniyor... %{percent}",
   "@photoUploadingPercent": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "photoUploadFailed": "Fotoğraf yüklenirken bir hata oluştu. Lütfen tekrar deneyin.",
@@ -676,7 +737,9 @@
   "sharedHobbiesCount": "{count} ortak hobi",
   "@sharedHobbiesCount": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "tabSettings": "Ayarlar",
@@ -697,20 +760,28 @@
   "musicCompatibilityPercent": "Benzer müzik zevki · en fazla %{percent}",
   "@musicCompatibilityPercent": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "musicCompatibilityShort": "Müzik · %{percent}",
   "@musicCompatibilityShort": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "musicSharedCounts": "{tracks} ortak parça · {artists} ortak sanatçı",
   "@musicSharedCounts": {
     "placeholders": {
-      "tracks": {"type": "int"},
-      "artists": {"type": "int"}
+      "tracks": {
+        "type": "int"
+      },
+      "artists": {
+        "type": "int"
+      }
     }
   },
   "musicOauthCancelled": "Spotify bağlantısı iptal edildi.",
@@ -726,7 +797,9 @@
   "matchScoreValue": "{score} puan",
   "@matchScoreValue": {
     "placeholders": {
-      "score": {"type": "int"}
+      "score": {
+        "type": "int"
+      }
     }
   },
   "matchScoreHistoryTitle": "Puan geçmişi",
@@ -758,26 +831,36 @@
   "relationshipPromptProgress": "{answered} / {total}",
   "@relationshipPromptProgress": {
     "placeholders": {
-      "answered": {"type": "int"},
-      "total": {"type": "int"}
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "relationshipCompatibilityPercent": "Görüş örtüşmesi · %{percent}",
   "@relationshipCompatibilityPercent": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "relationshipCompatibilityShort": "Görüş · %{percent}",
   "@relationshipCompatibilityShort": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "relationshipSharedViews": "{count} ortak görüş",
   "@relationshipSharedViews": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "relationshipSimilarThinker": "Seninle ilişki konusunda benzer düşünen biri bulundu.",
@@ -787,7 +870,9 @@
   "relationshipProfileSubtitle": "{answered} ilişki sorusu yanıtlandı",
   "@relationshipProfileSubtitle": {
     "placeholders": {
-      "answered": {"type": "int"}
+      "answered": {
+        "type": "int"
+      }
     }
   },
   "relationshipTopicJealousy": "Kıskançlık konusunda benzer düşünüyorsunuz.",
@@ -825,7 +910,9 @@
   "compatDiscoverBadge": "%{percent} Uyumlu",
   "@compatDiscoverBadge": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "compatCalculating": "Hesaplanıyor...",
@@ -848,10 +935,28 @@
   "profileAnswersTitle": "Cevapların",
   "profileAnswersEmpty": "Henüz ilişki sorusu cevaplamadın.",
   "profileAnswersEdit": "Düzenle",
+  "questionAnswersTitle": "Soru & Cevap",
+  "questionAnswersEmpty": "Henüz cevapladığın bir soru yok.",
+  "seeAllAnswers": "{count} cevabı daha gör",
+  "@seeAllAnswers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showOnProfile": "Profilimde göster",
+  "questionAnswersLoadError": "Cevaplar yüklenirken bir sorun oluştu.",
+  "questionAnswersMatchRequired": "Bu kişinin cevaplarını görmek için eşleşmeniz gerekiyor.",
+  "questionAnswersMatchedSubtitle": "Ortak yönlerinizi keşfedin.",
+  "matchViewAnswers": "Cevapları gör",
+  "chatDiscoverAnswersPrompt": "Onu biraz daha tanı",
   "compatOverallLabel": "Uyumluluğunuz %{percent}",
   "@compatOverallLabel": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "compatNotEnoughData": "Henüz yeterli veri yok",
@@ -869,27 +974,37 @@
   "compatReasonSameRelationshipGoal": "İkiniz de {goal} ilişki istiyorsunuz",
   "@compatReasonSameRelationshipGoal": {
     "placeholders": {
-      "goal": {"type": "String"}
+      "goal": {
+        "type": "String"
+      }
     }
   },
   "compatReasonSharedInterests": "İkiniz de {interests} seviyorsunuz",
   "@compatReasonSharedInterests": {
     "placeholders": {
-      "interests": {"type": "String"}
+      "interests": {
+        "type": "String"
+      }
     }
   },
   "compatReasonSimilarLifestyle": "Benzer bir yaşam tarzınız var",
   "compatReasonSameAnswers": "{shared} sorunun {aligned} tanesine aynı cevabı verdiniz",
   "@compatReasonSameAnswers": {
     "placeholders": {
-      "aligned": {"type": "String"},
-      "shared": {"type": "String"}
+      "aligned": {
+        "type": "String"
+      },
+      "shared": {
+        "type": "String"
+      }
     }
   },
   "compatReasonSimilarMusic": "Müzik zevkiniz %{score} uyumlu",
   "@compatReasonSimilarMusic": {
     "placeholders": {
-      "score": {"type": "String"}
+      "score": {
+        "type": "String"
+      }
     }
   },
   "compatReasonCommunication": "Benzer iletişim tarzlarınız var",
@@ -897,15 +1012,387 @@
   "hiddenCompatMessage": "Biri seninle aynı şekilde {count} soruya cevap verdi.",
   "@hiddenCompatMessage": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "hiddenCompatCompatibility": "%{percent} uyumluluk",
   "@hiddenCompatCompatibility": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "hiddenCompatCta": "Uyumluluğunu keşfet",
-  "hiddenCompatDismiss": "Şimdi değil"
+  "hiddenCompatDismiss": "Şimdi değil",
+  "supportCenterTitle": "Yardım ve Destek",
+  "supportCenterSubtitle": "Yanıtları bulun, politikaları inceleyin veya ekibimize ulaşın.",
+  "supportHelpSection": "Yardım",
+  "supportTopicsSection": "Konular",
+  "supportFaqTitle": "Sık Sorulan Sorular",
+  "supportFaqSubtitle": "Sık sorulan sorulara hızlı yanıtlar",
+  "supportFaqSearchHint": "Soru ara",
+  "supportFaqEmpty": "Aramanızla eşleşen soru bulunamadı.",
+  "supportCreateTicket": "Destek Talebi Oluştur",
+  "supportCreateTicketSubtitle": "Sorununuzu açıklayın ve isteğe bağlı ekran görüntüsü ekleyin",
+  "supportMyTickets": "Destek Taleplerim",
+  "supportTicketsEmptyTitle": "Henüz destek talebi yok",
+  "supportTicketsEmptyMessage": "Destek ekibine yazdığınızda talepleriniz burada görünür.",
+  "supportTicketCategory": "Kategori",
+  "supportTicketSubject": "Konu",
+  "supportTicketMessage": "Mesaj",
+  "supportTicketAddScreenshot": "Ekran görüntüsü ekle (isteğe bağlı)",
+  "supportTicketScreenshotAttached": "Ekran görüntüsü eklendi",
+  "supportTicketSubmit": "Gönder",
+  "supportTicketSubmitted": "Destek talebiniz gönderildi.",
+  "supportTicketFailed": "Talep gönderilemedi. Tekrar deneyin.",
+  "supportTicketValidation": "Konu ve mesaj zorunludur.",
+  "supportTicketDetailTitle": "Destek talebi",
+  "supportTicketStatusLabel": "Durum",
+  "supportTicketAttachments": "Ekler",
+  "supportTicketStatusOpen": "Açık",
+  "supportTicketStatusInProgress": "İşleniyor",
+  "supportTicketStatusResolved": "Çözüldü",
+  "supportTicketStatusClosed": "Kapatıldı",
+  "supportCategoryAccount": "Hesap ve profil",
+  "supportCategoryMatches": "Eşleşmeler",
+  "supportCategoryMessaging": "Mesajlaşma",
+  "supportCategoryPhotos": "Fotoğraf ve profil",
+  "supportCategorySafety": "Bildirme ve engelleme",
+  "supportCategoryTechnical": "Teknik sorunlar",
+  "supportCategoryOther": "Diğer",
+  "faqDeleteAccountQ": "Hesabımı nasıl silebilirim?",
+  "faqDeleteAccountA": "Ayarlar → Hesap → Hesabı Sil yolunu izleyin. Onayladığınızda Mevora hesabınız ve ilişkili verileriniz kalıcı olarak silinir. Bu işlem geri alınamaz.",
+  "faqChangePhotoQ": "Profil fotoğrafımı nasıl değiştiririm?",
+  "faqChangePhotoA": "Ayarlar → Profili Düzenle'ye gidin. Galeriden veya kameradan fotoğraf ekleyebilir, kaldırabilir veya değiştirebilirsiniz. Fotoğraflar yayınlanmadan önce incelenebilir.",
+  "faqCloseAccountQ": "Hesabımı nasıl kapatırım?",
+  "faqCloseAccountA": "Hesap kapatma, hesap silme ile aynıdır. Ayarlar → Hesap → Hesabı Sil'i kullanın. Yalnızca çıkış yapmak verilerinizi silmez.",
+  "faqHowMatchQ": "Nasıl eşleşme yapılıyor?",
+  "faqHowMatchA": "Keşfet'te iki kullanıcı birbirini beğendiğinde karşılıklı eşleşme oluşur. Eşleşmeler sekmesinden mesajlaşabilirsiniz.",
+  "faqMatchPercentQ": "Eşleşme yüzdesi ne anlama geliyor?",
+  "faqMatchPercentA": "Profil cevapları, ilgi alanları, yaşam tarzı, müzik zevki ve diğer sinyallere dayalı bir uyumluluk tahminidir. Bağ kurma olasılığını anlamanıza yardımcı olur; garanti değildir.",
+  "faqCantMessageQ": "Mesaj gönderemiyorsam ne yapmalıyım?",
+  "faqCantMessageA": "Mesajlaşma yalnızca aktif karşılıklı eşleşmelerde kullanılabilir. Eşleşme sona erdiyse, engellendiyseniz veya sohbet kapandıysa mesaj gönderemezsiniz.",
+  "faqNotificationsQ": "Bildirimleri nasıl yönetebilirim?",
+  "faqNotificationsA": "Ayarlar → Bildirimler'den eşleşme, mesaj ve diğer uyarıları yönetin. Cihaz ayarlarından da bildirim izni vermeniz gerekebilir.",
+  "faqBlockQ": "Bir kullanıcıyı nasıl engellerim?",
+  "faqBlockA": "Sohbette Daha Fazla → Engelle. Profilde güvenlik menüsünden Engelle'yi seçin. Engellenen kullanıcılar size mesaj gönderemez ve eşleşmelerinizde görünmez.",
+  "faqReportQ": "Bir kullanıcıyı nasıl şikayet ederim?",
+  "faqReportA": "Profil veya sohbet güvenlik menüsünden Şikayet Et'i seçin, neden belirtin ve isteğe bağlı açıklama ekleyin. Şikayetler ekibimiz tarafından incelenir.",
+  "faqStaySafeQ": "Uygulamada güvenliğimi nasıl koruyabilirim?",
+  "faqStaySafeA": "Kalabalık yerlerde buluşun, güvenene kadar kişisel bilgilerinizi paylaşmayın, engelle ve şikayet araçlarını kullanın, Topluluk Kuralları'nı okuyun.",
+  "guidelinesIntro": "Mevora saygılı bağlantılar için tasarlandı. Bu kurallar profil, mesaj, arama ve tüm uygulama içi davranışlar için geçerlidir.",
+  "guidelinesRespectTitle": "Saygılı iletişim",
+  "guidelinesRespectBody": "Başkalarına saygılı davranın. Anlaşmazlık hakaret, zorbalık veya aşağılayıcı dil için mazeret değildir.",
+  "guidelinesHarassmentTitle": "Taciz ve zorbalık yasağı",
+  "guidelinesHarassmentBody": "Tekrarlayan istenmeyen iletişim, gözdağı, takip veya baskı yasaktır.",
+  "guidelinesHateTitle": "Nefret söylemi yasağı",
+  "guidelinesHateBody": "Korunan özelliklere dayalı saldırılar yasaktır.",
+  "guidelinesThreatsTitle": "Tehdit ve şiddet",
+  "guidelinesThreatsBody": "Tehditler, şiddeti yüceltme veya kendine zarar vermeyi teşvik etme yasaktır.",
+  "guidelinesSpamTitle": "Spam",
+  "guidelinesSpamBody": "İstenmeyen reklam, tekrarlayan mesajlar veya otomatik talep yasaktır.",
+  "guidelinesFakeTitle": "Sahte hesaplar",
+  "guidelinesFakeBody": "Kimlik taklidi, yanıltıcı profil veya gerçek olmayan hesaplar yasaktır.",
+  "guidelinesScamTitle": "Dolandırıcılık",
+  "guidelinesScamBody": "Dolandırıcılık, para talebi veya hassas finansal bilgi isteme yasaktır.",
+  "guidelinesInappropriateTitle": "Uygunsuz içerik",
+  "guidelinesInappropriateBody": "Rahatsız edici, grafik veya uygunsuz içerik profilde veya mesajlarda yasaktır.",
+  "guidelinesSexualTitle": "Cinsel içerik ve istismar",
+  "guidelinesSexualBody": "Rızaya aykırı cinsel içerik, istismar veya reşit olmayanlara yönelik içerik kesinlikle yasaktır ve yetkililere bildirilir.",
+  "guidelinesMinorsTitle": "Reşit olmayanların korunması",
+  "guidelinesMinorsBody": "Mevora 18 yaş ve üzeri içindir. Reşit olmayanlara yönelik hesap veya davranışlar yasaktır.",
+  "guidelinesPrivacyTitle": "Kişisel bilgilerin paylaşılması",
+  "guidelinesPrivacyBody": "Başka birinin izni olmadan özel iletişim bilgilerini, adresini veya belgelerini paylaşmayın.",
+  "guidelinesMisuseTitle": "Platformun kötüye kullanılması",
+  "guidelinesMisuseBody": "Güvenlik sistemlerini aşmaya çalışmak, veri kazımak veya yetkisiz ticari kullanım yasaktır.",
+  "guidelinesReportTitle": "Kullanıcıların nasıl raporlanacağı",
+  "guidelinesReportBody": "Profil veya sohbetten Şikayet Et'i kullanın. Ayarlardan da destek talebi oluşturabilirsiniz.",
+  "guidelinesEnforcementTitle": "Yaptırımlar",
+  "guidelinesEnforcementBody": "İhlaller uyarı, kısıtlama, askıya alma veya kalıcı kaldırma ile sonuçlanabilir. Ciddi ihlaller yetkililere bildirilebilir.",
+  "termsIntro": "Bu Kullanım Koşulları, Mevora mobil uygulamasını ve ilgili hizmetleri kullanımınızı düzenler.",
+  "termsScopeTitle": "Hizmetin kapsamı",
+  "termsScopeBody": "Mevora, yetişkinlerin uyumlu kişileri keşfetmesine, karşılıklı beğeniyle eşleşmesine, mesajlaşmasına ve Boost ile doğrulama gibi isteğe bağlı özellikleri kullanmasına yardımcı olur.",
+  "termsAccountTitle": "Kullanıcı hesabı",
+  "termsAccountBody": "En az 18 yaşında olmalısınız. Giriş bilgilerinizin güvenliğinden ve hesabınızdaki faaliyetlerden siz sorumlusunuz.",
+  "termsResponsibilitiesTitle": "Kullanıcı sorumlulukları",
+  "termsResponsibilitiesBody": "Doğru bilgi vermeyi, yasalara uymayı ve Mevora'yı saygılı ve güvenli kullanmayı kabul edersiniz.",
+  "termsContentTitle": "Profil ve içerik sorumluluğu",
+  "termsContentBody": "Gönderdiğiniz içeriğin sahibi sizsiniz; ancak hizmeti sunmak, moderasyon ve güvenlik için Mevora'ya barındırma ve işleme lisansı verirsiniz.",
+  "termsProhibitedTitle": "Yasaklanan davranışlar",
+  "termsProhibitedBody": "Taciz, nefret söylemi, dolandırıcılık, sahte profil, cinsel istismar, spam ve platforma zarar verme yasaktır.",
+  "termsMatchingTitle": "Eşleşme ve mesajlaşma sistemi",
+  "termsMatchingBody": "Eşleşmeler karşılıklı beğeniyle oluşur. Mesajlaşma yalnızca aktif eşleşmelerde kullanılabilir ve güvenlik veya engelleme nedeniyle kısıtlanabilir.",
+  "termsSafetyTitle": "Kullanıcı güvenliği",
+  "termsSafetyBody": "Kullanıcıları engelleyebilir ve şikayet edebilirsiniz. Şikayetleri inceleyebilir ve topluluğu korumak için işlem uygulayabiliriz.",
+  "termsSuspensionTitle": "Hesabın askıya alınması veya sonlandırılması",
+  "termsSuspensionBody": "Bu Koşulları ihlal eden veya başkaları için risk oluşturan hesapları askıya alabilir veya sonlandırabiliriz.",
+  "termsDeletionTitle": "Kullanıcı tarafından hesap silme",
+  "termsDeletionBody": "Ayarlar → Hesap → Hesabı Sil ile hesabınızı kalıcı olarak silebilirsiniz. Silme geri alınamaz ve yasal saklama sınırları dışında verilerinizi kaldırır.",
+  "termsPaidTitle": "Ücretli özellikler / Boost",
+  "termsPaidBody": "Boost ve diğer satın alımlar uygulama mağazası üzerinden işlenir. İadeler mağaza politikalarına tabidir.",
+  "termsThirdPartyTitle": "Üçüncü taraf hizmetler",
+  "termsThirdPartyBody": "Mevora; Google, Apple, Spotify, Firebase ve doğrulama sağlayıcıları gibi hizmetlerle entegre olabilir. Bu hizmetlerin koşulları da geçerlidir.",
+  "termsAvailabilityTitle": "Hizmetin kullanılabilirliği",
+  "termsAvailabilityBody": "Güvenilir hizmet için çalışırız ancak kesintisiz erişim garanti etmeyiz. Özellikler değişebilir veya kaldırılabilir.",
+  "termsLiabilityTitle": "Sorumluluk sınırlamaları",
+  "termsLiabilityBody": "Yasaların izin verdiği ölçüde Mevora olduğu gibi sunulur. Kullanıcı davranışları veya çevrimdışı etkileşimlerden sorumlu değiliz.",
+  "termsChangesTitle": "Koşulların değiştirilmesi",
+  "termsChangesBody": "Bu Koşulları güncelleyebiliriz. Önemli değişiklikler uygulama veya politika sayfalarında duyurulur.",
+  "termsContactTitle": "İletişim",
+  "termsContactBody": "Hukuki sorular için Ayarlar'dan destek talebi oluşturun veya halilmertdeveliii@gmail.com adresine yazın.",
+  "termsEffectiveTitle": "Yürürlük tarihi",
+  "termsEffectiveBody": "Bu Koşullar 23 Ağustos 2026 tarihinden itibaren geçerlidir.",
+  "privacyIntroTitle": "Giriş",
+  "privacyIntroBody": "Bu Gizlilik Politikası, Mevora'yı kullandığınızda kişisel verilerin nasıl toplandığını, kullanıldığını, saklandığını ve silindiğini açıklar.",
+  "privacyDataCollectedTitle": "Genel bakış",
+  "privacyDataCollectedBody": "Yalnızca eşleşme, mesajlaşma, güvenlik, isteğe bağlı müzik özellikleri ve hesap yönetimi için gerekli verileri toplarız.",
+  "privacyAuthTitle": "Hesap ve kimlik doğrulama",
+  "privacyAuthBody": "Giriş yönteminize göre e-posta, telefon numarası, sağlayıcı kimlikleri (Google, Apple, Spotify) ve Firebase Authentication kullanıcı kimliği işlenebilir.",
+  "privacyProfileTitle": "Profil ve fotoğraflar",
+  "privacyProfileBody": "Sağladığınız profil bilgileri ve fotoğraflar Firebase Firestore ve Storage'da profilinizi göstermek ve eşleşmeyi sağlamak için saklanır.",
+  "privacyLocationTitle": "Konum bilgisi",
+  "privacyLocationBody": "İzninizle yaklaşık konum, yakındaki uyumlu kişileri göstermek için kullanılır. Keşfet sonuçlarında tam koordinatlar diğer kullanıcılara açıklanmaz.",
+  "privacyMessagingTitle": "Mesajlar ve aramalar",
+  "privacyMessagingBody": "Sohbet mesajları, sesli notlar, görseller, yazıyor göstergesi ve arama meta verileri hizmeti sunmak için saklanır. Her iki taraf anahtar yayınladığında mesajlar uçtan uca şifrelenebilir.",
+  "privacyMatchingTitle": "Eşleşme bilgileri",
+  "privacyMatchingBody": "Beğeniler, geçmeler, eşleşmeler, uyumluluk sinyalleri ve etkileşim geçmişi keşfet ve eşleşmeler için saklanır.",
+  "privacyPreferencesTitle": "Kullanıcı tercihleri",
+  "privacyPreferencesBody": "Bildirim tercihleri, gizlilik kontrolleri (çevrimiçi, son görülme, yazıyor), keşfet filtreleri ve dil ayarları tercihlerinize uyulması için saklanır.",
+  "privacySpotifyTitle": "Spotify entegrasyonu",
+  "privacySpotifyBody": "Spotify bağlarsanız, uyumluluk ve müzik özellikleri için hesap meta verileri ve müzik zevki sinyalleri saklanır. Ayarlardan bağlantıyı kesebilirsiniz.",
+  "privacyDeviceTitle": "Cihaz ve teknik bilgiler",
+  "privacyDeviceBody": "Push bildirimleri, tanılama ve güvenlik kayıtları için cihaz belirteçleri Firebase altyapısı üzerinden işlenir.",
+  "privacyWhyTitle": "Neden toplanıyor?",
+  "privacyWhyBody": "Kimliğinizi doğrulamak, eşleşmeleri göstermek, mesajları iletmek, güvenliği artırmak, destek sunmak, satın alımları işlemek ve yasal yükümlülüklere uymak için.",
+  "privacyStorageTitle": "Nerede saklanıyor?",
+  "privacyStorageBody": "Veriler öncelikle Google Firebase'de (Firestore, Storage, Authentication, Cloud Functions) yapılandırıldığı şekilde AB bölgesinde saklanır.",
+  "privacyRetentionTitle": "Ne kadar süre saklanıyor?",
+  "privacyRetentionBody": "Hesabınız aktifken veriler saklanır. Hesabı sildiğinizde, yasa veya dolandırıcılık önleme gerektirmedikçe ilişkili veriler silinir veya anonimleştirilir.",
+  "privacySharingTitle": "Kimlerle paylaşılabiliyor?",
+  "privacySharingBody": "Kişisel verileri satmayız. Firebase, uygulama mağazaları, Spotify ve doğrulama sağlayıcılarıyla yalnızca hizmeti sunmak için paylaşırız.",
+  "privacyRightsTitle": "Haklarınız",
+  "privacyRightsBody": "Bölgenize göre erişim, düzeltme, silme veya kısıtlama talep edebilirsiniz. Hesap silme Ayarlar'da mevcuttur.",
+  "privacyDeletionTitle": "Verilerinizi silme",
+  "privacyDeletionBody": "Kalıcı silme için Ayarlar → Hesap → Hesabı Sil'i kullanın. Oluşturduğunuz destek talepleri de hesap silme sırasında kaldırılır.",
+  "privacySecurityTitle": "Güvenlik",
+  "privacySecurityBody": "Erişim kontrolleri, aktarım şifrelemesi, isteğe bağlı mesaj şifrelemesi ve Firebase güvenlik kuralları kullanıyoruz. Sorunları destek üzerinden bildirin.",
+  "privacyChildrenTitle": "Çocuklar",
+  "privacyChildrenBody": "Mevora 18 yaş altı kullanıcılar içindir. Reşit olmayan hesaplar silinir.",
+  "privacyChangesTitle": "Politika değişiklikleri",
+  "privacyChangesBody": "Bu politikayı güncelleyebiliriz. Güncel sürüm uygulamada ve kamuya açık politika sayfasında yer alır.",
+  "privacyContactTitle": "İletişim",
+  "privacyContactBody": "Gizlilik soruları: halilmertdeveliii@gmail.com veya Ayarlar'dan destek talebi oluşturun.",
+  "musicMatchTitle": "🎵 Müzik Eşleşmesi — %{percent}",
+  "@musicMatchTitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightBandHigh": "Müzik zevkiniz oldukça benzer.",
+  "musicInsightBandMid": "Bazı güçlü ortak müzik zevkleriniz var.",
+  "musicInsightBandLow": "Müzik zevkleriniz farklı olsa da birkaç ortak sanatçınız var.",
+  "musicInsightSharedTracks": "🎵 {count} ortak şarkınız var.",
+  "@musicInsightSharedTracks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightSharedArtists": "🎤 {count} ortak sanatçınız var.",
+  "@musicInsightSharedArtists": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightSharedPlaylistTracks": "🎧 Playlistlerinizde {count} ortak şarkı var.",
+  "@musicInsightSharedPlaylistTracks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightSharedRecentTracks": "🎵 Son dönemde {count} aynı şarkıyı dinlemişsiniz.",
+  "@musicInsightSharedRecentTracks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightTopSharedArtist": "🎵 İkiniz de {name}'i sık dinliyorsunuz.",
+  "@musicInsightTopSharedArtist": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "musicInsightTopSharedGenres": "🎶 Müzik zevkinizin büyük kısmı {genres} türlerinde kesişiyor.",
+  "@musicInsightTopSharedGenres": {
+    "placeholders": {
+      "genres": {
+        "type": "String"
+      }
+    }
+  },
+  "musicInsightDataUnavailable": "Karşılaştırma için henüz yeterli Spotify verisi yok.",
+  "musicSpotifyNotConnected": "Spotify bağlı değil",
+  "musicSharedTracksHeading": "🎵 Ortak şarkılarınız",
+  "musicSharedArtistsHeading": "🎤 Ortak sanatçılarınız",
+  "musicSharedGenresHeading": "🎶 Ortak türler",
+  "musicViewAllShared": "Tümünü gör ({count})",
+  "@musicViewAllShared": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicMatchDetailsCta": "Bu müzik eşleşmesi neden?",
+  "profileEditSectionLanguages": "Konuştuğun diller",
+  "profileEditSectionHobbies": "Hobiler",
+  "profileEditSectionExtended": "Profilini tamamla",
+  "profileLanguagesHint": "Konuştuğun dilleri seç.",
+  "profileHobbiesHint": "Seni anlatan hobileri seç.",
+  "profileHeightLabel": "Boy",
+  "profileHeightCm": "{cm} cm",
+  "@profileHeightCm": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "profileHeight200Plus": "220+ cm",
+  "profileOccupationLabel": "Meslek",
+  "profileCompletionTitle": "Profilin %{percent} tamamlandı",
+  "@profileCompletionTitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "profileCompletionMissing": "Eksik alanlar: {fields}",
+  "@profileCompletionMissing": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "profileFieldDisplayName": "İsim",
+  "profileFieldBirthDate": "Doğum tarihi",
+  "profileFieldGender": "Cinsiyet",
+  "profileFieldInterestedIn": "İlgilendiğin kişiler",
+  "profileFieldCity": "Şehir",
+  "profileFieldPhotos": "Fotoğraflar",
+  "profileFieldInterests": "İlgi alanları",
+  "profileFieldRelationshipGoal": "İlişki hedefi",
+  "profileFieldLanguages": "Diller",
+  "profileFieldHeightCm": "Boy",
+  "profileFieldBio": "Biyografi",
+  "profileFieldEducation": "Eğitim",
+  "profileFieldOccupation": "Meslek",
+  "profileFieldHobbies": "Hobiler",
+  "profileFieldLifestyleHabits": "Yaşam tarzı alışkanlıkları",
+  "profileFieldLifestyleValues": "Gelecek tercihleri",
+  "onboardingHeight": "Boy",
+  "onboardingLanguages": "Diller",
+  "profilePartnerSmokingPref": "Partner sigara tercihi",
+  "profilePartnerDrinkingPref": "Partner alkol tercihi",
+  "profileChildrenPreference": "Çocuk istiyor musun?",
+  "profilePartnerChildrenPref": "Partner çocuk tercihi",
+  "profileSocialRhythm": "Sabah mı gece mi?",
+  "profileSocialLevel": "Sosyal hayat",
+  "profileWeekendPreferences": "Hafta sonu tercihleri",
+  "profileCohabitationPreference": "Birlikte yaşam",
+  "partnerPrefNoIssue": "Önemli değil",
+  "partnerPrefPrefer": "Tercih ederim",
+  "partnerPrefPreferNot": "Tercih etmem",
+  "partnerPrefNever": "Kesinlikle istemem",
+  "childrenPrefYes": "Evet",
+  "childrenPrefNo": "Hayır",
+  "childrenPrefMaybe": "Belki",
+  "childrenPrefUndecided": "Henüz karar vermedim",
+  "socialRhythmMorning": "Sabah insanıyım",
+  "socialRhythmNight": "Gece insanıyım",
+  "socialRhythmVaries": "Değişir",
+  "socialLevelVerySocial": "Çok sosyalim",
+  "socialLevelBalanced": "Dengeli",
+  "socialLevelQuiet": "Daha sakinim",
+  "weekendFriendsOut": "Arkadaşlarla dışarı",
+  "weekendHomeRelax": "Evde dinlenmek",
+  "weekendSports": "Spor",
+  "weekendTravel": "Seyahat",
+  "weekendNature": "Doğa",
+  "weekendParty": "Parti",
+  "weekendFamily": "Aile",
+  "weekendMovies": "Film/dizi",
+  "cohabitationYes": "İsterim",
+  "cohabitationMaybeLater": "İleride olabilir",
+  "cohabitationUnsure": "Emin değilim",
+  "cohabitationNo": "İstemiyorum",
+  "languageTurkish": "Türkçe 🇹🇷",
+  "languageEnglish": "English 🇬🇧",
+  "languageGerman": "Almanca",
+  "languageFrench": "Fransızca",
+  "languageSpanish": "İspanyolca",
+  "languageItalian": "İtalyanca",
+  "languageRussian": "Rusça",
+  "languageArabic": "Arapça",
+  "languagePersian": "Farsça",
+  "languageKurdish": "Kürtçe",
+  "languageGreek": "Yunanca",
+  "languageDutch": "Hollandaca",
+  "languagePortuguese": "Portekizce",
+  "languageChinese": "Çince",
+  "languageJapanese": "Japonca",
+  "languageKorean": "Korece",
+  "hobbyWorkingOut": "Spor yapmak",
+  "hobbyRunning": "Koşu",
+  "hobbyFitness": "Fitness",
+  "hobbySwimming": "Yüzme",
+  "hobbyDancing": "Dans",
+  "hobbyPhotography": "Fotoğrafçılık",
+  "hobbyPainting": "Resim",
+  "hobbyGaming": "Oyun",
+  "hobbyCoding": "Kodlama",
+  "hobbyCooking": "Yemek yapmak",
+  "hobbyTravel": "Seyahat",
+  "hobbyCamping": "Kamp",
+  "hobbyHiking": "Doğa yürüyüşü",
+  "hobbyPlayingInstrument": "Enstrüman çalmak",
+  "hobbyReading": "Okuma",
+  "hobbyYoga": "Yoga",
+  "hobbyCycling": "Bisiklet",
+  "hobbyTeamSports": "Takım sporları",
+  "compatCategoryLanguages": "Diller",
+  "compatCategoryHobbies": "Hobiler",
+  "compatCategoryValues": "Değerler & gelecek",
+  "compatReasonSharedLanguages": "İkiniz de {languages} konuşuyorsunuz",
+  "@compatReasonSharedLanguages": {
+    "placeholders": {
+      "languages": {
+        "type": "String"
+      }
+    }
+  },
+  "compatReasonSharedHobbies": "İkiniz de {hobbies} yapmayı seviyorsunuz",
+  "@compatReasonSharedHobbies": {
+    "placeholders": {
+      "hobbies": {
+        "type": "String"
+      }
+    }
+  }
 }

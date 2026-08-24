@@ -1,0 +1,59 @@
+{
+  "musicMatchTitle": "🎵 Music Match — {percent}%",
+  "@musicMatchTitle": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicInsightBandHigh": "Your music tastes are quite similar.",
+  "musicInsightBandMid": "You share some strong music tastes.",
+  "musicInsightBandLow": "Your music tastes differ, but you still share a few artists.",
+  "musicInsightSharedTracks": "🎵 You have {count} shared songs.",
+  "@musicInsightSharedTracks": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicInsightSharedArtists": "🎤 You have {count} shared artists.",
+  "@musicInsightSharedArtists": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicInsightSharedPlaylistTracks": "🎧 Your playlists share {count} songs.",
+  "@musicInsightSharedPlaylistTracks": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicInsightSharedRecentTracks": "🎵 You recently listened to {count} of the same songs.",
+  "@musicInsightSharedRecentTracks": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicInsightTopSharedArtist": "🎵 You both listen to {name} a lot.",
+  "@musicInsightTopSharedArtist": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "musicInsightTopSharedGenres": "🎶 Your tastes overlap most in {genres}.",
+  "@musicInsightTopSharedGenres": {
+    "placeholders": {
+      "genres": {"type": "String"}
+    }
+  },
+  "musicInsightDataUnavailable": "Not enough Spotify taste data to compare yet.",
+  "musicSpotifyNotConnected": "Spotify not connected",
+  "musicSharedTracksHeading": "🎵 Songs you both like",
+  "musicSharedArtistsHeading": "🎤 Artists you both like",
+  "musicSharedGenresHeading": "🎶 Shared genres",
+  "musicViewAllShared": "View all ({count})",
+  "@musicViewAllShared": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicMatchDetailsCta": "Why this music match?"
+}

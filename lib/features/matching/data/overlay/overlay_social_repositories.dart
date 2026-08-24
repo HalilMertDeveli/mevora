@@ -66,11 +66,16 @@ class OverlayMatchRepository implements MatchRepository {
     return controller.stream;
   }
 
+  bool _isDemoMatch(String matchId) {
+    return hub.graph.matches.containsKey(matchId) ||
+        matchId.contains('mock-');
+  }
+
   @override
   Future<Match?> getMatch(String matchId) async {
-    final local = hub.graph.matches[matchId];
-    if (local != null) {
-      return local;
+    if (_isDemoMatch(matchId)) {
+      return hub.graph.matches[matchId] ??
+          await hub.matches.getMatch(matchId);
     }
     try {
       return await remote.getMatch(matchId);
@@ -81,9 +86,8 @@ class OverlayMatchRepository implements MatchRepository {
 
   @override
   Stream<Match?> watchMatch(String matchId) async* {
-    final local = hub.graph.matches[matchId];
-    if (local != null) {
-      yield local;
+    if (_isDemoMatch(matchId)) {
+      yield* hub.matches.watchMatch(matchId);
       return;
     }
     yield* remote.watchMatch(matchId);
@@ -91,7 +95,7 @@ class OverlayMatchRepository implements MatchRepository {
 
   @override
   Future<void> markOpened(String matchId, String uid) async {
-    if (hub.graph.matches.containsKey(matchId)) {
+    if (_isDemoMatch(matchId)) {
       await hub.matches.markOpened(matchId, uid);
       return;
     }
@@ -109,7 +113,19 @@ class OverlayChatRepository implements ChatRepository {
   final ChatRepository remote;
   final DemoSocialHub hub;
 
-  bool _isDemo(String matchId) => hub.graph.matches.containsKey(matchId);
+  bool _isDemo(String matchId) =>
+      hub.graph.matches.containsKey(matchId) || matchId.contains('mock-');
+
+  @override
+  Future<bool> isE2eeActive({
+    required String matchId,
+    required String peerUid,
+  }) {
+    if (_isDemo(matchId)) {
+      return Future.value(false);
+    }
+    return remote.isE2eeActive(matchId: matchId, peerUid: peerUid);
+  }
 
   @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30}) {
@@ -320,5 +336,48 @@ class OverlaySafetyRepository implements SafetyRepository {
   @override
   Stream<Set<String>> watchBlockedUserIds(String uid) {
     return remote.watchBlockedUserIds(uid);
+  }
+}
+
+/// Demo (`mock-*`) presence stays in-memory; real users use Firestore.
+class OverlayPresenceRepository implements PresenceRepository {
+  OverlayPresenceRepository({
+    required this.remote,
+    required this.local,
+  });
+
+  final PresenceRepository remote;
+  final PresenceRepository local;
+
+  @override
+  Stream<PresenceWatch> watch(String uid) {
+    if (DemoSocialHub.isDemoUid(uid)) {
+      return local.watch(uid);
+    }
+    return remote.watch(uid);
+  }
+
+  @override
+  Future<void> setOnline(String uid) {
+    if (DemoSocialHub.isDemoUid(uid)) {
+      return local.setOnline(uid);
+    }
+    return remote.setOnline(uid);
+  }
+
+  @override
+  Future<void> setOffline(String uid) {
+    if (DemoSocialHub.isDemoUid(uid)) {
+      return local.setOffline(uid);
+    }
+    return remote.setOffline(uid);
+  }
+
+  @override
+  Future<void> heartbeat(String uid) {
+    if (DemoSocialHub.isDemoUid(uid)) {
+      return local.heartbeat(uid);
+    }
+    return remote.heartbeat(uid);
   }
 }

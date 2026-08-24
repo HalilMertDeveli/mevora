@@ -23,7 +23,12 @@ import {
   passesDiscoveryProfileFilters,
   passesGenderPreferences,
 } from "./discoveryMatching.js";
-import {loadActiveBoostedUserIds, sortByBoostVisibility} from "./boost/ranking.js";
+import {loadActiveBoostedUserIds, effectiveRadiusKm, isBoostedCandidate, sortByBoostVisibility} from "./boost/ranking.js";
+import {
+  classifyDiscoveryDistance,
+  fillFromDistanceTiers,
+  type DiscoveryDistanceTier,
+} from "./discoveryFallback.js";
 import {userLanguage} from "./language.js";
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
 import {musicRankingBonus} from "./musicCompatibility.js";
@@ -125,6 +130,28 @@ function parsePendingPhotoPath(name: string): {uid: string; imageId: string} | n
   return {uid, imageId};
 }
 
+async function loadUserLocations(
+  uids: string[],
+): Promise<Map<string, {latitude: number; longitude: number}>> {
+  const out = new Map<string, {latitude: number; longitude: number}>();
+  const unique = [...new Set(uids)].filter((id) => id.length > 0);
+  for (let i = 0; i < unique.length; i += 30) {
+    const chunk = unique.slice(i, i + 30);
+    const snaps = await Promise.all(chunk.map((id) => db.doc(`userLocation/${id}`).get()));
+    snaps.forEach((snap, index) => {
+      const data = snap.data();
+      if (data?.latitude == null || data?.longitude == null) {
+        return;
+      }
+      out.set(chunk[index], {
+        latitude: Number(data.latitude),
+        longitude: Number(data.longitude),
+      });
+    });
+  }
+  return out;
+}
+
 export const getDiscoveryCandidates = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const callerAccount = await db.doc(`users/${uid}`).get();
@@ -136,6 +163,8 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
   const radiusKm = allowedRadii.has(requested) ? requested : 25;
   const limit = Math.min(Math.max(Number(request.data?.limit ?? 10), 1), 20);
   const cursor = String(request.data?.cursor ?? "");
+  // Client may ask for soft distance expansion when a preferred radius is empty.
+  const expandDistance = request.data?.expandDistance === true;
   const [prefsSnap, viewerProfileSnap, locationSnap, blocked, likesSnap, passedSnap, boosted, activeMatches] =
     await Promise.all([
     db.doc(`userPreferences/${uid}`).get(),
@@ -153,132 +182,216 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
   seen.add(uid);
   const prefs = prefsSnap.data() ?? {};
   if (prefs.discoveryEnabled === false) {
-    return {items: [], nextCursor: null};
+    return {items: [], nextCursor: null, fallbackLevel: "empty"};
   }
   const viewerProfile = viewerProfileSnap.data() ?? {};
   const lang = await userLanguage(uid);
   const minAge = Number(prefs.minAge ?? 18);
   const maxAge = Number(prefs.maxAge ?? 99);
   const origin = locationSnap.data();
-  let query = db
-    .collection("profiles")
-    .where("isDiscoverable", "==", true)
-    .where("profileCompleted", "==", true)
-    .orderBy("updatedAt", "desc")
-    .limit(40);
-  if (cursor) {
-    const cursorSnap = await db.doc(`profiles/${cursor}`).get();
-    if (cursorSnap.exists) {
-      query = query.startAfter(cursorSnap);
-    }
-  }
-  const profiles = await query.get();
-  // lastActiveAt is on private users/{uid}. Filter here so inactive
-  // profiles never reach the client. Window: 90 days. Missing field = new user.
-  const candidateUids = profiles.docs.map((doc) => doc.id);
-  const [lastActiveByUid, accountsByUid, preferencesByUid] = await Promise.all([
-    loadLastActiveAt(db, candidateUids),
-    loadUserAccounts(candidateUids),
-    loadPreferencesByUid(db, candidateUids),
-  ]);
-  const items: Array<Record<string, unknown>> = [];
+  const hasViewerLocation = origin?.latitude != null && origin?.longitude != null;
+
+  // Scan multiple profile pages when nearby is sparse so far/no-location
+  // candidates can still fill the deck without a full collection download.
+  const pageSize = 40;
+  const maxPages = expandDistance ? 4 : 3;
+  let pageCursor = cursor;
   let lastUid: string | null = null;
-  for (const doc of profiles.docs) {
-    lastUid = doc.id;
-    if (seen.has(doc.id) || blocked.has(doc.id)) continue;
-    if (!passesSmokeDiscoveryIsolation(callerAccount.data(), accountsByUid.get(doc.id))) {
-      continue;
-    }
-    if (!isActiveForDiscovery(lastActiveByUid.get(doc.id))) continue;
-    if (await isBlocked(uid, doc.id)) continue;
-    const data = doc.data();
-    if (
-      !passesDiscoveryProfileFilters({
-        candidateProfile: data,
-        candidateAccount: accountsByUid.get(doc.id),
-        minAge,
-        maxAge,
-      })
-    ) {
-      continue;
-    }
-    if (
-      !passesGenderPreferences({
-        viewerPrefs: prefs,
-        viewerProfile,
-        candidatePrefs: preferencesByUid.get(doc.id) ?? {},
-        candidateProfile: data,
-      })
-    ) {
-      continue;
-    }
-    const age = resolveProfileAge(data);
-    if (age === null) continue;
-    let distanceKm: number | null = null;
-    let label: string | null = null;
-    if (origin?.latitude != null && origin?.longitude != null) {
-      const otherLoc = await db.doc(`userLocation/${doc.id}`).get();
-      const other = otherLoc.data();
-      if (other?.latitude != null && other?.longitude != null) {
-        distanceKm = haversineKm(
-          Number(origin.latitude),
-          Number(origin.longitude),
-          Number(other.latitude),
-          Number(other.longitude),
-        );
-        if (distanceKm > radiusKm) continue;
-        distanceKm = Math.round(distanceKm * 10) / 10;
-        label = distanceLabel(distanceKm, lang).label;
+  let scannedFullPage = false;
+  const buckets: Record<DiscoveryDistanceTier, Array<Record<string, unknown>>> = {
+    nearby: [],
+    extended: [],
+    far: [],
+    no_location: [],
+  };
+
+  for (let page = 0; page < maxPages; page++) {
+    let query = db
+      .collection("profiles")
+      .where("isDiscoverable", "==", true)
+      .where("profileCompleted", "==", true)
+      .orderBy("updatedAt", "desc")
+      .limit(pageSize);
+    if (pageCursor) {
+      const cursorSnap = await db.doc(`profiles/${pageCursor}`).get();
+      if (cursorSnap.exists) {
+        query = query.startAfter(cursorSnap);
       }
     }
-    const music = await musicScoreForPair(uid, doc.id);
-    const relationship = await relationshipScoreForPair(uid, doc.id);
-    const compat = calculateCompatibility({
-      viewerProfile,
-      candidateProfile: data,
-      relationship: relationship
-        ? {
-            score: relationship.score,
-            alignedCount: relationship.alignedCount,
-            sharedQuestionCount: relationship.sharedQuestionCount,
-            topTopics: relationship.topTopics ?? [],
-          }
-        : null,
-      musicScore: music?.score ?? null,
-    });
-    items.push({
-      uid: doc.id,
-      profile: {
-        ...publicProfileProjection({...data, uid: doc.id}),
-        isVerified: accountsByUid.get(doc.id)?.isVerified === true,
-      },
-      distanceLabel: label,
-      distanceKm,
-      compatibilityScore: compat.overallScore,
-      compatibilityBreakdown: {
-        overallScore: compat.overallScore,
-        relationshipScore: compat.relationshipScore,
-        interestScore: compat.interestScore,
-        lifestyleScore: compat.lifestyleScore,
-        questionScore: compat.questionScore,
-        musicScore: compat.musicScore,
-        communicationScore: compat.communicationScore,
-      },
-      musicCompatibilityScore: music?.score ?? null,
-      musicRankingBonus: music ? musicRankingBonus(music.score) : 0,
-      sharedMusicArtists: music?.sharedArtists.slice(0, 3) ?? [],
-      sharedMusicTracks: music?.sharedTracks.slice(0, 3) ?? [],
-      relationshipCompatibilityScore: relationship?.score ?? null,
-      relationshipSharedViewCount: relationship?.sharedQuestionCount ?? null,
-      relationshipAlignedCount: relationship?.alignedCount ?? null,
-      relationshipSummaryTopics: relationship?.topTopics ?? [],
-      sharedInterests: compat.sharedInterests,
-      compatibilityReasons: compat.reasons,
-    });
+    const profiles = await query.get();
+    scannedFullPage = profiles.size === pageSize;
+    if (profiles.empty) {
+      break;
+    }
+    const candidateUids = profiles.docs.map((doc) => doc.id);
+    const [lastActiveByUid, accountsByUid, preferencesByUid, locationsByUid] = await Promise.all([
+      loadLastActiveAt(db, candidateUids),
+      loadUserAccounts(candidateUids),
+      loadPreferencesByUid(db, candidateUids),
+      hasViewerLocation ? loadUserLocations(candidateUids) : Promise.resolve(new Map()),
+    ]);
+
+    for (const doc of profiles.docs) {
+      lastUid = doc.id;
+      if (seen.has(doc.id) || blocked.has(doc.id)) continue;
+      if (!passesSmokeDiscoveryIsolation(callerAccount.data(), accountsByUid.get(doc.id))) {
+        continue;
+      }
+      if (!isActiveForDiscovery(lastActiveByUid.get(doc.id))) continue;
+      if (await isBlocked(uid, doc.id)) continue;
+      const data = doc.data();
+      if (
+        !passesDiscoveryProfileFilters({
+          candidateProfile: data,
+          candidateAccount: accountsByUid.get(doc.id),
+          minAge,
+          maxAge,
+        })
+      ) {
+        continue;
+      }
+      if (
+        !passesGenderPreferences({
+          viewerPrefs: prefs,
+          viewerProfile,
+          candidatePrefs: preferencesByUid.get(doc.id) ?? {},
+          candidateProfile: data,
+        })
+      ) {
+        continue;
+      }
+      const age = resolveProfileAge(data);
+      if (age === null) continue;
+      const candidateBoosted = isBoostedCandidate(doc.id, boosted);
+      let distanceKm: number | null = null;
+      let label: string | null = null;
+      let tier: DiscoveryDistanceTier = "no_location";
+      if (hasViewerLocation) {
+        const other = locationsByUid.get(doc.id);
+        if (other) {
+          distanceKm = haversineKm(
+            Number(origin.latitude),
+            Number(origin.longitude),
+            other.latitude,
+            other.longitude,
+          );
+          const maxNearbyKm = effectiveRadiusKm(radiusKm, candidateBoosted);
+          tier = classifyDiscoveryDistance(
+            distanceKm,
+            radiusKm,
+            candidateBoosted,
+            maxNearbyKm,
+          );
+          distanceKm = Math.round(distanceKm * 10) / 10;
+          label = distanceLabel(distanceKm, lang).label;
+        } else {
+          tier = "no_location";
+        }
+      } else {
+        // Viewer has no location → location-independent discovery.
+        tier = "no_location";
+      }
+      const music = await musicScoreForPair(uid, doc.id);
+      const relationship = await relationshipScoreForPair(uid, doc.id);
+      const compat = calculateCompatibility({
+        viewerProfile,
+        candidateProfile: data,
+        relationship: relationship
+          ? {
+              score: relationship.score,
+              alignedCount: relationship.alignedCount,
+              sharedQuestionCount: relationship.sharedQuestionCount,
+              topTopics: relationship.topTopics ?? [],
+            }
+          : null,
+        musicScore: music?.score ?? null,
+      });
+      buckets[tier].push({
+        uid: doc.id,
+        profile: {
+          ...publicProfileProjection({...data, uid: doc.id}),
+          isVerified: accountsByUid.get(doc.id)?.isVerified === true,
+        },
+        distanceLabel: label,
+        distanceKm,
+        compatibilityScore: compat.overallScore,
+        compatibilityBreakdown: {
+          overallScore: compat.overallScore,
+          relationshipScore: compat.relationshipScore,
+          interestScore: compat.interestScore,
+          lifestyleScore: compat.lifestyleScore,
+          questionScore: compat.questionScore,
+          musicScore: compat.musicScore,
+          communicationScore: compat.communicationScore,
+        },
+        musicCompatibilityScore: music?.score ?? null,
+        musicRankingBonus: music ? musicRankingBonus(music.score) : 0,
+        sharedMusicArtists: music?.sharedArtistNames?.slice(0, 5)
+          ?? music?.sharedArtists.slice(0, 5)
+          ?? [],
+        sharedMusicTracks: music?.sharedTrackNames?.slice(0, 5)
+          ?? music?.sharedTracks.slice(0, 5)
+          ?? [],
+        sharedMusicGenres: music?.sharedGenres.slice(0, 3) ?? [],
+        sharedMusicArtistCount: music?.sharedArtists.length ?? 0,
+        sharedMusicTrackCount: music?.sharedTracks.length ?? 0,
+        sharedMusicGenreCount: music?.sharedGenres.length ?? 0,
+        sharedMusicPlaylistTrackCount: music?.sharedPlaylistTracks.length ?? 0,
+        sharedMusicRecentTrackCount: music?.sharedRecentTracks.length ?? 0,
+        musicInsights: music?.insights ?? [],
+        musicBreakdown: music?.breakdown ?? null,
+        relationshipCompatibilityScore: relationship?.score ?? null,
+        relationshipSharedViewCount: relationship?.sharedQuestionCount ?? null,
+        relationshipAlignedCount: relationship?.alignedCount ?? null,
+        relationshipSummaryTopics: relationship?.topTopics ?? [],
+        sharedInterests: compat.sharedInterests,
+        compatibilityReasons: compat.reasons,
+        isBoosted: candidateBoosted,
+        discoveryTier: tier,
+      });
+    }
+
+    const nearbyCount = buckets.nearby.length;
+    const totalEligible =
+      nearbyCount +
+      buckets.extended.length +
+      buckets.far.length +
+      buckets.no_location.length;
+    // Enough nearby — stop scanning. Otherwise keep scanning for fallback tiers.
+    if (nearbyCount >= limit || totalEligible >= limit * 2) {
+      pageCursor = lastUid ?? "";
+      break;
+    }
+    if (!scannedFullPage) {
+      break;
+    }
+    pageCursor = lastUid ?? "";
   }
-  const ranked = sortByBoostVisibility(items, boosted).slice(0, limit);
-  const nextCursor = profiles.size === 40 ? lastUid : null;
-  return {items: ranked, nextCursor};
+
+  // Rank each tier with the existing boost/compat ranking (no engine rewrite).
+  for (const key of Object.keys(buckets) as DiscoveryDistanceTier[]) {
+    buckets[key] = sortByBoostVisibility(buckets[key], boosted, radiusKm);
+  }
+
+  const filled = fillFromDistanceTiers(buckets, limit);
+  logger.info("discovery_fallback", {
+    viewerHasLocation: hasViewerLocation,
+    radiusKm,
+    expandDistance,
+    nearby: buckets.nearby.length,
+    extended: buckets.extended.length,
+    far: buckets.far.length,
+    noLocation: buckets.no_location.length,
+    returned: filled.items.length,
+    fallbackLevel: filled.fallbackLevel,
+  });
+
+  const nextCursor = scannedFullPage ? lastUid : null;
+  return {
+    items: filled.items,
+    nextCursor,
+    fallbackLevel: filled.fallbackLevel,
+  };
 });
 
 export const getDiscoveryFeed = getDiscoveryCandidates;

@@ -66,6 +66,8 @@ class UserProfile {
     this.occupation,
     this.education,
     this.languages = const [],
+    this.hobbies = const [],
+    this.heightCm,
     this.city,
     this.lifestyle = const [],
     this.lifestyleProfile = const ProfileLifestyle(),
@@ -92,6 +94,10 @@ class UserProfile {
   final String? occupation;
   final String? education;
   final List<String> languages;
+  final List<String> hobbies;
+
+  /// Height in centimeters. 201 means 200+ cm.
+  final int? heightCm;
 
   /// City label only. Never lat/lng.
   final String? city;
@@ -139,6 +145,8 @@ class UserProfile {
     String? occupation,
     String? education,
     List<String>? languages,
+    List<String>? hobbies,
+    int? heightCm,
     String? city,
     List<String>? lifestyle,
     ProfileLifestyle? lifestyleProfile,
@@ -165,6 +173,8 @@ class UserProfile {
       occupation: occupation ?? this.occupation,
       education: education ?? this.education,
       languages: languages ?? this.languages,
+      hobbies: hobbies ?? this.hobbies,
+      heightCm: heightCm ?? this.heightCm,
       city: city ?? this.city,
       lifestyle: lifestyle ?? this.lifestyle,
       lifestyleProfile: lifestyleProfile ?? this.lifestyleProfile,

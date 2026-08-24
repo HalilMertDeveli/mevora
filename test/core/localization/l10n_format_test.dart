@@ -11,8 +11,8 @@ void main() {
   final tr = lookupAppLocalizations(const Locale('tr'));
 
   test('invalid OTP is localized for EN and TR', () {
-    expect(L10nErrors.auth(en, AuthErrorKind.invalidOtp), 'Invalid verification code.');
-    expect(L10nErrors.auth(tr, AuthErrorKind.invalidOtp), 'Doğrulama kodu geçersiz.');
+    expect(L10nErrors.auth(en, AuthErrorKind.invalidOtp), 'The verification code is incorrect.');
+    expect(L10nErrors.auth(tr, AuthErrorKind.invalidOtp), 'Doğrulama kodu hatalı.');
   });
 
   test('billing-not-enabled is localized for EN and TR', () {

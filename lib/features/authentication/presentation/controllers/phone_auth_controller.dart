@@ -89,15 +89,23 @@ class PhoneAuthController extends ChangeNotifier {
     _state = const SendingOtp();
     notifyListeners();
     await _analytics.phoneAuthStarted();
+    // ignore: avoid_print
+    print('[PHONE_AUTH] START controller-send');
     _logger.info('phone_auth send requested');
 
     final result = await _send(validation.e164!);
     switch (result) {
       case Success<PhoneChallenge>(:final value):
+        // ignore: avoid_print
+        print(
+          '[PHONE_AUTH] CODE_SENT controller verificationIdEmpty=${value.verificationId.isEmpty} auto=${value.autoVerified}',
+        );
         if (value.autoVerified) {
           final auto = await _authRepository.completePhoneAutoVerification();
           switch (auto) {
             case Success<AuthUser>(:final value):
+              // ignore: avoid_print
+              print('[PHONE_AUTH] SIGN_IN_SUCCESS controller-auto');
               _state = PhoneAuthenticated(value);
               await _analytics.otpVerified();
               notifyListeners();
@@ -109,6 +117,8 @@ class PhoneAuthController extends ChangeNotifier {
         _state = OtpSent(challenge: value);
         _startCooldown();
         await _analytics.otpSent();
+        // ignore: avoid_print
+        print('[PHONE_AUTH] NAVIGATION otp-screen');
         notifyListeners();
         return true;
       case Err<PhoneChallenge>(:final failure):
@@ -144,22 +154,33 @@ class PhoneAuthController extends ChangeNotifier {
     switch (result) {
       case Success<AuthUser>(:final value):
         _timer?.cancel();
+        // ignore: avoid_print
+        print('[PHONE_AUTH] SIGN_IN_SUCCESS controller-manual');
+        // ignore: avoid_print
+        print('[PHONE_AUTH] FIREBASE_UID_RECEIVED controller');
         _state = PhoneAuthenticated(value);
         await _analytics.otpVerified();
+        // ignore: avoid_print
+        print('[PHONE_AUTH] NAVIGATION after-auth');
         notifyListeners();
         return true;
       case Err<AuthUser>(:final failure):
         await _analytics.otpVerificationFailed();
+        final code = failure is AuthFailure ? failure.code : null;
+        // ignore: avoid_print
+        print('[PHONE_AUTH] VERIFICATION_FAILED otp code=$code message=${failure.message}');
         if (_isTooMany(failure)) {
           _state = TooManyAttempts(
             failure.message,
             kind: failure is AuthFailure ? failure.kind : AuthErrorKind.tooManyAttempts,
+            firebaseCode: code,
           );
         } else {
           _state = OtpError(
             challenge: challenge,
             message: failure.message,
             kind: failure is AuthFailure ? failure.kind : AuthErrorKind.invalidOtp,
+            firebaseCode: code,
           );
         }
         notifyListeners();
@@ -204,8 +225,11 @@ class PhoneAuthController extends ChangeNotifier {
 
   bool _failSend(Failure failure) {
     final kind = failure is AuthFailure ? failure.kind : AuthErrorKind.smsFailed;
+    final code = failure is AuthFailure ? failure.code : null;
+    // ignore: avoid_print
+    print('[PHONE_AUTH] VERIFICATION_FAILED send code=$code kind=$kind message=${failure.message}');
     _logger.warning(
-      'phone_auth send failed kind=$kind',
+      'phone_auth send failed kind=$kind code=$code',
       error: failure.message,
     );
     unawaited(_analytics.phoneAuthFailed());
@@ -215,10 +239,12 @@ class PhoneAuthController extends ChangeNotifier {
             kind: kind == AuthErrorKind.smsQuota
                 ? AuthErrorKind.smsQuota
                 : AuthErrorKind.tooManyAttempts,
+            firebaseCode: code,
           )
         : SmsSendError(
             failure.message,
             kind: kind,
+            firebaseCode: code,
           );
     notifyListeners();
     return false;

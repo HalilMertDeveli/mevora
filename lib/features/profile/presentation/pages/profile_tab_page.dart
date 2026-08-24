@@ -15,6 +15,7 @@ import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
 import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
@@ -66,6 +67,14 @@ class ProfileTabPage extends StatelessWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.xl),
+          if (user?.id != null) ...[
+            ProfileQuestionAnswersSection(
+              uid: user!.id,
+              isOwner: true,
+              showEditAction: true,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
           const _ProfileVerificationTile(),
           const _ProfileBoostTile(),
           const _ProfileMatchScoreTile(),
@@ -117,16 +126,18 @@ class _ProfileVerificationTile extends StatefulWidget {
 class _ProfileVerificationTileState extends State<_ProfileVerificationTile> {
   StreamSubscription<ProfileVerification>? _subscription;
   ProfileVerificationStatus _status = ProfileVerificationStatus.notStarted;
+  String? _subscribedUid;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final uid = AuthScope.maybeOf(context)?.user?.id;
     final repository = VerificationScope.maybeOf(context);
-    if (uid == null || repository == null) {
+    if (uid == null || repository == null || uid == _subscribedUid) {
       return;
     }
-    _subscription?.cancel();
+    _subscribedUid = uid;
+    unawaited(_subscription?.cancel());
     _subscription = repository.watchVerification(uid).listen(
       (value) {
         if (!mounted) {

@@ -274,12 +274,18 @@ export async function queuePostMatchFeedback(input: {
 }
 
 export function preservedMatchScoreFields(existing?: {
+  matchedAt?: unknown;
   matchBonusAwarded?: unknown;
   interactionBonusAwarded?: unknown;
   messagedUserIds?: unknown;
+  isActive?: unknown;
 } | null) {
+  const rematching = existing?.isActive === false;
   return {
-    matchedAt: FieldValue.serverTimestamp(),
+    matchedAt:
+      rematching || !existing?.matchedAt
+        ? FieldValue.serverTimestamp()
+        : existing.matchedAt,
     matchBonusAwarded: existing?.matchBonusAwarded === true,
     interactionBonusAwarded: existing?.interactionBonusAwarded === true,
     messagedUserIds:

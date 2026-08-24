@@ -1,3 +1,6 @@
+import 'package:mevora/features/chat/e2ee/models/e2ee_identity.dart';
+import 'package:mevora/features/chat/e2ee/services/e2ee_chat_service.dart';
+
 enum MessageType { text, image, gif, voice, system }
 
 enum MessageStatus { sent, delivered, read }
@@ -41,6 +44,10 @@ class ChatMessage {
     this.mediaUrl,
     this.durationMs,
     this.localMediaBytes,
+    this.isEncrypted = false,
+    this.decryptFailed = false,
+    this.encryptedPayload,
+    this.mediaEnvelope,
   });
 
   final String id;
@@ -69,6 +76,18 @@ class ChatMessage {
   /// In-memory demo/preview bytes. Never written to Firestore.
   final List<int>? localMediaBytes;
 
+  /// True when ciphertext is stored in Firestore instead of plaintext [text].
+  final bool isEncrypted;
+
+  /// Decryption failed (tampered ciphertext or missing session key).
+  final bool decryptFailed;
+
+  /// Present only while mapping from Firestore before decryption.
+  final E2eeEncryptedPayload? encryptedPayload;
+
+  /// Encrypted media envelope metadata from Firestore.
+  final E2eeMediaEnvelopeFields? mediaEnvelope;
+
   bool get isMine => false;
 
   bool isFrom(String uid) => senderId == uid;
@@ -95,6 +114,10 @@ class ChatMessage {
     String? mediaUrl,
     int? durationMs,
     List<int>? localMediaBytes,
+    bool? isEncrypted,
+    bool? decryptFailed,
+    E2eeEncryptedPayload? encryptedPayload,
+    E2eeMediaEnvelopeFields? mediaEnvelope,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -112,6 +135,10 @@ class ChatMessage {
       mediaUrl: mediaUrl ?? this.mediaUrl,
       durationMs: durationMs ?? this.durationMs,
       localMediaBytes: localMediaBytes ?? this.localMediaBytes,
+      isEncrypted: isEncrypted ?? this.isEncrypted,
+      decryptFailed: decryptFailed ?? this.decryptFailed,
+      encryptedPayload: encryptedPayload ?? this.encryptedPayload,
+      mediaEnvelope: mediaEnvelope ?? this.mediaEnvelope,
     );
   }
 }

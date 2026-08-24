@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 
@@ -31,7 +33,7 @@ class _AnimatedCompatibilityScoreState extends State<AnimatedCompatibilityScore>
     _score = IntTween(begin: 0, end: widget.target).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
-    _controller.forward();
+    unawaited(_controller.forward());
   }
 
   @override

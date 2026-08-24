@@ -21,6 +21,20 @@
       ]
     }
   ],
+  "hosting": {
+    "public": "hosting/public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      { "source": "/privacy", "destination": "/privacy.html" },
+      { "source": "/terms", "destination": "/terms.html" },
+      { "source": "/guidelines", "destination": "/guidelines.html" },
+      { "source": "/help", "destination": "/help.html" }
+    ]
+  },
   "emulators": {
     "auth": {
       "port": 9099

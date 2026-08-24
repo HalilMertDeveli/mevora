@@ -95,6 +95,13 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  '${phone.country.dialPrefix} ${phone.formattedNational.isEmpty ? '—' : phone.formattedNational}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.xl),
                 if (sending)
                   MevoraLoading(message: l10n.sendingSms)

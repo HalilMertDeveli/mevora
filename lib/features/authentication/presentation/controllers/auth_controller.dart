@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:mevora/core/errors/failure.dart';
@@ -204,6 +205,16 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<Result<void>> signInWithGoogle() async {
+    // #region agent log
+    _logDebug(
+      'auth_controller_google_signin_start',
+      hypothesisId: 'GAUTH_FLOW',
+      data: <String, Object?>{
+        'hasUserBefore': user != null,
+        'statusBefore': status.runtimeType.toString(),
+      },
+    );
+    // #endregion
     await _analytics.googleLoginStarted();
     final result = await _run(
       _authRepository.signInWithGoogle,
@@ -212,8 +223,30 @@ class AuthController extends ChangeNotifier {
     );
     switch (result) {
       case Success<void>():
+        // #region agent log
+        _logDebug(
+          'auth_controller_google_signin_success',
+          hypothesisId: 'GAUTH_FLOW',
+          data: <String, Object?>{
+            'hasUserAfter': user != null,
+            'statusAfter': status.runtimeType.toString(),
+          },
+        );
+        // #endregion
         await _analytics.googleLoginSuccess();
       case Err<void>(:final failure):
+        // #region agent log
+        _logDebug(
+          'auth_controller_google_signin_failure',
+          hypothesisId: 'GAUTH_FLOW',
+          data: <String, Object?>{
+            'failureType': failure.runtimeType.toString(),
+            'failureMessage': failure.message,
+            'errorKind': errorKind?.name,
+            'statusAfter': status.runtimeType.toString(),
+          },
+        );
+        // #endregion
         if (failure is AuthFailure &&
             (failure.isCancelled || failure.kind == AuthErrorKind.cancelled)) {
           await _analytics.googleLoginCancelled();
@@ -223,6 +256,31 @@ class AuthController extends ChangeNotifier {
     }
     return result;
   }
+
+  // #region agent log
+  void _logDebug(
+    String message, {
+    String hypothesisId = 'GAUTH_FLOW',
+    Map<String, Object?> data = const <String, Object?>{},
+  }) {
+    try {
+      final entry = <String, Object?>{
+        'sessionId': '80971b',
+        'runId': 'google-signin',
+        'hypothesisId': hypothesisId,
+        'location': 'auth_controller.dart',
+        'message': message,
+        'data': data,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+      // Visible in `flutter run` output from physical devices.
+      // ignore: avoid_print
+      print('[GAUTH_DEBUG] ${jsonEncode(entry)}');
+    } on Object {
+      // Ignore logging errors.
+    }
+  }
+  // #endregion
 
   Future<Result<void>> signInWithApple() {
     return _run(_authRepository.signInWithApple, provider: 'apple');

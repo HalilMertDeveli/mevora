@@ -10,6 +10,12 @@ abstract final class AuthRedirector {
     AppRoutes.phone,
   };
 
+  static const Set<String> _publicLegalRoutes = {
+    AppRoutes.legalTerms,
+    AppRoutes.legalPrivacy,
+    AppRoutes.legalGuidelines,
+  };
+
   static String? redirect({
     required AuthStatus status,
     required String location,
@@ -36,7 +42,10 @@ abstract final class AuthRedirector {
         if (location == AppRoutes.phoneOtp) {
           return phoneChallengeActive ? null : AppRoutes.phone;
         }
-        return _sessionRoutes.contains(location) ? null : AppRoutes.login;
+        return _sessionRoutes.contains(location) ||
+                _publicLegalRoutes.contains(location)
+            ? null
+            : AppRoutes.login;
       case NeedsOnboarding():
         return _onboardingRedirect(
           location: location,

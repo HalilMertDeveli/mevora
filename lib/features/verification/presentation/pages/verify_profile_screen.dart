@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/verification_scope.dart';
+import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
 import 'package:mevora/features/verification/presentation/controllers/verification_controller.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
@@ -11,7 +13,6 @@ import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class VerifyProfileScreen extends StatefulWidget {
   const VerifyProfileScreen({super.key});
@@ -173,8 +174,7 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   TextButton(
-                    onPressed: () =>
-                        unawaited(_openUrl('https://mevora.app/privacy')),
+                    onPressed: () => context.push(AppRoutes.legalPrivacy),
                     child: Text(l10n.privacyPolicy),
                   ),
                 ],
@@ -202,13 +202,6 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
       'already-verified' => l10n.profileVerified,
       _ => l10n.verificationCouldNotComplete,
     };
-  }
-
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mevora/core/constants/firestore_paths.dart';
+import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/matching/domain/match_engine.dart';
@@ -97,11 +98,15 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
   Match _matchFrom(String id, Map<String, dynamic> data) {
     final userIds = (data['userIds'] as List?)?.whereType<String>().toList() ??
         const <String>[];
+    final matchedAt = _date(data['matchedAt']);
+    final createdAt =
+        _date(data['createdAt']) ?? matchedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     return Match(
       id: (data['matchId'] as String?) ?? id,
       userIds: userIds,
-      createdAt: _date(data['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt: createdAt,
       isActive: data['isActive'] as bool? ?? true,
+      matchedAt: matchedAt,
       lastMessage: data['lastMessage'] as String?,
       lastMessageAt: _date(data['lastMessageAt']),
       unmatchedBy: data['unmatchedBy'] as String?,
@@ -120,13 +125,5 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
     );
   }
 
-  DateTime? _date(Object? value) {
-    if (value is DateTime) {
-      return value;
-    }
-    if (value is Timestamp) {
-      return value.toDate();
-    }
-    return null;
-  }
+  DateTime? _date(Object? value) => firestoreDate(value);
 }

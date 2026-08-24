@@ -32,7 +32,7 @@ void main() {
     );
     expect(
       SpotifyAuthService.musicScopes,
-      'user-top-read user-read-recently-played',
+      'user-top-read user-read-recently-played playlist-read-private',
     );
     expect(SpotifyAuthService.musicScopes.contains('streaming'), isFalse);
     expect(SpotifyAuthService.loginScopes.contains('streaming'), isFalse);

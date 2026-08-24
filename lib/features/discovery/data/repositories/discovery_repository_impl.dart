@@ -6,6 +6,8 @@ import 'package:mevora/features/compatibility/domain/entities/compatibility_disp
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
+import 'package:mevora/features/music/domain/services/music_compatibility.dart';
+import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 
 /// Calls privileged Cloud Functions. Never reads other users' coordinates.
 class DiscoveryRepositoryImpl implements DiscoveryRepository {
@@ -19,12 +21,14 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     required DiscoveryRadius radius,
     String? cursor,
     int limit = 10,
+    bool expandDistance = false,
   }) async {
     try {
       final data = await _backend.invoke('getDiscoveryCandidates', {
         'radiusKm': radius.kilometers,
         'cursor': cursor,
         'limit': limit,
+        'expandDistance': expandDistance,
       });
       final rawItems = data['items'];
       final items = <DiscoveryCandidate>[];
@@ -125,6 +129,12 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
           ? CompatibilityDisplayStatus.ready
           : CompatibilityDisplayStatus.calculating,
       interests: firestoreStringList(profile['interests']),
+      languages: firestoreStringList(profile['languages']),
+      hobbies: firestoreStringList(profile['hobbies']),
+      lifestyle: firestoreStringList(profile['lifestyle']),
+      lifestyleProfile: ProfileLifestyle.fromMap(
+        profile['lifestyleProfile'] ?? profile['lifestyle'],
+      ),
       sharedInterests: firestoreStringList(raw['sharedInterests']),
       compatibilityReasons: firestoreStringList(raw['compatibilityReasons']),
       bio: profile['bio'] as String?,
@@ -134,6 +144,26 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       musicCompatibilityScore: raw['musicCompatibilityScore'] == null
           ? null
           : firestoreInt(raw['musicCompatibilityScore'], 0),
+      sharedMusicTracks: firestoreStringList(raw['sharedMusicTracks']),
+      sharedMusicArtists: firestoreStringList(raw['sharedMusicArtists']),
+      sharedMusicGenres: firestoreStringList(raw['sharedMusicGenres']),
+      sharedMusicTrackCount: raw['sharedMusicTrackCount'] == null
+          ? null
+          : firestoreInt(raw['sharedMusicTrackCount'], 0),
+      sharedMusicArtistCount: raw['sharedMusicArtistCount'] == null
+          ? null
+          : firestoreInt(raw['sharedMusicArtistCount'], 0),
+      sharedMusicGenreCount: raw['sharedMusicGenreCount'] == null
+          ? null
+          : firestoreInt(raw['sharedMusicGenreCount'], 0),
+      sharedMusicPlaylistTrackCount:
+          raw['sharedMusicPlaylistTrackCount'] == null
+          ? null
+          : firestoreInt(raw['sharedMusicPlaylistTrackCount'], 0),
+      sharedMusicRecentTrackCount: raw['sharedMusicRecentTrackCount'] == null
+          ? null
+          : firestoreInt(raw['sharedMusicRecentTrackCount'], 0),
+      musicInsights: _parseMusicInsights(raw['musicInsights']),
       relationshipCompatibilityScore:
           raw['relationshipCompatibilityScore'] == null
           ? null
@@ -148,6 +178,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         raw['relationshipSummaryTopics'],
       ),
       isVerified: profile['isVerified'] == true || raw['isVerified'] == true,
+      isBoosted: raw['isBoosted'] == true,
       categoryRelationshipScore: breakdown['relationshipScore'] == null
           ? null
           : firestoreInt(breakdown['relationshipScore'], 0),
@@ -182,5 +213,43 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       return fromBreakdown;
     }
     return 0;
+  }
+
+  List<MusicInsight> _parseMusicInsights(Object? raw) {
+    if (raw is! List) {
+      return const [];
+    }
+    final out = <MusicInsight>[];
+    for (final item in raw) {
+      if (item is! Map) {
+        continue;
+      }
+      final map = Map<String, dynamic>.from(item);
+      final code = MusicCompatibilityCalculator.parseInsightCode(
+        map['code'] as String?,
+      );
+      final paramsRaw = map['params'];
+      final params = <String, Object>{};
+      if (paramsRaw is Map) {
+        paramsRaw.forEach((key, value) {
+          if (key is! String || value == null) {
+            return;
+          }
+          if (value is int) {
+            params[key] = value;
+          } else if (value is double) {
+            params[key] = value;
+          } else if (value is String) {
+            params[key] = value;
+          } else if (value is num) {
+            params[key] = value.toDouble();
+          } else {
+            params[key] = value.toString();
+          }
+        });
+      }
+      out.add(MusicInsight(code: code, params: params));
+    }
+    return out;
   }
 }

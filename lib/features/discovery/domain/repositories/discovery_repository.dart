@@ -17,6 +17,7 @@ abstract class DiscoveryRepository {
     required DiscoveryRadius radius,
     String? cursor,
     int limit = 10,
+    bool expandDistance = false,
   });
 
   Future<Result<DiscoveryDecisionResult>> recordDecision({

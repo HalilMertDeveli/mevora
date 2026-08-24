@@ -23,6 +23,9 @@ class CompatibilityBreakdown {
     this.communicationScore,
     this.proximityScore,
     this.activityScore,
+    this.languageScore,
+    this.hobbyScore,
+    this.valuesScore,
     this.dataQuality = CompatibilityDataQuality.sufficient,
     this.reasons = const [],
     this.sharedInterests = const [],
@@ -42,6 +45,9 @@ class CompatibilityBreakdown {
   final int? communicationScore;
   final int? proximityScore;
   final int? activityScore;
+  final int? languageScore;
+  final int? hobbyScore;
+  final int? valuesScore;
   final CompatibilityDataQuality dataQuality;
   final List<CompatibilityReason> reasons;
   final List<String> sharedInterests;
@@ -59,26 +65,45 @@ class CompatibilityBreakdown {
 
   CompatibilityBreakdown copyWith({
     int? overallScore,
+    int? relationshipScore,
+    int? interestScore,
+    int? lifestyleScore,
+    int? questionScore,
+    int? musicScore,
+    int? communicationScore,
+    int? proximityScore,
+    int? activityScore,
+    int? languageScore,
+    int? hobbyScore,
+    int? valuesScore,
     CompatibilityDataQuality? dataQuality,
     List<CompatibilityReason>? reasons,
+    List<String>? sharedInterests,
+    int? questionAlignedCount,
+    int? questionSharedCount,
+    CompatibilityCategory? strongestCategory,
+    CompatibilityCategory? weakestCategory,
   }) {
     return CompatibilityBreakdown(
       overallScore: overallScore ?? this.overallScore,
-      relationshipScore: relationshipScore,
-      interestScore: interestScore,
-      lifestyleScore: lifestyleScore,
-      questionScore: questionScore,
-      musicScore: musicScore,
-      communicationScore: communicationScore,
-      proximityScore: proximityScore,
-      activityScore: activityScore,
+      relationshipScore: relationshipScore ?? this.relationshipScore,
+      interestScore: interestScore ?? this.interestScore,
+      lifestyleScore: lifestyleScore ?? this.lifestyleScore,
+      questionScore: questionScore ?? this.questionScore,
+      musicScore: musicScore ?? this.musicScore,
+      communicationScore: communicationScore ?? this.communicationScore,
+      proximityScore: proximityScore ?? this.proximityScore,
+      activityScore: activityScore ?? this.activityScore,
+      languageScore: languageScore ?? this.languageScore,
+      hobbyScore: hobbyScore ?? this.hobbyScore,
+      valuesScore: valuesScore ?? this.valuesScore,
       dataQuality: dataQuality ?? this.dataQuality,
       reasons: reasons ?? this.reasons,
-      sharedInterests: sharedInterests,
-      questionAlignedCount: questionAlignedCount,
-      questionSharedCount: questionSharedCount,
-      strongestCategory: strongestCategory,
-      weakestCategory: weakestCategory,
+      sharedInterests: sharedInterests ?? this.sharedInterests,
+      questionAlignedCount: questionAlignedCount ?? this.questionAlignedCount,
+      questionSharedCount: questionSharedCount ?? this.questionSharedCount,
+      strongestCategory: strongestCategory ?? this.strongestCategory,
+      weakestCategory: weakestCategory ?? this.weakestCategory,
     );
   }
 }

@@ -5,21 +5,28 @@ import 'package:mevora/features/discovery/domain/entities/discovery_candidate.da
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 
 abstract final class CompatibilityBreakdownMapper {
+  /// Maps a candidate only when the server sent a full core category breakdown.
+  static CompatibilityBreakdown? fromCandidateIfComplete(
+    DiscoveryCandidate candidate,
+  ) {
+    if (!candidate.hasCompleteCoreCategoryBreakdown) {
+      return null;
+    }
+    return fromCandidate(candidate);
+  }
+
   static CompatibilityBreakdown fromCandidate(DiscoveryCandidate candidate) {
-    final hasCategories = candidate.categoryRelationshipScore != null;
     return CompatibilityBreakdown(
       overallScore: candidate.compatibilityScore,
-      relationshipScore: candidate.categoryRelationshipScore ?? 0,
-      interestScore: candidate.categoryInterestScore ?? 0,
-      lifestyleScore: candidate.categoryLifestyleScore ?? 0,
+      relationshipScore: candidate.categoryRelationshipScore!,
+      interestScore: candidate.categoryInterestScore!,
+      lifestyleScore: candidate.categoryLifestyleScore!,
       questionScore: candidate.categoryQuestionScore ??
           candidate.relationshipCompatibilityScore,
       musicScore:
           candidate.categoryMusicScore ?? candidate.musicCompatibilityScore,
       communicationScore: candidate.categoryCommunicationScore,
-      dataQuality: hasCategories || candidate.compatibilityScore > 0
-          ? CompatibilityDataQuality.sufficient
-          : CompatibilityDataQuality.partial,
+      dataQuality: CompatibilityDataQuality.sufficient,
       sharedInterests: candidate.sharedInterests,
       questionAlignedCount: candidate.relationshipAlignedCount,
       questionSharedCount: candidate.relationshipSharedViewCount,

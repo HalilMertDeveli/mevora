@@ -12,7 +12,6 @@ import 'package:mevora/features/settings/presentation/widgets/language_settings_
 import 'package:mevora/features/settings/presentation/widgets/settings_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_dialog.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Main settings hub: account, discovery, privacy, notifications, support.
 class SettingsPage extends StatefulWidget {
@@ -81,7 +80,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 SettingsNavTile(
                   title: l10n.linkedAccounts,
-                  subtitle: l10n.deleteAccount,
+                  onTap: () => context.push(AppRoutes.accountSettings),
+                ),
+                SettingsNavTile(
+                  title: l10n.deleteAccount,
+                  destructive: true,
                   onTap: () => context.push(AppRoutes.accountSettings),
                 ),
                 SettingsNavTile(
@@ -164,22 +167,21 @@ class _SettingsPageState extends State<SettingsPage> {
               title: l10n.settingsSupport,
               children: [
                 SettingsNavTile(
-                  title: l10n.help,
-                  onTap: () => unawaited(_openUrl('https://mevora.app/help')),
+                  title: l10n.supportCenterTitle,
+                  subtitle: l10n.supportCenterSubtitle,
+                  onTap: () => context.push(AppRoutes.supportCenter),
                 ),
                 SettingsNavTile(
                   title: l10n.communityGuidelines,
-                  onTap: () =>
-                      unawaited(_openUrl('https://mevora.app/guidelines')),
+                  onTap: () => context.push(AppRoutes.communityGuidelines),
                 ),
                 SettingsNavTile(
                   title: l10n.termsOfService,
-                  onTap: () => unawaited(_openUrl('https://mevora.app/terms')),
+                  onTap: () => context.push(AppRoutes.termsOfService),
                 ),
                 SettingsNavTile(
                   title: l10n.privacyPolicy,
-                  onTap: () =>
-                      unawaited(_openUrl('https://mevora.app/privacy')),
+                  onTap: () => context.push(AppRoutes.privacyPolicy),
                 ),
               ],
             ),
@@ -202,13 +204,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
-  }
-
-  Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 
   Future<void> _confirmLogout() async {

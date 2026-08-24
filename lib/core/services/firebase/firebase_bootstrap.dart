@@ -97,61 +97,68 @@ class FirebaseBootstrap {
     );
   }
 
-  /// Live Phone Auth needs Play Integrity and/or reCAPTCHA.
+  /// Live Phone Auth needs Play Integrity and/or reCAPTCHA for **real SMS**.
   ///
-  /// Development disables app verification by default so Console **test
-  /// numbers** and debug sideloads work. Play Integrity / reCAPTCHA often
-  /// fail or hang on debug builds (empty `taskAffinity` + Custom Tabs).
+  /// Defaults target carrier SMS (not Console test numbers):
+  /// - App verification is **enabled** (required for real phone numbers).
+  /// - Play Integrity is preferred (SHA-1 + SHA-256 must be in Firebase Console).
+  /// - reCAPTCHA is **not** forced by default — forcing it without a hostable
+  ///   Activity caused `FirebaseAuthMissingActivityForRecaptchaException` and
+  ///   blocked real SMS. Opt in with `--dart-define=FORCE_PHONE_RECAPTCHA=true`.
   ///
-  /// - `--dart-define=DISABLE_PHONE_APP_VERIFICATION=false` to exercise real
-  ///   verification in development
-  /// - `--dart-define=FORCE_PHONE_RECAPTCHA=true` to force the reCAPTCHA path
-  ///
-  /// Production keeps verification enabled; Firebase picks Play Integrity then
-  /// reCAPTCHA.
+  /// Console test numbers (no carrier SMS) — opt in explicitly:
+  /// `--dart-define=DISABLE_PHONE_APP_VERIFICATION=true`
+  /// `--dart-define=PHONE_AUTH_TEST_NUMBER=+905551112233`
+  /// `--dart-define=PHONE_AUTH_TEST_SMS_CODE=123456`
   Future<void> _configureLivePhoneAuth(AppConfig config) async {
     try {
-      const forceRecaptcha = bool.fromEnvironment(
-        'FORCE_PHONE_RECAPTCHA',
+      const disableVerification = bool.fromEnvironment(
+        'DISABLE_PHONE_APP_VERIFICATION',
         defaultValue: false,
       );
-      const disableVerificationOverride = bool.fromEnvironment(
-        'DISABLE_PHONE_APP_VERIFICATION',
-        defaultValue: true,
-      );
-      final appVerificationDisabled = config.environment.isDevelopment
-          ? disableVerificationOverride
-          : false;
-
-      // Console test number on mevora-d6ed0 — auto-retrieves OTP in development
-      // so first-run smoke tests work without waiting for a carrier SMS.
-      // Real numbers still use the normal SMS path.
+      // Empty by default — never inject a Console test pair into production SMS.
       const testPhone = String.fromEnvironment(
         'PHONE_AUTH_TEST_NUMBER',
-        defaultValue: '+905551112233',
+        defaultValue: '',
       );
       const testSms = String.fromEnvironment(
         'PHONE_AUTH_TEST_SMS_CODE',
-        defaultValue: '123456',
+        defaultValue: '',
       );
+
+      final appVerificationDisabled =
+          config.environment.isDevelopment && disableVerification;
+      // Only force reCAPTCHA when explicitly requested. Default: Play Integrity.
+      final forceRecaptcha = !appVerificationDisabled &&
+          const bool.fromEnvironment('FORCE_PHONE_RECAPTCHA', defaultValue: false);
+      final useDevTestPair = config.environment.isDevelopment &&
+          appVerificationDisabled &&
+          testPhone.isNotEmpty &&
+          testSms.isNotEmpty;
 
       await FirebaseAuth.instance.setSettings(
         appVerificationDisabledForTesting: appVerificationDisabled,
-        forceRecaptchaFlow: !appVerificationDisabled && forceRecaptcha,
-        phoneNumber: config.environment.isDevelopment && testPhone.isNotEmpty
-            ? testPhone
-            : null,
-        smsCode: config.environment.isDevelopment && testSms.isNotEmpty
-            ? testSms
-            : null,
+        forceRecaptchaFlow: forceRecaptcha,
+        phoneNumber: useDevTestPair ? testPhone : null,
+        smsCode: useDevTestPair ? testSms : null,
+      );
+      // ignore: avoid_print
+      print(
+        '[PHONE_AUTH] SETTINGS '
+        'appVerificationDisabled=$appVerificationDisabled '
+        'forceRecaptchaFlow=$forceRecaptcha '
+        'devTestNumber=$useDevTestPair '
+        'project=${config.firebaseProjectId}',
       );
       logger.info(
         'Live Phone Auth configured '
         '(appVerificationDisabled=$appVerificationDisabled, '
-        'forceRecaptchaFlow=${!appVerificationDisabled && forceRecaptcha}, '
-        'devTestNumber=${config.environment.isDevelopment && testPhone.isNotEmpty})',
+        'forceRecaptchaFlow=$forceRecaptcha, '
+        'devTestNumber=$useDevTestPair)',
       );
     } on Object catch (error, stackTrace) {
+      // ignore: avoid_print
+      print('[PHONE_AUTH] SETTINGS_FAILED error=$error');
       logger.warning(
         'Auth phone verification settings were not applied',
         error: error,
@@ -163,14 +170,30 @@ class FirebaseBootstrap {
   Future<void> _configureAppCheck(AppConfig config) async {
     try {
       if (config.environment.isDevelopment) {
-        // Debug provider so App Check enforcement (if enabled) does not block
-        // Phone Auth / Auth APIs. Register the logged debug token in Console.
-        await FirebaseAppCheck.instance.activate(
-          providerAndroid: const AndroidDebugProvider(),
-          providerApple: const AppleDebugProvider(),
+        // Fixed token via --dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=...
+        // (injected by tool/flutter_prepare.ps1 from app_check_debug_token.local).
+        const debugToken = String.fromEnvironment(
+          'FIREBASE_APP_CHECK_DEBUG_TOKEN',
         );
+        await FirebaseAppCheck.instance.activate(
+          providerAndroid: AndroidDebugProvider(
+            debugToken: debugToken.isEmpty ? null : debugToken,
+          ),
+          providerApple: AppleDebugProvider(
+            debugToken: debugToken.isEmpty ? null : debugToken,
+          ),
+        );
+        // #region agent log
+        // ignore: avoid_print
+        print(
+          '[APPCHECK_DEBUG] activated development '
+          'hasFixedToken=${debugToken.isNotEmpty}',
+        );
+        // #endregion
         logger.info(
-          'App Check debug provider active — register debug token in Console if enforcement is on',
+          debugToken.isEmpty
+              ? 'App Check debug provider active — register logged token in Console'
+              : 'App Check debug provider active with fixed token',
         );
         return;
       }

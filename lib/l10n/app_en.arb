@@ -937,6 +937,8 @@
   "profileAnswersEdit": "Edit",
   "questionAnswersTitle": "Question & Answers",
   "questionAnswersEmpty": "You haven't answered any questions yet.",
+  "questionAnswersEmptyHint": "Answer a few relationship questions to make your profile more personal. You can edit them anytime.",
+  "questionAnswersSaveError": "Couldn't save your answer. Check your connection and try again.",
   "seeAllAnswers": "{count} more answers",
   "@seeAllAnswers": {
     "placeholders": {

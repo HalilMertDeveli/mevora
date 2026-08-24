@@ -16,8 +16,9 @@ describe("relationship compatibility", () => {
   it("rejects unknown question or answer ids", () => {
     assert.equal(isValidRelationshipAnswer("rq_001", "a"), true);
     assert.equal(isValidRelationshipAnswer("rq_110", "c"), true);
+    assert.equal(isValidRelationshipAnswer("rq_111", "a"), true);
     assert.equal(isValidRelationshipAnswer("rq_000", "a"), false);
-    assert.equal(isValidRelationshipAnswer("rq_111", "a"), false);
+    assert.equal(isValidRelationshipAnswer("rq_112", "a"), false);
     assert.equal(isValidRelationshipAnswer("rq_001", "d"), false);
   });
 

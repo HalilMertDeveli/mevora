@@ -120,7 +120,11 @@ const QUESTION_TOPICS: Record<string, string> = {
   rq_108: "communication",
   rq_109: "friendship",
   rq_110: "boundaries",
+  rq_111: "expectations",
 };
+
+/** Keep in sync with Flutter RelationshipQuestionCatalog size. */
+export const RELATIONSHIP_QUESTION_MAX_ID = 111;
 
 export function isValidRelationshipAnswer(
   questionId: string,
@@ -128,7 +132,9 @@ export function isValidRelationshipAnswer(
 ): boolean {
   if (!/^rq_\d{3}$/.test(questionId)) return false;
   const n = Number(questionId.slice(3));
-  if (!Number.isInteger(n) || n < 1 || n > 110) return false;
+  if (!Number.isInteger(n) || n < 1 || n > RELATIONSHIP_QUESTION_MAX_ID) {
+    return false;
+  }
   return answerId === "a" || answerId === "b" || answerId === "c";
 }
 

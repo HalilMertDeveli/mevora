@@ -2204,6 +2204,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get questionAnswersEmpty => 'Henüz cevapladığın bir soru yok.';
 
   @override
+  String get questionAnswersEmptyHint => 'Profilini daha kişisel hale getirmek için birkaç ilişki sorusu cevapla. İstediğin zaman düzenleyebilirsin.';
+
+  @override
+  String get questionAnswersSaveError => 'Cevabın kaydedilemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
   String seeAllAnswers(int count) {
     return '$count cevabı daha gör';
   }

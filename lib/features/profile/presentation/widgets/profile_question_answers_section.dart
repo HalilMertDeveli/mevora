@@ -173,7 +173,23 @@ class _ProfileQuestionAnswersSectionState
         }
         if (widget.isOwner && value.isEmpty && !_syncAttempted) {
           _syncAttempted = true;
-          await repository.syncFromMatching();
+          try {
+            await repository.syncFromMatching();
+          } on Object {
+            // Stream stays subscribed; UI shows empty / error below.
+          }
+          // Do not paint the pre-sync empty snapshot as final — wait for the
+          // next Firestore emission after dual-write / backfill.
+          if (!mounted) {
+            return;
+          }
+          if (value.isEmpty) {
+            setState(() {
+              _loading = false;
+              _error = null;
+            });
+            return;
+          }
         }
         if (!mounted) {
           return;
@@ -237,9 +253,16 @@ class _ProfileQuestionAnswersSectionState
         : _answers.where((item) => item.isVisible).toList(growable: false);
     if (visibleAnswers.isEmpty) {
       if (!widget.isOwner) {
+        if (widget.highlightWhenMatched) {
+          return _PeerEmptyAnswers(message: l10n.questionAnswersPeerEmpty);
+        }
         return const SizedBox.shrink();
       }
-      return Text(l10n.questionAnswersEmpty);
+      return _OwnerEmptyAnswers(
+        onEdit: widget.showEditAction
+            ? () => context.push(AppRoutes.profileAnswers)
+            : null,
+      );
     }
 
     final cards = visibleAnswers
@@ -265,7 +288,9 @@ class _ProfileQuestionAnswersSectionState
               children: [
                 Expanded(
                   child: Text(
-                    l10n.questionAnswersTitle,
+                    widget.highlightWhenMatched
+                        ? l10n.chatDiscoverAnswersPrompt
+                        : l10n.questionAnswersTitle,
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
@@ -317,6 +342,60 @@ class _ProfileQuestionAnswersSectionState
         borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
       child: content,
+    );
+  }
+}
+
+class _OwnerEmptyAnswers extends StatelessWidget {
+  const _OwnerEmptyAnswers({this.onEdit});
+
+  final VoidCallback? onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.questionAnswersTitle,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.questionAnswersEmpty,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.questionAnswersEmptyHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (onEdit != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: onEdit,
+                  child: Text(l10n.profileAnswersEdit),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -441,4 +520,41 @@ Future<void> showMatchedProfileAnswersSheet(
       );
     },
   );
+}
+
+class _PeerEmptyAnswers extends StatelessWidget {
+  const _PeerEmptyAnswers({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.questionAnswersTitle,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

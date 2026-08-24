@@ -131,6 +131,10 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
   ) async {
     final uid = AuthScope.of(context).user?.id;
     final settings = SettingsScope.maybeOf(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+    final previous = _answers[questionId];
+    setState(() => _answers = {..._answers, questionId: answerId});
     final result = await repository.saveAnswer(
       questionId: questionId,
       answerId: answerId,
@@ -139,14 +143,25 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
       return;
     }
     if (result.isSuccess) {
-      setState(() => _answers = {..._answers, questionId: answerId});
       if (uid != null) {
         settings?.profileUpdates.notifyProfileUpdated(uid);
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).settingsProfileSaved)),
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.settingsProfileSaved)),
       );
+      return;
     }
+    setState(() {
+      if (previous == null) {
+        final next = Map<String, String>.from(_answers)..remove(questionId);
+        _answers = next;
+      } else {
+        _answers = {..._answers, questionId: previous};
+      }
+    });
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.questionAnswersSaveError)),
+    );
   }
 
   Future<void> _setVisibility(

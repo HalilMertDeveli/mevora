@@ -937,6 +937,8 @@
   "profileAnswersEdit": "Düzenle",
   "questionAnswersTitle": "Soru & Cevap",
   "questionAnswersEmpty": "Henüz cevapladığın bir soru yok.",
+  "questionAnswersEmptyHint": "Profilini daha kişisel hale getirmek için birkaç ilişki sorusu cevapla. İstediğin zaman düzenleyebilirsin.",
+  "questionAnswersSaveError": "Cevabın kaydedilemedi. Bağlantını kontrol edip tekrar dene.",
   "seeAllAnswers": "{count} cevabı daha gör",
   "@seeAllAnswers": {
     "placeholders": {

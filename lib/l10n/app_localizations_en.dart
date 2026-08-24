@@ -2209,6 +2209,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get questionAnswersEmpty => 'You haven\'t answered any questions yet.';
 
   @override
+  String get questionAnswersEmptyHint => 'Answer a few relationship questions to make your profile more personal. You can edit them anytime.';
+
+  @override
+  String get questionAnswersSaveError => 'Couldn\'t save your answer. Check your connection and try again.';
+
+  @override
   String seeAllAnswers(int count) {
     return '$count more answers';
   }

@@ -276,10 +276,11 @@ service cloud.firestore {
       }
 
       // Profile question answers: owner or actively matched users (visible only).
+      // Default isVisible=true when the field is absent (legacy / backfill).
       match /questionAnswers/{questionId} {
         allow read: if isOwner(userId)
           || (hasActiveMatchWith(userId)
-            && resource.data.get('isVisible', false) == true);
+            && resource.data.get('isVisible', true) == true);
         allow create, update, delete: if false;
       }
 

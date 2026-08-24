@@ -50,6 +50,15 @@ void main() {
     expect(tr.seeAllAnswers(3), '3 cevabı daha gör');
     expect(en.seeAllAnswers(3), '3 more answers');
     expect(tr.questionAnswersEmpty, isNotEmpty);
+    expect(tr.questionAnswersEmptyHint, isNotEmpty);
+    expect(en.questionAnswersEmptyHint, isNotEmpty);
     expect(en.questionAnswersLoadError, isNotEmpty);
+    expect(en.questionAnswersSaveError, isNotEmpty);
+    expect(tr.questionAnswersSaveError, isNotEmpty);
+  });
+
+  test('catalog includes rq_111 which server must accept', () {
+    expect(RelationshipQuestionCatalog.byId('rq_111'), isNotNull);
+    expect(RelationshipQuestionCatalog.questions.length, greaterThanOrEqualTo(111));
   });
 }

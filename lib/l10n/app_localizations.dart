@@ -4124,6 +4124,18 @@ abstract class AppLocalizations {
   /// **'You haven\'t answered any questions yet.'**
   String get questionAnswersEmpty;
 
+  /// No description provided for @questionAnswersEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer a few relationship questions to make your profile more personal. You can edit them anytime.'**
+  String get questionAnswersEmptyHint;
+
+  /// No description provided for @questionAnswersSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn't save your answer. Check your connection and try again.'**
+  String get questionAnswersSaveError;
+
   /// No description provided for @seeAllAnswers.
   ///
   /// In en, this message translates to:

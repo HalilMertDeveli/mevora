@@ -74,7 +74,7 @@ class CompatibilityDiscoverBadge extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: AppColors.primaryText,
+                  color: AppColors.onMedia,
                   fontWeight: FontWeight.w600,
                 ),
               ),

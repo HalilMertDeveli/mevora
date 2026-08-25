@@ -231,13 +231,25 @@ service cloud.firestore {
       }
 
       match /presence/current {
-        allow write: if isOwner(userId)
+        // Heartbeat/online merges must not fail when an older lastSeenAt remains
+        // unchanged (merge keeps it). Only validate lastSeenAt when it changes.
+        allow create: if isOwner(userId)
           && request.resource.data.isOnline is bool
           && request.resource.data.updatedAt == request.time
           && (
             !('lastSeenAt' in request.resource.data)
             || request.resource.data.lastSeenAt == request.time
           );
+        allow update: if isOwner(userId)
+          && request.resource.data.isOnline is bool
+          && request.resource.data.updatedAt == request.time
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['lastSeenAt'])
+            || !('lastSeenAt' in request.resource.data)
+            || request.resource.data.lastSeenAt == request.time
+          );
+        allow delete: if isOwner(userId);
         allow read: if canReadPresence(userId);
       }
 
@@ -247,6 +259,12 @@ service cloud.firestore {
       }
 
       match /boostWallet/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Premium entitlement — owner may read; only Admin SDK / CF may write.
+      match /subscription/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
@@ -395,13 +413,21 @@ service cloud.firestore {
         && request.resource.data.geohash.size() <= 12;
     }
 
+    // Incoming likes (toUserId == auth) are NEVER client-readable.
+    // Use getIncomingLikes callable (premium-gated) instead.
     match /likes/{likeId} {
       allow read: if isAuthenticated() && resource.data.fromUserId == request.auth.uid;
       allow write: if false;
     }
 
     match /matches/{matchId} {
-      allow read: if isAuthenticated()
+      // Missing match docs must be readable as empty so profile details can
+      // safely watchCanView without PERMISSION_DENIED (freeze on photo swipe).
+      allow get: if isAuthenticated() && (
+        !exists(/databases/$(database)/documents/matches/$(matchId))
+        || request.auth.uid in resource.data.userIds
+      );
+      allow list: if isAuthenticated()
         && request.auth.uid in resource.data.userIds;
       allow create, delete: if false;
       allow update: if isMatchParticipant(matchId)

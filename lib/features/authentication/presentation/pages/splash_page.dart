@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_constants.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_decorations.dart';
 import 'package:mevora/core/theme/app_typography.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -16,11 +15,13 @@ class SplashPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final l10n = AppLocalizations.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.surface,
       body: DecoratedBox(
-        decoration: AppDecorations.ambientScreen(),
+        decoration: AppDecorations.ambientScreen(brightness: theme.brightness),
         child: SafeArea(
           child: Center(
             child: Padding(
@@ -28,11 +29,11 @@ class SplashPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Visibility(
+                  Visibility(
                     visible: false,
                     replacement: MevoraLogo(
                       size: 88,
-                      onDark: true,
+                      onDark: isDark,
                       showWordmark: false,
                     ),
                     child: IgnorePointer(
@@ -43,7 +44,7 @@ class SplashPage extends StatelessWidget {
                         fit: BoxFit.contain,
                         fallback: MevoraLogo(
                           size: 88,
-                          onDark: true,
+                          onDark: isDark,
                           showWordmark: false,
                         ),
                       ),
@@ -52,9 +53,9 @@ class SplashPage extends StatelessWidget {
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     AppConstants.appName.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: AppTypography.displayFontFamily,
-                      color: AppColors.primaryText,
+                      color: colors.onSurface,
                       fontSize: 28,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 6,
@@ -66,7 +67,7 @@ class SplashPage extends StatelessWidget {
                     l10n.tagline,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: AppColors.secondaryText,
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -74,7 +75,7 @@ class SplashPage extends StatelessWidget {
                     l10n.preparingMevora,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppColors.secondaryText,
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -92,7 +93,7 @@ class SplashPage extends StatelessWidget {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.4,
-                            color: theme.colorScheme.primary,
+                            color: colors.primary,
                           ),
                         ),
                       );

@@ -6,6 +6,7 @@ import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
 import 'package:mevora/features/matching/domain/services/presence_subtitle.dart';
+import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
 import 'package:mevora/features/settings/domain/entities/user_settings.dart';
 import 'package:mevora/features/settings/domain/repositories/settings_hub_repository.dart';
 
@@ -38,6 +39,28 @@ class MatchesController extends ChangeNotifier {
 
   int get mutualLikeCount =>
       items.where((item) => !item.match.isRelationshipTest).length;
+
+  /// Matches with a recent message — user is actively chatting.
+  int get activeConversationCount {
+    final current = uid;
+    if (current == null) {
+      return 0;
+    }
+    final cutoff = DateTime.now().subtract(
+      RelationshipQuestionConfig.activeConversationWindow,
+    );
+    return items.where((item) {
+      final match = item.match;
+      if (!match.isActive) {
+        return false;
+      }
+      final last = match.lastMessageAt;
+      if (last == null) {
+        return false;
+      }
+      return last.isAfter(cutoff);
+    }).length;
+  }
 
   int get totalUnread {
     final current = uid;

@@ -106,13 +106,47 @@ void main() {
       wrap(const DiscoveryProfileDetailsPage(candidate: candidate)),
     );
     await tester.pumpAndSettle();
+    // Photo PageView is above the details ListView — scroll the list only.
     await tester.scrollUntilVisible(
       find.text(_en.whyYoureSeeingThis),
       120,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.byType(Scrollable).last,
     );
     expect(find.text(_en.whyYoureSeeingThis), findsOneWidget);
     expect(find.text(_en.compatDiscoverBadge(91)), findsWidgets);
+  });
+
+  testWidgets('profile photo carousel swipes to second photo', (tester) async {
+    const candidate = DiscoveryCandidate(
+      uid: 'mock-photos',
+      displayName: 'PhotoUser',
+      age: 28,
+      photos: [
+        'mock://mock-01/0',
+        'mock://mock-02/0',
+        'mock://mock-03/0',
+      ],
+    );
+
+    await tester.pumpWidget(
+      wrap(const DiscoveryProfileDetailsPage(candidate: candidate)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(_en.photoCounter(1, 3)), findsOneWidget);
+
+    await tester.fling(find.byType(PageView), const Offset(-500, 0), 1200);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text(_en.photoCounter(2, 3)), findsOneWidget);
+
+    await tester.fling(find.byType(PageView), const Offset(-500, 0), 1200);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text(_en.photoCounter(3, 3)), findsOneWidget);
   });
 
   testWidgets('discovery supports dark theme layout', (tester) async {

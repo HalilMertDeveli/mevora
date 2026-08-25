@@ -36,8 +36,9 @@ void main() {
       expect(rules.contains('match /questionAnswers/{questionId}'), isTrue);
       expect(rules.contains('function hasActiveMatchWith(otherUid)'), isTrue);
       expect(rules.contains('function canonicalMatchId(uidA, uidB)'), isTrue);
+      // Legacy docs omit isVisible — default true so matched viewers still see them.
       expect(
-        rules.contains("resource.data.get('isVisible', false) == true"),
+        rules.contains("resource.data.get('isVisible', true) == true"),
         isTrue,
       );
     });
@@ -68,6 +69,24 @@ void main() {
     test('message rate limits and purchases stay server controlled', () {
       expect(rules.contains('match /rateLimits/{docId}'), isTrue);
       expect(rules.contains('match /purchases/{purchaseId}'), isTrue);
+      expect(rules.contains('allow create, update, delete: if false;'), isTrue);
+    });
+  });
+
+  group('likes privacy', () {
+    test('clients can only read their own outgoing likes', () {
+      expect(rules.contains('match /likes/{likeId}'), isTrue);
+      expect(
+        rules.contains(
+          'allow read: if isAuthenticated() && resource.data.fromUserId == request.auth.uid',
+        ),
+        isTrue,
+      );
+      expect(rules.contains('Incoming likes (toUserId == auth)'), isTrue);
+    });
+
+    test('subscription entitlement is owner-read and server-write only', () {
+      expect(rules.contains('match /subscription/{docId}'), isTrue);
       expect(rules.contains('allow create, update, delete: if false;'), isTrue);
     });
   });

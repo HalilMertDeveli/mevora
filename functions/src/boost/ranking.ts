@@ -1,3 +1,4 @@
+import {logger} from "firebase-functions";
 import type {Firestore, Timestamp} from "firebase-admin/firestore";
 
 /** Modest priority bump — compatibility stays meaningful. */
@@ -10,17 +11,25 @@ export async function loadActiveBoostedUserIds(
   db: Firestore,
   now = new Date(),
 ): Promise<Set<string>> {
-  const snap = await db.collectionGroup("boosts").where("status", "==", "active").get();
-  const ids = new Set<string>();
-  for (const doc of snap.docs) {
-    const data = doc.data();
-    const expires = data.expiresAt as Timestamp | undefined;
-    const expiresAt = expires && typeof expires.toDate === "function" ? expires.toDate() : null;
-    if (expiresAt && expiresAt.getTime() > now.getTime() && typeof data.userId === "string") {
-      ids.add(data.userId);
+  try {
+    const snap = await db.collectionGroup("boosts").where("status", "==", "active").get();
+    const ids = new Set<string>();
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      const expires = data.expiresAt as Timestamp | undefined;
+      const expiresAt = expires && typeof expires.toDate === "function" ? expires.toDate() : null;
+      if (expiresAt && expiresAt.getTime() > now.getTime() && typeof data.userId === "string") {
+        ids.add(data.userId);
+      }
     }
+    return ids;
+  } catch (error) {
+    // Missing collection-group index on boosts.status must not empty Discover.
+    logger.warn("loadActiveBoostedUserIds_failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return new Set();
   }
-  return ids;
 }
 
 export function effectiveRadiusKm(radiusKm: number, isBoosted: boolean): number {
@@ -69,6 +78,57 @@ export function computeDiscoveryRankScore(
   return score;
 }
 
+/**
+ * Question-answer priority for Discover:
+ * 3/3 same answers → highest, then 2/3, 1/3, then everyone else.
+ */
+export function questionAlignmentTier(item: Record<string, unknown>): number {
+  const aligned = Number(item.relationshipAlignedCount ?? 0);
+  if (!Number.isFinite(aligned) || aligned <= 0) {
+    return 0;
+  }
+  if (aligned >= 3) {
+    return 3;
+  }
+  if (aligned === 2) {
+    return 2;
+  }
+  return 1;
+}
+
+function distanceSortKey(item: Record<string, unknown>): number {
+  if (item.distanceKm == null) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const value = Number(item.distanceKm);
+  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+}
+
+export function compareDiscoveryCandidates(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+  boosted: Set<string>,
+  radiusKm: number,
+): number {
+  const tierDelta = questionAlignmentTier(b) - questionAlignmentTier(a);
+  if (tierDelta !== 0) {
+    return tierDelta;
+  }
+  const distanceDelta = distanceSortKey(a) - distanceSortKey(b);
+  if (distanceDelta !== 0) {
+    return distanceDelta;
+  }
+  const aScore = computeDiscoveryRankScore(a, boosted, radiusKm);
+  const bScore = computeDiscoveryRankScore(b, boosted, radiusKm);
+  if (bScore !== aScore) {
+    return bScore - aScore;
+  }
+  return (
+    Number(b.musicCompatibilityScore ?? 0) -
+    Number(a.musicCompatibilityScore ?? 0)
+  );
+}
+
 export function diversifyBoostedResults<T extends Record<string, unknown>>(
   sorted: T[],
   boosted: Set<string>,
@@ -92,21 +152,25 @@ export function diversifyBoostedResults<T extends Record<string, unknown>>(
   return out;
 }
 
+/**
+ * Primary: more shared question answers.
+ * Secondary: closer distance among equal answer tiers.
+ * Tertiary: existing boost/compat/music ranking (diversified within tier).
+ */
 export function sortByBoostVisibility<T extends Record<string, unknown>>(
   items: T[],
   boosted: Set<string>,
   radiusKm = 25,
 ): T[] {
-  const sorted = [...items].sort((a, b) => {
-    const aScore = computeDiscoveryRankScore(a, boosted, radiusKm);
-    const bScore = computeDiscoveryRankScore(b, boosted, radiusKm);
-    if (bScore !== aScore) {
-      return bScore - aScore;
-    }
-    return Number(b.musicCompatibilityScore ?? 0) -
-      Number(a.musicCompatibilityScore ?? 0);
-  });
-  return diversifyBoostedResults(sorted, boosted);
+  const sorted = [...items].sort((a, b) =>
+    compareDiscoveryCandidates(a, b, boosted, radiusKm),
+  );
+  const out: T[] = [];
+  for (const tier of [3, 2, 1, 0]) {
+    const group = sorted.filter((item) => questionAlignmentTier(item) === tier);
+    out.push(...diversifyBoostedResults(group, boosted));
+  }
+  return out;
 }
 
 export function isBoostedCandidate(

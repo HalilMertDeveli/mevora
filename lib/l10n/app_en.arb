@@ -377,6 +377,10 @@
   "takePhoto": "Camera",
   "recordVoice": "Voice message",
   "holdToRecord": "Recording…",
+  "slideToCancelVoice": "Slide left to cancel",
+  "releaseToSendVoice": "Release to send",
+  "holdAgainToRecord": "Microphone ready — hold to record",
+  "voiceTooShort": "Hold a bit longer to send a voice message.",
   "playVoice": "Play",
   "pauseVoice": "Pause",
   "previewPhoto": "Send this photo?",
@@ -820,6 +824,29 @@
   "relationshipTestMessage": "Answer 3 short questions to see people who may think similarly.",
   "relationshipTestStart": "Start the Relationship Test",
   "relationshipTestLater": "Not now",
+  "relationshipContinueTitle": "Keep matching?",
+  "relationshipContinueMessage": "You've completed 5 matching rounds. Do you want to continue finding people who share your answers?",
+  "relationshipContinueYes": "Continue",
+  "relationshipContinueNo": "Not now",
+  "likesYouTitle": "Likes you",
+  "likesYouEntrySubtitle": "See who liked your profile",
+  "likesYouLockedTitle": "Someone likes you",
+  "likesYouLockedCount": "{count} people like you",
+  "@likesYouLockedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "likesYouLockedMessage": "Upgrade to Premium to see who liked you. Photos and names stay hidden until then.",
+  "likesYouUnlockCta": "Unlock with Premium",
+  "likesYouBlurredHint": "People who liked you",
+  "likesYouHiddenName": "Someone special",
+  "likesYouHiddenSubtitle": "Unlock to see their profile",
+  "likesYouEmptyTitle": "No new likes yet",
+  "likesYouEmptyMessage": "When someone likes you, they'll show up here.",
+  "likesYouLoadError": "Couldn't load likes. Please try again.",
   "relationshipTestDoneTitle": "Your relationship test is complete",
   "relationshipTestFound": "We found someone whose views match yours.",
   "relationshipTestAlign": "Your answers overlap on several topics.",
@@ -951,6 +978,7 @@
   "questionAnswersLoadError": "Something went wrong while loading answers.",
   "questionAnswersMatchRequired": "Match with this person to see their answers.",
   "questionAnswersMatchedSubtitle": "Discover what you have in common.",
+  "questionAnswersPeerEmpty": "This person hasn't shared any profile answers yet.",
   "matchViewAnswers": "View answers",
   "chatDiscoverAnswersPrompt": "Learn more about them",
   "compatOverallLabel": "You're {percent}% compatible",

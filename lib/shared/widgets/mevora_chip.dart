@@ -12,6 +12,7 @@ class MevoraChip extends StatelessWidget {
     this.avatar,
     this.compact = false,
     this.wrapLabel = false,
+    this.onMedia = false,
   });
 
   final String label;
@@ -23,23 +24,40 @@ class MevoraChip extends StatelessWidget {
   /// When true, long labels wrap instead of ellipsizing to one line.
   final bool wrapLabel;
 
+  /// When true, force light-on-dark styling for photo overlays.
+  final bool onMedia;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final colors = theme.colorScheme;
 
-    final Color bgColor = selected
-        ? (isDark ? colors.primary : AppColors.mulberry)
-        : Colors.transparent;
-    final Color textColor = selected
-        ? (isDark ? colors.onPrimary : Colors.white)
-        : (isDark ? AppColors.primaryText : AppColors.ink);
-    final Border? border = selected
-        ? null
-        : Border.all(
-            color: isDark ? AppColors.glassBorder : AppColors.outline,
-          );
+    late final Color bgColor;
+    late final Color textColor;
+    late final Border? border;
+
+    if (onMedia) {
+      bgColor = selected
+          ? AppColors.accentPrimary.withValues(alpha: 0.85)
+          : Colors.white.withValues(alpha: 0.14);
+      textColor = AppColors.onMedia;
+      border = selected
+          ? null
+          : Border.all(color: Colors.white.withValues(alpha: 0.28));
+    } else {
+      bgColor = selected
+          ? colors.primary
+          : (isDark ? Colors.transparent : Colors.transparent);
+      textColor = selected
+          ? colors.onPrimary
+          : (isDark ? AppColors.primaryText : colors.onSurface);
+      border = selected
+          ? null
+          : Border.all(
+              color: isDark ? AppColors.glassBorder : colors.outline,
+            );
+    }
 
     final text = Text(
       label,

@@ -72,11 +72,15 @@ class _ActionCircle extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: theme.colorScheme.surface,
-        elevation: onPressed == null ? 0 : 2,
-        shadowColor: color.withValues(alpha: 0.25),
+        color: theme.colorScheme.surfaceContainerLowest,
+        elevation: onPressed == null ? 0 : 1,
+        shadowColor: color.withValues(alpha: 0.18),
         shape: CircleBorder(
-          side: BorderSide(color: color.withValues(alpha: 0.35)),
+          side: BorderSide(
+            color: theme.brightness == Brightness.dark
+                ? color.withValues(alpha: 0.35)
+                : theme.colorScheme.outline,
+          ),
         ),
         child: InkWell(
           onTap: onPressed,

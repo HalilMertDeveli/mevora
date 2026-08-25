@@ -76,6 +76,7 @@ class MevoraTextField extends StatelessWidget {
       textCapitalization: textCapitalization,
       autocorrect: autocorrect,
       enableSuggestions: enableSuggestions,
+      scrollPadding: const EdgeInsets.only(bottom: 80),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,

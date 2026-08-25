@@ -30,6 +30,8 @@ class MockRelationshipDataSource implements RelationshipDataSource {
   final Map<String, DateTime?> _lastActiveAtByUid;
   DateTime? _offerCooldownUntil;
   List<String> _completedQuestionIds = const [];
+  var _matchingEventCount = 0;
+  var _matchingPaused = false;
 
   static const seedPeers = [
     MockRelationshipPeer(
@@ -86,7 +88,18 @@ class MockRelationshipDataSource implements RelationshipDataSource {
   @override
   Future<RelationshipAnswerSnapshot> dismissOffer({
     bool matchTaken = false,
+    bool pauseMatching = false,
+    bool continueMatching = false,
   }) async {
+    if (pauseMatching) {
+      _matchingPaused = true;
+      return _snapshot();
+    }
+    if (continueMatching) {
+      _matchingPaused = false;
+      _offerCooldownUntil = _clock();
+      return _snapshot();
+    }
     _offerCooldownUntil = _clock().add(
       RelationshipQuestionConfig.cooldownFor(matchTaken: matchTaken),
     );
@@ -98,6 +111,8 @@ class MockRelationshipDataSource implements RelationshipDataSource {
     required List<String> questionIds,
   }) async {
     _completedQuestionIds = List<String>.from(questionIds);
+    _matchingEventCount += 1;
+    _matchingPaused = false;
     // Survey done without taking a match yet → short retry window.
     _offerCooldownUntil = _clock().add(
       RelationshipQuestionConfig.declinedCooldown,
@@ -204,6 +219,8 @@ class MockRelationshipDataSource implements RelationshipDataSource {
       answeredIds: _answers.keys.toSet(),
       answerCount: _answers.length,
       offerCooldownUntil: _offerCooldownUntil,
+      matchingEventCount: _matchingEventCount,
+      matchingPaused: _matchingPaused,
     );
   }
 }

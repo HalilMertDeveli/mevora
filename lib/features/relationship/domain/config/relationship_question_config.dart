@@ -1,18 +1,29 @@
 import 'package:flutter/foundation.dart';
 
-/// Relationship question trigger timings.
+/// Relationship / matching-event timings.
 ///
-/// - Spontaneous offer while on Discovery: every [productionInterval]
-///   (debug builds use [debugInterval]).
-/// - Survey finished / offer dismissed without taking a match: wait
-///   [declinedCooldown], then offer again.
-/// - Match taken (open chat): wait [matchedCooldown] with no survey.
+/// Spontaneous offer while on Discovery uses [matchingEventDuration]
+/// (alias of [productionInterval]). Change this single constant to retune
+/// event length (3 → 5 → 10 → 15 minutes) without hunting magic numbers.
 abstract final class RelationshipQuestionConfig {
-  static const Duration productionInterval = Duration(minutes: 30);
+  /// Configurable matching-event length (default: 3 minutes).
+  static const Duration matchingEventDuration = Duration(minutes: 3);
+
+  /// @nodoc Keep older call sites compiling — same value as [matchingEventDuration].
+  static const Duration productionInterval = matchingEventDuration;
+
   static const Duration debugInterval = Duration(seconds: 30);
   static const Duration idleTimeout = Duration(seconds: 20);
   static const Duration declinedCooldown = Duration(minutes: 3);
   static const Duration matchedCooldown = Duration(minutes: 30);
+
+  /// Recent messages within this window count as an "active conversation"
+  /// and temporarily exclude the user from new matching events.
+  static const Duration activeConversationWindow = Duration(minutes: 30);
+
+  /// After this many completed events, ask whether to continue.
+  static const int eventsBeforeContinuePrompt = 5;
+
   static const int questionsPerSession = 3;
   static const int resultLimit = 1;
   static const double maxDistanceKm = 100;

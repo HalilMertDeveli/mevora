@@ -1,3 +1,6 @@
+import 'dart:developer' as developer;
+
+import 'package:flutter/foundation.dart';
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
@@ -29,7 +32,15 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
         'cursor': cursor,
         'limit': limit,
         'expandDistance': expandDistance,
+        if (kDebugMode) 'includeDebug': true,
       });
+      final debug = data['debug'];
+      if (kDebugMode && debug is Map) {
+        developer.log(
+          'discovery_debug ${Map<String, dynamic>.from(debug)}',
+          name: 'DiscoveryRepository',
+        );
+      }
       final rawItems = data['items'];
       final items = <DiscoveryCandidate>[];
       if (rawItems is List) {

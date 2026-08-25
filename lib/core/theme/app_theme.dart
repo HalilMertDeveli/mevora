@@ -10,30 +10,33 @@ abstract final class AppTheme {
     brightness: Brightness.light,
     scheme: const ColorScheme(
       brightness: Brightness.light,
-      primary: AppColors.mulberry,
-      onPrimary: Color(0xFFFFFBFF),
-      primaryContainer: AppColors.mulberrySoft,
-      onPrimaryContainer: AppColors.mulberryDark,
-      secondary: AppColors.apricot,
-      onSecondary: Color(0xFFFFFBFF),
-      secondaryContainer: AppColors.apricotSoft,
-      onSecondaryContainer: Color(0xFF4A2E12),
+      primary: AppColors.rose,
+      onPrimary: Color(0xFFFFFFFF),
+      primaryContainer: AppColors.roseSoft,
+      onPrimaryContainer: AppColors.roseDark,
+      secondary: AppColors.peach,
+      onSecondary: Color(0xFFFFFFFF),
+      secondaryContainer: AppColors.peachSoft,
+      onSecondaryContainer: Color(0xFF7A3E12),
       tertiary: AppColors.moss,
-      onTertiary: Color(0xFFFFFBFF),
-      error: AppColors.danger,
-      onError: Color(0xFFFFFBFF),
-      surface: AppColors.parchment,
+      onTertiary: Color(0xFFFFFFFF),
+      tertiaryContainer: AppColors.mossSoft,
+      onTertiaryContainer: Color(0xFF14532D),
+      error: AppColors.error,
+      onError: Color(0xFFFFFFFF),
+      surface: AppColors.canvas,
       onSurface: AppColors.ink,
       onSurfaceVariant: AppColors.mutedInk,
       outline: AppColors.outline,
-      outlineVariant: Color(0xFFE8E0DB),
-      inverseSurface: AppColors.card,
-      onInverseSurface: AppColors.primaryText,
-      inversePrimary: AppColors.accentPrimary,
-      surfaceContainerLowest: Color(0xFFFFFFFF),
-      surfaceContainerLow: Color(0xFFF3EEEA),
-      surfaceContainer: Color(0xFFEFE8E3),
-      surfaceContainerHigh: Color(0xFFE9E1DC),
+      outlineVariant: AppColors.outline,
+      inverseSurface: AppColors.ink,
+      onInverseSurface: AppColors.surface,
+      inversePrimary: AppColors.roseSoft,
+      surfaceContainerLowest: AppColors.surface,
+      surfaceContainerLow: AppColors.surface,
+      surfaceContainer: AppColors.surfaceMuted,
+      surfaceContainerHigh: AppColors.surfaceMuted,
+      surfaceContainerHighest: Color(0xFFECEEF2),
     ),
   );
 
@@ -60,7 +63,7 @@ abstract final class AppTheme {
       onSurfaceVariant: AppColors.secondaryText,
       outline: AppColors.border,
       outlineVariant: Color(0x12FFFFFF),
-      inverseSurface: AppColors.parchment,
+      inverseSurface: AppColors.canvas,
       onInverseSurface: AppColors.ink,
       inversePrimary: AppColors.accentPrimary,
       surfaceContainerLowest: AppColors.primaryBackground,
@@ -79,6 +82,7 @@ abstract final class AppTheme {
     final radii = BorderRadius.circular(AppRadii.md);
     final textTheme = AppTypography.textTheme(brightness);
     final navRadius = BorderRadius.circular(AppRadii.xl);
+    final borderColor = isDark ? AppColors.glassBorder : scheme.outlineVariant;
 
     return ThemeData(
       useMaterial3: true,
@@ -87,7 +91,9 @@ abstract final class AppTheme {
       textTheme: textTheme,
       fontFamily: AppTypography.fontFamily,
       scaffoldBackgroundColor: scheme.surface,
-      disabledColor: isDark ? AppColors.mutedText : scheme.onSurface.withValues(alpha: 0.38),
+      disabledColor: isDark
+          ? AppColors.mutedText
+          : scheme.onSurface.withValues(alpha: 0.38),
       splashFactory: InkRipple.splashFactory,
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.surface,
@@ -98,14 +104,12 @@ abstract final class AppTheme {
         titleTextStyle: textTheme.titleLarge,
       ),
       cardTheme: CardThemeData(
-        color: scheme.surfaceContainerLow,
+        color: isDark ? scheme.surfaceContainerLow : AppColors.surface,
         elevation: AppElevation.none,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.lg),
-          side: BorderSide(
-            color: isDark ? AppColors.glassBorder : scheme.outlineVariant,
-          ),
+          side: BorderSide(color: borderColor),
         ),
       ),
       chipTheme: ChipThemeData(
@@ -115,32 +119,32 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.pill),
         ),
-        side: BorderSide(
-          color: isDark ? AppColors.glassBorder : scheme.outlineVariant,
-        ),
+        side: BorderSide(color: borderColor),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: isDark ? scheme.surfaceContainer : scheme.surfaceContainerLowest,
+        fillColor: isDark
+            ? scheme.surfaceContainer
+            : scheme.surfaceContainerLowest,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
-        hintStyle: textTheme.bodyMedium,
+        hintStyle: textTheme.bodyMedium?.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
         labelStyle: textTheme.bodyMedium,
         helperStyle: textTheme.bodySmall,
         errorStyle: textTheme.bodySmall?.copyWith(color: scheme.error),
         border: OutlineInputBorder(
           borderRadius: radii,
-          borderSide: BorderSide(
-            color: isDark ? AppColors.glassBorder : scheme.outline,
-          ),
+          borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: radii,
           borderSide: BorderSide(
-            color: isDark ? AppColors.glassBorder : scheme.outline,
+            color: isDark ? AppColors.glassBorder : AppColors.outline,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -166,8 +170,8 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
           elevation: AppElevation.none,
-          backgroundColor: isDark ? scheme.primary : null,
-          foregroundColor: isDark ? scheme.onPrimary : null,
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.md),
           ),
@@ -179,7 +183,7 @@ abstract final class AppTheme {
           minimumSize: const Size.fromHeight(52),
           foregroundColor: isDark ? scheme.onSurface : scheme.primary,
           side: BorderSide(
-            color: isDark ? AppColors.glassBorder : scheme.outline,
+            color: isDark ? AppColors.glassBorder : AppColors.outlineStrong,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.md),
@@ -194,8 +198,10 @@ abstract final class AppTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: isDark ? AppColors.glassFill : scheme.surfaceContainerLow,
-        indicatorColor: scheme.primary.withValues(alpha: 0.16),
+        backgroundColor: isDark
+            ? AppColors.glassFill
+            : AppColors.lightGlassFill,
+        indicatorColor: scheme.primary.withValues(alpha: isDark ? 0.16 : 0.12),
         elevation: AppElevation.none,
         height: 72,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -220,27 +226,33 @@ abstract final class AppTheme {
         }),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: isDark ? AppColors.elevatedCard : scheme.surfaceContainerLowest,
+        backgroundColor: isDark
+            ? AppColors.elevatedCard
+            : scheme.surfaceContainerLowest,
         elevation: AppElevation.medium,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.lg),
           side: isDark
               ? const BorderSide(color: AppColors.glassBorder)
-              : BorderSide.none,
+              : BorderSide(color: scheme.outlineVariant),
         ),
         titleTextStyle: textTheme.titleLarge,
         contentTextStyle: textTheme.bodyMedium,
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: isDark ? AppColors.elevatedCard : scheme.surfaceContainerLowest,
+        backgroundColor: isDark
+            ? AppColors.elevatedCard
+            : scheme.surfaceContainerLowest,
         elevation: AppElevation.high,
         showDragHandle: true,
         dragHandleColor: isDark ? AppColors.iconMuted : scheme.outline,
         shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadii.xl)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadii.xl),
+          ),
           side: isDark
               ? const BorderSide(color: AppColors.glassBorder)
-              : BorderSide.none,
+              : BorderSide(color: scheme.outlineVariant),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -254,7 +266,7 @@ abstract final class AppTheme {
         ),
       ),
       dividerTheme: DividerThemeData(
-        color: isDark ? AppColors.glassBorder : scheme.outlineVariant,
+        color: borderColor,
         space: 1,
         thickness: 1,
       ),
@@ -272,12 +284,14 @@ abstract final class AppTheme {
         ),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: isDark ? AppColors.elevatedCard : scheme.surfaceContainerLowest,
+        color: isDark
+            ? AppColors.elevatedCard
+            : scheme.surfaceContainerLowest,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
           side: isDark
               ? const BorderSide(color: AppColors.glassBorder)
-              : BorderSide.none,
+              : BorderSide(color: scheme.outlineVariant),
         ),
       ),
     );

@@ -22,14 +22,22 @@ class CompatibilitySessionCache {
   void clear() => _cache.clear();
 }
 
-/// Ranks candidates for discover UI using existing server order as base,
-/// then applies a light compatibility-first tiebreak (does not override hard filters).
+/// Preserves server Discover order with a light client re-rank that mirrors
+/// Cloud Functions priority: question alignment → distance → compatibility.
 abstract final class DiscoveryRankingEngine {
   static List<DiscoveryCandidate> applyCompatibilityTiebreak(
     List<DiscoveryCandidate> candidates,
   ) {
     final copy = List<DiscoveryCandidate>.from(candidates);
     copy.sort((a, b) {
+      final tierDelta = _alignmentTier(b).compareTo(_alignmentTier(a));
+      if (tierDelta != 0) {
+        return tierDelta;
+      }
+      final distanceDelta = _distanceKey(a).compareTo(_distanceKey(b));
+      if (distanceDelta != 0) {
+        return distanceDelta;
+      }
       final scoreDiff = b.compatibilityScore.compareTo(a.compatibilityScore);
       if (scoreDiff != 0) {
         return scoreDiff;
@@ -39,5 +47,23 @@ abstract final class DiscoveryRankingEngine {
       return qB.compareTo(qA);
     });
     return copy;
+  }
+
+  static int _alignmentTier(DiscoveryCandidate item) {
+    final aligned = item.relationshipAlignedCount ?? 0;
+    if (aligned >= 3) {
+      return 3;
+    }
+    if (aligned == 2) {
+      return 2;
+    }
+    if (aligned == 1) {
+      return 1;
+    }
+    return 0;
+  }
+
+  static double _distanceKey(DiscoveryCandidate item) {
+    return item.distanceKm ?? double.infinity;
   }
 }

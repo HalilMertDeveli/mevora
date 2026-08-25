@@ -15,7 +15,7 @@ abstract final class AppTypography {
         : AppColors.mutedInk;
     final subtle = brightness == Brightness.dark
         ? AppColors.mutedText
-        : AppColors.mutedInk;
+        : AppColors.subtleInk;
 
     return TextTheme(
       displayLarge: TextStyle(

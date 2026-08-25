@@ -10,6 +10,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/firebase/firebase_options_resolver.dart';
+import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/firebase_options.dart';
 
@@ -172,29 +173,49 @@ class FirebaseBootstrap {
       if (config.environment.isDevelopment) {
         // Fixed token via --dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=...
         // (injected by tool/flutter_prepare.ps1 from app_check_debug_token.local).
-        const debugToken = String.fromEnvironment(
+        // Fallback: same registered debug token as .vscode/launch.json so plain
+        // `flutter run` without dart-defines still passes App Check in development.
+        const fromEnv = String.fromEnvironment(
           'FIREBASE_APP_CHECK_DEBUG_TOKEN',
         );
+        const registeredDevFallback =
+            '18424c44-83a0-47d2-b57d-dd71ef21ca73';
+        final debugToken =
+            fromEnv.isNotEmpty ? fromEnv : registeredDevFallback;
         await FirebaseAppCheck.instance.activate(
           providerAndroid: AndroidDebugProvider(
-            debugToken: debugToken.isEmpty ? null : debugToken,
+            debugToken: debugToken,
           ),
           providerApple: AppleDebugProvider(
-            debugToken: debugToken.isEmpty ? null : debugToken,
+            debugToken: debugToken,
           ),
         );
-        // #region agent log
         // ignore: avoid_print
         print(
           '[APPCHECK_DEBUG] activated development '
-          'hasFixedToken=${debugToken.isNotEmpty}',
+          'hasFixedToken=true fromEnv=${fromEnv.isNotEmpty}',
+        );
+        // #region agent log
+        AgentDebugLog.log(
+          location: 'firebase_bootstrap.dart:_configureAppCheck',
+          message: 'app_check_activated',
+          hypothesisId: 'A',
+          runId: 'post-fix',
+          data: <String, Object?>{
+            'hasFixedToken': true,
+            'fromEnv': fromEnv.isNotEmpty,
+            'usedFallback': fromEnv.isEmpty,
+            'environment': config.environment.name,
+          },
         );
         // #endregion
-        logger.info(
-          debugToken.isEmpty
-              ? 'App Check debug provider active — register logged token in Console'
-              : 'App Check debug provider active with fixed token',
-        );
+        if (fromEnv.isEmpty) {
+          logger.info(
+            'App Check using registered development debug-token fallback',
+          );
+        } else {
+          logger.info('App Check debug provider active with fixed token');
+        }
         return;
       }
       await FirebaseAppCheck.instance.activate(

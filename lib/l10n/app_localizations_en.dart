@@ -955,6 +955,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holdToRecord => 'Recording…';
 
   @override
+  String get slideToCancelVoice => 'Slide left to cancel';
+
+  @override
+  String get releaseToSendVoice => 'Release to send';
+
+  @override
+  String get holdAgainToRecord => 'Microphone ready — hold to record';
+
+  @override
+  String get voiceTooShort => 'Hold a bit longer to send a voice message.';
+
+  @override
   String get playVoice => 'Play';
 
   @override
@@ -1957,6 +1969,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipTestLater => 'Not now';
 
   @override
+  String get relationshipContinueTitle => 'Keep matching?';
+
+  @override
+  String get relationshipContinueMessage =>
+      'You\'ve completed 5 matching rounds. Do you want to continue finding people who share your answers?';
+
+  @override
+  String get relationshipContinueYes => 'Continue';
+
+  @override
+  String get relationshipContinueNo => 'Not now';
+
+  @override
+  String get likesYouTitle => 'Likes you';
+
+  @override
+  String get likesYouEntrySubtitle => 'See who liked your profile';
+
+  @override
+  String get likesYouLockedTitle => 'Someone likes you';
+
+  @override
+  String likesYouLockedCount(int count) {
+    return '$count people like you';
+  }
+
+  @override
+  String get likesYouLockedMessage =>
+      'Upgrade to Premium to see who liked you. Photos and names stay hidden until then.';
+
+  @override
+  String get likesYouUnlockCta => 'Unlock with Premium';
+
+  @override
+  String get likesYouBlurredHint => 'People who liked you';
+
+  @override
+  String get likesYouHiddenName => 'Someone special';
+
+  @override
+  String get likesYouHiddenSubtitle => 'Unlock to see their profile';
+
+  @override
+  String get likesYouEmptyTitle => 'No new likes yet';
+
+  @override
+  String get likesYouEmptyMessage =>
+      'When someone likes you, they\'ll show up here.';
+
+  @override
+  String get likesYouLoadError => 'Couldn\'t load likes. Please try again.';
+
+  @override
   String get relationshipTestDoneTitle => 'Your relationship test is complete';
 
   @override
@@ -2209,10 +2274,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get questionAnswersEmpty => 'You haven\'t answered any questions yet.';
 
   @override
-  String get questionAnswersEmptyHint => 'Answer a few relationship questions to make your profile more personal. You can edit them anytime.';
+  String get questionAnswersEmptyHint =>
+      'Answer a few relationship questions to make your profile more personal. You can edit them anytime.';
 
   @override
-  String get questionAnswersSaveError => 'Couldn\'t save your answer. Check your connection and try again.';
+  String get questionAnswersSaveError =>
+      'Couldn\'t save your answer. Check your connection and try again.';
 
   @override
   String seeAllAnswers(int count) {
@@ -2233,6 +2300,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get questionAnswersMatchedSubtitle =>
       'Discover what you have in common.';
+
+  @override
+  String get questionAnswersPeerEmpty =>
+      'This person hasn\'t shared any profile answers yet.';
 
   @override
   String get matchViewAnswers => 'View answers';

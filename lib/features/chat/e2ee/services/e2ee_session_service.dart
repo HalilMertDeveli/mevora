@@ -36,7 +36,11 @@ class E2eeIdentityService {
         keyVersion: E2eeConstants.currentKeyVersion,
         algorithm: E2eeConstants.algorithm,
       );
-      await _remote.publishIdentity(uid: uid, identity: identity);
+      try {
+        await _remote.publishIdentity(uid: uid, identity: identity);
+      } on Object {
+        // Public-key publish is best-effort; local identity still works for E2EE.
+      }
       _cachedIdentity = identity;
       _cachedPrivateKey = privateKey;
       return identity;
@@ -56,7 +60,11 @@ class E2eeIdentityService {
       keyVersion: E2eeConstants.currentKeyVersion,
       algorithm: E2eeConstants.algorithm,
     );
-    await _remote.publishIdentity(uid: uid, identity: identity);
+    try {
+      await _remote.publishIdentity(uid: uid, identity: identity);
+    } on Object {
+      // Public-key publish is best-effort; local identity still works for E2EE.
+    }
     _cachedIdentity = identity;
     _cachedPrivateKey = privateKey;
     return identity;

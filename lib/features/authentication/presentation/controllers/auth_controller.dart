@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/app_logger.dart';
@@ -93,6 +94,19 @@ class AuthController extends ChangeNotifier {
 
   Future<void> _onSnapshot(AuthSnapshot snapshot) async {
     final generation = ++_generation;
+    // #region agent log
+    AgentDebugLog.log(
+      location: 'auth_controller.dart:_onSnapshot',
+      message: 'auth_snapshot',
+      hypothesisId: 'C',
+      data: <String, Object?>{
+        'snapshot': snapshot.runtimeType.toString(),
+        'statusBefore': status.runtimeType.toString(),
+        'actionInFlight': _actionInFlight,
+        'isBusy': isBusy,
+      },
+    );
+    // #endregion
     switch (snapshot) {
       case AuthSignedOut():
         if (!_signingOut &&
@@ -114,17 +128,62 @@ class AuthController extends ChangeNotifier {
           if (status is Unauthenticated || status is AuthInitializing) {
             status = const Authenticating();
           }
+          // #region agent log
+          AgentDebugLog.log(
+            location: 'auth_controller.dart:AuthProfilePending',
+            message: 'ensure_user_document_start',
+            hypothesisId: 'C',
+            data: <String, Object?>{
+              'uidLen': uid.length,
+              'status': status.runtimeType.toString(),
+            },
+          );
+          // #endregion
           try {
-            await _userDocumentRepository.ensureUserDocument(AuthUser(id: uid));
+            await _userDocumentRepository
+                .ensureUserDocument(AuthUser(id: uid))
+                .timeout(const Duration(seconds: 20));
             if (generation != _generation) {
               return;
             }
+            // #region agent log
+            AgentDebugLog.log(
+              location: 'auth_controller.dart:AuthProfilePending',
+              message: 'ensure_user_document_ok',
+              hypothesisId: 'C',
+              data: <String, Object?>{
+                'statusAfter': status.runtimeType.toString(),
+              },
+            );
+            // #endregion
           } on Object catch (error, stackTrace) {
+            // #region agent log
+            AgentDebugLog.log(
+              location: 'auth_controller.dart:AuthProfilePending',
+              message: 'ensure_user_document_failed',
+              hypothesisId: 'C',
+              data: <String, Object?>{
+                'errorType': error.runtimeType.toString(),
+                'error': error.toString(),
+              },
+            );
+            // #endregion
             _logger.error(
               'Failed to resolve pending profile',
               error: error,
               stackTrace: stackTrace,
             );
+            if (generation != _generation || _actionInFlight) {
+              return;
+            }
+            // Do not leave Authenticating forever (login buttons stay disabled).
+            user = null;
+            errorMessage =
+                'Oturum doğrulanamadı. Lütfen tekrar giriş yapın.';
+            status = AuthenticationError(errorMessage!);
+            notifyListeners();
+            unawaited(_authRepository.signOut());
+            return;
           }
         }
       case AuthProfileReady(:final user):
@@ -145,6 +204,17 @@ class AuthController extends ChangeNotifier {
         status = user.shouldOnboard
             ? NeedsOnboarding(user)
             : Authenticated(user);
+        // #region agent log
+        AgentDebugLog.log(
+          location: 'auth_controller.dart:AuthProfileReady',
+          message: 'profile_ready_applied',
+          hypothesisId: 'B',
+          data: <String, Object?>{
+            'status': status.runtimeType.toString(),
+            'shouldOnboard': user.shouldOnboard,
+          },
+        );
+        // #endregion
     }
     notifyListeners();
   }
@@ -172,6 +242,7 @@ class AuthController extends ChangeNotifier {
         password: password,
       ),
       provider: 'email',
+      onSuccess: _applyAuthenticatedUser,
     );
   }
 
@@ -182,6 +253,7 @@ class AuthController extends ChangeNotifier {
     return _run(
       () => _authRepository.signInWithEmail(email: email, password: password),
       provider: 'email',
+      onSuccess: _applyAuthenticatedUser,
     );
   }
 
@@ -283,11 +355,19 @@ class AuthController extends ChangeNotifier {
   // #endregion
 
   Future<Result<void>> signInWithApple() {
-    return _run(_authRepository.signInWithApple, provider: 'apple');
+    return _run(
+      _authRepository.signInWithApple,
+      provider: 'apple',
+      onSuccess: _applyAuthenticatedUser,
+    );
   }
 
   Future<Result<void>> signInWithSpotify() {
-    return _run(_authRepository.signInWithSpotify, provider: 'spotify');
+    return _run(
+      _authRepository.signInWithSpotify,
+      provider: 'spotify',
+      onSuccess: _applyAuthenticatedUser,
+    );
   }
 
   Future<Result<void>> sendPhoneCode(String e164Phone) async {
@@ -540,6 +620,21 @@ class AuthController extends ChangeNotifier {
     }
     switch (result) {
       case Success<T>(:final value):
+        // #region agent log
+        AgentDebugLog.log(
+          location: 'auth_controller.dart:_run',
+          message: 'auth_action_success',
+          hypothesisId: 'B',
+          data: <String, Object?>{
+            'provider': provider,
+            'hasOnSuccess': onSuccess != null,
+            'valueType': value.runtimeType.toString(),
+            'statusBeforeApply': status.runtimeType.toString(),
+            'willStayAuthenticating':
+                onSuccess == null && status is Authenticating,
+          },
+        );
+        // #endregion
         onSuccess?.call(value);
         afterSuccess?.call();
         notifyListeners();

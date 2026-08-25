@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Mevora mark: rounded square + M (matches in-app MevoraLogo). -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,24h60c6.6,0 12,5.4 12,12v60c0,6.6 -5.4,12 -12,12h-60c-6.6,0 -12,-5.4 -12,-12v-60c0,-6.6 5.4,-12 12,-12z" />
+    <path
+        android:fillColor="#08080A"
+        android:pathData="M36,72 L36,36 L48,36 L54,54 L60,36 L72,36 L72,72 L62,72 L62,50 L56,66 L52,66 L46,50 L46,72 Z" />
+</vector>

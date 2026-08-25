@@ -117,9 +117,19 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
   }
 
   const photos = ((data.photos as Array<Record<string, unknown>>) ?? []);
-  if (countApprovedPhotos(photos) < MIN_PROFILE_PHOTOS) {
-    throw new HttpsError("failed-precondition", "photos-not-approved");
-  }
+  const approvedCount = countApprovedPhotos(photos);
+  // Usable count already validated above. Do not block onboarding on async
+  // photo moderation — users must be able to finish signup. Discovery still
+  // projects only approved photos via publicProfileProjection.
+  const photosReadyForDiscovery = approvedCount >= MIN_PROFILE_PHOTOS;
+  const hasRejected = photos.some(
+    (photo) => String(photo.moderationStatus ?? "") === "rejected",
+  );
+  const profileModerationStatus = hasRejected
+    ? "rejected"
+    : photosReadyForDiscovery
+      ? "approved"
+      : "pending";
 
   const now = FieldValue.serverTimestamp();
   await db.doc(`profiles/${uid}`).set(
@@ -130,8 +140,10 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
       profileCompleted: true,
       onboardingCompleted: true,
       isProfileComplete: true,
-      isDiscoverable: true,
-      profileModerationStatus: "approved",
+  // Allow app entry immediately. Discover uses usableDiscoveryPhotos so pending
+  // photos with download URLs remain visible while moderation completes.
+  isDiscoverable: true,
+      profileModerationStatus,
       onboardingStep: "complete",
       updatedAt: now,
     },

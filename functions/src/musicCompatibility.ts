@@ -268,8 +268,15 @@ export function musicRankingBonus(score: number): number {
 }
 
 export function interestedInAllows(interestedIn: unknown, gender: unknown): boolean {
-  const want = typeof interestedIn === "string" ? interestedIn.trim().toLowerCase() : "";
-  if (!want || want === "everyone") return true;
+  const raw = typeof interestedIn === "string" ? interestedIn.trim().toLowerCase() : "";
+  if (!raw || raw === "everyone") return true;
+  // Settings UI may store singular preferredGender ("man"/"woman").
+  const want =
+    raw === "man" || raw === "male" || raw === "men"
+      ? "men"
+      : raw === "woman" || raw === "female" || raw === "women"
+        ? "women"
+        : raw;
   const g = typeof gender === "string" ? gender.trim().toLowerCase() : "";
   if (!g) return true;
   if (want === "men") return g === "man" || g === "male" || g === "men";

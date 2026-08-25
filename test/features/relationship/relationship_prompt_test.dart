@@ -254,7 +254,11 @@ void main() {
     );
     expect(
       RelationshipQuestionConfig.productionInterval,
-      const Duration(minutes: 30),
+      const Duration(minutes: 3),
+    );
+    expect(
+      RelationshipQuestionConfig.matchingEventDuration,
+      RelationshipQuestionConfig.productionInterval,
     );
     expect(
       RelationshipQuestionConfig.declinedCooldown,

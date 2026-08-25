@@ -10,6 +10,8 @@ import 'package:mevora/features/matching/data/firebase/firebase_social_data.dart
 import 'package:mevora/features/matching/data/memory/graph_repositories.dart';
 import 'package:mevora/features/matching/data/memory/in_memory_social_graph.dart';
 import 'package:mevora/features/matching/data/overlay/overlay_social_repositories.dart';
+import 'package:mevora/features/matching/data/repositories/functions_incoming_likes_repository.dart';
+import 'package:mevora/features/matching/data/repositories/mock_incoming_likes_repository.dart';
 
 SocialServices createGraphSocialServices({
   required InMemorySocialGraph graph,
@@ -30,6 +32,7 @@ SocialServices createGraphSocialServices({
     videoCallProvider: provider,
     notificationRepository: GraphNotificationRepository(graph),
     discoveryExclusion: GraphMatchRepository(graph, uidSource),
+    incomingLikesRepository: MockIncomingLikesRepository(locked: true, count: 3),
   );
 }
 
@@ -74,5 +77,6 @@ SocialServices createFirebaseSocialServices({
     videoCallProvider: LiveKitVideoCallProvider(),
     notificationRepository: FirebaseNotificationRepository(),
     discoveryExclusion: matches,
+    incomingLikesRepository: FunctionsIncomingLikesRepository(callable: callable),
   );
 }

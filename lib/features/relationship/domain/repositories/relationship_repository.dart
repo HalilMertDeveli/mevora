@@ -6,11 +6,15 @@ class RelationshipAnswerSnapshot {
     this.answeredIds = const {},
     this.answerCount = 0,
     this.offerCooldownUntil,
+    this.matchingEventCount = 0,
+    this.matchingPaused = false,
   });
 
   final Set<String> answeredIds;
   final int answerCount;
   final DateTime? offerCooldownUntil;
+  final int matchingEventCount;
+  final bool matchingPaused;
 }
 
 abstract class RelationshipRepository {
@@ -21,9 +25,14 @@ abstract class RelationshipRepository {
     required String answerId,
   });
 
-  /// Persists offer cooldown. [matchTaken] true → 30 min break; false → 3 min.
+  /// Persists offer cooldown / matching pause.
+  ///
+  /// [matchTaken] true → 30 min break; false → 3 min.
+  /// Use [pauseMatching] / [continueMatching] for the continue prompt.
   Future<Result<RelationshipAnswerSnapshot>> dismissOffer({
     bool matchTaken = false,
+    bool pauseMatching = false,
+    bool continueMatching = false,
   });
 
   Future<Result<List<RelationshipMatchSuggestion>>> completeTest({

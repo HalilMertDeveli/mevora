@@ -41,10 +41,13 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   var _answersReady = false;
   var _sessionLocked = false;
   var _offerVisible = false;
+  var _continuePromptVisible = false;
   var _resultsVisible = false;
   var _emptyResults = false;
   var _unavailable = false;
   var _normalMatchCount = 0;
+  var _matchingEventCount = 0;
+  var _matchingPaused = false;
   String? _lastError;
   Set<String> _answeredIds = {};
   List<RelationshipQuestion> _session = const [];
@@ -67,12 +70,15 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   }
 
   bool get isOfferVisible => _offerVisible;
+  bool get isContinuePromptVisible => _continuePromptVisible;
   bool get isPromptVisible => currentQuestion != null;
   bool get isResultVisible => _resultsVisible;
   bool get hasEmptyResults => _emptyResults;
   bool get hasUnavailableFallback => _unavailable && !isPromptVisible;
   bool get submitting => _submitting;
   bool get sessionLocked => _sessionLocked;
+  int get matchingEventCount => _matchingEventCount;
+  bool get matchingPaused => _matchingPaused;
   Duration get interval => _interval;
   Duration get activeSwipeTime => _elapsed + _runningElapsed;
   List<RelationshipMatchSuggestion> get suggestions => _suggestions;
@@ -125,6 +131,12 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       if (opened) {
         _log('Discovery visible');
         unawaited(refreshAnswered());
+        if (_matchingPaused && _enforceOfferGates && !_sessionLocked) {
+          _sessionLocked = true;
+          _continuePromptVisible = true;
+          notifyListeners();
+          return;
+        }
         _armTimer();
         return;
       }
@@ -146,9 +158,10 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       return;
     }
     _normalMatchCount = count;
-    _log('Normal matches: $count');
-    if (count > 0 && _enforceOfferGates && _offerVisible) {
+    _log('Active conversations: $count');
+    if (count > 0 && _enforceOfferGates && (_offerVisible || _continuePromptVisible)) {
       _offerVisible = false;
+      _continuePromptVisible = false;
       _sessionLocked = false;
       notifyListeners();
     }
@@ -172,9 +185,12 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       final snapshot = result.valueOrNull;
       _answeredIds = snapshot?.answeredIds ?? {};
       _offerCooldownUntil = snapshot?.offerCooldownUntil;
+      _matchingEventCount = snapshot?.matchingEventCount ?? 0;
+      _matchingPaused = snapshot?.matchingPaused ?? false;
       _log('Answered ids loaded (${_answeredIds.length})');
       _log(
-        'Cooldown until: ${_offerCooldownUntil?.toIso8601String() ?? 'none'}',
+        'Cooldown until: ${_offerCooldownUntil?.toIso8601String() ?? 'none'} '
+        'events=$_matchingEventCount paused=$_matchingPaused',
       );
     } else {
       _logFailure('Questions requested', result.failureOrNull);
@@ -238,6 +254,47 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     }
   }
 
+  Future<void> continueMatchingEvents() async {
+    if (!_continuePromptVisible || _submitting) {
+      return;
+    }
+    _log('Continue matching accepted');
+    _continuePromptVisible = false;
+    _matchingPaused = false;
+    _submitting = true;
+    notifyListeners();
+    final result = await _repository.dismissOffer(continueMatching: true);
+    _submitting = false;
+    if (result.isSuccess) {
+      final snapshot = result.valueOrNull;
+      _matchingPaused = snapshot?.matchingPaused ?? false;
+      _matchingEventCount =
+          snapshot?.matchingEventCount ?? _matchingEventCount;
+      _offerCooldownUntil = snapshot?.offerCooldownUntil;
+    }
+    _sessionLocked = true;
+    _offerVisible = true;
+    notifyListeners();
+  }
+
+  Future<void> pauseMatchingEvents() async {
+    if (!_continuePromptVisible) {
+      return;
+    }
+    _log('Continue matching declined — pausing events');
+    _continuePromptVisible = false;
+    _sessionLocked = false;
+    _matchingPaused = true;
+    _elapsed = Duration.zero;
+    final result = await _repository.dismissOffer(pauseMatching: true);
+    if (result.isSuccess) {
+      _matchingPaused = result.valueOrNull?.matchingPaused ?? true;
+      _matchingEventCount =
+          result.valueOrNull?.matchingEventCount ?? _matchingEventCount;
+    }
+    notifyListeners();
+  }
+
   Future<bool> answer(String answerId) async {
     final question = currentQuestion;
     if (question == null || _submitting || !_sessionLocked) {
@@ -289,7 +346,9 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       }
       _testResults = completed.valueOrNull ?? const [];
       _suggestions = _testResults;
+      _matchingEventCount += 1;
       _log('Compatibility key generated: YES');
+      _log('Matching event count: $_matchingEventCount');
       _log('Candidates found: ${_testResults.length}');
       for (final item in _testResults) {
         _log(
@@ -405,7 +464,12 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     }
     _pauseTimer();
     if (_normalMatchCount > 0 && _enforceOfferGates) {
-      _log('Dwell timer idle — user already has a match');
+      _log('Dwell timer idle — user has an active conversation');
+      _log('Relationship trigger condition: FALSE');
+      return;
+    }
+    if (_matchingPaused && _enforceOfferGates) {
+      _log('Dwell timer idle — matching paused after continue prompt');
       _log('Relationship trigger condition: FALSE');
       return;
     }
@@ -487,7 +551,12 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       return;
     }
     if (_normalMatchCount > 0 && _enforceOfferGates) {
-      _log('Offer skipped — user already has a match');
+      _log('Offer skipped — active conversation');
+      _log('Relationship trigger condition: FALSE');
+      return;
+    }
+    if (_matchingPaused && _enforceOfferGates) {
+      _log('Offer skipped — matching paused');
       _log('Relationship trigger condition: FALSE');
       return;
     }
@@ -498,13 +567,24 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       return;
     }
     _sessionLocked = true;
-    _offerVisible = true;
     _unavailable = false;
     _resultsVisible = false;
     _emptyResults = false;
     _lastError = null;
-    _log('Relationship trigger condition: TRUE');
-    _log('Opening test offer');
+    final needsContinue =
+        _matchingEventCount >=
+            RelationshipQuestionConfig.eventsBeforeContinuePrompt &&
+        _enforceOfferGates;
+    if (needsContinue) {
+      _continuePromptVisible = true;
+      _offerVisible = false;
+      _log('Opening continue-matching prompt (events=$_matchingEventCount)');
+    } else {
+      _continuePromptVisible = false;
+      _offerVisible = true;
+      _log('Relationship trigger condition: TRUE');
+      _log('Opening test offer');
+    }
     notifyListeners();
   }
 

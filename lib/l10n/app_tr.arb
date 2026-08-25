@@ -377,6 +377,10 @@
   "takePhoto": "Kamera",
   "recordVoice": "Sesli mesaj",
   "holdToRecord": "Kaydediliyor…",
+  "slideToCancelVoice": "İptal için sola kaydır",
+  "releaseToSendVoice": "Göndermek için bırak",
+  "holdAgainToRecord": "Mikrofon hazır — kaydetmek için basılı tut",
+  "voiceTooShort": "Sesli mesaj göndermek için biraz daha uzun basılı tut.",
   "playVoice": "Oynat",
   "pauseVoice": "Duraklat",
   "previewPhoto": "Bu fotoğraf gönderilsin mi?",
@@ -820,6 +824,29 @@
   "relationshipTestMessage": "3 kısa soruyla benzer düşünebilen kişileri gör.",
   "relationshipTestStart": "İlişki Testine Başla",
   "relationshipTestLater": "Daha Sonra",
+  "relationshipContinueTitle": "Eşleşmeye devam etmek ister misin?",
+  "relationshipContinueMessage": "5 eşleşme turunu tamamladın. Aynı cevaplara sahip insanları bulmaya devam etmek ister misin?",
+  "relationshipContinueYes": "Devam Et",
+  "relationshipContinueNo": "Şimdi Değil",
+  "likesYouTitle": "Sizi Beğendi",
+  "likesYouEntrySubtitle": "Profilini beğenenleri gör",
+  "likesYouLockedTitle": "Biri seni beğendi",
+  "likesYouLockedCount": "{count} kişi seni beğendi",
+  "@likesYouLockedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "likesYouLockedMessage": "Seni kimin beğendiğini görmek için Premium'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.",
+  "likesYouUnlockCta": "Premium ile aç",
+  "likesYouBlurredHint": "Seni beğenenler",
+  "likesYouHiddenName": "Özel biri",
+  "likesYouHiddenSubtitle": "Profilini görmek için kilidi aç",
+  "likesYouEmptyTitle": "Henüz yeni beğeni yok",
+  "likesYouEmptyMessage": "Biri seni beğendiğinde burada görünür.",
+  "likesYouLoadError": "Beğeniler yüklenemedi. Lütfen tekrar dene.",
   "relationshipTestDoneTitle": "İlişki Testin Tamamlandı",
   "relationshipTestFound": "Görüşlerine yakın biri bulundu.",
   "relationshipTestAlign": "Birkaç konuda benzer görüşleriniz var.",
@@ -951,6 +978,7 @@
   "questionAnswersLoadError": "Cevaplar yüklenirken bir sorun oluştu.",
   "questionAnswersMatchRequired": "Bu kişinin cevaplarını görmek için eşleşmeniz gerekiyor.",
   "questionAnswersMatchedSubtitle": "Ortak yönlerinizi keşfedin.",
+  "questionAnswersPeerEmpty": "Bu kişi henüz profilinde soru cevabı paylaşmamış.",
   "matchViewAnswers": "Cevapları gör",
   "chatDiscoverAnswersPrompt": "Onu biraz daha tanı",
   "compatOverallLabel": "Uyumluluğunuz %{percent}",

@@ -19,14 +19,26 @@ class FirebaseFunctionsCallable implements BackendCallable {
     String name, [
     Map<String, dynamic>? data,
   ]) async {
-    // 2nd gen callables return Unauthenticated if the ID token is missing.
-    await _auth.currentUser?.getIdToken();
+    // 2nd gen callables return Unauthenticated if the ID token is missing
+    // or stale after a long idle. Force-refresh so cold resume works.
+    await _auth.currentUser?.getIdToken(true);
     final callable = _functions.httpsCallable(
       name,
       options: HttpsCallableOptions(timeout: const Duration(seconds: 60)),
     );
-    final result = await callable.call<dynamic>(data ?? <String, dynamic>{});
-    return callablePayload(result.data);
+    try {
+      final result = await callable.call<dynamic>(data ?? <String, dynamic>{});
+      return callablePayload(result.data);
+    } on FirebaseFunctionsException catch (error) {
+      if (error.code == 'unauthenticated') {
+        await _auth.currentUser?.getIdToken(true);
+        final retry = await callable.call<dynamic>(
+          data ?? <String, dynamic>{},
+        );
+        return callablePayload(retry.data);
+      }
+      rethrow;
+    }
   }
 }
 

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mevora/core/constants/firestore_paths.dart';
-import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
@@ -119,9 +118,13 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
 
   @override
   Stream<Match?> watchMatch(String matchId) {
-    return _db.doc(FirestorePaths.match(matchId)).snapshots().map((snap) {
-      return snap.exists ? _matchFrom(snap) : null;
-    });
+    return _db
+        .doc(FirestorePaths.match(matchId))
+        .snapshots()
+        .map((snap) => snap.exists ? _matchFrom(snap) : null)
+        .handleError((Object error, StackTrace stackTrace) {
+          // Missing/denied match reads must not crash profile photo UI.
+        });
   }
 
   @override
@@ -489,6 +492,8 @@ class FirebasePresenceRepository implements PresenceRepository {
     return _db.doc(FirestorePaths.presence(uid)).set({
       'isOnline': true,
       'updatedAt': FieldValue.serverTimestamp(),
+      // Clear stale lastSeenAt so merge updates are not rejected by rules.
+      'lastSeenAt': FieldValue.delete(),
     }, SetOptions(merge: true));
   }
 

@@ -138,6 +138,52 @@ export function isValidRelationshipAnswer(
   return answerId === "a" || answerId === "b" || answerId === "c";
 }
 
+/** Normalize legacy / UI variants to canonical a|b|c. */
+export function normalizeAnswerId(raw: unknown): string | null {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    const n = Math.trunc(raw);
+    if (n === 1 || n === 0) return "a";
+    if (n === 2) return "b";
+    if (n === 3) return "c";
+    return null;
+  }
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const v = raw.trim().toLowerCase();
+  if (v === "a" || v === "b" || v === "c") {
+    return v;
+  }
+  if (
+    v === "option_a" ||
+    v === "option_1" ||
+    v === "answer_a" ||
+    v === "1" ||
+    v === "a1"
+  ) {
+    return "a";
+  }
+  if (
+    v === "option_b" ||
+    v === "option_2" ||
+    v === "answer_b" ||
+    v === "2" ||
+    v === "b1"
+  ) {
+    return "b";
+  }
+  if (
+    v === "option_c" ||
+    v === "option_3" ||
+    v === "answer_c" ||
+    v === "3" ||
+    v === "c1"
+  ) {
+    return "c";
+  }
+  return null;
+}
+
 export function scoreRelationshipCompatibility(
   viewer: RelationshipAnswers,
   candidate: RelationshipAnswers,
@@ -151,10 +197,12 @@ export function scoreRelationshipCompatibility(
   let aligned = 0;
   const topicHits = new Map<string, number>();
   for (const questionId of viewerKeys) {
-    const other = candidate[questionId];
-    if (other == null) continue;
+    const viewerAnswer = normalizeAnswerId(viewer[questionId]) ?? viewer[questionId];
+    const otherRaw = candidate[questionId];
+    if (otherRaw == null) continue;
+    const otherAnswer = normalizeAnswerId(otherRaw) ?? String(otherRaw);
     shared += 1;
-    if (other === viewer[questionId]) {
+    if (otherAnswer === viewerAnswer) {
       aligned += 1;
       const topic = QUESTION_TOPICS[questionId];
       if (topic) {
@@ -182,8 +230,9 @@ export function answersFromSummary(data: {answers?: unknown} | undefined): Relat
   if (!raw || typeof raw !== "object") return {};
   const out: RelationshipAnswers = {};
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (typeof value === "string" && isValidRelationshipAnswer(key, value)) {
-      out[key] = value;
+    const normalized = normalizeAnswerId(value);
+    if (normalized && isValidRelationshipAnswer(key, normalized)) {
+      out[key] = normalized;
     }
   }
   return out;

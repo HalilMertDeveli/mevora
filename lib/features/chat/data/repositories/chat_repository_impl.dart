@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:mevora/core/constants/firestore_paths.dart';
+import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/storage/storage_provider.dart';
@@ -9,6 +10,7 @@ import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
 import 'package:mevora/features/chat/e2ee/crypto/e2ee_constants.dart';
 import 'package:mevora/features/chat/e2ee/services/e2ee_chat_service.dart';
+import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
   ChatRepositoryImpl({
@@ -162,6 +164,12 @@ class ChatRepositoryImpl implements ChatRepository {
     if (ownerUid == null) {
       throw StateError('unauthenticated');
     }
+    if (!StoragePaths.isAllowedChatUpload(
+      contentType: media.contentType,
+      sizeBytes: media.bytes.length,
+    )) {
+      throw const ValidationFailure(PhotoUploadMessages.invalidFile);
+    }
     final messageId = _dataSource.allocateMessageId(matchId);
     final baseExtension = type == MessageType.voice
         ? _voiceExtension(media.contentType)
@@ -282,12 +290,10 @@ class ChatRepositoryImpl implements ChatRepository {
     if (lower.contains('mpeg') || lower.contains('mp3')) {
       return 'mp3';
     }
-    if (lower.contains('wav')) {
-      return 'wav';
-    }
     if (lower.contains('aac')) {
       return 'aac';
     }
+    // Default / recorder path is AAC in an MP4 container (.m4a).
     return 'm4a';
   }
 

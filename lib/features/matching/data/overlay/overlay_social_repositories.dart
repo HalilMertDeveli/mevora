@@ -90,7 +90,7 @@ class OverlayMatchRepository implements MatchRepository {
       yield* hub.matches.watchMatch(matchId);
       return;
     }
-    yield* remote.watchMatch(matchId);
+    yield* remote.watchMatch(matchId).handleError((Object error, StackTrace stackTrace) {});
   }
 
   @override

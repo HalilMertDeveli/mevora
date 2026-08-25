@@ -40,11 +40,19 @@ class FunctionsRelationshipDataSource implements RelationshipDataSource {
   @override
   Future<RelationshipAnswerSnapshot> dismissOffer({
     bool matchTaken = false,
+    bool pauseMatching = false,
+    bool continueMatching = false,
   }) async {
+    _debug(
+      'dismissOffer matchTaken=$matchTaken pause=$pauseMatching continue=$continueMatching',
+    );
+    final reason = pauseMatching
+        ? 'pause_matching'
+        : continueMatching
+        ? 'continue_matching'
+        : (matchTaken ? 'matched' : 'declined');
     return _parseSnapshot(
-      await _invoke('dismissRelationshipTestOffer', {
-        'reason': matchTaken ? 'matched' : 'declined',
-      }),
+      await _invoke('dismissRelationshipTestOffer', {'reason': reason}),
     );
   }
 
@@ -133,6 +141,8 @@ class FunctionsRelationshipDataSource implements RelationshipDataSource {
       offerCooldownUntil: cooldownMs > 0
           ? DateTime.fromMillisecondsSinceEpoch(cooldownMs)
           : null,
+      matchingEventCount: firestoreInt(data['matchingEventCount'], 0),
+      matchingPaused: data['matchingPaused'] == true,
     );
   }
 

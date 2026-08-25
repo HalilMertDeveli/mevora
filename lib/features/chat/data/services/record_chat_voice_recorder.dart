@@ -31,11 +31,13 @@ class RecordChatVoiceRecorder implements ChatVoiceRecorder {
     _path =
         '${dir.path}/mevora-voice-${DateTime.now().millisecondsSinceEpoch}.m4a';
     _startedAt = DateTime.now();
+    // 44.1 kHz AAC-LC is widely supported on real Android devices; 22.05 kHz
+    // silently fails to produce usable frames on some OEM recorders.
     await _recorder.start(
       const RecordConfig(
         encoder: AudioEncoder.aacLc,
-        bitRate: 48000,
-        sampleRate: 22050,
+        bitRate: 64000,
+        sampleRate: 44100,
         numChannels: 1,
       ),
       path: _path!,

@@ -32,8 +32,16 @@ class RelationshipRepositoryImpl implements RelationshipRepository {
   @override
   Future<Result<RelationshipAnswerSnapshot>> dismissOffer({
     bool matchTaken = false,
+    bool pauseMatching = false,
+    bool continueMatching = false,
   }) {
-    return _guard(() => _dataSource.dismissOffer(matchTaken: matchTaken));
+    return _guard(
+      () => _dataSource.dismissOffer(
+        matchTaken: matchTaken,
+        pauseMatching: pauseMatching,
+        continueMatching: continueMatching,
+      ),
+    );
   }
 
   @override

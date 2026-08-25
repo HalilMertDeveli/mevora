@@ -12,6 +12,7 @@ import {
   hashCompatibilityKey,
   isValidRelationshipAnswer,
   isWithinRelationshipRadius,
+  normalizeAnswerId,
   scoreRelationshipCompatibility,
   setIdFor,
   type RelationshipAnswers,
@@ -32,6 +33,11 @@ const callableOptions = {
 };
 const RESULT_LIMIT = 1;
 const skipRadius = process.env.FUNCTIONS_EMULATOR === "true";
+
+/** Configurable matching-event length (ms). Change once to retune 3→5→10→15 min. */
+export const MATCHING_EVENT_DURATION_MS = 3 * 60 * 1000;
+/** Recent message window that counts as an active conversation. */
+export const ACTIVE_CONVERSATION_WINDOW_MS = 30 * 60 * 1000;
 
 function relDebug(message: string, extra?: unknown): void {
   if (extra === undefined) {
@@ -68,6 +74,8 @@ function snapshotPayload(
   const payload: Record<string, unknown> = {
     answeredIds: Object.keys(answers).sort(),
     answerCount: Object.keys(answers).length,
+    matchingEventCount: Number(summary?.matchingEventCount ?? 0),
+    matchingPaused: summary?.matchingPaused === true,
   };
   const cooldown = toMillis(summary?.offerCooldownUntil);
   if (cooldown != null) payload.offerCooldownUntil = cooldown;
@@ -191,6 +199,67 @@ async function excludedMatchUids(uid: string): Promise<Set<string>> {
   return excluded;
 }
 
+/** True when [uid] has exchanged a message recently (not merely an old match). */
+async function hasActiveConversation(uid: string): Promise<boolean> {
+  const cutoff = Date.now() - ACTIVE_CONVERSATION_WINDOW_MS;
+  const snap = await db
+    .collection("matches")
+    .where("userIds", "array-contains", uid)
+    .where("isActive", "==", true)
+    .limit(40)
+    .get();
+  for (const doc of snap.docs) {
+    const last = doc.data().lastMessageAt as Timestamp | undefined;
+    const millis =
+      last && typeof last.toMillis === "function" ? last.toMillis() : 0;
+    if (millis > cutoff) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function compareCandidateRows(a: CandidateRow, b: CandidateRow): number {
+  const alignedDelta = b.alignedCount - a.alignedCount;
+  if (alignedDelta !== 0) {
+    return alignedDelta;
+  }
+  return (a.distanceKm ?? Number.POSITIVE_INFINITY) - (b.distanceKm ?? Number.POSITIVE_INFINITY);
+}
+
+function priorityLabel(aligned: number): string {
+  if (aligned >= 3) return "VERY HIGH";
+  if (aligned === 2) return "HIGH";
+  if (aligned === 1) return "MEDIUM";
+  return "LOW";
+}
+
+function logPairQuestionDebug(
+  viewerUid: string,
+  candidateUid: string,
+  questionIds: string[],
+  viewerAnswers: RelationshipAnswers,
+  candidateAnswers: RelationshipAnswers,
+  distanceKm: number | null,
+  alignedCount: number,
+): void {
+  relDebug(`User ${viewerUid} vs ${candidateUid}`);
+  for (const questionId of questionIds) {
+    const left = normalizeAnswerId(viewerAnswers[questionId]) ?? viewerAnswers[questionId];
+    const right =
+      normalizeAnswerId(candidateAnswers[questionId]) ?? candidateAnswers[questionId];
+    const match = left != null && right != null && left === right;
+    relDebug(
+      `${questionId}: ${match ? "MATCH" : "NO MATCH"} (${left ?? "—"} vs ${right ?? "—"})`,
+    );
+  }
+  relDebug(`Total: ${alignedCount}/${questionIds.length}`);
+  relDebug(
+    `Distance: ${distanceKm == null ? "n/a" : `${distanceKm} km`}`,
+  );
+  relDebug(`FINAL PRIORITY: ${priorityLabel(alignedCount)}`);
+}
+
 type CandidateRow = {
   uid: string;
   score: number;
@@ -282,6 +351,10 @@ async function findExactCandidates(
     if (!isActiveForDiscovery(lastActiveByUid.get(otherUid))) continue;
     afterActive += 1;
     if (await isBlocked(uid, otherUid)) continue;
+    if (await hasActiveConversation(otherUid)) {
+      relDebug(`Candidate ${otherUid} skipped — active conversation`);
+      continue;
+    }
     const otherAnswers = answersFromSummary(doc.data());
     if (!questionIds.every((id) => otherAnswers[id])) continue;
     const otherProfile = await db.doc(`profiles/${otherUid}`).get();
@@ -323,6 +396,15 @@ async function findExactCandidates(
     } else {
       relDebug(`Candidate: ${otherUid} Distance: skipped (emulator)`);
     }
+    logPairQuestionDebug(
+      uid,
+      otherUid,
+      questionIds,
+      filteredViewer,
+      filteredOther,
+      distanceKm,
+      compatibility.alignedCount,
+    );
     scored.push({
       uid: otherUid,
       score: compatibility.score,
@@ -344,9 +426,170 @@ async function findExactCandidates(
   }
   relDebug(`Active user filter result: ${afterActive}`);
   relDebug(`Preference filter result: ${afterPreference}`);
-  scored.sort((a, b) => (a.distanceKm ?? Number.POSITIVE_INFINITY) - (b.distanceKm ?? Number.POSITIVE_INFINITY));
+  scored.sort(compareCandidateRows);
   relDebug(`Relationship matches created: ${Math.min(scored.length, RESULT_LIMIT)}`);
   return scored.slice(0, RESULT_LIMIT);
+}
+
+/**
+ * Fallback when no exact 3/3 compatibilityKey peer exists:
+ * score eligible users on the current 3 questions (2/3 → 1/3), then distance.
+ */
+async function findPartialCandidates(
+  uid: string,
+  questionIds: string[],
+): Promise<CandidateRow[]> {
+  const [
+    prefsSnap,
+    profileSnap,
+    locationSnap,
+    blockedSnap,
+    passedSnap,
+    poolSnap,
+    matchUids,
+    seenSnap,
+    lang,
+  ] = await Promise.all([
+    db.doc(`userPreferences/${uid}`).get(),
+    db.doc(`profiles/${uid}`).get(),
+    db.doc(`userLocation/${uid}`).get(),
+    db.collection(`users/${uid}/blockedUsers`).get(),
+    db.collection(`users/${uid}/passedUsers`).get(),
+    db
+      .collectionGroup("relationshipMatch")
+      .where("eligibleForMatching", "==", true)
+      .limit(80)
+      .get()
+      .catch((error: unknown) => {
+        const err = error as {code?: string; message?: string};
+        relDebug(`Partial pool query failed ${err.code ?? "unknown"}: ${err.message ?? String(error)}`);
+        return null;
+      }),
+    excludedMatchUids(uid),
+    db.collection(`users/${uid}/relationshipSeen`).get(),
+    userLanguage(uid),
+  ]);
+  const origin = locationSnap.data();
+  const originLat = origin?.latitude;
+  const originLng = origin?.longitude;
+  const hasOrigin = originLat != null && originLng != null;
+  const blocked = new Set(blockedSnap.docs.map((doc) => doc.id));
+  const passed = new Set(passedSnap.docs.map((doc) => doc.id));
+  const seen = new Set(seenSnap.docs.map((doc) => doc.id));
+  const prefs = prefsSnap.data() ?? {};
+  const viewerProfile = profileSnap.data() ?? {};
+  const viewerGender = viewerProfile.gender as string | undefined;
+  const viewerWant = datingPreference(prefs, viewerProfile);
+  const viewerAnswers = answersFromSummary((await loadSummary(uid)).data());
+  const minAge = Number(prefs.minAge ?? 18);
+  const maxAge = Number(prefs.maxAge ?? 99);
+  const poolDocs = poolSnap?.docs ?? [];
+  const otherUids: string[] = [];
+  for (const doc of poolDocs) {
+    const otherUid = doc.ref.parent.parent?.id;
+    if (!otherUid || otherUid === uid) continue;
+    if (blocked.has(otherUid) || passed.has(otherUid) || matchUids.has(otherUid) || seen.has(otherUid)) {
+      continue;
+    }
+    otherUids.push(otherUid);
+  }
+  const lastActiveByUid = await loadLastActiveAt(db, otherUids);
+  const scored: CandidateRow[] = [];
+  for (const doc of poolDocs) {
+    const otherUid = doc.ref.parent.parent?.id;
+    if (!otherUid || otherUid === uid) continue;
+    if (blocked.has(otherUid) || passed.has(otherUid) || matchUids.has(otherUid) || seen.has(otherUid)) {
+      continue;
+    }
+    if (!isActiveForDiscovery(lastActiveByUid.get(otherUid))) continue;
+    if (await isBlocked(uid, otherUid)) continue;
+    if (await hasActiveConversation(otherUid)) continue;
+    const otherAnswers = answersFromSummary(doc.data());
+    const filteredViewer: RelationshipAnswers = {};
+    const filteredOther: RelationshipAnswers = {};
+    for (const questionId of questionIds) {
+      if (viewerAnswers[questionId]) filteredViewer[questionId] = viewerAnswers[questionId];
+      if (otherAnswers[questionId]) filteredOther[questionId] = otherAnswers[questionId];
+    }
+    const shared = questionIds.filter((id) => filteredViewer[id] && filteredOther[id]).length;
+    if (shared === 0) continue;
+    const compatibility = scoreRelationshipCompatibility(filteredViewer, filteredOther);
+    if (compatibility.alignedCount <= 0) continue;
+    const otherProfile = await db.doc(`profiles/${otherUid}`).get();
+    if (!otherProfile.exists) continue;
+    const data = otherProfile.data() ?? {};
+    if (data.isDiscoverable === false) continue;
+    const age = Number(data.age ?? 0);
+    if (age && (age < minAge || age > maxAge)) continue;
+    const otherPrefs = (await db.doc(`userPreferences/${otherUid}`).get()).data() ?? {};
+    const otherWant = datingPreference(otherPrefs, data);
+    if (!interestedInAllows(viewerWant, data.gender)) continue;
+    if (!interestedInAllows(otherWant, viewerGender)) continue;
+    let distanceKm: number | null = null;
+    if (hasOrigin) {
+      const otherLoc = await db.doc(`userLocation/${otherUid}`).get();
+      const other = otherLoc.data();
+      if (other?.latitude != null && other?.longitude != null) {
+        distanceKm =
+          Math.round(
+            haversineKm(
+              Number(originLat),
+              Number(originLng),
+              Number(other.latitude),
+              Number(other.longitude),
+            ) * 10,
+          ) / 10;
+        if (!skipRadius && !isWithinRelationshipRadius(distanceKm)) continue;
+      } else if (!skipRadius) {
+        continue;
+      }
+    } else if (!skipRadius) {
+      continue;
+    }
+    logPairQuestionDebug(
+      uid,
+      otherUid,
+      questionIds,
+      filteredViewer,
+      filteredOther,
+      distanceKm,
+      compatibility.alignedCount,
+    );
+    scored.push({
+      uid: otherUid,
+      score: compatibility.score,
+      sharedQuestionCount: compatibility.sharedQuestionCount,
+      alignedCount: compatibility.alignedCount,
+      distanceKm,
+      distanceLabel: distanceKm == null ? null : distanceLabel(distanceKm, lang),
+      profile: {
+        uid: otherUid,
+        displayName: data.displayName ?? "",
+        age: data.age ?? null,
+        gender: data.gender ?? null,
+        bio: data.bio ?? null,
+        photos: data.photos ?? [],
+        interests: data.interests ?? [],
+        city: data.city ?? null,
+      },
+    });
+  }
+  scored.sort(compareCandidateRows);
+  return scored.slice(0, RESULT_LIMIT);
+}
+
+async function findPriorityCandidates(
+  uid: string,
+  questionIds: string[],
+  compatibilityKey: string,
+): Promise<CandidateRow[]> {
+  const exact = await findExactCandidates(uid, questionIds, compatibilityKey);
+  if (exact.length > 0) {
+    relDebug(`Priority pool: exact 3/3 (${exact.length})`);
+    return exact;
+  }
+  relDebug("Priority pool: no exact 3/3 — trying partial alignment");
+  return findPartialCandidates(uid, questionIds);
 }
 
 async function createRelationshipMatch(
@@ -400,7 +643,7 @@ export const saveRelationshipAnswer = onCall(
     try {
       const uid = requireUid(request);
       const questionId = String(request.data?.questionId ?? "");
-      const answerId = String(request.data?.answerId ?? "");
+      const answerId = normalizeAnswerId(request.data?.answerId) ?? String(request.data?.answerId ?? "");
       relDebug(`Question answers submitted ${questionId}=${answerId}`);
       if (!isValidRelationshipAnswer(questionId, answerId)) {
         throw new HttpsError("invalid-argument", "invalid-relationship-answer");
@@ -496,17 +739,40 @@ export const dismissRelationshipTestOffer = onCall(
     const uid = requireUid(request);
     const reason = String(request.data?.reason ?? "declined");
     // declined / empty close → 3 min retry; matched (open chat) → 30 min pause
-    const cooldownMs =
-      reason === "matched" ? 30 * 60 * 1000 : 3 * 60 * 1000;
-    const cooldownUntil = Timestamp.fromMillis(Date.now() + cooldownMs);
-    await db.doc(`users/${uid}/relationshipMatch/summary`).set(
-      {
-        offerDismissedAt: FieldValue.serverTimestamp(),
-        offerCooldownUntil: cooldownUntil,
-        offerCooldownReason: reason === "matched" ? "matched" : "declined",
-      },
-      {merge: true},
-    );
+    // pause_matching → stop auto events until user continues
+    // continue_matching → clear pause and allow the next event
+    if (reason === "pause_matching") {
+      await db.doc(`users/${uid}/relationshipMatch/summary`).set(
+        {
+          matchingPaused: true,
+          matchingPausedAt: FieldValue.serverTimestamp(),
+          offerDismissedAt: FieldValue.serverTimestamp(),
+        },
+        {merge: true},
+      );
+    } else if (reason === "continue_matching") {
+      await db.doc(`users/${uid}/relationshipMatch/summary`).set(
+        {
+          matchingPaused: false,
+          matchingContinueAt: FieldValue.serverTimestamp(),
+          offerCooldownUntil: Timestamp.fromMillis(Date.now()),
+          offerCooldownReason: "continue",
+        },
+        {merge: true},
+      );
+    } else {
+      const cooldownMs =
+        reason === "matched" ? ACTIVE_CONVERSATION_WINDOW_MS : MATCHING_EVENT_DURATION_MS;
+      const cooldownUntil = Timestamp.fromMillis(Date.now() + cooldownMs);
+      await db.doc(`users/${uid}/relationshipMatch/summary`).set(
+        {
+          offerDismissedAt: FieldValue.serverTimestamp(),
+          offerCooldownUntil: cooldownUntil,
+          offerCooldownReason: reason === "matched" ? "matched" : "declined",
+        },
+        {merge: true},
+      );
+    }
     const [answers, summary] = await Promise.all([loadAnswers(uid), loadSummary(uid)]);
     return snapshotPayload(answers, summary.data());
   },
@@ -543,31 +809,47 @@ export const completeRelationshipTest = onCall(
       const setId = setIdFor(questionIds);
       relDebug(`Compatibility key generated: ${compatibilityKey ? "YES" : "NO"}`);
       relDebug("Relationship pool query started");
-      await db.doc(`users/${uid}/relationshipMatch/summary`).set(
+      const summaryRef = db.doc(`users/${uid}/relationshipMatch/summary`);
+      const previousSummary = await summaryRef.get();
+      const previousCount = Number(previousSummary.data()?.matchingEventCount ?? 0);
+      const matchingEventCount = previousCount + 1;
+      await summaryRef.set(
         {
           eligibleForMatching: true,
           compatibilityKey,
           setId,
           questionIds,
+          answers: {...(previousSummary.data()?.answers as object ?? {}), ...sessionAnswers},
           lastCompletedAt: FieldValue.serverTimestamp(),
-          offerCooldownUntil: Timestamp.fromMillis(Date.now() + 3 * 60 * 1000),
+          matchingEventCount,
+          matchingPaused: false,
+          offerCooldownUntil: Timestamp.fromMillis(Date.now() + MATCHING_EVENT_DURATION_MS),
         },
         {merge: true},
       );
-      const items = await findExactCandidates(uid, questionIds, compatibilityKey);
+      const items = await findPriorityCandidates(uid, questionIds, compatibilityKey);
       const nearest = items[0];
       if (!nearest) {
         relDebug("Candidates found: 0");
         relDebug("Relationship matches created: 0");
-        return {items: [], empty: true, matched: false};
+        return {
+          items: [],
+          empty: true,
+          matched: false,
+          matchingEventCount,
+        };
       }
       const matchId = await createRelationshipMatch(uid, nearest.uid, compatibilityKey);
       relDebug(`Relationship matches created: 1 matchId=${matchId}`);
+      relDebug(
+        `Nearest 3/3 candidate ${nearest.uid} distanceKm=${nearest.distanceKm ?? "n/a"}`,
+      );
       return {
         items: [{...nearest, matchId}],
         empty: false,
         matched: true,
         matchId,
+        matchingEventCount,
       };
     } catch (error) {
       const err = error as {code?: string; message?: string};
@@ -592,7 +874,7 @@ export const getRelationshipMatches = onCall(
     if (!compatibilityKey || questionIds.length !== 3) {
       return {items: []};
     }
-    const items = await findExactCandidates(uid, questionIds, compatibilityKey);
+    const items = await findPriorityCandidates(uid, questionIds, compatibilityKey);
     return {items};
   },
 );
@@ -679,14 +961,47 @@ export async function relationshipScoreForPair(
   }
   const viewerKey = viewer.data()?.compatibilityKey;
   const candidateKey = candidate.data()?.compatibilityKey;
-  if (
+  const questionIds = Array.isArray(viewer.data()?.questionIds)
+    ? (viewer.data()?.questionIds as unknown[]).map((id) => String(id))
+    : Object.keys(viewerAnswers).slice(0, 3);
+  const rel = scoreRelationshipCompatibility(viewerAnswers, candidateAnswers);
+  const keyMatch =
     typeof viewerKey === "string" &&
     typeof candidateKey === "string" &&
     viewerKey.length > 0 &&
-    viewerKey === candidateKey
-  ) {
-    return {score: 100, sharedQuestionCount: 3, alignedCount: 3, topTopics: []};
+    viewerKey === candidateKey;
+  if (keyMatch) {
+    relDebug(
+      `User ${viewerUid} vs ${candidateUid}: exact compatibilityKey → treat as 3/3 session match`,
+    );
   }
-  const rel = scoreRelationshipCompatibility(viewerAnswers, candidateAnswers);
-  return rel.alignedCount > 0 ? rel : null;
+  const debugIds =
+    questionIds.length === 3 ? questionIds : Object.keys(viewerAnswers).filter((id) => candidateAnswers[id] != null).slice(0, 3);
+  for (const questionId of debugIds) {
+    const match =
+      (normalizeAnswerId(viewerAnswers[questionId]) ?? viewerAnswers[questionId]) ===
+      (normalizeAnswerId(candidateAnswers[questionId]) ?? candidateAnswers[questionId]);
+    relDebug(
+      `User ${viewerUid} vs ${candidateUid} ${questionId}: ${match ? "MATCH" : "NO MATCH"} ` +
+        `(${viewerAnswers[questionId]} vs ${candidateAnswers[questionId]})`,
+    );
+  }
+  const alignedForRank = keyMatch
+    ? Math.max(rel.alignedCount, 3)
+    : rel.alignedCount;
+  relDebug(
+    `User ${viewerUid} vs ${candidateUid}: ${alignedForRank}/${rel.sharedQuestionCount} ` +
+      `score=${keyMatch ? 100 : rel.score}% FINAL PRIORITY: ${
+        alignedForRank >= 3 ? "VERY HIGH" : alignedForRank === 2 ? "HIGH" : alignedForRank === 1 ? "MEDIUM" : "LOW"
+      }`,
+  );
+  if (alignedForRank <= 0) {
+    return null;
+  }
+  return {
+    score: keyMatch ? 100 : rel.score,
+    sharedQuestionCount: keyMatch ? Math.max(rel.sharedQuestionCount, 3) : rel.sharedQuestionCount,
+    alignedCount: alignedForRank,
+    topTopics: rel.topTopics,
+  };
 }

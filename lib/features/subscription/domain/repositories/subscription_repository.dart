@@ -1,12 +1,11 @@
-import 'dart:async';
-
 class PremiumStatus {
-  const PremiumStatus({this.isPremium = false});
+  const PremiumStatus({this.isPremium = false, this.expiresAt});
 
   final bool isPremium;
+  final DateTime? expiresAt;
 }
 
-/// Placeholder only. Do not build payments until the dating core is stable.
+/// Entitlement stream. Billing UI is separate; this only observes status.
 abstract class SubscriptionRepository {
   Stream<PremiumStatus> watch();
 }

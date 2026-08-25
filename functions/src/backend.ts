@@ -14,10 +14,11 @@ import {logger} from "firebase-functions";
 import {blockId} from "./ids.js";
 import {
   isAccountEligible,
-  publicProfileProjection,
+  discoveryProfileProjection,
   resolveProfileAge,
 } from "./profileSafety.js";
 import {
+  discoveryProfileRejectReason,
   loadActiveMatchPartnerIds,
   loadPreferencesByUid,
   passesDiscoveryProfileFilters,
@@ -204,6 +205,11 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
     far: [],
     no_location: [],
   };
+  const rejectionReasons: Record<string, number> = {};
+  const bumpReject = (reason: string) => {
+    rejectionReasons[reason] = (rejectionReasons[reason] ?? 0) + 1;
+  };
+  const includeDebug = request.data?.includeDebug === true;
 
   for (let page = 0; page < maxPages; page++) {
     let query = db
@@ -233,21 +239,31 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
 
     for (const doc of profiles.docs) {
       lastUid = doc.id;
-      if (seen.has(doc.id) || blocked.has(doc.id)) continue;
-      if (!passesSmokeDiscoveryIsolation(callerAccount.data(), accountsByUid.get(doc.id))) {
+      if (seen.has(doc.id) || blocked.has(doc.id)) {
+        bumpReject(seen.has(doc.id) ? "already_seen_or_matched" : "blocked");
         continue;
       }
-      if (!isActiveForDiscovery(lastActiveByUid.get(doc.id))) continue;
-      if (await isBlocked(uid, doc.id)) continue;
+      if (!passesSmokeDiscoveryIsolation(callerAccount.data(), accountsByUid.get(doc.id))) {
+        bumpReject("smoke_isolation");
+        continue;
+      }
+      if (!isActiveForDiscovery(lastActiveByUid.get(doc.id))) {
+        bumpReject("inactive");
+        continue;
+      }
+      if (await isBlocked(uid, doc.id)) {
+        bumpReject("blocked");
+        continue;
+      }
       const data = doc.data();
-      if (
-        !passesDiscoveryProfileFilters({
-          candidateProfile: data,
-          candidateAccount: accountsByUid.get(doc.id),
-          minAge,
-          maxAge,
-        })
-      ) {
+      const profileReject = discoveryProfileRejectReason({
+        candidateProfile: data,
+        candidateAccount: accountsByUid.get(doc.id),
+        minAge,
+        maxAge,
+      });
+      if (profileReject) {
+        bumpReject(profileReject);
         continue;
       }
       if (
@@ -258,10 +274,14 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
           candidateProfile: data,
         })
       ) {
+        bumpReject("gender_preference");
         continue;
       }
       const age = resolveProfileAge(data);
-      if (age === null) continue;
+      if (age === null) {
+        bumpReject("age_unresolved");
+        continue;
+      }
       const candidateBoosted = isBoostedCandidate(doc.id, boosted);
       let distanceKm: number | null = null;
       let label: string | null = null;
@@ -309,7 +329,7 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
       buckets[tier].push({
         uid: doc.id,
         profile: {
-          ...publicProfileProjection({...data, uid: doc.id}),
+          ...discoveryProfileProjection({...data, uid: doc.id}),
           isVerified: accountsByUid.get(doc.id)?.isVerified === true,
         },
         distanceLabel: label,
@@ -384,6 +404,7 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
     noLocation: buckets.no_location.length,
     returned: filled.items.length,
     fallbackLevel: filled.fallbackLevel,
+    rejectionReasons,
   });
 
   const nextCursor = scannedFullPage ? lastUid : null;
@@ -391,6 +412,19 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
     items: filled.items,
     nextCursor,
     fallbackLevel: filled.fallbackLevel,
+    ...(includeDebug
+      ? {
+          debug: {
+            rejectionReasons,
+            viewerHasLocation: hasViewerLocation,
+            radiusKm,
+            nearby: buckets.nearby.length,
+            extended: buckets.extended.length,
+            far: buckets.far.length,
+            noLocation: buckets.no_location.length,
+          },
+        }
+      : {}),
   };
 });
 

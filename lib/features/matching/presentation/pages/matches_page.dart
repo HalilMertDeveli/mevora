@@ -9,6 +9,7 @@ import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
+import 'package:mevora/features/matching/presentation/pages/likes_you_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
@@ -155,15 +156,26 @@ class _MatchesPageState extends State<MatchesPage> {
                   onRetry: controller.start,
                 )
               : controller.items.isEmpty
-              ? MevoraEmptyState(
-                  icon: Icons.favorite_outline,
-                  riveAsset: MevoraRiveAssets.emptyMatches,
-                  title: l10n.matchesEmptyTitle,
-                  message: l10n.matchesEmptyMessage,
+              ? ListView(
+                  children: [
+                    LikesYouEntryCard(
+                      onTap: () => context.push(AppRoutes.likesYou),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    MevoraEmptyState(
+                      icon: Icons.favorite_outline,
+                      riveAsset: MevoraRiveAssets.emptyMatches,
+                      title: l10n.matchesEmptyTitle,
+                      message: l10n.matchesEmptyMessage,
+                    ),
+                  ],
                 )
               : ListView(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   children: [
+                    LikesYouEntryCard(
+                      onTap: () => context.push(AppRoutes.likesYou),
+                    ),
                     ...controller.items.map(
                       (item) => MatchListTile(
                         item: item,

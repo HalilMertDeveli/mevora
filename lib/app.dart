@@ -27,6 +27,7 @@ import 'package:mevora/core/routing/app_router.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/core/services/permissions/permission_handler_permission_service.dart';
 import 'package:mevora/core/services/permissions/permission_service.dart';
+import 'package:mevora/core/session/session_recovery_controller.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
@@ -113,11 +114,15 @@ class _MevoraAppState extends State<MevoraApp> {
   RelationshipController? _relationshipController;
   PresenceLifecycleController? _presenceLifecycleController;
   E2eeBootstrapController? _e2eeBootstrapController;
+  SessionRecoveryController? _sessionRecovery;
 
   @override
   void initState() {
     super.initState();
     widget.authController.start();
+    _sessionRecovery = SessionRecoveryController(logger: widget.logger)
+      ..attach();
+    unawaited(_sessionRecovery!.recover(reason: 'cold_start'));
     final providedLanguage = widget.languageController;
     if (providedLanguage != null) {
       _languageController = providedLanguage;
@@ -216,7 +221,7 @@ class _MevoraAppState extends State<MevoraApp> {
           title: widget.config.appName,
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.dark,
+          themeMode: ThemeMode.light,
           locale: _languageController.locale,
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -344,6 +349,7 @@ class _MevoraAppState extends State<MevoraApp> {
     _relationshipController?.dispose();
     _presenceLifecycleController?.dispose();
     _e2eeBootstrapController?.dispose();
+    _sessionRecovery?.dispose();
     _router.dispose();
     super.dispose();
   }

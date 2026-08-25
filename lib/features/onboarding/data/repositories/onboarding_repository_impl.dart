@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'dart:convert';
-import 'dart:io';
+
+import 'package:cloud_functions/cloud_functions.dart' show FirebaseFunctionsException;
+import 'package:flutter/foundation.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/network/backend_callable.dart';
@@ -20,7 +21,6 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   final ProfileRepository _profiles;
   final BackendCallable _backend;
   static const _onboardingCallableName = 'completeOnboarding';
-  static const _functionsRegion = 'europe-west1';
 
   @override
   Future<UserProfile?> loadDraft(String uid) => _profiles.getById(uid);
@@ -63,69 +63,102 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       ),
     );
     try {
-      // #region agent log
-      _writeDebugLog(
-        runId: 'onboarding-complete',
-        hypothesisId: 'H1',
-        location: 'onboarding_repository_impl.dart:complete:before_callable',
-        message: 'calling_complete_onboarding',
-        data: <String, Object?>{
-          'uid': profile.uid,
-          'callable': _onboardingCallableName,
-          'region': _functionsRegion,
-        },
-      );
-      // #endregion
-      await _profiles.saveMine(_clientSafeDraft(draft));
+      // Merge server-side moderation statuses so we never overwrite an already
+      // approved photo back to pending right before completeOnboarding.
+      final merged = await _mergeRemotePhotoStatuses(draft);
+      await _profiles.saveMine(_clientSafeDraft(merged));
       final response = await _backend.invoke(_onboardingCallableName);
-      // #region agent log
-      _writeDebugLog(
-        runId: 'onboarding-complete',
-        hypothesisId: 'H1',
-        location: 'onboarding_repository_impl.dart:complete:after_callable',
-        message: 'complete_onboarding_response',
-        data: <String, Object?>{
-          'uid': profile.uid,
-          'keys': response.keys.toList(growable: false),
-          'ok': response['ok'],
-          'profileCompleted': response['profileCompleted'],
-          'isDiscoverable': response['isDiscoverable'],
-        },
-      );
-      // #endregion
       final completed = await _profiles.getById(profile.uid);
-      if (completed == null || !completed.isDiscoverable) {
+      final finished = completed != null &&
+          (completed.onboardingCompleted ||
+              completed.profileCompleted ||
+              completed.isProfileComplete);
+      if (!finished) {
         return Err(
           NetworkFailure(
             kDebugMode
-                ? 'Could not complete onboarding (discoverable check failed). uid=${profile.uid} completedNull=${completed == null} isDiscoverable=${completed?.isDiscoverable}'
+                ? 'Could not complete onboarding (flags missing). '
+                    'uid=${profile.uid} responseKeys=${response.keys.toList()} '
+                    'onboardingCompleted=${completed?.onboardingCompleted} '
+                    'isDiscoverable=${completed?.isDiscoverable}'
                 : 'Could not complete onboarding.',
           ),
         );
       }
       return Success(completed);
+    } on FirebaseFunctionsException catch (error) {
+      return Err(NetworkFailure(_mapFunctionsError(error)));
     } on Object catch (error) {
-      // #region agent log
-      _writeDebugLog(
-        runId: 'onboarding-complete',
-        hypothesisId: 'H1',
-        location: 'onboarding_repository_impl.dart:complete:error',
-        message: 'complete_onboarding_failed',
-        data: <String, Object?>{
-          'uid': profile.uid,
-          'callable': _onboardingCallableName,
-          'region': _functionsRegion,
-          'error': error.toString(),
-        },
-      );
-      // #endregion
       return Err(
         NetworkFailure(
           kDebugMode
-              ? 'Could not complete onboarding (backend/storage error): $error'
+              ? 'Could not complete onboarding: $error'
               : 'Could not complete onboarding.',
         ),
       );
+    }
+  }
+
+  Future<UserProfile> _mergeRemotePhotoStatuses(UserProfile draft) async {
+    final remote = await _profiles.getById(draft.uid);
+    if (remote == null || remote.photos.isEmpty || draft.photos.isEmpty) {
+      return draft;
+    }
+    final byId = {
+      for (final photo in remote.photos) photo.id: photo,
+    };
+    final merged = draft.photos.map((photo) {
+      final server = byId[photo.id];
+      if (server == null) {
+        return photo;
+      }
+      final status = server.moderationStatus;
+      if (status == 'approved' ||
+          status == 'rejected' ||
+          status == 'manual_review') {
+        return photo.copyWith(moderationStatus: status);
+      }
+      return photo;
+    }).toList(growable: false);
+    return draft.copyWith(photos: merged);
+  }
+
+  static String _mapFunctionsError(FirebaseFunctionsException error) {
+    switch (error.code) {
+      case 'failed-precondition':
+        final details = error.message ?? '';
+        if (details.contains('photos-required')) {
+          return 'Add at least 3 photos to finish onboarding.';
+        }
+        if (details.contains('photos-not-approved')) {
+          return 'Photos are still under review. Please try again shortly.';
+        }
+        if (details.contains('interests-required')) {
+          return 'Pick at least 3 interests to continue.';
+        }
+        if (details.contains('underage')) {
+          return 'You must be 18 or older to use Mevora.';
+        }
+        if (details.contains('smoking-required') ||
+            details.contains('drinking-required') ||
+            details.contains('exercise-required') ||
+            details.contains('pets-required')) {
+          return 'Complete lifestyle answers to finish onboarding.';
+        }
+        if (details.contains('profile-missing')) {
+          return 'Profile is incomplete. Please go back and fill required fields.';
+        }
+        return kDebugMode
+            ? 'Could not complete onboarding (${error.message}).'
+            : 'Could not complete onboarding.';
+      case 'unauthenticated':
+        return 'Please sign in again to finish onboarding.';
+      case 'permission-denied':
+        return 'This account cannot complete onboarding.';
+      default:
+        return kDebugMode
+            ? 'Could not complete onboarding (${error.code}: ${error.message}).'
+            : 'Could not complete onboarding.';
     }
   }
 
@@ -144,31 +177,5 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       return profile;
     }
     return profile.copyWith(lifestyle: tags);
-  }
-
-  void _writeDebugLog({
-    required String runId,
-    required String hypothesisId,
-    required String location,
-    required String message,
-    required Map<String, Object?> data,
-  }) {
-    try {
-      final entry = <String, Object?>{
-        'sessionId': '80971b',
-        'runId': runId,
-        'hypothesisId': hypothesisId,
-        'location': location,
-        'message': message,
-        'data': data,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-      };
-      File('D:/debug-80971b.log').writeAsStringSync(
-        '${jsonEncode(entry)}\n',
-        mode: FileMode.append,
-      );
-    } on Object {
-      // Ignore logging failures in runtime path.
-    }
   }
 }

@@ -36,6 +36,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final _firstNameController = TextEditingController();
   final _cityController = TextEditingController();
   final _bioController = TextEditingController();
+  final _birthDateLabelController = TextEditingController();
   DateTime? _birthDate;
   bool _listenerAttached = false;
   String? _initializedUid;
@@ -62,6 +63,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _syncFields() {
+    if (!mounted) {
+      return;
+    }
     final profile = _controller.profile;
     if (profile == null) {
       return;
@@ -76,6 +80,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       _bioController.text = profile.bio ?? '';
     }
     _birthDate = profile.birthDate;
+    final birthLabel = _birthDate == null
+        ? ''
+        : MaterialLocalizations.of(context).formatMediumDate(_birthDate!);
+    if (_birthDateLabelController.text != birthLabel) {
+      _birthDateLabelController.text = birthLabel;
+    }
   }
 
   @override
@@ -86,6 +96,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _firstNameController.dispose();
     _cityController.dispose();
     _bioController.dispose();
+    _birthDateLabelController.dispose();
     super.dispose();
   }
 
@@ -104,6 +115,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           );
         }
         return Scaffold(
+          resizeToAvoidBottomInset: true,
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -145,6 +157,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       onBack: _controller.canGoBack ? _controller.goBack : null,
       onContinue: () => unawaited(_continue()),
       child: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         children: [
           MevoraTextField(
             controller: _firstNameController,
@@ -158,13 +171,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           MevoraTextField(
             readOnly: true,
             label: l10n.onboardingBirthDate,
-            controller: TextEditingController(
-              text: _birthDate == null
-                  ? ''
-                  : MaterialLocalizations.of(
-                      context,
-                    ).formatMediumDate(_birthDate!),
-            ),
+            controller: _birthDateLabelController,
             suffixIcon: IconButton(
               icon: const Icon(Icons.calendar_today_outlined),
               onPressed: _controller.isSaving ? null : _pickBirthDate,
@@ -411,7 +418,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Future<void> _pickCity() async {
     final picked = await showTurkishProvincePicker(context);
-    if (picked == null) return;
+    if (!mounted || picked == null) {
+      return;
+    }
     _cityController.text = picked;
     _controller.updateDraft((current) => current.copyWith(city: picked));
   }
@@ -424,10 +433,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
       firstDate: DateTime(now.year - 100),
       lastDate: DateTime(now.year - 18, now.month, now.day),
     );
-    if (picked == null) {
+    if (!mounted || picked == null) {
       return;
     }
     setState(() => _birthDate = picked);
+    _birthDateLabelController.text =
+        MaterialLocalizations.of(context).formatMediumDate(picked);
     _controller.updateDraft((current) => current.copyWith(birthDate: picked));
   }
 
@@ -441,7 +452,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Future<void> _finish() async {
     final result = await _controller.complete();
-    if (!mounted || result.isError) {
+    if (!mounted) {
+      return;
+    }
+    if (result.isError) {
       return;
     }
     AuthScope.of(context).applyOnboardingComplete();

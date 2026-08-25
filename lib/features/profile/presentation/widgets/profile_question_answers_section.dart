@@ -138,26 +138,49 @@ class _ProfileQuestionAnswersSectionState
       matches: social.matchRepository,
       viewerUid: viewerUid,
       profileUid: widget.uid,
-    ).listen((canView) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _canView = canView;
-        _matchChecked = true;
-      });
-      if (canView) {
-        _subscribeAnswers(repository);
-      } else {
-        unawaited(_answersSubscription?.cancel());
-        _answersSubscription = null;
+    ).listen(
+      (canView) {
+        if (!mounted) {
+          return;
+        }
         setState(() {
-          _answers = const [];
+          _canView = canView;
+          _matchChecked = true;
+        });
+        if (canView) {
+          _subscribeAnswers(repository);
+        } else {
+          unawaited(_answersSubscription?.cancel());
+          _answersSubscription = null;
+          setState(() {
+            _answers = const [];
+            _loading = false;
+            _error = null;
+          });
+        }
+      },
+      onError: (Object error) {
+        // #region agent log
+        // ignore: avoid_print
+        print(
+          '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"photo-swipe",'
+          '"hypothesisId":"H5","location":"profile_question_answers_section.dart",'
+          '"message":"match_watch_error","data":{"error":"$error"},'
+          '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
+        );
+        // #endregion
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _canView = false;
+          _matchChecked = true;
           _loading = false;
+          _answers = const [];
           _error = null;
         });
-      }
-    });
+      },
+    );
   }
 
   void _subscribeAnswers(ProfileQuestionAnswerRepository repository) {

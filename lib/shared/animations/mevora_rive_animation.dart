@@ -6,8 +6,15 @@ import 'package:rive/rive.dart' as rive;
 
 /// Loads a Rive graphic with a Flutter fallback.
 ///
-/// Skips Rive in widget tests, when the user prefers reduced motion, or when
-/// the asset cannot be decoded. The app never depends on a `.riv` file to
+/// Rive is **off by default** so physical devices match the emulator: on many
+/// x86 emulators `RiveNative.init` fails and the Flutter fallback is shown,
+/// while arm64 phones successfully play `.riv` files and look different.
+///
+/// Opt in only when you explicitly want Rive:
+/// `--dart-define=ENABLE_RIVE=true`
+///
+/// Also skips Rive in widget tests, when the user prefers reduced motion, or
+/// when the asset cannot be decoded. The app never depends on a `.riv` file to
 /// remain usable.
 class MevoraRiveAnimation extends StatefulWidget {
   const MevoraRiveAnimation({
@@ -41,6 +48,15 @@ class MevoraRiveAnimation extends StatefulWidget {
       WidgetsBinding.instance.runtimeType.toString().contains(
         'TestWidgetsFlutterBinding',
       );
+
+  /// When false (default), always render [fallback] / Flutter motion — never
+  /// native Rive. Keeps emulator and real-device UI identical.
+  static bool get riveEnabled {
+    if (isTestBinding) {
+      return false;
+    }
+    return const bool.fromEnvironment('ENABLE_RIVE', defaultValue: false);
+  }
 
   @override
   State<MevoraRiveAnimation> createState() => _MevoraRiveAnimationState();
@@ -81,7 +97,16 @@ class _MevoraRiveAnimationState extends State<MevoraRiveAnimation> {
   }
 
   Future<void> _prepareLoader() async {
-    if (MevoraRiveAnimation.isTestBinding) {
+    // Default path: Flutter fallback only (parity with emulator / no Rive UI).
+    if (!MevoraRiveAnimation.riveEnabled) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loader = null;
+        _assetMissing = true;
+        _assetReady = true;
+      });
       return;
     }
 

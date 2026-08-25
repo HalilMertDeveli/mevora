@@ -9,7 +9,11 @@ abstract class RelationshipDataSource {
     required String answerId,
   });
 
-  Future<RelationshipAnswerSnapshot> dismissOffer({bool matchTaken = false});
+  Future<RelationshipAnswerSnapshot> dismissOffer({
+    bool matchTaken = false,
+    bool pauseMatching = false,
+    bool continueMatching = false,
+  });
 
   Future<List<RelationshipMatchSuggestion>> completeTest({
     required List<String> questionIds,

@@ -58,6 +58,13 @@ class _ChatPageState extends State<ChatPage> {
   late final ChatAudioPlayer _player;
   late final ImagePicker _picker;
   bool _recording = false;
+  int _recordingSeconds = 0;
+  Timer? _recordingTimer;
+  DateTime? _recordingStartedAt;
+  /// Bumped on stop/cancel so an in-flight [_startVoice] cannot leave a stuck
+  /// recording after the finger already lifted (permission dialog / slow start).
+  int _voiceEpoch = 0;
+  String? _boundUid;
 
   ChatController get ctrl => _controller!;
 
@@ -72,10 +79,17 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_controller != null) {
+    final social = SocialScope.of(context);
+    final uid = social.uidSource.currentUid;
+    if (_controller != null && _boundUid == uid) {
       return;
     }
-    final social = SocialScope.of(context);
+    if (_controller != null) {
+      _scroll.removeListener(_onScroll);
+      _controller!.dispose();
+      _controller = null;
+    }
+    _boundUid = uid;
     final settingsHub = SettingsScope.maybeOf(context)?.settingsHub;
     _controller = widget.controller ??
         ChatController(
@@ -129,6 +143,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     _scroll.removeListener(_onScroll);
     _composer.dispose();
     _scroll.dispose();
@@ -248,12 +263,14 @@ class _ChatPageState extends State<ChatPage> {
                 controller: _composer,
                 enabled: controller.canChat,
                 recording: _recording,
+                recordingSeconds: _recordingSeconds,
                 uploading: controller.sending,
                 onChanged: controller.onComposerChanged,
                 onAttachPhoto: () => unawaited(_pick(ImageSource.gallery)),
                 onAttachCamera: () => unawaited(_pick(ImageSource.camera)),
                 onVoiceStart: () => unawaited(_startVoice()),
                 onVoiceEnd: () => unawaited(_stopVoice()),
+                onVoiceCancel: () => unawaited(_cancelVoice()),
                 onSend: () {
                   final text = _composer.text;
                   _composer.clear();
@@ -343,9 +360,20 @@ class _ChatPageState extends State<ChatPage> {
       await ctrl.sendImage(
         ChatMediaBytes(
           bytes: Uint8List.fromList(bytes),
-          contentType: file.mimeType ?? 'image/jpeg',
+          contentType: _normalizeImageContentType(file.mimeType),
         ),
       );
+      if (!mounted) {
+        return;
+      }
+      if (ctrl.error != null) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(L10nErrors.message(l10n, ctrl.error ?? l10n.chatGeneric)),
+          ),
+        );
+      }
     } on Object {
       if (!mounted) {
         return;
@@ -356,15 +384,85 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _startVoice() async {
-    final allowed = await _ensurePermission(PermissionType.microphone);
-    if (!allowed || !mounted) {
+  String _normalizeImageContentType(String? mimeType) {
+    final lower = (mimeType ?? '').toLowerCase().trim();
+    if (lower.contains('png')) {
+      return 'image/png';
+    }
+    if (lower.contains('webp')) {
+      return 'image/webp';
+    }
+    // Picker already re-encodes with imageQuality; treat unknown/HEIC as JPEG.
+    return 'image/jpeg';
+  }
+
+  void _clearRecordingUi() {
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+    _recordingStartedAt = null;
+    if (!mounted) {
       return;
     }
+    setState(() {
+      _recording = false;
+      _recordingSeconds = 0;
+    });
+  }
+
+  void _armRecordingTimer() {
+    _recordingTimer?.cancel();
+    _recordingStartedAt = DateTime.now();
+    _recordingSeconds = 0;
+    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !_recording || _recordingStartedAt == null) {
+        return;
+      }
+      setState(() {
+        _recordingSeconds =
+            DateTime.now().difference(_recordingStartedAt!).inSeconds;
+      });
+    });
+  }
+
+  Future<void> _startVoice() async {
+    if (_recording) {
+      return;
+    }
+    final epoch = _voiceEpoch;
+    final permissions = PermissionScope.maybeOf(context)?.controller;
+    if (permissions != null) {
+      final current = await permissions.check(PermissionType.microphone);
+      if (!mounted || epoch != _voiceEpoch) {
+        return;
+      }
+      if (!current.isUsable) {
+        final allowed = await _ensurePermission(PermissionType.microphone);
+        if (!allowed || !mounted || epoch != _voiceEpoch) {
+          return;
+        }
+        // System dialog usually ends the press; ask the user to hold again.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).holdAgainToRecord),
+          ),
+        );
+        return;
+      }
+    }
+
+    // Show recording UI immediately so the hold gesture is mirrored before
+    // the native recorder finishes opening the mic.
+    setState(() => _recording = true);
+    _armRecordingTimer();
     try {
       await _recorder.start();
-      setState(() => _recording = true);
+      if (!mounted || epoch != _voiceEpoch) {
+        await _recorder.cancel();
+        _clearRecordingUi();
+        return;
+      }
     } on ChatMicDenied {
+      _clearRecordingUi();
       if (!mounted) {
         return;
       }
@@ -372,6 +470,7 @@ class _ChatPageState extends State<ChatPage> {
         SnackBar(content: Text(AppLocalizations.of(context).micDeniedChat)),
       );
     } on Object {
+      _clearRecordingUi();
       if (!mounted) {
         return;
       }
@@ -381,23 +480,79 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _stopVoice() async {
-    if (!_recording) {
+  Future<void> _cancelVoice() async {
+    _voiceEpoch++;
+    if (!_recording && !_recorder.isRecording) {
       return;
     }
-    setState(() => _recording = false);
+    _clearRecordingUi();
     try {
-      final recorded = await _recorder.stop();
-      if (recorded == null || !mounted) {
+      await _recorder.cancel();
+    } on Object {
+      // Best-effort cancel — never crash the chat UI.
+    }
+  }
+
+  Future<void> _stopVoice() async {
+    _voiceEpoch++;
+    if (!_recording && !_recorder.isRecording) {
+      return;
+    }
+    final startedAt = _recordingStartedAt;
+    _clearRecordingUi();
+    try {
+      // Finger may release before native start() finishes; epoch cancel handles
+      // the in-flight start — don't call stop() on a recorder that never began.
+      if (!_recorder.isRecording) {
+        try {
+          await _recorder.cancel();
+        } on Object {
+          // Ignore.
+        }
         return;
       }
-      await ctrl.sendVoice(
+      final recorded = await _recorder.stop();
+      if (!mounted) {
+        return;
+      }
+      if (recorded == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).voiceTooShort),
+          ),
+        );
+        return;
+      }
+      // Ignore accidental near-zero captures (gesture rebuild races).
+      final heldMs = startedAt == null
+          ? recorded.durationMs
+          : DateTime.now().difference(startedAt).inMilliseconds;
+      if (heldMs < kMinVoiceDurationMs) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).voiceTooShort),
+          ),
+        );
+        return;
+      }
+      final result = await ctrl.sendVoice(
         ChatMediaBytes(
           bytes: recorded.bytes,
           contentType: recorded.contentType,
           durationMs: recorded.durationMs,
         ),
       );
+      if (!mounted) {
+        return;
+      }
+      if (result.isError) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(L10nErrors.message(l10n, ctrl.error ?? l10n.chatGeneric)),
+          ),
+        );
+      }
     } on Object {
       if (!mounted) {
         return;

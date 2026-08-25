@@ -31,7 +31,7 @@ class AppShell extends StatelessWidget {
         body = RelationshipDiscoverySync(
           controller: relationship,
           discoveryVisible: navigationShell.currentIndex == 0,
-          normalMatchCount: social?.matchesController.mutualLikeCount ?? 0,
+          normalMatchCount: social?.matchesController.activeConversationCount ?? 0,
           child: body,
         );
       }
@@ -44,51 +44,72 @@ class AppShell extends StatelessWidget {
             AppSpacing.sm,
             AppSpacing.sm,
           ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.glassFill,
-              borderRadius: BorderRadius.circular(AppRadii.xl),
-              border: Border.all(color: AppColors.glassBorder),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadii.xl),
-              child: NavigationBar(
-                selectedIndex: navigationShell.currentIndex,
-                onDestinationSelected: navigationShell.goBranch,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                destinations: [
-                  NavigationDestination(
-                    icon: const Icon(Icons.explore_outlined),
-                    selectedIcon: const Icon(Icons.explore),
-                    label: l10n.tabDiscovery,
+          child: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+              final isDark = theme.brightness == Brightness.dark;
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.glassFill
+                      : AppColors.lightGlassFill,
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.glassBorder
+                        : AppColors.lightGlassBorder,
                   ),
-                  NavigationDestination(
-                    icon: Badge(
-                      isLabelVisible: unread > 0,
-                      label: Text('$unread'),
-                      child: const Icon(Icons.favorite_outline),
-                    ),
-                    selectedIcon: Badge(
-                      isLabelVisible: unread > 0,
-                      label: Text('$unread'),
-                      child: const Icon(Icons.favorite),
-                    ),
-                    label: l10n.tabMatches,
+                  boxShadow: isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.xl),
+                  child: NavigationBar(
+                    selectedIndex: navigationShell.currentIndex,
+                    onDestinationSelected: navigationShell.goBranch,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    destinations: [
+                      NavigationDestination(
+                        icon: const Icon(Icons.explore_outlined),
+                        selectedIcon: const Icon(Icons.explore),
+                        label: l10n.tabDiscovery,
+                      ),
+                      NavigationDestination(
+                        icon: Badge(
+                          isLabelVisible: unread > 0,
+                          label: Text('$unread'),
+                          child: const Icon(Icons.favorite_outline),
+                        ),
+                        selectedIcon: Badge(
+                          isLabelVisible: unread > 0,
+                          label: Text('$unread'),
+                          child: const Icon(Icons.favorite),
+                        ),
+                        label: l10n.tabMatches,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.library_music_outlined),
+                        selectedIcon: const Icon(Icons.library_music),
+                        label: l10n.tabMusic,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.person_outline),
+                        selectedIcon: const Icon(Icons.person),
+                        label: l10n.tabProfile,
+                      ),
+                    ],
                   ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.library_music_outlined),
-                    selectedIcon: const Icon(Icons.library_music),
-                    label: l10n.tabMusic,
-                  ),
-                  NavigationDestination(
-                    icon: const Icon(Icons.person_outline),
-                    selectedIcon: const Icon(Icons.person),
-                    label: l10n.tabProfile,
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       );

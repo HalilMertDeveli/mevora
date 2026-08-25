@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/app_config.dart';
+import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/presentation/pages/design_system_page.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/routing/auth_redirector.dart';
@@ -29,6 +30,7 @@ import 'package:mevora/features/discovery/presentation/pages/discovery_page.dart
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
 import 'package:mevora/features/location/presentation/pages/location_permission_page.dart';
 import 'package:mevora/features/matching/presentation/pages/app_shell.dart';
+import 'package:mevora/features/matching/presentation/pages/likes_you_page.dart';
 import 'package:mevora/features/matching/presentation/pages/matches_page.dart';
 import 'package:mevora/features/music/presentation/pages/music_page.dart';
 import 'package:mevora/features/notifications/presentation/pages/notification_settings_page.dart';
@@ -57,7 +59,7 @@ GoRouter createAppRouter({
     initialLocation: AppRoutes.splash,
     refreshListenable: refresh,
     redirect: (context, state) {
-      return AuthRedirector.redirect(
+      final next = AuthRedirector.redirect(
         status: authController.status,
         location: state.matchedLocation,
         allowDesignSystem: config.showDebugBanner,
@@ -67,6 +69,23 @@ GoRouter createAppRouter({
         needsLocationOnboarding: locationController?.onboardingNeeded ?? false,
         locationGateResolved: locationController?.isResolved ?? true,
       );
+      // #region agent log
+      AgentDebugLog.log(
+        location: 'app_router.dart:redirect',
+        message: 'auth_redirect',
+        hypothesisId: 'D',
+        data: <String, Object?>{
+          'from': state.matchedLocation,
+          'to': next,
+          'status': authController.status.runtimeType.toString(),
+          'isBusy': authController.isBusy,
+          'locationGateResolved': locationController?.isResolved ?? true,
+          'needsLocationOnboarding':
+              locationController?.onboardingNeeded ?? false,
+        },
+      );
+      // #endregion
+      return next;
     },
     routes: [
       GoRoute(
@@ -254,6 +273,13 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const BoostScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.likesYou,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const LikesYouPage(),
         ),
       ),
       GoRoute(

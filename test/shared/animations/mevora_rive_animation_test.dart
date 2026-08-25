@@ -28,6 +28,10 @@ void main() {
     expect(find.text('fallback'), findsOneWidget);
   });
 
+  test('Rive stays disabled by default for emulator/device UI parity', () {
+    expect(MevoraRiveAnimation.riveEnabled, isFalse);
+  });
+
   test('loading and sync assets stay distinct and compact', () {
     expect(MevoraRiveAssets.loading, 'assets/rive/common/searching.riv');
     expect(MevoraRiveAssets.callConnecting, MevoraRiveAssets.loading);

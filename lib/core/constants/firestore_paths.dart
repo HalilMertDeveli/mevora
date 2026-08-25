@@ -17,6 +17,7 @@ abstract final class FirestorePaths {
   static const String boosts = 'boosts';
   static const String boostWallet = 'boostWallet';
   static const String boostProducts = 'boostProducts';
+  static const String subscription = 'subscription';
   static const String supportTickets = 'supportTickets';
 
   static const String devices = 'devices';
@@ -79,6 +80,9 @@ abstract final class FirestorePaths {
       '$users/$uid/settings/notifications';
 
   static String presence(String uid) => '$users/$uid/presence/current';
+
+  static String subscriptionCurrent(String uid) =>
+      '$users/$uid/$subscription/current';
 
   static String matchScoreHistory(String uid) => '$users/$uid/$scoreHistory';
 
@@ -169,6 +173,8 @@ abstract final class StoragePaths {
 
   static const int maxChatImageBytes = 5 * 1024 * 1024;
   static const int maxChatVoiceBytes = 8 * 1024 * 1024;
+  /// Matches `isEncryptedChatBlob()` in `firebase/storage.rules`.
+  static const int maxChatEncryptedBytes = 25 * 1024 * 1024;
 
   static const Set<String> allowedChatAudioTypes = {
     'audio/mp4',
@@ -176,8 +182,33 @@ abstract final class StoragePaths {
     'audio/x-m4a',
     'audio/aac',
     'audio/mpeg',
-    'audio/wav',
   };
+
+  static const String encryptedChatContentType = 'application/octet-stream';
+
+  /// Client-side gate aligned with Storage rules for chat media uploads.
+  static bool isAllowedChatUpload({
+    required String contentType,
+    required int sizeBytes,
+  }) {
+    if (sizeBytes <= 0) {
+      return false;
+    }
+    final lower = contentType.toLowerCase().trim();
+    if (allowedChatAudioTypes.contains(lower)) {
+      return sizeBytes <= maxChatVoiceBytes;
+    }
+    if (lower == encryptedChatContentType) {
+      return sizeBytes <= maxChatEncryptedBytes;
+    }
+    const images = {
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+    };
+    return images.contains(lower) && sizeBytes <= maxChatImageBytes;
+  }
 
   static const int maxSupportAttachmentBytes = 5 * 1024 * 1024;
 

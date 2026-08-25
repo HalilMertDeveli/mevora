@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/shared/animations/mevora_photo_fade.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/images/mevora_photo_images.dart';
 
 /// Discovery image with loading and error placeholders. No blur overlay.
+///
+/// Real Firebase Storage photos are decoded at display size ([cacheWidth]) so
+/// switching to photo 2 does not freeze the UI on full-resolution decode.
 class DiscoveryNetworkImage extends StatelessWidget {
   const DiscoveryNetworkImage({
     super.key,
@@ -17,14 +21,17 @@ class DiscoveryNetworkImage extends StatelessWidget {
 
   static final Set<String> _prefetched = <String>{};
 
-  static void prefetch(String url) {
+  static void prefetch(String url, {int? cacheWidth}) {
     if (_prefetched.contains(url) || !MevoraNetworkImages.isHttpUrl(url)) {
       return;
     }
     _prefetched.add(url);
-    final provider = MevoraNetworkImages.provider(url);
+    ImageProvider? provider = MevoraNetworkImages.provider(url);
     if (provider == null) {
       return;
+    }
+    if (cacheWidth != null && cacheWidth > 0) {
+      provider = ResizeImage(provider, width: cacheWidth);
     }
     final stream = provider.resolve(const ImageConfiguration());
     late ImageStreamListener listener;
@@ -36,9 +43,39 @@ class DiscoveryNetworkImage extends StatelessWidget {
     stream.addListener(listener);
   }
 
+  // #region agent log
+  static void _logDebug(
+    String message, {
+    String hypothesisId = 'PHOTO',
+    Map<String, Object?> data = const <String, Object?>{},
+  }) {
+    try {
+      final entry = <String, Object?>{
+        'sessionId': '80971b',
+        'runId': 'post-fix',
+        'hypothesisId': hypothesisId,
+        'location': 'discovery_network_image.dart',
+        'message': message,
+        'data': data,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+      // ignore: avoid_print
+      print('[PHOTO_DEBUG] ${jsonEncode(entry)}');
+    } on Object {
+      // Ignore logging failures.
+    }
+  }
+  // #endregion
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final media = MediaQuery.sizeOf(context);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    // Cap decode size so multi-MB Storage photos stay off the UI thread.
+    // Keep under ~1080px — pending discovery JPGs are often full camera size.
+    final cacheWidth = (media.width * dpr).round().clamp(320, 1080);
+
     final asset = MevoraPhotoImages.assetPath(url);
     if (asset != null) {
       return MevoraPhotoFade(
@@ -47,7 +84,7 @@ class DiscoveryNetworkImage extends StatelessWidget {
           child: Image.asset(
             asset,
             fit: fit,
-            filterQuality: FilterQuality.high,
+            filterQuality: FilterQuality.medium,
             gaplessPlayback: true,
             errorBuilder: (context, error, stackTrace) => _ErrorPlaceholder(
               color: theme.colorScheme.primaryContainer,
@@ -58,40 +95,73 @@ class DiscoveryNetworkImage extends StatelessWidget {
       );
     }
     if (!MevoraNetworkImages.isHttpUrl(url)) {
+      // #region agent log
+      _logDebug(
+        'non_http_url',
+        hypothesisId: 'H4',
+        data: <String, Object?>{
+          'scheme': Uri.tryParse(url)?.scheme,
+          'urlLen': url.length,
+        },
+      );
+      // #endregion
       return _ErrorPlaceholder(
         color: theme.colorScheme.primaryContainer,
         iconColor: theme.colorScheme.onPrimaryContainer,
       );
     }
-    return MevoraPhotoFade(
-      photoKey: url,
-      child: SizedBox.expand(
-        child: Image.network(
-          url,
-          fit: fit,
-          filterQuality: FilterQuality.high,
-          gaplessPlayback: true,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) {
-              return child;
-            }
-            return const _LoadingPlaceholder();
-          },
-          errorBuilder: (context, error, stackTrace) => _ErrorPlaceholder(
+    // #region agent log
+    final loadStartedAt = DateTime.now().millisecondsSinceEpoch;
+    _logDebug(
+      'network_image_build',
+      hypothesisId: 'H1',
+      data: <String, Object?>{
+        'cacheWidth': cacheWidth,
+        'urlLen': url.length,
+        'host': Uri.tryParse(url)?.host,
+      },
+    );
+    // #endregion
+    return SizedBox.expand(
+      child: Image.network(
+        url,
+        fit: fit,
+        cacheWidth: cacheWidth,
+        filterQuality: FilterQuality.medium,
+        gaplessPlayback: true,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) {
+            // #region agent log
+            _logDebug(
+              'network_image_loaded',
+              hypothesisId: 'H1',
+              data: <String, Object?>{
+                'elapsedMs':
+                    DateTime.now().millisecondsSinceEpoch - loadStartedAt,
+                'cacheWidth': cacheWidth,
+              },
+            );
+            // #endregion
+            return child;
+          }
+          return const _LoadingPlaceholder();
+        },
+        errorBuilder: (context, error, stackTrace) {
+          // #region agent log
+          _logDebug(
+            'network_image_error',
+            hypothesisId: 'H4',
+            data: <String, Object?>{
+              'error': error.toString(),
+              'urlLen': url.length,
+            },
+          );
+          // #endregion
+          return _ErrorPlaceholder(
             color: theme.colorScheme.primaryContainer,
             iconColor: theme.colorScheme.onPrimaryContainer,
-          ),
-          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-            if (wasSynchronouslyLoaded || frame != null) {
-              return AnimatedOpacity(
-                opacity: 1,
-                duration: AppDurations.photo,
-                child: child,
-              );
-            }
-            return const _LoadingPlaceholder();
-          },
-        ),
+          );
+        },
       ),
     );
   }

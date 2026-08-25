@@ -1868,6 +1868,30 @@ abstract class AppLocalizations {
   /// **'Recording…'**
   String get holdToRecord;
 
+  /// No description provided for @slideToCancelVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide left to cancel'**
+  String get slideToCancelVoice;
+
+  /// No description provided for @releaseToSendVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Release to send'**
+  String get releaseToSendVoice;
+
+  /// No description provided for @holdAgainToRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone ready — hold to record'**
+  String get holdAgainToRecord;
+
+  /// No description provided for @voiceTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold a bit longer to send a voice message.'**
+  String get voiceTooShort;
+
   /// No description provided for @playVoice.
   ///
   /// In en, this message translates to:
@@ -3692,6 +3716,102 @@ abstract class AppLocalizations {
   /// **'Not now'**
   String get relationshipTestLater;
 
+  /// No description provided for @relationshipContinueTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep matching?'**
+  String get relationshipContinueTitle;
+
+  /// No description provided for @relationshipContinueMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve completed 5 matching rounds. Do you want to continue finding people who share your answers?'**
+  String get relationshipContinueMessage;
+
+  /// No description provided for @relationshipContinueYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get relationshipContinueYes;
+
+  /// No description provided for @relationshipContinueNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get relationshipContinueNo;
+
+  /// No description provided for @likesYouTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Likes you'**
+  String get likesYouTitle;
+
+  /// No description provided for @likesYouEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See who liked your profile'**
+  String get likesYouEntrySubtitle;
+
+  /// No description provided for @likesYouLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone likes you'**
+  String get likesYouLockedTitle;
+
+  /// No description provided for @likesYouLockedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} people like you'**
+  String likesYouLockedCount(int count);
+
+  /// No description provided for @likesYouLockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Premium to see who liked you. Photos and names stay hidden until then.'**
+  String get likesYouLockedMessage;
+
+  /// No description provided for @likesYouUnlockCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with Premium'**
+  String get likesYouUnlockCta;
+
+  /// No description provided for @likesYouBlurredHint.
+  ///
+  /// In en, this message translates to:
+  /// **'People who liked you'**
+  String get likesYouBlurredHint;
+
+  /// No description provided for @likesYouHiddenName.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone special'**
+  String get likesYouHiddenName;
+
+  /// No description provided for @likesYouHiddenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock to see their profile'**
+  String get likesYouHiddenSubtitle;
+
+  /// No description provided for @likesYouEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No new likes yet'**
+  String get likesYouEmptyTitle;
+
+  /// No description provided for @likesYouEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone likes you, they\'ll show up here.'**
+  String get likesYouEmptyMessage;
+
+  /// No description provided for @likesYouLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load likes. Please try again.'**
+  String get likesYouLoadError;
+
   /// No description provided for @relationshipTestDoneTitle.
   ///
   /// In en, this message translates to:
@@ -4133,7 +4253,7 @@ abstract class AppLocalizations {
   /// No description provided for @questionAnswersSaveError.
   ///
   /// In en, this message translates to:
-  /// **'Couldn't save your answer. Check your connection and try again.'**
+  /// **'Couldn\'t save your answer. Check your connection and try again.'**
   String get questionAnswersSaveError;
 
   /// No description provided for @seeAllAnswers.
@@ -4165,6 +4285,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discover what you have in common.'**
   String get questionAnswersMatchedSubtitle;
+
+  /// No description provided for @questionAnswersPeerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This person hasn\'t shared any profile answers yet.'**
+  String get questionAnswersPeerEmpty;
 
   /// No description provided for @matchViewAnswers.
   ///

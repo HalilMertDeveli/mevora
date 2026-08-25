@@ -108,6 +108,7 @@ class MockDiscoveryRepository
       compatibilityOf: (seed) => seed.compatibilityScore,
       musicBonusOf: (_) => 0,
       distanceOf: (seed) => seed.distanceKm,
+      relationshipAlignedOf: (_) => 0,
       tieBreak: (a, b) =>
           b.compatibilityScore.compareTo(a.compatibilityScore),
     );

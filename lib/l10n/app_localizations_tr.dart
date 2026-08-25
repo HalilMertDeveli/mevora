@@ -953,6 +953,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get holdToRecord => 'Kaydediliyor…';
 
   @override
+  String get slideToCancelVoice => 'İptal için sola kaydır';
+
+  @override
+  String get releaseToSendVoice => 'Göndermek için bırak';
+
+  @override
+  String get holdAgainToRecord => 'Mikrofon hazır — kaydetmek için basılı tut';
+
+  @override
+  String get voiceTooShort =>
+      'Sesli mesaj göndermek için biraz daha uzun basılı tut.';
+
+  @override
   String get playVoice => 'Oynat';
 
   @override
@@ -1951,6 +1964,58 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relationshipTestLater => 'Daha Sonra';
 
   @override
+  String get relationshipContinueTitle => 'Eşleşmeye devam etmek ister misin?';
+
+  @override
+  String get relationshipContinueMessage =>
+      '5 eşleşme turunu tamamladın. Aynı cevaplara sahip insanları bulmaya devam etmek ister misin?';
+
+  @override
+  String get relationshipContinueYes => 'Devam Et';
+
+  @override
+  String get relationshipContinueNo => 'Şimdi Değil';
+
+  @override
+  String get likesYouTitle => 'Sizi Beğendi';
+
+  @override
+  String get likesYouEntrySubtitle => 'Profilini beğenenleri gör';
+
+  @override
+  String get likesYouLockedTitle => 'Biri seni beğendi';
+
+  @override
+  String likesYouLockedCount(int count) {
+    return '$count kişi seni beğendi';
+  }
+
+  @override
+  String get likesYouLockedMessage =>
+      'Seni kimin beğendiğini görmek için Premium\'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.';
+
+  @override
+  String get likesYouUnlockCta => 'Premium ile aç';
+
+  @override
+  String get likesYouBlurredHint => 'Seni beğenenler';
+
+  @override
+  String get likesYouHiddenName => 'Özel biri';
+
+  @override
+  String get likesYouHiddenSubtitle => 'Profilini görmek için kilidi aç';
+
+  @override
+  String get likesYouEmptyTitle => 'Henüz yeni beğeni yok';
+
+  @override
+  String get likesYouEmptyMessage => 'Biri seni beğendiğinde burada görünür.';
+
+  @override
+  String get likesYouLoadError => 'Beğeniler yüklenemedi. Lütfen tekrar dene.';
+
+  @override
   String get relationshipTestDoneTitle => 'İlişki Testin Tamamlandı';
 
   @override
@@ -2204,10 +2269,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get questionAnswersEmpty => 'Henüz cevapladığın bir soru yok.';
 
   @override
-  String get questionAnswersEmptyHint => 'Profilini daha kişisel hale getirmek için birkaç ilişki sorusu cevapla. İstediğin zaman düzenleyebilirsin.';
+  String get questionAnswersEmptyHint =>
+      'Profilini daha kişisel hale getirmek için birkaç ilişki sorusu cevapla. İstediğin zaman düzenleyebilirsin.';
 
   @override
-  String get questionAnswersSaveError => 'Cevabın kaydedilemedi. Bağlantını kontrol edip tekrar dene.';
+  String get questionAnswersSaveError =>
+      'Cevabın kaydedilemedi. Bağlantını kontrol edip tekrar dene.';
 
   @override
   String seeAllAnswers(int count) {
@@ -2227,6 +2294,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get questionAnswersMatchedSubtitle => 'Ortak yönlerinizi keşfedin.';
+
+  @override
+  String get questionAnswersPeerEmpty =>
+      'Bu kişi henüz profilinde soru cevabı paylaşmamış.';
 
   @override
   String get matchViewAnswers => 'Cevapları gör';

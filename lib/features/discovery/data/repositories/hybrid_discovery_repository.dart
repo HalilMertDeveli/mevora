@@ -64,10 +64,15 @@ class HybridDiscoveryRepository
           DiscoveryPageResult(candidates: real, nextCursor: page.nextCursor),
         );
       }
-      final realIds = real.map((candidate) => candidate.uid).toSet();
+      // Prefer real candidates. Only pad with demos when the live feed is empty.
+      if (real.isNotEmpty) {
+        return Success(
+          DiscoveryPageResult(candidates: real, nextCursor: page.nextCursor),
+        );
+      }
       final merged = [
         ...real,
-        ...demo.where((candidate) => !realIds.contains(candidate.uid)),
+        ...demo.where((candidate) => candidate.uid != uid),
       ];
       return Success(
         DiscoveryPageResult(
@@ -77,6 +82,8 @@ class HybridDiscoveryRepository
       );
     }
 
+    // Remote failed (index/App Check/etc.) — demos hide the outage. Prefer surfacing
+    // the error in development when demos would otherwise look like "no match".
     if (allowDemoFallback && demo.isNotEmpty) {
       return Success(
         DiscoveryPageResult(candidates: demo.take(limit).toList()),

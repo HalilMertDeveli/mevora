@@ -1,10 +1,11 @@
 import {type DocumentData, type Firestore} from "firebase-admin/firestore";
 import {interestedInAllows} from "./musicCompatibility.js";
 import {
-  approvedPhotos,
+  countUsableDiscoveryPhotos,
   isAccountEligible,
   isAdultProfile,
   isProfileDiscoverable,
+  MIN_PROFILE_PHOTOS,
   resolveProfileAge,
 } from "./profileSafety.js";
 
@@ -38,30 +39,52 @@ export function passesGenderPreferences(options: {
   );
 }
 
+export function discoveryProfileRejectReason(options: {
+  candidateProfile: DocumentData | undefined;
+  candidateAccount: DocumentData | undefined;
+  minAge: number;
+  maxAge: number;
+}): string | null {
+  const data = options.candidateProfile;
+  if (!isProfileDiscoverable(data)) {
+    if (!data) return "profile_missing";
+    if (data.isDiscoverable !== true) return "not_discoverable";
+    if (data.profileCompleted !== true) return "profile_incomplete";
+    const moderationStatus = String(
+      data.profileModerationStatus ?? data.moderationStatus ?? "approved",
+    );
+    if (
+      moderationStatus === "suspended" ||
+      moderationStatus === "rejected" ||
+      moderationStatus === "manual_review"
+    ) {
+      return `profile_moderation_${moderationStatus}`;
+    }
+    return "underage_or_undiscoverable";
+  }
+  if (!isAccountEligible(options.candidateAccount)) {
+    return "account_ineligible";
+  }
+  if (!isAdultProfile(data)) {
+    return "underage";
+  }
+  const age = resolveProfileAge(data);
+  if (age === null || age < 18 || age < options.minAge || age > options.maxAge) {
+    return "age_filter";
+  }
+  if (countUsableDiscoveryPhotos(data?.photos) < MIN_PROFILE_PHOTOS) {
+    return "photos_insufficient";
+  }
+  return null;
+}
+
 export function passesDiscoveryProfileFilters(options: {
   candidateProfile: DocumentData | undefined;
   candidateAccount: DocumentData | undefined;
   minAge: number;
   maxAge: number;
 }): boolean {
-  const data = options.candidateProfile;
-  if (!isProfileDiscoverable(data)) {
-    return false;
-  }
-  if (!isAccountEligible(options.candidateAccount)) {
-    return false;
-  }
-  if (!isAdultProfile(data)) {
-    return false;
-  }
-  const age = resolveProfileAge(data);
-  if (age === null || age < 18 || age < options.minAge || age > options.maxAge) {
-    return false;
-  }
-  if (approvedPhotos(data?.photos).length < 3) {
-    return false;
-  }
-  return true;
+  return discoveryProfileRejectReason(options) === null;
 }
 
 export async function loadActiveMatchPartnerIds(

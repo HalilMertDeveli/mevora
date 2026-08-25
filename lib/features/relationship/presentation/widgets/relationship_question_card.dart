@@ -186,6 +186,17 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
               },
             ),
           )
+        else if (showPrompt && controller.isContinuePromptVisible)
+          Positioned.fill(
+            child: RelationshipContinueMatchingCard(
+              onContinue: () {
+                unawaited(controller.continueMatchingEvents());
+              },
+              onNotNow: () {
+                unawaited(controller.pauseMatchingEvents());
+              },
+            ),
+          )
         else if (showPrompt && controller.isOfferVisible)
           Positioned.fill(
             child: RelationshipTestOfferCard(
@@ -358,6 +369,62 @@ class RelationshipQuestionUnavailableCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   MevoraButton(label: l10n.close, onPressed: onDismiss),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class RelationshipContinueMatchingCard extends StatelessWidget {
+  const RelationshipContinueMatchingCard({
+    super.key,
+    required this.onContinue,
+    required this.onNotNow,
+  });
+
+  final VoidCallback onContinue;
+  final VoidCallback onNotNow;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return ColoredBox(
+      color: Colors.black.withValues(alpha: 0.42),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: MevoraCard(
+              emphasis: MevoraCardEmphasis.elevated,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.relationshipContinueTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    l10n.relationshipContinueMessage,
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  MevoraButton(
+                    label: l10n.relationshipContinueYes,
+                    onPressed: onContinue,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  MevoraButton(
+                    label: l10n.relationshipContinueNo,
+                    variant: MevoraButtonVariant.secondary,
+                    onPressed: onNotNow,
+                  ),
                 ],
               ),
             ),

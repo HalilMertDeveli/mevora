@@ -52,12 +52,18 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
 
   @override
   Stream<Match?> watchMatch(String matchId) {
-    return _matches.doc(matchId).snapshots().map((snap) {
-      if (!snap.exists) {
-        return null;
-      }
-      return _matchFrom(snap.id, snap.data() ?? const {});
-    });
+    return _matches
+        .doc(matchId)
+        .snapshots()
+        .map((snap) {
+          if (!snap.exists) {
+            return null;
+          }
+          return _matchFrom(snap.id, snap.data() ?? const {});
+        })
+        .handleError((Object error, StackTrace stackTrace) {
+          // Missing match docs must not crash discovery profile photo UI.
+        });
   }
 
   @override

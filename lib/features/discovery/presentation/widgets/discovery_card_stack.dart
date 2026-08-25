@@ -73,10 +73,10 @@ class DiscoveryCardStack extends StatelessWidget {
   }
 }
 
-/// Prefetches the next card photo without blocking swipe gestures.
+/// Prefetches the next card photos without blocking swipe gestures.
 void prefetchDiscoveryPhotos(List<DiscoveryCandidate> candidates) {
   for (final candidate in candidates.take(2)) {
-    for (final url in candidate.photos.take(1)) {
+    for (final url in candidate.photos.take(2)) {
       DiscoveryNetworkImage.prefetch(url);
     }
   }

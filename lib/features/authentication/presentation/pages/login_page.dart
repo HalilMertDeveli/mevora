@@ -46,7 +46,6 @@ class _LoginPageState extends State<LoginPage>
   String? _emailError;
   String? _passwordError;
   bool _viewLogged = false;
-  bool _autoGoogleTriggered = false;
 
   @override
   void initState() {
@@ -95,13 +94,6 @@ class _LoginPageState extends State<LoginPage>
       _viewLogged = true;
       unawaited(AuthScope.of(context).reportLoginScreenViewed());
     }
-    // #region agent log
-    const autoGoogle = bool.fromEnvironment('AUTO_TEST_GOOGLE_SIGNIN');
-    if (autoGoogle && !_autoGoogleTriggered) {
-      _autoGoogleTriggered = true;
-      unawaited(AuthScope.of(context).signInWithGoogle());
-    }
-    // #endregion
   }
 
   @override
@@ -313,7 +305,9 @@ class _EmailSignInPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return DecoratedBox(
-      decoration: AppDecorations.glassCard(),
+      decoration: AppDecorations.glassCard(
+        brightness: Theme.of(context).brightness,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.cardPadding),
         child: AutofillGroup(
@@ -324,7 +318,9 @@ class _EmailSignInPanel extends StatelessWidget {
                 l10n.signInWithEmail,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.primaryText,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.primaryText
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),

@@ -36,9 +36,13 @@ class MevoraCard extends StatelessWidget {
       margin: margin,
       decoration: BoxDecoration(
         color: switch (emphasis) {
-          MevoraCardEmphasis.elevated => theme.colorScheme.surfaceContainerHigh,
+          MevoraCardEmphasis.elevated => theme.brightness == Brightness.dark
+              ? theme.colorScheme.surfaceContainerHigh
+              : theme.colorScheme.surfaceContainerLowest,
           MevoraCardEmphasis.quiet => theme.colorScheme.surfaceContainer,
-          MevoraCardEmphasis.standard => theme.colorScheme.surfaceContainerLow,
+          MevoraCardEmphasis.standard => theme.brightness == Brightness.dark
+              ? theme.colorScheme.surfaceContainerLow
+              : theme.colorScheme.surfaceContainerLowest,
         },
         borderRadius: BorderRadius.circular(AppRadii.lg),
         border: showBorder

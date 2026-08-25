@@ -50,7 +50,8 @@ class DiscoveryPage extends StatefulWidget {
   State<DiscoveryPage> createState() => _DiscoveryPageState();
 }
 
-class _DiscoveryPageState extends State<DiscoveryPage> {
+class _DiscoveryPageState extends State<DiscoveryPage>
+    with WidgetsBindingObserver {
   DiscoveryController? _owned;
   ProfileUpdateNotifier? _profileUpdates;
   Offset _drag = Offset.zero;
@@ -58,6 +59,35 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
   bool _animateOut = false;
 
   DiscoveryController? get _controller => widget.controller ?? _owned;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.controller?.addListener(_onController);
+    unawaited(widget.controller?.start());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      RelationshipScope.controllerOf(context)?.recordDiscoveryActivity();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) {
+      return;
+    }
+    final controller = _controller;
+    if (controller == null) {
+      return;
+    }
+    // Soft refresh after long idle — keep deck if already loaded.
+    if (controller.state.hasDiscoveryError || controller.state.candidates.isEmpty) {
+      unawaited(controller.refresh());
+    }
+  }
 
   void _pulseRelationshipActivity() {
     RelationshipScope.controllerOf(context)?.recordDiscoveryActivity();
@@ -133,20 +163,8 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    widget.controller?.addListener(_onController);
-    unawaited(widget.controller?.start());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      RelationshipScope.controllerOf(context)?.recordDiscoveryActivity();
-    });
-  }
-
-  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _profileUpdates?.removeListener(_onProfileUpdated);
     widget.controller?.removeListener(_onController);
     _owned?.removeListener(_onController);
@@ -166,7 +184,8 @@ class _DiscoveryPageState extends State<DiscoveryPage> {
     final state = controller.state;
     final relationship = RelationshipScope.controllerOf(context);
     final matchCount =
-        SocialScope.maybeOf(context)?.matchesController.mutualLikeCount ?? 0;
+        SocialScope.maybeOf(context)?.matchesController.activeConversationCount ??
+        0;
     Widget body = SafeArea(child: _body(controller, state));
     if (relationship != null) {
       body = RelationshipPromptHost(

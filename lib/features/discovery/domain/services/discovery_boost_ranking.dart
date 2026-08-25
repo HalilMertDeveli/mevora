@@ -57,9 +57,40 @@ abstract final class DiscoveryBoostRanking {
     required int Function(T item) compatibilityOf,
     required int Function(T item) musicBonusOf,
     required double? Function(T item) distanceOf,
+    int Function(T item)? relationshipAlignedOf,
     int Function(T a, T b)? tieBreak,
   }) {
+    int alignmentTier(T item) {
+      final aligned = relationshipAlignedOf?.call(item) ?? 0;
+      if (aligned >= 3) {
+        return 3;
+      }
+      if (aligned == 2) {
+        return 2;
+      }
+      if (aligned == 1) {
+        return 1;
+      }
+      return 0;
+    }
+
+    double distanceKey(T item) {
+      final value = distanceOf(item);
+      if (value == null) {
+        return double.infinity;
+      }
+      return value;
+    }
+
     final sorted = [...items]..sort((a, b) {
+      final tierDelta = alignmentTier(b).compareTo(alignmentTier(a));
+      if (tierDelta != 0) {
+        return tierDelta;
+      }
+      final distanceDelta = distanceKey(a).compareTo(distanceKey(b));
+      if (distanceDelta != 0) {
+        return distanceDelta;
+      }
       final aScore = rankScore(
         uid: uidOf(a),
         compatibilityScore: compatibilityOf(a),
@@ -81,7 +112,13 @@ abstract final class DiscoveryBoostRanking {
       }
       return tieBreak?.call(a, b) ?? 0;
     });
-    return _diversify(sorted, boostedUids, uidOf);
+
+    final out = <T>[];
+    for (final tier in const [3, 2, 1, 0]) {
+      final group = sorted.where((item) => alignmentTier(item) == tier).toList();
+      out.addAll(_diversify(group, boostedUids, uidOf));
+    }
+    return out;
   }
 
   static List<T> _diversify<T>(

@@ -54,8 +54,17 @@ class ChatBubble extends StatelessWidget {
               maxWidth: MediaQuery.sizeOf(context).width * 0.75,
             ),
             decoration: BoxDecoration(
-              color: isMine ? colors.primary : colors.surfaceContainerHigh,
+              color: isMine
+                  ? (Theme.of(context).brightness == Brightness.dark
+                      ? colors.primary
+                      : colors.primaryContainer)
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? colors.surfaceContainerHigh
+                      : colors.surfaceContainerHighest),
               borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: isMine || Theme.of(context).brightness == Brightness.dark
+                  ? null
+                  : Border.all(color: colors.outlineVariant),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -68,9 +77,7 @@ class ChatBubble extends StatelessWidget {
                     Text(
                       _timeLabel(message.createdAt),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isMine
-                            ? colors.onPrimary.withValues(alpha: 0.8)
-                            : colors.onSurfaceVariant,
+                        color: _metaColor(context, colors),
                       ),
                     ),
                     if (isMine && !message.deleted) ...[
@@ -81,8 +88,10 @@ class ChatBubble extends StatelessWidget {
                             : Icons.done,
                         size: 14,
                         color: message.status == MessageStatus.read
-                            ? colors.tertiaryContainer
-                            : colors.onPrimary.withValues(alpha: 0.8),
+                            ? (Theme.of(context).brightness == Brightness.dark
+                                ? colors.tertiaryContainer
+                                : colors.primary)
+                            : _metaColor(context, colors),
                       ),
                     ],
                   ],
@@ -95,8 +104,19 @@ class ChatBubble extends StatelessWidget {
     );
   }
 
+  Color _bubbleForeground(BuildContext context, ColorScheme colors) {
+    if (!isMine) return colors.onSurface;
+    return Theme.of(context).brightness == Brightness.dark
+        ? colors.onPrimary
+        : colors.onPrimaryContainer;
+  }
+
+  Color _metaColor(BuildContext context, ColorScheme colors) {
+    return _bubbleForeground(context, colors).withValues(alpha: 0.72);
+  }
+
   Widget _body(BuildContext context, AppLocalizations l10n, ColorScheme colors) {
-    final textColor = isMine ? colors.onPrimary : colors.onSurface;
+    final textColor = _bubbleForeground(context, colors);
     if (message.deleted) {
       return Text(
         l10n.messageDeleted,
@@ -419,8 +439,13 @@ class _ChatComposerState extends State<ChatComposer> {
   static const double _cancelDragThreshold = 72;
 
   bool get _hasText => widget.controller.text.trim().isNotEmpty;
-  double _dragLeft = 0;
   bool _cancelArmed = false;
+  /// Active pointer for hold-to-record. The mic [Listener] must stay mounted
+  /// for this pointer's lifetime — swapping it out cancels the gesture.
+  int? _voicePointer;
+  double _voicePointerStartDx = 0;
+  /// Preserves the mic [Listener] Element when the Row reorders for recording.
+  final GlobalKey _voiceHoldKey = GlobalKey(debugLabel: 'chat-voice-hold');
 
   @override
   void initState() {
@@ -434,6 +459,10 @@ class _ChatComposerState extends State<ChatComposer> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_onTextChanged);
       widget.controller.addListener(_onTextChanged);
+    }
+    if (oldWidget.recording && !widget.recording) {
+      _cancelArmed = false;
+      _voicePointer = null;
     }
   }
 
@@ -449,18 +478,62 @@ class _ChatComposerState extends State<ChatComposer> {
     }
   }
 
-  void _resetRecordingGesture() {
-    _dragLeft = 0;
-    _cancelArmed = false;
-  }
-
   void _finishRecording({required bool cancel}) {
-    _resetRecordingGesture();
-    if (cancel) {
+    if (_voicePointer == null && !widget.recording) {
+      return;
+    }
+    final wasCancel = cancel || _cancelArmed;
+    _cancelArmed = false;
+    _voicePointer = null;
+    // Always notify — even if recording UI has not flipped yet — so an
+    // in-flight start after permission/IO cannot leave a stuck take.
+    if (wasCancel) {
       widget.onVoiceCancel?.call();
     } else {
       widget.onVoiceEnd?.call();
     }
+  }
+
+  void _onVoicePointerDown(PointerDownEvent event) {
+    if (_voicePointer != null ||
+        _hasText ||
+        !widget.enabled ||
+        widget.uploading ||
+        widget.recording ||
+        widget.onVoiceStart == null) {
+      return;
+    }
+    setState(() {
+      _voicePointer = event.pointer;
+      _voicePointerStartDx = event.position.dx;
+      _cancelArmed = false;
+    });
+    widget.onVoiceStart!();
+  }
+
+  void _onVoicePointerMove(PointerMoveEvent event) {
+    if (_voicePointer != event.pointer) {
+      return;
+    }
+    final armed =
+        event.position.dx <= _voicePointerStartDx - _cancelDragThreshold;
+    if (armed != _cancelArmed) {
+      setState(() => _cancelArmed = armed);
+    }
+  }
+
+  void _onVoicePointerUp(PointerUpEvent event) {
+    if (_voicePointer != event.pointer) {
+      return;
+    }
+    _finishRecording(cancel: _cancelArmed);
+  }
+
+  void _onVoicePointerCancel(PointerCancelEvent event) {
+    if (_voicePointer != event.pointer) {
+      return;
+    }
+    _finishRecording(cancel: true);
   }
 
   String _formatRecordingClock(int seconds) {
@@ -474,7 +547,11 @@ class _ChatComposerState extends State<ChatComposer> {
     final l10n = AppLocalizations.of(context);
     final colors = Theme.of(context).colorScheme;
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final showVoice = !_hasText;
 
+    // Mic Listener stays in the tree for the whole hold. Only the left side
+    // swaps between text field and recording bar — never unmount the pointer
+    // target under the finger (that silently cancelled takes on device).
     return Material(
       color: colors.surface,
       elevation: 0,
@@ -491,60 +568,56 @@ class _ChatComposerState extends State<ChatComposer> {
             AppSpacing.sm,
             AppSpacing.sm + bottomInset,
           ),
-          // While recording, listen for pointer-up on the whole bar so ending
-          // the long-press still works after the mic button is swapped out.
-          child: widget.recording
-              ? Listener(
-                  behavior: HitTestBehavior.translucent,
-                  onPointerMove: (event) {
-                    if (event.delta.dx < 0) {
-                      setState(() {
-                        _dragLeft += -event.delta.dx;
-                        _cancelArmed = _dragLeft >= _cancelDragThreshold;
-                      });
-                    }
-                  },
-                  onPointerUp: (_) =>
-                      _finishRecording(cancel: _cancelArmed),
-                  onPointerCancel: (_) =>
-                      _finishRecording(cancel: _cancelArmed),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (widget.recording)
+                Expanded(
                   child: _RecordingBar(
                     label: widget.recordingSeconds > 0
-                        ? '${_formatRecordingClock(widget.recordingSeconds)} · ${l10n.holdToRecord}'
+                        ? '${_formatRecordingClock(widget.recordingSeconds)} · ${l10n.releaseToSendVoice}'
                         : l10n.holdToRecord,
-                    cancelHint: _cancelArmed ? l10n.cancel : null,
+                    cancelHint: _cancelArmed
+                        ? l10n.cancel
+                        : l10n.slideToCancelVoice,
+                    cancelling: _cancelArmed,
                   ),
                 )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    _AttachMenuButton(
-                      enabled: widget.enabled && !widget.uploading,
-                      onAttachPhoto: widget.onAttachPhoto,
-                      onAttachCamera: widget.onAttachCamera,
-                      attachPhotoLabel: l10n.attachPhoto,
-                      takePhotoLabel: l10n.takePhoto,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(child: _buildInput(context, l10n, colors)),
-                    const SizedBox(width: AppSpacing.xs),
-                    if (_hasText)
-                      _SendButton(
-                        enabled: widget.enabled && !widget.uploading,
-                        uploading: widget.uploading,
-                        tooltip: l10n.send,
-                        onSend: widget.onSend,
-                      )
-                    else
-                      _VoiceButton(
-                        enabled: widget.enabled && !widget.uploading,
-                        recording: widget.recording,
-                        tooltip: l10n.recordVoice,
-                        onVoiceStart: widget.onVoiceStart,
-                        onVoiceEnd: widget.onVoiceEnd,
-                      ),
-                  ],
+              else ...[
+                _AttachMenuButton(
+                  enabled: widget.enabled && !widget.uploading,
+                  onAttachPhoto: widget.onAttachPhoto,
+                  onAttachCamera: widget.onAttachCamera,
+                  attachPhotoLabel: l10n.attachPhoto,
+                  takePhotoLabel: l10n.takePhoto,
                 ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(child: _buildInput(context, l10n, colors)),
+                const SizedBox(width: AppSpacing.xs),
+              ],
+              if (showVoice || widget.recording)
+                Listener(
+                  key: _voiceHoldKey,
+                  behavior: HitTestBehavior.opaque,
+                  onPointerDown: _onVoicePointerDown,
+                  onPointerMove: _onVoicePointerMove,
+                  onPointerUp: _onVoicePointerUp,
+                  onPointerCancel: _onVoicePointerCancel,
+                  child: _VoiceButton(
+                    enabled: widget.enabled && !widget.uploading,
+                    recording: widget.recording || _voicePointer != null,
+                    tooltip: l10n.recordVoice,
+                  ),
+                )
+              else
+                _SendButton(
+                  enabled: widget.enabled && !widget.uploading,
+                  uploading: widget.uploading,
+                  tooltip: l10n.send,
+                  onSend: widget.onSend,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -730,45 +803,37 @@ class _VoiceButton extends StatelessWidget {
     required this.enabled,
     required this.recording,
     required this.tooltip,
-    required this.onVoiceStart,
-    required this.onVoiceEnd,
   });
 
   final bool enabled;
   final bool recording;
   final String tooltip;
-  final VoidCallback? onVoiceStart;
-  final VoidCallback? onVoiceEnd;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onLongPressStart: enabled && onVoiceStart != null
-          ? (_) => onVoiceStart!()
-          : null,
-      onLongPressEnd: enabled && onVoiceEnd != null
-          ? (_) => onVoiceEnd!()
-          : null,
-      child: Tooltip(
-        message: tooltip,
-        child: SizedBox(
-          key: const ValueKey('chat-record-voice'),
-          width: _ChatComposerState._actionSize,
-          height: _ChatComposerState._actionSize,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: recording
-                  ? colors.errorContainer
-                  : colors.surfaceContainerHighest,
-            ),
-            child: Icon(
-              Icons.mic_none_rounded,
-              color: recording
-                  ? colors.error
-                  : colors.onSurfaceVariant,
-            ),
+    // Gestures live on the parent [GestureDetector] so hold-to-record survives
+    // the mic → recording-bar child swap.
+    return Tooltip(
+      message: tooltip,
+      child: SizedBox(
+        key: const ValueKey('chat-record-voice'),
+        width: _ChatComposerState._actionSize,
+        height: _ChatComposerState._actionSize,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: recording
+                ? colors.errorContainer
+                : colors.surfaceContainerHighest,
+          ),
+          child: Icon(
+            Icons.mic_none_rounded,
+            color: recording
+                ? colors.error
+                : (enabled
+                      ? colors.onSurfaceVariant
+                      : Theme.of(context).disabledColor),
           ),
         ),
       ),
@@ -779,23 +844,24 @@ class _VoiceButton extends StatelessWidget {
 class _RecordingBar extends StatelessWidget {
   const _RecordingBar({
     required this.label,
-    this.cancelHint,
+    required this.cancelHint,
+    required this.cancelling,
   });
 
   final String label;
-  final String? cancelHint;
+  final String cancelHint;
+  final bool cancelling;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final cancelling = cancelHint != null;
     return SizedBox(
       height: _ChatComposerState._actionSize + 4,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: cancelling
-              ? colors.errorContainer.withValues(alpha: 0.75)
+              ? colors.errorContainer.withValues(alpha: 0.85)
               : colors.errorContainer.withValues(alpha: 0.55),
           borderRadius: BorderRadius.circular(AppRadii.lg),
         ),
@@ -805,12 +871,29 @@ class _RecordingBar extends StatelessWidget {
             const _RecordingPulse(),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: Text(
-                cancelling ? cancelHint! : label,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colors.onErrorContainer,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cancelling ? cancelHint : label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.onErrorContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (!cancelling)
+                    Text(
+                      cancelHint,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colors.onErrorContainer.withValues(alpha: 0.8),
+                      ),
+                    ),
+                ],
               ),
             ),
             Padding(

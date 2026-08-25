@@ -55,8 +55,11 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/matches/$(matchId)).data.isActive == true;
     }
 
+    // Discover may show pending photos before moderation publishes them.
+    // Authenticated read matches discoveryProfileProjection + download tokens.
     match /users/{userId}/profile/pending/{imageId} {
-      allow read, delete: if isOwner(userId);
+      allow read: if isAuthenticated();
+      allow delete: if isOwner(userId);
       allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
     }
 

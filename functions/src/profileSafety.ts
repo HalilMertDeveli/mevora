@@ -62,28 +62,65 @@ export function approvedPhotos(photos: unknown): Array<Record<string, unknown>> 
   );
 }
 
+/**
+ * Photos that can appear in Discover while moderation is still async.
+ * Rejected photos are excluded. Pending/processing need a viewable URL.
+ */
+export function usableDiscoveryPhotos(photos: unknown): Array<Record<string, unknown>> {
+  return ((photos as Array<Record<string, unknown>>) ?? []).filter((photo) => {
+    const status = String(photo.moderationStatus ?? "pending");
+    if (status === "rejected") {
+      return false;
+    }
+    if (status === "approved") {
+      return true;
+    }
+    return Boolean(photo.downloadUrl || photo.thumbUrl);
+  });
+}
+
 export function countApprovedPhotos(photos: unknown): number {
   return approvedPhotos(photos).length;
 }
 
-export function publicProfileProjection(data: DocumentData): Record<string, unknown> {
-  const photos = approvedPhotos(data.photos).map((photo) => ({
+export function countUsableDiscoveryPhotos(photos: unknown): number {
+  return usableDiscoveryPhotos(photos).length;
+}
+
+function projectPhotos(photos: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  return photos.map((photo) => ({
     id: photo.id,
     downloadUrl: photo.downloadUrl ?? null,
     thumbUrl: photo.thumbUrl ?? null,
     order: photo.order ?? 0,
     isPrimary: photo.isPrimary ?? false,
+    moderationStatus: photo.moderationStatus ?? "pending",
   }));
+}
+
+/** Strict public card: only fully approved photos. */
+export function publicProfileProjection(data: DocumentData): Record<string, unknown> {
   return {
     uid: data.uid,
     displayName: data.displayName ?? "",
     age: resolveProfileAge(data),
     gender: data.gender ?? null,
     bio: data.bio ?? null,
-    photos,
+    photos: projectPhotos(approvedPhotos(data.photos)),
     interests: data.interests ?? [],
     relationshipGoal: data.relationshipGoal ?? null,
     city: data.city ?? null,
     isVerified: data.isVerified === true,
+  };
+}
+
+/**
+ * Discover feed projection: include pending/processing photos that already have
+ * a download URL so newly onboarded users are visible before async moderation.
+ */
+export function discoveryProfileProjection(data: DocumentData): Record<string, unknown> {
+  return {
+    ...publicProfileProjection(data),
+    photos: projectPhotos(usableDiscoveryPhotos(data.photos)),
   };
 }

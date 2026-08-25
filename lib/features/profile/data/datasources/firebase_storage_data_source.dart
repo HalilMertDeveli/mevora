@@ -10,6 +10,7 @@ import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
+import 'package:mevora/features/chat/presentation/chat_strings.dart';
 import 'package:mevora/features/profile/data/services/profile_image_pipeline.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
@@ -37,22 +38,30 @@ class FirebaseStorageDataSource implements StorageRepository {
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
-      _logError('no currentUser', code: 'unauthenticated');
+      _logError('no currentUser', code: 'unauthenticated', path: path);
       return const Err(ValidationFailure(PhotoUploadMessages.needSignIn));
     }
     if (!path.startsWith('users/${user.uid}/')) {
       _logError(
         'path does not match auth uid',
         code: 'unauthorized',
+        path: path,
       );
       return const Err(ValidationFailure(PhotoUploadMessages.failed));
     }
     if (!_isAllowedUpload(path: path, contentType: contentType, size: bytes.length)) {
+      _logError(
+        'rejected contentType=$contentType size=${bytes.length}',
+        code: 'invalid-argument',
+        path: path,
+      );
       return const Err(ValidationFailure(PhotoUploadMessages.invalidFile));
     }
 
     _log(
-      'Upload Started uid=${user.uid} size=${bytes.length} path=$path',
+      'Upload Started uid=${user.uid} size=${bytes.length} '
+      'contentType=$contentType path=$path',
+      path: path,
     );
     UploadTask? task;
     StreamSubscription<TaskSnapshot>? subscription;
@@ -70,6 +79,7 @@ class FirebaseStorageDataSource implements StorageRepository {
         onProgress?.call(progress.clamp(0, 1));
         _log(
           'Upload Progress ${(progress * 100).round()}% state=${snapshot.state.name}',
+          path: path,
         );
       });
       await task.timeout(_uploadTimeout);
@@ -77,17 +87,22 @@ class FirebaseStorageDataSource implements StorageRepository {
       final url = await ref.getDownloadURL().timeout(
         const Duration(seconds: 15),
       );
-      _log('Upload Completed downloadUrlHost=${Uri.tryParse(url)?.host}');
+      _log('Upload Completed downloadUrlHost=${Uri.tryParse(url)?.host}', path: path);
       return Success(Uri.parse(url));
     } on TimeoutException {
       await _cancel(task);
-      _logError('timeout after ${_uploadTimeout.inSeconds}s', code: 'timeout');
+      _logError('timeout after ${_uploadTimeout.inSeconds}s', code: 'timeout', path: path);
       return const Err(NetworkFailure(PhotoUploadMessages.timeout));
     } on FirebaseException catch (error) {
-      _logError(error.message ?? error.code, code: error.code);
-      return const Err(NetworkFailure(PhotoUploadMessages.failed));
+      _logError(error.message ?? error.code, code: error.code, path: path);
+      final isChat = path.contains('/chat/');
+      return Err(
+        NetworkFailure(
+          isChat ? ChatStrings.mediaUploadFailed : PhotoUploadMessages.failed,
+        ),
+      );
     } on Object catch (error) {
-      _logError('$error', code: 'unknown');
+      _logError('$error', code: 'unknown', path: path);
       return Err(
         FailureMapper.from(
           NetworkException(PhotoUploadMessages.failed, cause: error),
@@ -126,9 +141,10 @@ class FirebaseStorageDataSource implements StorageRepository {
       }
       return Success(data);
     } on FirebaseException catch (error) {
-      _logError(error.message ?? error.code, code: error.code);
+      _logError(error.message ?? error.code, code: error.code, path: path);
       return const Err(NetworkFailure(PhotoUploadMessages.failed));
     } on Object catch (error) {
+      _logError('$error', code: 'unknown', path: path);
       return Err(
         FailureMapper.from(
           NetworkException(PhotoUploadMessages.failed, cause: error),
@@ -211,14 +227,11 @@ class FirebaseStorageDataSource implements StorageRepository {
     required int size,
   }) {
     final isChat = path.contains('/chat/');
-    if (isChat &&
-        StoragePaths.allowedChatAudioTypes.contains(contentType.toLowerCase())) {
-      return size > 0 && size <= StoragePaths.maxChatVoiceBytes;
-    }
     if (isChat) {
-      return pipeline.isAllowedType(contentType) &&
-          size > 0 &&
-          size <= StoragePaths.maxChatImageBytes;
+      return StoragePaths.isAllowedChatUpload(
+        contentType: contentType,
+        sizeBytes: size,
+      );
     }
     return pipeline.isAllowedType(contentType) && pipeline.isAllowedSize(size);
   }
@@ -242,20 +255,28 @@ class FirebaseStorageDataSource implements StorageRepository {
     }
   }
 
-  void _log(String message) {
+  void _log(String message, {required String path}) {
     if (!kDebugMode) {
       return;
     }
-    developer.log(message, name: 'PHOTO_UPLOAD');
+    final name = path.contains('/chat/') ? 'CHAT_UPLOAD' : 'PHOTO_UPLOAD';
+    developer.log(message, name: name);
   }
 
-  void _logError(String message, {required String code}) {
+  void _logError(
+    String message, {
+    required String code,
+    String path = '',
+  }) {
     if (!kDebugMode) {
       return;
     }
+    final name = path.contains('/chat/')
+        ? 'CHAT_UPLOAD_ERROR'
+        : 'PHOTO_UPLOAD_ERROR';
     developer.log(
       'Code: $code Message: $message',
-      name: 'PHOTO_UPLOAD_ERROR',
+      name: name,
     );
   }
 }

@@ -34,13 +34,13 @@ class DiscoveryBoostBadge extends StatelessWidget {
           Icon(
             Icons.bolt_rounded,
             size: compact ? 14 : 16,
-            color: AppColors.primaryText,
+            color: AppColors.onMedia,
           ),
           const SizedBox(width: AppSpacing.xs),
           Text(
             l10n.boostDiscoverBadge,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.primaryText,
+              color: AppColors.onMedia,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
             ),

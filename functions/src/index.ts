@@ -2,6 +2,8 @@ export * from "./backend";
 export * from "./social";
 export * from "./matchScore";
 export * from "./notifications";
+export * from "./incomingLikes";
+export * from "./premium";
 export {completeOnboarding} from "./onboarding";
 export {enforceProfilePhotoModeration} from "./moderation/profileModerationGuard.js";
 export {prepareSmokeTestUsers, cleanupSmokeTestUsers} from "./smoke/smokeTestUsers.js";

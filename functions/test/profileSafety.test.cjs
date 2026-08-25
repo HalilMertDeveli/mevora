@@ -103,7 +103,7 @@ describe("discoverability and public projection", () => {
     );
   });
 
-  it("requires three approved photos for discovery filters", () => {
+  it("requires three usable photos for discovery filters", () => {
     assert.equal(
       passesDiscoveryProfileFilters({
         candidateProfile: adultProfile(),
@@ -124,6 +124,21 @@ describe("discoverability and public projection", () => {
       }),
       false,
     );
+    assert.equal(
+      passesDiscoveryProfileFilters({
+        candidateProfile: adultProfile({
+          photos: [
+            {moderationStatus: "pending", downloadUrl: "https://a"},
+            {moderationStatus: "pending", downloadUrl: "https://b"},
+            {moderationStatus: "pending", downloadUrl: "https://c"},
+          ],
+        }),
+        candidateAccount: {accountStatus: "active"},
+        minAge: 18,
+        maxAge: 99,
+      }),
+      true,
+    );
   });
 
   it("public projection hides birthDate and pending photos", () => {
@@ -138,5 +153,19 @@ describe("discoverability and public projection", () => {
     });
     assert.equal(projection.photos.length, 1);
     assert.equal("birthDate" in projection, false);
+  });
+
+  it("discovery projection includes pending photos with download URLs", () => {
+    const {discoveryProfileProjection} = require("../lib/profileSafety.js");
+    const projection = discoveryProfileProjection({
+      ...adultProfile(),
+      uid: "u1",
+      photos: [
+        {id: "1", moderationStatus: "approved", downloadUrl: "a"},
+        {id: "2", moderationStatus: "pending", downloadUrl: "b"},
+        {id: "3", moderationStatus: "rejected", downloadUrl: "c"},
+      ],
+    });
+    assert.equal(projection.photos.length, 2);
   });
 });

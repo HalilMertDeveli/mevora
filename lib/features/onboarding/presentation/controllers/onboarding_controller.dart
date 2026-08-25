@@ -76,6 +76,7 @@ class OnboardingController extends ChangeNotifier {
   String? errorMessage;
 
   String? _uid;
+  var _disposed = false;
 
   bool get canGoBack => step.previous != null;
 
@@ -94,7 +95,7 @@ class OnboardingController extends ChangeNotifier {
     _uid = user.id;
     isLoading = true;
     errorMessage = null;
-    notifyListeners();
+    _notify();
     final existing = await _repository.loadDraft(user.id);
     final draft = (existing ??
             UserProfile(
@@ -110,7 +111,7 @@ class OnboardingController extends ChangeNotifier {
         : draft.onboardingStep;
     photoDrafts = _draftsFromProfile(draft);
     isLoading = false;
-    notifyListeners();
+    _notify();
   }
 
   void updateDraft(UserProfile Function(UserProfile current) transform) {
@@ -119,7 +120,7 @@ class OnboardingController extends ChangeNotifier {
       return;
     }
     profile = transform(current);
-    notifyListeners();
+    _notify();
   }
 
   Future<Result<void>> continueStep() async {
@@ -132,7 +133,7 @@ class OnboardingController extends ChangeNotifier {
     }
     isSaving = true;
     errorMessage = null;
-    notifyListeners();
+    _notify();
     try {
       if (step == OnboardingStep.photos) {
         if (!canContinuePhotos) {
@@ -160,7 +161,7 @@ class OnboardingController extends ChangeNotifier {
           }
           errorMessage = null;
           isSaving = false;
-          notifyListeners();
+          _notify();
           return const Success(null);
         case Err(:final failure):
           _fail(failure.message);
@@ -182,7 +183,7 @@ class OnboardingController extends ChangeNotifier {
     }
     isSaving = true;
     errorMessage = null;
-    notifyListeners();
+    _notify();
     try {
       final upload = await _ensurePhotosUploaded(uid);
       if (upload.isError) {
@@ -197,7 +198,7 @@ class OnboardingController extends ChangeNotifier {
           step = OnboardingStep.complete;
           errorMessage = null;
           isSaving = false;
-          notifyListeners();
+          _notify();
           return const Success(null);
         case Err(:final failure):
           _fail(failure.message);
@@ -216,7 +217,7 @@ class OnboardingController extends ChangeNotifier {
     }
     step = previous;
     errorMessage = null;
-    notifyListeners();
+    _notify();
   }
 
   Future<Result<void>> pickPhoto({required bool fromCamera}) async {
@@ -246,11 +247,11 @@ class OnboardingController extends ChangeNotifier {
             contentType: value.contentType,
           ),
         ];
-        notifyListeners();
+        _notify();
         return _uploadDraft(uid, id);
       case Err(:final failure):
         errorMessage = failure.message;
-        notifyListeners();
+        _notify();
         return Err(failure);
     }
   }
@@ -261,7 +262,7 @@ class OnboardingController extends ChangeNotifier {
         if (draft.id != id) draft,
     ];
     _syncPhotosToProfile();
-    notifyListeners();
+    _notify();
   }
 
   void reorderPhotos(int oldIndex, int newIndex) {
@@ -276,7 +277,7 @@ class OnboardingController extends ChangeNotifier {
     drafts.insert(newIndex, item);
     photoDrafts = drafts;
     _syncPhotosToProfile();
-    notifyListeners();
+    _notify();
   }
 
   Future<Result<void>> retryPhotoUpload(String id) async {
@@ -321,7 +322,7 @@ class OnboardingController extends ChangeNotifier {
         else
           photoDrafts[i],
     ];
-    notifyListeners();
+    _notify();
     try {
       final upload = await _storage.uploadProfileImage(
         ownerUid: uid,
@@ -340,7 +341,7 @@ class OnboardingController extends ChangeNotifier {
               else
                 photoDrafts[i],
           ];
-          notifyListeners();
+          _notify();
         },
       );
       switch (upload) {
@@ -376,7 +377,7 @@ class OnboardingController extends ChangeNotifier {
                 photoDrafts[i],
           ];
           _syncPhotosToProfile();
-          notifyListeners();
+          _notify();
           return const Success(null);
         case Err(:final failure):
           _markUploadFailed(id, PhotoUploadMessages.failed);
@@ -400,7 +401,7 @@ class OnboardingController extends ChangeNotifier {
         else
           draft,
     ];
-    notifyListeners();
+    _notify();
   }
 
   List<OnboardingPhotoDraft> _draftsFromProfile(UserProfile value) {
@@ -450,6 +451,19 @@ class OnboardingController extends ChangeNotifier {
   void _fail(String message) {
     isSaving = false;
     errorMessage = message;
+    _notify();
+  }
+
+  void _notify() {
+    if (_disposed) {
+      return;
+    }
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

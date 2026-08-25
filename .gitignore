@@ -91,3 +91,7 @@ storage-debug.log
 firebase-export/
 **/node_modules/
 
+
+# QA run logs (keep reports, drop noisy logs)
+qa/*.log
+

@@ -24,10 +24,11 @@ void main() {
     expect(source.contains('"rejected" ? "rejected" : "approved"'), isFalse);
   });
 
-  test('discovery admits usable pending photos with download URLs', () {
+  test('discovery admits only approved photos', () {
     final safety = File('functions/src/profileSafety.ts').readAsStringSync();
     final matching = File('functions/src/discoveryMatching.ts').readAsStringSync();
     expect(safety.contains('usableDiscoveryPhotos'), isTrue);
+    expect(safety.contains('return approvedPhotos(photos)'), isTrue);
     expect(safety.contains('discoveryProfileProjection'), isTrue);
     expect(matching.contains('countUsableDiscoveryPhotos'), isTrue);
     expect(matching.contains('photos_insufficient'), isTrue);

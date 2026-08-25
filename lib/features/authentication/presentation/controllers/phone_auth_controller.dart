@@ -53,6 +53,14 @@ class PhoneAuthController extends ChangeNotifier {
       _resendSeconds == 0 && hasActiveChallenge && !_isBusy;
   bool get _isBusy => _state is SendingOtp || _state is VerifyingOtp;
 
+  void _debugPrint(String message) {
+    if (!kDebugMode) {
+      return;
+    }
+    // ignore: avoid_print
+    print(message);
+  }
+
   String get formattedNational =>
       E164Formatter.formatNational(_country, _nationalNumber);
 
@@ -89,23 +97,20 @@ class PhoneAuthController extends ChangeNotifier {
     _state = const SendingOtp();
     notifyListeners();
     await _analytics.phoneAuthStarted();
-    // ignore: avoid_print
-    print('[PHONE_AUTH] START controller-send');
+    _debugPrint('[PHONE_AUTH] START controller-send');
     _logger.info('phone_auth send requested');
 
     final result = await _send(validation.e164!);
     switch (result) {
       case Success<PhoneChallenge>(:final value):
-        // ignore: avoid_print
-        print(
+        _debugPrint(
           '[PHONE_AUTH] CODE_SENT controller verificationIdEmpty=${value.verificationId.isEmpty} auto=${value.autoVerified}',
         );
         if (value.autoVerified) {
           final auto = await _authRepository.completePhoneAutoVerification();
           switch (auto) {
             case Success<AuthUser>(:final value):
-              // ignore: avoid_print
-              print('[PHONE_AUTH] SIGN_IN_SUCCESS controller-auto');
+              _debugPrint('[PHONE_AUTH] SIGN_IN_SUCCESS controller-auto');
               _state = PhoneAuthenticated(value);
               await _analytics.otpVerified();
               notifyListeners();
@@ -117,8 +122,7 @@ class PhoneAuthController extends ChangeNotifier {
         _state = OtpSent(challenge: value);
         _startCooldown();
         await _analytics.otpSent();
-        // ignore: avoid_print
-        print('[PHONE_AUTH] NAVIGATION otp-screen');
+        _debugPrint('[PHONE_AUTH] NAVIGATION otp-screen');
         notifyListeners();
         return true;
       case Err<PhoneChallenge>(:final failure):
@@ -154,21 +158,17 @@ class PhoneAuthController extends ChangeNotifier {
     switch (result) {
       case Success<AuthUser>(:final value):
         _timer?.cancel();
-        // ignore: avoid_print
-        print('[PHONE_AUTH] SIGN_IN_SUCCESS controller-manual');
-        // ignore: avoid_print
-        print('[PHONE_AUTH] FIREBASE_UID_RECEIVED controller');
+        _debugPrint('[PHONE_AUTH] SIGN_IN_SUCCESS controller-manual');
+        _debugPrint('[PHONE_AUTH] FIREBASE_UID_RECEIVED controller');
         _state = PhoneAuthenticated(value);
         await _analytics.otpVerified();
-        // ignore: avoid_print
-        print('[PHONE_AUTH] NAVIGATION after-auth');
+        _debugPrint('[PHONE_AUTH] NAVIGATION after-auth');
         notifyListeners();
         return true;
       case Err<AuthUser>(:final failure):
         await _analytics.otpVerificationFailed();
         final code = failure is AuthFailure ? failure.code : null;
-        // ignore: avoid_print
-        print('[PHONE_AUTH] VERIFICATION_FAILED otp code=$code message=${failure.message}');
+        _debugPrint('[PHONE_AUTH] VERIFICATION_FAILED otp code=$code message=${failure.message}');
         if (_isTooMany(failure)) {
           _state = TooManyAttempts(
             failure.message,
@@ -226,8 +226,7 @@ class PhoneAuthController extends ChangeNotifier {
   bool _failSend(Failure failure) {
     final kind = failure is AuthFailure ? failure.kind : AuthErrorKind.smsFailed;
     final code = failure is AuthFailure ? failure.code : null;
-    // ignore: avoid_print
-    print('[PHONE_AUTH] VERIFICATION_FAILED send code=$code kind=$kind message=${failure.message}');
+    _debugPrint('[PHONE_AUTH] VERIFICATION_FAILED send code=$code kind=$kind message=${failure.message}');
     _logger.warning(
       'phone_auth send failed kind=$kind code=$code',
       error: failure.message,

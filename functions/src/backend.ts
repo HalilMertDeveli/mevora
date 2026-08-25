@@ -1,7 +1,6 @@
 import {getApps, initializeApp} from "firebase-admin/app";
 import {
   FieldValue,
-  Timestamp,
   getFirestore,
   type DocumentData,
 } from "firebase-admin/firestore";
@@ -39,6 +38,11 @@ import {relationshipScoreForPair} from "./relationshipMatch.js";
 import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
 import {calculateCompatibility} from "./compatibility/compatibilityEngine.js";
 import {passesSmokeDiscoveryIsolation} from "./smoke/smokeTestUsers.js";
+import {
+  cleanupOldCalls,
+  cleanupOldNotifications,
+} from "./automation/cleanup.js";
+import {FcmTypes, sendUserPush} from "./notifications.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -503,6 +507,13 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   const reverseAction = reverse.data()?.action as string | undefined;
   const matched = reverse.exists && reverseAction !== "pass";
   if (!matched) {
+    await sendUserPush({
+      uid: candidateUid,
+      type: FcmTypes.incomingLike,
+      data: {},
+      prefKey: "likeNotifications",
+      idempotencyKey: `incomingLike_${uid}_${candidateUid}`,
+    });
     return {matched: false};
   }
   const matchId = [uid, candidateUid].sort().join("_");
@@ -559,27 +570,152 @@ export {deleteUserAccount} from "./deleteAccount.js";
 
 export const exportMyData = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
-  const [account, profile, prefs, settings, privacy, location, matches] = await Promise.all([
+  const [
+    account,
+    profile,
+    prefs,
+    settings,
+    privacy,
+    location,
+    matches,
+    likesFrom,
+    likesTo,
+    blocks,
+    reportsFiled,
+    purchases,
+    supportTickets,
+    devices,
+    notifSettings,
+    subscription,
+    music,
+    verification,
+    questionAnswers,
+  ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
     db.doc(`userPreferences/${uid}`).get(),
     db.doc(`userSettings/${uid}`).get(),
     db.doc(`userPrivacy/${uid}`).get(),
     db.doc(`userLocation/${uid}`).get(),
-    db.collection("matches").where("userIds", "array-contains", uid).get(),
+    db.collection("matches").where("userIds", "array-contains", uid).limit(200).get(),
+    db.collection("likes").where("fromUserId", "==", uid).limit(200).get(),
+    db.collection("likes").where("toUserId", "==", uid).limit(50).get(),
+    db.collection("blocks").where("blockerId", "==", uid).limit(100).get(),
+    db.collection("reports").where("reporterId", "==", uid).limit(50).get(),
+    db.collection("purchases").where("userId", "==", uid).limit(50).get(),
+    db.collection("supportTickets").where("userId", "==", uid).limit(50).get(),
+    db.collection(`users/${uid}/devices`).limit(20).get(),
+    db.doc(`users/${uid}/settings/notifications`).get(),
+    db.doc(`users/${uid}/subscription/current`).get(),
+    db.doc(`users/${uid}/music/summary`).get(),
+    db.doc(`users/${uid}/verification/sumsub`).get(),
+    db.collection(`users/${uid}/questionAnswers`).limit(100).get(),
   ]);
+
+  // Never include exact GPS, Spotify secrets, private keys, or message ciphertext bodies.
+  const loc = location.data();
+  const verificationData = verification.data();
+  const musicData = music.data();
+
   return {
     exportedAt: new Date().toISOString(),
     uid,
-    account: account.data() ?? null,
+    schemaVersion: 2,
+    notice:
+      "KVKK/GDPR technical export. Exact coordinates, E2EE message bodies, and third-party secrets are omitted. Not a legal compliance certificate.",
+    account: sanitizeAccountExport(account.data()),
     profile: profile.data() ?? null,
     preferences: prefs.data() ?? null,
     settings: settings.data() ?? null,
     privacy: privacy.data() ?? null,
-    location: {present: location.exists},
+    notificationSettings: notifSettings.data() ?? null,
+    location: loc
+      ? {
+        present: true,
+        updatedAt: loc.updatedAt ?? null,
+        // Coarse only — no lat/lng/geohash in export file left on device shares.
+        hasCoordinates: typeof loc.latitude === "number",
+      }
+      : {present: false},
+    subscription: subscription.data()
+      ? {
+        isPremium: subscription.data()?.isPremium === true,
+        expiresAt: subscription.data()?.expiresAt ?? null,
+        productId: subscription.data()?.productId ?? null,
+      }
+      : null,
+    music: musicData
+      ? {
+        spotifyConnected: musicData.spotifyConnected === true,
+        displayName: musicData.displayName ?? null,
+        // No access/refresh tokens.
+      }
+      : null,
+    verification: verificationData
+      ? {
+        status: verificationData.status ?? null,
+        reviewedAt: verificationData.reviewedAt ?? null,
+        // No Sumsub applicant secrets.
+      }
+      : null,
+    questionAnswers: questionAnswers.docs.map((d) => ({id: d.id, ...d.data()})),
     matchIds: matches.docs.map((d) => d.id),
+    likesSent: likesFrom.docs.map((d) => ({
+      id: d.id,
+      toUserId: d.data().toUserId ?? null,
+      action: d.data().action ?? null,
+      createdAt: d.data().createdAt ?? null,
+    })),
+    likesReceivedCount: likesTo.size,
+    blocks: blocks.docs.map((d) => ({
+      blockedUserId: d.data().blockedUserId ?? null,
+      createdAt: d.data().createdAt ?? null,
+    })),
+    reportsFiled: reportsFiled.docs.map((d) => ({
+      id: d.id,
+      reportedUserId: d.data().reportedUserId ?? null,
+      reason: d.data().reason ?? null,
+      status: d.data().status ?? null,
+      createdAt: d.data().createdAt ?? null,
+    })),
+    purchases: purchases.docs.map((d) => ({
+      id: d.id,
+      productId: d.data().productId ?? null,
+      platform: d.data().platform ?? null,
+      status: d.data().status ?? null,
+      createdAt: d.data().createdAt ?? null,
+    })),
+    supportTickets: supportTickets.docs.map((d) => ({
+      id: d.id,
+      subject: d.data().subject ?? null,
+      status: d.data().status ?? null,
+      createdAt: d.data().createdAt ?? null,
+    })),
+    devices: devices.docs.map((d) => ({
+      id: d.id,
+      platform: d.data().platform ?? null,
+      updatedAt: d.data().updatedAt ?? d.data().createdAt ?? null,
+      // FCM token omitted.
+    })),
   };
 });
+
+function sanitizeAccountExport(data: DocumentData | undefined): Record<string, unknown> | null {
+  if (!data) {
+    return null;
+  }
+  const {
+    // strip nothing critical except we avoid copying unknown secret-looking keys
+    ...rest
+  } = data;
+  const out: Record<string, unknown> = {...rest};
+  for (const key of Object.keys(out)) {
+    if (/token|secret|password|private/i.test(key)) {
+      delete out[key];
+    }
+  }
+  return out;
+}
 
 export const onProfilePhotoUploaded = onObjectFinalized(
   {region: "us-east1"},
@@ -606,28 +742,43 @@ export const onProfilePhotoUploaded = onObjectFinalized(
 export const retentionCleanup = onSchedule(
   {schedule: "every 24 hours", region: "europe-west1"},
   async () => {
-    const cutoff = Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-    const staleNotifications = await db
-      .collection("notifications")
-      .where("createdAt", "<", cutoff)
-      .limit(400)
-      .get();
-    const batch = db.batch();
-    for (const doc of staleNotifications.docs) batch.delete(doc.ref);
-    const staleCalls = await db.collection("calls").where("endedAt", "<", cutoff).limit(200).get();
-    for (const doc of staleCalls.docs) batch.delete(doc.ref);
-    await batch.commit();
+    // Kept for backward-compatible deploy name; prefer automationDailySchedule for full suite.
+    const notif = await cleanupOldNotifications({
+      dryRun: false,
+      limit: 400,
+      requireAdminApproval: false,
+    });
+    const calls = await cleanupOldCalls({
+      dryRun: false,
+      limit: 200,
+      requireAdminApproval: false,
+    });
     const retriedPhotos = await retryStaleProcessingPhotos(db, getStorage().bucket());
     logger.info("Retention cleanup complete", {
-      notifications: staleNotifications.size,
-      calls: staleCalls.size,
+      notifications: notif.deleted,
+      calls: calls.deleted,
       retriedPhotos,
     });
   },
 );
 
-export const health = onCall(callableOptions, () => {
-  return {status: "ok", service: "mevora"};
+export const health = onCall(callableOptions, async () => {
+  const [failedJobs, openReports, openReviews] = await Promise.all([
+    db.collection("automationJobs").where("status", "==", "failed").limit(1).get(),
+    db.collection("reports").where("status", "==", "open").limit(1).get(),
+    db.collection("adminReviewQueue").where("status", "==", "open").limit(1).get(),
+  ]);
+  return {
+    status: "ok",
+    service: "mevora",
+    region: "europe-west1",
+    signals: {
+      hasFailedJobs: !failedJobs.empty,
+      hasOpenReports: !openReports.empty,
+      hasOpenReviews: !openReviews.empty,
+    },
+    checkedAt: new Date().toISOString(),
+  };
 });
 
 export const syncAuthAccount = onCall(callableOptions, async (request) => {

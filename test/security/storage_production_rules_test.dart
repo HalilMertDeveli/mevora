@@ -9,6 +9,12 @@ void main() {
     rules = File('firebase/storage.rules').readAsStringSync();
   });
 
+  test('pending profile photos are owner-readable only', () {
+    expect(rules.contains('match /users/{userId}/profile/pending/{imageId}'), isTrue);
+    expect(rules.contains('allow read: if isOwner(userId);'), isTrue);
+    expect(rules.contains('allow create, update: if false;'), isTrue);
+  });
+
   test('owners upload pending photos but cannot publish approved photos directly', () {
     expect(rules.contains('match /users/{userId}/profile/pending/{imageId}'), isTrue);
     expect(rules.contains('match /users/{userId}/profile/photos/{imageId}'), isTrue);

@@ -140,8 +140,8 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
       profileCompleted: true,
       onboardingCompleted: true,
       isProfileComplete: true,
-  // Allow app entry immediately. Discover uses usableDiscoveryPhotos so pending
-  // photos with download URLs remain visible while moderation completes.
+  // Allow app entry immediately. Discover requires approved photos
+  // (usableDiscoveryPhotos == approvedPhotos); pending stay owner-private.
   isDiscoverable: true,
       profileModerationStatus,
       onboardingStep: "complete",

@@ -8,7 +8,8 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore();
-const callableOptions = {region: "europe-west1" as const};
+const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
+const callableOptions = {region: "europe-west1" as const, enforceAppCheck};
 
 export const INITIAL_MATCH_SCORE = 50;
 export const MATCH_BONUS = 1;

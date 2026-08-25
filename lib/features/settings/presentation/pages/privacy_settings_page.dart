@@ -80,6 +80,16 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                       ),
                     ),
                     SwitchListTile(
+                      title: Text(l10n.settingsShowAge),
+                      value: privacy.showAge,
+                      onChanged: (value) => unawaited(
+                        _save(
+                          settings,
+                          privacy.copyWith(showAge: value),
+                        ),
+                      ),
+                    ),
+                    SwitchListTile(
                       title: Text(l10n.settingsShowActivity),
                       value: privacy.showActivity,
                       onChanged: (value) => unawaited(

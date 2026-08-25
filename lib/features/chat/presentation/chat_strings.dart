@@ -9,6 +9,8 @@ abstract final class ChatStrings {
   static const String notFound = 'Sohbet bulunamadı.';
   static const String network = 'Bağlantını kontrol et ve tekrar dene.';
   static const String generic = 'Mesaj gönderilemedi. Lütfen tekrar dene.';
+  static const String encryptionNotReady =
+      'Uçtan uca şifreleme henüz hazır değil. Karşı tarafın anahtarı yayınlanınca tekrar dene.';
   static const String mediaUploadFailed =
       'Medya yüklenemedi. Bağlantını kontrol edip tekrar dene.';
   static const String hint = 'Mesaj yaz...';

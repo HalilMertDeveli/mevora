@@ -278,6 +278,9 @@ class AuthController extends ChangeNotifier {
     String hypothesisId = 'GAUTH_FLOW',
     Map<String, Object?> data = const <String, Object?>{},
   }) {
+    if (!kDebugMode) {
+      return;
+    }
     try {
       final entry = <String, Object?>{
         'sessionId': '80971b',

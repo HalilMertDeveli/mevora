@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/network/backend_callable.dart';
@@ -318,7 +319,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Result<void>> deleteAccount() {
-    return _run(_accountDeletionService.deleteAccount);
+    return _run(() async {
+      await _accountDeletionService.deleteAccount();
+      try {
+        await _onAfterSignOut?.call();
+      } on Object {
+        // Firestore/image cache wipe is best-effort after deletion.
+      }
+    });
   }
 
   @override
@@ -340,11 +348,15 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<AuthUser> _persistPhoneSession(AuthSession session) async {
-    // ignore: avoid_print
-    print('[PHONE_AUTH] FIRESTORE_PROFILE_CHECK start');
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('[PHONE_AUTH] FIRESTORE_PROFILE_CHECK start');
+    }
     await _userRemoteDataSource.upsertFromSession(session);
-    // ignore: avoid_print
-    print('[PHONE_AUTH] FIRESTORE_PROFILE_CHECK upserted');
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('[PHONE_AUTH] FIRESTORE_PROFILE_CHECK upserted');
+    }
     final sync = _accountSync;
     if (sync != null) {
       try {

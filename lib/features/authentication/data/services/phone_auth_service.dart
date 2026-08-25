@@ -24,6 +24,9 @@ class PhoneAuthService implements FirebaseAuthDataSource {
   Completer<PhoneChallenge>? _inFlightSend;
 
   void _log(String stage, [String? detail]) {
+    if (!kDebugMode) {
+      return;
+    }
     // Never log phone numbers, OTP codes, or secrets.
     final suffix = detail == null || detail.isEmpty ? '' : ' $detail';
     // ignore: avoid_print

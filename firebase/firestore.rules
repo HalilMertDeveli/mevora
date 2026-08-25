@@ -20,6 +20,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Admin access is Auth custom claim only — never a client-writable Firestore field.
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
     function userPrivacyData(userId) {
       return exists(/databases/$(database)/documents/userPrivacy/$(userId))
         ? get(/databases/$(database)/documents/userPrivacy/$(userId)).data
@@ -131,6 +136,71 @@ service cloud.firestore {
       return request.resource.data[key] == resource.data[key];
     }
 
+    // New client messages must be E2EE (ciphertext only). Legacy plaintext
+    // docs remain readable; clients cannot create new plaintext bodies.
+    function messageEncryptedFieldsValid() {
+      return request.resource.data.encrypted == true
+        && request.resource.data.ciphertext is string
+        && request.resource.data.ciphertext.size() > 0
+        && request.resource.data.ciphertext.size() <= 20000
+        && request.resource.data.nonce is string
+        && request.resource.data.nonce.size() > 0
+        && request.resource.data.nonce.size() <= 256
+        && request.resource.data.mac is string
+        && request.resource.data.mac.size() > 0
+        && request.resource.data.mac.size() <= 256
+        && request.resource.data.get('text', '') == '';
+    }
+
+    function chatStoragePathOwned(path, matchId) {
+      return path is string
+        && path.size() > 0
+        && path.size() <= 512
+        && path.matches('users/' + request.auth.uid + '/chat/' + matchId + '/.*');
+    }
+
+    function messageMediaPathsValid(matchId) {
+      return (!('imageStoragePath' in request.resource.data)
+          || chatStoragePathOwned(request.resource.data.imageStoragePath, matchId))
+        && (!('voiceStoragePath' in request.resource.data)
+          || chatStoragePathOwned(request.resource.data.voiceStoragePath, matchId))
+        && (!('mediaUrl' in request.resource.data)
+          || (request.resource.data.mediaUrl is string
+            && request.resource.data.mediaUrl.size() <= 2048));
+    }
+
+    function messageCreatePayloadValid(matchId) {
+      return messageEncryptedFieldsValid()
+        && messageMediaPathsValid(matchId)
+        && (
+          request.resource.data.type == 'text'
+          || (
+            request.resource.data.type in ['image', 'gif', 'voice']
+            && request.resource.data.keys().hasAny([
+              'imageStoragePath',
+              'voiceStoragePath',
+              'mediaUrl',
+              'mediaKeyCiphertext',
+            ])
+          )
+        );
+    }
+
+    function typingMetaWriteValid(matchId) {
+      return isMatchParticipant(matchId)
+        && (
+          (
+            !exists(/databases/$(database)/documents/matches/$(matchId)/meta/typing)
+            && request.resource.data.keys().hasOnly([request.auth.uid])
+          )
+          || (
+            exists(/databases/$(database)/documents/matches/$(matchId)/meta/typing)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly([request.auth.uid])
+          )
+        );
+    }
+
     // lastActiveAt lives on users/{uid} (private). Discovery Functions
     // filter with a 90-day window. Clients may only write request.time
     // (FieldValue.serverTimestamp()) — never an arbitrary date.
@@ -155,9 +225,11 @@ service cloud.firestore {
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
         && lastActiveAtMissingOrServerNow()
         && request.resource.data.get('isBanned', false) == false
+        && request.resource.data.get('isSuspended', false) == false
         && request.resource.data.get('isVerified', false) == false
         && request.resource.data.get('phoneVerified', false) == false
         && request.resource.data.get('accountStatus', 'active') != 'banned'
+        && request.resource.data.get('accountStatus', 'active') != 'suspended'
         && !request.resource.data.keys().hasAny([
           'boostBalance',
           'boostStatus',
@@ -173,6 +245,8 @@ service cloud.firestore {
         && lastActiveAtUnchangedOrServerNow()
         && request.resource.data.get('isBanned', resource.data.get('isBanned', false))
           == resource.data.get('isBanned', false)
+        && request.resource.data.get('isSuspended', resource.data.get('isSuspended', false))
+          == resource.data.get('isSuspended', false)
         && request.resource.data.get('isVerified', resource.data.get('isVerified', false))
           == resource.data.get('isVerified', false)
         && request.resource.data.get('phoneVerified', resource.data.get('phoneVerified', false))
@@ -187,7 +261,10 @@ service cloud.firestore {
           'boostExpiresAt',
           'boostActive',
           'matchScore',
-          'matchCount'
+          'matchCount',
+          'suspensionReason',
+          'suspensionUpdatedAt',
+          'suspensionUpdatedBy'
         ]);
 
       allow delete: if false;
@@ -461,10 +538,9 @@ service cloud.firestore {
           && request.resource.data.receiverId != request.auth.uid
           && request.resource.data.receiverId in get(/databases/$(database)/documents/matches/$(matchId)).data.userIds
           && !isBlockedPair(request.auth.uid, request.resource.data.receiverId)
-          && request.resource.data.type in ['text', 'image', 'gif', 'voice', 'system']
+          && request.resource.data.type in ['text', 'image', 'gif', 'voice']
           && request.resource.data.get('deleted', false) == false
-          && (!('text' in request.resource.data)
-            || (request.resource.data.text is string && request.resource.data.text.size() <= 2000));
+          && messageCreatePayloadValid(matchId);
         allow update: if isMatchParticipant(matchId)
           && unchanged('senderId')
           && unchanged('receiverId')
@@ -487,8 +563,11 @@ service cloud.firestore {
           && resource.data.senderId == request.auth.uid;
       }
 
+      // Typing indicators only (uid -> timestamp | FieldValue.delete).
       match /meta/{docId} {
-        allow read, write: if isMatchParticipant(matchId);
+        allow read: if isMatchParticipant(matchId);
+        allow create, update: if docId == 'typing' && typingMetaWriteValid(matchId);
+        allow delete: if isMatchParticipant(matchId) && docId == 'typing';
       }
     }
 
@@ -501,13 +580,11 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
     }
 
+    // Reports are created only by Cloud Functions (rate-limited).
     match /reports/{reportId} {
-      allow read: if isAuthenticated() && resource.data.reporterId == request.auth.uid;
-      allow create: if isAuthenticated()
-        && request.resource.data.reporterId == request.auth.uid
-        && request.resource.data.reportedUserId != request.auth.uid
-        && request.resource.data.status == 'open';
-      allow update, delete: if false;
+      allow read: if isAdmin()
+        || (isAuthenticated() && resource.data.reporterId == request.auth.uid);
+      allow create, update, delete: if false;
     }
 
     match /supportTickets/{ticketId} {
@@ -576,6 +653,29 @@ service cloud.firestore {
     }
 
     match /musicSpotifyIndex/{spotifyId} {
+      allow read, write: if false;
+    }
+
+    // -----------------------------------------------------------
+    // Automation / admin ops — Admin SDK writes only.
+    // Clients with admin claim may read for panel; never write.
+    // -----------------------------------------------------------
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /automationJobs/{jobId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /adminReviewQueue/{itemId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /failedNotifications/{id} {
       allow read, write: if false;
     }
 

@@ -14,8 +14,7 @@
       "args": [
         "--flavor",
         "development",
-        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1",
-        "--dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=18424c44-83a0-47d2-b57d-dd71ef21ca73"
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
       ]
     },
     {
@@ -32,8 +31,7 @@
         "--flavor",
         "development",
         "--dart-define=USE_EMULATORS=false",
-        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1",
-        "--dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=18424c44-83a0-47d2-b57d-dd71ef21ca73"
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
       ]
     },
     {
@@ -50,8 +48,7 @@
         "--flavor",
         "development",
         "--dart-define=USE_AUTH_EMULATOR=true",
-        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1",
-        "--dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=18424c44-83a0-47d2-b57d-dd71ef21ca73"
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
       ]
     },
     {

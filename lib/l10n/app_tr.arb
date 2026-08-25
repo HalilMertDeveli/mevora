@@ -404,6 +404,7 @@
   "alreadySwiped": "Bu kişiyi zaten değerlendirdin.",
   "chatNotFound": "Sohbet bulunamadı.",
   "chatGeneric": "Mesaj gönderilemedi. Lütfen tekrar dene.",
+  "chatEncryptionNotReady": "Uçtan uca şifreleme henüz hazır değil. Karşı tarafın anahtarı yayınlanınca tekrar dene.",
   "incomingCall": "Gelen görüntülü arama",
   "accept": "Kabul et",
   "decline": "Reddet",
@@ -515,6 +516,17 @@
   "deleteAccount": "Hesabı sil",
   "deleteAccountTitle": "Hesabın silinsin mi?",
   "deleteAccountBody": "Mevora hesabın, profilin, eşleşmelerin ve mesajların kalıcı olarak silinir. Bu işlem geri alınamaz.",
+  "exportMyData": "Verilerimi indir",
+  "exportMyDataTitle": "Verilerin dışa aktarılsın mı?",
+  "exportMyDataBody": "Mevora; hesabın, profilin, tercihlerin, eşleşmelerin, beğenilerin, engellemelerin, oluşturduğun raporların ve satın alımların olduğu bir JSON dosyası hazırlar. Tam konum, mesaj içerikleri ve gizli anahtarlar dahil edilmez.",
+  "exportMyDataSuccess": "Dışa aktarım kaydedildi: {path}",
+  "@exportMyDataSuccess": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "exportMyDataFailed": "Verilerin dışa aktarılamadı. Lütfen sonra tekrar dene.",
+  "settingsShowAge": "Profilde yaşı göster",
   "deleteConfirm": "Kalıcı olarak sil",
   "notificationsTitle": "Bildirimler ve gizlilik",
   "messageNotifications": "Mesaj bildirimleri",

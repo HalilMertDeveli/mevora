@@ -84,18 +84,21 @@ Images and voice messages:
 
 ## 13. Storage changes
 
-- Encrypted chat blobs allowed as `application/octet-stream` up to 25 MB.
-- Legacy image/audio content types still supported for older messages.
+- New chat uploads must be encrypted `application/octet-stream` blobs (≤25 MB).
+- Legacy plaintext image/audio objects may still exist historically; clients no longer upload them.
 
 ## 14–15. Security rules
 
 **Firestore**
 
 - `users/{uid}/crypto/identity`: authenticated read; owner write for public key metadata only.
+- New message creates require `encrypted == true` + ciphertext fields; plaintext `text` creates are denied.
+- Chat storage paths must be under `users/{auth.uid}/chat/{matchId}/`.
 
 **Storage**
 
-- Chat path unchanged; encrypted blobs validated by content type + size.
+- Pending profile photos: owner read only.
+- Chat create: encrypted blob only.
 
 ## 16. Cloud Functions
 
@@ -112,6 +115,7 @@ Images and voice messages:
 - No persistent plaintext message database.
 - Decrypted content kept in memory for UI rendering.
 - Firestore SDK disk cache may contain ciphertext only.
+- Private keys: `flutter_secure_storage` with Android Keystore-backed options + iOS Keychain `first_unlock_this_device` (non-synchronizable).
 
 ## 19–20. Platform
 
@@ -120,19 +124,23 @@ Images and voice messages:
 
 ## 21. Test results
 
-Automated tests in `test/features/chat/e2ee_crypto_test.dart`:
+Automated tests in `test/features/chat/e2ee_crypto_test.dart` and fail-closed repository tests:
 
 - Text encrypt/decrypt roundtrip
 - Wrong key authentication failure
 - Media encrypt/decrypt roundtrip
 - Public key derivation from private seed
+- Send path refuses plaintext when session not ready
 
 ## 22. Known limitations
 
+- **Not Signal Protocol** — see `docs/E2EE_PROTOCOL_EVALUATION.md`.
+- No forward secrecy (static per-match session key from identity ECDH).
 - No server-side search.
 - No cross-device private key sync in v1.
-- Legacy plaintext messages remain readable.
-- E2EE activates only when both users have published public keys.
+- Legacy plaintext messages remain readable for history.
+- Fail-closed: if peer has not published a public key, send fails (no plaintext fallback).
+- Calls (LiveKit) are not covered by Mevora E2EE.
 
 ## 23. Data visible to Firebase
 
@@ -141,6 +149,10 @@ Automated tests in `test/features/chat/e2ee_crypto_test.dart`:
 | Public keys | Yes |
 | Ciphertext + crypto metadata | Yes |
 | Encrypted media blobs | Yes |
-| Plaintext message text | No (when E2EE active) |
-| Plaintext media | No (when E2EE active) |
+| Plaintext message text | No (new sends) |
+| Plaintext media | No (new uploads) |
 | Private keys | No |
+
+## 24. Moderation / abuse
+
+Backend cannot read E2EE content. Abuse handling relies on metadata, blocks, rate limits, and **user-shared** evidence when reporting. Child-safety / legal hold product decisions remain open and require policy + legal review.

@@ -175,6 +175,9 @@ void main() {
       expect(source.contains(r'db.doc(`profiles/${uid}`)'), isTrue);
       expect(source.contains(r'deletePrefix(`profiles/${uid}/`)'), isTrue);
       expect(source.contains(r'users/${uid}/'), isTrue);
+      expect(source.contains('passedUsers'), isTrue);
+      expect(source.contains('callHistory'), isTrue);
+      expect(source.contains('BATCH_LIMIT'), isTrue);
     });
   });
 }

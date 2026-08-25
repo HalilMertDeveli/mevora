@@ -1037,6 +1037,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get chatGeneric => 'Mesaj gönderilemedi. Lütfen tekrar dene.';
 
   @override
+  String get chatEncryptionNotReady =>
+      'Uçtan uca şifreleme henüz hazır değil. Karşı tarafın anahtarı yayınlanınca tekrar dene.';
+
+  @override
   String get incomingCall => 'Gelen görüntülü arama';
 
   @override
@@ -1252,6 +1256,28 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get deleteAccountBody =>
       'Mevora hesabın, profilin, eşleşmelerin ve mesajların kalıcı olarak silinir. Bu işlem geri alınamaz.';
+
+  @override
+  String get exportMyData => 'Verilerimi indir';
+
+  @override
+  String get exportMyDataTitle => 'Verilerin dışa aktarılsın mı?';
+
+  @override
+  String get exportMyDataBody =>
+      'Mevora; hesabın, profilin, tercihlerin, eşleşmelerin, beğenilerin, engellemelerin, oluşturduğun raporların ve satın alımların olduğu bir JSON dosyası hazırlar. Tam konum, mesaj içerikleri ve gizli anahtarlar dahil edilmez.';
+
+  @override
+  String exportMyDataSuccess(String path) {
+    return 'Dışa aktarım kaydedildi: $path';
+  }
+
+  @override
+  String get exportMyDataFailed =>
+      'Verilerin dışa aktarılamadı. Lütfen sonra tekrar dene.';
+
+  @override
+  String get settingsShowAge => 'Profilde yaşı göster';
 
   @override
   String get deleteConfirm => 'Kalıcı olarak sil';

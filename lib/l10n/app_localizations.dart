@@ -2030,6 +2030,12 @@ abstract class AppLocalizations {
   /// **'Message could not be sent. Please try again.'**
   String get chatGeneric;
 
+  /// No description provided for @chatEncryptionNotReady.
+  ///
+  /// In en, this message translates to:
+  /// **'End-to-end encryption is not ready yet. Try again once your match has published their key.'**
+  String get chatEncryptionNotReady;
+
   /// No description provided for @incomingCall.
   ///
   /// In en, this message translates to:
@@ -2425,6 +2431,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This permanently deletes your Mevora account, profile, matches, and messages. This cannot be undone.'**
   String get deleteAccountBody;
+
+  /// No description provided for @exportMyData.
+  ///
+  /// In en, this message translates to:
+  /// **'Download my data'**
+  String get exportMyData;
+
+  /// No description provided for @exportMyDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export your data?'**
+  String get exportMyDataTitle;
+
+  /// No description provided for @exportMyDataBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora prepares a JSON file with your account, profile, preferences, matches, likes, blocks, reports you filed, and purchases. Exact location, message contents, and secrets are excluded.'**
+  String get exportMyDataBody;
+
+  /// No description provided for @exportMyDataSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Export saved to: {path}'**
+  String exportMyDataSuccess(String path);
+
+  /// No description provided for @exportMyDataFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export your data. Try again later.'**
+  String get exportMyDataFailed;
+
+  /// No description provided for @settingsShowAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Show age on profile'**
+  String get settingsShowAge;
 
   /// No description provided for @deleteConfirm.
   ///

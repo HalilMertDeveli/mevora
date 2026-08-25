@@ -6,7 +6,15 @@ import 'package:mevora/features/chat/e2ee/crypto/e2ee_constants.dart';
 /// Stores E2EE private key material only on-device (Android Keystore / iOS Keychain).
 class E2eeSecureKeyStore {
   E2eeSecureKeyStore({FlutterSecureStorage? storage})
-    : _storage = storage ?? const FlutterSecureStorage();
+    : _storage =
+          storage ??
+          const FlutterSecureStorage(
+            aOptions: AndroidOptions(),
+            iOptions: IOSOptions(
+              accessibility: KeychainAccessibility.first_unlock_this_device,
+              synchronizable: false,
+            ),
+          );
 
   final FlutterSecureStorage _storage;
 

@@ -23,9 +23,7 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore();
-const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || "";
-const enforceAppCheck =
-  process.env.FUNCTIONS_EMULATOR !== "true" && projectId === "mevora-production";
+const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 const callableOptions = {
   region: "europe-west1" as const,
   invoker: "public" as const,

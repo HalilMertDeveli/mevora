@@ -10,6 +10,7 @@ import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
 import 'package:mevora/features/chat/e2ee/crypto/e2ee_constants.dart';
 import 'package:mevora/features/chat/e2ee/services/e2ee_chat_service.dart';
+import 'package:mevora/features/chat/presentation/chat_strings.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
@@ -87,34 +88,21 @@ class ChatRepositoryImpl implements ChatRepository {
     required String receiverId,
     required String text,
   }) async {
-    if (_e2eeEnabled) {
-      final uid = _uidSource!.currentUid!;
-      final ready = await _e2ee!.isSessionReady(
-        uid: uid,
-        matchId: matchId,
-        peerUid: receiverId,
-      );
-      if (ready) {
-        final payload = await _e2ee!.encryptText(
-          uid: uid,
-          matchId: matchId,
-          peerUid: receiverId,
-          plaintext: text,
-        );
-        final sent = await _dataSource.sendEncryptedMessage(
-          matchId: matchId,
-          receiverId: receiverId,
-          type: MessageType.text,
-          payload: payload,
-        );
-        return sent.copyWith(text: text, isEncrypted: true);
-      }
-    }
-    return _dataSource.sendText(
+    await _requireE2eeSession(matchId: matchId, peerUid: receiverId);
+    final uid = _uidSource!.currentUid!;
+    final payload = await _e2ee!.encryptText(
+      uid: uid,
+      matchId: matchId,
+      peerUid: receiverId,
+      plaintext: text,
+    );
+    final sent = await _dataSource.sendEncryptedMessage(
       matchId: matchId,
       receiverId: receiverId,
-      text: text,
+      type: MessageType.text,
+      payload: payload,
     );
+    return sent.copyWith(text: text, isEncrypted: true);
   }
 
   @override
@@ -170,46 +158,31 @@ class ChatRepositoryImpl implements ChatRepository {
     )) {
       throw const ValidationFailure(PhotoUploadMessages.invalidFile);
     }
+    await _requireE2eeSession(matchId: matchId, peerUid: receiverId);
     final messageId = _dataSource.allocateMessageId(matchId);
     final baseExtension = type == MessageType.voice
         ? _voiceExtension(media.contentType)
         : _imageExtension(media.contentType);
 
-    var uploadBytes = media.bytes;
-    E2eeMediaEnvelopeFields? envelopeFields;
-    var encryptMedia = false;
-    if (_e2eeEnabled) {
-      final uid = _uidSource!.currentUid!;
-      final ready = await _e2ee!.isSessionReady(
-        uid: uid,
-        matchId: matchId,
-        peerUid: receiverId,
-      );
-      if (ready) {
-        encryptMedia = true;
-        final encrypted = await _e2ee!.encryptMedia(
-          uid: uid,
-          matchId: matchId,
-          peerUid: receiverId,
-          bytes: Uint8List.fromList(media.bytes),
-        );
-        uploadBytes = encrypted.encryptedBytes;
-        envelopeFields = E2eeMediaEnvelopeFields(
-          mediaNonceBase64: encrypted.mediaNonceBase64,
-          mediaMacBase64: encrypted.mediaMacBase64,
-          keyCiphertextBase64: encrypted.keyCiphertextBase64,
-          keyNonceBase64: encrypted.keyNonceBase64,
-          keyMacBase64: encrypted.keyMacBase64,
-          encryptionVersion: encrypted.encryptionVersion,
-          senderKeyVersion: encrypted.senderKeyVersion,
-          originalContentType: media.contentType,
-        );
-      }
-    }
+    final uid = _uidSource!.currentUid!;
+    final encrypted = await _e2ee!.encryptMedia(
+      uid: uid,
+      matchId: matchId,
+      peerUid: receiverId,
+      bytes: Uint8List.fromList(media.bytes),
+    );
+    final envelopeFields = E2eeMediaEnvelopeFields(
+      mediaNonceBase64: encrypted.mediaNonceBase64,
+      mediaMacBase64: encrypted.mediaMacBase64,
+      keyCiphertextBase64: encrypted.keyCiphertextBase64,
+      keyNonceBase64: encrypted.keyNonceBase64,
+      keyMacBase64: encrypted.keyMacBase64,
+      encryptionVersion: encrypted.encryptionVersion,
+      senderKeyVersion: encrypted.senderKeyVersion,
+      originalContentType: media.contentType,
+    );
 
-    final extension = encryptMedia
-        ? '$baseExtension.${E2eeConstants.encryptedFileExtension}'
-        : baseExtension;
+    final extension = '$baseExtension.${E2eeConstants.encryptedFileExtension}';
     final path = type == MessageType.voice
         ? StoragePaths.chatVoice(
             ownerUid: ownerUid,
@@ -226,51 +199,54 @@ class ChatRepositoryImpl implements ChatRepository {
 
     final uploaded = await storage.uploadBytes(
       path: path,
-      bytes: uploadBytes,
-      contentType: encryptMedia
-          ? E2eeConstants.encryptedContentType
-          : media.contentType,
+      bytes: encrypted.encryptedBytes,
+      contentType: E2eeConstants.encryptedContentType,
       onProgress: onProgress,
     );
     switch (uploaded) {
       case Err(:final failure):
         throw failure;
       case Success(:final value):
-        if (envelopeFields != null) {
-          final uid = _uidSource!.currentUid!;
-          final payload = await _e2ee!.encryptText(
-            uid: uid,
-            matchId: matchId,
-            peerUid: receiverId,
-            plaintext: '',
-          );
-          final sent = await _dataSource.sendEncryptedMessage(
-            matchId: matchId,
-            receiverId: receiverId,
-            type: type,
-            payload: payload,
-            mediaEnvelope: envelopeFields,
-            messageId: messageId,
-            imageStoragePath: type == MessageType.image ? path : null,
-            voiceStoragePath: type == MessageType.voice ? path : null,
-            mediaUrl: value.toString(),
-            durationMs: media.durationMs,
-          );
-          return sent.copyWith(
-            localMediaBytes: media.bytes,
-            isEncrypted: true,
-          );
-        }
-        return _dataSource.sendMediaMessage(
+        final payload = await _e2ee!.encryptText(
+          uid: uid,
+          matchId: matchId,
+          peerUid: receiverId,
+          plaintext: '',
+        );
+        final sent = await _dataSource.sendEncryptedMessage(
           matchId: matchId,
           receiverId: receiverId,
           type: type,
+          payload: payload,
+          mediaEnvelope: envelopeFields,
           messageId: messageId,
           imageStoragePath: type == MessageType.image ? path : null,
           voiceStoragePath: type == MessageType.voice ? path : null,
           mediaUrl: value.toString(),
           durationMs: media.durationMs,
         );
+        return sent.copyWith(
+          localMediaBytes: media.bytes,
+          isEncrypted: true,
+        );
+    }
+  }
+
+  Future<void> _requireE2eeSession({
+    required String matchId,
+    required String peerUid,
+  }) async {
+    if (!_e2eeEnabled) {
+      throw const ValidationFailure(ChatStrings.encryptionNotReady);
+    }
+    final uid = _uidSource!.currentUid!;
+    final ready = await _e2ee!.isSessionReady(
+      uid: uid,
+      matchId: matchId,
+      peerUid: peerUid,
+    );
+    if (!ready) {
+      throw const ValidationFailure(ChatStrings.encryptionNotReady);
     }
   }
 

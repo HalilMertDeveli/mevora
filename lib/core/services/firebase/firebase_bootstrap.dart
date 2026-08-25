@@ -170,36 +170,26 @@ class FirebaseBootstrap {
   Future<void> _configureAppCheck(AppConfig config) async {
     try {
       if (config.environment.isDevelopment) {
-        // Fixed token via --dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=...
-        // (injected by tool/flutter_prepare.ps1 from app_check_debug_token.local).
-        // Fallback: same registered debug token as .vscode/launch.json so plain
-        // `flutter run` without dart-defines still passes App Check in development.
+        // Fixed token only via --dart-define / tool/app_check_debug_token.local
+        // (never hardcode tokens in source).
         const fromEnv = String.fromEnvironment(
           'FIREBASE_APP_CHECK_DEBUG_TOKEN',
         );
-        const registeredDevFallback =
-            '18424c44-83a0-47d2-b57d-dd71ef21ca73';
-        final debugToken =
-            fromEnv.isNotEmpty ? fromEnv : registeredDevFallback;
-        await FirebaseAppCheck.instance.activate(
-          providerAndroid: AndroidDebugProvider(
-            debugToken: debugToken,
-          ),
-          providerApple: AppleDebugProvider(
-            debugToken: debugToken,
-          ),
-        );
-        // ignore: avoid_print
-        print(
-          '[APPCHECK_DEBUG] activated development '
-          'hasFixedToken=true fromEnv=${fromEnv.isNotEmpty}',
-        );
         if (fromEnv.isEmpty) {
-          logger.info(
-            'App Check using registered development debug-token fallback',
+          logger.warning(
+            'App Check debug token missing; activate debug providers without a fixed token. '
+            'Use tool/flutter_run_dev.ps1 or --dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=...',
+          );
+          await FirebaseAppCheck.instance.activate(
+            providerAndroid: const AndroidDebugProvider(),
+            providerApple: const AppleDebugProvider(),
           );
         } else {
-          logger.info('App Check debug provider active with fixed token');
+          await FirebaseAppCheck.instance.activate(
+            providerAndroid: const AndroidDebugProvider(debugToken: fromEnv),
+            providerApple: const AppleDebugProvider(debugToken: fromEnv),
+          );
+          logger.info('App Check debug provider active with dart-define token');
         }
         return;
       }

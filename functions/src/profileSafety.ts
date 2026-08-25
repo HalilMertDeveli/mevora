@@ -35,7 +35,7 @@ export function isAccountEligible(account: DocumentData | undefined): boolean {
   if (!account) {
     return true;
   }
-  if (account.isBanned === true) {
+  if (account.isBanned === true || account.isSuspended === true) {
     return false;
   }
   const status = String(account.accountStatus ?? "active");
@@ -63,20 +63,11 @@ export function approvedPhotos(photos: unknown): Array<Record<string, unknown>> 
 }
 
 /**
- * Photos that can appear in Discover while moderation is still async.
- * Rejected photos are excluded. Pending/processing need a viewable URL.
+ * Photos that may appear in Discover. Only moderated (approved) photos —
+ * pending Storage objects are owner-private and must not be shared via feed URLs.
  */
 export function usableDiscoveryPhotos(photos: unknown): Array<Record<string, unknown>> {
-  return ((photos as Array<Record<string, unknown>>) ?? []).filter((photo) => {
-    const status = String(photo.moderationStatus ?? "pending");
-    if (status === "rejected") {
-      return false;
-    }
-    if (status === "approved") {
-      return true;
-    }
-    return Boolean(photo.downloadUrl || photo.thumbUrl);
-  });
+  return approvedPhotos(photos);
 }
 
 export function countApprovedPhotos(photos: unknown): number {
@@ -115,12 +106,8 @@ export function publicProfileProjection(data: DocumentData): Record<string, unkn
 }
 
 /**
- * Discover feed projection: include pending/processing photos that already have
- * a download URL so newly onboarded users are visible before async moderation.
+ * Discover feed projection: approved photos only (same as public card photos).
  */
 export function discoveryProfileProjection(data: DocumentData): Record<string, unknown> {
-  return {
-    ...publicProfileProjection(data),
-    photos: projectPhotos(usableDiscoveryPhotos(data.photos)),
-  };
+  return publicProfileProjection(data);
 }

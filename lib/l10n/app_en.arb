@@ -404,6 +404,7 @@
   "alreadySwiped": "You already decided on this person.",
   "chatNotFound": "Chat not found.",
   "chatGeneric": "Message could not be sent. Please try again.",
+  "chatEncryptionNotReady": "End-to-end encryption is not ready yet. Try again once your match has published their key.",
   "incomingCall": "Incoming video call",
   "accept": "Accept",
   "decline": "Decline",
@@ -515,6 +516,17 @@
   "deleteAccount": "Delete account",
   "deleteAccountTitle": "Delete your account?",
   "deleteAccountBody": "This permanently deletes your Mevora account, profile, matches, and messages. This cannot be undone.",
+  "exportMyData": "Download my data",
+  "exportMyDataTitle": "Export your data?",
+  "exportMyDataBody": "Mevora prepares a JSON file with your account, profile, preferences, matches, likes, blocks, reports you filed, and purchases. Exact location, message contents, and secrets are excluded.",
+  "exportMyDataSuccess": "Export saved to: {path}",
+  "@exportMyDataSuccess": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "exportMyDataFailed": "Could not export your data. Try again later.",
+  "settingsShowAge": "Show age on profile",
   "deleteConfirm": "Delete forever",
   "notificationsTitle": "Notifications and privacy",
   "messageNotifications": "Message notifications",

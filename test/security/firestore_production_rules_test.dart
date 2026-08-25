@@ -27,6 +27,16 @@ void main() {
       expect(rules.contains("'boostStatus'"), isTrue);
     });
 
+    test('users cannot self-set isSuspended or suspension metadata', () {
+      expect(
+        rules.contains(
+          "request.resource.data.get('isSuspended', resource.data.get('isSuspended', false))",
+        ),
+        isTrue,
+      );
+      expect(rules.contains("'suspensionReason'"), isTrue);
+    });
+
     test('verification subcollection is read-only for clients', () {
       expect(rules.contains('match /verification/{docId}'), isTrue);
       expect(rules.contains('allow create, update, delete: if false'), isTrue);
@@ -51,11 +61,24 @@ void main() {
       expect(rules.contains(r"blocks/$(b + '_' + a)"), isTrue);
     });
 
-    test('reports are create-only for the reporter and not publicly readable', () {
+    test('reports are CF-only create and not publicly readable', () {
       expect(rules.contains('match /reports/{reportId}'), isTrue);
       expect(rules.contains('resource.data.reporterId == request.auth.uid'), isTrue);
-      expect(rules.contains('request.resource.data.status == \'open\''), isTrue);
-      expect(rules.contains('allow update, delete: if false'), isTrue);
+      expect(rules.contains('Reports are created only by Cloud Functions'), isTrue);
+      expect(rules.contains('allow create, update, delete: if false'), isTrue);
+      expect(rules.contains('function isAdmin()'), isTrue);
+    });
+
+    test('match meta writes are limited to typing indicators', () {
+      expect(rules.contains("docId == 'typing'"), isTrue);
+      expect(rules.contains('typingMetaWriteValid'), isTrue);
+    });
+
+    test('new messages require E2EE ciphertext and owned media paths', () {
+      expect(rules.contains('messageCreatePayloadValid'), isTrue);
+      expect(rules.contains('messageEncryptedFieldsValid'), isTrue);
+      expect(rules.contains('chatStoragePathOwned'), isTrue);
+      expect(rules.contains("request.resource.data.encrypted == true"), isTrue);
     });
 
     test('support tickets are owner-read and create-only', () {

@@ -95,6 +95,9 @@ abstract final class L10nErrors {
     if (raw == ChatStrings.notFound) return l10n.chatNotFound;
     if (raw == ChatStrings.network) return l10n.networkError;
     if (raw == ChatStrings.generic) return l10n.chatGeneric;
+    if (raw == ChatStrings.encryptionNotReady) {
+      return l10n.chatEncryptionNotReady;
+    }
     if (raw == CallStrings.userBusy) return l10n.userBusy;
     if (raw == CallStrings.notConfigured) return l10n.callNotConfigured;
     if (raw == CallStrings.cameraDenied) return l10n.cameraDenied;

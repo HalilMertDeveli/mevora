@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/features/authentication/data/mappers/auth_error_mapper.dart';
@@ -26,6 +27,9 @@ class GoogleAuthService {
     String hypothesisId = 'GAUTH',
     Map<String, Object?> data = const <String, Object?>{},
   }) {
+    if (!kDebugMode) {
+      return;
+    }
     try {
       final entry = <String, Object?>{
         'sessionId': '80971b',

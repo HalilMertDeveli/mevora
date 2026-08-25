@@ -1040,6 +1040,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatGeneric => 'Message could not be sent. Please try again.';
 
   @override
+  String get chatEncryptionNotReady =>
+      'End-to-end encryption is not ready yet. Try again once your match has published their key.';
+
+  @override
   String get incomingCall => 'Incoming video call';
 
   @override
@@ -1255,6 +1259,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteAccountBody =>
       'This permanently deletes your Mevora account, profile, matches, and messages. This cannot be undone.';
+
+  @override
+  String get exportMyData => 'Download my data';
+
+  @override
+  String get exportMyDataTitle => 'Export your data?';
+
+  @override
+  String get exportMyDataBody =>
+      'Mevora prepares a JSON file with your account, profile, preferences, matches, likes, blocks, reports you filed, and purchases. Exact location, message contents, and secrets are excluded.';
+
+  @override
+  String exportMyDataSuccess(String path) {
+    return 'Export saved to: $path';
+  }
+
+  @override
+  String get exportMyDataFailed =>
+      'Could not export your data. Try again later.';
+
+  @override
+  String get settingsShowAge => 'Show age on profile';
 
   @override
   String get deleteConfirm => 'Delete forever';

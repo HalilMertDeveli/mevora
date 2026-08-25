@@ -103,7 +103,7 @@ describe("discoverability and public projection", () => {
     );
   });
 
-  it("requires three usable photos for discovery filters", () => {
+  it("requires three approved photos for discovery filters", () => {
     assert.equal(
       passesDiscoveryProfileFilters({
         candidateProfile: adultProfile(),
@@ -137,7 +137,7 @@ describe("discoverability and public projection", () => {
         minAge: 18,
         maxAge: 99,
       }),
-      true,
+      false,
     );
   });
 
@@ -155,7 +155,7 @@ describe("discoverability and public projection", () => {
     assert.equal("birthDate" in projection, false);
   });
 
-  it("discovery projection includes pending photos with download URLs", () => {
+  it("discovery projection excludes pending photos", () => {
     const {discoveryProfileProjection} = require("../lib/profileSafety.js");
     const projection = discoveryProfileProjection({
       ...adultProfile(),
@@ -166,6 +166,6 @@ describe("discoverability and public projection", () => {
         {id: "3", moderationStatus: "rejected", downloadUrl: "c"},
       ],
     });
-    assert.equal(projection.photos.length, 2);
+    assert.equal(projection.photos.length, 1);
   });
 });

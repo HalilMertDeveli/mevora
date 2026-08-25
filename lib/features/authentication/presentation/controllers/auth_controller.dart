@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/app_logger.dart';
@@ -94,19 +93,6 @@ class AuthController extends ChangeNotifier {
 
   Future<void> _onSnapshot(AuthSnapshot snapshot) async {
     final generation = ++_generation;
-    // #region agent log
-    AgentDebugLog.log(
-      location: 'auth_controller.dart:_onSnapshot',
-      message: 'auth_snapshot',
-      hypothesisId: 'C',
-      data: <String, Object?>{
-        'snapshot': snapshot.runtimeType.toString(),
-        'statusBefore': status.runtimeType.toString(),
-        'actionInFlight': _actionInFlight,
-        'isBusy': isBusy,
-      },
-    );
-    // #endregion
     switch (snapshot) {
       case AuthSignedOut():
         if (!_signingOut &&
@@ -128,17 +114,6 @@ class AuthController extends ChangeNotifier {
           if (status is Unauthenticated || status is AuthInitializing) {
             status = const Authenticating();
           }
-          // #region agent log
-          AgentDebugLog.log(
-            location: 'auth_controller.dart:AuthProfilePending',
-            message: 'ensure_user_document_start',
-            hypothesisId: 'C',
-            data: <String, Object?>{
-              'uidLen': uid.length,
-              'status': status.runtimeType.toString(),
-            },
-          );
-          // #endregion
           try {
             await _userDocumentRepository
                 .ensureUserDocument(AuthUser(id: uid))
@@ -146,28 +121,7 @@ class AuthController extends ChangeNotifier {
             if (generation != _generation) {
               return;
             }
-            // #region agent log
-            AgentDebugLog.log(
-              location: 'auth_controller.dart:AuthProfilePending',
-              message: 'ensure_user_document_ok',
-              hypothesisId: 'C',
-              data: <String, Object?>{
-                'statusAfter': status.runtimeType.toString(),
-              },
-            );
-            // #endregion
           } on Object catch (error, stackTrace) {
-            // #region agent log
-            AgentDebugLog.log(
-              location: 'auth_controller.dart:AuthProfilePending',
-              message: 'ensure_user_document_failed',
-              hypothesisId: 'C',
-              data: <String, Object?>{
-                'errorType': error.runtimeType.toString(),
-                'error': error.toString(),
-              },
-            );
-            // #endregion
             _logger.error(
               'Failed to resolve pending profile',
               error: error,
@@ -204,17 +158,6 @@ class AuthController extends ChangeNotifier {
         status = user.shouldOnboard
             ? NeedsOnboarding(user)
             : Authenticated(user);
-        // #region agent log
-        AgentDebugLog.log(
-          location: 'auth_controller.dart:AuthProfileReady',
-          message: 'profile_ready_applied',
-          hypothesisId: 'B',
-          data: <String, Object?>{
-            'status': status.runtimeType.toString(),
-            'shouldOnboard': user.shouldOnboard,
-          },
-        );
-        // #endregion
     }
     notifyListeners();
   }
@@ -620,21 +563,6 @@ class AuthController extends ChangeNotifier {
     }
     switch (result) {
       case Success<T>(:final value):
-        // #region agent log
-        AgentDebugLog.log(
-          location: 'auth_controller.dart:_run',
-          message: 'auth_action_success',
-          hypothesisId: 'B',
-          data: <String, Object?>{
-            'provider': provider,
-            'hasOnSuccess': onSuccess != null,
-            'valueType': value.runtimeType.toString(),
-            'statusBeforeApply': status.runtimeType.toString(),
-            'willStayAuthenticating':
-                onSuccess == null && status is Authenticating,
-          },
-        );
-        // #endregion
         onSuccess?.call(value);
         afterSuccess?.call();
         notifyListeners();

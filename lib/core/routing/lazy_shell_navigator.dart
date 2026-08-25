@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 /// Builds only the visited shell branches. IndexedStack otherwise mounts every
@@ -13,11 +14,15 @@ class LazyShellNavigator extends StatefulWidget {
   final List<Widget> children;
 
   @override
-  State<LazyShellNavigator> createState() => _LazyShellNavigatorState();
+  State<LazyShellNavigator> createState() => LazyShellNavigatorState();
 }
 
-class _LazyShellNavigatorState extends State<LazyShellNavigator> {
+class LazyShellNavigatorState extends State<LazyShellNavigator> {
   late List<bool> _loaded;
+
+  /// Exposed for tests — which branches have been built at least once.
+  @visibleForTesting
+  List<bool> get debugLoadedBranches => List<bool>.unmodifiable(_loaded);
 
   @override
   void initState() {
@@ -26,6 +31,7 @@ class _LazyShellNavigatorState extends State<LazyShellNavigator> {
       widget.children.length,
       (index) => index == widget.currentIndex,
     );
+    _logLoad(widget.currentIndex, first: true);
   }
 
   @override
@@ -40,7 +46,21 @@ class _LazyShellNavigatorState extends State<LazyShellNavigator> {
       );
     } else if (!_loaded[widget.currentIndex]) {
       _loaded[widget.currentIndex] = true;
+      _logLoad(widget.currentIndex, first: true);
+    } else if (oldWidget.currentIndex != widget.currentIndex) {
+      _logLoad(widget.currentIndex, first: false);
     }
+  }
+
+  void _logLoad(int index, {required bool first}) {
+    if (!kDebugMode) {
+      return;
+    }
+    // ignore: avoid_print
+    print(
+      '[TAB] shell branch ${first ? 'mounted' : 'shown'}: index=$index '
+      'loaded=${_loaded.where((v) => v).length}/${_loaded.length}',
+    );
   }
 
   @override

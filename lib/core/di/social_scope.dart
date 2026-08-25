@@ -72,6 +72,7 @@ class SocialScopeState extends State<SocialScope> with WidgetsBindingObserver {
   late final MatchesController matchesController;
   late final CallController callController;
   StreamSubscription<String?>? _uidSub;
+  String? _boundUid;
 
   MatchRepository get matchRepository => widget.services.matchRepository;
   LikeRepository get likeRepository => widget.services.likeRepository;
@@ -99,20 +100,32 @@ class SocialScopeState extends State<SocialScope> with WidgetsBindingObserver {
       service: widget.services.videoCallService,
       provider: widget.services.videoCallProvider,
     );
+    _boundUid = widget.services.uidSource.currentUid;
     _uidSub = widget.services.uidSource.watchUid().listen((uid) {
-      matchesController.start();
-      if (uid != null) {
-        callController.watchIncoming(uid);
-      } else {
-        callController.stopIncoming();
-      }
+      _onUid(uid);
     }, onError: (_) {
-      matchesController.start();
-      callController.stopIncoming();
+      _onUid(widget.services.uidSource.currentUid);
     });
-    final uid = widget.services.uidSource.currentUid;
+    final uid = _boundUid;
     if (uid != null) {
       callController.watchIncoming(uid);
+    }
+  }
+
+  void _onUid(String? uid) {
+    if (uid == _boundUid) {
+      return;
+    }
+    debugPrint(
+      '[TAB] social uid changed: ${_boundUid ?? 'none'} → ${uid ?? 'none'} '
+      '| restarting matches/incoming listeners',
+    );
+    _boundUid = uid;
+    matchesController.start();
+    if (uid != null) {
+      callController.watchIncoming(uid);
+    } else {
+      callController.stopIncoming();
     }
   }
 

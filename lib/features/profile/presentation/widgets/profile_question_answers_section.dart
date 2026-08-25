@@ -197,7 +197,9 @@ class _ProfileQuestionAnswersSectionState
         if (widget.isOwner && value.isEmpty && !_syncAttempted) {
           _syncAttempted = true;
           try {
-            await repository.syncFromMatching();
+            await repository
+                .syncFromMatching()
+                .timeout(const Duration(seconds: 12));
           } on Object {
             // Stream stays subscribed; UI shows empty / error below.
           }
@@ -206,13 +208,12 @@ class _ProfileQuestionAnswersSectionState
           if (!mounted) {
             return;
           }
-          if (value.isEmpty) {
-            setState(() {
-              _loading = false;
-              _error = null;
-            });
-            return;
-          }
+          setState(() {
+            _loading = false;
+            _error = null;
+            _answers = value;
+          });
+          return;
         }
         if (!mounted) {
           return;

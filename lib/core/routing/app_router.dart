@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/app_config.dart';
-import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/presentation/pages/design_system_page.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/routing/auth_redirector.dart';
@@ -59,7 +58,7 @@ GoRouter createAppRouter({
     initialLocation: AppRoutes.splash,
     refreshListenable: refresh,
     redirect: (context, state) {
-      final next = AuthRedirector.redirect(
+      return AuthRedirector.redirect(
         status: authController.status,
         location: state.matchedLocation,
         allowDesignSystem: config.showDebugBanner,
@@ -69,23 +68,6 @@ GoRouter createAppRouter({
         needsLocationOnboarding: locationController?.onboardingNeeded ?? false,
         locationGateResolved: locationController?.isResolved ?? true,
       );
-      // #region agent log
-      AgentDebugLog.log(
-        location: 'app_router.dart:redirect',
-        message: 'auth_redirect',
-        hypothesisId: 'D',
-        data: <String, Object?>{
-          'from': state.matchedLocation,
-          'to': next,
-          'status': authController.status.runtimeType.toString(),
-          'isBusy': authController.isBusy,
-          'locationGateResolved': locationController?.isResolved ?? true,
-          'needsLocationOnboarding':
-              locationController?.onboardingNeeded ?? false,
-        },
-      );
-      // #endregion
-      return next;
     },
     routes: [
       GoRoute(

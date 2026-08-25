@@ -10,7 +10,11 @@ import 'package:mevora/features/profile/domain/repositories/profile_question_ans
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
+import 'package:mevora/shared/widgets/mevora_empty_state.dart';
+import 'package:mevora/shared/widgets/mevora_error_view.dart';
+import 'package:mevora/shared/widgets/mevora_loading.dart';
 
 class ProfileAnswersPage extends StatefulWidget {
   const ProfileAnswersPage({super.key});
@@ -24,10 +28,17 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
   Map<String, ProfileQuestionAnswer> _profileAnswers = const {};
   StreamSubscription<List<ProfileQuestionAnswer>>? _profileSubscription;
   var _loading = true;
+  var _loadStarted = false;
+  String? _error;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Inherited scopes are not safe to read from [initState]. Start once here.
+    if (_loadStarted) {
+      return;
+    }
+    _loadStarted = true;
     unawaited(_load());
   }
 
@@ -38,32 +49,110 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
   }
 
   Future<void> _load() async {
-    final uid = AuthScope.of(context).user?.id;
+    final uid = AuthScope.maybeOf(context)?.user?.id;
     final repository = RelationshipScope.maybeOf(context);
     final profileAnswers = RelationshipScope.profileAnswersOf(context);
     if (uid == null || repository == null) {
       if (mounted) {
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+          _error = null;
+          _answers = const {};
+        });
       }
       return;
     }
-    unawaited(_profileSubscription?.cancel());
-    if (profileAnswers != null) {
-      _profileSubscription = profileAnswers.watchAnswers(uid).listen((items) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _profileAnswers = {for (final item in items) item.questionId: item};
-        });
-      });
-      unawaited(profileAnswers.syncFromMatching());
-    }
-    final result = await repository.getSavedAnswers(uid);
+
     if (mounted) {
       setState(() {
-        _answers = result.valueOrNull ?? const {};
+        _loading = true;
+        _error = null;
+      });
+    }
+
+    unawaited(_profileSubscription?.cancel());
+    if (profileAnswers != null) {
+      _profileSubscription = profileAnswers.watchAnswers(uid).listen(
+        (items) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _profileAnswers = {
+              for (final item in items) item.questionId: item,
+            };
+            // Prefer live profile answers when the one-shot load was empty.
+            if (_answers.isEmpty && items.isNotEmpty) {
+              _answers = {
+                for (final item in items)
+                  if (item.answerId.trim().isNotEmpty)
+                    item.questionId: item.answerId,
+              };
+              _loading = false;
+              _error = null;
+            }
+          });
+        },
+        onError: (_) {
+          if (!mounted || !_loading) {
+            return;
+          }
+          setState(() {
+            _loading = false;
+            _error = AppLocalizations.of(context).questionAnswersLoadError;
+          });
+        },
+      );
+      try {
+        await profileAnswers
+            .syncFromMatching()
+            .timeout(const Duration(seconds: 12));
+      } on Object {
+        // Continue with whatever Firestore already has.
+      }
+    }
+
+    try {
+      final result = await repository
+          .getSavedAnswers(uid)
+          .timeout(const Duration(seconds: 12));
+      if (!mounted) {
+        return;
+      }
+      if (result.isError) {
+        setState(() {
+          _loading = false;
+          if (_answers.isEmpty && _profileAnswers.isEmpty) {
+            _error = AppLocalizations.of(context).questionAnswersLoadError;
+          }
+        });
+        return;
+      }
+      final loaded = result.valueOrNull ?? const <String, String>{};
+      setState(() {
+        if (loaded.isNotEmpty) {
+          _answers = loaded;
+        } else if (_profileAnswers.isNotEmpty) {
+          _answers = {
+            for (final item in _profileAnswers.values)
+              if (item.answerId.trim().isNotEmpty)
+                item.questionId: item.answerId,
+          };
+        } else {
+          _answers = const {};
+        }
         _loading = false;
+        _error = null;
+      });
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        if (_answers.isEmpty) {
+          _error = AppLocalizations.of(context).questionAnswersLoadError;
+        }
       });
     }
   }
@@ -77,17 +166,24 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.profileAnswersTitle)),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? MevoraLoading.page(
+              message: l10n.loading,
+              asset: MevoraRiveAssets.loading,
+            )
+          : _error != null && _answers.isEmpty
+          ? MevoraErrorView(
+              message: _error,
+              onRetry: () {
+                unawaited(_load());
+              },
+            )
           : SafeArea(
               child: _answers.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-                        child: Text(
-                          l10n.questionAnswersEmpty,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+                  ? MevoraEmptyState(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      riveAsset: MevoraRiveAssets.empty,
+                      title: l10n.questionAnswersEmpty,
+                      message: l10n.questionAnswersEmptyHint,
                     )
                   : ListView(
                       padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -129,12 +225,30 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
     String questionId,
     String answerId,
   ) async {
-    final uid = AuthScope.of(context).user?.id;
+    final uid = AuthScope.maybeOf(context)?.user?.id;
     final settings = SettingsScope.maybeOf(context);
     final messenger = ScaffoldMessenger.of(context);
     final l10n = AppLocalizations.of(context);
     final previous = _answers[questionId];
-    setState(() => _answers = {..._answers, questionId: answerId});
+    if (previous == answerId) {
+      return;
+    }
+    setState(() {
+      _answers = {..._answers, questionId: answerId};
+      final current = _profileAnswers[questionId];
+      if (current != null) {
+        _profileAnswers = {
+          ..._profileAnswers,
+          questionId: ProfileQuestionAnswer(
+            questionId: current.questionId,
+            answerId: answerId,
+            isVisible: current.isVisible,
+            createdAt: current.createdAt,
+            updatedAt: DateTime.now(),
+          ),
+        };
+      }
+    });
     final result = await repository.saveAnswer(
       questionId: questionId,
       answerId: answerId,

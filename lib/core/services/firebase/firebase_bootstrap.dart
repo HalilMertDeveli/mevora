@@ -10,7 +10,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/firebase/firebase_options_resolver.dart';
-import 'package:mevora/core/debug/agent_debug_log.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/firebase_options.dart';
 
@@ -195,20 +194,6 @@ class FirebaseBootstrap {
           '[APPCHECK_DEBUG] activated development '
           'hasFixedToken=true fromEnv=${fromEnv.isNotEmpty}',
         );
-        // #region agent log
-        AgentDebugLog.log(
-          location: 'firebase_bootstrap.dart:_configureAppCheck',
-          message: 'app_check_activated',
-          hypothesisId: 'A',
-          runId: 'post-fix',
-          data: <String, Object?>{
-            'hasFixedToken': true,
-            'fromEnv': fromEnv.isNotEmpty,
-            'usedFallback': fromEnv.isEmpty,
-            'environment': config.environment.name,
-          },
-        );
-        // #endregion
         if (fromEnv.isEmpty) {
           logger.info(
             'App Check using registered development debug-token fallback',

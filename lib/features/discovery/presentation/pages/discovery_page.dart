@@ -186,11 +186,14 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     final matchCount =
         SocialScope.maybeOf(context)?.matchesController.activeConversationCount ??
         0;
+    // LazyShellNavigator disables TickerMode for offstage tabs. Discover stays
+    // mounted after first visit — never report "visible" while offstage.
+    final discoveryVisible = TickerMode.valuesOf(context).enabled;
     Widget body = SafeArea(child: _body(controller, state));
     if (relationship != null) {
       body = RelationshipPromptHost(
         controller: relationship,
-        discoveryVisible: true,
+        discoveryVisible: discoveryVisible,
         normalMatchCount: matchCount,
         child: body,
       );

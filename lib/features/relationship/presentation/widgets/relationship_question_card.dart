@@ -38,11 +38,14 @@ class RelationshipDiscoverySync extends StatefulWidget {
 }
 
 class _RelationshipDiscoverySyncState extends State<RelationshipDiscoverySync> {
+  var _started = false;
+  bool? _lastVisible;
+  int? _lastMatchCount;
+
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(_syncHost);
-    unawaited(widget.controller.start());
+    _ensureStarted();
     _pushVisibility();
   }
 
@@ -50,34 +53,31 @@ class _RelationshipDiscoverySyncState extends State<RelationshipDiscoverySync> {
   void didUpdateWidget(RelationshipDiscoverySync oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_syncHost);
-      widget.controller.addListener(_syncHost);
-      unawaited(widget.controller.start());
+      _started = false;
+      _lastVisible = null;
+      _lastMatchCount = null;
+      _ensureStarted();
     }
     _pushVisibility();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _pushVisibility();
+  void _ensureStarted() {
+    if (_started) {
+      return;
+    }
+    _started = true;
+    unawaited(widget.controller.start());
   }
 
   void _pushVisibility() {
-    widget.controller.setNormalMatchCount(widget.normalMatchCount);
-    widget.controller.setDiscoveryVisible(widget.discoveryVisible);
-  }
-
-  void _syncHost() {
-    if (mounted) {
-      setState(() {});
+    if (_lastMatchCount != widget.normalMatchCount) {
+      _lastMatchCount = widget.normalMatchCount;
+      widget.controller.setNormalMatchCount(widget.normalMatchCount);
     }
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_syncHost);
-    super.dispose();
+    if (_lastVisible != widget.discoveryVisible) {
+      _lastVisible = widget.discoveryVisible;
+      widget.controller.setDiscoveryVisible(widget.discoveryVisible);
+    }
   }
 
   @override
@@ -107,8 +107,7 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
   void initState() {
     super.initState();
     widget.controller.addListener(_syncHost);
-    unawaited(widget.controller.start());
-    _pushVisibility();
+    _syncWhenVisible();
   }
 
   @override
@@ -117,20 +116,24 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_syncHost);
       widget.controller.addListener(_syncHost);
-      unawaited(widget.controller.start());
     }
-    _pushVisibility();
+    if (oldWidget.discoveryVisible != widget.discoveryVisible ||
+        oldWidget.normalMatchCount != widget.normalMatchCount ||
+        oldWidget.controller != widget.controller) {
+      _syncWhenVisible();
+    }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _pushVisibility();
-  }
-
-  void _pushVisibility() {
+  /// Only applies "visible" — never forces hidden. AppShell
+  /// [RelationshipDiscoverySync] owns tab-off visibility so an offstage
+  /// Discover page cannot re-arm timers after the user left the tab.
+  void _syncWhenVisible() {
+    if (!widget.discoveryVisible) {
+      return;
+    }
     widget.controller.setNormalMatchCount(widget.normalMatchCount);
-    widget.controller.setDiscoveryVisible(widget.discoveryVisible);
+    widget.controller.setDiscoveryVisible(true);
+    unawaited(widget.controller.start());
   }
 
   void _syncHost() {
@@ -149,6 +152,7 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
   Widget build(BuildContext context) {
     final controller = widget.controller;
     final question = controller.currentQuestion;
+    // Offstage discovery tabs keep this host mounted; only paint when visible.
     final showPrompt = widget.discoveryVisible;
     return Stack(
       fit: StackFit.expand,

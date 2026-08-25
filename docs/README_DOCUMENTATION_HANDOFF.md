@@ -78,8 +78,10 @@
 
 ## Commit
 
-`docs: merge complete project architecture and QA documentation`
+- `aa6666b` — `docs: merge complete project architecture and QA documentation`
+- `f98e583` — `docs: point Turkish README to expanded English technical sections`
 
 ## Push status
 
-Pushed to `origin/docs/readme-complete` (see session log).
+Pushed to `origin/docs/readme-complete` (`aa6666b`…`f98e583`).
+PR URL: https://github.com/HalilMertDeveli/mevora/pull/new/docs/readme-complete

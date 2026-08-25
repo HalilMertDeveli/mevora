@@ -39,6 +39,7 @@
 - [How it works](#how-it-works)
 - [Compatibility engine](#compatibility-engine)
 - [Relationship question system](#relationship-question-system)
+- [Messaging & chat E2EE](#messaging--chat-e2ee)
 - [Safety & trust](#safety--trust)
 - [Photo moderation](#photo-moderation)
 - [Feature matrix](#feature-matrix)
@@ -47,10 +48,17 @@
 - [Firebase architecture](#firebase-architecture)
 - [Project structure](#project-structure)
 - [Security](#security)
+- [Privacy & data handling](#privacy--data-handling)
+- [Admin & operations](#admin--operations)
 - [Testing](#testing)
+- [QA system](#qa-system)
+- [Multi-emulator & real-device testing](#multi-emulator--real-device-testing)
 - [Production smoke test](#production-smoke-test)
 - [Getting started](#getting-started)
 - [Environments & secrets](#environments--secrets)
+- [Git workflow](#git-workflow)
+- [Production readiness workflow](#production-readiness-workflow)
+- [Project status](#project-status)
 - [Recent development](#recent-development)
 - [Roadmap](#roadmap)
 - [Documentation map](#documentation-map)
@@ -330,16 +338,20 @@ Details: [docs/PHOTO_MODERATION.md](docs/PHOTO_MODERATION.md)
 | Music match / Spotify taste | Implemented |
 | Match Score & feedback | Implemented |
 | Text / image / GIF / voice chat | Implemented |
+| Chat E2EE (fail-closed for new sends) | Implemented — see [Messaging & chat E2EE](#messaging--chat-e2ee) |
 | Push notifications (FCM) | Implemented |
 | Block / report / unmatch | Implemented |
 | Boost IAP (consumable) | Implemented |
 | Subscriptions | **Disabled placeholder** only |
 | Video calls (LiveKit) | Implemented, **feature flag off by default** |
+| Sumsub profile verification | Implemented (sandbox/production secrets required) |
 | Photo moderation pipeline | Implemented (technical, no AI) |
 | Firebase App Check | Implemented |
 | Crashlytics & Analytics | Implemented |
-| Firebase Remote Config SDK | **Not wired** — local defaults via `MevoraRemoteConfig` |
-| Automated device E2E | Partial (`integration_test/`, needs device) |
+| Firebase Remote Config SDK | **Partial / WIP** — local defaults via `MevoraRemoteConfig`; SDK wiring lives on WIP branch |
+| Hosting admin / automation console | **In progress** — rules + WIP code on `wip/preserve-dirty-tree-20260825` (not merged to `main`) |
+| Automated device E2E | Partial (`integration_test/smoke/`, needs device) |
+| Multi-emulator Firebase seed/verify | Implemented tooling (`tool/qa_multi_user_*`) — UI dual-login still Partial |
 | Backend production smoke harness | Implemented (`tools/smoke/`) |
 | CI workflow | Implemented (`.github/workflows/smoke.yml`) |
 
@@ -366,6 +378,35 @@ Details: [docs/PHOTO_MODERATION.md](docs/PHOTO_MODERATION.md)
 | Motion | Rive |
 | Video | LiveKit (`livekit_client`) |
 | Voice chat media | `record`, `audioplayers` |
+| Chat E2EE crypto | `cryptography` (X25519, HKDF, AES-GCM) + `flutter_secure_storage` |
+| Identity verification | Sumsub mobile SDK + Cloud Functions webhooks |
+
+---
+
+## Messaging & chat E2EE
+
+Chat is realtime over Firestore under `matches/{matchId}/messages`. New sends are **fail-closed**: clients require an E2EE session; plaintext fallback for new messages is not used.
+
+```mermaid
+flowchart LR
+    A[Sender plaintext] --> E[AES-GCM encrypt]
+    E --> FS[(Firestore ciphertext + metadata)]
+    E --> ST[(Storage encrypted octet-stream)]
+    FS --> D[Receiver decrypt]
+    ST --> D
+    D --> UI[Chat UI]
+```
+
+| Channel | Storage / path (owner-scoped) | Notes |
+| --- | --- | --- |
+| Text | `matches/{matchId}/messages` | Ciphertext + E2EE fields required by rules |
+| Image / voice | `users/{uid}/chat/{matchId}/…` | Encrypted blobs (`application/octet-stream`) |
+| Typing / presence | match `meta` / user presence docs | Privacy-aware; not plaintext message bodies |
+| FCM | Generic notification types | No message body / no E2EE plaintext in push |
+
+**Honest scope:** this is **not** Signal-grade (no Double Ratchet / forward secrecy). See [docs/E2EE_SECURITY.md](docs/E2EE_SECURITY.md) and [docs/E2EE_PROTOCOL_EVALUATION.md](docs/E2EE_PROTOCOL_EVALUATION.md).
+
+Peer display names in the chat AppBar come from match/profile plumbing (`controller.otherName`), not a hardcoded brand string.
 
 ---
 
@@ -428,21 +469,39 @@ flowchart LR
     Trg[Storage trigger] --> CF
 ```
 
-**Key collections**
+**Key collections** (from `firebase/firestore.rules` — not exhaustive)
 
 | Path | Purpose |
 | --- | --- |
 | `users/{uid}` | Private account (owner read) |
+| `users/{uid}/devices`, `fcmTokens` | Device / push registration |
+| `users/{uid}/crypto` | E2EE public identity material |
+| `users/{uid}/relationshipAnswers` | Relationship Q&A answers |
+| `users/{uid}/questionAnswers` | Profile question answers |
+| `users/{uid}/verification` | Sumsub verification state |
 | `profiles/{uid}` | Public dating card |
 | `userPreferences/{uid}` | Discovery prefs |
 | `userLocation/{uid}` | GPS (server-side reads for distance) |
+| `userPrivacy/{uid}`, `userSettings/{uid}` | Privacy / settings |
 | `matches/{id}` | Active matches |
-| `matches/{id}/messages` | Chat |
+| `matches/{id}/messages` | Chat (E2EE ciphertext) |
 | `likes/{from}_{to}` | Swipe records (server writes) |
 | `blocks/{blocker}_{blocked}` | Blocks |
-| `reports/{id}` | User reports |
+| `reports/{id}` | User reports (create often CF-gated) |
+| `notifications/{id}` | In-app notifications |
+| `supportTickets/{id}` | Support |
+| `calls/{id}`, `callHistory/{id}` | Call signaling / history |
+| `auditLogs`, `automationJobs`, `adminReviewQueue` | Ops / admin (admin-read in rules) |
 
-References: [FIREBASE_ARCHITECTURE.md](FIREBASE_ARCHITECTURE.md) · [FIREBASE_DATA_ARCHITECTURE.md](FIREBASE_DATA_ARCHITECTURE.md)
+**Storage (high level)**
+
+| Path pattern | Purpose |
+| --- | --- |
+| `users/{uid}/profile/pending/` | Client photo upload |
+| `users/{uid}/profile/photos/` (approved) | Functions-published discovery photos |
+| `users/{uid}/chat/{matchId}/…` | Encrypted chat media blobs |
+
+References: [FIREBASE_ARCHITECTURE.md](FIREBASE_ARCHITECTURE.md) · [FIREBASE_DATA_ARCHITECTURE.md](FIREBASE_DATA_ARCHITECTURE.md) · [docs/E2EE_SECURITY.md](docs/E2EE_SECURITY.md)
 
 ---
 
@@ -461,11 +520,13 @@ Mevora/
 │   │   ├── match_score/
 │   │   ├── relationship/
 │   │   ├── music/
-│   │   ├── chat/
+│   │   ├── chat/          (+ e2ee/)
 │   │   ├── calls/
 │   │   ├── boost/
 │   │   ├── safety/
 │   │   ├── settings/
+│   │   ├── support/
+│   │   ├── verification/
 │   │   └── …
 │   ├── shared/         design system, Rive wrappers
 │   └── l10n/
@@ -474,6 +535,8 @@ Mevora/
 ├── test/               unit + widget + security contract tests
 ├── integration_test/   device E2E entry (requires connected device)
 ├── tools/smoke/        backend production smoke runner
+├── tool/               local QA seed/verify helpers (emulator multi-user)
+├── qa/                 QA reports, Git handoff, release readiness
 └── docs/               architecture & runbooks
 ```
 
@@ -481,14 +544,47 @@ Mevora/
 
 ## Security
 
-- **Firestore rules** — lifecycle fields, blocks, reports, server-only purchases/rate limits
-- **Storage rules** — clients upload `pending/` only; `photos/` publish is Functions-only
-- **App Check** — debug providers in dev/staging; Play Integrity / App Attest in production
+- **Firestore rules** — lifecycle fields, blocks, reports, server-only purchases/rate limits, E2EE message field requirements
+- **Storage rules** — clients upload `pending/` only; approved `photos/` publish is Functions-only; chat media as encrypted blobs
+- **Chat E2EE** — fail-closed new sends; private keys on-device (`flutter_secure_storage`); Firebase stores ciphertext
+- **App Check** — debug providers in development; Play Integrity / App Attest in production
 - **Server validation** — onboarding completion, swipes, boosts, reports, deletion
 - **18+ enforcement** — client + `completeOnboarding` + discovery filters
 - **Smoke test isolation** — `isSmokeTestUser` is server-only; smoke users only see each other in discovery
+- **Admin gates** — `isAdmin()` in rules for ops collections; full admin console still WIP (see below)
 
-More: [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md) · [LOCATION_ARCHITECTURE.md](LOCATION_ARCHITECTURE.md)
+More: [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md) · [LOCATION_ARCHITECTURE.md](LOCATION_ARCHITECTURE.md) · [docs/E2EE_SECURITY.md](docs/E2EE_SECURITY.md)
+
+---
+
+## Privacy & data handling
+
+Technical privacy posture (not a legal opinion):
+
+| Topic | Status |
+| --- | --- |
+| Exact GPS never shared to peers | Implemented (distance labels via Functions) |
+| Account deletion callable | Implemented (`deleteUserAccount` / expanded server cleanup) |
+| Data export | Implemented (settings export + Functions export notes) |
+| E2EE message bodies omitted from exports | Implemented (see Functions export messaging) |
+| Data retention plan | Documented — [docs/DATA_RETENTION_PLAN.md](docs/DATA_RETENTION_PLAN.md) |
+| Store / privacy readiness notes | [docs/PRIVACY_STORE_READINESS.md](docs/PRIVACY_STORE_READINESS.md) |
+
+> **Legal / KVKK compliance requires professional legal review.** This README describes engineering controls only.
+
+---
+
+## Admin & operations
+
+| Capability | Status |
+| --- | --- |
+| Firestore `isAdmin()` + admin-readable ops collections | Implemented in rules |
+| `auditLogs`, `automationJobs`, `adminReviewQueue` | Present in rules / backend design |
+| Hosting `/admin` console + Cloud Functions automation package | **In progress** on branch `wip/preserve-dirty-tree-20260825` |
+| Role matrix (SUPER_ADMIN / MODERATOR / SUPPORT / ANALYST) | **Planned / partial WIP** — do not treat as production-complete |
+| Mobile app embeds admin UI | **No** — admin is separate from the dating client |
+
+Details: [docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md)
 
 ---
 
@@ -496,19 +592,24 @@ More: [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md) · [LOCATION_ARCHITECTURE.md]
 
 | Layer | Location | Status |
 | --- | --- | --- |
-| Unit / widget tests | `test/` (~120 files) | Implemented |
-| Cloud Functions tests | `functions/test/` (41 tests) | Implemented |
+| Unit / widget tests | `test/` (~150 Dart test files) | Implemented — full suite recently **654** passing on CI/dev host |
+| Cloud Functions tests | `functions/test/` | Implemented — recently **78** passing |
 | Firestore rules tests | `firebase/tests/` | Implemented |
 | Security contract tests | `test/security/` | Implemented |
 | Integration config test | `test/integration/` | Implemented |
-| Device E2E | `integration_test/smoke/` | Partial — needs Android/iOS device |
+| Device E2E smoke | `integration_test/smoke/` | Partial — launch + email harness; needs stable device run |
+| Emulator multi-user seed/verify | `tool/qa_multi_user_*.cjs` | Implemented (Auth/Firestore emulator Admin SDK) |
 | Backend smoke | `tools/smoke/run_smoke_test.mjs` | Implemented |
 | CI | `.github/workflows/smoke.yml` | Implemented |
 
 ```bash
-# Flutter (default scope via dart_test.yaml)
+# Flutter
+flutter doctor
 flutter analyze
 flutter test
+
+# Device / emulator integration (example)
+flutter test integration_test/smoke/app_launch_test.dart -d <deviceId> --flavor development
 
 # Cloud Functions
 cd functions && npm test
@@ -516,13 +617,68 @@ cd functions && npm test
 # Firestore / moderation integration
 cd firebase/tests && npm test
 
+# Local Firebase Emulator Suite + multi-user seed (dev machine)
+firebase emulators:start --only auth,firestore,storage --project mevora-d6ed0
+# then (with JAVA_HOME set if needed):
+node tool/qa_multi_user_seed_admin.cjs
+node tool/qa_multi_user_verify.cjs
+
 # Backend smoke (requires service account — never commit credentials)
 cd tools/smoke && npm install
 # set GOOGLE_APPLICATION_CREDENTIALS, then:
 node run_smoke_test.mjs
 ```
 
-Smoke flow documentation: [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md)
+Smoke flow documentation: [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md) · QA overview: [docs/QA.md](docs/QA.md)
+
+---
+
+## QA system
+
+Engineering QA ladder used on this repo:
+
+```text
+Static analysis (flutter analyze)
+        ↓
+Unit / widget / Functions / rules tests
+        ↓
+Integration_test smoke (device/emulator)
+        ↓
+Firebase Emulator multi-user seed/verify
+        ↓
+Multi-emulator UI attempts + screenshots
+        ↓
+Real device (when connected)
+        ↓
+Regression after fixes
+        ↓
+Release APK cold-start checks
+        ↓
+Release readiness decision (qa/RELEASE_READINESS.md)
+```
+
+Latest overnight reports live under [`qa/`](qa/) (e.g. `FULL_QA_REPORT.md`, `multi-emulator-report.md`, `GIT_HANDOFF.md`). Current release readiness from that run: **RED — not ready for public store**.
+
+---
+
+## Multi-emulator & real-device testing
+
+| Mode | Purpose | Status |
+| --- | --- | --- |
+| Emulator A / B (+ optional C) | Parallel installs of the same APK | Tooling implemented; UI dual-login still Partial |
+| Auth + Firestore emulators | Isolated USER A/B/C seed, match, message verify | Implemented |
+| Live Firebase on emulator | Auth welcome / release APK smoke | Partial |
+| Physical Android | Camera, mic, FCM kill-state, Play Integrity | Required for release — often **Blocked** if no USB device |
+
+Recommended pairing for full product E2E (when UI login automation is stable):
+
+```text
+Emulator/Device A → USER A
+Emulator/Device B → USER B
+Signup → onboarding → questions → discover → like → match → chat
+```
+
+Use **smoke / QA emails only** (`smoke-a@mevora.test`, `qa-a@mevora.test`, …). Never use real customer accounts for automated tests.
 
 ---
 
@@ -606,30 +762,101 @@ Phone Auth typically needs a **live** Firebase project for real SMS unless using
 
 ## Environments & secrets
 
-| Flavor | Entry | Package (typical) | Firebase project |
+| Flavor | Entry | Android `applicationId` | Firebase project |
 | --- | --- | --- | --- |
-| development | `main_development.dart` | `com.mevora.app.dev` | `mevora-d6ed0` |
+| development | `main_development.dart` | `com.mevora.app` (same id for OAuth SHA registration; `-dev` versionNameSuffix) | `mevora-d6ed0` |
 | staging | `main_staging.dart` | `com.mevora.app.staging` | `mevora-staging` |
 | production | `main_production.dart` | `com.mevora.app` | `mevora-production` |
 
-**Never commit:** `.env`, keystores, service account JSON, Spotify client secret, LiveKit secrets, Apple signing keys.
+Default live backend for `USE_EMULATORS=false` development builds is **`mevora-d6ed0`**. Opt into the Emulator Suite only when it is running (`USE_EMULATORS=true`, optional `USE_AUTH_EMULATOR=true`).
 
-Public client IDs may be passed via `--dart-define` (e.g. `SPOTIFY_CLIENT_ID`). See [FIREBASE_SETUP.md](FIREBASE_SETUP.md).
+**Never commit:** `.env`, keystores, service account JSON, Spotify client secret, LiveKit secrets, Apple signing keys, App Check debug token files.
+
+Public client IDs may be passed via `--dart-define` (e.g. `SPOTIFY_CLIENT_ID`, `FIREBASE_APP_CHECK_DEBUG_TOKEN`). Prefer `tool/flutter_run_dev.ps1` / `tool/app_check_debug_token.local` for local App Check. See [FIREBASE_SETUP.md](FIREBASE_SETUP.md).
+
+---
+
+## Git workflow
+
+Do **not** develop experimental QA fixes directly on `main`. Current engineering pattern:
+
+```text
+main / backup tip
+        ↓
+qa/baseline  (tag: qa-stable-baseline)
+        ↓
+fix/<bug>  or  test/<suite>  or  qa/<area>
+        ↓
+automated + device checks
+        ↓
+commit + push
+        ↓
+merge into qa/integration  (RC: release/mevora-v1.0.0-rc1)
+```
+
+| Branch / tag | Purpose |
+| --- | --- |
+| `qa/baseline` · `qa-stable-baseline` | Pre-QA-split stable product tip (`dd03fd1` privacy/E2EE harden) |
+| `fix/*` | Atomic bug fixes (e.g. `fix/fcm-incoming-like-types`) |
+| `test/*` | Test harness alignment |
+| `qa/firebase`, `qa/release`, `qa/integration` | Firebase tooling, reports, aggregate QA |
+| `wip/preserve-dirty-tree-20260825` | Full dirty-tree safety snapshot (includes admin WIP) |
+| `release/mevora-v1.0.0-rc1` | Release **candidate** tracker — not a store ship claim |
+
+Safety: no force-push to `main`, no `git reset --hard` for cleanup, preserve failed fix branches as `fix/<name>-v2` when retrying.
+
+Details: [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md) · [qa/GIT_HANDOFF.md](qa/GIT_HANDOFF.md)
+
+---
+
+## Production readiness workflow
+
+```text
+Development (mevora-d6ed0)
+        ↓
+QA (analyze → unit → integration → multi-emu → real device)
+        ↓
+Security / rules / E2EE review
+        ↓
+Release candidate branch + signed release build
+        ↓
+Internal testing track
+        ↓
+Production (mevora-production) — only when readiness is green
+```
+
+Release signing is still **debug keystore** in `android/app/build.gradle.kts` until a Play upload key is wired. Treat store launch as blocked until signing, dual-device messaging, and readiness docs flip green.
+
+---
+
+## Project status
+
+| Area | Status |
+| --- | --- |
+| Core dating product (auth → discover → match → chat) | Implemented |
+| Compatibility / relationship / music signals | Implemented |
+| Chat E2EE fail-closed | Implemented |
+| Safety (block/report/delete/moderation pipeline) | Implemented |
+| Boost IAP | Implemented |
+| Video calls | Implemented, flag off |
+| Spotify login | Implemented, flag off by default |
+| Admin hosting console / automation package | In progress (WIP branch) |
+| Multi-emulator UI E2E | Partial |
+| Real-device release gate | Blocked until devices + signing ready |
+| Public store release | **Not ready** (see `qa/RELEASE_READINESS.md`) |
 
 ---
 
 ## Recent development
 
-| Commit | Summary |
+| Item | Summary |
 | --- | --- |
-| `docs` | Visual README PNG assets + live auth screen captures |
-| `4853442` | README screen map + production smoke flow |
-| `901fafd` | Comprehensive visual README with verified project analysis |
-| `8946ffb` | Production hardening, photo moderation pipeline, smoke tests, compliance tests |
-| `11fbba3` | Relationship survey timing tuning |
-| `7c8f1d0` | README + asset visuals |
-| `5cdac15` | Phone auth synced with shared `AuthController` |
-| `cef0595` | Boost IAP, Rive UI, logout stability |
+| `dd03fd1` | Privacy/security rules harden + fail-closed E2EE |
+| `qa/integration` | Aggregated QA fixes, tests, emulator tooling, reports |
+| `fix/fcm-incoming-like-types` | Restore missing `incomingLike` FCM types |
+| `docs/readme-complete` | README merge of architecture + QA + Git documentation |
+| `121aca5` / `bf76035` | Profile Q&A edit + question-priority matching / likes-you gate |
+| `8946ffb` | Production hardening, photo moderation, smoke tests |
 
 ---
 
@@ -638,11 +865,12 @@ Public client IDs may be passed via `--dart-define` (e.g. `SPOTIFY_CLIENT_ID`). 
 Verified gaps / planned improvements (not implemented as full products yet):
 
 - AI/ML photo moderation provider (architecture ready, not active)
-- Firebase Remote Config SDK integration (defaults exist in code only)
+- Complete Firebase Remote Config SDK wiring (defaults exist; SDK WIP)
 - Stronger profile read model (reduce authenticated enumeration surface)
-- Full device E2E smoke on CI (App Check + Test Lab strategy)
+- Stable dual-device / multi-emulator **UI** E2E (seed/verify exists; login automation Partial)
 - Live subscriptions (placeholder module only today)
-- Admin moderation console for `manual_review` photos
+- Production admin moderation console (WIP on preserve branch)
+- Play App Signing + R8 for store builds
 - Expanded analytics for safety events
 
 ---
@@ -651,15 +879,23 @@ Verified gaps / planned improvements (not implemented as full products yet):
 
 | Topic | Document |
 | --- | --- |
-| Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Architecture | [ARCHITECTURE.md](ARCHITECTURE.md) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Firebase overview | [FIREBASE_ARCHITECTURE.md](FIREBASE_ARCHITECTURE.md) |
 | Data model | [FIREBASE_DATA_ARCHITECTURE.md](FIREBASE_DATA_ARCHITECTURE.md) |
+| Security | [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md) |
+| Chat E2EE | [docs/E2EE_SECURITY.md](docs/E2EE_SECURITY.md) |
+| Privacy / retention | [docs/PRIVACY_STORE_READINESS.md](docs/PRIVACY_STORE_READINESS.md) · [docs/DATA_RETENTION_PLAN.md](docs/DATA_RETENTION_PLAN.md) |
 | Photo moderation | [docs/PHOTO_MODERATION.md](docs/PHOTO_MODERATION.md) |
 | Smoke testing | [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md) |
+| QA system | [docs/QA.md](docs/QA.md) · [`qa/`](qa/) |
+| Git workflow | [docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md) · [qa/GIT_HANDOFF.md](qa/GIT_HANDOFF.md) |
+| Admin / ops | [docs/ADMIN_PANEL.md](docs/ADMIN_PANEL.md) |
 | Phone auth | [PHONE_AUTH_IMPLEMENTATION.md](PHONE_AUTH_IMPLEMENTATION.md) |
 | Boost / IAP | [PAYMENT_ARCHITECTURE.md](PAYMENT_ARCHITECTURE.md) |
 | Localization | [LOCALIZATION_ARCHITECTURE.md](LOCALIZATION_ARCHITECTURE.md) |
+| Sumsub | [docs/SUMSUB_SETUP.md](docs/SUMSUB_SETUP.md) |
 | Rive assets | [assets/rive/ASSETS.md](assets/rive/ASSETS.md) |
+| README handoff | [docs/README_DOCUMENTATION_HANDOFF.md](docs/README_DOCUMENTATION_HANDOFF.md) |
 
 ---
 

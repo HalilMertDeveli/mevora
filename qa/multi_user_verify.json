@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "name": "auth-A",
+      "pass": true,
+      "detail": "qa-a@mevora.test"
+    },
+    {
+      "name": "profile-A",
+      "pass": true,
+      "detail": "\"Test User A\""
+    },
+    {
+      "name": "answers-A",
+      "pass": true,
+      "detail": "{\"q1\":\"A\",\"q2\":\"B\",\"q3\":\"A\",\"q4\":\"C\",\"q5\":\"B\"}"
+    },
+    {
+      "name": "auth-B",
+      "pass": true,
+      "detail": "qa-b@mevora.test"
+    },
+    {
+      "name": "profile-B",
+      "pass": true,
+      "detail": "\"Test User B\""
+    },
+    {
+      "name": "answers-B",
+      "pass": true,
+      "detail": "{\"q1\":\"A\",\"q2\":\"B\",\"q4\":\"C\",\"q5\":\"B\",\"q3\":\"CHANGED\"}"
+    },
+    {
+      "name": "auth-C",
+      "pass": true,
+      "detail": "qa-c@mevora.test"
+    },
+    {
+      "name": "profile-C",
+      "pass": true,
+      "detail": "\"Test User C\""
+    },
+    {
+      "name": "answers-C",
+      "pass": true,
+      "detail": "{\"q1\":\"A\",\"q2\":\"B\",\"q3\":\"A\",\"q4\":\"C\",\"q5\":\"B\"}"
+    },
+    {
+      "name": "match-exists",
+      "pass": true,
+      "detail": "7bNl8rfKudz0NRWf9THzg4oAyKlk_fK6meSLLsPxdvbjHLKmNqkL6Cmua"
+    },
+    {
+      "name": "messages-count",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "message-text-not-mevora-hardcoded-peer",
+      "pass": true,
+      "detail": "Merhaba Test User B — QA multi-emu message"
+    },
+    {
+      "name": "message-sender-is-A",
+      "pass": true,
+      "detail": "7bNl8rfKudz0NRWf9THzg4oAyKlk"
+    },
+    {
+      "name": "b-answer-changed-q3",
+      "pass": true,
+      "detail": "{\"q1\":\"A\",\"q2\":\"B\",\"q4\":\"C\",\"q5\":\"B\",\"q3\":\"CHANGED\"}"
+    }
+  ]
+}

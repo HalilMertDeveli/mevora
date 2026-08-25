@@ -120,6 +120,10 @@ void main() {
 
   testWidgets('delete account navigates to login after success', (tester) async {
     final auth = _authenticatedAuth();
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
     await tester.pumpWidget(
       await _routerHarness(
         auth: auth,
@@ -130,9 +134,11 @@ void main() {
 
     await tester.scrollUntilVisible(
       find.text(_l10n.deleteAccount),
-      120,
+      200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text(_l10n.deleteAccount));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(_l10n.deleteAccount));
     await tester.pumpAndSettle();
     await tester.tap(find.text(_l10n.deleteConfirm));

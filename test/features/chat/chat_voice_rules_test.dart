@@ -9,11 +9,24 @@ void main() {
     rules = File('firebase/storage.rules').readAsStringSync();
   });
 
-  test('chat voice uploads use participant-scoped paths and audio types', () {
+  test('chat voice uploads use participant-scoped encrypted blobs', () {
     expect(rules.contains('match /users/{userId}/chat/{matchId}/{fileId}'), isTrue);
     expect(rules.contains('isMatchParticipant(matchId)'), isTrue);
-    expect(rules.contains("audio/mp4"), isTrue);
-    expect(rules.contains('8 * 1024 * 1024'), isTrue);
+    expect(rules.contains('isEncryptedChatBlob'), isTrue);
+    expect(rules.contains('25 * 1024 * 1024'), isTrue);
+    // Client still validates original audio types/size before encrypting.
+    expect(
+      File('lib/core/constants/firestore_paths.dart').readAsStringSync().contains(
+        'audio/mp4',
+      ),
+      isTrue,
+    );
+    expect(
+      File('lib/core/constants/firestore_paths.dart').readAsStringSync().contains(
+        'maxChatVoiceBytes',
+      ),
+      isTrue,
+    );
   });
 
   test('firestore allows voice message type', () {

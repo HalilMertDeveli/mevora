@@ -2,6 +2,8 @@
   <a href="README.md">English</a> · <a href="README.tr.md">Türkçe</a>
 </p>
 
+> **Not:** Genişletilmiş teknik bölümler (E2EE, QA, çoklu emülatör, Git workflow, admin/ops durumu, production readiness) öncelikle [İngilizce README.md](README.md) içinde güncellenir. Bu Türkçe README ürün özeti, kurulum ve mevcut ekran dokümantasyonunu korur.
+
 <p align="center">
   <img src="docs/images/mevora-hero.png" alt="Mevora giriş hero görseli" width="850" />
 </p>

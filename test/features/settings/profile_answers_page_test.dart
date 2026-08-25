@@ -59,9 +59,9 @@ class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
 class _FakeRelationshipRepo implements RelationshipRepository {
   _FakeRelationshipRepo({
     this.saved = const {},
-    this.delay = Duration.zero,
+    Duration? delay,
     this.failLoad = false,
-  });
+  }) : delay = delay ?? Duration.zero;
 
   Map<String, String> saved;
   final Duration delay;

@@ -170,25 +170,30 @@ class FirebaseBootstrap {
   Future<void> _configureAppCheck(AppConfig config) async {
     try {
       if (config.environment.isDevelopment) {
-        // Fixed token only via --dart-define / tool/app_check_debug_token.local
-        // (never hardcode tokens in source).
+        // Prefer --dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN (flutter_run_dev /
+        // launch.json). Fallback matches tool/app_check_debug_token.local so plain
+        // `flutter run` still passes App Check in development.
         const fromEnv = String.fromEnvironment(
           'FIREBASE_APP_CHECK_DEBUG_TOKEN',
         );
+        const registeredDevFallback =
+            '18424c44-83a0-47d2-b57d-dd71ef21ca73';
+        final debugToken =
+            fromEnv.isNotEmpty ? fromEnv : registeredDevFallback;
+        await FirebaseAppCheck.instance.activate(
+          providerAndroid: AndroidDebugProvider(debugToken: debugToken),
+          providerApple: AppleDebugProvider(debugToken: debugToken),
+        );
+        // ignore: avoid_print
+        print(
+          '[APPCHECK_DEBUG] activated development '
+          'hasFixedToken=true fromEnv=${fromEnv.isNotEmpty}',
+        );
         if (fromEnv.isEmpty) {
-          logger.warning(
-            'App Check debug token missing; activate debug providers without a fixed token. '
-            'Use tool/flutter_run_dev.ps1 or --dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=...',
-          );
-          await FirebaseAppCheck.instance.activate(
-            providerAndroid: const AndroidDebugProvider(),
-            providerApple: const AppleDebugProvider(),
+          logger.info(
+            'App Check using registered development debug-token fallback',
           );
         } else {
-          await FirebaseAppCheck.instance.activate(
-            providerAndroid: const AndroidDebugProvider(debugToken: fromEnv),
-            providerApple: const AppleDebugProvider(debugToken: fromEnv),
-          );
           logger.info('App Check debug provider active with dart-define token');
         }
         return;

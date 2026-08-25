@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "users": {
+    "A": {
+      "uid": "7bNl8rfKudz0NRWf9THzg4oAyKlk",
+      "email": "qa-a@mevora.test",
+      "password": "***REDACTED***",
+      "displayName": "Test User A"
+    },
+    "B": {
+      "uid": "fK6meSLLsPxdvbjHLKmNqkL6Cmua",
+      "email": "qa-b@mevora.test",
+      "password": "***REDACTED***",
+      "displayName": "Test User B"
+    },
+    "C": {
+      "uid": "G34T5QfXLlyM4fr4tj5tc0UE1RbR",
+      "email": "qa-c@mevora.test",
+      "password": "***REDACTED***",
+      "displayName": "Test User C"
+    }
+  },
+  "matchId": "7bNl8rfKudz0NRWf9THzg4oAyKlk_fK6meSLLsPxdvbjHLKmNqkL6Cmua",
+  "messageId": "V7LyynsQmhEeNOFLDTYo",
+  "emulator": true
+}

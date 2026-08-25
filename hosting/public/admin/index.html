@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mevora Admin</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a222c;
+      --text: #e8eef4;
+      --muted: #8b9aab;
+      --accent: #3d8bfd;
+      --danger: #e35d6a;
+      --ok: #3ecf8e;
+      --border: #2a3542;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    header h1 { margin: 0; font-size: 1.15rem; letter-spacing: 0.04em; }
+    main { max-width: 1100px; margin: 0 auto; padding: 1.25rem; }
+    .hidden { display: none !important; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+      margin-bottom: 1rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+    .metric {
+      background: #121820;
+      border-radius: 8px;
+      padding: 0.85rem;
+    }
+    .metric .n { font-size: 1.5rem; font-weight: 600; }
+    .metric .l { color: var(--muted); font-size: 0.8rem; }
+    label { display: block; color: var(--muted); font-size: 0.8rem; margin-bottom: 0.25rem; }
+    input, select, textarea, button {
+      font: inherit;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #121820;
+      color: var(--text);
+      padding: 0.5rem 0.65rem;
+    }
+    input, select, textarea { width: 100%; margin-bottom: 0.65rem; }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      border-color: transparent;
+      font-weight: 600;
+    }
+    button.secondary { background: transparent; border-color: var(--border); }
+    button.danger { background: var(--danger); }
+    .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: end; }
+    .row > * { flex: 1; min-width: 140px; }
+    pre {
+      background: #0b1015;
+      border-radius: 8px;
+      padding: 0.75rem;
+      overflow: auto;
+      max-height: 360px;
+      font-size: 0.78rem;
+      border: 1px solid var(--border);
+    }
+    .tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .tabs button { background: transparent; border: 1px solid var(--border); }
+    .tabs button.active { background: var(--accent); border-color: transparent; }
+    .err { color: var(--danger); }
+    .ok { color: var(--ok); }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MEVORA ADMIN</h1>
+    <div id="authStatus" class="muted">Checking session…</div>
+  </header>
+
+  <main>
+    <section id="loginCard" class="card">
+      <h2>Sign in</h2>
+      <p class="muted">Requires Firebase Auth custom claim <code>admin: true</code>. Role cannot be set from the client.</p>
+      <label>Email</label>
+      <input id="email" type="email" autocomplete="username" />
+      <label>Password</label>
+      <input id="password" type="password" autocomplete="current-password" />
+      <div class="row">
+        <button id="loginBtn" type="button">Sign in</button>
+        <button id="logoutBtn" class="secondary hidden" type="button">Sign out</button>
+      </div>
+      <p id="loginError" class="err"></p>
+    </section>
+
+    <section id="app" class="hidden">
+      <div class="tabs">
+        <button data-tab="dash" class="active" type="button">Dashboard</button>
+        <button data-tab="users" type="button">Users</button>
+        <button data-tab="reports" type="button">Reports</button>
+        <button data-tab="photos" type="button">Photo MR</button>
+        <button data-tab="jobs" type="button">Jobs</button>
+        <button data-tab="cleanup" type="button">Cleanup</button>
+        <button data-tab="audit" type="button">Audit</button>
+      </div>
+
+      <section id="tab-dash" class="card">
+        <h2>Dashboard</h2>
+        <div id="metrics" class="grid"></div>
+        <button id="refreshDash" type="button">Refresh</button>
+      </section>
+
+      <section id="tab-users" class="card hidden">
+        <h2>User search</h2>
+        <div class="row">
+          <div>
+            <label>UID</label>
+            <input id="searchUid" />
+          </div>
+          <button id="searchBtn" type="button">Search</button>
+        </div>
+        <pre id="userOut"></pre>
+        <h3>Suspend / restore</h3>
+        <label>Reason (required)</label>
+        <input id="suspendReason" />
+        <div class="row">
+          <button id="suspendBtn" class="danger" type="button">Suspend</button>
+          <button id="restoreBtn" class="secondary" type="button">Restore</button>
+        </div>
+        <h3>Permanent ban</h3>
+        <p class="muted">Requires typing BAN. Disables Auth + sets isBanned. Not a data wipe.</p>
+        <label>Confirm phrase</label>
+        <input id="banConfirm" placeholder="BAN" />
+        <button id="banBtn" class="danger" type="button">Execute permanent ban</button>
+      </section>
+
+      <section id="tab-reports" class="card hidden">
+        <h2>Report review queue</h2>
+        <button id="loadReports" type="button">Load open reports</button>
+        <pre id="reportsOut"></pre>
+        <label>Report ID</label>
+        <input id="reportId" />
+        <label>Decision</label>
+        <select id="reportDecision">
+          <option value="dismiss">dismiss</option>
+          <option value="warn">warn</option>
+          <option value="escalate_ban_review">escalate_ban_review (manual)</option>
+        </select>
+        <label>Reason</label>
+        <input id="reportReason" />
+        <button id="resolveReport" type="button">Resolve</button>
+      </section>
+
+      <section id="tab-photos" class="card hidden">
+        <h2>Photo manual review</h2>
+        <button id="loadPhotos" type="button">Load manual_review profiles</button>
+        <pre id="photosOut"></pre>
+        <label>UID</label>
+        <input id="photoUid" />
+        <label>Image ID</label>
+        <input id="photoImageId" />
+        <label>Decision</label>
+        <select id="photoDecision">
+          <option value="approve">approve</option>
+          <option value="reject">reject</option>
+        </select>
+        <label>Reason</label>
+        <input id="photoReason" />
+        <button id="resolvePhoto" type="button">Resolve photo</button>
+      </section>
+
+      <section id="tab-jobs" class="card hidden">
+        <h2>Failed / review jobs</h2>
+        <div class="row">
+          <div>
+            <label>Status</label>
+            <select id="jobStatus">
+              <option value="failed">failed</option>
+              <option value="manual_review">manual_review</option>
+              <option value="queued">queued</option>
+              <option value="retrying">retrying</option>
+            </select>
+          </div>
+          <button id="loadJobs" type="button">Load</button>
+        </div>
+        <pre id="jobsOut"></pre>
+        <label>Job ID to retry</label>
+        <input id="retryJobId" />
+        <button id="retryJob" type="button">Manual retry</button>
+      </section>
+
+      <section id="tab-cleanup" class="card hidden">
+        <h2>Storage / retention cleanup</h2>
+        <p class="muted">Default is dry-run. Destructive runs require a reason and are audited.</p>
+        <label>Kind</label>
+        <select id="cleanupKind">
+          <option value="orphan_chat">orphan_chat</option>
+          <option value="stale_pending">stale_pending</option>
+          <option value="deleted_remnant">deleted_remnant</option>
+          <option value="premium_sync">premium_sync</option>
+        </select>
+        <label><input id="cleanupDry" type="checkbox" checked /> Dry run</label>
+        <label>Reason</label>
+        <input id="cleanupReason" value="admin_panel" />
+        <button id="runCleanup" type="button">Run</button>
+        <pre id="cleanupOut"></pre>
+        <h3>Deletion verify</h3>
+        <input id="verifyUid" placeholder="uid" />
+        <button id="verifyDel" type="button">Verify deletion</button>
+        <pre id="verifyOut"></pre>
+      </section>
+
+      <section id="tab-audit" class="card hidden">
+        <h2>Audit logs</h2>
+        <input id="auditTarget" placeholder="optional targetUid" />
+        <button id="loadAudit" type="button">Load</button>
+        <pre id="auditOut"></pre>
+      </section>
+    </section>
+  </main>
+
+  <!-- Configure project via meta or edit below before deploy. -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+    import {
+      getFunctions,
+      httpsCallable,
+      connectFunctionsEmulator,
+    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-functions.js";
+
+    // Same project as the Flutter app (mevora-d6ed0). Safe public web config.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDummyReplaceWithWebApiKey",
+      authDomain: "mevora-d6ed0.firebaseapp.com",
+      projectId: "mevora-d6ed0",
+      storageBucket: "mevora-d6ed0.appspot.com",
+      messagingSenderId: "821220262229",
+      appId: "1:821220262229:web:admin",
+    };
+
+    // Prefer runtime config from /__/firebase/init.json when hosted on Firebase Hosting.
+    async function loadConfig() {
+      try {
+        const res = await fetch("/__/firebase/init.json");
+        if (res.ok) return await res.json();
+      } catch (_) {}
+      return firebaseConfig;
+    }
+
+    const cfg = await loadConfig();
+    const app = initializeApp(cfg);
+    const auth = getAuth(app);
+    const functions = getFunctions(app, "europe-west1");
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+      try { connectFunctionsEmulator(functions, "127.0.0.1", 5001); } catch (_) {}
+    }
+
+    const call = (name) => httpsCallable(functions, name);
+    const $ = (id) => document.getElementById(id);
+    const show = (el, on) => el.classList.toggle("hidden", !on);
+
+    function setTab(name) {
+      document.querySelectorAll(".tabs button").forEach((b) => {
+        b.classList.toggle("active", b.dataset.tab === name);
+      });
+      ["dash", "users", "reports", "photos", "jobs", "cleanup", "audit"].forEach((t) => {
+        show($(`tab-${t}`), t === name);
+      });
+    }
+
+    document.querySelectorAll(".tabs button").forEach((b) => {
+      b.addEventListener("click", () => setTab(b.dataset.tab));
+    });
+
+    async function ensureAdmin(user) {
+      const token = await user.getIdTokenResult(true);
+      return token.claims.admin === true;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        $("authStatus").textContent = "Signed out";
+        show($("app"), false);
+        show($("logoutBtn"), false);
+        return;
+      }
+      const ok = await ensureAdmin(user);
+      if (!ok) {
+        $("authStatus").textContent = "Signed in but not admin";
+        $("loginError").textContent = "Missing admin custom claim.";
+        show($("app"), false);
+        show($("logoutBtn"), true);
+        return;
+      }
+      $("authStatus").textContent = `Admin · ${user.email || user.uid}`;
+      $("loginError").textContent = "";
+      show($("app"), true);
+      show($("logoutBtn"), true);
+      refreshDash();
+    });
+
+    $("loginBtn").onclick = async () => {
+      $("loginError").textContent = "";
+      try {
+        await signInWithEmailAndPassword(auth, $("email").value, $("password").value);
+      } catch (e) {
+        $("loginError").textContent = e.message || String(e);
+      }
+    };
+    $("logoutBtn").onclick = () => signOut(auth);
+
+    async function refreshDash() {
+      const res = await call("adminGetDashboard")({});
+      const m = res.data.metrics;
+      $("metrics").innerHTML = [
+        ["Open reports", m.openReports],
+        ["Failed jobs", m.failedJobs],
+        ["Manual review", m.manualReviewJobs],
+        ["Review queue", m.openReviewQueue],
+      ].map(([l, n]) => `<div class="metric"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+    }
+    $("refreshDash").onclick = () => refreshDash().catch(alert);
+
+    $("searchBtn").onclick = async () => {
+      const uid = $("searchUid").value.trim();
+      const res = await call("adminSearchUsers")({ uid });
+      $("userOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+
+    async function setSuspension(suspend) {
+      const uid = $("searchUid").value.trim();
+      const reason = $("suspendReason").value.trim();
+      const res = await call("adminSetUserSuspension")({ uid, suspend, reason });
+      $("userOut").textContent = JSON.stringify(res.data, null, 2);
+    }
+    $("suspendBtn").onclick = () => setSuspension(true).catch((e) => alert(e.message));
+    $("restoreBtn").onclick = () => setSuspension(false).catch((e) => alert(e.message));
+    $("banBtn").onclick = async () => {
+      try {
+        const res = await call("adminExecutePermanentBan")({
+          uid: $("searchUid").value.trim(),
+          reason: $("suspendReason").value.trim(),
+          confirmPhrase: $("banConfirm").value.trim(),
+        });
+        $("userOut").textContent = JSON.stringify(res.data, null, 2);
+      } catch (e) {
+        alert(e.message || String(e));
+      }
+    };
+
+    $("loadReports").onclick = async () => {
+      const res = await call("adminListReports")({ status: "open" });
+      $("reportsOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+    $("resolveReport").onclick = async () => {
+      const res = await call("adminResolveReport")({
+        reportId: $("reportId").value.trim(),
+        decision: $("reportDecision").value,
+        reason: $("reportReason").value.trim(),
+      });
+      $("reportsOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+
+    $("loadPhotos").onclick = async () => {
+      const res = await call("adminListPhotoReviews")({});
+      $("photosOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+    $("resolvePhoto").onclick = async () => {
+      const res = await call("adminResolvePhotoReview")({
+        uid: $("photoUid").value.trim(),
+        imageId: $("photoImageId").value.trim(),
+        decision: $("photoDecision").value,
+        reason: $("photoReason").value.trim(),
+      });
+      $("photosOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+
+    $("loadJobs").onclick = async () => {
+      const res = await call("adminListJobs")({ status: $("jobStatus").value });
+      $("jobsOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+    $("retryJob").onclick = async () => {
+      const res = await call("adminRetryJob")({
+        jobId: $("retryJobId").value.trim(),
+        reason: "admin_panel_retry",
+      });
+      $("jobsOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+
+    $("runCleanup").onclick = async () => {
+      const res = await call("adminRunCleanup")({
+        kind: $("cleanupKind").value,
+        dryRun: $("cleanupDry").checked,
+        reason: $("cleanupReason").value.trim(),
+        limit: 50,
+      });
+      $("cleanupOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+    $("verifyDel").onclick = async () => {
+      const res = await call("adminVerifyDeletion")({ uid: $("verifyUid").value.trim() });
+      $("verifyOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+
+    $("loadAudit").onclick = async () => {
+      const targetUid = $("auditTarget").value.trim();
+      const res = await call("adminListAuditLogs")({ targetUid: targetUid || undefined });
+      $("auditOut").textContent = JSON.stringify(res.data, null, 2);
+    };
+  </script>
+</body>
+</html>

@@ -23,6 +23,7 @@ class LocationPermissionPage extends StatelessWidget {
       animation: controller,
       builder: (context, _) {
         return Scaffold(
+          resizeToAvoidBottomInset: true,
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -220,24 +221,32 @@ class _StatusCopy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        const Spacer(),
-        Icon(icon, size: 56, color: theme.colorScheme.primary),
-        const SizedBox(height: AppSpacing.lg),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineSmall,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyMedium,
-        ),
-        const Spacer(),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 56, color: theme.colorScheme.primary),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -274,70 +283,94 @@ class _ActionCopy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        const Spacer(),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer,
-            shape: BoxShape.circle,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Icon(icon, size: 40, color: theme.colorScheme.primary),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineSmall,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge,
-        ),
-        if (detail != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            detail!,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium,
-          ),
-        ],
-        const Spacer(),
+    final actions = <Widget>[
+      MevoraButton(
+        label: primaryLabel,
+        onPressed: onPrimary,
+        isLoading: isPrimaryLoading,
+      ),
+      if (secondaryLabel != null) ...[
+        const SizedBox(height: AppSpacing.sm),
         MevoraButton(
-          label: primaryLabel,
-          onPressed: onPrimary,
-          isLoading: isPrimaryLoading,
+          label: secondaryLabel!,
+          onPressed: onSecondary,
+          variant: MevoraButtonVariant.ghost,
         ),
-        if (secondaryLabel != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          MevoraButton(
-            label: secondaryLabel!,
-            onPressed: onSecondary,
-            variant: MevoraButtonVariant.ghost,
+      ],
+      if (tertiaryLabel != null) ...[
+        const SizedBox(height: AppSpacing.sm),
+        MevoraButton(
+          label: tertiaryLabel!,
+          onPressed: onTertiary,
+          variant: MevoraButtonVariant.ghost,
+        ),
+      ],
+      if (hint != null) ...[
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          hint!,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall,
+        ),
+      ],
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: Column(
+              children: [
+                const SizedBox(height: AppSpacing.lg),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Icon(
+                      icon,
+                      size: 40,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge,
+                ),
+                if (detail != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    detail!,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ],
+            ),
           ),
-        ],
-        if (tertiaryLabel != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          MevoraButton(
-            label: tertiaryLabel!,
-            onPressed: onTertiary,
-            variant: MevoraButtonVariant.ghost,
-          ),
-        ],
-        if (hint != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            hint!,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall,
-          ),
-        ],
+        ),
+        // Keep CTAs reachable; avoid Flexible+ScrollView (flex:1) eating half
+        // the viewport and intercepting taps on scrollable content above.
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: actions,
+        ),
       ],
     );
   }
 }
+

@@ -78,7 +78,7 @@ void main() {
       expect(rules.contains('messageCreatePayloadValid'), isTrue);
       expect(rules.contains('messageEncryptedFieldsValid'), isTrue);
       expect(rules.contains('chatStoragePathOwned'), isTrue);
-      expect(rules.contains("request.resource.data.encrypted == true"), isTrue);
+      expect(rules.contains('request.resource.data.encrypted == true'), isTrue);
     });
 
     test('support tickets are owner-read and create-only', () {

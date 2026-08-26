@@ -79,46 +79,49 @@ class _ProfileHeightPickerState extends State<ProfileHeightPicker> {
     final theme = Theme.of(context);
     final textStyle = theme.textTheme.bodyLarge;
 
-    return SizedBox(
-      height: 160,
-      child: ListWheelScrollView.useDelegate(
-        controller: _controller,
-        itemExtent: 36,
-        diameterRatio: 1.35,
-        perspective: 0.003,
-        physics: widget.enabled
-            ? const FixedExtentScrollPhysics(
-                parent: BouncingScrollPhysics(
-                  decelerationRate: ScrollDecelerationRate.fast,
-                ),
-              )
-            : const NeverScrollableScrollPhysics(),
-        onSelectedItemChanged: widget.enabled
-            ? (index) {
-                if (_suppressNotify) {
-                  return;
+    return NotificationListener<ScrollNotification>(
+      onNotification: (_) => true,
+      child: SizedBox(
+        height: 160,
+        child: ListWheelScrollView.useDelegate(
+          controller: _controller,
+          itemExtent: 36,
+          diameterRatio: 1.35,
+          perspective: 0.003,
+          physics: widget.enabled
+              ? const FixedExtentScrollPhysics(
+                  parent: BouncingScrollPhysics(
+                    decelerationRate: ScrollDecelerationRate.fast,
+                  ),
+                )
+              : const NeverScrollableScrollPhysics(),
+          onSelectedItemChanged: widget.enabled
+              ? (index) {
+                  if (_suppressNotify) {
+                    return;
+                  }
+                  widget.onChanged(options[index]);
                 }
-                widget.onChanged(options[index]);
-              }
-            : null,
-        childDelegate: ListWheelChildBuilderDelegate(
-          childCount: options.length,
-          builder: (context, index) {
-            final cm = options[index];
-            final label = l10n.profileHeightCm(cm);
-            final isSelected = widget.valueCm == cm;
-            return Center(
-              child: Text(
-                label,
-                style: textStyle?.copyWith(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              : null,
+          childDelegate: ListWheelChildBuilderDelegate(
+            childCount: options.length,
+            builder: (context, index) {
+              final cm = options[index];
+              final label = l10n.profileHeightCm(cm);
+              final isSelected = widget.valueCm == cm;
+              return Center(
+                child: Text(
+                  label,
+                  style: textStyle?.copyWith(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

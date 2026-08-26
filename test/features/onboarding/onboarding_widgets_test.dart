@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mevora/core/di/onboarding_scope.dart';
-import 'package:mevora/core/config/auth_scope.dart';
-import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
+import 'package:mevora/core/config/auth_scope.dart';
+import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_enums.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
-import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
@@ -26,6 +24,11 @@ void main() {
     final controller = services.controller;
     await controller.initialize(const AuthUser(id: 'u1'));
     controller.step = OnboardingStep.education;
+
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
       wrapWithApp(
@@ -45,13 +48,22 @@ void main() {
             child: const OnboardingPage(),
           ),
         ),
+        scaffold: false,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text(l10n.onboardingEducationBachelors), findsOneWidget);
-    await tester.tap(find.text(l10n.onboardingEducationMasters));
-    await tester.pumpAndSettle();
+    final masters = find.text(l10n.onboardingEducationMasters);
+    await tester.scrollUntilVisible(
+      masters,
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    await tester.tap(masters);
+    await tester.pump();
     expect(controller.profile!.education, OnboardingEducation.masters);
   });
 }

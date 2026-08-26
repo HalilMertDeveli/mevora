@@ -156,8 +156,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.canGoBack ? _controller.goBack : null,
       onContinue: () => unawaited(_continue()),
-      child: ListView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           MevoraTextField(
             controller: _firstNameController,
@@ -333,7 +333,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
-      child: ListView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           MevoraTextField(
             controller: _bioController,
@@ -360,7 +361,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
-      child: ListView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OnboardingPhotoGrid(
             drafts: _controller.photoDrafts,
@@ -387,7 +389,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_finish()),
-      child: ListView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(
             child: Builder(
@@ -443,10 +446,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _continue() async {
-    if (_controller.step == OnboardingStep.photos) {
-      await _controller.continueStep();
-      return;
-    }
     await _controller.continueStep();
   }
 

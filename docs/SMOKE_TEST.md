@@ -62,6 +62,9 @@ flutter test integration_test/smoke/app_launch_test.dart
 8. Block / report
 9. Delete account
 
+For first-signup / onboarding on two real phones (restart + no cross-account
+leak), see [ONBOARDING_TWO_DEVICE_TEST_PLAN.md](ONBOARDING_TWO_DEVICE_TEST_PLAN.md).
+
 ## Output format
 
 The smoke runner prints:

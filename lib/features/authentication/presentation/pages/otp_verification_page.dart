@@ -27,6 +27,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     final l10n = AppLocalizations.of(context);
     final error = localizeAuthError(l10n, auth);
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -43,45 +44,58 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                l10n.otpTitle,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                l10n.otpSentTo(challenge?.maskedPhone ?? ''),
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              OtpCodeInput(
-                enabled: !auth.isBusy,
-                onChanged: (value) => _code = value,
-                onCompleted: (value) => unawaited(auth.verifyPhoneCode(value)),
-              ),
-              if (error != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  error,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
+              Expanded(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        l10n.otpTitle,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        l10n.otpSentTo(challenge?.maskedPhone ?? ''),
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      OtpCodeInput(
+                        enabled: !auth.isBusy,
+                        onChanged: (value) => _code = value,
+                        onCompleted: (value) =>
+                            unawaited(auth.verifyPhoneCode(value)),
+                      ),
+                      if (error != null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          error,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                      if (auth.resendSeconds > 0)
+                        Text(
+                          l10n.resendCountdown(auth.resendSeconds),
+                          textAlign: TextAlign.center,
+                        )
+                      else
+                        MevoraButton(
+                          label: l10n.resend,
+                          variant: MevoraButtonVariant.ghost,
+                          onPressed: auth.isBusy
+                              ? null
+                              : () => unawaited(auth.resendPhoneCode()),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-              const SizedBox(height: AppSpacing.lg),
-              if (auth.resendSeconds > 0)
-                Text(
-                  l10n.resendCountdown(auth.resendSeconds),
-                  textAlign: TextAlign.center,
-                )
-              else
-                MevoraButton(
-                  label: l10n.resend,
-                  variant: MevoraButtonVariant.ghost,
-                  onPressed: auth.isBusy
-                      ? null
-                      : () => unawaited(auth.resendPhoneCode()),
-                ),
-              const Spacer(),
+              ),
+              const SizedBox(height: AppSpacing.sm),
               MevoraButton(
                 label: l10n.verify,
                 isLoading: auth.isBusy,

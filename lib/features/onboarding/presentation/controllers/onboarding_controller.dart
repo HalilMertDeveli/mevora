@@ -106,9 +106,15 @@ class OnboardingController extends ChangeNotifier {
           displayName: _prefillName(existing?.displayName, user.displayName),
         );
     profile = draft;
-    step = draft.onboardingStep == OnboardingStep.complete
-        ? OnboardingStep.basicInfo
-        : draft.onboardingStep;
+    final flagsDone = draft.profileCompleted ||
+        draft.onboardingCompleted ||
+        draft.isProfileComplete;
+    if (flagsDone || draft.onboardingStep == OnboardingStep.complete) {
+      // Keep celebration when CF still needs retry; do not bounce to basicInfo.
+      step = OnboardingStep.complete;
+    } else {
+      step = draft.onboardingStep;
+    }
     photoDrafts = _draftsFromProfile(draft);
     isLoading = false;
     _notify();

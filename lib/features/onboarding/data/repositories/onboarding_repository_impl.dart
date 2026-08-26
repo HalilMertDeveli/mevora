@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:cloud_functions/cloud_functions.dart' show FirebaseFunctionsException;
 import 'package:flutter/foundation.dart';
@@ -15,12 +15,16 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   OnboardingRepositoryImpl({
     required ProfileRepository profiles,
     required BackendCallable backend,
+    Duration flagReadRetryDelay = const Duration(milliseconds: 200),
   }) : _profiles = profiles,
-       _backend = backend;
+       _backend = backend,
+       _flagReadRetryDelay = flagReadRetryDelay;
 
   final ProfileRepository _profiles;
   final BackendCallable _backend;
+  final Duration _flagReadRetryDelay;
   static const _onboardingCallableName = 'completeOnboarding';
+  static const _flagReadAttempts = 3;
 
   @override
   Future<UserProfile?> loadDraft(String uid) => _profiles.getById(uid);
@@ -68,24 +72,32 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       final merged = await _mergeRemotePhotoStatuses(draft);
       await _profiles.saveMine(_clientSafeDraft(merged));
       final response = await _backend.invoke(_onboardingCallableName);
-      final completed = await _profiles.getById(profile.uid);
-      final finished = completed != null &&
-          (completed.onboardingCompleted ||
-              completed.profileCompleted ||
-              completed.isProfileComplete);
-      if (!finished) {
+      final callableOk = _callableSaysComplete(response);
+
+      var completed = await _readUntilFinished(profile.uid);
+      if (!_isFinished(completed) && callableOk) {
+        // CF already wrote flags; Firestore client cache can lag. Trust the
+        // callable payload so applyOnboardingComplete can run and Discover opens.
+        completed = _profileFromCallableSuccess(
+          base: completed ?? merged,
+          response: response,
+        );
+      }
+
+      if (!_isFinished(completed)) {
         return Err(
           NetworkFailure(
             kDebugMode
                 ? 'Could not complete onboarding (flags missing). '
                     'uid=${profile.uid} responseKeys=${response.keys.toList()} '
+                    'callableOk=$callableOk '
                     'onboardingCompleted=${completed?.onboardingCompleted} '
                     'isDiscoverable=${completed?.isDiscoverable}'
                 : 'Could not complete onboarding.',
           ),
         );
       }
-      return Success(completed);
+      return Success(completed!);
     } on FirebaseFunctionsException catch (error) {
       return Err(NetworkFailure(_mapFunctionsError(error)));
     } on Object catch (error) {
@@ -97,6 +109,60 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
         ),
       );
     }
+  }
+
+  Future<UserProfile?> _readUntilFinished(String uid) async {
+    UserProfile? latest;
+    for (var attempt = 0; attempt < _flagReadAttempts; attempt++) {
+      latest = await _profiles.getById(uid);
+      if (_isFinished(latest)) {
+        return latest;
+      }
+      if (attempt < _flagReadAttempts - 1 &&
+          _flagReadRetryDelay > Duration.zero) {
+        await Future<void>.delayed(
+          _flagReadRetryDelay * (attempt + 1),
+        );
+      }
+    }
+    return latest;
+  }
+
+  static bool _callableSaysComplete(Map<String, dynamic> response) {
+    if (response['ok'] == true) {
+      return true;
+    }
+    if (response['profileCompleted'] == true) {
+      return true;
+    }
+    if (response['onboardingCompleted'] == true) {
+      return true;
+    }
+    return false;
+  }
+
+  static bool _isFinished(UserProfile? profile) {
+    if (profile == null) {
+      return false;
+    }
+    return profile.onboardingCompleted ||
+        profile.profileCompleted ||
+        profile.isProfileComplete;
+  }
+
+  static UserProfile _profileFromCallableSuccess({
+    required UserProfile base,
+    required Map<String, dynamic> response,
+  }) {
+    final age = response['age'];
+    return base.copyWith(
+      profileCompleted: true,
+      onboardingCompleted: true,
+      isProfileComplete: true,
+      isDiscoverable: response['isDiscoverable'] != false,
+      onboardingStep: OnboardingStep.complete,
+      age: age is int ? age : base.age,
+    );
   }
 
   Future<UserProfile> _mergeRemotePhotoStatuses(UserProfile draft) async {

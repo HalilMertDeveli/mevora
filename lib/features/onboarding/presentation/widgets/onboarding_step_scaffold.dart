@@ -7,6 +7,10 @@ import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
+/// Shared onboarding layout: scrollable body + pinned bottom actions.
+///
+/// Keeps Continue/Back reachable on short screens and with the keyboard open
+/// without nesting unbounded [ListView]s inside [Expanded].
 class OnboardingStepScaffold extends StatelessWidget {
   const OnboardingStepScaffold({
     super.key,
@@ -37,6 +41,8 @@ class OnboardingStepScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final media = MediaQuery.of(context);
+    final shortViewport = media.size.height < 700 || media.textScaler.scale(1) > 1.15;
     // Selective accents only — avoid a Rive instance on every wizard step.
     final asset =
         riveAsset ??
@@ -47,51 +53,76 @@ class OnboardingStepScaffold extends StatelessWidget {
           OnboardingStep.complete => null,
           _ => null,
         };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          l10n.onboardingStepProgress(
-            step.displayStep,
-            OnboardingStep.totalSteps,
-          ),
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.primary,
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(
+                  bottom: AppSpacing.md + media.viewInsets.bottom,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        l10n.onboardingStepProgress(
+                          step.displayStep,
+                          OnboardingStep.totalSteps,
+                        ),
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(title, style: theme.textTheme.headlineSmall),
+                      if (asset != null &&
+                          !MevoraRiveAnimation.isTestBinding &&
+                          !shortViewport) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Center(
+                          child: Builder(
+                            builder: (context) {
+                              final size = MevoraMotionSize.loading(context);
+                              return MevoraRiveAnimation(
+                                asset: asset,
+                                width: size,
+                                height: size,
+                                fallback: Icon(
+                                  Icons.auto_awesome_outlined,
+                                  size: 32,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                      child,
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(title, style: theme.textTheme.headlineSmall),
-        if (asset != null && !MevoraRiveAnimation.isTestBinding) ...[
-          const SizedBox(height: AppSpacing.md),
-          Center(
-            child: Builder(
-              builder: (context) {
-                final size = MevoraMotionSize.loading(context);
-                return MevoraRiveAnimation(
-                  asset: asset,
-                  width: size,
-                  height: size,
-                  fallback: Icon(
-                    Icons.auto_awesome_outlined,
-                    size: 32,
-                    color: theme.colorScheme.primary,
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-        const SizedBox(height: AppSpacing.lg),
-        Expanded(child: child),
         if (errorMessage != null) ...[
+          const SizedBox(height: AppSpacing.sm),
           Text(
             errorMessage!,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.error,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
         ],
+        const SizedBox(height: AppSpacing.sm),
         if (onBack != null) ...[
           MevoraButton(
             label: l10n.onboardingBack,

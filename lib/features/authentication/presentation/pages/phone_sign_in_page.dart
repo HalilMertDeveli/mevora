@@ -35,6 +35,7 @@ class _PhoneSignInPageState extends State<PhoneSignInPage> {
     final auth = AuthScope.of(context);
     final l10n = AppLocalizations.of(context);
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: Text(l10n.phoneTitle),
       ),
@@ -44,24 +45,35 @@ class _PhoneSignInPageState extends State<PhoneSignInPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                l10n.phoneSubtitle,
-                style: Theme.of(context).textTheme.bodyLarge,
+              Expanded(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        l10n.phoneSubtitle,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      PhoneNumberInput(
+                        country: _country,
+                        controller: _controller,
+                        errorText: _error ?? localizeAuthError(l10n, auth),
+                        onCountrySelected: (country) {
+                          setState(() {
+                            _country = country;
+                            _error = null;
+                          });
+                        },
+                        onSubmitted: (_) => unawaited(_submit()),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              PhoneNumberInput(
-                country: _country,
-                controller: _controller,
-                errorText: _error ?? localizeAuthError(l10n, auth),
-                onCountrySelected: (country) {
-                  setState(() {
-                    _country = country;
-                    _error = null;
-                  });
-                },
-                onSubmitted: (_) => unawaited(_submit()),
-              ),
-              const Spacer(),
+              const SizedBox(height: AppSpacing.sm),
               MevoraButton(
                 label: l10n.sendCode,
                 isLoading: auth.isBusy,

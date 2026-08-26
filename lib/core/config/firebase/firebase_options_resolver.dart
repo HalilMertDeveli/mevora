@@ -1,16 +1,15 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mevora/core/config/app_environment.dart';
+import 'package:mevora/firebase_options.dart';
 
 /// Firebase options for each Mevora environment and platform.
 ///
-/// There is no generated `lib/firebase_options.dart`. These values are the
-/// existing FlutterFire SDK configs and must stay aligned with:
-/// - `android/app/src/{flavor}/google-services.json`
-/// - `ios/flavors/{flavor}/GoogleService-Info.plist`
-///
-/// Do not regenerate, overwrite, or copy API keys into other Dart files.
-/// [resolve] is the flavor equivalent of `DefaultFirebaseOptions.currentPlatform`.
+/// Development / default init uses generated `lib/firebase_options.dart`
+/// (`mevora-d6ed0`). Staging and production keep their existing projects.
+/// Native files must stay aligned with:
+/// - `android/app/google-services.json` (and `android/app/src/{flavor}/`)
+/// - `ios/Runner/GoogleService-Info.plist` (and `ios/flavors/{flavor}/`)
 abstract final class FirebaseOptionsResolver {
   static FirebaseOptions resolve(AppEnvironment environment) {
     return switch (environment) {
@@ -20,11 +19,12 @@ abstract final class FirebaseOptionsResolver {
     };
   }
 
+  /// Sourced from [DefaultFirebaseOptions] so development points at mevora-d6ed0.
   static FirebaseOptions get _development {
     return switch (defaultTargetPlatform) {
-      TargetPlatform.android => _androidDevelopment,
-      TargetPlatform.iOS => _iosDevelopment,
-      _ => _androidDevelopment,
+      TargetPlatform.android => DefaultFirebaseOptions.android,
+      TargetPlatform.iOS => DefaultFirebaseOptions.ios,
+      _ => DefaultFirebaseOptions.android,
     };
   }
 
@@ -43,23 +43,6 @@ abstract final class FirebaseOptionsResolver {
       _ => _androidProduction,
     };
   }
-
-  static const FirebaseOptions _androidDevelopment = FirebaseOptions(
-    apiKey: 'AIzaSyCtct0Q2aI_h_YgBESu_0qG8kPppil_PSQ',
-    appId: '1:462386294396:android:aff3c8aa15f4041ac963f9',
-    messagingSenderId: '462386294396',
-    projectId: 'mevora-dev',
-    storageBucket: 'mevora-dev.firebasestorage.app',
-  );
-
-  static const FirebaseOptions _iosDevelopment = FirebaseOptions(
-    apiKey: 'AIzaSyCau0O6Ptr74IEE1HzL6ulXFrApI_-GQu4',
-    appId: '1:462386294396:ios:233c5fa39e0ca788c963f9',
-    messagingSenderId: '462386294396',
-    projectId: 'mevora-dev',
-    storageBucket: 'mevora-dev.firebasestorage.app',
-    iosBundleId: 'com.mevora.app.dev',
-  );
 
   static const FirebaseOptions _androidStaging = FirebaseOptions(
     apiKey: 'AIzaSyC7dWuaKZmX1c5q4QyQPLUKBPhRvNSqaW0',

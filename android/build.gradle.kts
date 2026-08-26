@@ -12,8 +12,14 @@ val newBuildDir: Directory =
 rootProject.layout.buildDirectory.value(newBuildDir)
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
+    // Keep plugin builds next to their sources. Flutter plugins live in the
+    // Pub cache on C: while this repo is on D:; Kotlin incremental caches then
+    // crash with "this and base files have different roots".
+    val projectPath = project.projectDir.canonicalFile.toPath()
+    val rootPath = rootProject.projectDir.canonicalFile.toPath()
+    if (projectPath.startsWith(rootPath)) {
+        project.layout.buildDirectory.value(newBuildDir.dir(project.name))
+    }
 }
 subprojects {
     project.evaluationDependsOn(":app")

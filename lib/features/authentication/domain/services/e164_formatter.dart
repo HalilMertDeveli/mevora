@@ -3,8 +3,7 @@ import 'package:mevora/features/authentication/domain/entities/country_code.dart
 
 /// Formats national numbers into E.164 and display groups.
 abstract final class E164Formatter {
-  static String digitsOnly(String input) =>
-      input.replaceAll(RegExp(r'\D'), '');
+  static String digitsOnly(String input) => input.replaceAll(RegExp(r'\D'), '');
 
   /// Trunk `0` and an accidental country dial prefix are stripped so the
   /// national length check matches what Firebase Phone Auth expects.
@@ -34,7 +33,7 @@ abstract final class E164Formatter {
 
   static String formatNational(CountryCode country, String input) {
     final digits = digitsOnly(input);
-    final groups = _groupsFor(country);
+    final groups = _groupsFor(country, digits);
     final buffer = StringBuffer();
     var index = 0;
     for (final size in groups) {
@@ -57,9 +56,11 @@ abstract final class E164Formatter {
     return buffer.toString();
   }
 
-  static List<int> _groupsFor(CountryCode country) {
+  /// Display grouping only. E.164 conversion still strips trunk `0`.
+  static List<int> _groupsFor(CountryCode country, String digits) {
     return switch (country.isoCode) {
-      'TR' => const [3, 3, 2, 2],
+      // 0542 519 2119 or 542 519 21 19
+      'TR' => digits.startsWith('0') ? const [4, 3, 4] : const [3, 3, 2, 2],
       'US' || 'CA' => const [3, 3, 4],
       'GB' => const [4, 3, 3],
       'DE' => const [3, 4, 4],

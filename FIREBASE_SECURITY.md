@@ -19,7 +19,8 @@ Rules live in `firebase/firestore.rules` and `firebase/storage.rules`. Field-lev
 | `userSettings/{uid}`, `userPreferences/{uid}`, `userPrivacy/{uid}` | Owner only |
 | `userLocation/{uid}` | Owner only. Other clients never receive lat/lng/geohash. Distance is `getDistanceLabel` / `getDiscoveryFeed`. |
 | `users/{uid}/devices/{deviceId}` and `fcmTokens` | Owner only. Tokens are not public. |
-| `purchases/{id}`, `users/{uid}/boosts/{id}` | Owner read. **Write: none** (Functions). |
+| `purchases/{id}`, `users/{uid}/boosts/{id}`, `users/{uid}/boostWallet/current` | Owner read. **Write: none** (Functions). |
+| `boostProducts/{sku}` | Authenticated read. **Write: none**. |
 
 `profiles/{uid}` is a public dating card for authenticated users. It must not contain password, phone, private email, GPS, or FCM tokens.
 
@@ -32,7 +33,7 @@ Rules live in `firebase/firestore.rules` and `firebase/storage.rules`. Field-lev
 
 ## Boost / IAP
 
-Clients never write `status`, `expiresAt`, `verifiedAt`, `purchaseId`, or `transactionId` on boosts or purchases. `verifyBoostPurchase` is authoritative. `activateBoost` only activates a **verified** purchase owned by the signed-in UID.
+Clients never write `status`, `expiresAt`, `verifiedAt`, `purchaseId`, `transactionId`, or wallet `balance` on boosts or purchases. `verifyBoostPurchase` is authoritative for duration grants (7 / 30 / 365 days). Legacy `activateBoost` may consume leftover wallet credits.
 
 ## Storage
 

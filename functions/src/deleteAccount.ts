@@ -4,6 +4,8 @@ import {FieldValue, getFirestore, type DocumentReference} from "firebase-admin/f
 import {getStorage} from "firebase-admin/storage";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
+import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
+import {safeLogMeta} from "./security/logHygiene.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -12,33 +14,40 @@ if (getApps().length === 0) {
 const db = getFirestore();
 const auth = getAuth();
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
+const BATCH_LIMIT = 400;
 
 async function deleteQuery(path: string, field: string, uid: string): Promise<void> {
   const snap = await db.collection(path).where(field, "==", uid).get();
   if (snap.empty) {
     return;
   }
-  const batch = db.batch();
-  snap.docs.forEach((doc) => batch.delete(doc.ref));
-  await batch.commit();
+  await batchDelete(snap.docs.map((doc) => doc.ref));
 }
 
 async function batchDelete(refs: DocumentReference[]): Promise<void> {
   if (!refs.length) {
     return;
   }
-  const chunk = db.batch();
-  for (const ref of refs) {
-    chunk.delete(ref);
+  for (let i = 0; i < refs.length; i += BATCH_LIMIT) {
+    const slice = refs.slice(i, i + BATCH_LIMIT);
+    const chunk = db.batch();
+    for (const ref of slice) {
+      chunk.delete(ref);
+    }
+    await chunk.commit();
   }
-  await chunk.commit();
+}
+
+async function deleteCollectionDocs(path: string): Promise<void> {
+  const snap = await db.collection(path).get();
+  await batchDelete(snap.docs.map((d) => d.ref));
 }
 
 async function deletePrefix(prefix: string): Promise<void> {
   try {
     await getStorage().bucket().deleteFiles({prefix});
   } catch (error) {
-    logger.warn("Storage cleanup skipped", {prefix, error});
+    logger.warn("Storage cleanup skipped", safeLogMeta({prefix, error: String(error)}));
   }
 }
 
@@ -53,30 +62,49 @@ export const deleteUserAccount = onCall(
 
     const userSnap = await db.doc(`users/${uid}`).get();
     const spotifyId = userSnap.data()?.spotifyId as string | undefined;
+    const verificationSnap = await db.doc(`users/${uid}/verification/sumsub`).get();
+    const sumsubApplicantId = verificationSnap.data()?.sumsubApplicantId as string | undefined;
+    const musicSnap = await db.doc(`users/${uid}/music/summary`).get();
+    const musicSpotifyId = musicSnap.data()?.spotifyUserId as string | undefined;
 
-    const [devices, tokens, blocked, notifs, likesFrom, likesTo, boosts] = await Promise.all([
-      db.collection(`users/${uid}/devices`).get(),
-      db.collection(`users/${uid}/fcmTokens`).get(),
-      db.collection(`users/${uid}/blockedUsers`).get(),
-      db.collection("notifications").where("userId", "==", uid).get(),
-      db.collection("likes").where("fromUserId", "==", uid).get(),
-      db.collection("likes").where("toUserId", "==", uid).get(),
-      db.collection(`users/${uid}/boosts`).get(),
+    await Promise.all([
+      deleteCollectionDocs(`users/${uid}/devices`),
+      deleteCollectionDocs(`users/${uid}/fcmTokens`),
+      deleteCollectionDocs(`users/${uid}/blockedUsers`),
+      deleteCollectionDocs(`users/${uid}/passedUsers`),
+      deleteCollectionDocs(`users/${uid}/boosts`),
+      deleteCollectionDocs(`users/${uid}/boostWallet`),
+      deleteCollectionDocs(`users/${uid}/matchScoreHistory`),
+      deleteCollectionDocs(`users/${uid}/matchFeedback`),
+      deleteCollectionDocs(`users/${uid}/pendingMatchFeedback`),
+      deleteCollectionDocs(`users/${uid}/relationshipAnswers`),
+      deleteCollectionDocs(`users/${uid}/relationshipSeen`),
+      deleteCollectionDocs(`users/${uid}/questionAnswers`),
+      deleteCollectionDocs(`users/${uid}/subscription`),
+      deleteCollectionDocs(`users/${uid}/crypto`),
+      deleteCollectionDocs(`users/${uid}/settings`),
+      deleteCollectionDocs(`users/${uid}/music`),
+      deleteCollectionDocs(`users/${uid}/verification`),
+      deleteCollectionDocs(`users/${uid}/rateLimits`),
     ]);
-    await batchDelete([
-      ...devices.docs.map((d) => d.ref),
-      ...tokens.docs.map((d) => d.ref),
-      ...blocked.docs.map((d) => d.ref),
-      ...notifs.docs.map((d) => d.ref),
-      ...likesFrom.docs.map((d) => d.ref),
-      ...likesTo.docs.map((d) => d.ref),
-      ...boosts.docs.map((d) => d.ref),
-    ]);
+
+    await deleteQuery("notifications", "userId", uid);
+    await deleteQuery("likes", "fromUserId", uid);
+    await deleteQuery("likes", "toUserId", uid);
+
+    const presenceRef = db.doc(`users/${uid}/presence/current`);
+    await presenceRef.delete().catch(() => undefined);
 
     const matches = await db.collection("matches").where("userIds", "array-contains", uid).get();
     for (const match of matches.docs) {
-      const messages = await match.ref.collection("messages").get();
-      await batchDelete(messages.docs.map((d) => d.ref));
+      const [messages, meta] = await Promise.all([
+        match.ref.collection("messages").get(),
+        match.ref.collection("meta").get(),
+      ]);
+      await batchDelete([
+        ...messages.docs.map((d) => d.ref),
+        ...meta.docs.map((d) => d.ref),
+      ]);
       await match.ref.set(
         {
           isActive: false,
@@ -92,10 +120,25 @@ export const deleteUserAccount = onCall(
 
     await deleteQuery("reports", "reporterId", uid);
     await deleteQuery("reports", "reportedUserId", uid);
+    await deleteQuery("supportTickets", "userId", uid);
     await deleteQuery("blocks", "blockerId", uid);
     await deleteQuery("blocks", "blockedUserId", uid);
     await deleteQuery("calls", "callerId", uid);
+    await deleteQuery("calls", "receiverId", uid);
+    await deleteQuery("callHistory", "callerId", uid);
+    await deleteQuery("callHistory", "receiverId", uid);
     await deleteQuery("purchases", "userId", uid);
+
+    // Ops queue remnants (best-effort, capped).
+    const [reviewQueue, failedNotifs] = await Promise.all([
+      db.collection("adminReviewQueue").where("reportedUserId", "==", uid).limit(50).get(),
+      db.collection("failedNotifications").where("uid", "==", uid).limit(50).get(),
+    ]);
+    await batchDelete([
+      ...reviewQueue.docs.map((d) => d.ref),
+      ...failedNotifs.docs.map((d) => d.ref),
+      db.doc(`adminReviewQueue/${uid}`),
+    ]);
 
     await deletePrefix(`users/${uid}/`);
     await deletePrefix(`profiles/${uid}/`);
@@ -103,9 +146,16 @@ export const deleteUserAccount = onCall(
     if (spotifyId) {
       await db.doc(`spotifyIndex/${spotifyId}`).delete().catch(() => undefined);
     }
+    if (musicSpotifyId) {
+      await db.doc(`musicSpotifyIndex/${musicSpotifyId}`).delete().catch(() => undefined);
+    }
 
     await batchDelete([
       db.doc(`users/${uid}`),
+      db.doc(`users/${uid}/music/summary`),
+      db.doc(`users/${uid}/relationshipMatch/summary`),
+      db.doc(`users/${uid}/verification/sumsub`),
+      db.doc(`spotifySecrets/${uid}`),
       db.doc(`profiles/${uid}`),
       db.doc(`userPreferences/${uid}`),
       db.doc(`userSettings/${uid}`),
@@ -113,7 +163,28 @@ export const deleteUserAccount = onCall(
       db.doc(`userLocation/${uid}`),
     ]);
 
+    await requestSumsubApplicantDeletion({uid, applicantId: sumsubApplicantId}).catch(
+      (error) => logger.warn("Sumsub applicant cleanup skipped", safeLogMeta({uid, error: String(error)})),
+    );
+
     await auth.deleteUser(uid);
+
+    // Post-delete verification job (Auth already gone). Processed by automation drain.
+    try {
+      const {enqueueJob} = await import("./automation/jobs.js");
+      const {JobKind} = await import("./automation/types.js");
+      const {enqueueCloudTask} = await import("./automation/tasksEnqueue.js");
+      const {jobId} = await enqueueJob({
+        kind: JobKind.accountDeletionVerify,
+        idempotencyKey: `deletion_verify_${uid}`,
+        payload: {uid},
+        createdBy: "deleteUserAccount",
+      });
+      await enqueueCloudTask(jobId);
+    } catch (error) {
+      logger.warn("deletion verify enqueue skipped", safeLogMeta({uid, error: String(error)}));
+    }
+
     return {ok: true, deleted: true};
   },
 );

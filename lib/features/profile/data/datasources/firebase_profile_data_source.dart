@@ -3,6 +3,8 @@ import 'package:mevora/core/constants/firestore_paths.dart';
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/paging/page.dart';
+import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
+import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 
 class FirebaseProfileDataSource {
@@ -100,6 +102,7 @@ class FirebaseProfileDataSource {
           ? _ageFrom(birthDate)
           : firestoreInt(data['age'], 0),
       gender: data['gender'] as String?,
+      interestedIn: data['interestedIn'] as String?,
       bio: data['bio'] as String?,
       photos: _photosFrom(data['photos']),
       interests: firestoreStringList(data['interests']),
@@ -107,9 +110,21 @@ class FirebaseProfileDataSource {
       occupation: data['occupation'] as String?,
       education: data['education'] as String?,
       languages: firestoreStringList(data['languages']),
+      hobbies: firestoreStringList(data['hobbies']),
+      heightCm: firestoreInt(data['heightCm'], 0) == 0
+          ? null
+          : firestoreInt(data['heightCm'], 0),
       city: data['city'] as String?,
+      lifestyle: firestoreStringList(data['lifestyle']),
+      lifestyleProfile: ProfileLifestyle.fromMap(
+        data['lifestyleProfile'] ?? data['lifestyle'],
+      ),
+      onboardingStep: OnboardingStep.fromStorage(data['onboardingStep']),
       profileCompleted: firestoreFlag(data['profileCompleted']),
       onboardingCompleted: firestoreFlag(data['onboardingCompleted']),
+      isProfileComplete: firestoreFlag(data['isProfileComplete']) ||
+          firestoreFlag(data['profileCompleted']) ||
+          firestoreFlag(data['onboardingCompleted']),
       isDiscoverable: firestoreFlag(data['isDiscoverable']),
       createdAt: firestoreDate(data['createdAt']),
       updatedAt: firestoreDate(data['updatedAt']),
@@ -125,15 +140,18 @@ class FirebaseProfileDataSource {
           : Timestamp.fromDate(profile.birthDate!),
       'age': profile.age ?? _ageFrom(profile.birthDate),
       'gender': profile.gender,
+      'interestedIn': profile.interestedIn,
       'bio': profile.bio,
       'photos': [
-        for (final photo in profile.photos)
+        for (final photo in _sortedPhotos(profile.photos))
           {
             'id': photo.id,
             'storagePath': photo.storagePath,
             'downloadUrl': photo.downloadUrl,
             'thumbUrl': photo.thumbUrl,
             'moderationStatus': photo.moderationStatus,
+            'order': photo.order,
+            'isPrimary': photo.isPrimary,
           },
       ],
       'interests': profile.interests,
@@ -141,10 +159,14 @@ class FirebaseProfileDataSource {
       'occupation': profile.occupation,
       'education': profile.education,
       'languages': profile.languages,
+      'hobbies': profile.hobbies,
+      if (profile.heightCm != null) 'heightCm': profile.heightCm,
       'city': profile.city,
-      'profileCompleted': profile.profileCompleted,
-      'onboardingCompleted': profile.onboardingCompleted,
-      'isDiscoverable': profile.isDiscoverable,
+      'lifestyle': profile.lifestyle.isNotEmpty
+          ? profile.lifestyle
+          : profile.lifestyleProfile.toTags(),
+      'lifestyleProfile': profile.lifestyleProfile.toMap(),
+      'onboardingStep': profile.onboardingStep.name,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -153,19 +175,34 @@ class FirebaseProfileDataSource {
     if (value is! List) {
       return const [];
     }
-    return [
-      for (final item in value)
-        if (item is Map)
+    final photos = [
+      for (var i = 0; i < value.length; i++)
+        if (value[i] is Map)
           ProfilePhoto(
-            id: (item['id'] as String?) ?? '',
-            storagePath: (item['storagePath'] as String?) ?? '',
-            downloadUrl: item['downloadUrl'] as String?,
-            thumbUrl: item['thumbUrl'] as String?,
-            moderationStatus: (item['moderationStatus'] as String?) ?? 'pending',
+            id: ((value[i] as Map)['id'] as String?) ?? '',
+            storagePath: ((value[i] as Map)['storagePath'] as String?) ?? '',
+            downloadUrl: (value[i] as Map)['downloadUrl'] as String?,
+            thumbUrl: (value[i] as Map)['thumbUrl'] as String?,
+            moderationStatus:
+                ((value[i] as Map)['moderationStatus'] as String?) ?? 'pending',
+            order: firestoreInt((value[i] as Map)['order'], i),
+            isPrimary: (value[i] as Map)['isPrimary'] as bool? ?? i == 0,
           )
-        else if (item is String)
-          ProfilePhoto(id: item, storagePath: item, downloadUrl: item),
+        else if (value[i] is String)
+          ProfilePhoto(
+            id: value[i] as String,
+            storagePath: value[i] as String,
+            downloadUrl: value[i] as String,
+            order: i,
+            isPrimary: i == 0,
+          ),
     ];
+    return _sortedPhotos(photos);
+  }
+
+  static List<ProfilePhoto> _sortedPhotos(List<ProfilePhoto> photos) {
+    final copy = [...photos]..sort((a, b) => a.order.compareTo(b.order));
+    return copy;
   }
 
   UserPreferences _preferencesFrom(String uid, Map<String, dynamic> data) {

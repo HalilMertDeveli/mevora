@@ -5,23 +5,63 @@
   ],
   "products" : [
     {
-      "displayPrice" : "29.99",
+      "displayPrice" : "99.99",
       "familyShareable" : false,
-      "internalID" : "BOOST30",
+      "internalID" : "BOOST7D",
       "localizations" : [
         {
-          "description" : "Show your profile to more people for 30 minutes.",
-          "displayName" : "Mevora Boost",
+          "description" : "Boost your profile in Discovery for 7 days.",
+          "displayName" : "1 Week Boost",
           "locale" : "en_US"
         },
         {
-          "description" : "Profilini 30 dakika boyunca daha fazla kişiye göster.",
-          "displayName" : "Mevora Boost",
+          "description" : "Profilini 7 gün boyunca öne çıkar.",
+          "displayName" : "1 Haftalık Boost",
           "locale" : "tr"
         }
       ],
-      "productID" : "com.mevora.app.boost",
-      "referenceName" : "Boost 30 min",
+      "productID" : "mevora_boost_7_days",
+      "referenceName" : "Boost 7 days",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "249.99",
+      "familyShareable" : false,
+      "internalID" : "BOOST30D",
+      "localizations" : [
+        {
+          "description" : "Boost your profile in Discovery for 30 days.",
+          "displayName" : "1 Month Boost",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Profilini 30 gün boyunca öne çıkar.",
+          "displayName" : "1 Aylık Boost",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "mevora_boost_1_month",
+      "referenceName" : "Boost 1 month",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1499.99",
+      "familyShareable" : false,
+      "internalID" : "BOOST365D",
+      "localizations" : [
+        {
+          "description" : "Boost your profile in Discovery for 365 days.",
+          "displayName" : "1 Year Boost",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Profilini 365 gün boyunca öne çıkar.",
+          "displayName" : "1 Yıllık Boost",
+          "locale" : "tr"
+        }
+      ],
+      "productID" : "mevora_boost_1_year",
+      "referenceName" : "Boost 1 year",
       "type" : "Consumable"
     }
   ],

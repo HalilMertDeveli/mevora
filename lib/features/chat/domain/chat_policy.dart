@@ -27,11 +27,18 @@ abstract final class ChatPolicy {
     return true;
   }
 
+  static bool canDeleteOwnMessage({
+    required ChatMessage message,
+    required String uid,
+  }) {
+    return message.senderId == uid && !message.deleted;
+  }
+
   static bool canMarkRead({
     required ChatMessage message,
     required String readerUid,
   }) {
-    return message.receiverId == readerUid;
+    return message.receiverId == readerUid && !message.deleted;
   }
 
   static MessageStatus nextStatus({

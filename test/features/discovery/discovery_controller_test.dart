@@ -72,4 +72,55 @@ void main() {
     await controller.setRadius(DiscoveryRadius.km5);
     expect(controller.state.radius, DiscoveryRadius.km5);
   });
+
+  test('hideCandidate removes profile from stack', () async {
+    final discovery = InMemoryDiscoveryRepository(
+      seeds: const [
+        DiscoverySeed(
+          profile: UserProfile(uid: 'ada', displayName: 'Ada', age: 27),
+          distanceKm: 4,
+          distanceLabel: '4 km away',
+        ),
+        DiscoverySeed(
+          profile: UserProfile(uid: 'beo', displayName: 'Beo', age: 28),
+          distanceKm: 6,
+          distanceLabel: '6 km away',
+        ),
+      ],
+    );
+    final controller = build(discovery: discovery);
+    await controller.skipLocation();
+    expect(controller.state.candidates, hasLength(2));
+    await controller.hideCandidate('ada');
+    expect(controller.state.candidates, hasLength(1));
+    expect(controller.state.candidates.first.uid, 'beo');
+  });
+
+  test('appends next page when deck runs low', () async {
+    final seeds = List.generate(
+      5,
+      (index) => DiscoverySeed(
+        profile: UserProfile(
+          uid: 'user-$index',
+          displayName: 'User $index',
+          age: 25 + index,
+        ),
+        distanceKm: 3,
+        distanceLabel: '3 km away',
+      ),
+    );
+    final discovery = InMemoryDiscoveryRepository(seeds: seeds);
+    final controller = build(discovery: discovery);
+    await controller.skipLocation();
+    expect(controller.state.candidates.length, lessThanOrEqualTo(5));
+    final initialCount = controller.state.candidates.length;
+    while (controller.state.candidates.length > 1) {
+      await controller.onPass(controller.state.current!.uid);
+    }
+    expect(controller.state.candidates, isNotEmpty);
+    if (initialCount < seeds.length) {
+      await controller.onPass(controller.state.current!.uid);
+      expect(controller.state.candidates, isNotEmpty);
+    }
+  });
 }

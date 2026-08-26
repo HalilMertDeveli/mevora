@@ -7,6 +7,7 @@ enum CallLifecycle {
   reconnecting,
   ended,
   declined,
+  cancelled,
   busy,
   failed,
 }
@@ -16,6 +17,7 @@ enum CallEvent {
   receiveIncoming,
   accept,
   decline,
+  cancel,
   remoteAccepted,
   remoteDeclined,
   connected,

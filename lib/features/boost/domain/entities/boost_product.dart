@@ -1,5 +1,5 @@
-/// Store-backed Boost SKU. [localizedPrice] and [currency] always come from
-/// StoreKit / Play Billing — never from Flutter or our backend.
+/// Store-backed Boost SKU. [localizedPrice] and [currency] come from
+/// StoreKit / Play Billing when available. [fallbackPrice] is display-only.
 class BoostProduct {
   const BoostProduct({
     required this.productId,
@@ -10,13 +10,16 @@ class BoostProduct {
     required this.available,
     required this.duration,
     this.displayOrder = 0,
+    this.boostCount = 0,
+    this.featured = false,
+    this.fallbackPrice,
   });
 
   final String productId;
   final String title;
   final String description;
 
-  /// Store-localized price string, e.g. "₺29,99". Never a client-authored value.
+  /// Store-localized price string, e.g. "₺49,99". Never a client-authored charge.
   final String localizedPrice;
 
   /// ISO currency from the store, e.g. "TRY".
@@ -25,4 +28,14 @@ class BoostProduct {
   final bool available;
   final Duration duration;
   final int displayOrder;
+  final int boostCount;
+  final bool featured;
+
+  /// Catalog fallback shown only when the store has not returned a price.
+  final String? fallbackPrice;
+
+  int get durationDays => duration.inDays;
+
+  String get displayPrice =>
+      localizedPrice.isNotEmpty ? localizedPrice : (fallbackPrice ?? '');
 }

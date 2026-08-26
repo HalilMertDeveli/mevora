@@ -1,6 +1,8 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  errors:
+    use_null_aware_elements: ignore
   language:
     strict-casts: true
     strict-inference: true
@@ -32,6 +34,7 @@ analyzer:
     - test/helpers/fake_chat_repository.dart
     - test/helpers/fake_match_repository.dart
     - test/helpers/fake_video_call_provider.dart
+    - tool/**
 
 linter:
   rules:

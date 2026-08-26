@@ -72,6 +72,8 @@ abstract class VideoCallService {
   Future<void> expireCall(String callId);
 
   Stream<CallSession> watchIncoming(String uid);
+
+  Stream<CallSession?> watchCall(String callId);
 }
 
 abstract class CallRepository {
@@ -90,4 +92,6 @@ abstract class CallRepository {
   Future<void> expire(String callId);
 
   Stream<List<CallSession>> watchIncoming(String uid);
+
+  Stream<CallSession?> watchCall(String callId);
 }

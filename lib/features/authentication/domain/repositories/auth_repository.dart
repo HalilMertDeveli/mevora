@@ -59,6 +59,11 @@ abstract class AuthRepository {
 
   Future<Result<void>> deleteAccount();
 
+  Future<Result<void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
+
   /// Completes an in-flight OAuth callback after process resume (Spotify).
   Future<void> restorePendingOAuth();
 }

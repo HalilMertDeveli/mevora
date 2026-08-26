@@ -3,6 +3,11 @@
   "appName": "Mevora",
   "tagline": "Find compatible people, not just nearby people.",
   "connectTagline": "Connect with people who match you.",
+  "loginSlogan": "Don't just meet people.\nMeet someone compatible.",
+  "@loginSlogan": {
+    "description": "Welcome/login hero slogan. Keep the line break."
+  },
+  "continueWithEmail": "Continue with email",
   "somethingWentWrong": "Something went wrong",
   "tryAgain": "Try again",
   "unexpectedError": "The app hit an unexpected error.",
@@ -39,7 +44,9 @@
   "passwordMinLength": "Password must be at least {min} characters",
   "@passwordMinLength": {
     "placeholders": {
-      "min": {"type": "int"}
+      "min": {
+        "type": "int"
+      }
     }
   },
   "confirmPassword": "Confirm password",
@@ -47,14 +54,20 @@
   "fieldRequired": "{field} is required",
   "@fieldRequired": {
     "placeholders": {
-      "field": {"type": "String"}
+      "field": {
+        "type": "String"
+      }
     }
   },
   "fieldMinLength": "{field} must be at least {min} characters",
   "@fieldMinLength": {
     "placeholders": {
-      "field": {"type": "String"},
-      "min": {"type": "int"}
+      "field": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      }
     }
   },
   "phoneRequired": "Phone is required",
@@ -71,9 +84,10 @@
   "backToSignIn": "Back to sign in",
   "orContinueWith": "or continue with",
   "continueWithGoogle": "Continue with Google",
+  "signingIn": "Signing in...",
   "continueWithApple": "Continue with Apple",
   "continueWithSpotify": "Continue with Spotify",
-  "continueWithPhone": "Continue with phone",
+  "continueWithPhone": "Sign in with Phone Number",
   "legalPrefix": "By continuing you agree to our",
   "termsOfService": "Terms of Service",
   "privacyPolicy": "Privacy Policy",
@@ -87,10 +101,10 @@
   "showPassword": "Show password",
   "hidePassword": "Hide password",
   "appleSignInUnavailable": "Apple Sign-In is available on iPhone and iPad.",
-  "phoneTitle": "Enter your phone number",
-  "phoneSubtitle": "We will text you a verification code.",
+  "phoneTitle": "Sign in with Phone Number",
+  "phoneSubtitle": "Choose your country code and enter your phone number. We'll send a 6-digit verification code by SMS.",
   "phoneHint": "555 000 0000",
-  "sendCode": "Send SMS code",
+  "sendCode": "Send verification code",
   "countrySearchHint": "Search country",
   "otpTitle": "Verify your phone",
   "verify": "Verify",
@@ -104,23 +118,28 @@
   "otpSentTo": "Enter the 6-digit code sent to {phone}.",
   "@otpSentTo": {
     "placeholders": {
-      "phone": {"type": "String"}
+      "phone": {
+        "type": "String"
+      }
     }
   },
   "resendCountdown": "You can request a new code in {seconds} seconds.",
   "@resendCountdown": {
     "placeholders": {
-      "seconds": {"type": "int"}
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "enterOtp": "Enter the verification code.",
   "authCancelled": "Sign-in was cancelled.",
-  "authInvalidPhone": "Enter a valid phone number.",
+  "authInvalidPhone": "Phone number is invalid.",
   "authSmsFailed": "We could not send the SMS. Please try again.",
-  "authInvalidOtp": "Invalid verification code.",
-  "authExpiredOtp": "That code has expired. Request a new one.",
+  "authAppVerification": "App verification failed. Check your connection, try on a physical device, then request a new code.",
+  "authInvalidOtp": "The verification code is incorrect.",
+  "authExpiredOtp": "The verification code expired. Request a new one.",
   "authSessionExpired": "Your session expired. Please enter your number again.",
-  "authTooManyAttempts": "Too many attempts. Please wait and try again.",
+  "authTooManyAttempts": "Too many attempts. Please try again later.",
   "authSmsQuota": "SMS sending limit reached. Please try again later.",
   "authFirebaseUnavailable": "Verification is temporarily unavailable. Please try again later.",
   "authNetwork": "Check your internet connection.",
@@ -130,7 +149,8 @@
   "authUnknown": "Something unexpected happened. Please try again.",
   "authAccountExists": "That sign-in method is already tied to another Mevora account. Accounts are never merged automatically.",
   "authLinkingBlocked": "Accounts are linked only when you confirm. A matching email is not enough.",
-  "authNotConfigured": "This sign-in method is not set up yet.",
+  "authNotConfigured": "Phone sign-in is not enabled for this Firebase project yet.",
+  "authBillingNotEnabled": "Firebase billing (Blaze) is required to send SMS verification codes.",
   "authInvalidEmail": "Enter a valid email address.",
   "authWeakPassword": "Choose a stronger password with at least 8 characters.",
   "authUserNotFound": "No account found for that email.",
@@ -139,6 +159,8 @@
   "authEmailInUse": "An account already exists for that email.",
   "authGeneric": "We could not complete that request. Please try again.",
   "authGoogleFailed": "Google Sign-In could not be completed.",
+  "googleSignInCancelled": "Google Sign-In was cancelled.",
+  "googleSignInFailed": "Google Sign-In could not be completed.",
   "authAppleFailed": "Apple Sign-In could not be completed.",
   "onboardingTitle": "A few more steps",
   "onboardingMessage": "Complete your profile so Mevora can introduce compatible people.",
@@ -153,6 +175,89 @@
   "onboardingRelationshipGoal": "Looking for",
   "onboardingAddPhoto": "Add a photo",
   "onboardingMustBeAdult": "You must be 18 or older to use Mevora.",
+  "onboardingStepProgress": "Step {current} of {total}",
+  "@onboardingStepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingBack": "Back",
+  "onboardingContinue": "Continue",
+  "onboardingEducation": "Education",
+  "onboardingLifestyle": "Lifestyle",
+  "onboardingSmoking": "Smoking",
+  "onboardingDrinking": "Drinking",
+  "onboardingExercise": "Exercise",
+  "onboardingPets": "Pets",
+  "onboardingInterestsHint": "Pick at least 3 interests so Mevora can find compatible people.",
+  "onboardingBioHint": "Share a little about yourself.",
+  "onboardingPhotosHint": "Add at least 3 photos. Drag to reorder — your first photo is your main one.",
+  "onboardingPrimaryPhoto": "Main photo",
+  "onboardingPhotoNumber": "Photo {number}",
+  "@onboardingPhotoNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingCompleteTitle": "You're all set",
+  "onboardingCompleteMessage": "Your profile is ready. Mevora will start introducing compatible people.",
+  "onboardingStartDiscovering": "Start discovering",
+  "onboardingGenderMan": "Man",
+  "onboardingGenderWoman": "Woman",
+  "onboardingGenderNonBinary": "Non-binary",
+  "onboardingInterestedMen": "Men",
+  "onboardingInterestedWomen": "Women",
+  "onboardingInterestedEveryone": "Everyone",
+  "onboardingEducationHighSchool": "High school",
+  "onboardingEducationSomeCollege": "Some college",
+  "onboardingEducationBachelors": "Bachelor's degree",
+  "onboardingEducationMasters": "Master's degree",
+  "onboardingEducationPhd": "PhD",
+  "onboardingEducationPreferNotToSay": "Prefer not to say",
+  "onboardingRelationshipLongTerm": "Long-term relationship",
+  "onboardingRelationshipShortTerm": "Short-term relationship",
+  "onboardingRelationshipFriendship": "New friends",
+  "onboardingRelationshipNotSure": "Still figuring it out",
+  "onboardingRelationshipPreferNotToSay": "Prefer not to say",
+  "onboardingLifestyleNever": "Never",
+  "onboardingLifestyleSometimes": "Sometimes",
+  "onboardingLifestyleRegularly": "Regularly",
+  "onboardingLifestyleDaily": "Daily",
+  "onboardingLifestyleNone": "None",
+  "onboardingLifestyleCat": "Cat",
+  "onboardingLifestyleDog": "Dog",
+  "onboardingLifestyleBoth": "Both",
+  "onboardingLifestyleOther": "Other",
+  "onboardingAlcoholNone": "None",
+  "onboardingAlcoholRarely": "Rarely",
+  "onboardingAlcoholSocial": "Socially",
+  "onboardingAlcoholSpecialOccasion": "Special occasions",
+  "onboardingAlcoholFrequently": "Frequently",
+  "interestMusic": "Music",
+  "interestTravel": "Travel",
+  "interestFitness": "Fitness",
+  "interestFood": "Food",
+  "interestArt": "Art",
+  "interestMovies": "Movies",
+  "interestBooks": "Books",
+  "interestGaming": "Gaming",
+  "interestNature": "Nature",
+  "interestPhotography": "Photography",
+  "interestCoffee": "Coffee",
+  "interestDancing": "Dancing",
+  "interestYoga": "Yoga",
+  "interestTech": "Tech",
+  "interestFashion": "Fashion",
+  "interestPets": "Pets",
+  "interestSports": "Sports",
+  "interestCooking": "Cooking",
   "locationPermissionTitle": "Discover people nearby",
   "locationPermissionMessage": "Mevora uses your location to show more compatible matches around you.",
   "locationPermissionSub": "Your exact location is never shown to others. It is only used for matching and distance.",
@@ -178,6 +283,38 @@
   "discoveryMessage": "Compatible people will appear here once discovery is ready.",
   "discoveryEmptyTitle": "No one new right now",
   "discoveryEmptyMessage": "Widen your distance or check back a little later.",
+  "discoverySeenEveryoneTitle": "You've seen everyone for now",
+  "discoverySeenEveryoneMessage": "Check back later for new people, or restart the demo to explore again.",
+  "exploreAgain": "Explore again",
+  "restartDemo": "Restart demo",
+  "discoveryFiltersTitle": "Discovery filters",
+  "discoveryFiltersHint": "Filters are saved locally. Server-side filtering arrives in a later update.",
+  "applyFilters": "Apply filters",
+  "filterAge": "Age range",
+  "filterDistance": "Maximum distance",
+  "filterGender": "Show me",
+  "filterRelationshipGoal": "Relationship goal",
+  "genderWoman": "Women",
+  "genderMan": "Men",
+  "genderNonBinary": "Non-binary",
+  "relationshipGoalLongTerm": "Long-term",
+  "relationshipGoalCasual": "Casual",
+  "relationshipGoalFiguringOut": "Still figuring it out",
+  "compatibilityReasonsHeading": "Why you might connect",
+  "whyYoureSeeingThis": "Why this profile is shown",
+  "sharedInterests": "Shared interests",
+  "profileDetailsTitle": "Profile",
+  "photoCounter": "{current} / {total}",
+  "@photoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "tabDiscovery": "Discover",
   "tabMatches": "Matches",
   "tabProfile": "Profile",
@@ -185,21 +322,27 @@
   "distanceAway": "{distance} km away",
   "@distanceAway": {
     "placeholders": {
-      "distance": {"type": "String"}
+      "distance": {
+        "type": "String"
+      }
     }
   },
   "distanceLessThanOne": "Less than 1 km away",
   "distanceFar": "100+ km away",
-  "compatibilityPercent": "{percent}% match",
+  "compatibilityPercent": "Suggested · {percent}% compatible",
   "@compatibilityPercent": {
     "placeholders": {
-      "percent": {"type": "int"}
+      "percent": {
+        "type": "int"
+      }
     }
   },
   "like": "Like",
   "pass": "Pass",
   "superLike": "Super Like",
   "itsAMatch": "It's a match",
+  "youLikedEachOther": "You liked each other!",
+  "sendMessage": "Send message",
   "startChat": "Say hello",
   "keepSwiping": "Keep exploring",
   "profile": "Profile",
@@ -226,8 +369,31 @@
   "matchesEmptyMessage": "When you like each other, the conversation starts here.",
   "newMatch": "New match",
   "chatHint": "Write a message...",
+  "chatEmptyTitle": "No messages yet",
+  "chatEmptyMessage": "Send the first message.",
   "send": "Send",
   "typing": "is typing...",
+  "attachPhoto": "Photo",
+  "takePhoto": "Camera",
+  "recordVoice": "Voice message",
+  "holdToRecord": "Recording…",
+  "slideToCancelVoice": "Slide left to cancel",
+  "releaseToSendVoice": "Release to send",
+  "holdAgainToRecord": "Microphone ready — hold to record",
+  "voiceTooShort": "Hold a bit longer to send a voice message.",
+  "playVoice": "Play",
+  "pauseVoice": "Pause",
+  "previewPhoto": "Send this photo?",
+  "messageDeleted": "Message deleted",
+  "messageDecryptFailed": "Could not decrypt this message.",
+  "chatE2eeTitle": "End-to-end encrypted",
+  "chatE2eeSubtitle": "Only you and this person can read your messages.",
+  "deleteMessage": "Delete",
+  "deleteMessageConfirm": "Delete this message? The other person will no longer see it.",
+  "micDeniedChat": "Microphone permission is needed to send a voice message.",
+  "photoDeniedChat": "Photo permission is needed to send an image.",
+  "callCancelled": "Call cancelled",
+  "callRejected": "Call declined",
   "unmatchedBanner": "You are no longer matched with this person.",
   "videoCall": "Video call",
   "more": "More",
@@ -238,6 +404,7 @@
   "alreadySwiped": "You already decided on this person.",
   "chatNotFound": "Chat not found.",
   "chatGeneric": "Message could not be sent. Please try again.",
+  "chatEncryptionNotReady": "End-to-end encryption is not ready yet. Try again once your match has published their key.",
   "incomingCall": "Incoming video call",
   "accept": "Accept",
   "decline": "Decline",
@@ -265,23 +432,57 @@
   "presenceOnline": "Online",
   "presenceRecentlyActive": "Active recently",
   "presenceOffline": "Offline",
+  "presenceTyping": "typing...",
+  "lastSeenToday": "Last seen today at {time}",
+  "@lastSeenToday": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "lastSeenYesterday": "Last seen yesterday at {time}",
+  "@lastSeenYesterday": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "lastSeenOnDate": "Last seen {date} at {time}",
+  "@lastSeenOnDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "timeNow": "now",
   "timeMinutes": "{count}m",
   "@timeMinutes": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeHours": "{count}h",
   "@timeHours": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeDays": "{count}d",
   "@timeDays": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "unmatch": "Unmatch",
@@ -304,6 +505,9 @@
   "reportFakeProfile": "Fake profile",
   "reportUnderage": "Underage",
   "reportOther": "Other",
+  "hideProfile": "Hide profile",
+  "hideProfileTitle": "Hide this profile?",
+  "hideProfileMessage": "They will not appear in your discovery stack again.",
   "linkedAccounts": "Linked accounts",
   "link": "Link",
   "linked": "Linked",
@@ -312,6 +516,17 @@
   "deleteAccount": "Delete account",
   "deleteAccountTitle": "Delete your account?",
   "deleteAccountBody": "This permanently deletes your Mevora account, profile, matches, and messages. This cannot be undone.",
+  "exportMyData": "Download my data",
+  "exportMyDataTitle": "Export your data?",
+  "exportMyDataBody": "Mevora prepares a JSON file with your account, profile, preferences, matches, likes, blocks, reports you filed, and purchases. Exact location, message contents, and secrets are excluded.",
+  "exportMyDataSuccess": "Export saved to: {path}",
+  "@exportMyDataSuccess": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "exportMyDataFailed": "Could not export your data. Try again later.",
+  "settingsShowAge": "Show age on profile",
   "deleteConfirm": "Delete forever",
   "notificationsTitle": "Notifications and privacy",
   "messageNotifications": "Message notifications",
@@ -323,14 +538,14 @@
   "notificationSuperLike": "Someone Super Liked you",
   "boostTitle": "BOOST",
   "boostSubtitle": "Show your profile to more people and get discovered faster.",
-  "boostDuration": "30 minutes",
-  "boostActivate": "Activate Boost",
+  "boostDuration": "Boost your profile",
+  "boostActivate": "Use leftover Boost",
   "boostBuy": "Buy Boost",
   "boostPurchasing": "Starting purchase...",
   "boostVerifying": "Confirming your purchase...",
   "boostSuccessTitle": "Boost is on! 🚀",
   "boostSuccessMessage": "Your profile will start appearing to more people.",
-  "boostAlreadyActive": "You already have an active Boost.",
+  "boostAlreadyActive": "You already have an active Boost. Buying another pack adds time to the remaining period.",
   "boostPurchaseCancelled": "Purchase cancelled.",
   "boostPurchaseFailed": "Purchase could not be completed. Please try again.",
   "boostStoreUnavailable": "The store is not available on this device right now.",
@@ -341,16 +556,86 @@
   "boostLoadingProduct": "Loading store details...",
   "boostBackToDiscovery": "Back to Discover",
   "boostTooltip": "Boost",
-  "boostRemainingMinutes": "{minutes} min",
+  "boostRemainingMinutes": "{minutes} min left",
   "@boostRemainingMinutes": {
     "placeholders": {
-      "minutes": {"type": "int"}
+      "minutes": {
+        "type": "int"
+      }
     }
   },
+  "boostRemainingDays": "{days} days left",
+  "@boostRemainingDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "boostRemainingHours": "{hours} hours left",
+  "@boostRemainingHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "boostSpotlight": "Boost Profile",
+  "boostPackOne": "1 Boost",
+  "boostPackFive": "5 Boost",
+  "boostPackTen": "10 Boost",
+  "boostPackCount": "{count} Boost",
+  "@boostPackCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostPackWeek": "1 Week",
+  "boostPackMonth": "1 Month",
+  "boostPackYear": "1 Year",
+  "boostPackWeekSubtitle": "Boost your profile for 7 days",
+  "boostPackMonthSubtitle": "Boost your profile for 30 days",
+  "boostPackYearSubtitle": "Boost your profile for 365 days",
+  "boostBestValue": "Best value",
+  "boostBalance": "{count} leftover Boost",
+  "@boostBalance": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostBuyPack": "Buy",
+  "boostCreditedTitle": "Boosts added to your account",
+  "boostCreditedMessage": "{count} Boost added. Activate when you are ready.",
+  "@boostCreditedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostInsufficientBalance": "You need a Boost before you can go live.",
+  "boostHistoryTitle": "Purchase history",
+  "boostHistoryEmpty": "No purchases yet.",
+  "boostHistoryPurchase": "Purchase",
+  "boostHistoryActivation": "Activation",
+  "boostHistoryPlatformIos": "App Store",
+  "boostHistoryPlatformAndroid": "Google Play",
+  "boostActiveBadge": "Boost on",
+  "boostDiscoverBadge": "BOOST",
+  "boostActivating": "Turning Boost on...",
+  "boostNoBalance": "Choose a pack to Boost your profile.",
+  "boostPriceUnavailable": "Price unavailable",
+  "boostRestoring": "Restoring purchases...",
   "radiusKm": "{km} km",
   "@radiusKm": {
     "placeholders": {
-      "km": {"type": "int"}
+      "km": {
+        "type": "int"
+      }
     }
   },
   "paymentTitle": "Payment",
@@ -386,5 +671,770 @@
   "selectCityInstead": "Choose a city instead",
   "addPhotoCamera": "Take photo",
   "addPhotoGallery": "Choose from gallery",
-  "enableDeviceNotifications": "Enable notifications"
+  "photoEmptyHint": "Add your first photo to continue.",
+  "photoMinRequired": "You must add at least 3 photos.",
+  "photoUploadingPercent": "Uploading photo... {percent}%",
+  "@photoUploadingPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "photoUploadFailed": "Photo could not be uploaded. Please try again.",
+  "photoUploaded": "Photo uploaded",
+  "photoSelected": "Photo selected",
+  "photoRetry": "Try again",
+  "enableDeviceNotifications": "Enable notifications",
+  "settingsChangePassword": "Change password",
+  "settingsEmailUnavailable": "No email on file",
+  "settingsReadOnly": "Read-only",
+  "settingsPrivacySafety": "Privacy & Safety",
+  "settingsPrivacyControls": "Privacy",
+  "settingsLocation": "Location",
+  "settingsSupport": "Support",
+  "settingsLogoutTitle": "Log out?",
+  "settingsLogoutBody": "You will need to sign in again to use Mevora.",
+  "settingsDeleteConfirmTitle": "This is permanent",
+  "settingsDeleteConfirmBody": "All matches, messages, and profile data will be deleted forever.",
+  "settingsReauthTitle": "Confirm your identity",
+  "settingsCurrentPasswordRequired": "Enter your current password.",
+  "settingsNewPasswordRequired": "Enter a new password.",
+  "settingsConfirmPasswordRequired": "Confirm your new password.",
+  "settingsPasswordsDoNotMatch": "Passwords do not match.",
+  "settingsPhotoMinRequired": "Keep at least 3 profile photos.",
+  "settingsPhotoMaxExceeded": "You can add up to 6 photos.",
+  "settingsPhotoPrimaryDeleteBlocked": "Set another photo as primary before deleting this one.",
+  "settingsPhotoPrimaryRequired": "Choose a primary photo.",
+  "settingsFirstNameRequired": "First name is required.",
+  "settingsFirstNameTooLong": "First name is too long.",
+  "settingsBioTooLong": "Bio is too long.",
+  "settingsInterestsTooMany": "Choose fewer interests.",
+  "settingsMinAgeInvalid": "Minimum age must be at least 18.",
+  "settingsMaxAgeInvalid": "Maximum age is too high.",
+  "settingsAgeRangeInvalid": "Maximum age must be greater than minimum age.",
+  "settingsDistanceInvalid": "Distance must be between 1 and 500 km.",
+  "settingsGooglePasswordMessage": "Your account uses Google Sign-In. Password changes are managed by Google.",
+  "settingsBirthDateLocked": "Birthday cannot be changed after onboarding. Age is calculated from your birthday.",
+  "settingsSaveProfile": "Save profile",
+  "settingsUnblock": "Unblock",
+  "settingsBlockedEmptyTitle": "No blocked users",
+  "settingsBlockedEmptyMessage": "People you block will appear here.",
+  "settingsShowOnlineStatus": "Show online status",
+  "settingsShowLastSeen": "Show last seen",
+  "settingsShowTypingStatus": "Show typing status",
+  "settingsShowDistance": "Show distance",
+  "settingsShowActivity": "Show activity status",
+  "settingsPushNotifications": "Push notifications",
+  "settingsSuperLikeNotifications": "Super Like notifications",
+  "settingsSetPrimaryPhoto": "Set as primary",
+  "settingsDeletePhoto": "Remove photo",
+  "settingsAddPhoto": "Add photo",
+  "settingsEducation": "Education",
+  "settingsLifestyle": "Lifestyle",
+  "settingsInterestedIn": "Interested in",
+  "settingsRelationshipGoal": "Relationship goal",
+  "settingsCity": "City",
+  "settingsGender": "Gender",
+  "settingsNewPassword": "New password",
+  "settingsCurrentPassword": "Current password",
+  "settingsConfirmPassword": "Confirm password",
+  "settingsPasswordChanged": "Password updated.",
+  "settingsProfileSaved": "Profile saved.",
+  "citySelectTitle": "Select City",
+  "citySelectSearch": "Search province…",
+  "citySelectNone": "No province found",
+  "discoveryLoading": "Discovering people for you...",
+  "discoveryLoadErrorTitle": "Couldn't load profiles",
+  "discoveryLoadErrorMessage": "Something went wrong while loading profiles.",
+  "discoveryChangePreferences": "Change discovery preferences",
+  "itsAMatchHeadline": "IT'S A MATCH",
+  "demoProfileBadge": "Sample",
+  "sharedHobbiesCount": "{count} shared interests",
+  "@sharedHobbiesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tabSettings": "Settings",
+  "tabMusic": "Music",
+  "musicTitle": "Music",
+  "musicConnectCta": "🎵 Connect Spotify",
+  "musicConnected": "✓ Spotify connected",
+  "musicUnconnectedCopy": "Connect your Spotify account and discover people who fit your music taste.",
+  "musicConnecting": "Connecting Spotify…",
+  "musicSyncing": "Refreshing your music taste…",
+  "musicRefresh": "Refresh music data",
+  "musicRefreshCooldown": "You can refresh again later.",
+  "musicProfileTitle": "Your music profile",
+  "musicSameTasteTitle": "People who listen to the same music",
+  "musicSameTasteEmpty": "No overlapping tastes yet. Refresh after you listen a bit more.",
+  "musicWeeklyTitle": "This week's music",
+  "musicWeeklyEmpty": "Weekly highlights will appear here once enough people connect Spotify.",
+  "musicCompatibilityPercent": "Similar music taste · up to {percent}%",
+  "@musicCompatibilityPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "musicCompatibilityShort": "Music · {percent}%",
+  "@musicCompatibilityShort": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSharedCounts": "{tracks} shared tracks · {artists} shared artists",
+  "@musicSharedCounts": {
+    "placeholders": {
+      "tracks": {
+        "type": "int"
+      },
+      "artists": {
+        "type": "int"
+      }
+    }
+  },
+  "musicOauthCancelled": "Spotify connection was cancelled.",
+  "musicApiDenied": "Spotify didn't allow access. You can try again later.",
+  "musicTokenExpired": "Your Spotify connection expired. Please reconnect.",
+  "musicNetwork": "Check your internet connection and try again.",
+  "musicNotConfigured": "Spotify isn't configured in this build yet.",
+  "musicConnectError": "Couldn't connect Spotify. The rest of Mevora still works.",
+  "settingsConnectSpotify": "Connect Spotify",
+  "settingsSpotifySubtitle": "Music taste matching — no playback in Mevora.",
+  "matchScoreTitle": "Match points",
+  "matchScoreSubtitle": "Your connection reputation",
+  "matchScoreValue": "{score} points",
+  "@matchScoreValue": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "matchScoreHistoryTitle": "Point history",
+  "matchScoreHistoryEmpty": "New matches and conversations will add points here.",
+  "matchScoreHistoryMatch": "New match +1",
+  "matchScoreHistoryInteraction": "Conversation +1",
+  "matchFeedbackTitle": "How did this match go?",
+  "matchFeedbackMessage": "Optional. This note stays in your history — they will not see it, and it does not change anyone's points.",
+  "matchFeedbackHint": "A short private note",
+  "matchFeedbackSubmit": "Save note",
+  "matchFeedbackThanks": "Saved to your history.",
+  "matchFeedbackTooShort": "Write a short note, or skip.",
+  "matchFeedbackFailed": "Couldn't save that note. Try again.",
+  "relationshipPromptTitle": "What do you think about relationships?",
+  "relationshipQuestionsPreparing": "New questions are being prepared. Please try again in a bit.",
+  "relationshipTestTitle": "Relationship Test",
+  "relationshipTestHeadline": "Discover people who share your views",
+  "relationshipTestMessage": "Answer 3 short questions to see people who may think similarly.",
+  "relationshipTestStart": "Start the Relationship Test",
+  "relationshipTestLater": "Not now",
+  "relationshipContinueTitle": "Keep matching?",
+  "relationshipContinueMessage": "You've completed 5 matching rounds. Do you want to continue finding people who share your answers?",
+  "relationshipContinueYes": "Continue",
+  "relationshipContinueNo": "Not now",
+  "likesYouTitle": "Likes you",
+  "likesYouEntrySubtitle": "See who liked your profile",
+  "likesYouLockedTitle": "Someone likes you",
+  "likesYouLockedCount": "{count} people like you",
+  "@likesYouLockedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "likesYouLockedMessage": "Upgrade to Premium to see who liked you. Photos and names stay hidden until then.",
+  "likesYouUnlockCta": "Unlock with Premium",
+  "likesYouBlurredHint": "People who liked you",
+  "likesYouHiddenName": "Someone special",
+  "likesYouHiddenSubtitle": "Unlock to see their profile",
+  "likesYouEmptyTitle": "No new likes yet",
+  "likesYouEmptyMessage": "When someone likes you, they'll show up here.",
+  "likesYouLoadError": "Couldn't load likes. Please try again.",
+  "relationshipTestDoneTitle": "Your relationship test is complete",
+  "relationshipTestFound": "We found someone whose views match yours.",
+  "relationshipTestAlign": "Your answers overlap on several topics.",
+  "relationshipTestNearest": "Closest to you:",
+  "relationshipTestEmpty": "There's no one nearby who thinks like you right now.",
+  "relationshipTestViewProfile": "View profile",
+  "relationshipTestOpenChat": "Open chat",
+  "relationshipMatchBadge": "Relationship Test",
+  "relationshipPromptProgress": "{answered} / {total}",
+  "@relationshipPromptProgress": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipCompatibilityPercent": "Views overlap · {percent}%",
+  "@relationshipCompatibilityPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipCompatibilityShort": "Views · {percent}%",
+  "@relationshipCompatibilityShort": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipSharedViews": "{count} shared views",
+  "@relationshipSharedViews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipSimilarThinker": "Someone who thinks similarly about relationships was found.",
+  "relationshipViewsAlign": "Your relationship views overlap.",
+  "relationshipMatchesTitle": "Relationship matches",
+  "relationshipMatchesEmpty": "Answer a few relationship questions to find people who think like you — distance does not matter here.",
+  "relationshipProfileSubtitle": "{answered} relationship questions answered",
+  "@relationshipProfileSubtitle": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipTopicJealousy": "You think similarly about jealousy.",
+  "relationshipTopicTrust": "You think similarly about trust.",
+  "relationshipTopicLoyalty": "You think similarly about loyalty.",
+  "relationshipTopicCommunication": "You think similarly about communication.",
+  "relationshipTopicBoundaries": "You think similarly about boundaries.",
+  "relationshipTopicSocialLife": "You think similarly about social life.",
+  "relationshipTopicFriendship": "You think similarly about friendship.",
+  "relationshipTopicPersonalSpace": "You think similarly about personal space.",
+  "relationshipTopicFuturePlans": "You think similarly about future plans.",
+  "relationshipTopicMoney": "You think similarly about money.",
+  "relationshipTopicFlirting": "You think similarly about flirting.",
+  "relationshipTopicExes": "You think similarly about past relationships.",
+  "relationshipTopicExpectations": "You think similarly about relationship expectations.",
+  "verifyYourProfile": "Verify your profile",
+  "verificationDescription": "Verification helps us keep Mevora authentic and safer for everyone.",
+  "verificationBenefitFakeProfiles": "Helps protect against fake profiles",
+  "verificationBenefitSpoofing": "Helps prevent spoofing",
+  "verificationBenefitBadge": "Adds a verified badge to your profile",
+  "startVerification": "Start verification",
+  "verificationInProgress": "Verification in progress",
+  "profileVerified": "Profile verified",
+  "profileVerifiedBadge": "Verified",
+  "verificationCouldNotComplete": "Verification couldn't be completed",
+  "tryVerificationAgain": "Try again",
+  "verificationStarted": "Verification started",
+  "verificationPrivacyNote": "Your verification is handled securely by our verification provider.",
+  "followVerificationInstructions": "Please follow the instructions to verify yourself.",
+  "verificationNotConfigured": "Verification is temporarily unavailable.",
+  "verificationCooldown": "Please wait a few minutes before trying again.",
+  "verificationAttemptLimit": "You've reached today's verification limit. Try again tomorrow.",
+  "whyYouMatch": "Why you match",
+  "compatWhyButton": "Why?",
+  "compatDiscoverBadge": "{percent}% Compatible",
+  "@compatDiscoverBadge": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "compatCalculating": "Calculating...",
+  "compatUnavailable": "Compatibility unavailable",
+  "profileEditSectionPhotos": "Photos",
+  "profileEditSectionBasic": "Basic information",
+  "profileEditSectionAbout": "About you",
+  "profileEditSectionInterests": "Your interests",
+  "profileEditSectionLifestyle": "Lifestyle",
+  "profileEditSectionRelationship": "Relationship preferences",
+  "profileEditSectionAnswers": "Your answers",
+  "profileEditDiscoveryPrefs": "Age range & distance",
+  "profileEditAnswersSubtitle": "Update how you answer relationship questions",
+  "saveChanges": "Save changes",
+  "discardChangesTitle": "Discard changes?",
+  "discardChangesMessage": "Your profile changes haven't been saved.",
+  "keepEditing": "Keep editing",
+  "discard": "Discard",
+  "interestsMinRequired": "Select at least 3 interests",
+  "profileAnswersTitle": "Your answers",
+  "profileAnswersEmpty": "You haven't answered any relationship questions yet.",
+  "profileAnswersEdit": "Edit",
+  "questionAnswersTitle": "Question & Answers",
+  "questionAnswersEmpty": "You haven't answered any questions yet.",
+  "questionAnswersEmptyHint": "Answer a few relationship questions to make your profile more personal. You can edit them anytime.",
+  "questionAnswersSaveError": "Couldn't save your answer. Check your connection and try again.",
+  "seeAllAnswers": "{count} more answers",
+  "@seeAllAnswers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showOnProfile": "Show on profile",
+  "questionAnswersLoadError": "Something went wrong while loading answers.",
+  "questionAnswersMatchRequired": "Match with this person to see their answers.",
+  "questionAnswersMatchedSubtitle": "Discover what you have in common.",
+  "questionAnswersPeerEmpty": "This person hasn't shared any profile answers yet.",
+  "matchViewAnswers": "View answers",
+  "chatDiscoverAnswersPrompt": "Learn more about them",
+  "compatOverallLabel": "You're {percent}% compatible",
+  "@compatOverallLabel": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "compatNotEnoughData": "Not enough data yet",
+  "compatStrongestConnection": "Strongest connection",
+  "compatPotentialDifference": "Potential difference",
+  "compatCategoryOverall": "Overall",
+  "compatCategoryRelationship": "Relationship",
+  "compatCategoryInterests": "Interests",
+  "compatCategoryLifestyle": "Lifestyle",
+  "compatCategoryQuestions": "Questions",
+  "compatCategoryMusic": "Music",
+  "compatCategoryCommunication": "Communication",
+  "compatCategoryProximity": "Proximity",
+  "compatCategoryActivity": "Activity",
+  "compatReasonSameRelationshipGoal": "You both want a {goal} relationship",
+  "@compatReasonSameRelationshipGoal": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "compatReasonSharedInterests": "You both like {interests}",
+  "@compatReasonSharedInterests": {
+    "placeholders": {
+      "interests": {
+        "type": "String"
+      }
+    }
+  },
+  "compatReasonSimilarLifestyle": "You have a similar lifestyle",
+  "compatReasonSameAnswers": "You answered {aligned} of {shared} questions the same way",
+  "@compatReasonSameAnswers": {
+    "placeholders": {
+      "aligned": {
+        "type": "String"
+      },
+      "shared": {
+        "type": "String"
+      }
+    }
+  },
+  "compatReasonSimilarMusic": "Your music taste is {score}% aligned",
+  "@compatReasonSimilarMusic": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "compatReasonCommunication": "You communicate in similar ways",
+  "hiddenCompatTitle": "Someone is thinking like you 👀",
+  "hiddenCompatMessage": "Someone answered {count} questions the same way you did.",
+  "@hiddenCompatMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hiddenCompatCompatibility": "{percent}% compatibility",
+  "@hiddenCompatCompatibility": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "hiddenCompatCta": "Discover who",
+  "hiddenCompatDismiss": "Not now",
+  "supportCenterTitle": "Help & Support",
+  "supportCenterSubtitle": "Find answers, review policies, or contact our team.",
+  "supportHelpSection": "Help",
+  "supportTopicsSection": "Topics",
+  "supportFaqTitle": "Frequently Asked Questions",
+  "supportFaqSubtitle": "Quick answers to common questions",
+  "supportFaqSearchHint": "Search questions",
+  "supportFaqEmpty": "No questions matched your search.",
+  "supportCreateTicket": "Create Support Request",
+  "supportCreateTicketSubtitle": "Describe your issue and optionally attach a screenshot",
+  "supportMyTickets": "My Support Requests",
+  "supportTicketsEmptyTitle": "No support requests yet",
+  "supportTicketsEmptyMessage": "When you contact support, your requests will appear here.",
+  "supportTicketCategory": "Category",
+  "supportTicketSubject": "Subject",
+  "supportTicketMessage": "Message",
+  "supportTicketAddScreenshot": "Add screenshot (optional)",
+  "supportTicketScreenshotAttached": "Screenshot attached",
+  "supportTicketSubmit": "Send request",
+  "supportTicketSubmitted": "Your support request was sent.",
+  "supportTicketFailed": "We could not send your request. Try again.",
+  "supportTicketValidation": "Subject and message are required.",
+  "supportTicketDetailTitle": "Support request",
+  "supportTicketStatusLabel": "Status",
+  "supportTicketAttachments": "Attachments",
+  "supportTicketStatusOpen": "Open",
+  "supportTicketStatusInProgress": "In progress",
+  "supportTicketStatusResolved": "Resolved",
+  "supportTicketStatusClosed": "Closed",
+  "supportCategoryAccount": "Account & profile",
+  "supportCategoryMatches": "Matches",
+  "supportCategoryMessaging": "Messaging",
+  "supportCategoryPhotos": "Photos & profile",
+  "supportCategorySafety": "Reporting & blocking",
+  "supportCategoryTechnical": "Technical issues",
+  "supportCategoryOther": "Other",
+  "faqDeleteAccountQ": "How do I delete my account?",
+  "faqDeleteAccountA": "Go to Settings → Account → Delete Account. Confirm the dialog to permanently delete your Mevora account and associated data. This cannot be undone.",
+  "faqChangePhotoQ": "How do I change my profile photo?",
+  "faqChangePhotoA": "Open Settings → Edit Profile. You can add, remove, or replace photos from your gallery or camera. Photos may be reviewed before they appear to others.",
+  "faqCloseAccountQ": "How do I close my account?",
+  "faqCloseAccountA": "Closing your account is the same as deleting it. Use Settings → Account → Delete Account. Logging out alone does not delete your data.",
+  "faqHowMatchQ": "How does matching work?",
+  "faqHowMatchA": "When you and another person both like each other in Discover, Mevora creates a mutual match. You can then chat from the Matches tab.",
+  "faqMatchPercentQ": "What does the match percentage mean?",
+  "faqMatchPercentA": "It is a compatibility estimate based on profile answers, interests, lifestyle, music taste, and other signals Mevora uses. It helps you understand why you might connect, but it is not a guarantee.",
+  "faqCantMessageQ": "Why can't I send a message?",
+  "faqCantMessageA": "Messaging is only available in active mutual matches. You cannot message if the match ended, you blocked each other, or the conversation was closed.",
+  "faqNotificationsQ": "How do I manage notifications?",
+  "faqNotificationsA": "Open Settings → Notifications to control match, message, and other alerts. You may also need to allow notifications in your device settings.",
+  "faqBlockQ": "How do I block someone?",
+  "faqBlockA": "From a chat, tap More → Block. From a profile, open the safety menu → Block. Blocked users cannot message you or appear in your matches.",
+  "faqReportQ": "How do I report someone?",
+  "faqReportA": "From a chat or profile safety menu, choose Report, select a reason, and optionally add details. Reports are reviewed by our team.",
+  "faqStaySafeQ": "How can I stay safe on Mevora?",
+  "faqStaySafeA": "Meet in public places, keep personal details private until you trust someone, use block and report tools, and review our Community Guidelines.",
+  "guidelinesIntro": "Mevora is built for respectful connections. These rules apply to profiles, messages, calls, and all in-app behavior.",
+  "guidelinesRespectTitle": "Respectful communication",
+  "guidelinesRespectBody": "Treat others with respect. Disagreement is not an excuse for insults, bullying, or degrading language.",
+  "guidelinesHarassmentTitle": "No harassment or bullying",
+  "guidelinesHarassmentBody": "Repeated unwanted contact, intimidation, stalking, or pressuring someone is not allowed.",
+  "guidelinesHateTitle": "No hate speech",
+  "guidelinesHateBody": "Content attacking people based on protected characteristics is prohibited.",
+  "guidelinesThreatsTitle": "No threats or violence",
+  "guidelinesThreatsBody": "Threats, glorification of violence, or encouragement of self-harm are forbidden.",
+  "guidelinesSpamTitle": "No spam",
+  "guidelinesSpamBody": "Unsolicited promotions, repetitive messages, or automated solicitation are not allowed.",
+  "guidelinesFakeTitle": "No fake accounts",
+  "guidelinesFakeBody": "Impersonation, misleading identity, or profiles that are not authentically you are prohibited.",
+  "guidelinesScamTitle": "No fraud",
+  "guidelinesScamBody": "Scams, financial fraud, phishing, or asking for money or sensitive financial data are forbidden.",
+  "guidelinesInappropriateTitle": "No inappropriate content",
+  "guidelinesInappropriateBody": "Offensive, graphic, or otherwise unsuitable content is not allowed in profiles or messages.",
+  "guidelinesSexualTitle": "Sexual content and exploitation",
+  "guidelinesSexualBody": "Non-consensual sexual content, exploitation, or sexual content involving minors is strictly prohibited and will be reported to authorities.",
+  "guidelinesMinorsTitle": "Protecting minors",
+  "guidelinesMinorsBody": "Mevora is for adults 18+. Profiles or behavior targeting minors are banned.",
+  "guidelinesPrivacyTitle": "Protect personal information",
+  "guidelinesPrivacyBody": "Do not share another person's private contact details, address, documents, or passwords without consent.",
+  "guidelinesMisuseTitle": "No platform misuse",
+  "guidelinesMisuseBody": "Do not attempt to bypass safety systems, scrape data, or use Mevora for unauthorized commercial activity.",
+  "guidelinesReportTitle": "How to report",
+  "guidelinesReportBody": "Use Report from a profile or chat. Choose the closest reason and add context. You can also contact support from Settings.",
+  "guidelinesEnforcementTitle": "Enforcement",
+  "guidelinesEnforcementBody": "Violations may result in warnings, feature limits, suspension, or permanent removal. Serious violations may be reported to law enforcement.",
+  "termsIntro": "These Terms of Service govern your use of the Mevora mobile application and related services.",
+  "termsScopeTitle": "Scope of service",
+  "termsScopeBody": "Mevora helps adults discover compatible people, match through mutual likes, chat, and use optional features such as Boost and profile verification.",
+  "termsAccountTitle": "Your account",
+  "termsAccountBody": "You must be at least 18 years old. You are responsible for keeping your login credentials secure and for activity on your account.",
+  "termsResponsibilitiesTitle": "Your responsibilities",
+  "termsResponsibilitiesBody": "You agree to provide accurate information, follow applicable laws, and use Mevora respectfully and safely.",
+  "termsContentTitle": "Profile and content",
+  "termsContentBody": "You own the content you submit, but grant Mevora a license to host, display, and process it to operate the service, including moderation and safety review.",
+  "termsProhibitedTitle": "Prohibited behavior",
+  "termsProhibitedBody": "Harassment, hate speech, scams, fake profiles, sexual exploitation, spam, and attempts to harm other users or the platform are prohibited.",
+  "termsMatchingTitle": "Matching and messaging",
+  "termsMatchingBody": "Matches are created through mutual likes. Messaging is available only in active matches and may be limited by safety, blocking, or moderation actions.",
+  "termsSafetyTitle": "Safety tools",
+  "termsSafetyBody": "You can block and report users. We may review reports and take action to protect the community.",
+  "termsSuspensionTitle": "Suspension or termination",
+  "termsSuspensionBody": "We may suspend or terminate accounts that violate these Terms or create risk for other users.",
+  "termsDeletionTitle": "Account deletion",
+  "termsDeletionBody": "You may delete your account in Settings → Account → Delete Account. Deletion is permanent and removes your profile and associated app data subject to legal retention limits.",
+  "termsPaidTitle": "Paid features",
+  "termsPaidBody": "Boost and other purchases are processed through your app store. Refunds follow the store's policies unless required otherwise by law.",
+  "termsThirdPartyTitle": "Third-party services",
+  "termsThirdPartyBody": "Mevora may integrate with services such as Google Sign-In, Apple Sign-In, Spotify, Firebase, and identity verification providers. Their terms also apply.",
+  "termsAvailabilityTitle": "Service availability",
+  "termsAvailabilityBody": "We strive for reliable service but do not guarantee uninterrupted availability. Features may change or be discontinued.",
+  "termsLiabilityTitle": "Limitation of liability",
+  "termsLiabilityBody": "To the extent permitted by law, Mevora is provided as is. We are not liable for user conduct or offline interactions between users.",
+  "termsChangesTitle": "Changes",
+  "termsChangesBody": "We may update these Terms. Material changes will be communicated in the app or on our policy pages.",
+  "termsContactTitle": "Contact",
+  "termsContactBody": "For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.",
+  "termsEffectiveTitle": "Effective date",
+  "termsEffectiveBody": "These Terms are effective as of August 23, 2026.",
+  "privacyIntroTitle": "Introduction",
+  "privacyIntroBody": "This Privacy Policy explains how Mevora collects, uses, stores, and deletes personal data when you use our app.",
+  "privacyDataCollectedTitle": "Overview",
+  "privacyDataCollectedBody": "We collect only data needed to operate matching, messaging, safety, optional music features, and account management.",
+  "privacyAuthTitle": "Account and authentication data",
+  "privacyAuthBody": "Depending on how you sign in, we may process email, phone number, authentication provider identifiers (Google, Apple, Spotify), and Firebase Authentication user ID.",
+  "privacyProfileTitle": "Profile data and photos",
+  "privacyProfileBody": "Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.",
+  "privacyLocationTitle": "Location data",
+  "privacyLocationBody": "With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.",
+  "privacyMessagingTitle": "Messages and calls",
+  "privacyMessagingBody": "Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.",
+  "privacyMatchingTitle": "Matching and interactions",
+  "privacyMatchingBody": "Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.",
+  "privacyPreferencesTitle": "Settings and preferences",
+  "privacyPreferencesBody": "Notification preferences, privacy controls (online status, last seen, typing), discovery filters, and language settings are stored to honor your choices.",
+  "privacySpotifyTitle": "Spotify data",
+  "privacySpotifyBody": "If you connect Spotify, we store linked account metadata and music taste signals used for compatibility and music features. You can disconnect Spotify in settings.",
+  "privacyDeviceTitle": "Device and technical data",
+  "privacyDeviceBody": "We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.",
+  "privacyWhyTitle": "Why we use data",
+  "privacyWhyBody": "To authenticate you, show matches, deliver messages, improve safety, provide support, process optional purchases, and comply with law.",
+  "privacyStorageTitle": "Where data is stored",
+  "privacyStorageBody": "Data is primarily stored in Google Firebase (Firestore, Storage, Authentication, Cloud Functions) in the EU region where configured.",
+  "privacyRetentionTitle": "Retention",
+  "privacyRetentionBody": "We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.",
+  "privacySharingTitle": "Sharing",
+  "privacySharingBody": "We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.",
+  "privacyRightsTitle": "Your rights",
+  "privacyRightsBody": "Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.",
+  "privacyDeletionTitle": "Deleting your data",
+  "privacyDeletionBody": "Use Settings → Account → Delete Account for permanent deletion. Support tickets you created are also removed as part of account deletion.",
+  "privacySecurityTitle": "Security",
+  "privacySecurityBody": "We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.",
+  "privacyChildrenTitle": "Children",
+  "privacyChildrenBody": "Mevora is not for users under 18. We delete accounts identified as underage.",
+  "privacyChangesTitle": "Policy changes",
+  "privacyChangesBody": "We may update this policy. The latest version is always available in the app and on our public policy page.",
+  "privacyContactTitle": "Contact",
+  "privacyContactBody": "Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.",
+  "musicMatchTitle": "🎵 Music Match — {percent}%",
+  "@musicMatchTitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightBandHigh": "Your music tastes are quite similar.",
+  "musicInsightBandMid": "You share some strong music tastes.",
+  "musicInsightBandLow": "Your music tastes differ, but you still share a few artists.",
+  "musicInsightSharedTracks": "🎵 You have {count} shared songs.",
+  "@musicInsightSharedTracks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightSharedArtists": "🎤 You have {count} shared artists.",
+  "@musicInsightSharedArtists": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightSharedPlaylistTracks": "🎧 Your playlists share {count} songs.",
+  "@musicInsightSharedPlaylistTracks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightSharedRecentTracks": "🎵 You recently listened to {count} of the same songs.",
+  "@musicInsightSharedRecentTracks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicInsightTopSharedArtist": "🎵 You both listen to {name} a lot.",
+  "@musicInsightTopSharedArtist": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "musicInsightTopSharedGenres": "🎶 Your tastes overlap most in {genres}.",
+  "@musicInsightTopSharedGenres": {
+    "placeholders": {
+      "genres": {
+        "type": "String"
+      }
+    }
+  },
+  "musicInsightDataUnavailable": "Not enough Spotify taste data to compare yet.",
+  "musicSpotifyNotConnected": "Spotify not connected",
+  "musicSharedTracksHeading": "🎵 Songs you both like",
+  "musicSharedArtistsHeading": "🎤 Artists you both like",
+  "musicSharedGenresHeading": "🎶 Shared genres",
+  "musicViewAllShared": "View all ({count})",
+  "@musicViewAllShared": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicMatchDetailsCta": "Why this music match?",
+  "profileEditSectionLanguages": "Languages you speak",
+  "profileEditSectionHobbies": "Hobbies",
+  "profileEditSectionExtended": "Complete your profile",
+  "profileLanguagesHint": "Select the languages you speak.",
+  "profileHobbiesHint": "Pick hobbies that describe you.",
+  "profileHeightLabel": "Height",
+  "profileHeightCm": "{cm} cm",
+  "@profileHeightCm": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "profileHeight200Plus": "220+ cm",
+  "profileOccupationLabel": "Occupation",
+  "profileCompletionTitle": "Your profile is {percent}% complete",
+  "@profileCompletionTitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "profileCompletionMissing": "Still missing: {fields}",
+  "@profileCompletionMissing": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "profileFieldDisplayName": "Name",
+  "profileFieldBirthDate": "Birth date",
+  "profileFieldGender": "Gender",
+  "profileFieldInterestedIn": "Interested in",
+  "profileFieldCity": "City",
+  "profileFieldPhotos": "Photos",
+  "profileFieldInterests": "Interests",
+  "profileFieldRelationshipGoal": "Relationship goal",
+  "profileFieldLanguages": "Languages",
+  "profileFieldHeightCm": "Height",
+  "profileFieldBio": "Bio",
+  "profileFieldEducation": "Education",
+  "profileFieldOccupation": "Occupation",
+  "profileFieldHobbies": "Hobbies",
+  "profileFieldLifestyleHabits": "Lifestyle habits",
+  "profileFieldLifestyleValues": "Future preferences",
+  "onboardingHeight": "Height",
+  "onboardingLanguages": "Languages",
+  "profilePartnerSmokingPref": "Partner smoking preference",
+  "profilePartnerDrinkingPref": "Partner drinking preference",
+  "profileChildrenPreference": "Do you want children?",
+  "profilePartnerChildrenPref": "Partner children preference",
+  "profileSocialRhythm": "Morning or night person?",
+  "profileSocialLevel": "Social life",
+  "profileWeekendPreferences": "Weekend preferences",
+  "profileCohabitationPreference": "Living together",
+  "partnerPrefNoIssue": "Not important",
+  "partnerPrefPrefer": "Prefer",
+  "partnerPrefPreferNot": "Prefer not",
+  "partnerPrefNever": "Dealbreaker",
+  "childrenPrefYes": "Yes",
+  "childrenPrefNo": "No",
+  "childrenPrefMaybe": "Maybe",
+  "childrenPrefUndecided": "Not decided yet",
+  "socialRhythmMorning": "Morning person",
+  "socialRhythmNight": "Night owl",
+  "socialRhythmVaries": "It varies",
+  "socialLevelVerySocial": "Very social",
+  "socialLevelBalanced": "Balanced",
+  "socialLevelQuiet": "More quiet",
+  "weekendFriendsOut": "Going out with friends",
+  "weekendHomeRelax": "Relaxing at home",
+  "weekendSports": "Sports",
+  "weekendTravel": "Travel",
+  "weekendNature": "Nature",
+  "weekendParty": "Parties",
+  "weekendFamily": "Family time",
+  "weekendMovies": "Movies & series",
+  "cohabitationYes": "Yes",
+  "cohabitationMaybeLater": "Maybe later",
+  "cohabitationUnsure": "Not sure",
+  "cohabitationNo": "No",
+  "languageTurkish": "Türkçe 🇹🇷",
+  "languageEnglish": "English 🇬🇧",
+  "languageGerman": "German",
+  "languageFrench": "French",
+  "languageSpanish": "Spanish",
+  "languageItalian": "Italian",
+  "languageRussian": "Russian",
+  "languageArabic": "Arabic",
+  "languagePersian": "Persian",
+  "languageKurdish": "Kurdish",
+  "languageGreek": "Greek",
+  "languageDutch": "Dutch",
+  "languagePortuguese": "Portuguese",
+  "languageChinese": "Chinese",
+  "languageJapanese": "Japanese",
+  "languageKorean": "Korean",
+  "hobbyWorkingOut": "Working out",
+  "hobbyRunning": "Running",
+  "hobbyFitness": "Fitness",
+  "hobbySwimming": "Swimming",
+  "hobbyDancing": "Dancing",
+  "hobbyPhotography": "Photography",
+  "hobbyPainting": "Painting",
+  "hobbyGaming": "Gaming",
+  "hobbyCoding": "Coding",
+  "hobbyCooking": "Cooking",
+  "hobbyTravel": "Travel",
+  "hobbyCamping": "Camping",
+  "hobbyHiking": "Hiking",
+  "hobbyPlayingInstrument": "Playing an instrument",
+  "hobbyReading": "Reading",
+  "hobbyYoga": "Yoga",
+  "hobbyCycling": "Cycling",
+  "hobbyTeamSports": "Team sports",
+  "compatCategoryLanguages": "Languages",
+  "compatCategoryHobbies": "Hobbies",
+  "compatCategoryValues": "Values & future",
+  "compatReasonSharedLanguages": "You both speak {languages}",
+  "@compatReasonSharedLanguages": {
+    "placeholders": {
+      "languages": {
+        "type": "String"
+      }
+    }
+  },
+  "compatReasonSharedHobbies": "You both enjoy {hobbies}",
+  "@compatReasonSharedHobbies": {
+    "placeholders": {
+      "hobbies": {
+        "type": "String"
+      }
+    }
+  }
 }

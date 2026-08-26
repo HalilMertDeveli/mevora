@@ -32,9 +32,17 @@ class ApplePurchaseService {
     }
   }
 
-  /// Boost is a consumable. StoreKit will not redeliver it after restore.
-  /// Purchase history is the Firebase UID ledger, not the App Store.
+  /// Unfinished StoreKit transactions can be recovered. Finished consumables
+  /// are not redelivered; active Boost is loaded from the Firebase UID ledger.
   Future<void> restoreConsumables() async {
-    _logger?.debug('Apple consumable restore skipped; history is Firebase UID');
+    try {
+      await _store.restorePurchases();
+    } on Object catch (error, stackTrace) {
+      _logger?.warning(
+        'Apple restore failed; loading Boost from Firebase UID',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

@@ -1,0 +1,59 @@
+{
+  "musicMatchTitle": "🎵 Müzik Eşleşmesi — %{percent}",
+  "@musicMatchTitle": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicInsightBandHigh": "Müzik zevkiniz oldukça benzer.",
+  "musicInsightBandMid": "Bazı güçlü ortak müzik zevkleriniz var.",
+  "musicInsightBandLow": "Müzik zevkleriniz farklı olsa da birkaç ortak sanatçınız var.",
+  "musicInsightSharedTracks": "🎵 {count} ortak şarkınız var.",
+  "@musicInsightSharedTracks": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicInsightSharedArtists": "🎤 {count} ortak sanatçınız var.",
+  "@musicInsightSharedArtists": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicInsightSharedPlaylistTracks": "🎧 Playlistlerinizde {count} ortak şarkı var.",
+  "@musicInsightSharedPlaylistTracks": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicInsightSharedRecentTracks": "🎵 Son dönemde {count} aynı şarkıyı dinlemişsiniz.",
+  "@musicInsightSharedRecentTracks": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicInsightTopSharedArtist": "🎵 İkiniz de {name}'i sık dinliyorsunuz.",
+  "@musicInsightTopSharedArtist": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "musicInsightTopSharedGenres": "🎶 Müzik zevkinizin büyük kısmı {genres} türlerinde kesişiyor.",
+  "@musicInsightTopSharedGenres": {
+    "placeholders": {
+      "genres": {"type": "String"}
+    }
+  },
+  "musicInsightDataUnavailable": "Karşılaştırma için henüz yeterli Spotify verisi yok.",
+  "musicSpotifyNotConnected": "Spotify bağlı değil",
+  "musicSharedTracksHeading": "🎵 Ortak şarkılarınız",
+  "musicSharedArtistsHeading": "🎤 Ortak sanatçılarınız",
+  "musicSharedGenresHeading": "🎶 Ortak türler",
+  "musicViewAllShared": "Tümünü gör ({count})",
+  "@musicViewAllShared": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "musicMatchDetailsCta": "Bu müzik eşleşmesi neden?"
+}

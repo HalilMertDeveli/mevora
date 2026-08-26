@@ -1,0 +1,12 @@
+{
+  "name": "mevora-smoke",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "smoke": "node run_smoke_test.mjs",
+    "smoke:emulator": "cross-env SMOKE_USE_EMULATOR=true node run_smoke_test.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

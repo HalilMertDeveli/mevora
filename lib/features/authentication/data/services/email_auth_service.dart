@@ -87,6 +87,43 @@ class EmailAuthService {
     }
   }
 
+  Future<void> reauthenticateWithPassword(String password) async {
+    final user = _firebaseAuth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null || email.isEmpty) {
+      throw AuthErrorMapper.fromCode('unknown');
+    }
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+    } on FirebaseAuthException catch (error) {
+      throw AuthErrorMapper.fromCode(error.code, cause: error);
+    } on Object catch (error) {
+      throw AuthErrorMapper.map(error);
+    }
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await reauthenticateWithPassword(currentPassword);
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      throw AuthErrorMapper.fromCode('unknown');
+    }
+    try {
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (error) {
+      throw AuthErrorMapper.fromCode(error.code, cause: error);
+    } on Object catch (error) {
+      throw AuthErrorMapper.map(error);
+    }
+  }
+
   Future<void> _sendVerificationBestEffort(User? user) async {
     if (user == null || user.emailVerified) {
       return;

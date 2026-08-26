@@ -1,6 +1,8 @@
 # Mevora Boost — In-App Purchase Architecture
 
-Boost is a **one-time consumable** that increases Discovery ranking/visibility for a configured duration (default **30 minutes**). It is not a subscription, coin wallet, or premium tier. Prices are never set in Flutter or Cloud Functions.
+Boost is a **one-time consumable time grant** that increases Discovery ranking/visibility for **7, 30, or 365 days**. It is not an auto-renewing subscription, generic coin wallet, or premium tier.
+
+Charged prices always come from StoreKit / Play Billing. Never hard-code a charge amount in Flutter.
 
 This document is the source of truth for IAP. Product phases still follow `MEVORA_DEVELOPMENT.md`.
 
@@ -13,57 +15,56 @@ This document is the source of truth for IAP. Product phases still follow `MEVOR
 | iOS | StoreKit 2 via Flutter `in_app_purchase` | Consumable |
 | Android | Google Play Billing via Flutter `in_app_purchase` | One-time in-app product (consumable) |
 
-The client fetches `productId`, `title`, `description`, `localizedPrice`, `currency`, and availability from the store. **Never hardcode a price.**
+Consumable (not subscription) because the user can buy again and **must not** be billed automatically when Boost expires.
+
+The client fetches `productId`, `title`, `description`, `localizedPrice`, and `currency` from the store. **Never charge a hardcoded price.**
 
 ---
 
-## 2. Product config (placeholders)
+## 2. Pack catalog
 
-`BoostProductConfig` (`lib/features/boost/domain/config/boost_product_config.dart` and `functions/src/boost/config.ts`):
+Live catalog: Firestore `boostProducts/{sku}` (authenticated read, **no client write**). Cloud Functions `resolveBoostPack` reads this first, then Dart/Functions defaults.
 
-| Field | Placeholder | Override |
+| SKU | Duration | Storefront |
 | --- | --- | --- |
-| `iosProductId` | `com.mevora.app.boost` | `--dart-define=BOOST_IOS_PRODUCT_ID=` / `BOOST_IOS_PRODUCT_ID` env |
-| `androidProductId` | `com.mevora.app.boost` | `BOOST_ANDROID_PRODUCT_ID` |
-| `duration` | 30 minutes | `BOOST_DURATION_MINUTES` / `BOOST_DURATION_MS` |
-| `displayOrder` | 0 | `BOOST_DISPLAY_ORDER` |
+| `mevora_boost_7_days` | 7 days | yes |
+| `mevora_boost_1_month` | 30 days | yes |
+| `mevora_boost_1_year` | 365 days | yes |
+| `com.mevora.app.boost.1` / `.5` / `.10` / `com.mevora.app.boost` | legacy 30-minute wallet credit | hidden |
 
-Create these SKUs in App Store Connect and Play Console (see §10–11). Until then, local StoreKit testing can use `ios/Runner/MevoraBoost.storekit`.
+Create the three storefront SKUs in App Store Connect and Play Console with **the same product IDs** on both stores. Local StoreKit testing: `ios/Runner/MevoraBoost.storekit`.
 
 ---
 
 ## 3. User flow
 
 ```text
-Discovery → Boost button → BoostScreen
-  → load store product (localized price)
-  → [ BOOST'U AKTİF ET ] / Boost'u Satın Al
+Profile "Öne Çıkar" / Settings "Satın Alma Geçmişi" / Discovery Boost
+  → BoostScreen
+  → load catalog + store prices + active Boost + history
+  → buy 1 Week / 1 Month / 1 Year
   → native StoreKit / Play payment sheet
   → Flutter sends transaction to Cloud Function verifyBoostPurchase
   → server validates product, uid, transaction, duplicates
-  → server activates Boost
-  → Discovery (ranking bonus, filters still apply)
+  → server sets startedAt / expiresAt (stacks remaining time)
+  → Discovery ranking bonus (filters still apply)
 ```
 
-UI copy is Turkish. Loading:
+The app **must not** say Boost is active until `verifyBoostPurchase` confirms.
 
-1. `Satın alma işlemi başlatılıyor...`
-2. `Satın alma doğrulanıyor...`
+Purchase success: `Boost aktif! 🚀`
 
-The app **must not** say Boost is active until the backend confirms.
-
-Success: `Boost aktif! 🚀` / `Profilin daha fazla kişiye gösterilmeye başlayacak.`
-
-Already active: `Zaten aktif bir Boost'un var.`
+Active Boost: buying again **adds** the new duration onto remaining time. The same store transaction is never applied twice.
 
 ---
 
 ## 4. Flutter layers
 
 ```text
-BoostScreen / BoostButton
+BoostScreen / BoostButton / Profile "Öne Çıkar"
   → PurchaseController
-    → GetBoostProduct / PurchaseBoost / VerifyBoostPurchase / GetActiveBoost
+    → GetBoostProducts / PurchaseBoost / VerifyBoostPurchase
+      / GetActiveBoost / GetBoostHistory / Restore
       → PurchaseRepository
         → StorePurchaseDataSource (in_app_purchase)
         → FirebasePurchaseDataSource (callable + owner reads)
@@ -72,22 +73,21 @@ BoostScreen / BoostButton
 
 UI must not import StoreKit, Play Billing, or Firebase.
 
-**States:** `initial`, `loading`, `productLoaded`, `purchasing`, `verifying`, `success`, `cancelled`, `failed`, `unavailable`.
+**States:** `initial`, `loading`, `productLoaded`, `purchasing`, `verifying`, `credited` (legacy wallet only), `activating` (legacy wallet only), `success`, `cancelled`, `failed`, `unavailable`.
 
 ---
 
 ## 5. Verification (never trust the client)
 
-`verifyBoostPurchase` is the only writer of purchase/boost activation fields.
+`verifyBoostPurchase` is the only writer of purchase fields and Boost `status` / `expiresAt` for store packs.
 
 1. Require Firebase Auth UID. Ignore client `status`, `expiresAt`, `verifiedAt`, `purchaseId`, `userId`.
-2. `PurchaseVerificationService` checks product ID against config, non-empty uid/transaction, and `purchases/{purchaseId}` idempotency (`{platform}_{transactionId}`).
+2. `PurchaseVerificationService` checks product ID against the catalog, non-empty uid/transaction, and `purchases/{purchaseId}` idempotency (`{platform}_{transactionId}`).
 3. `ApplePurchaseVerifier` calls App Store Server API (`GET /inApps/v1/transactions/{id}`), production then sandbox.
 4. `GooglePurchaseVerifier` calls Play Developer API (`purchases.products.get`) and consumes the token server-side.
-5. Duplicate **verified** transaction → return existing Boost, **do not** double-activate.
-6. `BoostActivationService` uses `FieldValue.serverTimestamp()` + configured duration. One active Boost at a time (`allowStacking = false` for later stacking).
-
-Emulator without store credentials still requires uid + allowed product + transaction id; it never lets the client write `boost.status=active`.
+5. Duplicate **verified** transaction → return existing Boost, **do not** add time again.
+6. New verified duration pack → `BoostActivationService` sets `expiresAt = max(now, currentExpiresAt) + pack.duration` using **server time**.
+7. Legacy wallet SKUs still credit `users/{uid}/boostWallet/current`. `activateBoost` consumes one leftover credit (30 minutes) and may stack.
 
 Production secrets (never commit):
 
@@ -100,13 +100,17 @@ Production secrets (never commit):
 
 ### `purchases/{purchaseId}` (functions write only; owner read)
 
-`purchaseId`, `userId`, `productId`, `platform`, `transactionId`, `purchaseTokenHashOrReference` (**hash**, not raw Play token), `status`, `purchasedAt`, `verifiedAt`, `createdAt`.
+`purchaseId`, `userId`, `productId`, `durationDays`, `durationMs`, `boostCount`, `platform`, `transactionId`, `purchaseTokenHashOrReference` (**hash**, not raw Play token), `status`, `purchasedAt`, `verifiedAt`, `createdAt`.
 
 No cards, CVV, bank data, or receipts.
 
 ### `users/{uid}/boosts/{boostId}` (functions write only; owner read)
 
 `boostId`, `userId`, `productId`, `purchaseId`, `status` (`pending` | `active` | `expired` | `cancelled`), `startedAt`, `expiresAt`, `createdAt`.
+
+### `users/{uid}/boostWallet/current` (functions write only; owner read)
+
+Legacy leftover credits only.
 
 Other users cannot read purchases or boosts. Discovery **does not** send `isBoosted` to other clients.
 
@@ -115,25 +119,29 @@ Other users cannot read purchases or boosts. Discovery **does not** send `isBoos
 ## 7. Activation, expiration, Discovery
 
 - Activation clock is **server time**.
-- Client may show remaining minutes. Authority is `expiresAt`.
-- Optional `expireBoost` (every 15 minutes) sets `status=expired`. Discovery still treats `expiresAt < now` as expired if the job lags.
-- Discovery loads active boost user IDs (collection group `boosts` where `status == active`, then `expiresAt > now`) and sorts those profiles first. Distance, age, gender, prefs, and blocks still apply.
-- Viewer cache: `PurchaseRepository` + `MemoryCache` (TTL ~2 minutes). Discovery hydrates once on start / returning from BoostScreen, **not every swipe**. Cache is not source of truth.
+- Client may show remaining days. Authority is `expiresAt`.
+- `expireBoost` (every 15 minutes) sets `status=expired`. Discovery still treats `expiresAt < now` as expired if the job lags.
+- Production Discovery (`getDiscoveryCandidates`) loads active boost user IDs and sorts those profiles first. Distance, age, gender, prefs, and blocks still apply.
+- Boost never means “show to everyone”.
 
 ---
 
-## 8. Restore (consumable)
+## 8. Restore
 
 | Platform | Behavior |
 | --- | --- |
-| iOS | StoreKit does **not** restore consumables. History is `purchases` + `users/{uid}/boosts` keyed by Firebase UID. |
+| iOS | Unfinished StoreKit transactions can be recovered. Finished consumables are **not** redelivered. Active Boost is `users/{uid}/boosts` keyed by Firebase UID. |
 | Android | Unconsumed purchases may redeliver. `verifyBoostPurchase` is idempotent; server consumes the token. |
+
+“Restore purchases” re-syncs the store, verifies unfinished transactions, then reloads Firebase.
+
+A user on a new device with the same Mevora account sees active Boost from Firestore.
 
 ---
 
 ## 9. Analytics
 
-`boost_viewed`, `boost_purchase_started`, `boost_purchase_success`, `boost_purchase_cancelled`, `boost_purchase_failed`, `boost_activated`, `boost_expired`.
+`boost_page_opened`, `boost_viewed`, `boost_product_selected` (`product_id` only), `boost_purchase_started`, `boost_purchase_success`, `boost_purchase_cancelled`, `boost_purchase_failed`, `boost_activated`, `boost_expired`.
 
 Never log purchase tokens, receipts, cards, or raw StoreKit/Play codes.
 
@@ -142,11 +150,11 @@ Never log purchase tokens, receipts, cards, or raw StoreKit/Play codes.
 ## 10. App Store Connect steps (you)
 
 1. Agreements, Tax, and Banking — Paid Apps.
-2. In-App Purchases → Consumable.
-3. Product ID: `com.mevora.app.boost` (or your override).
-4. Reference name, localized display name/description (Turkish + English).
+2. In-App Purchases → **Consumable** (not auto-renewable subscription).
+3. Product IDs: `mevora_boost_7_days`, `mevora_boost_1_month`, `mevora_boost_1_year`.
+4. Localized name/description (Turkish + English).
 5. Price tier (store-localized; Mevora never stores this).
-6. Review screenshot + notes: “One-time Boost, 30 minutes extra Discovery visibility.”
+6. Review notes: “One-time Boost that increases Discovery visibility for 7 / 30 / 365 days. Not a subscription.”
 7. Submit with the app binary. In-App Purchase capability is on the App ID.
 8. For local Xcode testing, select `MevoraBoost.storekit`.
 9. Set Cloud Functions secrets: App Store Connect API key (Issuer ID, Key ID, `.p8`).
@@ -156,38 +164,33 @@ Never log purchase tokens, receipts, cards, or raw StoreKit/Play codes.
 ## 11. Google Play Console steps (you)
 
 1. Payments profile, tax, and banking.
-2. Monetize → In-app products → Create product.
-3. Product ID: `com.mevora.app.boost` (or your override).
-4. Name/description; default price and tax; mark **consumable** (one-time, can be bought again).
-5. Activate the product. License testers for internal testing.
-6. Upload an App Bundle that includes Billing (added by `in_app_purchase`).
-7. Link a Google Play Developer API service account to the Play Console; grant access; put JSON in `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`.
-8. Package name must match (`com.mevora.app` production; flavors may differ — use env `ANDROID_PACKAGE_NAME`).
+2. Monetize → In-app products → Create product (**one-time**, consumable — not a subscription).
+3. Product IDs: `mevora_boost_7_days`, `mevora_boost_1_month`, `mevora_boost_1_year`.
+4. Name/description; default price and tax; activate.
+5. License testers for internal testing.
+6. Upload an App Bundle that includes Billing (`com.android.vending.BILLING`).
+7. Link a Google Play Developer API service account; put JSON in `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`.
+8. Package name must match (`com.mevora.app`).
 
 ---
 
 ## 12. Security
 
-- Firestore: owner **read** only on `purchases` and `users/{uid}/boosts`. All writes `if false` (Admin SDK / functions).
-- Clients cannot set `boost.status`, `expiresAt`, `verifiedAt`, `purchaseId`, `transactionId`, or `userId`.
+- Firestore: owner **read** only on `purchases`, `users/{uid}/boosts`, `users/{uid}/boostWallet`. `boostProducts` authenticated read. All writes `if false` (Admin SDK / functions).
+- Clients cannot set `boost.status`, `expiresAt`, `verifiedAt`, `purchaseId`, `transactionId`, `userId`, or `boostBalance`.
 - App Check on callables outside the emulator.
-- Account deletion deletes that UID’s purchases and boosts.
+- Account deletion deletes that UID’s purchases, boosts, and wallet.
 
 ---
 
 ## 13. Tests
 
-| Area | Coverage |
-| --- | --- |
-| `PurchaseVerificationService` | uid/product/transaction, duplicates, other-user receipt |
-| `BoostActivationService` | duration, one-at-a-time, expiresAt vs now, stacking flag |
-| `PurchaseRepository` | store product, cancel, verify, cache, expired cache |
-| `PurchaseController` | load, success only after verify, cancel, fail, already active |
-| Widgets | BoostScreen copy, button, loading, success, human errors |
-| Integration (mocked) | Discovery → product → purchase → verify → activate → Discovery |
+Use Play license testers and App Store sandbox / TestFlight before charging real money.
+
+Covered in unit/widget tests: catalog, stacking, idempotent verify, cancel, store down, restore, history UI.
 
 ---
 
 ## 14. Intentionally out of scope
 
-Subscriptions, coins, premium, Stripe, PayPal, client-set prices, broadcasting Boost status to other users.
+Auto-renewing subscriptions, generic coins, premium, Stripe, PayPal, client-set prices, broadcasting Boost status to other users, collecting card data in the app.

@@ -3,6 +3,16 @@ import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/features/authentication/data/mappers/auth_error_mapper.dart';
 import 'package:mevora/features/authentication/domain/auth_messages.dart';
 
+class _FakeFirebaseAuthException implements Exception {
+  _FakeFirebaseAuthException({required this.code, this.message});
+
+  final String code;
+  final String? message;
+
+  @override
+  String toString() => 'FirebaseAuthException($code, $message)';
+}
+
 void main() {
   test('maps email auth codes to user-facing exceptions', () {
     expect(
@@ -42,7 +52,7 @@ void main() {
     );
     expect(
       AuthErrorMapper.fromCode('firebase_auth/invalid-app-credential').kind,
-      AuthErrorKind.smsFailed,
+      AuthErrorKind.appVerification,
     );
     expect(
       AuthErrorMapper.fromCode('sms-region-restricted').kind,
@@ -50,7 +60,78 @@ void main() {
     );
     expect(
       AuthErrorMapper.fromCode('invalid-app-credential').message,
-      AuthMessages.smsFailed,
+      AuthMessages.appVerification,
     );
+    expect(
+      AuthErrorMapper.fromCode('captcha-check-failed').kind,
+      AuthErrorKind.appVerification,
+    );
+    expect(
+      AuthErrorMapper.fromCode('missing-client-identifier').kind,
+      AuthErrorKind.appVerification,
+    );
+    expect(
+      AuthErrorMapper.fromCode('invalid-phone-number').kind,
+      AuthErrorKind.invalidPhone,
+    );
+    expect(
+      AuthErrorMapper.fromCode('invalid-verification-code').kind,
+      AuthErrorKind.invalidOtp,
+    );
+    expect(
+      AuthErrorMapper.fromCode('session-expired').kind,
+      AuthErrorKind.expiredOtp,
+    );
+    expect(
+      AuthErrorMapper.fromCode('session-expired').message,
+      AuthMessages.expiredOtp,
+    );
+    expect(
+      AuthErrorMapper.fromCode('too-many-requests').kind,
+      AuthErrorKind.tooManyAttempts,
+    );
+    expect(
+      AuthErrorMapper.fromCode('quota-exceeded').kind,
+      AuthErrorKind.smsQuota,
+    );
+    expect(
+      AuthErrorMapper.fromCode('network-request-failed').kind,
+      AuthErrorKind.network,
+    );
+    expect(
+      AuthErrorMapper.fromCode('user-disabled').kind,
+      AuthErrorKind.disabled,
+    );
+  });
+
+  test('maps BILLING_NOT_ENABLED / 17499 to clear billing message', () {
+    final byCode = AuthErrorMapper.fromCode('billing-not-enabled');
+    expect(byCode.kind, AuthErrorKind.billingNotEnabled);
+    expect(byCode.message, AuthMessages.billingNotEnabled);
+    expect(byCode.message.contains('BILLING'), isFalse);
+
+    final prefixed = AuthErrorMapper.fromCode('firebase_auth/billing-not-enabled');
+    expect(prefixed.kind, AuthErrorKind.billingNotEnabled);
+
+    final wrapped = AuthErrorMapper.map(
+      _FakeFirebaseAuthException(
+        code: 'internal-error',
+        message: 'An internal error has occurred. [ BILLING_NOT_ENABLED ]',
+      ),
+    );
+    expect(wrapped.kind, AuthErrorKind.billingNotEnabled);
+    expect(wrapped.message, AuthMessages.billingNotEnabled);
+    expect(wrapped.message.contains('BILLING_NOT_ENABLED'), isFalse);
+    expect(wrapped.message.contains('internal'), isFalse);
+
+    final byStatus = AuthErrorMapper.map(
+      _FakeFirebaseAuthException(
+        code: 'unknown',
+        message:
+            'SMS verification code request failed: unknown status code: 17499',
+      ),
+    );
+    expect(byStatus.kind, AuthErrorKind.billingNotEnabled);
+    expect(byStatus.message, AuthMessages.billingNotEnabled);
   });
 }

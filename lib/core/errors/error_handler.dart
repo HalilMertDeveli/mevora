@@ -15,6 +15,9 @@ abstract final class ErrorHandler {
         error: details.exception,
         stackTrace: details.stack,
       );
+      if (_isNonFatalPluginNoise(details.exception)) {
+        return;
+      }
       crashReporter?.recordFlutterFatal(details);
       FlutterError.presentError(details);
     };
@@ -25,7 +28,21 @@ abstract final class ErrorHandler {
         error: error,
         stackTrace: stack,
       );
+      if (_isNonFatalPluginNoise(error)) {
+        return true;
+      }
       return crashReporter?.recordUncaught(error, stack) ?? true;
     };
+  }
+
+  static bool _isNonFatalPluginNoise(Object error) {
+    final message = error.toString();
+    return message.contains('Future already completed') ||
+        (message.contains('MissingPluginException') &&
+            message.contains('firebase_firestore/transaction')) ||
+        message.contains('permission-denied') ||
+        message.contains('PERMISSION_DENIED') ||
+        message.contains("Unsupported scheme 'mock'") ||
+        message.contains('Unsupported scheme');
   }
 }

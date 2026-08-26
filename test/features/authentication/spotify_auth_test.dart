@@ -30,6 +30,12 @@ void main() {
       SpotifyAuthService.isSpotifyCallback(Uri.parse('https://evil.example/auth')),
       isFalse,
     );
+    expect(
+      SpotifyAuthService.musicScopes,
+      'user-top-read user-read-recently-played playlist-read-private',
+    );
+    expect(SpotifyAuthService.musicScopes.contains('streaming'), isFalse);
+    expect(SpotifyAuthService.loginScopes.contains('streaming'), isFalse);
   });
 
   test('pending PKCE store round-trips without a client secret', () async {

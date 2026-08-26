@@ -15,6 +15,7 @@ class PurchaseRecord {
     this.purchaseTokenHashOrReference,
     this.purchasedAt,
     this.verifiedAt,
+    this.boostCount = 1,
   });
 
   final String purchaseId;
@@ -29,4 +30,5 @@ class PurchaseRecord {
   final DateTime? purchasedAt;
   final DateTime? verifiedAt;
   final DateTime createdAt;
+  final int boostCount;
 }

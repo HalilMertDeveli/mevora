@@ -11,19 +11,22 @@ abstract final class L10nErrors {
       AuthErrorKind.cancelled => l10n.authCancelled,
       AuthErrorKind.invalidPhone => l10n.authInvalidPhone,
       AuthErrorKind.smsFailed => l10n.authSmsFailed,
+      AuthErrorKind.appVerification => l10n.authAppVerification,
       AuthErrorKind.invalidOtp => l10n.authInvalidOtp,
       AuthErrorKind.expiredOtp => l10n.authExpiredOtp,
+      AuthErrorKind.sessionExpired => l10n.authSessionExpired,
       AuthErrorKind.tooManyAttempts => l10n.authTooManyAttempts,
       AuthErrorKind.smsQuota => l10n.authSmsQuota,
       AuthErrorKind.firebaseUnavailable => l10n.authFirebaseUnavailable,
       AuthErrorKind.network => l10n.authNetwork,
       AuthErrorKind.disabled => l10n.authDisabled,
       AuthErrorKind.banned => l10n.authBanned,
-      AuthErrorKind.oauth => l10n.authOauth,
+      AuthErrorKind.oauth => l10n.authGoogleFailed,
       AuthErrorKind.unknown => l10n.authUnknown,
       AuthErrorKind.accountExists => l10n.authAccountExists,
       AuthErrorKind.linkingBlocked => l10n.authLinkingBlocked,
       AuthErrorKind.notConfigured => l10n.authNotConfigured,
+      AuthErrorKind.billingNotEnabled => l10n.authBillingNotEnabled,
       AuthErrorKind.invalidEmail => l10n.authInvalidEmail,
       AuthErrorKind.weakPassword => l10n.authWeakPassword,
       AuthErrorKind.userNotFound => l10n.authUserNotFound,
@@ -56,6 +59,7 @@ abstract final class L10nErrors {
       PurchaseErrorKind.verificationFailed => l10n.boostVerificationFailed,
       PurchaseErrorKind.alreadyProcessed => l10n.boostAlreadyProcessed,
       PurchaseErrorKind.alreadyActive => l10n.boostAlreadyActive,
+      PurchaseErrorKind.insufficientBalance => l10n.boostInsufficientBalance,
     };
   }
 
@@ -91,6 +95,9 @@ abstract final class L10nErrors {
     if (raw == ChatStrings.notFound) return l10n.chatNotFound;
     if (raw == ChatStrings.network) return l10n.networkError;
     if (raw == ChatStrings.generic) return l10n.chatGeneric;
+    if (raw == ChatStrings.encryptionNotReady) {
+      return l10n.chatEncryptionNotReady;
+    }
     if (raw == CallStrings.userBusy) return l10n.userBusy;
     if (raw == CallStrings.notConfigured) return l10n.callNotConfigured;
     if (raw == CallStrings.cameraDenied) return l10n.cameraDenied;

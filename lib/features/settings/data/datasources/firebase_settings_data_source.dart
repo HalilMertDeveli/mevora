@@ -25,6 +25,7 @@ class FirebaseSettingsDataSource {
       notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
       messageNotifications: data['messageNotifications'] as bool? ?? true,
       matchNotifications: data['matchNotifications'] as bool? ?? true,
+      superLikeNotifications: data['superLikeNotifications'] as bool? ?? true,
       callNotifications: data['callNotifications'] as bool? ?? true,
       locationEnabled: data['locationEnabled'] as bool? ?? false,
       locationOnboardingCompleted:
@@ -42,6 +43,7 @@ class FirebaseSettingsDataSource {
       'notificationsEnabled': settings.notificationsEnabled,
       'messageNotifications': settings.messageNotifications,
       'matchNotifications': settings.matchNotifications,
+      'superLikeNotifications': settings.superLikeNotifications,
       'callNotifications': settings.callNotifications,
       'locationEnabled': settings.locationEnabled,
       'locationOnboardingCompleted': settings.locationOnboardingCompleted,
@@ -61,8 +63,14 @@ class FirebaseSettingsDataSource {
     return UserPrivacy(
       uid: uid,
       showOnlineStatus: data['showOnlineStatus'] as bool? ?? true,
+      showLastSeen:
+          data['showLastSeen'] as bool? ??
+          data['showActivity'] as bool? ??
+          true,
+      showTypingStatus: data['showTypingStatus'] as bool? ?? true,
       showDistance: data['showDistance'] as bool? ?? true,
       showAge: data['showAge'] as bool? ?? true,
+      showActivity: data['showActivity'] as bool? ?? true,
       allowNotifications: data['allowNotifications'] as bool? ?? true,
       allowCalls: data['allowCalls'] as bool? ?? true,
       allowMessages: data['allowMessages'] as bool? ?? true,
@@ -72,8 +80,11 @@ class FirebaseSettingsDataSource {
   Future<void> savePrivacy(UserPrivacy privacy) {
     return _firestore.collection(FirestorePaths.userPrivacy).doc(privacy.uid).set({
       'showOnlineStatus': privacy.showOnlineStatus,
+      'showLastSeen': privacy.showLastSeen,
+      'showTypingStatus': privacy.showTypingStatus,
       'showDistance': privacy.showDistance,
       'showAge': privacy.showAge,
+      'showActivity': privacy.showActivity,
       'allowNotifications': privacy.allowNotifications,
       'allowCalls': privacy.allowCalls,
       'allowMessages': privacy.allowMessages,

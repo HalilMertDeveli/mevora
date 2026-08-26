@@ -4,6 +4,7 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/boost/data/datasources/store_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/repositories/purchase_repository_impl.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
+import 'package:mevora/features/boost/domain/entities/boost_credit_result.dart';
 import 'package:mevora/features/boost/domain/entities/boost_product.dart';
 import 'package:mevora/features/boost/domain/entities/store_transaction.dart';
 
@@ -30,7 +31,14 @@ void main() {
 
   setUp(() {
     store = FakeStorePurchaseDataSource();
-    remote = FakePurchaseRemoteDataSource(verifyResult: active);
+    remote = FakePurchaseRemoteDataSource(
+      verifyResult: const BoostCreditResult(
+        purchaseId: 'android_GPA.1234',
+        productId: 'com.mevora.app.boost',
+        boostCount: 1,
+        balance: 1,
+      ),
+    );
     uid = FakeUidSource('u1');
     repository = PurchaseRepositoryImpl(
       store: store,
@@ -52,6 +60,15 @@ void main() {
     expect(product.currency, 'TRY');
   });
 
+  test('pack catalog uses store prices when present and fallbacks when store is down', () async {
+    store.available = false;
+    final result = await repository.getBoostProducts();
+    expect(result, isA<Success<List<BoostProduct>>>());
+    final packs = (result as Success<List<BoostProduct>>).value;
+    expect(packs.map((pack) => pack.durationDays), [7, 30, 365]);
+    expect(packs.first.available, isFalse);
+  });
+
   test('store unavailable maps to a human purchase failure', () async {
     store.available = false;
     final result = await repository.getBoostProduct();
@@ -70,7 +87,7 @@ void main() {
     expect(purchased, isA<Success<StoreTransaction>>());
     final tx = (purchased as Success<StoreTransaction>).value;
     final first = await repository.verifyBoostPurchase(userId: 'u1', transaction: tx);
-    expect(first, isA<Success<Boost>>());
+    expect(first, isA<Success<BoostCreditResult>>());
     expect(remote.verifyCalls, 1);
     expect(store.completed, isNull);
     await repository.completeStoreTransaction(tx);
@@ -121,7 +138,7 @@ void main() {
       userId: 'u1',
       transaction: store.event.transaction!,
     );
-    expect(result, isA<Err<Boost>>());
+    expect(result, isA<Err<BoostCreditResult>>());
     expect(remote.verifyCalls, 0);
   });
 }

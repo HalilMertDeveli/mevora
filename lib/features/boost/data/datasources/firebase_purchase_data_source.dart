@@ -6,19 +6,32 @@ import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/services/app_logger.dart';
+import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
+import 'package:mevora/features/boost/domain/entities/boost_credit_result.dart';
+import 'package:mevora/features/boost/domain/entities/boost_history_entry.dart';
+import 'package:mevora/features/boost/domain/entities/boost_pack.dart';
+import 'package:mevora/features/boost/domain/entities/boost_wallet.dart';
 import 'package:mevora/features/boost/domain/entities/store_transaction.dart';
 import 'package:mevora/features/boost/domain/services/boost_activation_service.dart';
 
-/// Reads owner boosts and calls verifyBoostPurchase. Never writes status,
-/// expiresAt, verifiedAt, purchaseId, transactionId, or userId from the client.
+/// Reads owner boosts/wallet and calls verify/activate. Never writes status,
+/// expiresAt, verifiedAt, purchaseId, transactionId, balance, or userId.
 abstract class PurchaseRemoteDataSource {
-  Future<Boost> verifyPurchase({
+  Future<BoostCreditResult> verifyPurchase({
     required String userId,
     required StoreTransaction transaction,
   });
 
+  Future<Boost> activateBoost(String userId);
+
   Future<Boost?> loadActiveBoost(String userId);
+
+  Future<BoostWallet> loadWallet(String userId);
+
+  Future<List<BoostHistoryEntry>> loadHistory(String userId);
+
+  Future<List<BoostPack>> loadCatalog();
 }
 
 class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
@@ -40,7 +53,8 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
   final BoostActivationService _activation;
   final DateTime Function() _clock;
 
-  Future<Boost> verifyPurchase({
+  @override
+  Future<BoostCreditResult> verifyPurchase({
     required String userId,
     required StoreTransaction transaction,
   }) async {
@@ -56,20 +70,19 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
         if (transaction.receiptData != null)
           'receiptData': transaction.receiptData,
       });
-      final boost = _boostFromMap(data['boost']);
-      if (boost == null) {
-        throw const PurchaseException(
-          AppStrings.boostVerificationFailed,
-          kind: PurchaseErrorKind.verificationFailed,
-        );
-      }
-      if (data['alreadyActive'] == true) {
-        throw const PurchaseException(
-          AppStrings.boostAlreadyActive,
-          kind: PurchaseErrorKind.alreadyActive,
-        );
-      }
-      return boost;
+      final purchase = _mapOf(data['purchase']);
+      final wallet = _mapOf(data['wallet']);
+      final purchaseId = purchase?['purchaseId'] as String? ??
+          '${transaction.platform.name}_${transaction.transactionId}';
+      return BoostCreditResult(
+        purchaseId: purchaseId,
+        productId:
+            purchase?['productId'] as String? ?? transaction.productId,
+        boostCount: _intOf(purchase?['boostCount'], fallback: 0),
+        balance: _intOf(wallet?['balance']),
+        alreadyProcessed: data['alreadyProcessed'] == true,
+        boost: _boostFromMap(data['boost']),
+      );
     } on PurchaseException {
       rethrow;
     } on FirebaseFunctionsException catch (error, stackTrace) {
@@ -90,6 +103,39 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
     }
   }
 
+  @override
+  Future<Boost> activateBoost(String userId) async {
+    try {
+      final data = await _backend.invoke('activateBoost', <String, dynamic>{});
+      final boost = _boostFromMap(data['boost']);
+      if (boost == null) {
+        throw const PurchaseException(
+          AppStrings.boostVerificationFailed,
+          kind: PurchaseErrorKind.verificationFailed,
+        );
+      }
+      return boost;
+    } on PurchaseException {
+      rethrow;
+    } on FirebaseFunctionsException catch (error, stackTrace) {
+      Error.throwWithStackTrace(_mapCallable(error), stackTrace);
+    } on Object catch (error, stackTrace) {
+      _logger?.warning(
+        'Boost activate call failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      Error.throwWithStackTrace(
+        const PurchaseException(
+          AppStrings.boostNetworkError,
+          kind: PurchaseErrorKind.network,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
   Future<Boost?> loadActiveBoost(String userId) async {
     try {
       final snap = await _firestore
@@ -115,11 +161,131 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
     }
   }
 
-  Boost? _boostFromMap(Object? raw) {
+  @override
+  Future<BoostWallet> loadWallet(String userId) async {
+    try {
+      final snap = await _firestore
+          .doc(FirestorePaths.userBoostWallet(userId))
+          .get();
+      final data = snap.data();
+      return BoostWallet(
+        balance: _intOf(data?['balance']),
+        updatedAt: _dateOf(data?['updatedAt']),
+      );
+    } on FirebaseException catch (error, stackTrace) {
+      _logger?.warning(
+        'Boost wallet read failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      Error.throwWithStackTrace(
+        const PurchaseException(
+          AppStrings.boostNetworkError,
+          kind: PurchaseErrorKind.network,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<List<BoostHistoryEntry>> loadHistory(String userId) async {
+    try {
+      final purchases = await _firestore
+          .collection(FirestorePaths.purchases)
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .get();
+      final boosts = await _firestore
+          .collection(FirestorePaths.userBoosts(userId))
+          .limit(50)
+          .get();
+      final entries = <BoostHistoryEntry>[
+        ...purchases.docs.map((doc) {
+          final data = doc.data();
+          return BoostHistoryEntry(
+            id: doc.id,
+            type: BoostHistoryType.purchase,
+            productId: data['productId'] as String? ?? '',
+            boostCount: _intOf(data['boostCount'], fallback: 0),
+            createdAt: _dateOf(data['createdAt']) ?? _clock(),
+            status: data['status'] as String?,
+            platform: data['platform'] as String?,
+          );
+        }),
+        ...boosts.docs.map((doc) {
+          final data = doc.data();
+          return BoostHistoryEntry(
+            id: doc.id,
+            type: BoostHistoryType.activation,
+            productId: data['productId'] as String? ?? '',
+            boostCount: 1,
+            createdAt: _dateOf(data['createdAt']) ?? _clock(),
+            status: data['status'] as String?,
+            expiresAt: _dateOf(data['expiresAt']),
+          );
+        }),
+      ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return entries;
+    } on FirebaseException catch (error, stackTrace) {
+      _logger?.warning(
+        'Boost history read failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      Error.throwWithStackTrace(
+        const PurchaseException(
+          AppStrings.boostNetworkError,
+          kind: PurchaseErrorKind.network,
+        ),
+        stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<List<BoostPack>> loadCatalog() async {
+    try {
+      final snap = await _firestore
+          .collection(FirestorePaths.boostProducts)
+          .get();
+      if (snap.docs.isEmpty) {
+        return List<BoostPack>.from(BoostPackCatalog.storefrontPacks);
+      }
+      final parsed = BoostPackCatalog.parse(
+        snap.docs.map((doc) {
+          final data = Map<String, dynamic>.from(doc.data());
+          data.putIfAbsent('productId', () => doc.id);
+          data.putIfAbsent('sku', () => doc.id);
+          return data;
+        }).toList(),
+      );
+      return parsed
+          .where((pack) => pack.productId != BoostPackCatalog.legacyProductId)
+          .toList();
+    } on Object catch (error, stackTrace) {
+      _logger?.warning(
+        'Boost catalog read failed; using offline packs',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return List<BoostPack>.from(BoostPackCatalog.storefrontPacks);
+    }
+  }
+
+  Map<String, dynamic>? _mapOf(Object? raw) {
     if (raw is! Map) {
       return null;
     }
-    final data = Map<String, dynamic>.from(raw);
+    return Map<String, dynamic>.from(raw);
+  }
+
+  Boost? _boostFromMap(Object? raw) {
+    final data = _mapOf(raw);
+    if (data == null) {
+      return null;
+    }
     final boostId = data['boostId'] as String?;
     final userId = data['userId'] as String?;
     if (boostId == null || userId == null) {
@@ -154,6 +320,16 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
     return null;
   }
 
+  int _intOf(Object? value, {int fallback = 0}) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
   BoostStatus _statusOf(String? raw) {
     return switch (raw) {
       'active' => BoostStatus.active,
@@ -166,6 +342,12 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
   PurchaseException _mapCallable(FirebaseFunctionsException error) {
     final details = error.details;
     final reason = details is Map ? details['reason'] as String? : null;
+    if (reason == 'insufficient-balance') {
+      return const PurchaseException(
+        AppStrings.boostInsufficientBalance,
+        kind: PurchaseErrorKind.insufficientBalance,
+      );
+    }
     if (reason == 'already-active' || error.code == 'failed-precondition') {
       return const PurchaseException(
         AppStrings.boostAlreadyActive,

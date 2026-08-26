@@ -38,11 +38,33 @@ void main() {
     expect(rules.contains('allow read: if isOwner(userId)'), isTrue);
   });
 
+  test('lastActiveAt may only be omitted or a server timestamp', () {
+    final rules = File('firebase/firestore.rules').readAsStringSync();
+    expect(rules.contains('lastActiveAtUnchangedOrServerNow'), isTrue);
+    expect(rules.contains('lastActiveAtMissingOrServerNow'), isTrue);
+    expect(rules.contains('request.resource.data.lastActiveAt == request.time'), isTrue);
+    expect(rules.contains('allow read, write: if true'), isFalse);
+  });
+
   test('purchases and boosts are owner-read and client-unwritable', () {
     final rules = File('firebase/firestore.rules').readAsStringSync();
     expect(rules.contains('match /purchases/{purchaseId}'), isTrue);
     expect(rules.contains('match /boosts/{boostId}'), isTrue);
+    expect(rules.contains('match /boostWallet/{docId}'), isTrue);
+    expect(rules.contains('match /boostProducts/{productId}'), isTrue);
     expect(rules.contains('allow create, update, delete: if false;'), isTrue);
+  });
+
+  test('clients cannot write matchScore, matchCount, or interaction bonuses', () {
+    final rules = File('firebase/firestore.rules').readAsStringSync();
+    expect(rules.contains("'matchScore'"), isTrue);
+    expect(rules.contains("'matchCount'"), isTrue);
+    expect(rules.contains("'interactionBonusAwarded'"), isTrue);
+    expect(rules.contains("'matchBonusAwarded'"), isTrue);
+    expect(rules.contains('match /matchScoreHistory/{entryId}'), isTrue);
+    expect(rules.contains('match /matchFeedback/{matchId}'), isTrue);
+    expect(rules.contains('match /pendingMatchFeedback/{matchId}'), isTrue);
+    expect(rules.contains('allow read, write: if true'), isFalse);
   });
 
   test('repository refuses to persist another userId', () async {

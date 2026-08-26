@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 
-/// Editorial, restrained type scale. Avoid display fonts that feel like
-/// dating-app clichés.
+/// Mevora type scale — Manrope for UI, Fraunces for display/brand moments.
 abstract final class AppTypography {
-  static const String fontFamily = 'Roboto';
+  static const String fontFamily = 'Manrope';
+  static const String displayFontFamily = 'Fraunces';
 
   static TextTheme textTheme(Brightness brightness) {
     final color = brightness == Brightness.dark
-        ? const Color(0xFFF4EEE8)
+        ? AppColors.primaryText
         : AppColors.ink;
     final muted = brightness == Brightness.dark
-        ? const Color(0xFFB7AFC0)
+        ? AppColors.secondaryText
         : AppColors.mutedInk;
+    final subtle = brightness == Brightness.dark
+        ? AppColors.mutedText
+        : AppColors.subtleInk;
 
     return TextTheme(
       displayLarge: TextStyle(
-        fontFamily: fontFamily,
+        fontFamily: displayFontFamily,
         fontSize: 40,
         fontWeight: FontWeight.w600,
         letterSpacing: 2.4,
@@ -24,7 +27,7 @@ abstract final class AppTypography {
         color: color,
       ),
       displayMedium: TextStyle(
-        fontFamily: fontFamily,
+        fontFamily: displayFontFamily,
         fontSize: 34,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.4,
@@ -32,7 +35,7 @@ abstract final class AppTypography {
         color: color,
       ),
       headlineMedium: TextStyle(
-        fontFamily: fontFamily,
+        fontFamily: displayFontFamily,
         fontSize: 28,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.2,
@@ -86,7 +89,7 @@ abstract final class AppTypography {
         fontSize: 12,
         fontWeight: FontWeight.w400,
         height: 1.4,
-        color: muted,
+        color: subtle,
       ),
       labelLarge: TextStyle(
         fontFamily: fontFamily,
@@ -107,7 +110,7 @@ abstract final class AppTypography {
         fontSize: 11,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.6,
-        color: muted,
+        color: subtle,
       ),
     );
   }

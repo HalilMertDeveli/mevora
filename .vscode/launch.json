@@ -6,35 +6,82 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main_development.dart",
-      "args": ["--flavor", "development"]
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
+      "args": [
+        "--flavor",
+        "development",
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
+      ]
     },
     {
       "name": "Mevora (development · physical SMS)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_development.dart",
-      "args": ["--flavor", "development", "--dart-define=USE_EMULATORS=false"]
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
+      "args": [
+        "--flavor",
+        "development",
+        "--dart-define=USE_EMULATORS=false",
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
+      ]
     },
     {
       "name": "Mevora (development · auth emulator)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_development.dart",
-      "args": ["--flavor", "development", "--dart-define=USE_AUTH_EMULATOR=true"]
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
+      "args": [
+        "--flavor",
+        "development",
+        "--dart-define=USE_AUTH_EMULATOR=true",
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
+      ]
     },
     {
       "name": "Mevora (staging)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_staging.dart",
-      "args": ["--flavor", "staging"]
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
+      "args": [
+        "--flavor",
+        "staging",
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
+      ]
     },
     {
       "name": "Mevora (production)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_production.dart",
-      "args": ["--flavor", "production"]
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "D:/Mevora/.tmp",
+        "TEMP": "D:/Mevora/.tmp"
+      },
+      "args": [
+        "--flavor",
+        "production",
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
+      ]
     }
   ]
 }

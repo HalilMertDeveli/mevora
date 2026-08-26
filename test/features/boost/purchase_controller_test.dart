@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/constants/app_strings.dart';
 import 'package:mevora/core/errors/failure.dart';
+import 'package:mevora/features/boost/domain/entities/boost_wallet.dart';
 import 'package:mevora/features/boost/domain/entities/purchase_flow_state.dart';
 import 'package:mevora/features/boost/domain/usecases/get_active_boost.dart';
 import 'package:mevora/features/boost/domain/usecases/get_boost_product.dart';
@@ -31,29 +32,41 @@ void main() {
   test('load shows store product without activating', () async {
     await controller.load();
     expect(controller.state.status, PurchaseUiStatus.productLoaded);
-    expect(controller.state.product?.localizedPrice, '₺29,99');
+    expect(controller.state.product?.localizedPrice, '₺99,99');
     expect(controller.state.hasActiveBoost, isFalse);
+    expect(controller.state.products, isNotEmpty);
   });
 
-  test('already active boost blocks a second purchase', () async {
-    repository.activeBoost = (await repository.verifyBoostPurchase(
-      userId: 'u1',
-      transaction: repository.transaction!,
-    )).valueOrNull;
+  test('already active boost still allows buying another duration pack', () async {
+    repository.wallet = const BoostWallet(balance: 2);
+    await repository.activateBoost('u1');
     await controller.load();
-    expect(controller.state.message, AppStrings.boostAlreadyActive);
+    expect(controller.state.hasActiveBoost, isTrue);
     await controller.purchase();
-    expect(controller.state.message, AppStrings.boostAlreadyActive);
+    expect(repository.verifyCalled, isTrue);
+    expect(controller.state.status, PurchaseUiStatus.success);
+    expect(controller.state.hasActiveBoost, isTrue);
   });
 
-  test('purchase waits for backend before success copy', () async {
+  test('purchase waits for backend then activates Boost', () async {
     await controller.load();
     await controller.purchase();
     expect(repository.purchaseCalled, isTrue);
     expect(repository.verifyCalled, isTrue);
     expect(controller.state.status, PurchaseUiStatus.success);
     expect(controller.state.message, AppStrings.boostSuccessTitle);
+    expect(controller.state.hasActiveBoost, isTrue);
     expect(repository.lastCompleted?.transactionId, 'GPA.1234');
+  });
+
+  test('activate consumes balance and reports success only after server confirm', () async {
+    repository.wallet = const BoostWallet(balance: 1);
+    await controller.load();
+    await controller.activate();
+    expect(repository.activateCalled, isTrue);
+    expect(controller.state.status, PurchaseUiStatus.success);
+    expect(controller.state.message, AppStrings.boostSuccessTitle);
+    expect(controller.state.hasActiveBoost, isTrue);
   });
 
   test('cancelled purchase uses cancelled state', () async {
@@ -77,6 +90,7 @@ void main() {
     expect(controller.state.status, PurchaseUiStatus.failed);
     expect(controller.state.message, AppStrings.boostVerificationFailed);
     expect(controller.state.hasActiveBoost, isFalse);
+    expect(controller.state.balance, 0);
   });
 
   test('unavailable store maps to unavailable', () async {

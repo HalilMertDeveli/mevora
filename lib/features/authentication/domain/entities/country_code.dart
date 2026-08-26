@@ -327,6 +327,46 @@ abstract final class CountryCodes {
       minNationalLength: 8,
       maxNationalLength: 8,
     ),
+    CountryCode(
+      country: 'Nijerya',
+      isoCode: 'NG',
+      dialCode: '234',
+      flag: '🇳🇬',
+      minNationalLength: 7,
+      maxNationalLength: 10,
+    ),
+    CountryCode(
+      country: 'Endonezya',
+      isoCode: 'ID',
+      dialCode: '62',
+      flag: '🇮🇩',
+      minNationalLength: 9,
+      maxNationalLength: 12,
+    ),
+    CountryCode(
+      country: 'Pakistan',
+      isoCode: 'PK',
+      dialCode: '92',
+      flag: '🇵🇰',
+      minNationalLength: 10,
+      maxNationalLength: 10,
+    ),
+    CountryCode(
+      country: 'Rusya',
+      isoCode: 'RU',
+      dialCode: '7',
+      flag: '🇷🇺',
+      minNationalLength: 10,
+      maxNationalLength: 10,
+    ),
+    CountryCode(
+      country: 'Çin',
+      isoCode: 'CN',
+      dialCode: '86',
+      flag: '🇨🇳',
+      minNationalLength: 11,
+      maxNationalLength: 11,
+    ),
   ];
 
   static CountryCode? byIso(String isoCode) {

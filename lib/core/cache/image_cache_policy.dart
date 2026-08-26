@@ -4,8 +4,8 @@ import 'package:flutter/painting.dart';
 /// without unbounded memory growth.
 abstract final class ImageCachePolicy {
   static void apply({
-    int maximumSize = 200,
-    int maximumSizeBytes = 80 * 1024 * 1024,
+    int maximumSize = 80,
+    int maximumSizeBytes = 32 * 1024 * 1024,
   }) {
     final cache = PaintingBinding.instance.imageCache;
     cache.maximumSize = maximumSize;

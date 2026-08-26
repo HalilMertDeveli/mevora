@@ -37,7 +37,7 @@ class FirebaseBootstrap {
     if (config.useEmulators) {
       await _connectEmulators(config);
     } else {
-      await _configureLivePhoneAuth();
+      await _configureLivePhoneAuth(config);
     }
 
     await _configureAppCheck(config);
@@ -49,8 +49,12 @@ class FirebaseBootstrap {
     );
     if (!config.environment.isDevelopment) {
       await FirebaseAnalytics.instance.logAppOpen();
+      await FirebaseMessaging.instance.setAutoInitEnabled(true);
+    } else {
+      // A second Flutter isolate for FCM + Play Services at launch is enough
+      // to trip the emulator low-memory killer (seen at ~460MB RSS).
+      await FirebaseMessaging.instance.setAutoInitEnabled(false);
     }
-    await FirebaseMessaging.instance.setAutoInitEnabled(true);
 
     logger.info(
       'Firebase ready (${config.firebaseProjectId}, emulators=${config.useEmulators}, authEmulator=${config.useAuthEmulator})',
@@ -71,7 +75,7 @@ class FirebaseBootstrap {
         'Auth emulator at ${emulators.host}:${emulators.authPort} (no real SMS)',
       );
     } else {
-      await _configureLivePhoneAuth();
+      await _configureLivePhoneAuth(config);
       logger.info(
         'Auth uses live ${config.firebaseProjectId} for Phone Auth SMS',
       );
@@ -93,14 +97,68 @@ class FirebaseBootstrap {
     );
   }
 
-  /// Live Phone Auth needs Play Integrity / reCAPTCHA. Never disable
-  /// verification against production or staging.
-  Future<void> _configureLivePhoneAuth() async {
+  /// Live Phone Auth needs Play Integrity and/or reCAPTCHA for **real SMS**.
+  ///
+  /// Defaults target carrier SMS (not Console test numbers):
+  /// - App verification is **enabled** (required for real phone numbers).
+  /// - Play Integrity is preferred (SHA-1 + SHA-256 must be in Firebase Console).
+  /// - reCAPTCHA is **not** forced by default — forcing it without a hostable
+  ///   Activity caused `FirebaseAuthMissingActivityForRecaptchaException` and
+  ///   blocked real SMS. Opt in with `--dart-define=FORCE_PHONE_RECAPTCHA=true`.
+  ///
+  /// Console test numbers (no carrier SMS) — opt in explicitly:
+  /// `--dart-define=DISABLE_PHONE_APP_VERIFICATION=true`
+  /// `--dart-define=PHONE_AUTH_TEST_NUMBER=+905551112233`
+  /// `--dart-define=PHONE_AUTH_TEST_SMS_CODE=123456`
+  Future<void> _configureLivePhoneAuth(AppConfig config) async {
     try {
+      const disableVerification = bool.fromEnvironment(
+        'DISABLE_PHONE_APP_VERIFICATION',
+        defaultValue: false,
+      );
+      // Empty by default — never inject a Console test pair into production SMS.
+      const testPhone = String.fromEnvironment(
+        'PHONE_AUTH_TEST_NUMBER',
+        defaultValue: '',
+      );
+      const testSms = String.fromEnvironment(
+        'PHONE_AUTH_TEST_SMS_CODE',
+        defaultValue: '',
+      );
+
+      final appVerificationDisabled =
+          config.environment.isDevelopment && disableVerification;
+      // Only force reCAPTCHA when explicitly requested. Default: Play Integrity.
+      final forceRecaptcha = !appVerificationDisabled &&
+          const bool.fromEnvironment('FORCE_PHONE_RECAPTCHA', defaultValue: false);
+      final useDevTestPair = config.environment.isDevelopment &&
+          appVerificationDisabled &&
+          testPhone.isNotEmpty &&
+          testSms.isNotEmpty;
+
       await FirebaseAuth.instance.setSettings(
-        appVerificationDisabledForTesting: false,
+        appVerificationDisabledForTesting: appVerificationDisabled,
+        forceRecaptchaFlow: forceRecaptcha,
+        phoneNumber: useDevTestPair ? testPhone : null,
+        smsCode: useDevTestPair ? testSms : null,
+      );
+      // ignore: avoid_print
+      print(
+        '[PHONE_AUTH] SETTINGS '
+        'appVerificationDisabled=$appVerificationDisabled '
+        'forceRecaptchaFlow=$forceRecaptcha '
+        'devTestNumber=$useDevTestPair '
+        'project=${config.firebaseProjectId}',
+      );
+      logger.info(
+        'Live Phone Auth configured '
+        '(appVerificationDisabled=$appVerificationDisabled, '
+        'forceRecaptchaFlow=$forceRecaptcha, '
+        'devTestNumber=$useDevTestPair)',
       );
     } on Object catch (error, stackTrace) {
+      // ignore: avoid_print
+      print('[PHONE_AUTH] SETTINGS_FAILED error=$error');
       logger.warning(
         'Auth phone verification settings were not applied',
         error: error,
@@ -111,6 +169,30 @@ class FirebaseBootstrap {
 
   Future<void> _configureAppCheck(AppConfig config) async {
     try {
+      if (config.environment.isDevelopment) {
+        // Fixed token only via --dart-define / tool/app_check_debug_token.local
+        // (never hardcode tokens in source).
+        const fromEnv = String.fromEnvironment(
+          'FIREBASE_APP_CHECK_DEBUG_TOKEN',
+        );
+        if (fromEnv.isEmpty) {
+          logger.warning(
+            'App Check debug token missing; activate debug providers without a fixed token. '
+            'Use tool/flutter_run_dev.ps1 or --dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=...',
+          );
+          await FirebaseAppCheck.instance.activate(
+            providerAndroid: const AndroidDebugProvider(),
+            providerApple: const AppleDebugProvider(),
+          );
+        } else {
+          await FirebaseAppCheck.instance.activate(
+            providerAndroid: const AndroidDebugProvider(debugToken: fromEnv),
+            providerApple: const AppleDebugProvider(debugToken: fromEnv),
+          );
+          logger.info('App Check debug provider active with dart-define token');
+        }
+        return;
+      }
       await FirebaseAppCheck.instance.activate(
         providerAndroid: config.environment.isProduction
             ? const AndroidPlayIntegrityProvider()
@@ -121,7 +203,7 @@ class FirebaseBootstrap {
       );
     } on Object catch (error, stackTrace) {
       logger.warning(
-        'App Check was not activated',
+        'App Check was not activated; continuing without enforcement',
         error: error,
         stackTrace: stackTrace,
       );

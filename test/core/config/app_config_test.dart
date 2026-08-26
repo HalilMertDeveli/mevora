@@ -6,13 +6,13 @@ import 'package:mevora/core/config/app_environment.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('development config isolates Firebase to mevora-dev and emulators', () {
+  test('development config isolates Firebase to mevora-d6ed0', () {
     const config = AppConfig(environment: AppEnvironment.development);
 
     expect(config.appName, 'Mevora Dev');
-    expect(config.packageName, 'com.mevora.app.dev');
-    expect(config.firebaseProjectId, 'mevora-dev');
-    expect(config.useEmulators, isTrue);
+    expect(config.packageName, 'com.mevora.app');
+    expect(config.firebaseProjectId, 'mevora-d6ed0');
+    expect(config.useEmulators, isFalse);
     expect(
       config.useAuthEmulator,
       isFalse,
@@ -49,5 +49,11 @@ void main() {
 
     expect(config.emulatorConfig.host, '10.0.2.2');
     debugDefaultTargetPlatformOverride = null;
+  });
+
+  test('development Google web client id defaults from FlutterFire public client', () {
+    const config = AppConfig(environment: AppEnvironment.development);
+    expect(config.googleWebClientId, contains('apps.googleusercontent.com'));
+    expect(config.googleWebClientId.startsWith('821220262229-'), isTrue);
   });
 }

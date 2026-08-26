@@ -1,7 +1,7 @@
 {
   "projects": {
-    "default": "mevora-dev",
-    "development": "mevora-dev",
+    "default": "mevora-d6ed0",
+    "development": "mevora-d6ed0",
     "staging": "mevora-staging",
     "production": "mevora-production"
   },

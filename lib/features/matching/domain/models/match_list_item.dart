@@ -7,6 +7,7 @@ class MatchListItem {
     required this.otherUserId,
     required this.name,
     this.photoUrl,
+    this.isVerified = false,
     this.presence = PresenceStatus.offline,
   });
 
@@ -14,6 +15,7 @@ class MatchListItem {
   final String otherUserId;
   final String name;
   final String? photoUrl;
+  final bool isVerified;
   final PresenceStatus presence;
 
   int unreadCount(String uid) => match.unreadFor(uid);

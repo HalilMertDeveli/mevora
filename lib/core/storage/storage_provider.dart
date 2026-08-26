@@ -7,7 +7,10 @@ abstract class StorageProvider {
     required String path,
     required List<int> bytes,
     String contentType = 'image/jpeg',
+    void Function(double progress)? onProgress,
   });
+
+  Future<Result<List<int>>> downloadBytes(String path);
 
   Future<Result<void>> delete(String path);
 }

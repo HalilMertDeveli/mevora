@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/analytics/analytics_provider.dart';
+import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/features/safety/domain/models/report_reason.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -89,18 +91,38 @@ class _ReportPageState extends State<ReportPage> {
 
   Future<void> _submit() async {
     setState(() => _sending = true);
-    await SocialScope.of(context).safetyRepository.reportUser(
-      userId: widget.userId,
-      reason: _reason.firestoreValue,
-      matchId: widget.matchId,
-      messageId: widget.messageId,
-      description: _description.text,
-    );
+    final l10n = AppLocalizations.of(context);
+    try {
+      await SocialScope.of(context).safetyRepository.reportUser(
+        userId: widget.userId,
+        reason: _reason.firestoreValue,
+        matchId: widget.matchId,
+        messageId: widget.messageId,
+        description: _description.text,
+      );
+      await BoostScope.maybeOf(context)?.analytics?.logEvent(
+        AnalyticsEvents.reportSubmitted,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.reportThanks)),
+      );
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.somethingWentWrong)),
+      );
+      return;
+    }
     if (!mounted) {
       return;
     }
     setState(() => _sending = false);
-    final l10n = AppLocalizations.of(context);
     final block = await MevoraDialog.show(
       context,
       title: l10n.offerBlockTitle,
@@ -111,6 +133,9 @@ class _ReportPageState extends State<ReportPage> {
       await SocialScope.of(context).safetyRepository.blockUser(
         userId: widget.userId,
         matchId: widget.matchId,
+      );
+      await BoostScope.maybeOf(context)?.analytics?.logEvent(
+        AnalyticsEvents.userBlocked,
       );
     }
     if (mounted) {

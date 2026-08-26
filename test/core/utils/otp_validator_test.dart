@@ -9,13 +9,14 @@ void main() {
   });
 
   test('rejects empty, short, and non-digit codes', () {
-    expect(OtpValidator.validate(''), 'Doğrulama kodunu gir.');
-    expect(OtpValidator.validate('12'), 'Doğrulama kodu geçersiz.');
-    expect(OtpValidator.validate('12ab56'), 'Doğrulama kodu geçersiz.');
+    expect(OtpValidator.validate(''), AuthMessages.invalidOtp);
+    expect(OtpValidator.validate('12'), AuthMessages.invalidOtp);
+    expect(OtpValidator.validate('12ab56'), AuthMessages.invalidOtp);
     expect(OtpValidator.digitsOnly('1 2 3-4'), '1234');
   });
 
   test('resend copy matches the OTP screen spec', () {
+    expect(OtpValidator.resendSeconds, 30);
     expect(
       AuthMessages.resendCountdown(42),
       'Yeni kodu 42 saniye sonra tekrar gönderebilirsin.',

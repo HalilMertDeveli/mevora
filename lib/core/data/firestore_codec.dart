@@ -7,6 +7,9 @@ DateTime? firestoreDate(Object? value) {
   if (value is DateTime) {
     return value;
   }
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value);
+  }
   return null;
 }
 
@@ -25,6 +28,16 @@ int firestoreInt(Object? value, int fallback) {
   }
   if (value is num) {
     return value.toInt();
+  }
+  if (value is String) {
+    final parsed = int.tryParse(value.trim());
+    if (parsed != null) {
+      return parsed;
+    }
+    final asDouble = double.tryParse(value.trim());
+    if (asDouble != null) {
+      return asDouble.round();
+    }
   }
   return fallback;
 }

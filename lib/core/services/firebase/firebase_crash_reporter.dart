@@ -14,9 +14,24 @@ class FirebaseCrashReporter implements CrashReporter {
 
   @override
   bool recordUncaught(Object error, StackTrace stackTrace) {
+    if (_isOptionalAssetFailure(error)) {
+      return true;
+    }
     unawaited(
       FirebaseCrashlytics.instance.recordError(error, stackTrace, fatal: true),
     );
     return true;
+  }
+
+  static bool _isOptionalAssetFailure(Object error) {
+    final message = error.toString();
+    return message.contains('RiveFileLoaderException') ||
+        message.contains('Unable to load asset: "assets/rive/') ||
+        // Firestore MethodChannel race on cancelled transactions (non-fatal).
+        message.contains('Future already completed') ||
+        (message.contains('MissingPluginException') &&
+            message.contains('firebase_firestore/transaction')) ||
+        message.contains('permission-denied') ||
+        message.contains('PERMISSION_DENIED');
   }
 }

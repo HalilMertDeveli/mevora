@@ -4,6 +4,8 @@ enum PurchaseUiStatus {
   productLoaded,
   purchasing,
   verifying,
+  credited,
+  activating,
   success,
   cancelled,
   failed,

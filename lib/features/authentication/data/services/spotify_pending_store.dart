@@ -1,14 +1,18 @@
+enum SpotifyOAuthPurpose { login, musicLink }
+
 /// Persists the Spotify PKCE verifier so auth can survive the OAuth callback.
 class SpotifyPendingAuth {
   const SpotifyPendingAuth({
     required this.state,
     required this.verifier,
     required this.linkToCurrentUser,
+    this.purpose = SpotifyOAuthPurpose.login,
   });
 
   final String state;
   final String verifier;
   final bool linkToCurrentUser;
+  final SpotifyOAuthPurpose purpose;
 }
 
 abstract class SpotifyPendingStore {

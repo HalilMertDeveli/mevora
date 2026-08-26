@@ -1,0 +1,108 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import 'package:mevora/features/chat/domain/services/chat_voice_recorder.dart';
+
+/// Minimum captured audio length we treat as intentional (ms).
+const int kMinVoiceDurationMs = 400;
+
+class RecordChatVoiceRecorder implements ChatVoiceRecorder {
+  RecordChatVoiceRecorder({AudioRecorder? recorder})
+    : _recorder = recorder ?? AudioRecorder();
+
+  final AudioRecorder _recorder;
+  String? _path;
+  DateTime? _startedAt;
+  bool _recording = false;
+
+  @override
+  bool get isRecording => _recording;
+
+  @override
+  Future<void> start() async {
+    final allowed = await _recorder.hasPermission();
+    if (!allowed) {
+      throw const ChatMicDenied();
+    }
+    final dir = await getTemporaryDirectory();
+    _path =
+        '${dir.path}/mevora-voice-${DateTime.now().millisecondsSinceEpoch}.m4a';
+    _startedAt = DateTime.now();
+    // 44.1 kHz AAC-LC is widely supported on real Android devices; 22.05 kHz
+    // silently fails to produce usable frames on some OEM recorders.
+    await _recorder.start(
+      const RecordConfig(
+        encoder: AudioEncoder.aacLc,
+        bitRate: 64000,
+        sampleRate: 44100,
+        numChannels: 1,
+      ),
+      path: _path!,
+    );
+    _recording = true;
+  }
+
+  @override
+  Future<RecordedVoice?> stop() async {
+    _recording = false;
+    final started = _startedAt;
+    final stoppedAt = DateTime.now();
+    final path = await _recorder.stop() ?? _path;
+    _path = null;
+    _startedAt = null;
+    if (path == null) {
+      return null;
+    }
+    final file = File(path);
+    if (!file.existsSync()) {
+      return null;
+    }
+    final bytes = Uint8List.fromList(await file.readAsBytes());
+    try {
+      await file.delete();
+    } on Object {
+      // Temp cleanup is best-effort.
+    }
+    if (bytes.isEmpty) {
+      return null;
+    }
+    final durationMs = started == null
+        ? kMinVoiceDurationMs
+        : stoppedAt.difference(started).inMilliseconds;
+    if (durationMs < kMinVoiceDurationMs) {
+      return null;
+    }
+    return RecordedVoice(
+      bytes: bytes,
+      contentType: 'audio/mp4',
+      durationMs: durationMs.clamp(kMinVoiceDurationMs, 120000),
+    );
+  }
+
+  @override
+  Future<void> cancel() async {
+    _recording = false;
+    try {
+      await _recorder.stop();
+    } on Object {
+      // Ignore.
+    }
+    final path = _path;
+    _path = null;
+    _startedAt = null;
+    if (path != null) {
+      try {
+        await File(path).delete();
+      } on Object {
+        // Ignore.
+      }
+    }
+  }
+}
+
+class ChatMicDenied implements Exception {
+  const ChatMicDenied();
+}

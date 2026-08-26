@@ -21,7 +21,7 @@ class AppConfig {
   };
 
   String get packageName => switch (environment) {
-    AppEnvironment.development => '${AppConstants.packageName}.dev',
+    AppEnvironment.development => AppConstants.packageName,
     AppEnvironment.staging => '${AppConstants.packageName}.staging',
     AppEnvironment.production => AppConstants.packageName,
   };
@@ -36,14 +36,14 @@ class AppConfig {
 
   bool get enableVerboseLogging => !environment.isProduction;
 
-  /// Development talks to the Emulator Suite for Firestore, Functions, and
-  /// Storage. Pass `--dart-define=USE_EMULATORS=false` on a physical device
-  /// so the whole stack uses live `mevora-d6ed0` (10.0.2.2 is unreachable there).
+  /// Live `mevora-d6ed0` is the default. The Storage emulator silently hangs
+  /// `putData` when it is not running (typical on a physical device). Opt in
+  /// with `--dart-define=USE_EMULATORS=true` only when the Emulator Suite is up.
   bool get useEmulators {
     if (!environment.isDevelopment) {
       return false;
     }
-    return const bool.fromEnvironment('USE_EMULATORS', defaultValue: true);
+    return const bool.fromEnvironment('USE_EMULATORS', defaultValue: false);
   }
 
   /// Auth emulator never sends SMS. Off by default so Phone Auth uses live
@@ -79,8 +79,21 @@ class AppConfig {
   );
 
   /// Web OAuth client ID used by Google Sign-In on Android (id token).
-  String get googleWebClientId =>
-      const String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+  /// Public client ID from `google-services.json` (client_type 3) — not a secret.
+  String get googleWebClientId {
+    const fromEnv = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+    if (fromEnv.isNotEmpty) {
+      return fromEnv;
+    }
+    return switch (environment) {
+      AppEnvironment.development =>
+        '821220262229-7nkoi3c1sacopqnjesvrkk464cup6b84.apps.googleusercontent.com',
+      AppEnvironment.staging =>
+        '905717896949-ed8egc0uc4nng7tae5p52qs0ogrnc6vh.apps.googleusercontent.com',
+      AppEnvironment.production =>
+        '795522345315-nmco4v6vq6njto71d4ga0f0j1o9h1cg6.apps.googleusercontent.com',
+    };
+  }
 
   /// Apple Services ID used for Sign in with Apple on Android.
   String get appleServiceId => const String.fromEnvironment(
@@ -98,12 +111,12 @@ class AppConfig {
 
   String get termsOfServiceUrl => const String.fromEnvironment(
     'TERMS_URL',
-    defaultValue: 'https://mevora.app/terms',
+    defaultValue: 'https://mevora-d6ed0.web.app/terms',
   );
 
   String get privacyPolicyUrl => const String.fromEnvironment(
     'PRIVACY_URL',
-    defaultValue: 'https://mevora.app/privacy',
+    defaultValue: 'https://mevora-d6ed0.web.app/privacy',
   );
 
   String get functionsRegion => const String.fromEnvironment(

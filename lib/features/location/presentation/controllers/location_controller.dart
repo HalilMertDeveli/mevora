@@ -75,7 +75,21 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     final generation = ++_syncGeneration;
+    final userChanged = uid != _uid;
     _uid = uid;
+
+    // Hard reset UI state on uid changes so no previous user's location gate
+    // state can leak into the next session.
+    if (userChanged) {
+      errorMessage = null;
+      selectedCity = null;
+      screen = LocationScreenState.prompt;
+      reducedAccuracy = false;
+      onboardingNeeded = false;
+      isResolved = false;
+      _nativePromptedThisSession = false;
+      notifyListeners();
+    }
     if (uid == null) {
       onboardingNeeded = false;
       isResolved = true;
@@ -85,27 +99,42 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
+    // Note: on uid changes, reset already happened above.
     isResolved = false;
     onboardingNeeded = false;
     notifyListeners();
 
-    final flagsResult = await repository.loadLocationFlags(uid);
-    final storedResult = await repository.loadOwnerLocation(uid);
-    if (generation != _syncGeneration) {
-      return;
-    }
+    try {
+      final flagsResult = await repository
+          .loadLocationFlags(uid)
+          .timeout(const Duration(seconds: 8));
+      final storedResult = await repository
+          .loadOwnerLocation(uid)
+          .timeout(const Duration(seconds: 8));
+      if (generation != _syncGeneration) {
+        return;
+      }
 
-    final flags = flagsResult.valueOrNull ?? LocationFlags(uid: uid);
-    final stored = storedResult.valueOrNull;
-    onboardingNeeded = LocationOnboardingGate.shouldShow(
-      locationOnboardingCompleted: flags.locationOnboardingCompleted,
-      hasStoredLocation: stored != null,
-    );
-    if (onboardingNeeded) {
-      await _refreshPromptState();
+      final flags = flagsResult.valueOrNull ?? LocationFlags(uid: uid);
+      final stored = storedResult.valueOrNull;
+      onboardingNeeded = LocationOnboardingGate.shouldShow(
+        locationOnboardingCompleted: flags.locationOnboardingCompleted,
+        hasStoredLocation: stored != null,
+      );
+      if (onboardingNeeded) {
+        await _refreshPromptState();
+      }
+      isResolved = true;
+      notifyListeners();
+    } on Object {
+      if (generation != _syncGeneration) {
+        return;
+      }
+      // Never block splash forever on Firestore/network hang.
+      onboardingNeeded = false;
+      isResolved = true;
+      notifyListeners();
     }
-    isResolved = true;
-    notifyListeners();
   }
 
   Future<void> refreshStatus() async {

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
@@ -16,8 +15,6 @@ import 'package:mevora/features/authentication/presentation/widgets/social_auth_
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -45,7 +42,6 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     final auth = AuthScope.of(context);
-    final config = AppScope.of(context).config;
     final l10n = AppLocalizations.of(context);
     final error = localizeAuthError(l10n, auth);
     final busyProvider = switch (auth.status) {
@@ -141,12 +137,8 @@ class _RegisterPageState extends State<RegisterPage> {
               onPressed: auth.isBusy ? null : () => unawaited(_submit()),
             ),
             AuthLegalFooter(
-              onTerms: () => unawaited(
-                launchUrl(Uri.parse(config.termsOfServiceUrl)),
-              ),
-              onPrivacy: () => unawaited(
-                launchUrl(Uri.parse(config.privacyPolicyUrl)),
-              ),
+              onTerms: () => context.push(AppRoutes.legalTerms),
+              onPrivacy: () => context.push(AppRoutes.legalPrivacy),
             ),
             const SizedBox(height: AppSpacing.lg),
             SocialAuthButtons(

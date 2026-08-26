@@ -1,9 +1,19 @@
+enum MatchSource { mutualLike, relationshipTest }
+
+MatchSource matchSourceFrom(Object? raw, {Object? matchType}) {
+  if (raw == 'relationship_test' || matchType == 'relationship') {
+    return MatchSource.relationshipTest;
+  }
+  return MatchSource.mutualLike;
+}
+
 class Match {
   const Match({
     required this.id,
     required this.userIds,
     required this.createdAt,
     required this.isActive,
+    this.matchedAt,
     this.lastMessage,
     this.lastMessageAt,
     this.unmatchedBy,
@@ -12,6 +22,8 @@ class Match {
     this.isNewFor = const {},
     this.participantNames = const {},
     this.participantPhotos = const {},
+    this.participantVerified = const {},
+    this.source = MatchSource.mutualLike,
   });
 
   final String id;
@@ -20,6 +32,11 @@ class Match {
   final List<String> userIds;
   final DateTime createdAt;
   final bool isActive;
+
+  /// Canonical match time from Firestore (`matchedAt` or `createdAt`).
+  DateTime get occurredAt => matchedAt ?? createdAt;
+
+  final DateTime? matchedAt;
   final String? lastMessage;
   final DateTime? lastMessageAt;
   final String? unmatchedBy;
@@ -28,6 +45,10 @@ class Match {
   final Map<String, bool> isNewFor;
   final Map<String, String> participantNames;
   final Map<String, String> participantPhotos;
+  final Map<String, bool> participantVerified;
+  final MatchSource source;
+
+  bool get isRelationshipTest => source == MatchSource.relationshipTest;
 
   String otherUserId(String uid) {
     return userIds.firstWhere(
@@ -41,6 +62,9 @@ class Match {
 
   String? otherPhoto(String uid) => participantPhotos[otherUserId(uid)];
 
+  bool otherIsVerified(String uid) =>
+      participantVerified[otherUserId(uid)] ?? false;
+
   int unreadFor(String uid) => unreadCounts[uid] ?? 0;
 
   bool isNewMatchFor(String uid) =>
@@ -50,18 +74,21 @@ class Match {
 
   Match copyWith({
     bool? isActive,
+    DateTime? matchedAt,
     String? lastMessage,
     DateTime? lastMessageAt,
     String? unmatchedBy,
     DateTime? unmatchedAt,
     Map<String, int>? unreadCounts,
     Map<String, bool>? isNewFor,
+    MatchSource? source,
   }) {
     return Match(
       id: id,
       userIds: userIds,
       createdAt: createdAt,
       isActive: isActive ?? this.isActive,
+      matchedAt: matchedAt ?? this.matchedAt,
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
       unmatchedBy: unmatchedBy ?? this.unmatchedBy,
@@ -70,6 +97,8 @@ class Match {
       isNewFor: isNewFor ?? this.isNewFor,
       participantNames: participantNames,
       participantPhotos: participantPhotos,
+      participantVerified: participantVerified,
+      source: source ?? this.source,
     );
   }
 }

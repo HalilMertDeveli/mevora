@@ -11,8 +11,30 @@ void main() {
   final tr = lookupAppLocalizations(const Locale('tr'));
 
   test('invalid OTP is localized for EN and TR', () {
-    expect(L10nErrors.auth(en, AuthErrorKind.invalidOtp), 'Invalid verification code.');
-    expect(L10nErrors.auth(tr, AuthErrorKind.invalidOtp), 'Doğrulama kodu geçersiz.');
+    expect(L10nErrors.auth(en, AuthErrorKind.invalidOtp), 'The verification code is incorrect.');
+    expect(L10nErrors.auth(tr, AuthErrorKind.invalidOtp), 'Doğrulama kodu hatalı.');
+  });
+
+  test('billing-not-enabled is localized for EN and TR', () {
+    expect(
+      L10nErrors.auth(en, AuthErrorKind.billingNotEnabled),
+      'Firebase billing (Blaze) is required to send SMS verification codes.',
+    );
+    expect(
+      L10nErrors.auth(tr, AuthErrorKind.billingNotEnabled),
+      'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.',
+    );
+  });
+
+  test('app verification is localized for EN and TR', () {
+    expect(
+      L10nErrors.auth(en, AuthErrorKind.appVerification),
+      en.authAppVerification,
+    );
+    expect(
+      L10nErrors.auth(tr, AuthErrorKind.appVerification),
+      tr.authAppVerification,
+    );
   });
 
   test('email-in-use is localized for EN and TR', () {
@@ -35,17 +57,30 @@ void main() {
     expect(L10nFormat.distance(tr, 0.4), "1 km'den yakın");
   });
 
-  test('unsupported device locale falls back to English before lookup', () {
+  test('unsupported device locale falls back to Turkish before lookup', () {
     final locale = AppLanguage.fromDeviceLocale(const Locale('de')).locale;
-    expect(lookupAppLocalizations(locale).signIn, en.signIn);
+    expect(lookupAppLocalizations(locale).signIn, tr.signIn);
     expect(
       () => lookupAppLocalizations(const Locale('de')),
       throwsA(isA<FlutterError>()),
     );
   });
 
-  test('long EN and TR boost strings stay defined', () {
-    expect(en.boostSubtitle.length, greaterThan(20));
-    expect(tr.boostSubtitle.length, greaterThan(20));
+  test('Google Sign-In localization keys exist for EN and TR', () {
+    expect(en.continueWithGoogle, isNotEmpty);
+    expect(tr.continueWithGoogle, isNotEmpty);
+    expect(en.signingIn, 'Signing in...');
+    expect(tr.signingIn, 'Giriş yapılıyor...');
+    expect(en.googleSignInCancelled, isNotEmpty);
+    expect(tr.googleSignInCancelled, isNotEmpty);
+    expect(en.googleSignInFailed, isNotEmpty);
+    expect(tr.googleSignInFailed, isNotEmpty);
+    expect(en.authNetwork, isNotEmpty);
+    expect(tr.authNetwork, isNotEmpty);
+    expect(en.tryAgain, isNotEmpty);
+    expect(tr.tryAgain, isNotEmpty);
+    expect(L10nErrors.auth(en, AuthErrorKind.oauth), en.authGoogleFailed);
+    expect(L10nErrors.auth(tr, AuthErrorKind.cancelled), tr.authCancelled);
+    expect(L10nErrors.auth(en, AuthErrorKind.network), en.authNetwork);
   });
 }

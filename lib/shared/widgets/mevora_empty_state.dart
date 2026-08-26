@@ -1,23 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_motion_size.dart';
+import 'package:mevora/shared/animations/mevora_rive_animation.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
 class MevoraEmptyState extends StatelessWidget {
   const MevoraEmptyState({
     super.key,
     this.icon = Icons.hourglass_empty_rounded,
+    this.riveAsset,
     this.title,
     this.message,
     this.actionLabel,
     this.onAction,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
   });
 
   final IconData icon;
+  final String? riveAsset;
   final String? title;
   final String? message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +43,25 @@ class MevoraEmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 40, color: theme.colorScheme.primary),
+              if (riveAsset != null)
+                Builder(
+                  builder: (context) {
+                    final size = MevoraMotionSize.accent(context);
+                    return MevoraRiveAnimation(
+                      asset: riveAsset!,
+                      width: size,
+                      height: size,
+                      fit: BoxFit.contain,
+                      fallback: Icon(
+                        icon,
+                        size: 40,
+                        color: theme.colorScheme.primary,
+                      ),
+                    );
+                  },
+                )
+              else
+                Icon(icon, size: 40, color: theme.colorScheme.primary),
               const SizedBox(height: AppSpacing.md),
               Text(
                 resolvedTitle,
@@ -53,6 +79,15 @@ class MevoraEmptyState extends StatelessWidget {
                 MevoraButton(
                   label: actionLabel!,
                   onPressed: onAction,
+                  isExpanded: false,
+                ),
+              ],
+              if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                MevoraButton(
+                  label: secondaryActionLabel!,
+                  onPressed: onSecondaryAction,
+                  variant: MevoraButtonVariant.ghost,
                   isExpanded: false,
                 ),
               ],

@@ -79,6 +79,13 @@ class GraphChatRepository implements ChatRepository {
   String get _uid => auth.currentUid ?? '';
 
   @override
+  Future<bool> isE2eeActive({
+    required String matchId,
+    required String peerUid,
+  }) async =>
+      false;
+
+  @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30}) {
     return graph.watchMessages(matchId);
   }
@@ -103,6 +110,54 @@ class GraphChatRepository implements ChatRepository {
       matchId: matchId,
       receiverId: receiverId,
       text: text,
+    );
+  }
+
+  @override
+  Future<ChatMessage> sendImage({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) async {
+    onProgress?.call(1);
+    final sent = graph.sendMedia(
+      actorUid: _uid,
+      matchId: matchId,
+      receiverId: receiverId,
+      type: MessageType.image,
+      bytes: media.bytes,
+    );
+    return sent;
+  }
+
+  @override
+  Future<ChatMessage> sendVoice({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) async {
+    onProgress?.call(1);
+    return graph.sendMedia(
+      actorUid: _uid,
+      matchId: matchId,
+      receiverId: receiverId,
+      type: MessageType.voice,
+      durationMs: media.durationMs,
+      bytes: media.bytes,
+    );
+  }
+
+  @override
+  Future<void> deleteMessage({
+    required String matchId,
+    required String messageId,
+  }) async {
+    graph.deleteMessage(
+      actorUid: _uid,
+      matchId: matchId,
+      messageId: messageId,
     );
   }
 
@@ -209,20 +264,22 @@ class GraphCallRepository implements CallRepository {
 
   @override
   Future<void> end(String callId) async {
-    final call = graph.calls[callId];
-    if (call != null) {
-      graph.calls[callId] = call.copyWith(lifecycle: CallLifecycle.ended);
-    }
+    graph.endCall(callId);
   }
 
   @override
   Future<void> expire(String callId) async {
-    await end(callId);
+    graph.endCall(callId);
   }
 
   @override
   Stream<List<CallSession>> watchIncoming(String uid) {
     return graph.watchIncoming(uid);
+  }
+
+  @override
+  Stream<CallSession?> watchCall(String callId) {
+    return graph.watchCall(callId);
   }
 }
 
@@ -259,16 +316,38 @@ class GraphPresenceRepository implements PresenceRepository {
   final InMemorySocialGraph graph;
 
   @override
-  Stream<PresenceWatch> watch(String uid) async* {
-    yield graph.presence[uid] ??
-        const PresenceWatch(updatedAt: null, hideOnlineStatus: false);
+  Stream<PresenceWatch> watch(String uid) {
+    return graph.watchPresence(uid);
   }
 
   @override
-  Future<void> heartbeat(String uid, {required bool hideOnlineStatus}) async {
+  Future<void> setOnline(String uid) async {
     graph.presence[uid] = PresenceWatch(
+      isOnline: true,
       updatedAt: DateTime.now(),
-      hideOnlineStatus: hideOnlineStatus,
+      lastSeenAt: graph.presence[uid]?.lastSeenAt,
     );
+    graph.emitPresence(uid);
+  }
+
+  @override
+  Future<void> setOffline(String uid) async {
+    final now = DateTime.now();
+    graph.presence[uid] = PresenceWatch(
+      isOnline: false,
+      updatedAt: now,
+      lastSeenAt: now,
+    );
+    graph.emitPresence(uid);
+  }
+
+  @override
+  Future<void> heartbeat(String uid) async {
+    graph.presence[uid] = PresenceWatch(
+      isOnline: true,
+      updatedAt: DateTime.now(),
+      lastSeenAt: graph.presence[uid]?.lastSeenAt,
+    );
+    graph.emitPresence(uid);
   }
 }

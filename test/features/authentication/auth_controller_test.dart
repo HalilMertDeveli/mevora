@@ -47,7 +47,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(controller.status, isA<NeedsOnboarding>());
-    expect(documents.ensured?.id, 'user-1');
+    expect(controller.user?.id, 'user-1');
   });
 
   test('complete profile reaches authenticated status', () async {
@@ -117,6 +117,70 @@ void main() {
     expect(controller.status, isA<Unauthenticated>());
     expect(controller.user, isNull);
     expect(authRepository.signedOut, isTrue);
+  });
+
+  test('logout failure keeps the session and does not throw', () async {
+    authRepository.user = const AuthUser(
+      id: 'user-1',
+      onboardingCompleted: true,
+      profileCompleted: true,
+    );
+    documents.complete = true;
+    controller.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    authRepository.nextFailure = const AuthFailure(
+      'We could not complete that request. Please try again.',
+    );
+
+    final result = await controller.signOut();
+
+    expect(result, isA<Err<void>>());
+    expect(controller.status, isA<Authenticated>());
+    expect(controller.user?.id, 'user-1');
+    expect(controller.errorMessage, isNotNull);
+    expect(authRepository.signedOut, isFalse);
+  });
+
+  test('double-tap logout is ignored', () async {
+    authRepository.user = const AuthUser(
+      id: 'user-1',
+      onboardingCompleted: true,
+      profileCompleted: true,
+    );
+    documents.complete = true;
+    authRepository.signOutDelay = const Duration(milliseconds: 40);
+    controller.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    final first = controller.signOut();
+    final second = controller.signOut();
+    await Future.wait<Result<void>>([first, second]);
+
+    expect(authRepository.signOutCalls, 1);
+    expect(controller.status, isA<Unauthenticated>());
+    expect(controller.user, isNull);
+  });
+
+  test('stale profile snapshot after logout is ignored', () async {
+    const user = AuthUser(
+      id: 'user-1',
+      onboardingCompleted: true,
+      profileCompleted: true,
+    );
+    authRepository.user = user;
+    documents.complete = true;
+    controller.start();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    await controller.signOut();
+    authRepository.emit(user);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.status, isA<Unauthenticated>());
+    expect(controller.user, isNull);
   });
 
   test('explicit linking records the provider and does not auto-merge', () async {
@@ -221,6 +285,6 @@ void main() {
     await controller.verifyPhoneCode('000000');
 
     expect(controller.status, isA<PhoneVerificationRequired>());
-    expect(controller.errorMessage, 'Doğrulama kodu geçersiz.');
+    expect(controller.errorMessage, 'Doğrulama kodu hatalı.');
   });
 }

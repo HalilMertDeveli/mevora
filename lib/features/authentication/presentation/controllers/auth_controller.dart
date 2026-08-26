@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:mevora/core/errors/failure.dart';
@@ -11,6 +12,8 @@ import 'package:mevora/features/authentication/domain/entities/auth_snapshot.dar
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/domain/entities/phone_challenge.dart';
+import 'package:mevora/features/authentication/domain/entities/phone_auth_state.dart';
+import 'package:mevora/features/authentication/data/services/auth_analytics.dart';
 import 'package:mevora/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:mevora/features/authentication/domain/repositories/user_document_repository.dart';
 import 'package:mevora/features/authentication/domain/usecases/auth_usecases.dart';
@@ -21,9 +24,11 @@ class AuthController extends ChangeNotifier {
     required AuthRepository authRepository,
     required UserDocumentRepository userDocumentRepository,
     required AppLogger logger,
+    AuthAnalytics? analytics,
   }) : _authRepository = authRepository,
        _userDocumentRepository = userDocumentRepository,
-       _logger = logger {
+       _logger = logger,
+       _analytics = analytics ?? const NoOpAuthAnalytics() {
     phoneAuth = PhoneAuthController(
       sendPhoneVerificationCode: SendPhoneVerificationCode(_authRepository),
       verifyPhoneCode: VerifyPhoneCode(_authRepository),
@@ -32,18 +37,22 @@ class AuthController extends ChangeNotifier {
       ),
       authRepository: _authRepository,
       logger: _logger,
+      analytics: _analytics,
     );
-    phoneAuth.addListener(notifyListeners);
+    phoneAuth.addListener(_onPhoneAuthChanged);
   }
 
   final AuthRepository _authRepository;
   final UserDocumentRepository _userDocumentRepository;
   final AppLogger _logger;
+  final AuthAnalytics _analytics;
   late final PhoneAuthController phoneAuth;
 
   StreamSubscription<AuthSnapshot>? _subscription;
   Timer? _resendTimer;
   bool _actionInFlight = false;
+  bool _signingOut = false;
+  bool _disposed = false;
   int _generation = 0;
 
   AuthStatus status = const AuthInitializing();
@@ -86,30 +95,55 @@ class AuthController extends ChangeNotifier {
     final generation = ++_generation;
     switch (snapshot) {
       case AuthSignedOut():
-        if (_actionInFlight ||
-            status is PhoneCodeSent ||
-            status is PhoneVerificationRequired) {
+        if (!_signingOut &&
+            (_actionInFlight ||
+                status is PhoneCodeSent ||
+                status is PhoneVerificationRequired)) {
           return;
         }
         user = null;
         status = const Unauthenticated();
       case AuthProfilePending(:final uid):
-        if (status is Unauthenticated || status is AuthInitializing) {
-          status = const Authenticating();
+        if (_signingOut) {
+          return;
         }
-        try {
-          await _userDocumentRepository.ensureUserDocument(AuthUser(id: uid));
-          if (generation != _generation) {
+        if (_actionInFlight) {
+          // Sign-in flows already upsert the user document.
+          status = const Authenticating();
+        } else {
+          if (status is Unauthenticated || status is AuthInitializing) {
+            status = const Authenticating();
+          }
+          try {
+            await _userDocumentRepository
+                .ensureUserDocument(AuthUser(id: uid))
+                .timeout(const Duration(seconds: 20));
+            if (generation != _generation) {
+              return;
+            }
+          } on Object catch (error, stackTrace) {
+            _logger.error(
+              'Failed to resolve pending profile',
+              error: error,
+              stackTrace: stackTrace,
+            );
+            if (generation != _generation || _actionInFlight) {
+              return;
+            }
+            // Do not leave Authenticating forever (login buttons stay disabled).
+            user = null;
+            errorMessage =
+                'Oturum doğrulanamadı. Lütfen tekrar giriş yapın.';
+            status = AuthenticationError(errorMessage!);
+            notifyListeners();
+            unawaited(_authRepository.signOut());
             return;
           }
-        } on Object catch (error, stackTrace) {
-          _logger.error(
-            'Failed to resolve pending profile',
-            error: error,
-            stackTrace: stackTrace,
-          );
         }
       case AuthProfileReady(:final user):
+        if (_signingOut) {
+          return;
+        }
         if (user.isBanned || !user.isActive) {
           unawaited(_handleBanned());
           return;
@@ -119,25 +153,11 @@ class AuthController extends ChangeNotifier {
         errorKind = null;
         _actionInFlight = false;
         phoneChallenge = null;
-        try {
-          await _userDocumentRepository.ensureUserDocument(user);
-          if (generation != _generation) {
-            return;
-          }
-          status = user.shouldOnboard
-              ? NeedsOnboarding(user)
-              : Authenticated(user);
-        } on Object catch (error, stackTrace) {
-          _logger.error(
-            'Failed to resolve profile completeness',
-            error: error,
-            stackTrace: stackTrace,
-          );
-          if (generation != _generation) {
-            return;
-          }
-          status = NeedsOnboarding(user);
-        }
+        // Document already exists (Ready). Do not upsert here — writing
+        // lastLoginAt would re-trigger users/{uid} snapshots in a loop.
+        status = user.shouldOnboard
+            ? NeedsOnboarding(user)
+            : Authenticated(user);
     }
     notifyListeners();
   }
@@ -165,6 +185,7 @@ class AuthController extends ChangeNotifier {
         password: password,
       ),
       provider: 'email',
+      onSuccess: _applyAuthenticatedUser,
     );
   }
 
@@ -175,6 +196,7 @@ class AuthController extends ChangeNotifier {
     return _run(
       () => _authRepository.signInWithEmail(email: email, password: password),
       provider: 'email',
+      onSuccess: _applyAuthenticatedUser,
     );
   }
 
@@ -197,16 +219,101 @@ class AuthController extends ChangeNotifier {
     return result;
   }
 
-  Future<Result<void>> signInWithGoogle() {
-    return _run(_authRepository.signInWithGoogle, provider: 'google');
+  Future<Result<void>> signInWithGoogle() async {
+    // #region agent log
+    _logDebug(
+      'auth_controller_google_signin_start',
+      hypothesisId: 'GAUTH_FLOW',
+      data: <String, Object?>{
+        'hasUserBefore': user != null,
+        'statusBefore': status.runtimeType.toString(),
+      },
+    );
+    // #endregion
+    await _analytics.googleLoginStarted();
+    final result = await _run(
+      _authRepository.signInWithGoogle,
+      provider: 'google',
+      onSuccess: _applyAuthenticatedUser,
+    );
+    switch (result) {
+      case Success<void>():
+        // #region agent log
+        _logDebug(
+          'auth_controller_google_signin_success',
+          hypothesisId: 'GAUTH_FLOW',
+          data: <String, Object?>{
+            'hasUserAfter': user != null,
+            'statusAfter': status.runtimeType.toString(),
+          },
+        );
+        // #endregion
+        await _analytics.googleLoginSuccess();
+      case Err<void>(:final failure):
+        // #region agent log
+        _logDebug(
+          'auth_controller_google_signin_failure',
+          hypothesisId: 'GAUTH_FLOW',
+          data: <String, Object?>{
+            'failureType': failure.runtimeType.toString(),
+            'failureMessage': failure.message,
+            'errorKind': errorKind?.name,
+            'statusAfter': status.runtimeType.toString(),
+          },
+        );
+        // #endregion
+        if (failure is AuthFailure &&
+            (failure.isCancelled || failure.kind == AuthErrorKind.cancelled)) {
+          await _analytics.googleLoginCancelled();
+        } else {
+          await _analytics.googleLoginFailed();
+        }
+    }
+    return result;
   }
 
+  // #region agent log
+  void _logDebug(
+    String message, {
+    String hypothesisId = 'GAUTH_FLOW',
+    Map<String, Object?> data = const <String, Object?>{},
+  }) {
+    if (!kDebugMode) {
+      return;
+    }
+    try {
+      final entry = <String, Object?>{
+        'sessionId': '80971b',
+        'runId': 'google-signin',
+        'hypothesisId': hypothesisId,
+        'location': 'auth_controller.dart',
+        'message': message,
+        'data': data,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+      // Visible in `flutter run` output from physical devices.
+      // ignore: avoid_print
+      print('[GAUTH_DEBUG] ${jsonEncode(entry)}');
+    } on Object {
+      // Ignore logging errors.
+    }
+  }
+  // #endregion
+
   Future<Result<void>> signInWithApple() {
-    return _run(_authRepository.signInWithApple, provider: 'apple');
+    return _run(
+      _authRepository.signInWithApple,
+      provider: 'apple',
+      onSuccess: _applyAuthenticatedUser,
+    );
   }
 
   Future<Result<void>> signInWithSpotify() {
-    return _run(_authRepository.signInWithSpotify, provider: 'spotify');
+    return _run(
+      _authRepository.signInWithSpotify,
+      provider: 'spotify',
+      onSuccess: _applyAuthenticatedUser,
+    );
   }
 
   Future<Result<void>> sendPhoneCode(String e164Phone) async {
@@ -323,14 +430,53 @@ class AuthController extends ChangeNotifier {
     );
   }
 
-  Future<Result<void>> signOut() {
-    return _run(_authRepository.signOut, afterSuccess: _resetToLoggedOut);
+  Future<Result<void>> signOut() async {
+    if (_disposed) {
+      return const Success<void>(null);
+    }
+    if (_actionInFlight) {
+      return const Success<void>(null);
+    }
+    if (user == null && status is Unauthenticated) {
+      return const Success<void>(null);
+    }
+    _signingOut = true;
+    _generation += 1;
+    final result = await _run(
+      _authRepository.signOut,
+      afterSuccess: _resetToLoggedOut,
+    );
+    if (result is Err<void>) {
+      _signingOut = false;
+    }
+    return result;
   }
 
-  Future<Result<void>> deleteAccount() {
-    return _run(
+  Future<Result<void>> deleteAccount() async {
+    if (_disposed || _actionInFlight) {
+      return const Success<void>(null);
+    }
+    _signingOut = true;
+    _generation += 1;
+    final result = await _run(
       _authRepository.deleteAccount,
       afterSuccess: _resetToLoggedOut,
+    );
+    if (result is Err<void>) {
+      _signingOut = false;
+    }
+    return result;
+  }
+
+  Future<Result<void>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) {
+    return _run(
+      () => _authRepository.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      ),
     );
   }
 
@@ -360,6 +506,10 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> reportLoginScreenViewed() {
+    return _analytics.loginScreenViewed();
+  }
+
   void _resetToLoggedOut() {
     user = null;
     phoneChallenge = null;
@@ -376,11 +526,29 @@ class AuthController extends ChangeNotifier {
     status = next.shouldOnboard ? NeedsOnboarding(next) : Authenticated(next);
   }
 
+  /// Keeps redirect rules in sync immediately after onboarding completes.
+  void applyOnboardingComplete() {
+    final current = user;
+    if (current == null) {
+      return;
+    }
+    _applyAuthenticatedUser(
+      current.copyWith(
+        profileCompleted: true,
+        onboardingCompleted: true,
+      ),
+    );
+  }
+
   Future<Result<void>> _run<T>(
     Future<Result<T>> Function() action, {
     String? provider,
     VoidCallback? afterSuccess,
+    void Function(T value)? onSuccess,
   }) async {
+    if (provider != null) {
+      _signingOut = false;
+    }
     _actionInFlight = true;
     errorMessage = null;
     errorKind = null;
@@ -390,8 +558,15 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
     final result = await action();
     _actionInFlight = false;
+    if (_disposed) {
+      return result.when(
+        success: (_) => const Success<void>(null),
+        err: (failure) => Err<void>(failure),
+      );
+    }
     switch (result) {
-      case Success<T>():
+      case Success<T>(:final value):
+        onSuccess?.call(value);
         afterSuccess?.call();
         notifyListeners();
         return const Success<void>(null);
@@ -439,9 +614,70 @@ class AuthController extends ChangeNotifier {
     });
   }
 
+  /// Keeps [AuthStatus] / redirect rules aligned with [PhoneAuthController]
+  /// so OTP success is not bounced back to `/phone` before the auth stream
+  /// emits a profile-ready snapshot.
+  void _onPhoneAuthChanged() {
+    switch (phoneAuth.state) {
+      case SendingOtp():
+        if (status is Unauthenticated ||
+            status is AuthenticationError ||
+            status is PhoneCodeSent) {
+          status = const Authenticating(provider: 'phone');
+        }
+      case OtpSent(:final challenge):
+        final sameChallenge =
+            phoneChallenge?.verificationId == challenge.verificationId &&
+            phoneChallenge?.resendAttempt == challenge.resendAttempt &&
+            status is PhoneCodeSent;
+        phoneChallenge = challenge;
+        if (!sameChallenge &&
+            (status is Unauthenticated ||
+                status is AuthenticationError ||
+                status is Authenticating ||
+                status is PhoneCodeSent ||
+                status is PhoneVerificationRequired)) {
+          status = PhoneCodeSent(challenge);
+          _startResendTimer();
+        }
+      case VerifyingOtp(:final challenge):
+        phoneChallenge = challenge;
+        if (status is! PhoneVerificationRequired) {
+          status = PhoneVerificationRequired(challenge);
+        }
+      case PhoneAuthenticated(:final user):
+        if (status is! Authenticated && status is! NeedsOnboarding) {
+          _applyAuthenticatedUser(user);
+        }
+      case PhoneNumberEntering() || SmsSendError() || TooManyAttempts():
+        if (status is PhoneCodeSent ||
+            status is PhoneVerificationRequired ||
+            (status is Authenticating &&
+                (status as Authenticating).provider == 'phone')) {
+          phoneChallenge = null;
+          _resendTimer?.cancel();
+          resendSeconds = 0;
+          status = const Unauthenticated();
+        }
+      case OtpError(:final challenge):
+        phoneChallenge = challenge;
+        status = PhoneVerificationRequired(challenge);
+    }
+    notifyListeners();
+  }
+
+  @override
+  void notifyListeners() {
+    if (_disposed) {
+      return;
+    }
+    super.notifyListeners();
+  }
+
   @override
   void dispose() {
-    phoneAuth.removeListener(notifyListeners);
+    _disposed = true;
+    phoneAuth.removeListener(_onPhoneAuthChanged);
     phoneAuth.dispose();
     _resendTimer?.cancel();
     unawaited(_subscription?.cancel());

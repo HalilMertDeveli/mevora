@@ -28,8 +28,10 @@ enum AuthErrorKind {
   cancelled,
   invalidPhone,
   smsFailed,
+  appVerification,
   invalidOtp,
   expiredOtp,
+  sessionExpired,
   tooManyAttempts,
   smsQuota,
   firebaseUnavailable,
@@ -41,6 +43,7 @@ enum AuthErrorKind {
   accountExists,
   linkingBlocked,
   notConfigured,
+  billingNotEnabled,
   invalidEmail,
   weakPassword,
   userNotFound,
@@ -106,6 +109,7 @@ enum PurchaseErrorKind {
   verificationFailed,
   alreadyProcessed,
   alreadyActive,
+  insufficientBalance,
 }
 
 final class PurchaseException extends AppException {

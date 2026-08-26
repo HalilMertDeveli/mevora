@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/firebase/firebase_options_resolver.dart';
+import 'package:mevora/firebase_options.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -10,27 +11,28 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  test('development Android options target mevora-dev', () {
+  test('development Android options target mevora-d6ed0', () {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     final options = FirebaseOptionsResolver.resolve(
       AppEnvironment.development,
     );
 
-    expect(options.projectId, 'mevora-dev');
-    expect(options.appId, '1:462386294396:android:aff3c8aa15f4041ac963f9');
-    expect(options.messagingSenderId, '462386294396');
-    expect(options.androidClientId, isNull);
+    expect(options.projectId, 'mevora-d6ed0');
+    expect(options, DefaultFirebaseOptions.android);
+    expect(options.appId, '1:821220262229:android:1a12a39a06a7516f702fdc');
+    expect(options.messagingSenderId, '821220262229');
   });
 
-  test('development iOS options use the .dev bundle id', () {
+  test('development iOS options use com.mevora.app on mevora-d6ed0', () {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     final options = FirebaseOptionsResolver.resolve(
       AppEnvironment.development,
     );
 
-    expect(options.projectId, 'mevora-dev');
-    expect(options.iosBundleId, 'com.mevora.app.dev');
-    expect(options.appId, '1:462386294396:ios:233c5fa39e0ca788c963f9');
+    expect(options.projectId, 'mevora-d6ed0');
+    expect(options, DefaultFirebaseOptions.ios);
+    expect(options.iosBundleId, 'com.mevora.app');
+    expect(options.appId, '1:821220262229:ios:634b8b3284cc59fc702fdc');
   });
 
   test('staging Android options target mevora-staging', () {

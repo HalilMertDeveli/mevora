@@ -2,8 +2,8 @@ import {createHash, randomBytes} from "node:crypto";
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
-import {defineSecret, defineString} from "firebase-functions/params";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
+import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -11,9 +11,6 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 const auth = getAuth();
-
-const spotifyClientId = defineString("SPOTIFY_CLIENT_ID");
-const spotifyClientSecret = defineSecret("SPOTIFY_CLIENT_SECRET");
 
 type SpotifyProfile = {
   id: string;

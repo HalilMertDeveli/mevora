@@ -17,6 +17,7 @@ class FirebaseStorageAdapter implements StorageProvider {
     required String path,
     required List<int> bytes,
     String contentType = 'image/jpeg',
+    void Function(double progress)? onProgress,
   }) async {
     try {
       final ref = _storage.ref(path);
@@ -30,6 +31,27 @@ class FirebaseStorageAdapter implements StorageProvider {
       return Err(
         FailureMapper.from(
           NetworkException('Could not upload that file.', cause: error),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Result<List<int>>> downloadBytes(String path) async {
+    try {
+      final data = await _storage.ref(path).getData();
+      if (data == null) {
+        return Err(
+          FailureMapper.from(
+            const NetworkException('Could not download that file.'),
+          ),
+        );
+      }
+      return Success(data);
+    } on Object catch (error) {
+      return Err(
+        FailureMapper.from(
+          NetworkException('Could not download that file.', cause: error),
         ),
       );
     }

@@ -4,18 +4,22 @@ class BoostActivationDecision {
   const BoostActivationDecision._({
     required this.shouldActivate,
     this.alreadyActive = false,
+    this.insufficientBalance = false,
     this.startedAt,
     this.expiresAt,
+    this.extendBoostId,
   });
 
   factory BoostActivationDecision.activate({
     required DateTime startedAt,
     required DateTime expiresAt,
+    String? extendBoostId,
   }) {
     return BoostActivationDecision._(
       shouldActivate: true,
       startedAt: startedAt,
       expiresAt: expiresAt,
+      extendBoostId: extendBoostId,
     );
   }
 
@@ -26,19 +30,31 @@ class BoostActivationDecision {
     );
   }
 
+  factory BoostActivationDecision.insufficientBalance() {
+    return const BoostActivationDecision._(
+      shouldActivate: false,
+      insufficientBalance: true,
+    );
+  }
+
   final bool shouldActivate;
   final bool alreadyActive;
+  final bool insufficientBalance;
   final DateTime? startedAt;
   final DateTime? expiresAt;
+
+  /// When set, extend this existing Boost document instead of creating another.
+  final String? extendBoostId;
 }
 
-/// Server-side policy for turning a verified purchase into a Boost.
-/// [allowStacking] is false for MVP; keep the flag so duration stacking can
-/// be enabled later without rewriting callers.
+/// Server-side policy for granting Boost time.
+///
+/// Stacking adds [duration] onto remaining time. Duplicate store transactions
+/// must be rejected before this service runs.
 class BoostActivationService {
   const BoostActivationService({
-    this.allowStacking = false,
-    this.duration = const Duration(minutes: 30),
+    this.allowStacking = true,
+    this.duration = const Duration(days: 7),
   });
 
   final bool allowStacking;
@@ -59,15 +75,29 @@ class BoostActivationService {
   BoostActivationDecision decide({
     required DateTime now,
     Boost? currentActive,
+    int balance = 1,
+    Duration? duration,
+    bool requireBalance = false,
   }) {
-    if (currentActive != null &&
-        currentActive.isActiveAt(now) &&
-        !allowStacking) {
+    final grant = duration ?? this.duration;
+    if (grant <= Duration.zero) {
+      return BoostActivationDecision.insufficientBalance();
+    }
+    final live =
+        currentActive != null && currentActive.isActiveAt(now)
+            ? currentActive
+            : null;
+    if (live != null && !allowStacking) {
       return BoostActivationDecision.alreadyActive();
     }
+    if (requireBalance && balance < 1) {
+      return BoostActivationDecision.insufficientBalance();
+    }
+    final base = live?.expiresAt ?? now;
     return BoostActivationDecision.activate(
-      startedAt: now,
-      expiresAt: now.add(duration),
+      startedAt: live?.startedAt ?? now,
+      expiresAt: base.add(grant),
+      extendBoostId: live?.boostId,
     );
   }
 }

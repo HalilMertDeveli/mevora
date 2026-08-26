@@ -13,9 +13,11 @@ void main() {
 
     expect(light.useMaterial3, isTrue);
     expect(dark.useMaterial3, isTrue);
-    expect(light.colorScheme.primary, AppColors.mulberry);
+    expect(light.colorScheme.primary, AppColors.rose);
+    expect(light.colorScheme.surface, AppColors.canvas);
+    expect(light.scaffoldBackgroundColor, AppColors.canvas);
     expect(dark.colorScheme.primary, AppColors.blossom);
-    expect(light.colorScheme.secondary, AppColors.apricot);
+    expect(light.colorScheme.secondary, AppColors.peach);
     expect(light.colorScheme.tertiary, AppColors.moss);
     expect(light.appBarTheme.elevation, AppElevation.none);
     expect(light.filledButtonTheme.style?.elevation?.resolve({}), 0);

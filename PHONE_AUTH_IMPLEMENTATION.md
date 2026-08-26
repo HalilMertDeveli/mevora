@@ -4,17 +4,55 @@ Production phone authentication for Mevora. OTP codes are created, sent, and ver
 
 ## Flow
 
-1. Login → **Telefon ile devam et**
-2. Country + national number (default 🇹🇷 +90)
+1. Login → **Telefon Numarası ile Giriş Yap** / **Sign in with Phone Number**
+2. Country + national number (default 🇹🇷 +90; trunk `0` OK, e.g. `0542 519 2119` → `+905425192119`)
 3. Domain validation → `SendPhoneVerificationCode`
-4. Firebase `verifyPhoneNumber` sends the SMS
+4. Firebase `verifyPhoneNumber` sends a **real carrier SMS** (Play Integrity / reCAPTCHA)
 5. 6-digit OTP screen (autofill / paste)
 6. `PhoneAuthProvider.credential` + `signInWithCredential`
 7. Account doc `users/{uid}` is created or updated
 8. Cloud Function `syncAuthAccount` sets `phoneVerified` from Admin Auth
 9. Existing user with completed onboarding → Discovery; new user → Onboarding
 
-App restart on the OTP screen: the verification session lives in memory only. If it is gone, the user is sent back to the phone screen. That is not treated as “SMS sent”.
+App restart on the OTP screen: the verification session lives in memory only. If it is gone, the user is sent back to the phone screen.
+
+## Real SMS defaults (important)
+
+Development and production both enable app verification for real phone numbers.
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `DISABLE_PHONE_APP_VERIFICATION` | `false` | Must stay false for carrier SMS |
+| `FORCE_PHONE_RECAPTCHA` | unset → **false** | Opt in with `=true` only if Play Integrity fails on your device; needs Activity for reCAPTCHA |
+| `PHONE_AUTH_TEST_NUMBER` / `PHONE_AUTH_TEST_SMS_CODE` | empty | Only used when verification is **disabled** for Console test numbers |
+
+### Console test numbers (QA only — not production)
+
+```bat
+flutter run --flavor development -t lib/main_development.dart ^
+  --dart-define=USE_EMULATORS=false ^
+  --dart-define=DISABLE_PHONE_APP_VERIFICATION=true ^
+  --dart-define=PHONE_AUTH_TEST_NUMBER=+905551112233 ^
+  --dart-define=PHONE_AUTH_TEST_SMS_CODE=123456
+```
+
+### Real SMS (recommended)
+
+```bat
+flutter run --flavor development -t lib/main_development.dart --dart-define=USE_EMULATORS=false
+```
+
+Watch logcat / Flutter console for `[PHONE_AUTH]` stages. Debug builds also append `Firebase: <code>` under the localized error.
+
+Do **not** use Firebase Console test numbers as a production workaround.
+
+If Play Integrity fails on a sideloaded APK and SMS never starts:
+
+```bat
+flutter run --flavor development -t lib/main_development.dart --dart-define=USE_EMULATORS=false --dart-define=FORCE_PHONE_RECAPTCHA=true
+```
+
+(`MainActivity` extends `FlutterFragmentActivity` so reCAPTCHA can host a WebView.)
 
 ## Architecture
 
@@ -27,105 +65,34 @@ UI (PhoneLoginScreen / OtpVerificationScreen)
   → Firebase Auth
 ```
 
-No `FirebaseAuth.instance` in widgets or domain.
-
 States: `PhoneNumberEntering`, `SendingOtp`, `OtpSent`, `VerifyingOtp`, `PhoneAuthenticated`, `OtpError`, `SmsSendError`, `TooManyAttempts`.
 
-## How OTP never leaves Firebase
+**Routed screens:** `/phone` → `PhoneLoginScreen`, `/phone/otp` → `OtpVerificationScreen`
 
-- Flutter does not generate a code.
-- The SMS code is typed (or autofilled) and passed once into `PhoneAuthProvider.credential`.
-- It is not written to Firestore, SharedPreferences, analytics, Crashlytics, or logs.
-- `AppLogger` redacts E.164 numbers and token-like values.
-- Analytics events are names only: `phone_auth_started`, `otp_sent`, `otp_verified`, `phone_auth_failed`, `otp_resend`, `otp_verification_failed`.
-- `phoneVerified=true` is never set by the client. `syncAuthAccount` copies it from `admin.auth().getUser(uid).phoneNumber`.
+## Firebase / Android
 
-## Privacy
-
-`phoneNumber`, `authProviders`, `phoneVerified`, `email`, and timestamps live on **`users/{uid}`** (owner read/write). They are forbidden on `profiles/{uid}` and must never appear in discovery, chat, or match payloads.
-
-Linking Google / Apple / Spotify is explicit. Email match does **not** auto-merge accounts.
-
-## Firebase / Android / iOS
-
-### Enable Phone provider
-
-Firebase Console → Authentication → Sign-in method → **Phone** → Enable, for:
-
-- `mevora-dev`
-- `mevora-staging`
-- `mevora-production`
-
-Test phone numbers belong only in the Firebase Console (or emulator config), never in app source.
-
-### Real SMS vs Auth emulator
-
-The Auth emulator **never sends SMS**. Development therefore uses **live Phone Auth on `mevora-dev`** unless you opt in:
-
-| Goal | Command |
+| Item | Value |
 | --- | --- |
-| Real SMS (default `flutter run` development) | Live Auth. Firestore emulator still used unless `USE_EMULATORS=false`. |
-| Physical device (recommended for SMS) | `flutter run --flavor development -t lib/main_development.dart --dart-define=USE_EMULATORS=false` |
-| Auth emulator / no SMS | `--dart-define=USE_AUTH_EMULATOR=true` and start the Auth emulator |
+| Firebase project | `mevora-d6ed0` |
+| Android package | `com.mevora.app` |
+| Billing | Blaze (required for real SMS) |
+| Phone provider | Enabled |
+| Debug SHA-1 | `9C:A2:E5:84:1A:55:0C:56:4B:A3:4D:0A:57:31:A5:24:AF:23:CC:9F` |
+| Debug SHA-256 | `4F:D3:13:FE:A7:0A:40:AE:D4:17:B4:96:5D:1B:F4:18:33:01:BE:0E:12:75:54:64:7A:F4:BA:CB:BE:B3:E1:65` |
 
-Android `10.0.2.2` only reaches the host from the **Android emulator**. On a real phone it is a black hole — use `USE_EMULATORS=false` or `--dart-define=FIREBASE_EMULATOR_HOST=127.0.0.1` plus `adb reverse`.
+Release / Play App Signing SHA-1 and SHA-256 must still be added from Play Console → App integrity → App signing.
 
-Real SMS also requires Console steps: Phone provider enabled, SMS region allows TR (already set on `mevora-dev`), and **Blaze billing**. Spark cannot send SMS to real numbers.
+### App Check
 
-### Android SHA certificates
+Development uses the App Check **debug** provider. If Authentication enforces App Check, register the debug token from logcat in Firebase Console → App Check → Manage debug tokens.
 
-Phone Auth requires the app’s SHA-1 and SHA-256 on the Android app in Firebase.
+## Troubleshooting (SMS does not arrive)
 
-Debug keystore (this machine):
-
-```bat
-"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
-```
-
-Observed debug fingerprints:
-
-- SHA-1: `9C:A2:E5:84:1A:55:0C:56:4B:A3:4D:0A:57:31:A5:24:AF:23:CC:9F`
-- SHA-256: `4F:D3:13:FE:A7:0A:40:AE:D4:17:B4:96:5D:1B:F4:18:33:01:BE:0E:12:75:54:64:7A:F4:BA:CB:BE:B3:E1:65`
-
-Debug hashes are already registered on:
-
-- `com.mevora.app.dev` (`mevora-dev`)
-- `com.mevora.app.staging` (`mevora-staging`)
-- `com.mevora.app` (`mevora-production`)
-
-Firebase MCP cannot enable the Phone sign-in provider (`firebase_init` auth schema has no Phone field). Enable it in Console for each project:
-
-Authentication → Sign-in method → Phone → Enable.
-
-Release / Play App Signing SHA-1 and SHA-256 still need to be added from Play Console (App integrity → App signing) onto the production Android app. Debug hashes are not a substitute for Play signing certificates.
-
-### iOS
-
-- Enable Push Notifications and upload APNs key/cert for silent verification.
-- If APNs is unavailable, Firebase falls back to reCAPTCHA.
-- App Check (already bootstrapped) stays compatible: debug providers in development, Play Integrity / DeviceCheck in production.
-
-### Rate limits
-
-The 60-second resend countdown is UX only. Firebase abuse protection and quota are authoritative. Invalid OTP limits are also enforced by Firebase.
-
-## Testing
-
-- Unit: `PhoneNumberValidator`, `E164Formatter`, send/verify/resend use cases, `PhoneAuthController`
-- Widget: phone screen, country selector, OTP boxes, resend copy, errors, loading
-- Integration tests use repository mocks and must not send real SMS in CI
-- Emulator test numbers: Firebase Console only
-
-## Production checklist
-
-- [x] Debug SHA-1 and SHA-256 on Android apps for dev, staging, and production
-- [ ] Play App Signing SHA-1 and SHA-256 on production Android
-- [ ] Phone provider enabled on dev, staging, production (Console only; MCP has no Phone field)
-- [ ] Blaze billing on each project that must send real SMS
-- [x] SMS region allow-list includes TR (and the in-app country catalog) on `mevora-dev`
-- [ ] Same SMS region policy on staging and production
-- [ ] iOS APNs configured
-- [x] No test numbers in source
-- [ ] `syncAuthAccount` deployed
-- [x] Firestore rules: other users cannot read `users/{uid}`
-- [x] `flutter analyze` and `flutter test` clean
+1. `USE_AUTH_EMULATOR=true`? → remove it
+2. Package is `com.mevora.app`?
+3. SHA registered on `mevora-d6ed0` Android app?
+4. Phone provider enabled?
+5. Blaze active?
+6. `DISABLE_PHONE_APP_VERIFICATION=true` without a Console test number? → set to false for real SMS
+7. App Check enforcement on? → register debug token
+8. Logcat: `PhoneAuth verificationFailed code=...`

@@ -17,6 +17,8 @@ class MevoraButton extends StatelessWidget {
     this.isLoading = false,
     this.isExpanded = true,
     this.icon,
+    this.maxLines = 2,
+    this.wrapLabel = false,
   });
 
   final String label;
@@ -26,6 +28,12 @@ class MevoraButton extends StatelessWidget {
   final bool isLoading;
   final bool isExpanded;
   final IconData? icon;
+
+  /// Default compact buttons keep 2 lines. Use [wrapLabel] for full answer text.
+  final int? maxLines;
+
+  /// When true, height grows with content and text is not ellipsized.
+  final bool wrapLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +54,7 @@ class MevoraButton extends StatelessWidget {
       MevoraButtonSize.large => 20.0,
     };
     final enabled = onPressed != null && !isLoading;
+    final resolvedMaxLines = wrapLabel ? null : maxLines;
     final child = AnimatedSwitcher(
       duration: AppDurations.short,
       switchInCurve: Curves.easeOut,
@@ -63,6 +72,9 @@ class MevoraButton extends StatelessWidget {
           : Row(
               key: const ValueKey('label'),
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: wrapLabel
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.center,
               children: [
                 if (icon != null) ...[
                   Icon(icon, size: iconSize),
@@ -72,8 +84,10 @@ class MevoraButton extends StatelessWidget {
                   child: Text(
                     label,
                     textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: resolvedMaxLines,
+                    overflow: wrapLabel
+                        ? TextOverflow.visible
+                        : TextOverflow.ellipsis,
                     softWrap: true,
                   ),
                 ),
@@ -83,10 +97,13 @@ class MevoraButton extends StatelessWidget {
 
     final style = ButtonStyle(
       minimumSize: WidgetStatePropertyAll(
-        Size(isExpanded ? double.infinity : 0, height),
+        Size(isExpanded ? double.infinity : 0, wrapLabel ? 0 : height),
       ),
       padding: WidgetStatePropertyAll(
-        EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
+        EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: wrapLabel ? 14 : 8,
+        ),
       ),
       elevation: const WidgetStatePropertyAll(0),
       shape: WidgetStatePropertyAll(
@@ -94,6 +111,7 @@ class MevoraButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.md),
         ),
       ),
+      visualDensity: wrapLabel ? VisualDensity.standard : null,
     );
 
     return Semantics(
@@ -103,29 +121,29 @@ class MevoraButton extends StatelessWidget {
       child: MevoraPressScale(
         enabled: enabled,
         child: switch (variant) {
-        MevoraButtonVariant.primary => FilledButton(
-          onPressed: enabled ? onPressed : null,
-          style: style,
-          child: child,
-        ),
-        MevoraButtonVariant.secondary => OutlinedButton(
-          onPressed: enabled ? onPressed : null,
-          style: style,
-          child: child,
-        ),
-        MevoraButtonVariant.ghost => TextButton(
-          onPressed: enabled ? onPressed : null,
-          style: style,
-          child: child,
-        ),
-        MevoraButtonVariant.destructive => FilledButton(
-          onPressed: enabled ? onPressed : null,
-          style: style.copyWith(
-            backgroundColor: WidgetStatePropertyAll(colors.error),
-            foregroundColor: WidgetStatePropertyAll(colors.onError),
+          MevoraButtonVariant.primary => FilledButton(
+            onPressed: enabled ? onPressed : null,
+            style: style,
+            child: child,
           ),
-          child: child,
-        ),
+          MevoraButtonVariant.secondary => OutlinedButton(
+            onPressed: enabled ? onPressed : null,
+            style: style,
+            child: child,
+          ),
+          MevoraButtonVariant.ghost => TextButton(
+            onPressed: enabled ? onPressed : null,
+            style: style,
+            child: child,
+          ),
+          MevoraButtonVariant.destructive => FilledButton(
+            onPressed: enabled ? onPressed : null,
+            style: style.copyWith(
+              backgroundColor: WidgetStatePropertyAll(colors.error),
+              foregroundColor: WidgetStatePropertyAll(colors.onError),
+            ),
+            child: child,
+          ),
         },
       ),
     );

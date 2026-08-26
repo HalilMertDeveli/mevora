@@ -5,10 +5,13 @@ import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/features/location/domain/entities/location_screen_state.dart';
-import 'package:mevora/features/location/presentation/widgets/manual_city_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_motion_size.dart';
+import 'package:mevora/shared/animations/mevora_rive_animation.dart';
+import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
+import 'package:mevora/shared/widgets/turkish_province_picker.dart';
 
 class LocationPermissionPage extends StatelessWidget {
   const LocationPermissionPage({super.key});
@@ -43,6 +46,7 @@ class LocationPermissionPage extends StatelessWidget {
     return switch (screen) {
       LocationScreenState.locating => _LoadingCopy(
         message: l10n.locationLocating,
+        riveAsset: MevoraRiveAssets.locationLocating,
       ),
       LocationScreenState.preparingMatches => _LoadingCopy(
         message: l10n.locationPreparingMatches,
@@ -142,7 +146,7 @@ class LocationPermissionPage extends StatelessWidget {
   }
 
   Future<void> _chooseCity(BuildContext context) async {
-    final city = await ManualCitySheet.show(context);
+    final city = await showTurkishProvincePicker(context);
     if (!context.mounted || city == null || city.isEmpty) {
       return;
     }
@@ -151,13 +155,54 @@ class LocationPermissionPage extends StatelessWidget {
 }
 
 class _LoadingCopy extends StatelessWidget {
-  const _LoadingCopy({required this.message});
+  const _LoadingCopy({required this.message, this.riveAsset});
 
   final String message;
+  final String? riveAsset;
 
   @override
   Widget build(BuildContext context) {
-    return MevoraLoading.page(message: message);
+    if (riveAsset == null) {
+      return MevoraLoading.page(message: message);
+    }
+
+    final size = MevoraMotionSize.loading(context);
+    return Semantics(
+      label: message,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IgnorePointer(
+              child: MevoraRiveAnimation(
+                asset: riveAsset!,
+                width: size,
+                height: size,
+                loop: true,
+                fit: BoxFit.contain,
+                semanticsLabel: message,
+                fallback: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.4,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

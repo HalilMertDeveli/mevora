@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/calls/domain/services/video_call_provider.dart';
 import 'package:mevora/features/calls/presentation/controllers/call_controller.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
+import 'package:mevora/features/matching/domain/models/incoming_likes.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
@@ -21,6 +25,7 @@ class SocialServices {
     required this.videoCallProvider,
     required this.notificationRepository,
     required this.discoveryExclusion,
+    required this.incomingLikesRepository,
     this.retentionPolicy = const NoOpChatRetentionPolicy(),
   });
 
@@ -35,6 +40,7 @@ class SocialServices {
   final VideoCallProvider videoCallProvider;
   final NotificationRepository notificationRepository;
   final DiscoveryExclusionSource discoveryExclusion;
+  final IncomingLikesRepository incomingLikesRepository;
   final ChatRetentionPolicy retentionPolicy;
 }
 
@@ -62,9 +68,11 @@ class SocialScope extends StatefulWidget {
   State<SocialScope> createState() => SocialScopeState();
 }
 
-class SocialScopeState extends State<SocialScope> {
+class SocialScopeState extends State<SocialScope> with WidgetsBindingObserver {
   late final MatchesController matchesController;
   late final CallController callController;
+  StreamSubscription<String?>? _uidSub;
+  String? _boundUid;
 
   MatchRepository get matchRepository => widget.services.matchRepository;
   LikeRepository get likeRepository => widget.services.likeRepository;
@@ -75,30 +83,74 @@ class SocialScopeState extends State<SocialScope> {
   AuthUidSource get uidSource => widget.services.uidSource;
   NotificationRepository get notificationRepository =>
       widget.services.notificationRepository;
+  IncomingLikesRepository get incomingLikesRepository =>
+      widget.services.incomingLikesRepository;
   ChatRetentionPolicy get retentionPolicy => widget.services.retentionPolicy;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     matchesController = MatchesController(
       matchRepository: widget.services.matchRepository,
+      presenceRepository: widget.services.presenceRepository,
       uidSource: widget.services.uidSource,
     )..start();
     callController = CallController(
       service: widget.services.videoCallService,
       provider: widget.services.videoCallProvider,
     );
-    final uid = widget.services.uidSource.currentUid;
+    _boundUid = widget.services.uidSource.currentUid;
+    _uidSub = widget.services.uidSource.watchUid().listen((uid) {
+      _onUid(uid);
+    }, onError: (_) {
+      _onUid(widget.services.uidSource.currentUid);
+    });
+    final uid = _boundUid;
     if (uid != null) {
       callController.watchIncoming(uid);
     }
   }
 
+  void _onUid(String? uid) {
+    if (uid == _boundUid) {
+      return;
+    }
+    debugPrint(
+      '[TAB] social uid changed: ${_boundUid ?? 'none'} → ${uid ?? 'none'} '
+      '| restarting matches/incoming listeners',
+    );
+    _boundUid = uid;
+    matchesController.start();
+    if (uid != null) {
+      callController.watchIncoming(uid);
+    } else {
+      callController.stopIncoming();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      matchesController.start();
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_uidSub?.cancel());
     matchesController.dispose();
     callController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    matchesController.attachSettingsHub(
+      SettingsScope.maybeOf(context)?.settingsHub,
+    );
   }
 
   @override

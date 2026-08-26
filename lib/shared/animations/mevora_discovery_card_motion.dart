@@ -42,14 +42,32 @@ class MevoraDiscoveryCardMotion extends StatelessWidget {
     final rotation = (offset.dx / 480).clamp(-_maxRotation, _maxRotation);
     final scale = 1 - (progress * 0.04);
     final opacity = 1 - (progress * 0.18);
+    final angle = rotation * math.pi / 6;
+    final isIdentity =
+        !animateOut &&
+        offset == Offset.zero &&
+        angle == 0 &&
+        scale == 1 &&
+        opacity == 1;
+
+    // Identity transforms still rasterize with FilterQuality.low and soften photos.
+    if (isIdentity) {
+      return child;
+    }
 
     final content = Opacity(
       opacity: opacity,
       child: Transform.translate(
         offset: offset,
+        filterQuality: FilterQuality.high,
         child: Transform.rotate(
-          angle: rotation * math.pi / 6,
-          child: Transform.scale(scale: scale, child: child),
+          angle: angle,
+          filterQuality: FilterQuality.high,
+          child: Transform.scale(
+            scale: scale,
+            filterQuality: FilterQuality.high,
+            child: child,
+          ),
         ),
       ),
     );

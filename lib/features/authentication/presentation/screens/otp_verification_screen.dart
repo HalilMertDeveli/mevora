@@ -20,6 +20,8 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
+  String _code = '';
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +30,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         return;
       }
       final phone = AuthScope.of(context).phoneAuth;
+      if (phone.state is PhoneAuthenticated) {
+        return;
+      }
       phone.restoreOrReset();
       if (!phone.hasActiveChallenge) {
         context.go(AppRoutes.phone);
@@ -87,7 +92,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   label: l10n.otpFieldLabel,
                   child: OtpCodeInput(
                     enabled: !verifying,
-                    onChanged: (_) {},
+                    onChanged: (code) => _code = code,
                     onCompleted: (code) => unawaited(phone.verify(code)),
                   ),
                 ),
@@ -105,20 +110,29 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   MevoraLoading(message: l10n.verifying)
                 else if (success)
                   MevoraLoading(message: l10n.phoneVerifiedSuccess)
-                else if (phone.resendSeconds > 0)
-                  Text(
-                    l10n.resendCountdown(phone.resendSeconds),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  )
-                else
+                else ...[
                   MevoraButton(
-                    label: l10n.resend,
-                    variant: MevoraButtonVariant.secondary,
-                    onPressed: phone.canResend
-                        ? () => unawaited(phone.resend())
+                    label: l10n.verify,
+                    onPressed: _code.length == 6 && !verifying
+                        ? () => unawaited(phone.verify(_code))
                         : null,
                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (phone.resendSeconds > 0)
+                    Text(
+                      l10n.resendCountdown(phone.resendSeconds),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    )
+                  else
+                    MevoraButton(
+                      label: l10n.resend,
+                      variant: MevoraButtonVariant.secondary,
+                      onPressed: phone.canResend
+                          ? () => unawaited(phone.resend())
+                          : null,
+                    ),
+                ],
               ],
             ),
           ),

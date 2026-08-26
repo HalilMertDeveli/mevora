@@ -6,13 +6,19 @@ import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
-import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/boost/domain/entities/purchase_flow_state.dart';
+import 'package:mevora/features/boost/domain/usecases/activate_boost.dart';
 import 'package:mevora/features/boost/domain/usecases/get_active_boost.dart';
+import 'package:mevora/features/boost/domain/usecases/get_boost_history.dart';
 import 'package:mevora/features/boost/domain/usecases/get_boost_product.dart';
+import 'package:mevora/features/boost/domain/usecases/get_boost_products.dart';
+import 'package:mevora/features/boost/domain/usecases/get_boost_wallet.dart';
 import 'package:mevora/features/boost/domain/usecases/purchase_boost.dart';
 import 'package:mevora/features/boost/domain/usecases/verify_boost_purchase.dart';
 import 'package:mevora/features/boost/presentation/controllers/purchase_controller.dart';
+import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
+import 'package:mevora/features/boost/presentation/widgets/boost_history_list.dart';
+import 'package:mevora/features/boost/presentation/widgets/boost_pack_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
@@ -29,12 +35,13 @@ String _boostStatusMessage(AppLocalizations l10n, PurchaseViewState state) {
       l10n.boostLoadingProduct,
     PurchaseUiStatus.purchasing => l10n.boostPurchasing,
     PurchaseUiStatus.verifying => l10n.boostVerifying,
+    PurchaseUiStatus.activating => l10n.boostActivating,
     PurchaseUiStatus.cancelled => l10n.boostPurchaseCancelled,
     PurchaseUiStatus.unavailable => l10n.boostStoreUnavailable,
     PurchaseUiStatus.failed => l10n.boostPurchaseFailed,
+    PurchaseUiStatus.credited => l10n.boostCreditedTitle,
     PurchaseUiStatus.success => l10n.boostSuccessTitle,
-    PurchaseUiStatus.productLoaded =>
-      state.hasActiveBoost ? l10n.boostAlreadyActive : l10n.boostSubtitle,
+    PurchaseUiStatus.productLoaded => l10n.boostSubtitle,
   };
 }
 
@@ -66,9 +73,13 @@ class _BoostScreenState extends State<BoostScreen> {
     _owned = PurchaseController(
       userId: uid,
       getBoostProduct: GetBoostProduct(scope.repository),
+      getBoostProducts: GetBoostProducts(scope.repository),
       purchaseBoost: PurchaseBoost(scope.repository),
       verifyBoostPurchase: VerifyBoostPurchase(scope.repository),
       getActiveBoost: GetActiveBoost(scope.repository),
+      getBoostWallet: GetBoostWallet(scope.repository),
+      getBoostHistory: GetBoostHistory(scope.repository),
+      activateBoost: ActivateBoost(scope.repository),
       repository: scope.repository,
       analytics: scope.analytics,
     )..addListener(_onController);
@@ -132,6 +143,9 @@ class _BoostScreenState extends State<BoostScreen> {
         PurchaseUiStatus.verifying => MevoraLoading.page(
           message: l10n.boostVerifying,
         ),
+        PurchaseUiStatus.activating => MevoraLoading.page(
+          message: l10n.boostActivating,
+        ),
         PurchaseUiStatus.success => _SuccessView(
           onDone: () => Navigator.of(context).maybePop(),
         ),
@@ -140,10 +154,9 @@ class _BoostScreenState extends State<BoostScreen> {
         PurchaseUiStatus.unavailable => MevoraErrorView(
           title: l10n.boostTitle,
           message: _boostStatusMessage(l10n, state),
-          onRetry: state.status == PurchaseUiStatus.unavailable
-              ? () => unawaited(controller.load())
-              : () => unawaited(controller.purchase()),
+          onRetry: () => unawaited(controller.load()),
         ),
+        PurchaseUiStatus.credited ||
         PurchaseUiStatus.productLoaded => _ProductView(controller: controller),
       },
     );
@@ -157,99 +170,84 @@ class _ProductView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final product = controller.state.product;
-    final active = controller.state.hasActiveBoost;
+    final state = controller.state;
     final l10n = AppLocalizations.of(context);
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.96, end: 1),
-      duration: AppDurations.medium,
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value.clamp(0, 1),
-          child: Transform.scale(scale: value, child: child),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
-        child: Column(
-          children: [
-            const Spacer(),
-            MevoraCard(
-              emphasis: MevoraCardEmphasis.elevated,
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.bolt_rounded,
-                    size: 56,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    l10n.boostTitle,
-                    style: Theme.of(context).textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    l10n.boostSubtitle,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                    ),
-                    child: Text(
-                      l10n.boostDuration,
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                  ),
-                  if (product != null && product.localizedPrice.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      product.localizedPrice,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ],
-                  if (active) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      l10n.boostAlreadyActive,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ],
+    final products = state.products.isNotEmpty
+        ? state.products
+        : [if (state.product != null) state.product!];
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.screenPadding),
+      children: [
+        MevoraCard(
+          emphasis: MevoraCardEmphasis.elevated,
+          child: Column(
+            children: [
+              Icon(
+                Icons.bolt_rounded,
+                size: 56,
+                color: Theme.of(context).colorScheme.secondary,
               ),
-            ),
-            const Spacer(),
-            MevoraButton(
-              label: l10n.boostActivate,
-              isLoading: false,
-              onPressed: active
-                  ? null
-                  : () => unawaited(controller.purchase()),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              l10n.boostBuy,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                l10n.boostTitle,
+                style: Theme.of(context).textTheme.headlineMedium,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                l10n.boostSubtitle,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              BoostActiveBadge(boost: state.activeBoost),
+              if (state.hasActiveBoost) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  l10n.boostAlreadyActive,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+              if (state.balance > 0) ...[
+                const SizedBox(height: AppSpacing.sm),
+                BoostBalanceChip(balance: state.balance),
+              ],
+              if (state.status == PurchaseUiStatus.credited) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  l10n.boostCreditedTitle,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ],
+          ),
         ),
-      ),
+        if (state.canActivate) ...[
+          const SizedBox(height: AppSpacing.lg),
+          MevoraButton(
+            label: l10n.boostActivate,
+            onPressed: () => unawaited(controller.activate()),
+            variant: MevoraButtonVariant.secondary,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        BoostPackList(
+          products: products,
+          onSelect: (product) => unawaited(controller.purchase(product)),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        MevoraButton(
+          label: l10n.restorePurchases,
+          onPressed: () => unawaited(controller.restore()),
+          variant: MevoraButtonVariant.ghost,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        BoostHistoryList(entries: state.history),
+      ],
     );
   }
 }

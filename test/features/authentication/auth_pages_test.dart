@@ -66,6 +66,9 @@ void main() {
     await tester.pumpWidget(_wrap(controller: controller, child: const LoginPage()));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text(_l10n.continueWithEmail));
+    await tester.pumpAndSettle();
+
     await tester.ensureVisible(find.text(_l10n.signIn));
     await tester.tap(find.text(_l10n.signIn));
     await tester.pump();
@@ -85,6 +88,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(_wrap(controller: controller, child: const LoginPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(_l10n.continueWithEmail));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -116,6 +122,9 @@ void main() {
       kind: AuthErrorKind.wrongPassword,
     );
     await tester.pumpWidget(_wrap(controller: controller, child: const LoginPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(_l10n.continueWithEmail));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -249,17 +258,23 @@ void main() {
   });
 
   testWidgets('login shows Mevora branding and provider buttons', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       _wrap(controller: controller, child: const LoginPage()),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    expect(find.text(_l10n.appName), findsWidgets);
-    expect(find.text(_l10n.connectTagline), findsOneWidget);
+    expect(find.text('MEVORA'), findsOneWidget);
+    expect(find.text(_l10n.loginSlogan), findsOneWidget);
     expect(find.text(_l10n.continueWithGoogle), findsOneWidget);
     expect(find.text(_l10n.continueWithApple), findsOneWidget);
     expect(find.text(_l10n.continueWithSpotify), findsOneWidget);
     expect(find.text(_l10n.continueWithPhone), findsOneWidget);
+    expect(find.text(_l10n.continueWithEmail), findsOneWidget);
     expect(find.text(_l10n.termsOfService), findsOneWidget);
     expect(find.text(_l10n.privacyPolicy), findsOneWidget);
   });
@@ -273,7 +288,7 @@ void main() {
     await tester.tap(find.text(_l10n.sendCode));
     await tester.pump();
 
-    expect(find.text(_l10n.authInvalidPhone), findsOneWidget);
+    expect(find.text(_l10n.authInvalidPhone), findsWidgets);
   });
 
   testWidgets('otp input auto-focuses and accepts a pasted 6-digit code', (

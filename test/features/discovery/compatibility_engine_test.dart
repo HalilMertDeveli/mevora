@@ -68,6 +68,9 @@ class _AlwaysOneStrategy implements CompatibilityStrategy {
   double get weight => 0.5;
 
   @override
+  bool applies(CompatibilityContext context) => true;
+
+  @override
   double score(CompatibilityContext context) => 1;
 
   @override

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/firebase/firebase_options_resolver.dart';
+import 'package:mevora/firebase_options.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -13,13 +14,27 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  test('Android google-services.json matches resolver project IDs', () {
+  test('android/app/google-services.json targets mevora-d6ed0', () {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    final json = _androidJson('android/app/google-services.json');
+    final project = json['project_info'] as Map<String, dynamic>;
+    const options = DefaultFirebaseOptions.android;
+    final client = _androidClient(json, 'com.mevora.app');
+
+    expect(project['project_id'], 'mevora-d6ed0');
+    expect(project['project_number'], options.messagingSenderId);
+    expect(project['storage_bucket'], options.storageBucket);
+    expect(client.appId, options.appId);
+    expect(client.apiKey, options.apiKey);
+  });
+
+  test('Android flavor google-services.json matches resolver project IDs', () {
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
     _expectAndroidFlavor(
       flavor: 'development',
       environment: AppEnvironment.development,
-      packageName: 'com.mevora.app.dev',
+      packageName: 'com.mevora.app',
     );
     _expectAndroidFlavor(
       flavor: 'staging',
@@ -33,13 +48,22 @@ void main() {
     );
   });
 
+  test('ios/Runner/GoogleService-Info.plist targets mevora-d6ed0', () {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    _expectIosPlist(
+      path: 'ios/Runner/GoogleService-Info.plist',
+      environment: AppEnvironment.development,
+      bundleId: 'com.mevora.app',
+    );
+  });
+
   test('iOS flavor plists match resolver project IDs and bundle ids', () {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
     _expectIosPlist(
       path: 'ios/flavors/development/GoogleService-Info.plist',
       environment: AppEnvironment.development,
-      bundleId: 'com.mevora.app.dev',
+      bundleId: 'com.mevora.app',
     );
     _expectIosPlist(
       path: 'ios/flavors/staging/GoogleService-Info.plist',
@@ -73,23 +97,16 @@ void _expectAndroidFlavor({
   required AppEnvironment environment,
   required String packageName,
 }) {
-  final json = jsonDecode(
-    File('android/app/src/$flavor/google-services.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
+  final json = _androidJson('android/app/src/$flavor/google-services.json');
   final project = json['project_info'] as Map<String, dynamic>;
-  final client = (json['client'] as List<dynamic>).first as Map<String, dynamic>;
-  final info = client['client_info'] as Map<String, dynamic>;
-  final android = info['android_client_info'] as Map<String, dynamic>;
-  final apiKey = ((client['api_key'] as List<dynamic>).first
-      as Map<String, dynamic>)['current_key'] as String;
-
+  final client = _androidClient(json, packageName);
   final options = FirebaseOptionsResolver.resolve(environment);
+
   expect(project['project_id'], options.projectId);
   expect(project['project_number'], options.messagingSenderId);
   expect(project['storage_bucket'], options.storageBucket);
-  expect(info['mobilesdk_app_id'], options.appId);
-  expect(android['package_name'], packageName);
-  expect(apiKey, options.apiKey);
+  expect(client.appId, options.appId);
+  expect(client.apiKey, options.apiKey);
 }
 
 void _expectIosPlist({
@@ -107,6 +124,35 @@ void _expectIosPlist({
   expect(_plistString(plist, 'BUNDLE_ID'), bundleId);
   expect(options.iosBundleId, bundleId);
   expect(_plistString(plist, 'API_KEY'), options.apiKey);
+}
+
+Map<String, dynamic> _androidJson(String path) {
+  return jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
+}
+
+({String appId, String apiKey}) _androidClient(
+  Map<String, dynamic> json,
+  String packageName,
+) {
+  final clients = json['client'] as List<dynamic>;
+  Map<String, dynamic>? matched;
+  for (final raw in clients) {
+    final client = raw as Map<String, dynamic>;
+    final info = client['client_info'] as Map<String, dynamic>;
+    final android = info['android_client_info'] as Map<String, dynamic>;
+    if (android['package_name'] == packageName) {
+      matched = client;
+      break;
+    }
+  }
+  expect(matched, isNotNull, reason: 'missing Android client $packageName');
+  final info = matched!['client_info'] as Map<String, dynamic>;
+  final apiKey = ((matched['api_key'] as List<dynamic>).first
+      as Map<String, dynamic>)['current_key'] as String;
+  return (
+    appId: info['mobilesdk_app_id'] as String,
+    apiKey: apiKey,
+  );
 }
 
 String _plistString(String plist, String key) {

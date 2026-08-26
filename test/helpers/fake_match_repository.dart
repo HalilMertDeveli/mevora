@@ -83,10 +83,28 @@ class FakeMatchRepository
   }
 
   @override
-  Future<void> heartbeat(String userId, {required bool hideOnlineStatus}) async {
+  Future<void> setOnline(String userId) async {
     _presence[userId] = PresenceWatch(
+      isOnline: true,
       updatedAt: DateTime.utc(2026, 8, 18, 12),
-      hideOnlineStatus: hideOnlineStatus,
+    );
+  }
+
+  @override
+  Future<void> setOffline(String userId) async {
+    _presence[userId] = PresenceWatch(
+      isOnline: false,
+      updatedAt: DateTime.utc(2026, 8, 18, 12),
+      lastSeenAt: DateTime.utc(2026, 8, 18, 12),
+    );
+  }
+
+  @override
+  Future<void> heartbeat(String userId) async {
+    _presence[userId] = PresenceWatch(
+      isOnline: true,
+      updatedAt: DateTime.utc(2026, 8, 18, 12),
+      lastSeenAt: _presence[userId]?.lastSeenAt,
     );
   }
 

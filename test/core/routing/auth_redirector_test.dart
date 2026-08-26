@@ -51,6 +51,20 @@ void main() {
       ),
       isNull,
     );
+    expect(
+      AuthRedirector.redirect(
+        status: const Unauthenticated(),
+        location: AppRoutes.settings,
+      ),
+      AppRoutes.login,
+    );
+    expect(
+      AuthRedirector.redirect(
+        status: const Unauthenticated(),
+        location: AppRoutes.discovery,
+      ),
+      AppRoutes.login,
+    );
   });
 
   test('otp screen without a challenge returns to phone entry', () {

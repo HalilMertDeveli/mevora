@@ -44,6 +44,8 @@ class UserDocument {
 
   bool get isActive => accountStatus.isActive;
 
+  bool get isProfileComplete => profileCompleted || onboardingCompleted;
+
   factory UserDocument.fromMap(String id, Map<String, dynamic> data) {
     return UserDocument.fromAccountAndProfile(
       uid: id,

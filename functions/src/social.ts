@@ -5,6 +5,19 @@ import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {defineSecret} from "firebase-functions/params";
 import {AccessToken} from "livekit-server-sdk";
 import {blockId, canonicalMatchId, likeId, previewText} from "./ids.js";
+import {
+  loadActiveMatchPartnerIds,
+  passesDiscoveryProfileFilters,
+  passesGenderPreferences,
+} from "./discoveryMatching.js";
+import {isAccountEligible} from "./profileSafety.js";
+import {markProfilePhotosForManualReview} from "./moderation/photoModerationService.js";
+import {
+  applyMessageSideEffects,
+  preservedMatchScoreFields,
+  queuePostMatchFeedback,
+} from "./matchScore.js";
+import {enforceMessageRateLimit} from "./messageRateLimit.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
 
 if (getApps().length === 0) {
@@ -15,7 +28,19 @@ const db = getFirestore();
 const livekitApiKey = defineSecret("LIVEKIT_API_KEY");
 const livekitApiSecret = defineSecret("LIVEKIT_API_SECRET");
 const livekitUrl = defineSecret("LIVEKIT_URL");
-const socialCallable = {region: "europe-west1" as const};
+const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
+const socialCallable = {enforceAppCheck, region: "europe-west1" as const};
+
+const REPORT_REASONS = new Set([
+  "spam",
+  "harassment",
+  "inappropriate_content",
+  "scam",
+  "fake_profile",
+  "underage",
+  "other",
+]);
+const MAX_REPORTS_PER_DAY = 20;
 
 function requireUid(uid: string | undefined): string {
   if (!uid) {
@@ -34,15 +59,32 @@ async function isBlocked(a: string, b: string): Promise<boolean> {
   return first.exists || second.exists || subA.exists || subB.exists;
 }
 
-async function profilePreview(uid: string): Promise<{name: string; photoUrl?: string}> {
-  const snap = await db.doc(`profiles/${uid}`).get();
-  const data = snap.data() ?? {};
-  const userSnap = snap.exists ? snap : await db.doc(`users/${uid}`).get();
-  const merged = userSnap.data() ?? data;
+async function profilePreview(uid: string): Promise<{name: string; photoUrl?: string; isVerified: boolean}> {
+  const [profileSnap, userSnap] = await Promise.all([
+    db.doc(`profiles/${uid}`).get(),
+    db.doc(`users/${uid}`).get(),
+  ]);
+  const data = profileSnap.data() ?? {};
+  const account = userSnap.data() ?? {};
   return {
-    name: String(merged.displayName ?? merged.name ?? "Mevora"),
-    photoUrl: merged.photoUrl as string | undefined,
+    name: String(data.displayName ?? account.displayName ?? account.name ?? "Mevora"),
+    photoUrl: (data.photoUrl ?? account.photoUrl) as string | undefined,
+    isVerified: account.isVerified === true,
   };
+}
+
+async function endActiveCallsForMatch(matchId: string): Promise<void> {
+  const ringing = await db
+    .collection("calls")
+    .where("matchId", "==", matchId)
+    .where("status", "in", ["ringing", "calling", "connecting", "connected"])
+    .get();
+  if (ringing.empty) {
+    return;
+  }
+  const batch = db.batch();
+  ringing.docs.forEach((doc) => batch.update(doc.ref, {status: "ended", endedAt: FieldValue.serverTimestamp()}));
+  await batch.commit();
 }
 
 export const recordSwipe = onCall(socialCallable, async (request) => {
@@ -51,6 +93,53 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
   const action = String(request.data?.action ?? "like");
   if (!targetUserId || targetUserId === uid) {
     throw new HttpsError("invalid-argument", "self");
+  }
+  const [
+    callerAccount,
+    callerProfileSnap,
+    callerPrefsSnap,
+    targetProfileSnap,
+    targetPrefsSnap,
+    targetAccountSnap,
+    activeMatches,
+  ] = await Promise.all([
+    db.doc(`users/${uid}`).get(),
+    db.doc(`profiles/${uid}`).get(),
+    db.doc(`userPreferences/${uid}`).get(),
+    db.doc(`profiles/${targetUserId}`).get(),
+    db.doc(`userPreferences/${targetUserId}`).get(),
+    db.doc(`users/${targetUserId}`).get(),
+    loadActiveMatchPartnerIds(db, uid),
+  ]);
+  if (!isAccountEligible(callerAccount.data())) {
+    throw new HttpsError("permission-denied", "account-suspended");
+  }
+  if (activeMatches.has(targetUserId)) {
+    throw new HttpsError("failed-precondition", "already-matched");
+  }
+  const callerPrefs = callerPrefsSnap.data() ?? {};
+  const minAge = Number(callerPrefs.minAge ?? 18);
+  const maxAge = Number(callerPrefs.maxAge ?? 99);
+  if (
+    !targetProfileSnap.exists ||
+    !passesDiscoveryProfileFilters({
+      candidateProfile: targetProfileSnap.data(),
+      candidateAccount: targetAccountSnap.data(),
+      minAge,
+      maxAge,
+    })
+  ) {
+    throw new HttpsError("failed-precondition", "candidate-unavailable");
+  }
+  if (
+    !passesGenderPreferences({
+      viewerPrefs: callerPrefs,
+      viewerProfile: callerProfileSnap.data() ?? {},
+      candidatePrefs: targetPrefsSnap.data() ?? {},
+      candidateProfile: targetProfileSnap.data() ?? {},
+    })
+  ) {
+    throw new HttpsError("failed-precondition", "preference-mismatch");
   }
   if (await isBlocked(uid, targetUserId)) {
     throw new HttpsError("failed-precondition", "blocked");
@@ -86,9 +175,10 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
     }
     const actor = await profilePreview(uid);
     const other = await profilePreview(targetUserId);
+    const previousMatch = matchSnap.data();
     tx.set(matchRef, {
       userIds: [uid, targetUserId].sort(),
-      createdAt: FieldValue.serverTimestamp(),
+      createdAt: previousMatch?.createdAt ?? FieldValue.serverTimestamp(),
       lastMessage: null,
       lastMessageAt: FieldValue.serverTimestamp(),
       isActive: true,
@@ -101,6 +191,12 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
         ...(actor.photoUrl ? {[uid]: actor.photoUrl} : {}),
         ...(other.photoUrl ? {[targetUserId]: other.photoUrl} : {}),
       },
+      participantVerified: {
+        [uid]: actor.isVerified,
+        [targetUserId]: other.isVerified,
+      },
+      ...preservedMatchScoreFields(previousMatch),
+      source: "mutual_like",
     });
     return {matched: true, matchId};
   });
@@ -114,11 +210,20 @@ export const unmatchUser = onCall(socialCallable, async (request) => {
   if (!snap.exists || !((snap.data()?.userIds as string[]) ?? []).includes(uid)) {
     throw new HttpsError("permission-denied", "not-matched");
   }
+  const userIds = (snap.data()?.userIds as string[]) ?? [];
   await ref.update({
     isActive: false,
     unmatchedBy: uid,
     unmatchedAt: FieldValue.serverTimestamp(),
+    endedReason: "unmatch",
   });
+  await queuePostMatchFeedback({
+    matchId,
+    endedBy: uid,
+    reason: "unmatch",
+    userIds,
+  });
+  await endActiveCallsForMatch(matchId);
   return {ok: true};
 });
 
@@ -141,27 +246,44 @@ export const blockUser = onCall(socialCallable, async (request) => {
   const matchRef = db.doc(`matches/${matchId}`);
   const match = await matchRef.get();
   if (match.exists) {
+    const userIds = (match.data()?.userIds as string[]) ?? [];
     await matchRef.update({
       isActive: false,
       unmatchedBy: uid,
       unmatchedAt: FieldValue.serverTimestamp(),
+      endedReason: "block",
+    });
+    await queuePostMatchFeedback({
+      matchId,
+      endedBy: uid,
+      reason: "block",
+      userIds,
     });
   }
-  const ringing = await db
-    .collection("calls")
-    .where("matchId", "==", matchId)
-    .where("status", "in", ["ringing", "calling", "connecting", "connected"])
-    .get();
-  const batch = db.batch();
-  ringing.docs.forEach((doc) => batch.update(doc.ref, {status: "ended"}));
-  await batch.commit();
+  await endActiveCallsForMatch(matchId);
   return {ok: true};
 });
 
 export const reportUser = onCall(socialCallable, async (request) => {
   const uid = requireUid(request.auth?.uid);
-  const userId = String(request.data?.userId ?? "");
-  const reason = String(request.data?.reason ?? "other");
+  const userId = String(request.data?.userId ?? "").trim();
+  const reason = String(request.data?.reason ?? "other").trim();
+  if (!userId || userId === uid) {
+    throw new HttpsError("invalid-argument", "invalid-target");
+  }
+  if (!REPORT_REASONS.has(reason)) {
+    throw new HttpsError("invalid-argument", "invalid-reason");
+  }
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recent = await db
+    .collection("reports")
+    .where("reporterId", "==", uid)
+    .where("createdAt", ">=", since)
+    .limit(MAX_REPORTS_PER_DAY)
+    .get();
+  if (recent.size >= MAX_REPORTS_PER_DAY) {
+    throw new HttpsError("resource-exhausted", "report-rate-limit");
+  }
   await db.collection("reports").add({
     reporterId: uid,
     reportedUserId: userId,
@@ -172,6 +294,7 @@ export const reportUser = onCall(socialCallable, async (request) => {
     createdAt: FieldValue.serverTimestamp(),
     status: "open",
   });
+  await markProfilePhotosForManualReview(db, userId, `report:${reason}`);
   return {ok: true};
 });
 
@@ -277,14 +400,17 @@ export const endVideoCall = onCall(socialCallable, async (request) => {
   if (!snap.exists || (data?.callerId !== uid && data?.receiverId !== uid)) {
     throw new HttpsError("permission-denied", "not-found");
   }
-  await ref.update({status: "ended", endedAt: FieldValue.serverTimestamp()});
+  const ringing = data?.status === "ringing" || data?.status === "calling";
+  const cancelledByCaller = ringing && data?.callerId === uid;
+  const status = cancelledByCaller ? "cancelled" : "ended";
+  await ref.update({status, endedAt: FieldValue.serverTimestamp()});
   await db.doc(`callHistory/${callId}`).set({
     callerId: data?.callerId,
     receiverId: data?.receiverId,
     participantIds: [data?.callerId, data?.receiverId],
     matchId: data?.matchId,
     type: "video",
-    status: "completed",
+    status: cancelledByCaller ? "cancelled" : "completed",
     startedAt: data?.createdAt ?? FieldValue.serverTimestamp(),
     endedAt: FieldValue.serverTimestamp(),
     duration: 0,
@@ -325,30 +451,53 @@ export const sendMessageNotification = onDocumentCreated(
     region: "europe-west1",
   },
   async (event) => {
-    const data = event.data?.data();
+    const snap = event.data;
+    const data = snap?.data();
     const matchId = event.params.matchId;
-    if (!data) {
+    if (!snap || !data) {
       return;
     }
     const senderId = String(data.senderId ?? "");
     const receiverId = String(data.receiverId ?? "");
+    const allowed = await enforceMessageRateLimit({
+      matchId,
+      messageId: event.params.messageId,
+      senderId,
+      type: String(data.type ?? "text"),
+      messageRef: snap.ref,
+    });
+    if (!allowed) {
+      return;
+    }
     if (await isBlocked(senderId, receiverId)) {
       return;
     }
-    const matchRef = db.doc(`matches/${matchId}`);
-    await matchRef.update({
-      lastMessage: previewText(String(data.text ?? "")),
-      lastMessageAt: FieldValue.serverTimestamp(),
-      [`unreadCounts.${receiverId}`]: FieldValue.increment(1),
-      [`isNewFor.${receiverId}`]: false,
+    const type = String(data.type ?? "text");
+    const encrypted = data.encrypted === true;
+    const lastMessage = data.deleted === true
+      ? ""
+      : type === "image"
+        ? "📷"
+        : type === "voice"
+          ? "🎤"
+          : encrypted
+            ? "🔒"
+            : previewText(String(data.text ?? ""));
+    await applyMessageSideEffects({
+      matchId,
+      senderId,
+      receiverId,
+      lastMessage,
     });
-    const preview = previewText(String(data.text ?? ""));
     await sendUserPush({
       uid: receiverId,
-      type: FcmTypes.newMessage,
+      type: type === "image"
+        ? FcmTypes.newPhoto
+        : type === "voice"
+          ? FcmTypes.newVoice
+          : FcmTypes.newMessage,
       data: {matchId},
       prefKey: "messageNotifications",
-      bodyOverride: preview,
     });
   },
 );

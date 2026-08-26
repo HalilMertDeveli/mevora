@@ -11,11 +11,14 @@ class NotificationSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final social = SocialScope.of(context);
     final l10n = AppLocalizations.of(context);
-    final uid = social.uidSource.currentUid;
-    if (uid == null) {
-      return const Scaffold(body: SizedBox.shrink());
+    final social = SocialScope.maybeOf(context);
+    final uid = social?.uidSource.currentUid;
+    if (social == null || uid == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.notificationsTitle)),
+        body: const SizedBox.shrink(),
+      );
     }
     return StreamBuilder<NotificationPrefs>(
       stream: social.notificationRepository.watchPrefs(uid),

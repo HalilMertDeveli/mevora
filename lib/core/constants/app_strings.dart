@@ -42,7 +42,7 @@ abstract final class AppStrings {
   static const String continueWithGoogle = 'Continue with Google';
   static const String continueWithApple = 'Continue with Apple';
   static const String continueWithSpotify = 'Continue with Spotify';
-  static const String continueWithPhone = 'Continue with Phone Number';
+  static const String continueWithPhone = 'Sign in with Phone Number';
   static const String connectTagline = 'Connect with people who match you.';
   static const String legalPrefix = 'By continuing you agree to our';
   static const String termsOfService = 'Terms of Service';
@@ -120,7 +120,7 @@ abstract final class AppStrings {
   static const String boostTitle = 'BOOST';
   static const String boostSubtitle =
       'Profilini daha fazla kişiye göster ve keşfedilme şansını artır.';
-  static const String boostDurationLabel = '30 dakika';
+  static const String boostDurationLabel = 'Boost';
   static const String boostActivateCta = "BOOST'U AKTİF ET";
   static const String boostBuyCta = "Boost'u Satın Al";
   static const String boostPurchasing = 'Satın alma işlemi başlatılıyor...';
@@ -142,6 +142,9 @@ abstract final class AppStrings {
       'Satın alma doğrulanamadı. Biraz sonra tekrar dene.';
   static const String boostAlreadyProcessed =
       'Bu satın alma zaten işlendi.';
+  static const String boostInsufficientBalance =
+      'Aktif etmek için Boost bakiyen yok.';
+  static const String boostCreditedTitle = 'Boost hesabına eklendi';
   static const String boostLoadingProduct = 'Mağaza bilgileri yükleniyor...';
   static const String boostBackToDiscovery = 'Keşfe dön';
   static const String boostButtonTooltip = 'Boost';

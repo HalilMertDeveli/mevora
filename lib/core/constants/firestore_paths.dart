@@ -15,11 +15,24 @@ abstract final class FirestorePaths {
   static const String blocks = 'blocks';
   static const String purchases = 'purchases';
   static const String boosts = 'boosts';
+  static const String boostWallet = 'boostWallet';
+  static const String boostProducts = 'boostProducts';
+  static const String subscription = 'subscription';
+  static const String supportTickets = 'supportTickets';
 
   static const String devices = 'devices';
   static const String blockedUsers = 'blockedUsers';
   static const String messages = 'messages';
   static const String fcmTokens = 'fcmTokens';
+  static const String scoreHistory = 'matchScoreHistory';
+  static const String matchFeedback = 'matchFeedback';
+  static const String pendingFeedback = 'pendingMatchFeedback';
+  static const String relationshipAnswers = 'relationshipAnswers';
+  static const String relationshipMatch = 'relationshipMatch';
+  static const String relationshipSeen = 'relationshipSeen';
+  static const String questionAnswers = 'questionAnswers';
+
+  static String supportTicket(String ticketId) => '$supportTickets/$ticketId';
 
   static String user(String uid) => '$users/$uid';
 
@@ -68,12 +81,43 @@ abstract final class FirestorePaths {
 
   static String presence(String uid) => '$users/$uid/presence/current';
 
+  static String subscriptionCurrent(String uid) =>
+      '$users/$uid/$subscription/current';
+
+  static String matchScoreHistory(String uid) => '$users/$uid/$scoreHistory';
+
+  static String matchFeedbackDoc(String uid, String matchId) =>
+      '$users/$uid/$matchFeedback/$matchId';
+
+  static String pendingMatchFeedback(String uid) =>
+      '$users/$uid/$pendingFeedback';
+
   static String purchase(String purchaseId) => '$purchases/$purchaseId';
 
   static String userBoosts(String uid) => '$users/$uid/$boosts';
 
   static String userBoost(String uid, String boostId) =>
       '$users/$uid/$boosts/$boostId';
+
+  static String userBoostWallet(String uid) =>
+      '$users/$uid/$boostWallet/current';
+
+  static String boostProduct(String productId) => '$boostProducts/$productId';
+
+  static String relationshipAnswer(String uid, String questionId) =>
+      '$users/$uid/$relationshipAnswers/$questionId';
+
+  static String relationshipMatchSummary(String uid) =>
+      '$users/$uid/$relationshipMatch/summary';
+
+  static String relationshipSeenDoc(String uid, String otherUid) =>
+      '$users/$uid/$relationshipSeen/$otherUid';
+
+  static String questionAnswer(String uid, String questionId) =>
+      '$users/$uid/$questionAnswers/$questionId';
+
+  static String userQuestionAnswers(String uid) =>
+      '$users/$uid/$questionAnswers';
 }
 
 abstract final class StoragePaths {
@@ -89,7 +133,15 @@ abstract final class StoragePaths {
   static String profilePending({
     required String ownerUid,
     required String imageId,
-  }) => 'users/$ownerUid/profile/pending/$imageId';
+    String extension = 'jpg',
+  }) => 'users/$ownerUid/profile/pending/$imageId.$extension';
+
+  /// Canonical client upload path. Unique [imageId] so photos are never overwritten.
+  static String profilePhoto({
+    required String ownerUid,
+    required String imageId,
+    String extension = 'jpg',
+  }) => 'users/$ownerUid/profile/photos/$imageId.$extension';
 
   static String profileApproved({
     required String ownerUid,
@@ -105,7 +157,64 @@ abstract final class StoragePaths {
     required String ownerUid,
     required String matchId,
     required String messageId,
+    String extension = 'jpg',
   }) {
-    return 'users/$ownerUid/chat/$matchId/$messageId';
+    return 'users/$ownerUid/chat/$matchId/$messageId.$extension';
   }
+
+  static String chatVoice({
+    required String ownerUid,
+    required String matchId,
+    required String messageId,
+    String extension = 'm4a',
+  }) {
+    return 'users/$ownerUid/chat/$matchId/$messageId.$extension';
+  }
+
+  static const int maxChatImageBytes = 5 * 1024 * 1024;
+  static const int maxChatVoiceBytes = 8 * 1024 * 1024;
+  /// Matches `isEncryptedChatBlob()` in `firebase/storage.rules`.
+  static const int maxChatEncryptedBytes = 25 * 1024 * 1024;
+
+  static const Set<String> allowedChatAudioTypes = {
+    'audio/mp4',
+    'audio/m4a',
+    'audio/x-m4a',
+    'audio/aac',
+    'audio/mpeg',
+  };
+
+  static const String encryptedChatContentType = 'application/octet-stream';
+
+  /// Client-side gate aligned with Storage rules for chat media uploads.
+  static bool isAllowedChatUpload({
+    required String contentType,
+    required int sizeBytes,
+  }) {
+    if (sizeBytes <= 0) {
+      return false;
+    }
+    final lower = contentType.toLowerCase().trim();
+    if (allowedChatAudioTypes.contains(lower)) {
+      return sizeBytes <= maxChatVoiceBytes;
+    }
+    if (lower == encryptedChatContentType) {
+      return sizeBytes <= maxChatEncryptedBytes;
+    }
+    const images = {
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+    };
+    return images.contains(lower) && sizeBytes <= maxChatImageBytes;
+  }
+
+  static const int maxSupportAttachmentBytes = 5 * 1024 * 1024;
+
+  static String supportAttachment({
+    required String ownerUid,
+    required String ticketId,
+    required String fileName,
+  }) => 'users/$ownerUid/support/$ticketId/$fileName';
 }

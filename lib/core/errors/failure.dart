@@ -33,10 +33,14 @@ final class AuthFailure extends Failure {
     super.message, {
     this.isCancelled = false,
     this.kind = AuthErrorKind.unknown,
+    this.code,
   });
 
   final bool isCancelled;
   final AuthErrorKind kind;
+
+  /// Firebase / domain error code for diagnostics (never secrets).
+  final String? code;
 }
 
 final class AuthzFailure extends Failure {

@@ -31,9 +31,39 @@ service firebase.storage {
         && request.auth.uid in firestore.get(/databases/(default)/documents/matches/$(matchId)).data.userIds;
     }
 
+    function isAudio() {
+      return request.resource.contentType.matches('audio/mp4')
+        || request.resource.contentType.matches('audio/m4a')
+        || request.resource.contentType.matches('audio/x-m4a')
+        || request.resource.contentType.matches('audio/aac')
+        || request.resource.contentType.matches('audio/mpeg');
+    }
+
+    function isEncryptedChatBlob() {
+      return request.resource.contentType == 'application/octet-stream'
+        && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    function isChatMediaOk() {
+      // New uploads must be client-encrypted blobs only.
+      return isEncryptedChatBlob();
+    }
+
+    function isActiveMatch(matchId) {
+      return firestore.exists(/databases/(default)/documents/matches/$(matchId))
+        && firestore.get(/databases/(default)/documents/matches/$(matchId)).data.isActive == true;
+    }
+
+    // Pending uploads are owner-private until moderation publishes to photos/.
     match /users/{userId}/profile/pending/{imageId} {
-      allow read, delete: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow delete: if isOwner(userId);
       allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
+    }
+
+    match /users/{userId}/profile/photos/{imageId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
     }
 
     match /users/{userId}/profile/thumbs/{imageId} {
@@ -41,13 +71,25 @@ service firebase.storage {
       allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();
     }
 
+    // Legacy path: read for existing objects; no new client writes (use pending/).
     match /users/{userId}/profile/{imageId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();
+      allow create, update: if false;
+      allow delete: if isOwner(userId);
     }
 
-    match /users/{userId}/chat/{matchId}/{messageId} {
+    // Chat media: participants only. Prefer encrypted octet-stream (Wave B).
+    match /users/{userId}/chat/{matchId}/{fileId} {
       allow read: if isOwner(userId) || isMatchParticipant(matchId);
+      allow create, update: if isOwner(userId)
+        && isMatchParticipant(matchId)
+        && isActiveMatch(matchId)
+        && isChatMediaOk();
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/support/{ticketId}/{fileId} {
+      allow read: if isOwner(userId);
       allow create, update: if isOwner(userId) && isImage() && isSmallEnough();
       allow delete: if isOwner(userId);
     }

@@ -5,10 +5,7 @@ import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart'
 enum DiscoveryDecision { pass, like, superLike }
 
 class DiscoveryPageResult {
-  const DiscoveryPageResult({
-    required this.candidates,
-    this.nextCursor,
-  });
+  const DiscoveryPageResult({required this.candidates, this.nextCursor});
 
   final List<DiscoveryCandidate> candidates;
   final String? nextCursor;
@@ -20,12 +17,22 @@ abstract class DiscoveryRepository {
     required DiscoveryRadius radius,
     String? cursor,
     int limit = 10,
+    bool expandDistance = false,
   });
 
   Future<Result<DiscoveryDecisionResult>> recordDecision({
     required String candidateUid,
     required DiscoveryDecision decision,
   });
+}
+
+/// Optional development-only deck reset. Production repositories omit this.
+abstract class DemoDiscoverySupport {
+  bool get supportsDemoRestart;
+
+  void restartDemo();
+
+  bool isExhaustedForRadius(int radiusKm);
 }
 
 class DiscoveryDecisionResult {

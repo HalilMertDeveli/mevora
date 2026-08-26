@@ -17,6 +17,7 @@ import 'package:mevora/features/location/presentation/controllers/location_contr
 import 'package:mevora/l10n/app_localizations.dart';
 
 import '../../helpers/fake_auth.dart';
+import '../../helpers/fake_onboarding_services.dart';
 
 void main() {
   const environment = AppEnvironment.development;
@@ -51,6 +52,7 @@ void main() {
         locationController: location,
         locationRepository: location.repository,
         languageController: language,
+        onboardingServices: createFakeOnboardingServices(),
       ),
     );
     await tester.pump();

@@ -2,6 +2,8 @@ rules_version = '2';
 
 // users/{uid}                  ACCOUNT ONLY (private). May contain
 //   location: { latitude, longitude, updatedAt } readable by the owner only.
+//   lastActiveAt: server timestamp only. Discovery Functions hide users
+//   inactive for 90+ days; missing lastActiveAt still counts as active.
 // userLocation/{uid}           OWNER READ/WRITE ONLY (lat, lng, geohash)
 // Other clients never read exact GPS. Discovery receives distanceLabel from
 // Cloud Functions (getDiscoveryCandidates / getDistanceLabel).
@@ -18,6 +20,36 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Admin access is Auth custom claim only — never a client-writable Firestore field.
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    function userPrivacyData(userId) {
+      return exists(/databases/$(database)/documents/userPrivacy/$(userId))
+        ? get(/databases/$(database)/documents/userPrivacy/$(userId)).data
+        : {};
+    }
+
+    function privacyFlag(userId, field, fallback) {
+      return userPrivacyData(userId).get(field, fallback);
+    }
+
+    function canReadPresence(userId) {
+      return isOwner(userId)
+        || (
+          isAuthenticated()
+          && (
+            privacyFlag(userId, 'showOnlineStatus', true) == true
+            || privacyFlag(
+              userId,
+              'showLastSeen',
+              privacyFlag(userId, 'showActivity', true),
+            ) == true
+          )
+        );
+    }
+
     function isMatchParticipant(matchId) {
       return isAuthenticated()
         && exists(/databases/$(database)/documents/matches/$(matchId))
@@ -26,11 +58,161 @@ service cloud.firestore {
 
     function isBlockedPair(a, b) {
       return exists(/databases/$(database)/documents/users/$(a)/blockedUsers/$(b))
-        || exists(/databases/$(database)/documents/users/$(b)/blockedUsers/$(a));
+        || exists(/databases/$(database)/documents/users/$(b)/blockedUsers/$(a))
+        || exists(/databases/$(database)/documents/blocks/$(a + '_' + b))
+        || exists(/databases/$(database)/documents/blocks/$(b + '_' + a));
+    }
+
+    function canonicalMatchId(uidA, uidB) {
+      return uidA < uidB ? uidA + '_' + uidB : uidB + '_' + uidA;
+    }
+
+    function hasActiveMatchWith(otherUid) {
+      return isAuthenticated()
+        && otherUid != request.auth.uid
+        && !isBlockedPair(request.auth.uid, otherUid)
+        && exists(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid)))
+        && get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.isActive == true
+        && request.auth.uid in get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.userIds
+        && otherUid in get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.userIds;
+    }
+
+    function unchangedOrFalse(key) {
+      return request.resource.data.get(key, false) == resource.data.get(key, false)
+        || request.resource.data.get(key, false) == false;
+    }
+
+    function birthDateUnchanged() {
+      return !('birthDate' in resource.data)
+        || request.resource.data.birthDate == resource.data.birthDate;
+    }
+
+    function ageUnchanged() {
+      return !('age' in resource.data)
+        || request.resource.data.age == resource.data.age;
+    }
+
+    function profileLifecycleClientSafe() {
+      return request.resource.data.get('isDiscoverable', false) == false
+        && request.resource.data.get('profileCompleted', false) == false
+        && request.resource.data.get('onboardingCompleted', false) == false
+        && request.resource.data.get('isProfileComplete', false) == false
+        && !request.resource.data.keys().hasAny([
+          'profileModerationStatus',
+          'moderationStatus',
+          'isVerified',
+          'isAdmin',
+          'isSuspended',
+          'isBanned',
+          'subscriptionStatus',
+          'boostStatus',
+          'matchCount'
+        ]);
+    }
+
+    function profileLifecycleUpdateSafe() {
+      return unchangedOrFalse('isDiscoverable')
+        && unchangedOrFalse('profileCompleted')
+        && unchangedOrFalse('onboardingCompleted')
+        && unchangedOrFalse('isProfileComplete')
+        && birthDateUnchanged()
+        && ageUnchanged()
+        && request.resource.data.get('profileModerationStatus', resource.data.get('profileModerationStatus', 'pending'))
+          == resource.data.get('profileModerationStatus', 'pending')
+        && request.resource.data.get('moderationStatus', resource.data.get('moderationStatus', 'pending'))
+          == resource.data.get('moderationStatus', 'pending')
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'isVerified',
+          'isAdmin',
+          'isSuspended',
+          'isBanned',
+          'subscriptionStatus',
+          'boostStatus',
+          'matchCount'
+        ]);
     }
 
     function unchanged(key) {
       return request.resource.data[key] == resource.data[key];
+    }
+
+    // New client messages must be E2EE (ciphertext only). Legacy plaintext
+    // docs remain readable; clients cannot create new plaintext bodies.
+    function messageEncryptedFieldsValid() {
+      return request.resource.data.encrypted == true
+        && request.resource.data.ciphertext is string
+        && request.resource.data.ciphertext.size() > 0
+        && request.resource.data.ciphertext.size() <= 20000
+        && request.resource.data.nonce is string
+        && request.resource.data.nonce.size() > 0
+        && request.resource.data.nonce.size() <= 256
+        && request.resource.data.mac is string
+        && request.resource.data.mac.size() > 0
+        && request.resource.data.mac.size() <= 256
+        && request.resource.data.get('text', '') == '';
+    }
+
+    function chatStoragePathOwned(path, matchId) {
+      return path is string
+        && path.size() > 0
+        && path.size() <= 512
+        && path.matches('users/' + request.auth.uid + '/chat/' + matchId + '/.*');
+    }
+
+    function messageMediaPathsValid(matchId) {
+      return (!('imageStoragePath' in request.resource.data)
+          || chatStoragePathOwned(request.resource.data.imageStoragePath, matchId))
+        && (!('voiceStoragePath' in request.resource.data)
+          || chatStoragePathOwned(request.resource.data.voiceStoragePath, matchId))
+        && (!('mediaUrl' in request.resource.data)
+          || (request.resource.data.mediaUrl is string
+            && request.resource.data.mediaUrl.size() <= 2048));
+    }
+
+    function messageCreatePayloadValid(matchId) {
+      return messageEncryptedFieldsValid()
+        && messageMediaPathsValid(matchId)
+        && (
+          request.resource.data.type == 'text'
+          || (
+            request.resource.data.type in ['image', 'gif', 'voice']
+            && request.resource.data.keys().hasAny([
+              'imageStoragePath',
+              'voiceStoragePath',
+              'mediaUrl',
+              'mediaKeyCiphertext',
+            ])
+          )
+        );
+    }
+
+    function typingMetaWriteValid(matchId) {
+      return isMatchParticipant(matchId)
+        && (
+          (
+            !exists(/databases/$(database)/documents/matches/$(matchId)/meta/typing)
+            && request.resource.data.keys().hasOnly([request.auth.uid])
+          )
+          || (
+            exists(/databases/$(database)/documents/matches/$(matchId)/meta/typing)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly([request.auth.uid])
+          )
+        );
+    }
+
+    // lastActiveAt lives on users/{uid} (private). Discovery Functions
+    // filter with a 90-day window. Clients may only write request.time
+    // (FieldValue.serverTimestamp()) — never an arbitrary date.
+    function lastActiveAtUnchangedOrServerNow() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['lastActiveAt'])
+        || request.resource.data.lastActiveAt == request.time;
+    }
+
+    function lastActiveAtMissingOrServerNow() {
+      return !('lastActiveAt' in request.resource.data)
+        || request.resource.data.lastActiveAt == request.time;
     }
 
     // -----------------------------------------------------------
@@ -41,21 +223,49 @@ service cloud.firestore {
 
       allow create: if isOwner(userId)
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
+        && lastActiveAtMissingOrServerNow()
         && request.resource.data.get('isBanned', false) == false
+        && request.resource.data.get('isSuspended', false) == false
         && request.resource.data.get('isVerified', false) == false
         && request.resource.data.get('phoneVerified', false) == false
-        && request.resource.data.get('accountStatus', 'active') != 'banned';
+        && request.resource.data.get('accountStatus', 'active') != 'banned'
+        && request.resource.data.get('accountStatus', 'active') != 'suspended'
+        && !request.resource.data.keys().hasAny([
+          'boostBalance',
+          'boostStatus',
+          'boostExpiresAt',
+          'boostActive',
+          'matchScore',
+          'matchCount',
+          'isSmokeTestUser'
+        ]);
 
       allow update: if isOwner(userId)
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
+        && lastActiveAtUnchangedOrServerNow()
         && request.resource.data.get('isBanned', resource.data.get('isBanned', false))
           == resource.data.get('isBanned', false)
+        && request.resource.data.get('isSuspended', resource.data.get('isSuspended', false))
+          == resource.data.get('isSuspended', false)
         && request.resource.data.get('isVerified', resource.data.get('isVerified', false))
           == resource.data.get('isVerified', false)
         && request.resource.data.get('phoneVerified', resource.data.get('phoneVerified', false))
           == resource.data.get('phoneVerified', false)
         && request.resource.data.get('accountStatus', resource.data.get('accountStatus', 'active'))
-          == resource.data.get('accountStatus', 'active');
+          == resource.data.get('accountStatus', 'active')
+        && request.resource.data.get('isSmokeTestUser', resource.data.get('isSmokeTestUser', false))
+          == resource.data.get('isSmokeTestUser', false)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'boostBalance',
+          'boostStatus',
+          'boostExpiresAt',
+          'boostActive',
+          'matchScore',
+          'matchCount',
+          'suspensionReason',
+          'suspensionUpdatedAt',
+          'suspensionUpdatedBy'
+        ]);
 
       allow delete: if false;
 
@@ -85,16 +295,111 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      match /crypto/{docId} {
+        allow read: if isAuthenticated();
+        allow create, update: if isOwner(userId)
+          && docId == 'identity'
+          && request.resource.data.publicKey is string
+          && request.resource.data.publicKey.size() > 0
+          && request.resource.data.publicKey.size() <= 256
+          && request.resource.data.algorithm is string
+          && !request.resource.data.keys().hasAny(['privateKey']);
+        allow delete: if false;
+      }
+
       match /presence/current {
-        allow write: if isOwner(userId);
-        allow read: if isOwner(userId)
-          || (
-            isAuthenticated()
-            && get(/databases/$(database)/documents/userPrivacy/$(userId)).data.get('showOnlineStatus', false) == true
+        // Heartbeat/online merges must not fail when an older lastSeenAt remains
+        // unchanged (merge keeps it). Only validate lastSeenAt when it changes.
+        allow create: if isOwner(userId)
+          && request.resource.data.isOnline is bool
+          && request.resource.data.updatedAt == request.time
+          && (
+            !('lastSeenAt' in request.resource.data)
+            || request.resource.data.lastSeenAt == request.time
           );
+        allow update: if isOwner(userId)
+          && request.resource.data.isOnline is bool
+          && request.resource.data.updatedAt == request.time
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['lastSeenAt'])
+            || !('lastSeenAt' in request.resource.data)
+            || request.resource.data.lastSeenAt == request.time
+          );
+        allow delete: if isOwner(userId);
+        allow read: if canReadPresence(userId);
       }
 
       match /boosts/{boostId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /boostWallet/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Premium entitlement — owner may read; only Admin SDK / CF may write.
+      match /subscription/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Owner may read their own music summary. Tokens live in spotifySecrets
+      // (Admin SDK only). Clients never write music docs.
+      match /music/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Private relationship answers. Other users never read these.
+      // Compatibility is computed by Cloud Functions only.
+      match /relationshipAnswers/{questionId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /relationshipMatch/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /relationshipSeen/{otherUid} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Profile question answers: owner or actively matched users (visible only).
+      // Default isVisible=true when the field is absent (legacy / backfill).
+      match /questionAnswers/{questionId} {
+        allow read: if isOwner(userId)
+          || (hasActiveMatchWith(userId)
+            && resource.data.get('isVisible', true) == true);
+        allow create, update, delete: if false;
+      }
+
+      // Match points + private feedback. Clients never write scores.
+      match /matchScoreHistory/{entryId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /matchFeedback/{matchId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /pendingMatchFeedback/{matchId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /rateLimits/{docId} {
+        allow read, write: if false;
+      }
+
+      match /verification/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
@@ -105,8 +410,9 @@ service cloud.firestore {
     // -----------------------------------------------------------
     match /profiles/{userId} {
       allow read: if isAuthenticated();
-      allow create, update: if isOwner(userId)
+      allow create: if isOwner(userId)
         && (request.resource.data.get('uid', userId) == userId)
+        && profileLifecycleClientSafe()
         && !request.resource.data.keys().hasAny([
           'email',
           'phoneNumber',
@@ -118,7 +424,27 @@ service cloud.firestore {
           'geohash',
           'location',
           'fcmToken',
-          'token'
+          'token',
+          'accessToken',
+          'refreshToken'
+        ]);
+      allow update: if isOwner(userId)
+        && (request.resource.data.get('uid', userId) == userId)
+        && profileLifecycleUpdateSafe()
+        && !request.resource.data.keys().hasAny([
+          'email',
+          'phoneNumber',
+          'password',
+          'authProviders',
+          'phoneVerified',
+          'latitude',
+          'longitude',
+          'geohash',
+          'location',
+          'fcmToken',
+          'token',
+          'accessToken',
+          'refreshToken'
         ]);
       allow delete: if false;
     }
@@ -144,7 +470,9 @@ service cloud.firestore {
     }
 
     match /userPrivacy/{userId} {
-      allow read, write: if isOwner(userId);
+      allow get: if isOwner(userId) || isAuthenticated();
+      allow list: if isOwner(userId);
+      allow create, update, delete: if isOwner(userId);
     }
 
     match /userLocation/{userId} {
@@ -162,20 +490,45 @@ service cloud.firestore {
         && request.resource.data.geohash.size() <= 12;
     }
 
+    // Incoming likes (toUserId == auth) are NEVER client-readable.
+    // Use getIncomingLikes callable (premium-gated) instead.
     match /likes/{likeId} {
       allow read: if isAuthenticated() && resource.data.fromUserId == request.auth.uid;
       allow write: if false;
     }
 
     match /matches/{matchId} {
-      allow read: if isMatchParticipant(matchId);
+      // Missing match docs must be readable as empty so profile details can
+      // safely watchCanView without PERMISSION_DENIED (freeze on photo swipe).
+      allow get: if isAuthenticated() && (
+        !exists(/databases/$(database)/documents/matches/$(matchId))
+        || request.auth.uid in resource.data.userIds
+      );
+      allow list: if isAuthenticated()
+        && request.auth.uid in resource.data.userIds;
       allow create, delete: if false;
       allow update: if isMatchParticipant(matchId)
         && unchanged('userIds')
         && unchanged('createdAt')
         && request.resource.data.isActive == resource.data.isActive
         && request.resource.data.get('unmatchedBy', null)
-          == resource.data.get('unmatchedBy', null);
+          == resource.data.get('unmatchedBy', null)
+        && request.resource.data.get('matchBonusAwarded', false)
+          == resource.data.get('matchBonusAwarded', false)
+        && request.resource.data.get('interactionBonusAwarded', false)
+          == resource.data.get('interactionBonusAwarded', false)
+        && request.resource.data.get('matchedAt', resource.data.get('matchedAt', null))
+          == resource.data.get('matchedAt', null)
+        && request.resource.data.get('messagedUserIds', resource.data.get('messagedUserIds', []))
+          == resource.data.get('messagedUserIds', [])
+        && request.resource.data.get('endedReason', resource.data.get('endedReason', null))
+          == resource.data.get('endedReason', null)
+        && request.resource.data.get('source', resource.data.get('source', 'mutual_like'))
+          == resource.data.get('source', 'mutual_like')
+        && request.resource.data.get('matchType', resource.data.get('matchType', null))
+          == resource.data.get('matchType', null)
+        && request.resource.data.get('compatibilityKey', resource.data.get('compatibilityKey', null))
+          == resource.data.get('compatibilityKey', null);
 
       match /messages/{messageId} {
         allow read: if isMatchParticipant(matchId);
@@ -185,16 +538,36 @@ service cloud.firestore {
           && request.resource.data.receiverId != request.auth.uid
           && request.resource.data.receiverId in get(/databases/$(database)/documents/matches/$(matchId)).data.userIds
           && !isBlockedPair(request.auth.uid, request.resource.data.receiverId)
-          && (!('text' in request.resource.data)
-            || (request.resource.data.text is string && request.resource.data.text.size() <= 2000));
+          && request.resource.data.type in ['text', 'image', 'gif', 'voice']
+          && request.resource.data.get('deleted', false) == false
+          && messageCreatePayloadValid(matchId);
         allow update: if isMatchParticipant(matchId)
           && unchanged('senderId')
-          && unchanged('receiverId');
-        allow delete: if false;
+          && unchanged('receiverId')
+          && unchanged('createdAt')
+          && unchanged('type')
+          && (
+            (
+              request.auth.uid == resource.data.receiverId
+              && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['status', 'isRead', 'readAt'])
+            )
+            || (
+              request.auth.uid == resource.data.senderId
+              && request.resource.data.deleted == true
+              && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['deleted', 'text', 'mediaUrl', 'imageStoragePath', 'voiceStoragePath'])
+            )
+          );
+        allow delete: if isMatchParticipant(matchId)
+          && resource.data.senderId == request.auth.uid;
       }
 
+      // Typing indicators only (uid -> timestamp | FieldValue.delete).
       match /meta/{docId} {
-        allow read, write: if isMatchParticipant(matchId);
+        allow read: if isMatchParticipant(matchId);
+        allow create, update: if docId == 'typing' && typingMetaWriteValid(matchId);
+        allow delete: if isMatchParticipant(matchId) && docId == 'typing';
       }
     }
 
@@ -207,12 +580,27 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
     }
 
+    // Reports are created only by Cloud Functions (rate-limited).
     match /reports/{reportId} {
-      allow read: if isAuthenticated() && resource.data.reporterId == request.auth.uid;
+      allow read: if isAdmin()
+        || (isAuthenticated() && resource.data.reporterId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /supportTickets/{ticketId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated()
-        && request.resource.data.reporterId == request.auth.uid
-        && request.resource.data.reportedUserId != request.auth.uid
-        && request.resource.data.status == 'open';
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'open'
+        && request.resource.data.category is string
+        && request.resource.data.subject is string
+        && request.resource.data.subject.size() > 0
+        && request.resource.data.subject.size() <= 120
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 4000
+        && request.resource.data.attachments is list
+        && request.resource.data.attachments.size() <= 3;
       allow update, delete: if false;
     }
 
@@ -238,14 +626,57 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (resource.data.blockerId == request.auth.uid
           || resource.data.blockedUserId == request.auth.uid);
-      allow create, delete: if isAuthenticated()
+      allow create: if isAuthenticated()
         && request.resource.data.blockerId == request.auth.uid;
+      allow delete: if isAuthenticated()
+        && resource.data.blockerId == request.auth.uid;
       allow update: if false;
     }
 
     match /purchases/{purchaseId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create, update, delete: if false;
+    }
+
+    match /boostProducts/{productId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /weeklyMusicStats/{weekId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    match /spotifySecrets/{userId} {
+      allow read, write: if false;
+    }
+
+    match /musicSpotifyIndex/{spotifyId} {
+      allow read, write: if false;
+    }
+
+    // -----------------------------------------------------------
+    // Automation / admin ops — Admin SDK writes only.
+    // Clients with admin claim may read for panel; never write.
+    // -----------------------------------------------------------
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /automationJobs/{jobId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /adminReviewQueue/{itemId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /failedNotifications/{id} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

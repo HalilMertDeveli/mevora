@@ -25,6 +25,7 @@ class MevoraStartupErrorApp extends StatelessWidget {
       title: AppConstants.appName,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.light,
       debugShowCheckedModeBanner: false,
       locale: resolved,
       supportedLocales: AppLocalizations.supportedLocales,

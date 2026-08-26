@@ -68,7 +68,7 @@ Spotify sign-in uses a **custom token** from `spotifyCompleteAuth`.
 
 ## Collections
 
-`users`, `profiles`, `userSettings`, `userPreferences`, `userPrivacy`, `userLocation`, `matches` / `messages`, `calls`, `notifications`, `devices` (under `users/{uid}`), `purchases`, `users/{uid}/boosts`.
+`users`, `profiles`, `userSettings`, `userPreferences`, `userPrivacy`, `userLocation`, `matches` / `messages`, `calls`, `notifications`, `devices` (under `users/{uid}`), `purchases`, `users/{uid}/boosts`, `users/{uid}/boostWallet`, `boostProducts`.
 
 Passwords never go to Firestore. Exact lat/lng are owner-only. Chat: participants only; `senderId == request.auth.uid`. Clients cannot set `boost.status` or `boost.expiresAt`.
 
@@ -78,8 +78,8 @@ Video: Firestore holds **signaling / state / history** only. Media is not stream
 
 | Export | Role |
 | --- | --- |
-| `verifyBoostPurchase` | IAP verification + Boost write |
-| `activateBoost` | Activate from an already-verified purchase owned by the UID |
+| `verifyBoostPurchase` | IAP verification + wallet credit |
+| `activateBoost` | Consume 1 Boost from the signed-in UID's wallet |
 | `expireBoost` | Scheduled; sets `status=expired` |
 | `sendMatchNotification` | Trigger on `matches/{id}` → FCM `newMatch` |
 | `sendMessageNotification` | Trigger on messages → FCM `newMessage` + match preview |

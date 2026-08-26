@@ -19,6 +19,14 @@ void main() {
     expect(state, CallLifecycle.ended);
   });
 
+  test('caller cancel before accept is cancelled', () {
+    var state = CallLifecycle.idle;
+    state = CallStateMachine.transition(state, CallEvent.startOutgoing);
+    state = CallStateMachine.transition(state, CallEvent.cancel);
+    expect(state, CallLifecycle.cancelled);
+    expect(CallStateMachine.isTerminal(state), isTrue);
+  });
+
   test('incoming decline and busy', () {
     expect(
       CallStateMachine.transition(CallLifecycle.idle, CallEvent.receiveIncoming),

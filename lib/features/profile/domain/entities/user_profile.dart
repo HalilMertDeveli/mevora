@@ -1,3 +1,6 @@
+import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
+import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
+
 class ProfilePhoto {
   const ProfilePhoto({
     required this.id,
@@ -5,6 +8,8 @@ class ProfilePhoto {
     this.downloadUrl,
     this.thumbUrl,
     this.moderationStatus = 'pending',
+    this.order = 0,
+    this.isPrimary = false,
   });
 
   final String id;
@@ -15,7 +20,33 @@ class ProfilePhoto {
   /// `pending` | `approved` | `rejected`. Clients cannot mark approved.
   final String moderationStatus;
 
+  /// Display order in profile. Lower values appear first.
+  final int order;
+
+  /// Primary photo shown on cards. Exactly one photo should be primary.
+  final bool isPrimary;
+
   bool get isPublic => moderationStatus == 'approved';
+
+  ProfilePhoto copyWith({
+    String? id,
+    String? storagePath,
+    String? downloadUrl,
+    String? thumbUrl,
+    String? moderationStatus,
+    int? order,
+    bool? isPrimary,
+  }) {
+    return ProfilePhoto(
+      id: id ?? this.id,
+      storagePath: storagePath ?? this.storagePath,
+      downloadUrl: downloadUrl ?? this.downloadUrl,
+      thumbUrl: thumbUrl ?? this.thumbUrl,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
+      order: order ?? this.order,
+      isPrimary: isPrimary ?? this.isPrimary,
+    );
+  }
 }
 
 /// Public dating projection. Never includes password, phone, private email,
@@ -27,6 +58,7 @@ class UserProfile {
     this.birthDate,
     this.age,
     this.gender,
+    this.interestedIn,
     this.bio,
     this.photos = const [],
     this.interests = const [],
@@ -34,11 +66,16 @@ class UserProfile {
     this.occupation,
     this.education,
     this.languages = const [],
+    this.hobbies = const [],
+    this.heightCm,
     this.city,
     this.lifestyle = const [],
+    this.lifestyleProfile = const ProfileLifestyle(),
+    this.onboardingStep = OnboardingStep.basicInfo,
     this.lastActiveAt,
     this.profileCompleted = false,
     this.onboardingCompleted = false,
+    this.isProfileComplete = false,
     this.isDiscoverable = false,
     this.createdAt,
     this.updatedAt,
@@ -49,6 +86,7 @@ class UserProfile {
   final DateTime? birthDate;
   final int? age;
   final String? gender;
+  final String? interestedIn;
   final String? bio;
   final List<ProfilePhoto> photos;
   final List<String> interests;
@@ -56,13 +94,22 @@ class UserProfile {
   final String? occupation;
   final String? education;
   final List<String> languages;
+  final List<String> hobbies;
+
+  /// Height in centimeters. 201 means 200+ cm.
+  final int? heightCm;
 
   /// City label only. Never lat/lng.
   final String? city;
   final List<String> lifestyle;
+  final ProfileLifestyle lifestyleProfile;
+  final OnboardingStep onboardingStep;
   final DateTime? lastActiveAt;
   final bool profileCompleted;
   final bool onboardingCompleted;
+
+  /// Public completion flag used by discovery gating.
+  final bool isProfileComplete;
   final bool isDiscoverable;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -90,6 +137,7 @@ class UserProfile {
     DateTime? birthDate,
     int? age,
     String? gender,
+    String? interestedIn,
     String? bio,
     List<ProfilePhoto>? photos,
     List<String>? interests,
@@ -97,11 +145,16 @@ class UserProfile {
     String? occupation,
     String? education,
     List<String>? languages,
+    List<String>? hobbies,
+    int? heightCm,
     String? city,
     List<String>? lifestyle,
+    ProfileLifestyle? lifestyleProfile,
+    OnboardingStep? onboardingStep,
     DateTime? lastActiveAt,
     bool? profileCompleted,
     bool? onboardingCompleted,
+    bool? isProfileComplete,
     bool? isDiscoverable,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -112,6 +165,7 @@ class UserProfile {
       birthDate: birthDate ?? this.birthDate,
       age: age ?? this.age,
       gender: gender ?? this.gender,
+      interestedIn: interestedIn ?? this.interestedIn,
       bio: bio ?? this.bio,
       photos: photos ?? this.photos,
       interests: interests ?? this.interests,
@@ -119,11 +173,16 @@ class UserProfile {
       occupation: occupation ?? this.occupation,
       education: education ?? this.education,
       languages: languages ?? this.languages,
+      hobbies: hobbies ?? this.hobbies,
+      heightCm: heightCm ?? this.heightCm,
       city: city ?? this.city,
       lifestyle: lifestyle ?? this.lifestyle,
+      lifestyleProfile: lifestyleProfile ?? this.lifestyleProfile,
+      onboardingStep: onboardingStep ?? this.onboardingStep,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
       profileCompleted: profileCompleted ?? this.profileCompleted,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
+      isProfileComplete: isProfileComplete ?? this.isProfileComplete,
       isDiscoverable: isDiscoverable ?? this.isDiscoverable,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

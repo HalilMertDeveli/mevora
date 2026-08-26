@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/painting.dart';
 import 'package:mevora/core/services/app_logger.dart';
 
 /// Best-effort wipe of the local Firestore cache after logout / deletion.
@@ -9,6 +10,12 @@ class FirestoreSessionCache {
   final AppLogger? logger;
 
   Future<void> clearSensitiveCache() async {
+    try {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+    } on Object {
+      // Image cache clear is best-effort.
+    }
     try {
       await FirebaseFirestore.instance.clearPersistence();
     } on Object catch (error, stackTrace) {

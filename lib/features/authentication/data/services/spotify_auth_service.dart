@@ -19,13 +19,29 @@ class _PendingSpotifyAuth {
     required this.pkce,
     required this.state,
     required this.linkToCurrentUser,
-    this.completer,
+    required this.purpose,
+    this.loginCompleter,
+    this.musicCompleter,
   });
 
   final PkcePair pkce;
   final String state;
   final bool linkToCurrentUser;
-  final Completer<AuthSession>? completer;
+  final SpotifyOAuthPurpose purpose;
+  final Completer<AuthSession>? loginCompleter;
+  final Completer<void>? musicCompleter;
+
+  bool get isOpen {
+    final login = loginCompleter;
+    if (login != null && !login.isCompleted) {
+      return true;
+    }
+    final music = musicCompleter;
+    if (music != null && !music.isCompleted) {
+      return true;
+    }
+    return login == null && music == null;
+  }
 }
 
 class SpotifyAuthService {
@@ -57,9 +73,78 @@ class SpotifyAuthService {
   _PendingSpotifyAuth? _pending;
 
   /// Identity-only scopes. Playback and library scopes stay off the login path.
-  static const _scopes = 'user-read-private';
+  static const loginScopes = 'user-read-private';
+
+  /// Taste analysis only. No streaming, playback, or playlist modification.
+  static const musicScopes =
+      'user-top-read user-read-recently-played playlist-read-private';
 
   Future<AuthSession> signIn({required bool linkToCurrentUser}) async {
+    final completer = Completer<AuthSession>();
+    await _beginOAuth(
+      purpose: SpotifyOAuthPurpose.login,
+      scopes: loginScopes,
+      linkToCurrentUser: linkToCurrentUser,
+      loginCompleter: completer,
+    );
+    try {
+      return await completer.future.timeout(
+        const Duration(minutes: 5),
+        onTimeout: () {
+          throw const AuthException(
+            AuthMessages.cancelled,
+            kind: AuthErrorKind.cancelled,
+            isCancelled: true,
+          );
+        },
+      );
+    } finally {
+      if (_pending?.loginCompleter == completer) {
+        _pending = null;
+      }
+    }
+  }
+
+  /// Account linking for the Spotify Web API. Does not replace Firebase Auth.
+  Future<void> linkMusicAccount() async {
+    if (_firebaseAuth.currentUser == null) {
+      throw const AuthException(
+        AuthMessages.sessionExpired,
+        kind: AuthErrorKind.sessionExpired,
+      );
+    }
+    final completer = Completer<void>();
+    await _beginOAuth(
+      purpose: SpotifyOAuthPurpose.musicLink,
+      scopes: musicScopes,
+      linkToCurrentUser: true,
+      musicCompleter: completer,
+    );
+    try {
+      return await completer.future.timeout(
+        const Duration(minutes: 5),
+        onTimeout: () {
+          throw const AuthException(
+            AuthMessages.cancelled,
+            kind: AuthErrorKind.cancelled,
+            isCancelled: true,
+          );
+        },
+      );
+    } finally {
+      if (_pending?.musicCompleter == completer) {
+        _pending = null;
+      }
+    }
+  }
+
+  Future<void> _beginOAuth({
+    required SpotifyOAuthPurpose purpose,
+    required String scopes,
+    required bool linkToCurrentUser,
+    Completer<AuthSession>? loginCompleter,
+    Completer<void>? musicCompleter,
+  }) async {
     if (config.spotifyClientId.isEmpty) {
       throw const AuthException(
         AuthMessages.notConfigured,
@@ -69,18 +154,20 @@ class SpotifyAuthService {
 
     final pkce = PkcePair.generate();
     final state = _randomState();
-    final completer = Completer<AuthSession>();
     _pending = _PendingSpotifyAuth(
       pkce: pkce,
       state: state,
       linkToCurrentUser: linkToCurrentUser,
-      completer: completer,
+      purpose: purpose,
+      loginCompleter: loginCompleter,
+      musicCompleter: musicCompleter,
     );
     await _pendingStore.save(
       SpotifyPendingAuth(
         state: state,
         verifier: pkce.verifier,
         linkToCurrentUser: linkToCurrentUser,
+        purpose: purpose,
       ),
     );
 
@@ -91,7 +178,7 @@ class SpotifyAuthService {
       'code_challenge_method': 'S256',
       'code_challenge': pkce.challenge,
       'state': state,
-      'scope': _scopes,
+      'scope': scopes,
     });
 
     final launched = await _launch(
@@ -105,23 +192,6 @@ class SpotifyAuthService {
         AuthMessages.oauth,
         kind: AuthErrorKind.oauth,
       );
-    }
-
-    try {
-      return await completer.future.timeout(
-        const Duration(minutes: 5),
-        onTimeout: () {
-          throw const AuthException(
-            AuthMessages.cancelled,
-            kind: AuthErrorKind.cancelled,
-            isCancelled: true,
-          );
-        },
-      );
-    } finally {
-      if (_pending?.state == state) {
-        _pending = null;
-      }
     }
   }
 
@@ -173,13 +243,24 @@ class SpotifyAuthService {
     }
 
     try {
-      final session = await _exchange(
+      if (pending.purpose == SpotifyOAuthPurpose.musicLink) {
+        await _exchangeMusic(code: code, verifier: pending.pkce.verifier);
+        await _pendingStore.clear();
+        _pending = null;
+        final completer = pending.musicCompleter;
+        if (completer != null && !completer.isCompleted) {
+          completer.complete();
+        }
+        return;
+      }
+
+      final session = await _exchangeLogin(
         code: code,
         verifier: pending.pkce.verifier,
       );
       await _pendingStore.clear();
       _pending = null;
-      final completer = pending.completer;
+      final completer = pending.loginCompleter;
       if (completer != null && !completer.isCompleted) {
         completer.complete(session);
       }
@@ -190,8 +271,7 @@ class SpotifyAuthService {
 
   Future<_PendingSpotifyAuth?> _resolvePending() async {
     final inMemory = _pending;
-    if (inMemory != null &&
-        (inMemory.completer == null || !inMemory.completer!.isCompleted)) {
+    if (inMemory != null && inMemory.isOpen) {
       return inMemory;
     }
     final stored = await _pendingStore.read();
@@ -202,6 +282,7 @@ class SpotifyAuthService {
       pkce: PkcePair(verifier: stored.verifier, challenge: ''),
       state: stored.state,
       linkToCurrentUser: stored.linkToCurrentUser,
+      purpose: stored.purpose,
     );
   }
 
@@ -211,13 +292,39 @@ class SpotifyAuthService {
   ) async {
     await _pendingStore.clear();
     _pending = null;
-    final completer = pending.completer;
-    if (completer != null && !completer.isCompleted) {
-      completer.completeError(error);
+    final login = pending.loginCompleter;
+    if (login != null && !login.isCompleted) {
+      login.completeError(error);
+    }
+    final music = pending.musicCompleter;
+    if (music != null && !music.isCompleted) {
+      music.completeError(error);
     }
   }
 
-  Future<AuthSession> _exchange({
+  Future<void> _exchangeMusic({
+    required String code,
+    required String verifier,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('spotifyLinkMusic');
+      await callable.call<Map<String, dynamic>>({
+        'code': code,
+        'codeVerifier': verifier,
+        'redirectUri': config.spotifyRedirectUri,
+      });
+    } on FirebaseFunctionsException catch (error) {
+      throw AuthErrorMapper.fromCode(
+        error.details is Map &&
+                (error.details as Map)['mevoraCode'] is String
+            ? (error.details as Map)['mevoraCode'] as String
+            : (error.message ?? error.code),
+        cause: error,
+      );
+    }
+  }
+
+  Future<AuthSession> _exchangeLogin({
     required String code,
     required String verifier,
   }) async {

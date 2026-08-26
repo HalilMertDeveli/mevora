@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Mevora branded launch splash — dark brand bg + centered mark -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
+    <item
+        android:drawable="@drawable/ic_mevora_mark"
+        android:gravity="center"
+        android:width="96dp"
+        android:height="96dp" />
 </layer-list>

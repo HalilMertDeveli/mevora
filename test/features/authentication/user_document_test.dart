@@ -66,7 +66,7 @@ void main() {
   test('storage profile paths stay under the owner uid', () {
     expect(
       StoragePaths.profilePending(ownerUid: 'u1', imageId: 'p1'),
-      'users/u1/profile/pending/p1',
+      'users/u1/profile/pending/p1.jpg',
     );
     expect(
       StoragePaths.profileApproved(ownerUid: 'u1', imageId: 'p1'),

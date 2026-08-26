@@ -1,7 +1,10 @@
 /// Phone number helpers. Masking never exposes the full number in OTP UI.
 abstract final class PhoneMask {
   static String e164(String dialCode, String nationalNumber) {
-    final digits = nationalNumber.replaceAll(RegExp(r'\D'), '');
+    var digits = nationalNumber.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
     return '+$dialCode$digits';
   }
 

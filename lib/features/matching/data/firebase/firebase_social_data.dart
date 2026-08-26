@@ -2,13 +2,17 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mevora/core/constants/firestore_paths.dart';
-import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
 import 'package:mevora/features/calls/domain/services/video_call_provider.dart';
+import 'package:mevora/core/storage/storage_provider.dart';
+import 'package:mevora/features/chat/data/datasources/firebase_chat_data_source.dart';
+import 'package:mevora/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
+import 'package:mevora/features/chat/e2ee/services/e2ee_chat_service.dart';
+import 'package:mevora/features/profile/data/datasources/firebase_storage_data_source.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
@@ -44,6 +48,8 @@ Match _matchFrom(DocumentSnapshot<Map<String, dynamic>> snap) {
     isNewFor: _stringBoolMap(data['isNewFor']),
     participantNames: _stringStringMap(data['participantNames']),
     participantPhotos: _stringStringMap(data['participantPhotos']),
+    participantVerified: _stringBoolMap(data['participantVerified']),
+    source: matchSourceFrom(data['source'], matchType: data['matchType']),
   );
 }
 
@@ -95,6 +101,7 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
               otherUserId: match.otherUserId(uid),
               name: match.otherName(uid),
               photoUrl: match.otherPhoto(uid),
+              isVerified: match.otherIsVerified(uid),
             );
           }).toList(growable: false);
         });
@@ -111,9 +118,13 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
 
   @override
   Stream<Match?> watchMatch(String matchId) {
-    return _db.doc(FirestorePaths.match(matchId)).snapshots().map((snap) {
-      return snap.exists ? _matchFrom(snap) : null;
-    });
+    return _db
+        .doc(FirestorePaths.match(matchId))
+        .snapshots()
+        .map((snap) => snap.exists ? _matchFrom(snap) : null)
+        .handleError((Object error, StackTrace stackTrace) {
+          // Missing/denied match reads must not crash profile photo UI.
+        });
   }
 
   @override
@@ -161,38 +172,35 @@ class FirebaseChatRepository implements ChatRepository {
   FirebaseChatRepository({
     required this.uidSource,
     FirebaseFirestore? firestore,
-  }) : _db = firestore ?? FirebaseFirestore.instance;
+    StorageProvider? storage,
+    E2eeChatService? e2ee,
+  }) : _inner = ChatRepositoryImpl(
+         dataSource: FirebaseChatDataSource(
+           uidSource: uidSource,
+           firestore: firestore,
+         ),
+         storage: storage ?? FirebaseStorageDataSource(),
+         e2ee: e2ee ??
+             E2eeChatService(
+               storage: storage ?? FirebaseStorageDataSource(),
+             ),
+         uidSource: uidSource,
+       );
 
   final AuthUidSource uidSource;
-  final FirebaseFirestore _db;
+  final ChatRepository _inner;
 
-  CollectionReference<Map<String, dynamic>> _col(String matchId) {
-    return _db.collection(FirestorePaths.matchMessages(matchId));
-  }
-
-  ChatMessage _from(DocumentSnapshot<Map<String, dynamic>> snap) {
-    final data = snap.data() ?? const <String, dynamic>{};
-    return ChatMessage(
-      id: snap.id,
-      senderId: data['senderId'] as String? ?? '',
-      receiverId: data['receiverId'] as String? ?? '',
-      text: data['text'] as String? ?? '',
-      type: MessageTypeX.fromFirestore(data['type'] as String?),
-      createdAt: _time(data['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
-      status: MessageStatusX.fromFirestore(data['status'] as String?),
-      isRead: data['isRead'] as bool? ?? false,
-      readAt: _time(data['readAt']),
-      imageStoragePath: data['imageStoragePath'] as String?,
-    );
+  @override
+  Future<bool> isE2eeActive({
+    required String matchId,
+    required String peerUid,
+  }) {
+    return _inner.isE2eeActive(matchId: matchId, peerUid: peerUid);
   }
 
   @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30}) {
-    return _col(matchId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit)
-        .snapshots()
-        .map((snap) => snap.docs.reversed.map(_from).toList());
+    return _inner.watchLatest(matchId, limit: limit);
   }
 
   @override
@@ -200,15 +208,8 @@ class FirebaseChatRepository implements ChatRepository {
     required String matchId,
     required ChatMessage before,
     int limit = 30,
-  }) async {
-    final cursor = await _col(matchId).doc(before.id).get();
-    final snap = await _col(matchId)
-        .orderBy('createdAt', descending: true)
-        .startAfterDocument(cursor)
-        .limit(limit)
-        .get();
-    final items = snap.docs.reversed.map(_from).toList(growable: false);
-    return ChatPage(messages: items, hasMore: snap.docs.length == limit);
+  }) {
+    return _inner.loadOlder(matchId: matchId, before: before, limit: limit);
   }
 
   @override
@@ -216,77 +217,70 @@ class FirebaseChatRepository implements ChatRepository {
     required String matchId,
     required String receiverId,
     required String text,
-  }) async {
-    final uid = uidSource.currentUid;
-    if (uid == null) {
-      throw const AuthzException('unauthenticated', code: 'unauthenticated');
-    }
-    final doc = _col(matchId).doc();
-    await doc.set({
-      'senderId': uid,
-      'receiverId': receiverId,
-      'text': text.trim(),
-      'type': MessageType.text.name,
-      'createdAt': FieldValue.serverTimestamp(),
-      'status': MessageStatus.sent.name,
-      'isRead': false,
-    });
-    final snap = await doc.get();
-    return _from(snap);
+  }) {
+    return _inner.sendText(
+      matchId: matchId,
+      receiverId: receiverId,
+      text: text,
+    );
   }
 
   @override
-  Future<void> markDelivered(String matchId, List<ChatMessage> messages) async {
-    final batch = _db.batch();
-    for (final message in messages) {
-      if (message.status != MessageStatus.sent) {
-        continue;
-      }
-      batch.update(_col(matchId).doc(message.id), {
-        'status': MessageStatus.delivered.name,
-      });
-    }
-    await batch.commit();
-  }
-
-  @override
-  Future<void> markRead(String matchId, List<ChatMessage> messages) async {
-    final batch = _db.batch();
-    for (final message in messages) {
-      batch.update(_col(matchId).doc(message.id), {
-        'isRead': true,
-        'readAt': FieldValue.serverTimestamp(),
-        'status': MessageStatus.read.name,
-      });
-    }
-    if (messages.isNotEmpty) {
-      await batch.commit();
-    }
-  }
-
-  @override
-  Future<void> setTyping({
+  Future<ChatMessage> sendImage({
     required String matchId,
-    required bool isTyping,
-  }) async {
-    final uid = uidSource.currentUid;
-    if (uid == null) {
-      return;
-    }
-    await _db.doc(FirestorePaths.matchTyping(matchId)).set({
-      uid: isTyping ? FieldValue.serverTimestamp() : FieldValue.delete(),
-    }, SetOptions(merge: true));
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) {
+    return _inner.sendImage(
+      matchId: matchId,
+      receiverId: receiverId,
+      media: media,
+      onProgress: onProgress,
+    );
+  }
+
+  @override
+  Future<ChatMessage> sendVoice({
+    required String matchId,
+    required String receiverId,
+    required ChatMediaBytes media,
+    void Function(double progress)? onProgress,
+  }) {
+    return _inner.sendVoice(
+      matchId: matchId,
+      receiverId: receiverId,
+      media: media,
+      onProgress: onProgress,
+    );
+  }
+
+  @override
+  Future<void> deleteMessage({
+    required String matchId,
+    required String messageId,
+  }) {
+    return _inner.deleteMessage(matchId: matchId, messageId: messageId);
+  }
+
+  @override
+  Future<void> markDelivered(String matchId, List<ChatMessage> messages) {
+    return _inner.markDelivered(matchId, messages);
+  }
+
+  @override
+  Future<void> markRead(String matchId, List<ChatMessage> messages) {
+    return _inner.markRead(matchId, messages);
+  }
+
+  @override
+  Future<void> setTyping({required String matchId, required bool isTyping}) {
+    return _inner.setTyping(matchId: matchId, isTyping: isTyping);
   }
 
   @override
   Stream<Map<String, DateTime>> watchTyping(String matchId) {
-    return _db.doc(FirestorePaths.matchTyping(matchId)).snapshots().map((snap) {
-      final data = snap.data() ?? const <String, dynamic>{};
-      return {
-        for (final entry in data.entries)
-          if (_time(entry.value) != null) entry.key: _time(entry.value)!,
-      };
-    });
+    return _inner.watchTyping(matchId);
   }
 }
 
@@ -392,6 +386,7 @@ class FirebaseCallRepository implements CallRepository {
       'connecting' => CallLifecycle.connecting,
       'connected' => CallLifecycle.connected,
       'declined' => CallLifecycle.declined,
+      'cancelled' => CallLifecycle.cancelled,
       'busy' => CallLifecycle.busy,
       'failed' => CallLifecycle.failed,
       'ended' || 'missed' => CallLifecycle.ended,
@@ -462,6 +457,16 @@ class FirebaseCallRepository implements CallRepository {
         .snapshots()
         .map((snap) => snap.docs.map(_from).toList(growable: false));
   }
+
+  @override
+  Stream<CallSession?> watchCall(String callId) {
+    return _db.doc(FirestorePaths.call(callId)).snapshots().map((snap) {
+      if (!snap.exists) {
+        return null;
+      }
+      return _from(snap);
+    });
+  }
 }
 
 class FirebasePresenceRepository implements PresenceRepository {
@@ -475,17 +480,37 @@ class FirebasePresenceRepository implements PresenceRepository {
     return _db.doc(FirestorePaths.presence(uid)).snapshots().map((snap) {
       final data = snap.data() ?? const <String, dynamic>{};
       return PresenceWatch(
+        isOnline: data['isOnline'] == true,
         updatedAt: _time(data['updatedAt']),
-        hideOnlineStatus: data['hideOnlineStatus'] == true,
+        lastSeenAt: _time(data['lastSeenAt']),
       );
     });
   }
 
   @override
-  Future<void> heartbeat(String uid, {required bool hideOnlineStatus}) {
+  Future<void> setOnline(String uid) {
     return _db.doc(FirestorePaths.presence(uid)).set({
+      'isOnline': true,
       'updatedAt': FieldValue.serverTimestamp(),
-      'hideOnlineStatus': hideOnlineStatus,
+      // Clear stale lastSeenAt so merge updates are not rejected by rules.
+      'lastSeenAt': FieldValue.delete(),
+    }, SetOptions(merge: true));
+  }
+
+  @override
+  Future<void> setOffline(String uid) {
+    return _db.doc(FirestorePaths.presence(uid)).set({
+      'isOnline': false,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'lastSeenAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  @override
+  Future<void> heartbeat(String uid) {
+    return _db.doc(FirestorePaths.presence(uid)).set({
+      'isOnline': true,
+      'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 }

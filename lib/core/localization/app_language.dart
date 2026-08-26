@@ -11,7 +11,7 @@ enum AppLanguage {
 
   Locale get locale => Locale(code);
 
-  static const AppLanguage fallback = AppLanguage.english;
+  static const AppLanguage fallback = AppLanguage.turkish;
 
   static const List<Locale> supportedLocales = [
     Locale('en'),
@@ -29,11 +29,15 @@ enum AppLanguage {
     return AppLanguage.fallback;
   }
 
-  /// First launch / no saved preference: Turkish device → TR, anything else → EN.
+  /// First launch / no saved preference: Turkish device → TR, English device → EN,
+  /// anything else → TR (Mevora is a Turkish-first app).
   static AppLanguage fromDeviceLocale(Locale locale) {
     if (locale.languageCode.toLowerCase() == 'tr') {
       return AppLanguage.turkish;
     }
-    return AppLanguage.english;
+    if (locale.languageCode.toLowerCase() == 'en') {
+      return AppLanguage.english;
+    }
+    return AppLanguage.turkish;
   }
 }

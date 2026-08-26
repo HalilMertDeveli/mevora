@@ -91,3 +91,11 @@ storage-debug.log
 firebase-export/
 **/node_modules/
 
+# ASP.NET support website (mevora-support-web)
+mevora-support-web/bin/
+mevora-support-web/obj/
+mevora-support-web/publish/
+mevora-support-web/.vs/
+mevora-support-web/**/appsettings.*.local.json
+mevora-support-web/**/*.user
+

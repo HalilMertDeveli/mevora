@@ -474,8 +474,17 @@ Mevora/
 ├── test/               unit + widget + security contract tests
 ├── integration_test/   device E2E entry (requires connected device)
 ├── tools/smoke/        backend production smoke runner
+├── mevora-support-web/ independent ASP.NET Core support & landing site
 └── docs/               architecture & runbooks
 ```
+
+## Support Website
+
+The Mevora repository also contains an independent ASP.NET Core support website located at:
+
+`/mevora-support-web`
+
+See [`mevora-support-web/README.md`](mevora-support-web/README.md) for local run, Firebase, email, and domain setup.
 
 ---
 

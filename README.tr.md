@@ -474,6 +474,7 @@ Mevora/
 ├── test/               unit + widget + güvenlik sözleşme testleri
 ├── integration_test/   cihaz E2E girişi (bağlı cihaz gerekir)
 ├── tools/smoke/        backend production smoke runner
+├── mevora-support-web/ bağımsız ASP.NET Core destek sitesi
 └── docs/               mimari ve runbook'lar
 ```
 

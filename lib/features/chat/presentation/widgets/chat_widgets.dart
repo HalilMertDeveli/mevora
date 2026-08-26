@@ -7,9 +7,9 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/chat/data/services/chat_audio_player.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
+import 'package:mevora/features/chat/presentation/widgets/chat_fullscreen_image_viewer.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_press_scale.dart';
-import 'package:mevora/shared/images/mevora_network_images.dart';
 
 class ChatBubble extends StatelessWidget {
   const ChatBubble({
@@ -180,30 +180,36 @@ class ChatImageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final local = bytes;
-    final ImageProvider? provider;
-    if (local != null && local.isNotEmpty) {
-      provider = MemoryImage(Uint8List.fromList(local));
-    } else {
-      provider = MevoraNetworkImages.provider(url);
-    }
+    final provider = ChatFullscreenImageViewer.resolveProvider(
+      url: url,
+      bytes: bytes,
+    );
     if (provider == null) {
       return Icon(Icons.image_outlined, color: textColor);
     }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadii.md),
-      child: Image(
-        image: provider,
-        width: 220,
-        height: 220,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stack) {
-          return SizedBox(
-            width: 220,
-            height: 120,
-            child: Icon(Icons.broken_image_outlined, color: textColor),
-          );
-        },
+    return GestureDetector(
+      onTap: () {
+        // Fire-and-forget; viewer guards unmounted context internally.
+        unawaited(
+          ChatFullscreenImageViewer.open(context, url: url, bytes: bytes),
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: Image(
+          image: provider,
+          width: 220,
+          height: 220,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          errorBuilder: (context, error, stack) {
+            return SizedBox(
+              width: 220,
+              height: 120,
+              child: Icon(Icons.broken_image_outlined, color: textColor),
+            );
+          },
+        ),
       ),
     );
   }
@@ -355,7 +361,8 @@ class _TypingDotsState extends State<TypingDots>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
-    )..repeat();
+    );
+    unawaited(_controller.repeat());
   }
 
   @override
@@ -928,7 +935,8 @@ class _RecordingPulseState extends State<_RecordingPulse>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
+    );
+    unawaited(_controller.repeat(reverse: true));
   }
 
   @override

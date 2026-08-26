@@ -1,0 +1,54 @@
+@page "/terms"
+@model Mevora.Web.Pages.TermsModel
+@using Mevora.Web.Configuration
+@using Microsoft.Extensions.Options
+@inject IOptions<SiteSettings> SiteOptions
+@{
+    var site = SiteOptions.Value;
+    ViewData["Title"] = $"Kullanım Koşulları — {site.SiteName}";
+    ViewData["Description"] = $"{site.SiteName} kullanım koşulları. Uygun kullanım, eşleşme, ücretli özellikler ve hesap silme.";
+}
+
+<article class="legal-page container narrow">
+    <p class="eyebrow">Yasal</p>
+    <h1>Kullanım Koşulları</h1>
+    <p class="legal-meta">Son güncelleme: 26 Ağustos 2026 · Bu metin bilgilendirme amaçlı bir yer tutucudur; hukuki danışmanlık yerine geçmez.</p>
+
+    <h2>Kapsam</h2>
+    <p>
+        Bu koşullar Mevora mobil uygulamasının kullanımını düzenler. Tam ve yerelleştirilmiş
+        metin uygulama içinde Ayarlar → Yardım ve Destek altında da yayınlanabilir.
+    </p>
+
+    <h2>Uygunluk</h2>
+    <p>Mevora 18 yaş ve üzeri kullanıcılar içindir. Hesap etkinliklerinden sen sorumlusun.</p>
+
+    <h2>Kabul edilebilir kullanım</h2>
+    <p>
+        Taciz, nefret söylemi, dolandırıcılık, sahte profil, cinsel sömürü, spam ve kullanıcıya
+        ya da platforma zarar vermeye yönelik girişimler yasaktır.
+    </p>
+
+    <h2>Eşleşme ve mesajlaşma</h2>
+    <p>
+        Eşleşmeler karşılıklı beğenilerle oluşur. Mesajlaşma aktif eşleşmelerde mümkündür ve
+        güvenlik aksiyonlarıyla sınırlanabilir.
+    </p>
+
+    <h2>Ücretli özellikler</h2>
+    <p>Boost ve diğer satın almalar uygulama mağazası üzerinden işlenir.</p>
+
+    <h2>Hesap silme</h2>
+    <p>
+        Hesabını istediğin zaman Ayarlar → Hesap → Hesabı Sil üzerinden silebilirsin.
+        Silme işlemi kalıcıdır.
+    </p>
+
+    <h2>İletişim</h2>
+    <p>
+        <a href="/support">Destek formu</a> ·
+        <a href="mailto:@site.SupportEmail">@site.SupportEmail</a>
+    </p>
+
+    <p><a class="btn btn-ghost" href="/">@site.SiteName’ya geri dön</a></p>
+</article>

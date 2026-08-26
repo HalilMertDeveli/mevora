@@ -1,0 +1,28 @@
+﻿@page
+@model Mevora.Web.Pages.ErrorModel
+@{
+    ViewData["Title"] = Model.Is404 ? "Sayfa bulunamadı — Mevora" : "Bir sorun oluştu — Mevora";
+    ViewData["Description"] = "Mevora hata sayfası.";
+}
+
+<section class="error-page container narrow">
+    @if (Model.Is404)
+    {
+        <p class="eyebrow">404</p>
+        <h1>Aradığın sayfayı bulamadık.</h1>
+        <p>Bağlantı eski olabilir veya adres yanlış yazılmış olabilir.</p>
+    }
+    else
+    {
+        <p class="eyebrow">@Model.StatusCodeValue</p>
+        <h1>Bir şeyler ters gitti.</h1>
+        <p>İsteğini şu an tamamlayamadık. Lütfen biraz sonra tekrar dene.</p>
+    }
+
+    <a class="btn btn-primary" href="/">Mevora’ya geri dön</a>
+
+    @if (!string.IsNullOrEmpty(Model.RequestId))
+    {
+        <p class="request-id">İstek kodu: <code>@Model.RequestId</code></p>
+    }
+</section>

@@ -1,0 +1,60 @@
+﻿@page "/privacy"
+@model Mevora.Web.Pages.PrivacyModel
+@using Mevora.Web.Configuration
+@using Microsoft.Extensions.Options
+@inject IOptions<SiteSettings> SiteOptions
+@{
+    var site = SiteOptions.Value;
+    ViewData["Title"] = $"Gizlilik Politikası — {site.SiteName}";
+    ViewData["Description"] = $"{site.SiteName} gizlilik politikası. Toplanan veriler, kullanım amaçları ve hakların özeti.";
+}
+
+<article class="legal-page container narrow">
+    <p class="eyebrow">Yasal</p>
+    <h1>Gizlilik Politikası</h1>
+    <p class="legal-meta">Son güncelleme: 26 Ağustos 2026 · Bu metin bilgilendirme amaçlı bir yer tutucudur; hukuki danışmanlık yerine geçmez.</p>
+
+    <h2>Kapsam</h2>
+    <p>
+        Bu sayfa Mevora mobil uygulaması ve resmi web sitesi için gizlilik bilgilendirmesinin
+        özetidir. Tam ve yerelleştirilmiş metin uygulama içinde Ayarlar → Yardım ve Destek →
+        Gizlilik Politikası altında da yayınlanabilir.
+    </p>
+
+    <h2>Topladığımız veriler</h2>
+    <p>
+        Hesap tanımlayıcıları (e-posta, telefon, Google/Apple/Spotify giriş verileri), profil
+        bilgileri, fotoğraflar, yaklaşık konum (izinle), beğeni/eşleşme sinyalleri, mesaj ve
+        arama meta verileri, bildirim belirteçleri, tercihler ve altyapıyı işletmek için gerekli
+        teknik günlükler işlenebilir.
+    </p>
+
+    <h2>Neden kullanıyoruz?</h2>
+    <p>
+        Kimlik doğrulama, uyumlu kişileri gösterme, eşleşme ve mesaj iletimi, güvenlik
+        (engelleme/bildirme), destek, isteğe bağlı Boost satın almaları ve yasal yükümlülükler.
+    </p>
+
+    <h2>Saklama ve güvenlik</h2>
+    <p>
+        Veriler başlıca Google Firebase (Firestore, Storage, Authentication, Cloud Functions)
+        üzerinde tutulur. Uygun koşullarda mesajlar uçtan uca şifrelenebilir. Erişim kontrolleri
+        ve güvenlik kuralları uygulanır.
+    </p>
+
+    <h2>Saklama ve silme</h2>
+    <p>
+        Hesabın aktif olduğu süre boyunca veriler tutulur. Uygulama üzerinden Ayarlar → Hesap →
+        Hesabı Sil ile kalıcı silme talep edebilirsin. Yasal zorunluluk veya dolandırıcılık
+        önleme nedeniyle bazı kayıtlar sınırlı süre saklanabilir.
+    </p>
+
+    <h2>Hakların ve iletişim</h2>
+    <p>
+        Bölgene bağlı olarak erişim, düzeltme veya silme talep edebilirsin.
+        Destek için <a href="/support">destek formu</a>nu kullanabilir veya
+        <a href="mailto:@site.SupportEmail">@site.SupportEmail</a> adresine yazabilirsin.
+    </p>
+
+    <p><a class="btn btn-ghost" href="/">@site.SiteName’ya geri dön</a></p>
+</article>

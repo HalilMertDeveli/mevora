@@ -1,0 +1,31 @@
+@page "/faq"
+@model Mevora.Web.Pages.FaqModel
+@{
+    ViewData["Title"] = "SSS — Mevora";
+    ViewData["Description"] = "Mevora sık sorulan sorular. Hesap, uyumluluk, mesajlaşma ve destek.";
+}
+
+<section class="section">
+    <div class="container narrow">
+        <div class="section-head">
+            <p class="eyebrow">SSS</p>
+            <h1>Sık sorulan sorular</h1>
+            <p>Cevabını bulamazsan <a href="/support">destek formu</a>nu kullan.</p>
+        </div>
+
+        @if (Model.FaqsFromFallback)
+        {
+            <p class="fallback-note" role="status">İçerik yerel yedekten gösteriliyor.</p>
+        }
+
+        <div class="faq-list">
+            @foreach (var item in Model.Faqs)
+            {
+                <details class="faq-item">
+                    <summary>@item.Question</summary>
+                    <p>@item.Answer</p>
+                </details>
+            }
+        </div>
+    </div>
+</section>

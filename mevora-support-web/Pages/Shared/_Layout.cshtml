@@ -1,0 +1,130 @@
+﻿@using Mevora.Web.Configuration
+@using Mevora.Web.Services
+@using Microsoft.Extensions.Options
+@inject IOptions<SiteSettings> SiteOptions
+@inject ISiteUrlService SiteUrls
+@{
+    var site = SiteOptions.Value;
+    var title = ViewData["Title"] as string ?? site.DefaultTitle;
+    var description = ViewData["Description"] as string ?? site.DefaultDescription;
+    var path = Context.Request.Path.HasValue ? Context.Request.Path.Value! : "/";
+    var canonical = SiteUrls.CanonicalFor(path);
+    var ogImage = SiteUrls.Absolute("/images/og-cover.svg");
+}
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+    <meta name="description" content="@description" />
+    @if (!string.IsNullOrEmpty(canonical))
+    {
+        <link rel="canonical" href="@canonical" />
+        <meta property="og:url" content="@canonical" />
+    }
+    <meta name="theme-color" content="#D63384" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="tr_TR" />
+    <meta property="og:site_name" content="@site.SiteName" />
+    <meta property="og:title" content="@title" />
+    <meta property="og:description" content="@description" />
+    <meta property="og:image" content="@ogImage" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@title" />
+    <meta name="twitter:description" content="@description" />
+    <meta name="twitter:image" content="@ogImage" />
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <a class="skip-link" href="#main">İçeriğe geç</a>
+
+    <header class="site-header" id="top">
+        <div class="container header-inner">
+            <a class="brand" href="/" aria-label="@site.SiteName ana sayfa">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-name">@site.SiteName</span>
+            </a>
+
+            <nav class="nav-desktop" aria-label="Ana menü">
+                <a href="/#mevora">Mevora</a>
+                <a href="/#how">Nasıl Çalışır?</a>
+                <a href="/#features">Özellikler</a>
+                <a href="/#faq">SSS</a>
+                <a href="/#support">Destek</a>
+                <a href="/privacy">Gizlilik</a>
+                <a href="/terms">Kullanım Koşulları</a>
+            </nav>
+
+            <div class="header-actions">
+                <button type="button" class="theme-toggle" id="themeToggle" aria-label="Temayı değiştir">
+                    <span class="theme-icon theme-icon-sun" aria-hidden="true"></span>
+                    <span class="theme-icon theme-icon-moon" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mobileNav" aria-label="Menüyü aç">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="nav-mobile" id="mobileNav" hidden aria-label="Mobil menü">
+            <a href="/#mevora">Mevora</a>
+            <a href="/#how">Nasıl Çalışır?</a>
+            <a href="/#features">Özellikler</a>
+            <a href="/#faq">SSS</a>
+            <a href="/#support">Destek</a>
+            <a href="/privacy">Gizlilik</a>
+            <a href="/terms">Kullanım Koşulları</a>
+        </nav>
+    </header>
+
+    <main id="main">
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <a class="brand" href="/">
+                    <span class="brand-mark" aria-hidden="true"></span>
+                    <span class="brand-name">@site.SiteName</span>
+                </a>
+                <p>Anlamlı eşleşmeler, daha iyi bağlantılar.</p>
+            </div>
+            <div>
+                <h2 class="footer-heading">Keşfet</h2>
+                <ul class="footer-links">
+                    <li><a href="/">Ana Sayfa</a></li>
+                    <li><a href="/#support">Destek</a></li>
+                    <li><a href="/#faq">SSS</a></li>
+                    <li><a href="/privacy">Gizlilik Politikası</a></li>
+                    <li><a href="/terms">Kullanım Koşulları</a></li>
+                </ul>
+            </div>
+            <div>
+                <h2 class="footer-heading">Uygulama</h2>
+                <ul class="footer-links">
+                    <li><a href="#" aria-disabled="true">App Store (yakında)</a></li>
+                    <li><a href="#" aria-disabled="true">Google Play (yakında)</a></li>
+                </ul>
+            </div>
+            <div>
+                <h2 class="footer-heading">İletişim</h2>
+                <ul class="footer-links">
+                    <li><a href="mailto:@site.SupportEmail">@site.SupportEmail</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="container footer-bottom">
+            <p>&copy; @DateTime.UtcNow.Year @site.SiteName. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

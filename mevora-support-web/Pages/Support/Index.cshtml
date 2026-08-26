@@ -1,0 +1,103 @@
+@page "/support"
+@model Mevora.Web.Pages.Support.IndexModel
+@{
+    ViewData["Title"] = "Destek — Mevora";
+    ViewData["Description"] = "Mevora destek merkezi. Hesap, eşleşme, mesajlaşma ve teknik sorunlar için yardım alın.";
+    Layout = "_Layout";
+}
+
+<section class="section support-standalone">
+    <div class="container">
+        <div class="section-head">
+            <p class="eyebrow">Destek</p>
+            <h1>Nasıl yardımcı olabiliriz?</h1>
+            <p>Kategori seçin ve talebinizi gönderin. Mobil uygulamadan da bu sayfayı açabilirsiniz.</p>
+        </div>
+
+        <div class="support-categories" role="list">
+            @foreach (var cat in SupportCategories.All)
+            {
+                <button type="button"
+                        class="support-chip @(Model.SupportForm.Category == cat.Value ? "is-active" : string.Empty)"
+                        data-category="@cat.Value"
+                        role="listitem">
+                    @cat.Label
+                </button>
+            }
+        </div>
+
+        @if (Model.SubmissionSucceeded)
+        {
+            <div class="alert alert-success" role="status">
+                Destek talebiniz başarıyla oluşturuldu.
+                @if (!string.IsNullOrEmpty(Model.CreatedTicketId))
+                {
+                    <span class="ticket-id">Talep no: @Model.CreatedTicketId</span>
+                }
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(Model.SubmissionError))
+        {
+            <div class="alert alert-error" role="alert">@Model.SubmissionError</div>
+        }
+
+        <form method="post" enctype="multipart/form-data" class="support-form" id="supportForm" novalidate>
+            @Html.AntiForgeryToken()
+            <div class="form-grid">
+                <div class="field">
+                    <label asp-for="SupportForm.Name"></label>
+                    <input asp-for="SupportForm.Name" autocomplete="name" />
+                    <span asp-validation-for="SupportForm.Name" class="field-error"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="SupportForm.Email"></label>
+                    <input asp-for="SupportForm.Email" autocomplete="email" inputmode="email" />
+                    <span asp-validation-for="SupportForm.Email" class="field-error"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="SupportForm.UserId"></label>
+                    <input asp-for="SupportForm.UserId" autocomplete="off" />
+                    <span asp-validation-for="SupportForm.UserId" class="field-error"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="SupportForm.Category"></label>
+                    <select asp-for="SupportForm.Category" id="supportCategory">
+                        <option value="">Kategori seçin</option>
+                        @foreach (var cat in SupportCategories.All)
+                        {
+                            <option value="@cat.Value">@cat.Label</option>
+                        }
+                    </select>
+                    <span asp-validation-for="SupportForm.Category" class="field-error"></span>
+                </div>
+                <div class="field field-span">
+                    <label asp-for="SupportForm.Subject"></label>
+                    <input asp-for="SupportForm.Subject" />
+                    <span asp-validation-for="SupportForm.Subject" class="field-error"></span>
+                </div>
+                <div class="field field-span">
+                    <label asp-for="SupportForm.Description"></label>
+                    <textarea asp-for="SupportForm.Description" rows="5"></textarea>
+                    <span asp-validation-for="SupportForm.Description" class="field-error"></span>
+                </div>
+                <div class="field">
+                    <label asp-for="SupportForm.Priority"></label>
+                    <select asp-for="SupportForm.Priority">
+                        <option value="@SupportPriorities.Low">Düşük</option>
+                        <option value="@SupportPriorities.Normal">Normal</option>
+                        <option value="@SupportPriorities.High">Yüksek</option>
+                        <option value="@SupportPriorities.Urgent">Acil</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label asp-for="SupportForm.Screenshot"></label>
+                    <input asp-for="SupportForm.Screenshot" type="file" accept="image/jpeg,image/png,image/webp" />
+                    <span class="field-hint">JPEG, PNG veya WebP — en fazla 5 MB</span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Talebi Gönder</button>
+        </form>
+
+        <p class="support-extra"><a href="/faq">Sık sorulan sorular</a> · <a href="/">Ana sayfa</a></p>
+    </div>
+</section>

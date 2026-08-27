@@ -2356,6 +2356,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compatNotEnoughData => 'Not enough data yet';
 
   @override
+  String get compatRevealTitle => 'Compatibility Reveal';
+
+  @override
+  String get compatRevealSubtitle => 'Discover up to 3 real things you share';
+
+  @override
+  String get compatRevealCta => 'Reveal Your Chemistry';
+
+  @override
+  String get compatRevealLoading => 'Revealing…';
+
+  @override
+  String get compatRevealPremiumCta => 'Unlock full chemistry breakdown';
+
+  @override
+  String get compatRevealBreakdownTitle => 'Detailed breakdown';
+
+  @override
+  String get compatRevealKindPersonality => 'Personality';
+
+  @override
+  String get compatRevealKindQuestions => 'Question Answers';
+
+  @override
+  String get compatRevealKindMusic => 'Music';
+
+  @override
+  String get compatRevealKindRelationship => 'Relationship';
+
+  @override
+  String get compatRevealKindPreference => 'Preferences';
+
+  @override
+  String get compatRevealKindLifestyle => 'Lifestyle';
+
+  @override
+  String compatRevealPersonalityAligned(String count) {
+    return 'You share $count aligned personality answers';
+  }
+
+  @override
+  String get compatRevealSimilarPersonality =>
+      'Your lifestyles point to a similar personality vibe';
+
+  @override
   String get compatStrongestConnection => 'Strongest connection';
 
   @override

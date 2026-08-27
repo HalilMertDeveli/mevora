@@ -4370,6 +4370,90 @@ abstract class AppLocalizations {
   /// **'Not enough data yet'**
   String get compatNotEnoughData;
 
+  /// No description provided for @compatRevealTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility Reveal'**
+  String get compatRevealTitle;
+
+  /// No description provided for @compatRevealSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover up to 3 real things you share'**
+  String get compatRevealSubtitle;
+
+  /// No description provided for @compatRevealCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal Your Chemistry'**
+  String get compatRevealCta;
+
+  /// No description provided for @compatRevealLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Revealing…'**
+  String get compatRevealLoading;
+
+  /// No description provided for @compatRevealPremiumCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock full chemistry breakdown'**
+  String get compatRevealPremiumCta;
+
+  /// No description provided for @compatRevealBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed breakdown'**
+  String get compatRevealBreakdownTitle;
+
+  /// No description provided for @compatRevealKindPersonality.
+  ///
+  /// In en, this message translates to:
+  /// **'Personality'**
+  String get compatRevealKindPersonality;
+
+  /// No description provided for @compatRevealKindQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Question Answers'**
+  String get compatRevealKindQuestions;
+
+  /// No description provided for @compatRevealKindMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get compatRevealKindMusic;
+
+  /// No description provided for @compatRevealKindRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get compatRevealKindRelationship;
+
+  /// No description provided for @compatRevealKindPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get compatRevealKindPreference;
+
+  /// No description provided for @compatRevealKindLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get compatRevealKindLifestyle;
+
+  /// No description provided for @compatRevealPersonalityAligned.
+  ///
+  /// In en, this message translates to:
+  /// **'You share {count} aligned personality answers'**
+  String compatRevealPersonalityAligned(String count);
+
+  /// No description provided for @compatRevealSimilarPersonality.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lifestyles point to a similar personality vibe'**
+  String get compatRevealSimilarPersonality;
+
   /// No description provided for @compatStrongestConnection.
   ///
   /// In en, this message translates to:

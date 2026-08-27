@@ -20,6 +20,8 @@ import 'package:mevora/core/di/support_scope.dart';
 import 'package:mevora/core/di/verification_services_factory.dart';
 import 'package:mevora/core/errors/error_handler.dart';
 import 'package:mevora/core/identity/firebase_auth_uid_source.dart';
+import 'package:mevora/core/network/firebase_functions_callable.dart';
+import 'package:mevora/features/compatibility/data/repositories/compatibility_reveal_repository.dart';
 import 'package:mevora/core/localization/language_controller.dart';
 import 'package:mevora/core/localization/language_repository.dart';
 import 'package:mevora/core/localization/local_language_data_source.dart';
@@ -121,6 +123,9 @@ Future<void> bootstrap(AppEnvironment environment) async {
     logger: logger,
   );
   final verificationServices = createVerificationServices();
+  final compatibilityRevealRepository = FunctionsCompatibilityRevealRepository(
+    backend: FirebaseFunctionsCallable(),
+  );
   final languageController = LanguageController(
     repository: LanguageRepository(
       local: SharedPreferencesLanguageDataSource(
@@ -151,6 +156,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,
       verificationRepository: verificationServices.repository,
+      compatibilityRevealRepository: compatibilityRevealRepository,
       analytics: analytics,
       languageController: languageController,
       permissionService: permissionService,

@@ -2350,6 +2350,51 @@ class AppLocalizationsTr extends AppLocalizations {
   String get compatNotEnoughData => 'Henüz yeterli veri yok';
 
   @override
+  String get compatRevealTitle => 'Compatibility Reveal';
+
+  @override
+  String get compatRevealSubtitle => '3 gerçek ortak noktanızı keşfet';
+
+  @override
+  String get compatRevealCta => 'Reveal Your Chemistry';
+
+  @override
+  String get compatRevealLoading => 'Açılıyor…';
+
+  @override
+  String get compatRevealPremiumCta => 'Tam uyum dökümünü aç';
+
+  @override
+  String get compatRevealBreakdownTitle => 'Detaylı döküm';
+
+  @override
+  String get compatRevealKindPersonality => 'Kişilik';
+
+  @override
+  String get compatRevealKindQuestions => 'Soru Cevapları';
+
+  @override
+  String get compatRevealKindMusic => 'Müzik';
+
+  @override
+  String get compatRevealKindRelationship => 'İlişki';
+
+  @override
+  String get compatRevealKindPreference => 'Tercihler';
+
+  @override
+  String get compatRevealKindLifestyle => 'Yaşam tarzı';
+
+  @override
+  String compatRevealPersonalityAligned(String count) {
+    return '$count kişilik cevabında aynı hizasınız';
+  }
+
+  @override
+  String get compatRevealSimilarPersonality =>
+      'Yaşam tarzınız benzer bir kişilik enerjisine işaret ediyor';
+
+  @override
   String get compatStrongestConnection => 'En güçlü bağ';
 
   @override

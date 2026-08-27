@@ -1018,6 +1018,27 @@
     }
   },
   "compatNotEnoughData": "Henüz yeterli veri yok",
+  "compatRevealTitle": "Compatibility Reveal",
+  "compatRevealSubtitle": "3 gerçek ortak noktanızı keşfet",
+  "compatRevealCta": "Reveal Your Chemistry",
+  "compatRevealLoading": "Açılıyor…",
+  "compatRevealPremiumCta": "Tam uyum dökümünü aç",
+  "compatRevealBreakdownTitle": "Detaylı döküm",
+  "compatRevealKindPersonality": "Kişilik",
+  "compatRevealKindQuestions": "Soru Cevapları",
+  "compatRevealKindMusic": "Müzik",
+  "compatRevealKindRelationship": "İlişki",
+  "compatRevealKindPreference": "Tercihler",
+  "compatRevealKindLifestyle": "Yaşam tarzı",
+  "compatRevealPersonalityAligned": "{count} kişilik cevabında aynı hizasınız",
+  "@compatRevealPersonalityAligned": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "compatRevealSimilarPersonality": "Yaşam tarzınız benzer bir kişilik enerjisine işaret ediyor",
   "compatStrongestConnection": "En güçlü bağ",
   "compatPotentialDifference": "Potansiyel fark",
   "compatCategoryOverall": "Genel",

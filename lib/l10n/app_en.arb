@@ -1018,6 +1018,27 @@
     }
   },
   "compatNotEnoughData": "Not enough data yet",
+  "compatRevealTitle": "Compatibility Reveal",
+  "compatRevealSubtitle": "Discover up to 3 real things you share",
+  "compatRevealCta": "Reveal Your Chemistry",
+  "compatRevealLoading": "Revealing…",
+  "compatRevealPremiumCta": "Unlock full chemistry breakdown",
+  "compatRevealBreakdownTitle": "Detailed breakdown",
+  "compatRevealKindPersonality": "Personality",
+  "compatRevealKindQuestions": "Question Answers",
+  "compatRevealKindMusic": "Music",
+  "compatRevealKindRelationship": "Relationship",
+  "compatRevealKindPreference": "Preferences",
+  "compatRevealKindLifestyle": "Lifestyle",
+  "compatRevealPersonalityAligned": "You share {count} aligned personality answers",
+  "@compatRevealPersonalityAligned": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "compatRevealSimilarPersonality": "Your lifestyles point to a similar personality vibe",
   "compatStrongestConnection": "Strongest connection",
   "compatPotentialDifference": "Potential difference",
   "compatCategoryOverall": "Overall",

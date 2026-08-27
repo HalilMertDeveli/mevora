@@ -684,6 +684,17 @@ class DiscoveryController extends ChangeNotifier {
       decision: decision,
     );
 
+    if (result case Err(:final failure)) {
+      _actedUserIds.remove(userId);
+      _isProcessingAction = false;
+      state = state.copyWith(
+        showLikeBurst: false,
+        errorMessage: failure.message,
+      );
+      notifyListeners();
+      return;
+    }
+
     final remaining = state.candidates.skip(1).toList();
     final matched = result.valueOrNull?.matched == true ? current : null;
     state = state.copyWith(
@@ -692,6 +703,7 @@ class DiscoveryController extends ChangeNotifier {
       matchedCandidate: matched,
       matchedMatchId: result.valueOrNull?.matchId,
       clearMatch: matched == null,
+      clearError: true,
     );
     notifyListeners();
 

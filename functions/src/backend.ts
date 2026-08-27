@@ -441,103 +441,164 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   if (!candidateUid || candidateUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid candidate.");
   }
-  const [callerAccount, callerProfileSnap, callerPrefsSnap, candidateProfile, candidatePrefsSnap, candidateAccountSnap, activeMatches] =
-    await Promise.all([
-    db.doc(`users/${uid}`).get(),
-    db.doc(`profiles/${uid}`).get(),
-    db.doc(`userPreferences/${uid}`).get(),
-    db.doc(`profiles/${candidateUid}`).get(),
-    db.doc(`userPreferences/${candidateUid}`).get(),
-    db.doc(`users/${candidateUid}`).get(),
-    loadActiveMatchPartnerIds(db, uid),
-  ]);
-  if (!isAccountEligible(callerAccount.data())) {
-    throw new HttpsError("permission-denied", "account-suspended");
-  }
-  if (activeMatches.has(candidateUid)) {
-    throw new HttpsError("failed-precondition", "already-matched");
-  }
-  const callerPrefs = callerPrefsSnap.data() ?? {};
-  const minAge = Number(callerPrefs.minAge ?? 18);
-  const maxAge = Number(callerPrefs.maxAge ?? 99);
-  if (
-    !candidateProfile.exists ||
-    !passesDiscoveryProfileFilters({
-      candidateProfile: candidateProfile.data(),
-      candidateAccount: candidateAccountSnap.data(),
-      minAge,
-      maxAge,
-    })
-  ) {
-    throw new HttpsError("failed-precondition", "candidate-unavailable");
-  }
-  if (
-    !passesGenderPreferences({
-      viewerPrefs: callerPrefs,
-      viewerProfile: callerProfileSnap.data() ?? {},
-      candidatePrefs: candidatePrefsSnap.data() ?? {},
-      candidateProfile: candidateProfile.data() ?? {},
-    })
-  ) {
-    throw new HttpsError("failed-precondition", "preference-mismatch");
-  }
-  if (await isBlocked(uid, candidateUid)) {
-    throw new HttpsError("failed-precondition", "blocked");
-  }
-  if (action === "pass") {
-    await db.doc(`users/${uid}/passedUsers/${candidateUid}`).set({
-      toUserId: candidateUid,
-      createdAt: FieldValue.serverTimestamp(),
-    });
+  try {
+    const [
+      callerAccount,
+      callerProfileSnap,
+      callerPrefsSnap,
+      candidateProfile,
+      candidatePrefsSnap,
+      candidateAccountSnap,
+      activeMatches,
+    ] = await Promise.all([
+      db.doc(`users/${uid}`).get(),
+      db.doc(`profiles/${uid}`).get(),
+      db.doc(`userPreferences/${uid}`).get(),
+      db.doc(`profiles/${candidateUid}`).get(),
+      db.doc(`userPreferences/${candidateUid}`).get(),
+      db.doc(`users/${candidateUid}`).get(),
+      loadActiveMatchPartnerIds(db, uid),
+    ]);
+    if (!isAccountEligible(callerAccount.data())) {
+      throw new HttpsError("permission-denied", "account-suspended");
+    }
+    if (activeMatches.has(candidateUid)) {
+      throw new HttpsError("failed-precondition", "already-matched");
+    }
+    const callerPrefs = callerPrefsSnap.data() ?? {};
+    const minAge = Number(callerPrefs.minAge ?? 18);
+    const maxAge = Number(callerPrefs.maxAge ?? 99);
+    if (
+      !candidateProfile.exists ||
+      !passesDiscoveryProfileFilters({
+        candidateProfile: candidateProfile.data(),
+        candidateAccount: candidateAccountSnap.data(),
+        minAge,
+        maxAge,
+      })
+    ) {
+      throw new HttpsError("failed-precondition", "candidate-unavailable");
+    }
+    if (
+      !passesGenderPreferences({
+        viewerPrefs: callerPrefs,
+        viewerProfile: callerProfileSnap.data() ?? {},
+        candidatePrefs: candidatePrefsSnap.data() ?? {},
+        candidateProfile: candidateProfile.data() ?? {},
+      })
+    ) {
+      throw new HttpsError("failed-precondition", "preference-mismatch");
+    }
+    if (await isBlocked(uid, candidateUid)) {
+      throw new HttpsError("failed-precondition", "blocked");
+    }
+
+    const actorName = String(
+      callerProfileSnap.data()?.displayName ??
+        callerAccount.data()?.displayName ??
+        callerAccount.data()?.name ??
+        "Mevora",
+    );
+    const otherName = String(
+      candidateProfile.data()?.displayName ??
+        candidateAccountSnap.data()?.displayName ??
+        candidateAccountSnap.data()?.name ??
+        "Mevora",
+    );
+    const actorPhoto = (callerProfileSnap.data()?.photoUrl ??
+      callerAccount.data()?.photoUrl) as string | undefined;
+    const otherPhoto = (candidateProfile.data()?.photoUrl ??
+      candidateAccountSnap.data()?.photoUrl) as string | undefined;
+    const actorVerified = callerAccount.data()?.isVerified === true;
+    const otherVerified = candidateAccountSnap.data()?.isVerified === true;
+
+    if (action === "pass") {
+      await db.doc(`users/${uid}/passedUsers/${candidateUid}`).set({
+        toUserId: candidateUid,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      await db.doc(`likes/${uid}_${candidateUid}`).set({
+        fromUserId: uid,
+        toUserId: candidateUid,
+        action: "pass",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      return {matched: false};
+    }
+
+    const likeAction = action === "superLike" ? "superLike" : "like";
     await db.doc(`likes/${uid}_${candidateUid}`).set({
       fromUserId: uid,
       toUserId: candidateUid,
-      action: "pass",
+      action: likeAction,
       createdAt: FieldValue.serverTimestamp(),
     });
-    return {matched: false};
-  }
-  await db.doc(`likes/${uid}_${candidateUid}`).set({
-    fromUserId: uid,
-    toUserId: candidateUid,
-    action: action === "superLike" ? "superLike" : "like",
-    createdAt: FieldValue.serverTimestamp(),
-  });
-  const reverse = await db.doc(`likes/${candidateUid}_${uid}`).get();
-  const reverseAction = reverse.data()?.action as string | undefined;
-  const matched = reverse.exists && reverseAction !== "pass";
-  if (!matched) {
-    await sendUserPush({
-      uid: candidateUid,
-      type: FcmTypes.incomingLike,
-      data: {},
-      prefKey: "likeNotifications",
-      idempotencyKey: `incomingLike_${uid}_${candidateUid}`,
-    });
-    return {matched: false};
-  }
-  const matchId = [uid, candidateUid].sort().join("_");
-  const matchRef = db.doc(`matches/${matchId}`);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(matchRef);
-    if (snap.exists && snap.data()?.isActive === true) {
-      return;
+    const reverse = await db.doc(`likes/${candidateUid}_${uid}`).get();
+    const reverseAction = reverse.data()?.action as string | undefined;
+    const matched = reverse.exists && reverseAction !== "pass";
+    if (!matched) {
+      try {
+        await sendUserPush({
+          uid: candidateUid,
+          type: FcmTypes.incomingLike,
+          data: {},
+          prefKey: "likeNotifications",
+          idempotencyKey: `incomingLike_${uid}_${candidateUid}`,
+        });
+      } catch (pushError) {
+        logger.warn("recordDiscoveryDecision incomingLike push failed", {
+          uid,
+          candidateUid,
+          error: String(pushError),
+        });
+      }
+      return {matched: false};
     }
-    const existing = snap.data();
-    tx.set(matchRef, {
-      userIds: [uid, candidateUid].sort(),
-      createdAt: existing?.createdAt ?? FieldValue.serverTimestamp(),
-      lastMessage: null,
-      lastMessageAt: FieldValue.serverTimestamp(),
-      isActive: true,
-      unmatchedBy: null,
-      unmatchedAt: null,
-      unreadCounts: {[uid]: 0, [candidateUid]: 0},
-      isNewFor: {[uid]: true, [candidateUid]: true},
-      ...preservedMatchScoreFields(existing),
+
+    const matchId = [uid, candidateUid].sort().join("_");
+    const matchRef = db.doc(`matches/${matchId}`);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(matchRef);
+      if (snap.exists && snap.data()?.isActive === true) {
+        return;
+      }
+      const existing = snap.data();
+      tx.set(matchRef, {
+        userIds: [uid, candidateUid].sort(),
+        createdAt: existing?.createdAt ?? FieldValue.serverTimestamp(),
+        lastMessage: null,
+        lastMessageAt: FieldValue.serverTimestamp(),
+        isActive: true,
+        unmatchedBy: null,
+        unmatchedAt: null,
+        unreadCounts: {[uid]: 0, [candidateUid]: 0},
+        isNewFor: {[uid]: true, [candidateUid]: true},
+        participantNames: {[uid]: actorName, [candidateUid]: otherName},
+        participantPhotos: {
+          ...(actorPhoto ? {[uid]: actorPhoto} : {}),
+          ...(otherPhoto ? {[candidateUid]: otherPhoto} : {}),
+        },
+        participantVerified: {
+          [uid]: actorVerified,
+          [candidateUid]: otherVerified,
+        },
+        ...preservedMatchScoreFields(existing),
+        source: "mutual_like",
+      });
     });
-  });
-  return {matched: true, matchId};
+    return {matched: true, matchId};
+  } catch (error) {
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    logger.error("recordDiscoveryDecision failed", {
+      uid,
+      candidateUid,
+      action,
+      error: String(error),
+    });
+    throw new HttpsError("internal", "decision-unavailable");
+  }
 });
 
 export const getDistanceLabel = onCall(callableOptions, async (request) => {

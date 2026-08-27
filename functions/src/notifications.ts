@@ -112,18 +112,23 @@ export async function sendUserPush(options: {
   const body = options.bodyOverride ?? localized.body;
   const payload: Record<string, string> = {type: options.type, ...options.data};
 
-
-  await db.collection("notifications").add({
-    userId: options.uid,
-    type: options.type,
-    title,
-    body,
-    isRead: false,
-    createdAt: FieldValue.serverTimestamp(),
-    matchId: payload.matchId ?? null,
-    callId: payload.callId ?? null,
-    route: routeFor(options.type, payload),
-  });
+  // Best-effort inbox + FCM. Callables (e.g. Discover like) must not fail
+  // with INTERNAL when notification delivery has a transient error.
+  try {
+    await db.collection("notifications").add({
+      userId: options.uid,
+      type: options.type,
+      title,
+      body,
+      isRead: false,
+      createdAt: FieldValue.serverTimestamp(),
+      matchId: payload.matchId ?? null,
+      callId: payload.callId ?? null,
+      route: routeFor(options.type, payload),
+    });
+  } catch {
+    // Notification doc is non-critical for swipe/match success.
+  }
 
   const tokens = await collectDeviceTokens(options.uid);
   if (tokens.length === 0) {

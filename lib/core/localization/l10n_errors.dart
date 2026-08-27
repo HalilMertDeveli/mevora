@@ -106,6 +106,11 @@ abstract final class L10nErrors {
     if (raw == CallStrings.failed) return l10n.callFailed;
     if (raw == CallStrings.ended) return l10n.callEnded;
     if (raw == AppStrings.networkError) return l10n.networkError;
+    if (raw == AppStrings.somethingWentWrong ||
+        raw == AppStrings.unexpectedErrorMessage ||
+        raw == 'An unexpected error occurred.') {
+      return l10n.somethingWentWrong;
+    }
     if (raw == AppStrings.locationTimeoutMessage) return l10n.locationTimeoutMessage;
     if (raw == AppStrings.locationNetworkMessage) return l10n.locationNetworkMessage;
     if (raw == AppStrings.boostStoreUnavailable) return l10n.boostStoreUnavailable;

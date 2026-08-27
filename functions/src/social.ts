@@ -1,9 +1,10 @@
 import {getApps, initializeApp} from "firebase-admin/app";
-import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {defineSecret} from "firebase-functions/params";
 import {AccessToken} from "livekit-server-sdk";
+import {logger} from "firebase-functions";
 import {blockId, canonicalMatchId, likeId, previewText} from "./ids.js";
 import {
   loadActiveMatchPartnerIds,
@@ -19,6 +20,7 @@ import {
 } from "./matchScore.js";
 import {enforceMessageRateLimit} from "./messageRateLimit.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
+import {safeLogMeta} from "./security/logHygiene.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -64,8 +66,15 @@ async function profilePreview(uid: string): Promise<{name: string; photoUrl?: st
     db.doc(`profiles/${uid}`).get(),
     db.doc(`users/${uid}`).get(),
   ]);
-  const data = profileSnap.data() ?? {};
-  const account = userSnap.data() ?? {};
+  return profilePreviewFromSnaps(profileSnap.data(), userSnap.data());
+}
+
+function profilePreviewFromSnaps(
+  profileData: DocumentData | undefined,
+  accountData: DocumentData | undefined,
+): {name: string; photoUrl?: string; isVerified: boolean} {
+  const data = profileData ?? {};
+  const account = accountData ?? {};
   return {
     name: String(data.displayName ?? account.displayName ?? account.name ?? "Mevora"),
     photoUrl: (data.photoUrl ?? account.photoUrl) as string | undefined,
@@ -94,112 +103,175 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
   if (!targetUserId || targetUserId === uid) {
     throw new HttpsError("invalid-argument", "self");
   }
-  const [
-    callerAccount,
-    callerProfileSnap,
-    callerPrefsSnap,
-    targetProfileSnap,
-    targetPrefsSnap,
-    targetAccountSnap,
-    activeMatches,
-  ] = await Promise.all([
-    db.doc(`users/${uid}`).get(),
-    db.doc(`profiles/${uid}`).get(),
-    db.doc(`userPreferences/${uid}`).get(),
-    db.doc(`profiles/${targetUserId}`).get(),
-    db.doc(`userPreferences/${targetUserId}`).get(),
-    db.doc(`users/${targetUserId}`).get(),
-    loadActiveMatchPartnerIds(db, uid),
-  ]);
-  if (!isAccountEligible(callerAccount.data())) {
-    throw new HttpsError("permission-denied", "account-suspended");
-  }
-  if (activeMatches.has(targetUserId)) {
-    throw new HttpsError("failed-precondition", "already-matched");
-  }
-  const callerPrefs = callerPrefsSnap.data() ?? {};
-  const minAge = Number(callerPrefs.minAge ?? 18);
-  const maxAge = Number(callerPrefs.maxAge ?? 99);
-  if (
-    !targetProfileSnap.exists ||
-    !passesDiscoveryProfileFilters({
-      candidateProfile: targetProfileSnap.data(),
-      candidateAccount: targetAccountSnap.data(),
-      minAge,
-      maxAge,
-    })
-  ) {
-    throw new HttpsError("failed-precondition", "candidate-unavailable");
-  }
-  if (
-    !passesGenderPreferences({
-      viewerPrefs: callerPrefs,
-      viewerProfile: callerProfileSnap.data() ?? {},
-      candidatePrefs: targetPrefsSnap.data() ?? {},
-      candidateProfile: targetProfileSnap.data() ?? {},
-    })
-  ) {
-    throw new HttpsError("failed-precondition", "preference-mismatch");
-  }
-  if (await isBlocked(uid, targetUserId)) {
-    throw new HttpsError("failed-precondition", "blocked");
-  }
-  const forwardId = likeId(uid, targetUserId);
-  const reverseId = likeId(targetUserId, uid);
-  const matchId = canonicalMatchId(uid, targetUserId);
-  return db.runTransaction(async (tx) => {
-    const forwardRef = db.doc(`likes/${forwardId}`);
-    const existing = await tx.get(forwardRef);
-    if (existing.exists) {
-      throw new HttpsError("already-exists", "already-swiped");
+  try {
+    const [
+      callerAccount,
+      callerProfileSnap,
+      callerPrefsSnap,
+      targetProfileSnap,
+      targetPrefsSnap,
+      targetAccountSnap,
+      activeMatches,
+    ] = await Promise.all([
+      db.doc(`users/${uid}`).get(),
+      db.doc(`profiles/${uid}`).get(),
+      db.doc(`userPreferences/${uid}`).get(),
+      db.doc(`profiles/${targetUserId}`).get(),
+      db.doc(`userPreferences/${targetUserId}`).get(),
+      db.doc(`users/${targetUserId}`).get(),
+      loadActiveMatchPartnerIds(db, uid),
+    ]);
+    if (!isAccountEligible(callerAccount.data())) {
+      throw new HttpsError("permission-denied", "account-suspended");
     }
-    tx.set(forwardRef, {
-      fromUserId: uid,
-      toUserId: targetUserId,
-      action,
-      createdAt: FieldValue.serverTimestamp(),
+    if (activeMatches.has(targetUserId)) {
+      throw new HttpsError("failed-precondition", "already-matched");
+    }
+    const callerPrefs = callerPrefsSnap.data() ?? {};
+    const minAge = Number(callerPrefs.minAge ?? 18);
+    const maxAge = Number(callerPrefs.maxAge ?? 99);
+    if (
+      !targetProfileSnap.exists ||
+      !passesDiscoveryProfileFilters({
+        candidateProfile: targetProfileSnap.data(),
+        candidateAccount: targetAccountSnap.data(),
+        minAge,
+        maxAge,
+      })
+    ) {
+      throw new HttpsError("failed-precondition", "candidate-unavailable");
+    }
+    if (
+      !passesGenderPreferences({
+        viewerPrefs: callerPrefs,
+        viewerProfile: callerProfileSnap.data() ?? {},
+        candidatePrefs: targetPrefsSnap.data() ?? {},
+        candidateProfile: targetProfileSnap.data() ?? {},
+      })
+    ) {
+      throw new HttpsError("failed-precondition", "preference-mismatch");
+    }
+    if (await isBlocked(uid, targetUserId)) {
+      throw new HttpsError("failed-precondition", "blocked");
+    }
+
+    // Build participant previews outside the transaction so we never do
+    // non-transactional reads after transactional writes.
+    const actor = profilePreviewFromSnaps(
+      callerProfileSnap.data(),
+      callerAccount.data(),
+    );
+    const other = profilePreviewFromSnaps(
+      targetProfileSnap.data(),
+      targetAccountSnap.data(),
+    );
+
+    const forwardId = likeId(uid, targetUserId);
+    const reverseId = likeId(targetUserId, uid);
+    const matchId = canonicalMatchId(uid, targetUserId);
+
+    // Firestore transactions require ALL reads before ANY writes.
+    // Pass used to succeed (early return after one write); like failed with
+    // INTERNAL because reverse/match were read after the like write.
+    const result = await db.runTransaction(async (tx) => {
+      const forwardRef = db.doc(`likes/${forwardId}`);
+      const reverseRef = db.doc(`likes/${reverseId}`);
+      const matchRef = db.doc(`matches/${matchId}`);
+
+      const [existing, reverse, matchSnap] = await Promise.all([
+        tx.get(forwardRef),
+        tx.get(reverseRef),
+        tx.get(matchRef),
+      ]);
+
+      if (existing.exists) {
+        throw new HttpsError("already-exists", "already-swiped");
+      }
+
+      tx.set(forwardRef, {
+        fromUserId: uid,
+        toUserId: targetUserId,
+        action,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+      if (action === "pass") {
+        return {matched: false as const};
+      }
+
+      const reverseAction = reverse.data()?.action as string | undefined;
+      const positive = reverse.exists && reverseAction !== "pass";
+      if (!positive) {
+        return {matched: false as const};
+      }
+
+      if (matchSnap.exists && matchSnap.data()?.isActive === true) {
+        return {matched: true as const, matchId};
+      }
+
+      const previousMatch = matchSnap.data();
+      tx.set(matchRef, {
+        userIds: [uid, targetUserId].sort(),
+        createdAt: previousMatch?.createdAt ?? FieldValue.serverTimestamp(),
+        lastMessage: null,
+        lastMessageAt: FieldValue.serverTimestamp(),
+        isActive: true,
+        unmatchedBy: null,
+        unmatchedAt: null,
+        unreadCounts: {[uid]: 0, [targetUserId]: 0},
+        isNewFor: {[uid]: true, [targetUserId]: true},
+        participantNames: {[uid]: actor.name, [targetUserId]: other.name},
+        participantPhotos: {
+          ...(actor.photoUrl ? {[uid]: actor.photoUrl} : {}),
+          ...(other.photoUrl ? {[targetUserId]: other.photoUrl} : {}),
+        },
+        participantVerified: {
+          [uid]: actor.isVerified,
+          [targetUserId]: other.isVerified,
+        },
+        ...preservedMatchScoreFields(previousMatch),
+        source: "mutual_like",
+      });
+      return {matched: true as const, matchId};
     });
-    if (action === "pass") {
-      return {matched: false};
+
+    // Incoming-like push must stay outside the transaction (side effect).
+    if (!result.matched && action !== "pass") {
+      try {
+        await sendUserPush({
+          uid: targetUserId,
+          type: FcmTypes.incomingLike,
+          data: {},
+          prefKey: "likeNotifications",
+          idempotencyKey: `incomingLike_${uid}_${targetUserId}`,
+        });
+      } catch (pushError) {
+        logger.warn(
+          "recordSwipe incomingLike push failed",
+          safeLogMeta({
+            uid,
+            targetUserId,
+            error: String(pushError),
+          }),
+        );
+      }
     }
-    const reverse = await tx.get(db.doc(`likes/${reverseId}`));
-    const reverseAction = reverse.data()?.action as string | undefined;
-    const positive = reverse.exists && reverseAction !== "pass";
-    if (!positive) {
-      return {matched: false};
+    return result;
+  } catch (error) {
+    if (error instanceof HttpsError) {
+      throw error;
     }
-    const matchRef = db.doc(`matches/${matchId}`);
-    const matchSnap = await tx.get(matchRef);
-    if (matchSnap.exists && matchSnap.data()?.isActive === true) {
-      return {matched: true, matchId};
-    }
-    const actor = await profilePreview(uid);
-    const other = await profilePreview(targetUserId);
-    const previousMatch = matchSnap.data();
-    tx.set(matchRef, {
-      userIds: [uid, targetUserId].sort(),
-      createdAt: previousMatch?.createdAt ?? FieldValue.serverTimestamp(),
-      lastMessage: null,
-      lastMessageAt: FieldValue.serverTimestamp(),
-      isActive: true,
-      unmatchedBy: null,
-      unmatchedAt: null,
-      unreadCounts: {[uid]: 0, [targetUserId]: 0},
-      isNewFor: {[uid]: true, [targetUserId]: true},
-      participantNames: {[uid]: actor.name, [targetUserId]: other.name},
-      participantPhotos: {
-        ...(actor.photoUrl ? {[uid]: actor.photoUrl} : {}),
-        ...(other.photoUrl ? {[targetUserId]: other.photoUrl} : {}),
-      },
-      participantVerified: {
-        [uid]: actor.isVerified,
-        [targetUserId]: other.isVerified,
-      },
-      ...preservedMatchScoreFields(previousMatch),
-      source: "mutual_like",
-    });
-    return {matched: true, matchId};
-  });
+    logger.error(
+      "recordSwipe failed",
+      safeLogMeta({
+        uid,
+        targetUserId,
+        action,
+        error: String(error),
+      }),
+    );
+    throw new HttpsError("internal", "swipe-unavailable");
+  }
 });
 
 export const unmatchUser = onCall(socialCallable, async (request) => {
@@ -511,12 +583,19 @@ export const sendMatchNotification = onDocumentCreated(
     const data = event.data?.data();
     const userIds = (data?.userIds as string[]) ?? [];
     for (const uid of userIds) {
-      await sendUserPush({
-        uid,
-        type: FcmTypes.newMatch,
-        data: {matchId: event.params.matchId},
-        prefKey: "matchNotifications",
-      });
+      try {
+        await sendUserPush({
+          uid,
+          type: FcmTypes.newMatch,
+          data: {matchId: event.params.matchId},
+          prefKey: "matchNotifications",
+        });
+      } catch (error) {
+        logger.warn(
+          "sendMatchNotification push failed",
+          safeLogMeta({uid, matchId: event.params.matchId, error: String(error)}),
+        );
+      }
     }
   },
 );

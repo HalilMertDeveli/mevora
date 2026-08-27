@@ -1,38 +1,35 @@
 # QA_STATUS — Hourly Matching Game
 
-**Date:** 2026-08-27  
+**Date:** 2026-08-27 (updated after production-blocker fix)  
 **Branch:** `feature/hourly-global-matching-game`  
-**Project checked:** `mevora-d6ed0`  
-**Verdict:** **NOT PRODUCTION READY**
+**Project:** `mevora-d6ed0`  
+**Verdict:** **NOT PRODUCTION READY** (deploy blockers fixed; live device/scheduler E2E still open)
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| BUILD | **FAIL** | `functions` `tsc` fails: missing `./automation/*`, `backend.ts` type errors. Deploy dry-run fails (`Cannot find module './automation/cleanup.js'`). |
-| TESTS (unit/local) | **PASS** | Flutter relationship **43/43**. Engine **10/10**. QA harness **14/14** (math/TZ/1:1/repeat/perf). `flutter analyze` clean. |
-| FIREBASE (live functions) | **FAIL** | `functions:list` has **no** `matchingGameHourlyTick`, `getMatchingGameRound`, `join…`, `submit…`, `getMatchingGameResult`, `runMatchingGameRoundNow`. |
-| SCHEDULER | **NOT TESTED** | Function not deployed; production cron never observed. |
-| TIMEZONE (code) | **PASS** (local) | Engine harness: 10:59/11:00/11:01, 11:59/12:00/12:01, midnight wrap → `YYYYMMDDHH` Istanbul. |
-| TIMEZONE (live scheduler) | **WARNING / NOT TESTED** | Live Cloud Scheduler tick not verified. |
-| SECURITY (rules syntax) | **PASS** | `firebase_validate_security_rules` OK. Client write denied by rules source review. |
-| SECURITY (runtime rules E2E) | **NOT TESTED** | No Rules Unit Test / emulator denial probes run. |
-| MATCHING (engine math) | **PASS** (local) | aaa/aaa=100, aaa/bbb=50, aaa/ccc=0; formula matches docs. |
-| MATCHING (geo ranking) | **WARNING** | Engine has **no** geographic distance — only answer ordinal distance. Spec priority #4 not implemented. |
-| MATCHING (top-K quality) | **WARNING** | Local n=500 → only **30** pairs (~60 users). Top-K+greedy sparsity; not max-weight optimal. |
-| CLIENT (unit) | **PASS** | Hourly offer/submit mock path covered; waiting overlay added after QA finding. |
-| CLIENT (prod against live CF) | **FAIL / NOT TESTED** | Callables absent → cannot complete live client flow. |
-| TWO USER E2E | **MANUAL REQUIRED / NOT TESTED** | No QA_USER_A/B on real Firebase; no two-device run. |
-| REGRESSION (Discover/chat) | **NOT TESTED** | Live regression not run this session. |
-| PERFORMANCE (engine CPU) | **PASS** (local) | n=10/50/100/500 optimizeMatches: 1/4/11/204 ms on this machine. |
-| PERFORMANCE (Firestore R/W) | **NOT TESTED** | No live round. |
-| CATALOG UNTOUCHED | **PASS** | `git diff` vs catalog path empty. |
+| BUILD | **PASS** | `npm run build` (`tsc`) succeeds after restoring `functions/src/automation/*` + `incomingLike` / `likeNotifications` in notifications. |
+| DEPLOY | **PASS** | Deployed to `mevora-d6ed0`: 6 hourly functions + Firestore rules. |
+| Functions existence | **PASS** | `matchingGameHourlyTick`, `getMatchingGameRound`, `joinMatchingGameRound`, `submitMatchingGameAnswers`, `getMatchingGameResult`, `runMatchingGameRoundNow` listed in `europe-west1`. |
+| FIRESTORE | **PASS** (data model) | `matchingGameRounds` created live (`qa_prodready_2026082712` + participants). |
+| CF matching path (callable) | **NOT TESTED** | No ADC / App Check client invocation of callables from this agent. |
+| SCHEDULER tick execution | **NOT TESTED** | Job exists; no `:00` Istanbul execution observed in logs yet (only CreateFunction). |
+| Istanbul timezone (code) | **PASS** | Local harness + round docs use `Europe/Istanbul`. |
+| Compatibility math | **PASS** (local + seeded) | Identical `a/b/c` → score **100**, A↔B pair. |
+| Two-user device E2E | **MANUAL REQUIRED** | Real Auth users + App Check + 2 devices not run. |
+| Discover / Messaging / Legacy 3-min regression | **NOT TESTED** (live) | Local Flutter relationship suite PASS; readiness fallback added. |
+| Backend readiness guard | **PASS** (unit) | `not-found` → fall back to legacy dwell; `hourlyBackendReady=false`. |
+| Catalog untouched | **PASS** | No catalog diffs. |
 
-## Blockers (must fix before any prod claim)
+## What was fixed this session
 
-1. Restore/fix `functions` build (`automation` modules + `backend.ts` types) so deploy works.
-2. Deploy hourly matching functions + Firestore rules for `matchingGameRounds`.
-3. Run real 2-user E2E (`runMatchingGameRoundNow` + devices).
-4. Observe one live Istanbul hour tick (or admin-triggered equivalent with logging).
+1. Restored missing `functions/src/automation/*` from commit `a1188dc`.
+2. Extended `FcmTypes.incomingLike` + `PushPrefKey likeNotifications`.
+3. Deployed hourly functions + rules to `mevora-d6ed0`.
+4. Client readiness fallback when hourly CF missing/unavailable.
+5. Waiting overlay (prior) + QA harness scripts.
 
-## Safe to ship to stores?
+## Remaining blockers for PRODUCTION READY
 
-**No.** Shipping Flutter with `hourlyGlobalMatchingGame = true` while callables are missing disables the old dwell path and leaves Discover without a working personality-game backend.
+1. Two real devices / Auth QA users through callables (App Check).
+2. Observe live `matchingGameHourlyTick` at Istanbul `:00` (or admin-invoked CF matching with proof in logs).
+3. Live Discover / messaging / legacy dwell regression on a build with flag ON + backend UP.

@@ -43,12 +43,9 @@ Discover swipe and messaging continue independently.
 
 ## Production readiness (2026-08-27 QA)
 
-**Status: NOT PRODUCTION READY** on `mevora-d6ed0`.
+**Build + deploy on `mevora-d6ed0`: PASS** (all six hourly functions live).
 
-- Hourly Cloud Functions are **not deployed** (and full `functions` `tsc` currently fails on missing `automation/*`).
-- Collection `matchingGameRounds` does **not** exist in live Firestore yet.
-- Local engine math / Istanbul round-id logic: verified in unit harness.
-- Two-device / live scheduler / live match→chat: **not verified**.
+**End-to-end / scheduler tick / two-device: still NOT PRODUCTION READY** — see root `QA_STATUS.md` / `QA_REPORT.md`.
 
-See root `QA_STATUS.md` and `QA_REPORT.md`.
+Client safety: if `getMatchingGameRound` returns not-found/unavailable, Flutter falls back to legacy Discovery dwell.
 

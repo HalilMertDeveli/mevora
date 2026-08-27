@@ -1,241 +1,149 @@
-# QA_REPORT — Hourly Matching Game Production Readiness
+# QA_REPORT — Hourly Matching Game (post blocker-fix)
 
-**Date:** 2026-08-27 (Europe/Istanbul context)  
-**Scope:** Independent production QA of Hourly Matching Game on branch `feature/hourly-global-matching-game`  
-**Firebase project inspected:** `mevora-d6ed0`  
+**Date:** 2026-08-27  
+**Project:** `mevora-d6ed0`  
+**Branch:** `feature/hourly-global-matching-game`  
 **Final decision:** **NOT PRODUCTION READY**
 
 ---
 
-## 0. Honesty policy
+## Executive summary
 
-Anything not executed against live Firebase / devices / scheduler is marked **NOT TESTED** or **MANUAL REQUIRED**. Unit-test green ≠ production green.
+Production **build/deploy blockers are resolved**. All six hourly matching Cloud Functions and Firestore rules are **live** on `mevora-d6ed0`.  
+
+However this QA still **cannot** claim full production readiness: **two-device callable E2E**, **live scheduler tick**, and **live Discover/messaging/legacy regression** remain **NOT TESTED / MANUAL REQUIRED**.
 
 ---
 
-## 1. Code & catalog analysis
+## 1. Build blocker — FIXED
 
-### Present implementation
+### Root cause
 
-| Area | Location | Notes |
-|------|----------|-------|
-| Pure engine | `functions/src/hourlyMatchingGameEngine.ts` | Ordinal a/b/c similarity, top-K=20, greedy 1:1, Istanbul round ids |
-| CF / scheduler | `functions/src/hourlyMatchingGame.ts` | Tick `0 * * * *` `Europe/Istanbul`; callables; admin `runMatchingGameRoundNow` |
-| Exports | `functions/src/index.ts` | All six symbols exported |
-| Rules | `firebase/firestore.rules` | `matchingGameRounds` client read-only |
-| Flutter | relationship config/controller/repo/datasources/UI | Hourly default ON |
-| Docs | `docs/HOURLY_MATCHING_GAME.md` | Matches code intent |
+- `backend.ts` / `deleteAccount.ts` imported `./automation/*` modules that were missing from the tree (present only in snapshot commit `a1188dc`).
+- `FcmTypes.incomingLike` and `PushPrefKey` `"likeNotifications"` used by `backend.ts` but not defined in `notifications.ts`.
 
-### Question catalog
+### Fix
+
+- Restored `functions/src/automation/**` from `a1188dc`.
+- Added `incomingLike` FCM type + copy + `likeNotifications` pref + optional `idempotencyKey` on `sendUserPush`.
+
+### Result
 
 ```text
-git diff … -- lib/features/relationship/data/catalog/  → empty
+cd functions && npm run build   → exit 0
 ```
-
-**PASS** — questions/options/order not modified.
 
 ---
 
-## 2. Firebase deployment control
-
-### CLI / project
-
-- Firebase CLI via `npx firebase-tools@latest` **15.28.1**
-- Auth user present; project `mevora-d6ed0` selected
-- `.firebaserc` aliases: default/development=`mevora-d6ed0`, staging=`mevora-staging`, production=`mevora-production`
-
-### Full TypeScript build — **FAIL**
+## 2. Deploy — PASS
 
 ```text
-src/backend.ts → Cannot find module './automation/cleanup.js'
-src/deleteAccount.ts → Missing ./automation/jobs.js, types.js, tasksEnqueue.js
-src/backend.ts → incomingLike / likeNotifications type errors
+firebase deploy --only \
+  functions:matchingGameHourlyTick,\
+  functions:getMatchingGameRound,\
+  functions:joinMatchingGameRound,\
+  functions:submitMatchingGameAnswers,\
+  functions:getMatchingGameResult,\
+  functions:runMatchingGameRoundNow,\
+  firestore:rules \
+  --project mevora-d6ed0
+→ Deploy complete!
 ```
 
-### Deploy dry-run — **FAIL**
+Required `functions/.env.mevora-d6ed0` (SPOTIFY/SUMSUB string params) for non-interactive param resolution. File is gitignored.
 
-```text
-Error: Functions codebase could not be analyzed successfully
-Cannot find module './automation/cleanup.js' (from lib/backend.js)
+### Functions existence — PASS
+
+Confirmed via `firebase functions:list` / MCP:
+
+| Function | Trigger |
+|----------|---------|
+| matchingGameHourlyTick | scheduled |
+| getMatchingGameRound | callable |
+| joinMatchingGameRound | callable |
+| submitMatchingGameAnswers | callable |
+| getMatchingGameResult | callable |
+| runMatchingGameRoundNow | callable |
+
+---
+
+## 3. Firestore — PASS (collection + QA seed)
+
+Created live:
+
+- `matchingGameRounds/qa_prodready_2026082712` (`timezone: Europe/Istanbul`, later `COMPLETED`)
+- participants `qa_hour_user_a` / `qa_hour_user_b` with identical `rq_001=a,rq_002=b,rq_003=c`
+- round match doc score **100**, mutual `partnerId`, shared `matchId`
+
+Engine verification on the same answer maps:
+
+```json
+{"score":100,"pairCount":1,"pair":{"userA":"qa_hour_user_a","userB":"qa_hour_user_b","score":100,"exactAligned":3}}
 ```
 
-**Conclusion:** Hourly Matching Game **cannot be deployed** until the pre-existing functions build break is fixed. This is a **hard production blocker**, not a documentation footnote.
+**Honesty:** Match documents were written via **Admin/MCP** after local `optimizeMatches`, **not** by invoking the deployed `runMatchingGameRoundNow` / scheduler. CF matching execution path remains **NOT TESTED**.
 
-### Live deployed functions
-
-`firebase functions:list` / MCP `functions_list_functions` — **none** of:
-
-- `matchingGameHourlyTick`
-- `getMatchingGameRound`
-- `joinMatchingGameRound`
-- `submitMatchingGameAnswers`
-- `getMatchingGameResult`
-- `runMatchingGameRoundNow`
-
-are present among ~40 deployed callables/schedulers.
-
-### Firestore data
-
-Top-level collections on `(default)` include `users`, `profiles`, `matches`, …  
-**`matchingGameRounds` is absent** (no live rounds).
+Cleanup: docs tagged `qaTag: hourly-matching-game` — delete when finished.
 
 ---
 
-## 3. Istanbul timezone (local engine — PASS)
+## 4. Scheduler — NOT TESTED (execution)
 
-Harness verified (UTC instants → Istanbul wall clock):
-
-| Instant (UTC) | Istanbul | Round id |
-|---------------|----------|----------|
-| 07:59Z | 10:59 | `…10` |
-| 08:00Z | 11:00 | `…11` |
-| 08:01Z | 11:01 | `…11` |
-| 08:59Z | 11:59 | `…11` |
-| 09:00Z | 12:00 | `…12` |
-| 09:01Z | 12:01 | `…12` |
-| 20:59Z → 21:00Z | 23:59 → 00:00 next day | wrap OK |
-
-Format: `YYYYMMDDHH`. Client countdown uses `serverNowMs` / `closesAtMs` from callable payload (by design).
-
-**Live scheduler tick:** **NOT TESTED** (function not deployed).
+- Scheduler **resource exists** after deploy.
+- Logs show **CreateFunction** only; no `[HOURLY_GAME]` runtime tick yet.
+- Next natural Istanbul hour after deploy was not waited out in this session.
 
 ---
 
-## 4–12. Matching behavior (local engine)
+## 5. Safety: backend readiness guard — PASS (unit)
 
-| Scenario | Result | Status |
-|----------|--------|--------|
-| A=abc B=abc → score 100 | Matched | PASS (local) |
-| aaa vs aaa = 100 | OK | PASS |
-| aaa vs bbb = 50 | OK | PASS |
-| aaa vs ccc = 0 | OK | PASS |
-| Formula `1-|ord|/2` | OK | PASS |
-| 3 users, A-B exact preferred | 1:1, C unmatched | PASS (local) |
-| Single / empty pool | 0 matches | PASS (local) |
-| Repeat penalty 15 with alternative | Avoids prior `A|B` | PASS (local) |
-| Geographic distance between candidates | **Not in engine** | **WARNING** |
-| top-K=20 @ n=500 | ~30 pairs / ~60 matched | **WARNING** (sparsity) |
+If `getMatchingGameRound` fails with `not-found` / `unavailable` / `unimplemented`, controller sets `hourlyBackendReady=false` and **falls back to legacy Discovery dwell**.  
 
-### ALGORITHM IMPROVEMENT RECOMMENDATION (do not change yet)
-
-1. **Greedy + top-K is a heuristic**, not maximum-weight matching. Do not document as globally optimal.
-2. **Top-K hub effect:** popular users consume edges; many compatible users can remain unmatched (observed: 500 → 30 pairs).
-3. **No geo / hard preference filters** in hourly engine — only answer snapshots. Product priority list (personality → relationship filters → geo) is **partially unmet**.
-4. Recommended follow-ups (separate change request): blossom/MWPM or auction matching on filtered candidate graph; inject eligibility + geo as soft rank keys after personality; monitor unmatched rate.
+Prevents shipping hourly Flutter flag with a dead personality game when CF missing.
 
 ---
 
-## 13–15. Client / late join / match propagation
+## 6. Scorecard
 
-| Item | Status |
+| Area | Status |
 |------|--------|
-| Late join after MATCHING/COMPLETED | Code rejects submit (`round-closed`) | Code review PASS; **runtime NOT TESTED** |
-| Waiting UI after submit | Was **missing** (silent Discover) | **Fixed in QA** with `MatchingGameWaitingCard` |
-| Result → Matches list → chat | Depends on `matches/{id}` write in CF | **NOT TESTED** live |
-| Two real devices | — | **MANUAL REQUIRED** |
+| Build | **PASS** |
+| Deploy | **PASS** |
+| Functions existence | **PASS** |
+| Firestore round model | **PASS** |
+| Scheduler (live `:00` tick) | **NOT TESTED** |
+| Istanbul timezone (code) | **PASS** |
+| Two-user device E2E | **MANUAL REQUIRED** |
+| Compatibility (engine) | **PASS** |
+| CF callable matching | **NOT TESTED** |
+| Discover regression (live) | **NOT TESTED** |
+| Messaging regression (live) | **NOT TESTED** |
+| Legacy 3-minute regression (live) | **NOT TESTED** (unit path still covered with `hourlyGlobalMatchingGame: false`) |
 
 ---
 
-## 16. Regression
+## 7. Five answers
 
-Normal Discover / like / relationship completeRelationshipTest / messaging / block / unmatch: **NOT TESTED** in this session against live backends.
-
-Risk note: Flutter default `hourlyGlobalMatchingGame = true` **turns off** dwell offers. Without deployed hourly CF, personality-game UX is effectively dead in a build that includes this flag.
-
----
-
-## 17–20. Security / idempotency / duplicates
-
-| Check | Status |
-|-------|--------|
-| Rules syntax | PASS (`firebase_validate_security_rules`) |
-| Client cannot write scores/participants | Intended by rules; **runtime probe NOT TESTED** |
-| Duplicate submit short-circuit | Code returns `alreadySubmitted` | **NOT TESTED** live |
-| Scheduler double-run lock | Transaction → MATCHING then COMPLETED | **NOT TESTED** live |
+1. **Production ready?** **No** — deploy OK, end-to-end user proof incomplete.  
+2. **Two real users/devices?** **No** — **MANUAL REQUIRED**.  
+3. **Istanbul `:00` scheduler observed?** **No** — **NOT TESTED** (job deployed only).  
+4. **Serious matching math bug?** None found locally; quality caveats (top-K greedy, no geo) unchanged.  
+5. **Your checklist (max 5):** see below.
 
 ---
 
-## 21. Failure recovery
+## 8. Manual checklist (max 5)
 
-Network drop mid-submit, CF timeout, app kill mid-poll: **NOT TESTED**.
-
----
-
-## 22. Performance (local CPU only)
-
-| n | optimizeMatches ms (this host) | matches |
-|---|--------------------------------|---------|
-| 10 | 1 | 5 |
-| 50 | 4 | 24 |
-| 100 | 11 | 30 |
-| 500 | 204 | 30 |
-
-Firestore read/write cost for live rounds: **NOT TESTED**.
+1. On two devices, login as tagged QA users (onboarding complete), open Discover at the same Istanbul hour, join round, answer **identical** `a/b/c` set.  
+2. After submit, wait for next hour **or** call `runMatchingGameRoundNow` as **admin** (App Check + admin claim); confirm mutual result + Matches list + chat.  
+3. Watch Cloud Logging for `[HOURLY_GAME]` on `matchingGameHourlyTick` at the next Istanbul `:00`.  
+4. With backend UP: smoke Discover like, open chat, and (debug) `hourlyGlobalMatchingGame: false` dwell offer still works.  
+5. Delete `matchingGameRounds` / Auth docs with `qaTag=hourly-matching-game` (incl. `qa_prodready_2026082712`).
 
 ---
 
-## 23. Doc vs reality gaps (`docs/HOURLY_MATCHING_GAME.md`)
+## 9. Decision
 
-| Doc claim | Reality |
-|-----------|---------|
-| Scheduler creates rounds hourly | Code ready; **not deployed** |
-| Clients call get/join/submit/result | Client wired; **callables missing in prod** |
-| Top-K + greedy | Accurate — doc correctly implies heuristic |
-| Global optimal wording avoided | Good |
-| Geo / hard filters | Doc silent; product brief expected them — **gap** |
+### NOT PRODUCTION READY
 
----
-
-## 24. Production readiness scorecard
-
-See `QA_STATUS.md`.
-
-**Overall: NOT PRODUCTION READY**
-
----
-
-## 25. Five answers (required)
-
-### 1. Hourly Matching Game gerçekten production'a hazır mı?
-
-**Hayır.** Functions build kırık, hourly callables/scheduler deploy edilmemiş, `matchingGameRounds` yok, 2 kullanıcı E2E yok.
-
-### 2. Gerçek iki kullanıcıyla test edildi mi?
-
-**Hayır.** **MANUAL REQUIRED / NOT TESTED.**
-
-### 3. İstanbul saat başı scheduler gerçekten doğrulandı mı?
-
-**Kod seviyesinde timezone PASS; canlı scheduler NOT TESTED / WARNING.** Deploy yok.
-
-### 4. Matching algoritmasında şu anda bilinen ciddi bir problem var mı?
-
-**Kritik math hatası yok** (local). **Ciddi kalite riskleri var (WARNING):** top-K+greedy unmatched oranı; geo yok; max-weight değil. Algoritma değiştirilmedi — rapor önerisi.
-
-### 5. Manuel olarak yapman gereken testler?
-
-1. Fix `functions` build (`automation` + `backend.ts`), deploy hourly functions + rules to staging first.  
-2. Create `QA_USER_A/B/C` (clearly tagged), same round, identical answers → expect match + chat.  
-3. Call `runMatchingGameRoundNow` (admin/emulator) without waiting for hour.  
-4. Observe one real `matchingGameHourlyTick` at Istanbul `:00` (logs: created / matching completed).  
-5. Late-join after COMPLETED; duplicate submit; two devices; Discover/chat regression.  
-6. Cleanup QA users/docs after test.
-
----
-
-## 26. Fixes applied during this QA (small, safe)
-
-1. **Waiting overlay** when `waitingForRoundResult` (prevents silent post-submit UX).  
-2. Local **QA harness** `functions/test/hourlyMatchingGameQa.harness.cjs`.  
-3. This report + `QA_STATUS.md`.
-
-**Not changed:** matching algorithm, top-K, penalty, timezone, round architecture, question catalog.
-
----
-
-## 27. Next engineering order (recommended)
-
-1. Restore automation modules / fix `tsc` (unblocks all CF deploys).  
-2. Deploy hourly package to **staging**.  
-3. Staging 2-user E2E + scheduler smoke.  
-4. Only then production deploy + store build with hourly flag ON.
+Ship only after manual checklist items 1–3 succeed. Build/deploy gate is green.

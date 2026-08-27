@@ -34,6 +34,8 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   final DateTime Function() _clock;
   final bool _enforceOfferGates;
   final bool _hourlyGlobalMatchingGame;
+  /// When hourly CF is unreachable, fall back to legacy Discovery dwell.
+  var _hourlyBackendReady = true;
 
   Timer? _timer;
   Timer? _heartbeat;
@@ -91,7 +93,9 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   bool get sessionLocked => _sessionLocked;
   bool get waitingForRoundResult =>
       _waitingForRoundResult && !_waitingOverlayDismissed;
-  bool get hourlyGlobalMatchingGame => _hourlyGlobalMatchingGame;
+  bool get hourlyGlobalMatchingGame =>
+      _hourlyGlobalMatchingGame && _hourlyBackendReady;
+  bool get hourlyBackendReady => _hourlyBackendReady;
   MatchingGameRoundInfo? get roundInfo => _roundInfo;
   String? get activeRoundId => _activeRoundId;
 
@@ -517,7 +521,7 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   }
 
   void _armTimer() {
-    if (_hourlyGlobalMatchingGame) {
+    if (_hourlyGlobalMatchingGame && _hourlyBackendReady) {
       unawaited(_syncHourlyRoundOffer());
       return;
     }
@@ -584,7 +588,12 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     final roundResult = await _repository.getMatchingGameRound();
     if (roundResult.isError) {
       _logFailure('getMatchingGameRound', roundResult.failureOrNull);
+      _markHourlyBackendUnavailable(roundResult.failureOrNull);
       return;
+    }
+    // Backend responded — keep hourly path enabled.
+    if (!_hourlyBackendReady) {
+      _hourlyBackendReady = true;
     }
     final round = roundResult.valueOrNull;
     if (round == null || round.roundId.isEmpty) {
@@ -612,6 +621,41 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     }
     _log('Hourly matching game offer for ${round.roundId}');
     _triggerOffer();
+  }
+
+  void _markHourlyBackendUnavailable(Failure? failure) {
+    if (!_hourlyGlobalMatchingGame || !_hourlyBackendReady) {
+      return;
+    }
+    final code = switch (failure) {
+      AuthFailure(:final code) => code?.toLowerCase(),
+      _ => null,
+    };
+    final message = (failure?.message ?? '').toLowerCase();
+    final looksMissing =
+        failure is NotFoundFailure ||
+        code == 'not-found' ||
+        code == 'unimplemented' ||
+        code == 'unavailable' ||
+        message.contains('not-found') ||
+        message.contains('not found') ||
+        message.contains('does not exist') ||
+        message.contains('unimplemented') ||
+        message.contains('unavailable') ||
+        message.contains('not-found');
+    if (!looksMissing) {
+      // Transient errors: keep hourly mode; user can retry next sync.
+      return;
+    }
+    _hourlyBackendReady = false;
+    _log(
+      'Hourly matching backend unavailable ($code) — '
+      'falling back to legacy Discovery dwell',
+    );
+    notifyListeners();
+    if (_discoveryVisible && !_sessionLocked) {
+      _armTimer();
+    }
   }
 
   Future<void> _completeHourlyRound(List<String> questionIds) async {

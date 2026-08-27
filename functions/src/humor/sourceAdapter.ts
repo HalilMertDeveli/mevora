@@ -1,6 +1,7 @@
 /**
  * Provider-agnostic humor content source.
- * MVP provider: Giphy (licensed API). No Instagram/TikTok/YouTube scraping.
+ * Active: YouTube Data API (embed) + Giphy (stream CDN). Tenor disabled.
+ * No Instagram/TikTok scraping. Never copy third-party media into Storage.
  */
 
 export type HumorSourceKind = "internal" | "licensed_api";
@@ -13,6 +14,9 @@ export interface HumorSourceMedia {
   aspectRatio?: number | null;
   textBody?: string | null;
   mimeHint?: "image/gif" | "image/jpeg" | "image/png" | "video/mp4" | string;
+  /** YouTube iframe embed — stream/display only. */
+  embedUrl?: string | null;
+  attributionRequired?: boolean;
 }
 
 export interface HumorSourceItem {

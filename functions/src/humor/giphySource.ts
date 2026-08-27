@@ -7,23 +7,30 @@ import type {
 
 /** Turkish-first humor search queries for Giphy lang=tr. */
 export const GIPHY_TR_QUERIES = [
+  "komik video",
+  "komik anlar",
+  "türk komedi",
+  "hayvan komik",
+  "fail",
+  "prank",
+  "absürt komedi",
+  "meme",
+  "komik skeç",
   "komik",
   "mizah",
-  "espri",
   "gülmek",
-  "kahkaha",
-  "absürt",
-  "meme türk",
-  "funny turkey",
 ] as const;
 
 export const GIPHY_EN_QUERIES = [
-  "funny",
-  "lol",
-  "meme",
+  "funny short",
+  "lol meme",
   "hilarious",
-  "comedy",
-  "sarcasm",
+  "comedy sketch",
+  "funny animals",
+  "fail funny",
+  "prank funny",
+  "absurd comedy",
+  "reaction funny",
 ] as const;
 
 interface GiphyImageSet {

@@ -37,6 +37,9 @@ export type HumorMedia = {
   durationMs?: number | null;
   aspectRatio?: number | null;
   textBody?: string | null;
+  /** YouTube / iframe embed — never download into Storage. */
+  embedUrl?: string | null;
+  attributionRequired?: boolean;
 };
 
 export type HumorSource = {
@@ -97,6 +100,9 @@ export type HumorFeedItem = {
   category: HumorCategory;
   humorTags: string[];
   media: HumorMedia;
+  provider?: string | null;
+  attributionRequired?: boolean;
+  sourceUrl?: string | null;
 };
 
 export type HumorCompatibilityResult = {

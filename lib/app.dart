@@ -40,6 +40,9 @@ import 'package:mevora/features/chat/e2ee/services/e2ee_bootstrap_controller.dar
 import 'package:mevora/features/matching/presentation/controllers/presence_lifecycle_controller.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
 import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
+import 'package:mevora/features/humor/domain/config/humor_ads_settings.dart';
+import 'package:mevora/features/humor/domain/services/humor_ad_service.dart';
+import 'package:mevora/features/subscription/domain/repositories/subscription_repository.dart';
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
@@ -60,6 +63,9 @@ class MevoraApp extends StatefulWidget {
     this.discoveryRepository,
     this.musicRepository,
     this.humorRepository,
+    this.humorAdService,
+    this.humorAdsSettings,
+    this.subscriptionRepository,
     this.matchScoreRepository,
     this.relationshipRepository,
     this.profileQuestionAnswerRepository,
@@ -84,6 +90,9 @@ class MevoraApp extends StatefulWidget {
   final DiscoveryRepository? discoveryRepository;
   final MusicRepository? musicRepository;
   final HumorRepository? humorRepository;
+  final HumorAdService? humorAdService;
+  final HumorAdsSettings? humorAdsSettings;
+  final SubscriptionRepository? subscriptionRepository;
   final MatchScoreRepository? matchScoreRepository;
   final RelationshipRepository? relationshipRepository;
   final ProfileQuestionAnswerRepository? profileQuestionAnswerRepository;
@@ -284,7 +293,13 @@ class _MevoraAppState extends State<MevoraApp> {
 
     final humor = widget.humorRepository;
     if (humor != null) {
-      child = HumorScope(repository: humor, child: child);
+      child = HumorScope(
+        repository: humor,
+        adService: widget.humorAdService,
+        subscriptionRepository: widget.subscriptionRepository,
+        adsSettings: widget.humorAdsSettings ?? HumorAdsSettings.defaults,
+        child: child,
+      );
     }
 
     final relationship = widget.relationshipRepository;

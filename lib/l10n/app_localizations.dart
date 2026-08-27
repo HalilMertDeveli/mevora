@@ -6209,8 +6209,32 @@ abstract class AppLocalizations {
   /// No description provided for @humorLabSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Watch short clips and memes, then rate how funny they are.'**
+  /// **'We\'ll show different funny videos and images. Rate what actually makes you laugh — the more you rate, the better your humor profile.'**
   String get humorLabSubtitle;
+
+  /// No description provided for @humorAttributionGiphy.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered by GIPHY'**
+  String get humorAttributionGiphy;
+
+  /// No description provided for @humorAttributionYoutube.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube'**
+  String get humorAttributionYoutube;
+
+  /// No description provided for @humorAttributionGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get humorAttributionGeneric;
+
+  /// No description provided for @humorOpenOnYoutube.
+  ///
+  /// In en, this message translates to:
+  /// **'Open on YouTube'**
+  String get humorOpenOnYoutube;
 
   /// No description provided for @humorLabDiscoverCta.
   ///
@@ -6331,6 +6355,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'How funny is this?'**
   String get humorHowFunny;
+
+  /// No description provided for @humorAdSponsoredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sponsored'**
+  String get humorAdSponsoredLabel;
+
+  /// No description provided for @humorAdPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing ad…'**
+  String get humorAdPreparing;
+
+  /// No description provided for @humorAdCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Ad finished.'**
+  String get humorAdCompleted;
+
+  /// No description provided for @humorAdContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get humorAdContinue;
+
+  /// No description provided for @humorAdCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue in {seconds}s…'**
+  String humorAdCountdown(int seconds);
+
+  /// No description provided for @humorPremiumAdFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Ad-free Humor Lab with Premium'**
+  String get humorPremiumAdFree;
 
   /// No description provided for @humorReportReasonOffensive.
   ///

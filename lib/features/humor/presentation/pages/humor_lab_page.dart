@@ -1,11 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
+import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/humor/domain/config/humor_ads_settings.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
+import 'package:mevora/features/humor/domain/services/humor_ad_service.dart';
 import 'package:mevora/features/humor/presentation/controllers/humor_controller.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_content_player.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_profile_sheet.dart';
@@ -33,6 +37,7 @@ class _HumorLabPageState extends State<HumorLabPage> {
   PageController? _pageController;
   var _syncingPage = false;
   int _lastSyncedIndex = 0;
+  var _presentingAd = false;
 
   @override
   void didChangeDependencies() {
@@ -46,12 +51,19 @@ class _HumorLabPageState extends State<HumorLabPage> {
       unawaited(provided.load());
       return;
     }
-    final repository = HumorScope.maybeOf(context);
+    final scope = HumorScope.maybeScopeOf(context);
+    final repository = scope?.repository;
     if (repository == null) {
       return;
     }
     final analytics = BoostScope.maybeOf(context)?.analytics;
-    final owned = HumorController(repository: repository, analytics: analytics);
+    final owned = HumorController(
+      repository: repository,
+      analytics: analytics,
+      adService: scope?.adService,
+      adsSettings: scope?.adsSettings ?? HumorAdsSettings.defaults,
+      subscriptionRepository: scope?.subscriptionRepository,
+    );
     _owned = owned;
     _attach(owned);
     unawaited(owned.load());
@@ -67,7 +79,20 @@ class _HumorLabPageState extends State<HumorLabPage> {
   void _onControllerChanged() {
     final controller = _controller;
     final page = _pageController;
-    if (controller == null || page == null || !mounted) {
+    if (controller == null || !mounted) {
+      return;
+    }
+
+    if (controller.state.adPhase == HumorAdPhase.eligible && !_presentingAd) {
+      _presentingAd = true;
+      unawaited(
+        controller.presentPendingAd(hostContext: context).whenComplete(() {
+          _presentingAd = false;
+        }),
+      );
+    }
+
+    if (page == null) {
       return;
     }
     final index = controller.state.currentIndex;
@@ -128,7 +153,9 @@ class _HumorLabPageState extends State<HumorLabPage> {
               if (state.canUndo)
                 IconButton(
                   tooltip: l10n.humorUndoRating,
-                  onPressed: () => unawaited(controller.undo()),
+                  onPressed: state.adsBlocked
+                      ? null
+                      : () => unawaited(controller.undo()),
                   icon: const Icon(Icons.undo_rounded),
                 ),
               IconButton(
@@ -147,41 +174,45 @@ class _HumorLabPageState extends State<HumorLabPage> {
               ),
               IconButton(
                 tooltip: l10n.humorSaved,
-                onPressed: () => unawaited(controller.saveCurrent()),
+                onPressed: state.adsBlocked
+                    ? null
+                    : () => unawaited(controller.saveCurrent()),
                 icon: const Icon(Icons.bookmark_border_rounded),
               ),
               IconButton(
                 tooltip: l10n.humorReport,
-                onPressed: () async {
-                  final item = controller.state.current;
-                  if (item == null) {
-                    return;
-                  }
-                  final reason = await HumorReportSheet.show(context);
-                  if (reason == null || !context.mounted) {
-                    return;
-                  }
-                  final repo = HumorScope.maybeOf(context);
-                  if (repo == null) {
-                    return;
-                  }
-                  final result = await repo.reportContent(
-                    contentId: item.contentId,
-                    reason: reason,
-                  );
-                  if (!context.mounted) {
-                    return;
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        result.isError
-                            ? l10n.humorFeedError
-                            : l10n.humorReportSuccess,
-                      ),
-                    ),
-                  );
-                },
+                onPressed: state.adsBlocked
+                    ? null
+                    : () async {
+                        final item = controller.state.current;
+                        if (item == null) {
+                          return;
+                        }
+                        final reason = await HumorReportSheet.show(context);
+                        if (reason == null || !context.mounted) {
+                          return;
+                        }
+                        final repo = HumorScope.maybeOf(context);
+                        if (repo == null) {
+                          return;
+                        }
+                        final result = await repo.reportContent(
+                          contentId: item.contentId,
+                          reason: reason,
+                        );
+                        if (!context.mounted) {
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              result.isError
+                                  ? l10n.humorFeedError
+                                  : l10n.humorReportSuccess,
+                            ),
+                          ),
+                        );
+                      },
                 icon: const Icon(Icons.flag_outlined),
               ),
             ],
@@ -234,6 +265,7 @@ class _HumorFeedBody extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final state = controller.state;
     final theme = Theme.of(context);
+    final locked = state.adsBlocked;
 
     return Column(
       children: [
@@ -244,14 +276,29 @@ class _HumorFeedBody extends StatelessWidget {
             AppSpacing.screenPadding,
             AppSpacing.sm,
           ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              l10n.humorLabSubtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.humorLabSubtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
-            ),
+              if (state.isPremium)
+                Text(
+                  l10n.humorPremiumAdFree,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                )
+              else
+                TextButton(
+                  onPressed: () => context.push(AppRoutes.boost),
+                  child: Text(l10n.humorPremiumAdFree),
+                ),
+            ],
           ),
         ),
         Expanded(
@@ -264,9 +311,12 @@ class _HumorFeedBody extends StatelessWidget {
                 PageView.builder(
                   controller: pageController,
                   scrollDirection: Axis.vertical,
+                  physics: locked
+                      ? const NeverScrollableScrollPhysics()
+                      : const PageScrollPhysics(),
                   itemCount: state.items.length,
                   onPageChanged: (index) {
-                    if (syncingPage()) {
+                    if (syncingPage() || locked) {
                       return;
                     }
                     unawaited(controller.onPageChanged(index));
@@ -274,18 +324,20 @@ class _HumorFeedBody extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final item = state.items[index];
                     return GestureDetector(
-                      onVerticalDragEnd: (details) {
-                        final dy = details.primaryVelocity ?? 0;
-                        if (dy < -400) {
-                          unawaited(controller.rateSwipeUp());
-                        } else if (dy > 400) {
-                          unawaited(controller.rateSwipeDown());
-                        }
-                      },
-                      onDoubleTap: controller.replayCurrent,
+                      onVerticalDragEnd: locked
+                          ? null
+                          : (details) {
+                              final dy = details.primaryVelocity ?? 0;
+                              if (dy < -400) {
+                                unawaited(controller.rateSwipeUp());
+                              } else if (dy > 400) {
+                                unawaited(controller.rateSwipeDown());
+                              }
+                            },
+                      onDoubleTap: locked ? null : controller.replayCurrent,
                       child: HumorContentPlayer(
                         content: item,
-                        isActive: index == state.currentIndex,
+                        isActive: index == state.currentIndex && !locked,
                         replayToken: state.replayToken,
                       ),
                     );
@@ -309,6 +361,7 @@ class _HumorFeedBody extends StatelessWidget {
           ),
           child: HumorRatingBar(
             selected: state.lastRated,
+            enabled: !locked,
             onRated: (HumorRating rating) {
               unawaited(controller.rate(rating));
             },

@@ -336,3 +336,82 @@ test("compatibility baseline overallScore is 80 and has no humorScore field", ()
   assert.equal(Object.prototype.hasOwnProperty.call(result, "humorScore"), false);
   assert.equal("humorScore" in result, false);
 });
+
+test("youtube mapper builds embed-only normalized content", () => {
+  const {mapYoutubeItem, youtubeEmbedUrl} = require("../lib/humor/youtubeSource.js");
+  const mapped = mapYoutubeItem(
+    {
+      id: {videoId: "abc123XYZ12"},
+      snippet: {
+        title: "Komik anlar #shorts",
+        description: "türk komedi",
+        publishedAt: "2024-01-01T00:00:00Z",
+        thumbnails: {high: {url: "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg"}},
+      },
+    },
+    "tr",
+    "absurd",
+  );
+  assert.ok(mapped);
+  assert.equal(mapped.provider, "youtube");
+  assert.equal(mapped.contentUrl, null);
+  assert.equal(mapped.embedUrl, youtubeEmbedUrl("abc123XYZ12"));
+  assert.equal(mapped.attributionRequired, true);
+  assert.equal(mapped.category, "absurd");
+  const nsfw = mapYoutubeItem(
+    {id: {videoId: "bad"}, snippet: {title: "xxx nsfw clip"}},
+    "en",
+    "meme",
+  );
+  assert.equal(nsfw, null);
+});
+
+test("youtube embed host is allowlisted for validation", () => {
+  const {validateHumorSourceItem} = require("../lib/humor/contentValidation.js");
+  assert.equal(
+    validateHumorSourceItem({
+      sourceId: "abc123XYZ12",
+      type: "video",
+      language: "tr",
+      sourceUrl: "https://www.youtube.com/watch?v=abc123XYZ12",
+      media: {
+        downloadUrl: "https://www.youtube.com/embed/abc123XYZ12",
+        embedUrl: "https://www.youtube.com/embed/abc123XYZ12",
+        thumbUrl: "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg",
+      },
+    }).ok,
+    true,
+  );
+});
+
+test("tenor provider is disabled", () => {
+  const {TENOR_API_STATUS, TenorHumorSource} = require("../lib/humor/tenorSource.js");
+  assert.equal(TENOR_API_STATUS.active, false);
+  assert.equal(TenorHumorSource.tryCreate(), null);
+});
+
+test("category query buckets are allowlisted and turkish-first", () => {
+  const {
+    HUMOR_SEARCH_BUCKETS,
+    pickBucketQuery,
+    BUCKET_TO_CATEGORY,
+  } = require("../lib/humor/categoryQueries.js");
+  assert.ok(HUMOR_SEARCH_BUCKETS.includes("fail"));
+  assert.ok(HUMOR_SEARCH_BUCKETS.includes("turkish"));
+  const q = pickBucketQuery("turkish", "tr", 0);
+  assert.match(q, /türk|komedi|komik/i);
+  assert.equal(BUCKET_TO_CATEGORY.animal, "silly");
+});
+
+test("provider diversification avoids long same-provider runs", () => {
+  const {diversifyByProvider} = require("../lib/humor/feed.js");
+  const items = [
+    contentDoc({contentId: "a", source: {type: "licensed_api", provider: "giphy"}}),
+    contentDoc({contentId: "b", source: {type: "licensed_api", provider: "giphy"}}),
+    contentDoc({contentId: "c", source: {type: "licensed_api", provider: "youtube"}}),
+    contentDoc({contentId: "d", source: {type: "licensed_api", provider: "giphy"}}),
+  ];
+  const out = diversifyByProvider(items);
+  assert.equal(out.length, 4);
+  assert.notEqual(out[0].source.provider, out[1].source.provider);
+});

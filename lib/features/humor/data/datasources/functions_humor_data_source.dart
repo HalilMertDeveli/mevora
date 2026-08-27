@@ -31,6 +31,8 @@ class FunctionsHumorDataSource implements HumorDataSource {
       nextCursor: data['nextCursor'] as String?,
       profileBuilding: data['profileBuilding'] == true,
       interactionCount: firestoreInt(data['interactionCount'], 0),
+      isPremium: data['isPremium'] is bool ? data['isPremium'] as bool : null,
+      adsEnabled: data['adsEnabled'] is bool ? data['adsEnabled'] as bool : null,
     );
   }
 
@@ -141,12 +143,18 @@ class FunctionsHumorDataSource implements HumorDataSource {
           textBody: media['textBody'] as String?,
           downloadUrl: media['downloadUrl'] as String?,
           thumbUrl: media['thumbUrl'] as String?,
+          embedUrl: media['embedUrl'] as String?,
           durationMs: media['durationMs'] == null
               ? null
               : firestoreInt(media['durationMs'], 0),
           aspectRatio: media['aspectRatio'] == null
               ? null
               : _asDouble(media['aspectRatio']),
+          provider: map['provider'] as String?,
+          attributionRequired:
+              map['attributionRequired'] == true ||
+              media['attributionRequired'] == true,
+          sourceUrl: map['sourceUrl'] as String?,
         ),
       );
     }

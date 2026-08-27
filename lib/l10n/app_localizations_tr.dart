@@ -3378,7 +3378,19 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorLabSubtitle =>
-      'Kısa klipleri ve memeleri izle, ne kadar komik olduğunu değerlendir.';
+      'Sana farklı komik videolar ve görseller göstereceğiz. Hangilerinin seni gerçekten güldürdüğünü değerlendir. Ne kadar çok değerlendirirsen, mizah profilin o kadar doğru oluşur.';
+
+  @override
+  String get humorAttributionGiphy => 'Powered by GIPHY';
+
+  @override
+  String get humorAttributionYoutube => 'YouTube';
+
+  @override
+  String get humorAttributionGeneric => 'Kaynak';
+
+  @override
+  String get humorOpenOnYoutube => 'YouTube\'da aç';
 
   @override
   String get humorLabDiscoverCta => 'Mizah Labı\'nı aç';
@@ -3439,6 +3451,26 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorHowFunny => 'Ne kadar komik?';
+
+  @override
+  String get humorAdSponsoredLabel => 'Sponsorlu';
+
+  @override
+  String get humorAdPreparing => 'Reklam hazırlanıyor…';
+
+  @override
+  String get humorAdCompleted => 'Reklam tamamlandı.';
+
+  @override
+  String get humorAdContinue => 'Devam et';
+
+  @override
+  String humorAdCountdown(int seconds) {
+    return 'Devam etmek için $seconds sn…';
+  }
+
+  @override
+  String get humorPremiumAdFree => 'Premium ile reklamsız Mizah Labı';
 
   @override
   String get humorReportReasonOffensive => 'Rahatsız edici';

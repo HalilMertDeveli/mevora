@@ -56,7 +56,17 @@ export const getHumorFeed = onCall(callableOptions, async (request) => {
       limit: typeof data.limit === "number" ? data.limit : undefined,
       cursor: typeof data.cursor === "string" ? data.cursor : null,
     });
-    return feed;
+    // Do not expose raw provider error details / keys to clients.
+    const {providerMeta, ...safe} = feed;
+    return {
+      ...safe,
+      providers: {
+        toppedUp: providerMeta?.toppedUp ?? 0,
+        attempts: (providerMeta?.attempts as Array<{provider: string; ok: boolean}> | undefined)?.map(
+          (a) => ({provider: a.provider, ok: a.ok}),
+        ),
+      },
+    };
   } catch (error) {
     logger.error("getHumorFeed failed", safeLogMeta({uid, error: String(error)}));
     throw new HttpsError("internal", "feed-unavailable");
@@ -282,42 +292,72 @@ export const seedInternalHumorContent = onCall(callableOptions, async (request) 
 });
 
 /**
- * Admin: pull licensed Giphy content (lang=tr preferred) into humorContent.
- * Requires GIPHY_API_KEY secret/env. No scraping.
+ * Admin: pull licensed provider content (YouTube embed metadata + Giphy CDN URLs)
+ * into humorContent. Requires API keys via env/Secret Manager.
+ * Never downloads media bytes into Firebase Storage.
  */
-export const syncHumorFromProvider = onCall(
-  {
-    ...callableOptions,
-    // Secret optional at deploy; runtime checks configuration.
-    secrets: [],
-  },
-  async (request) => {
-    const uid = requireUid(request);
-    await requireAdmin(uid);
-    const data = (request.data ?? {}) as {language?: string; limit?: number};
-    const {syncHumorFromGiphy} = await import("./ingest.js");
-    const {isGiphyConfigured} = await import("./humorApiConfig.js");
+export const syncHumorFromProvider = onCall(callableOptions, async (request) => {
+  const uid = requireUid(request);
+  await requireAdmin(uid);
+  const data = (request.data ?? {}) as {
+    language?: string;
+    limit?: number;
+    provider?: string;
+  };
+  const {syncHumorFromGiphy} = await import("./ingest.js");
+  const {topUpHumorFromProviders} = await import("./providerOrchestrator.js");
+  const {humorProviderStatus, isGiphyConfigured, isYoutubeConfigured} = await import(
+    "./humorApiConfig.js"
+  );
+  const status = humorProviderStatus();
+  const language = data.language ?? "tr";
+  const limit = typeof data.limit === "number" ? data.limit : 24;
+
+  if (data.provider === "giphy") {
     if (!isGiphyConfigured()) {
       return {
         ok: false,
         configured: false,
-        message: "Set GIPHY_API_KEY (firebase functions:secrets:set GIPHY_API_KEY).",
+        providers: status,
+        message:
+          "Set GIPHY_API_KEY (firebase functions:secrets:set GIPHY_API_KEY).",
       };
     }
     const result = await syncHumorFromGiphy({
       db,
-      language: data.language ?? "tr",
-      limit: typeof data.limit === "number" ? data.limit : 24,
+      language,
+      limit,
       probe: true,
     });
-    return {ok: true, ...result};
-  },
-);
+    return {ok: true, mode: "giphy_sync", providers: status, ...result};
+  }
 
-export {isGiphyConfigured} from "./humorApiConfig.js";
+  const topUp = await topUpHumorFromProviders({
+    db,
+    languages: [language, "en"],
+    needed: limit,
+    excludeIds: new Set(),
+  });
+  return {
+    ok: topUp.contentIds.length > 0 || isYoutubeConfigured() || isGiphyConfigured(),
+    mode: "fallback_chain",
+    providers: status,
+    ...topUp,
+    message:
+      !isYoutubeConfigured() && !isGiphyConfigured()
+        ? "No live API keys. Set YOUTUBE_DATA_API_KEY and/or GIPHY_API_KEY. Internal pool still works after seedInternalHumorContent."
+        : undefined,
+  };
+});
+
+export {isGiphyConfigured, isYoutubeConfigured, humorProviderStatus} from "./humorApiConfig.js";
 export {GiphyHumorSource} from "./giphySource.js";
+export {YoutubeHumorSource} from "./youtubeSource.js";
+export {TENOR_API_STATUS} from "./tenorSource.js";
 export {validateHumorSourceItem} from "./contentValidation.js";
 export {syncHumorFromGiphy} from "./ingest.js";
+export {topUpHumorFromProviders} from "./providerOrchestrator.js";
+export {diversifyByProvider, diversifyByCategory} from "./feed.js";
 
 // Re-export pure helpers for tests / future V3 wiring (not used by Discover in MVP).
 export {humorScoreForPair} from "./compatibility.js";

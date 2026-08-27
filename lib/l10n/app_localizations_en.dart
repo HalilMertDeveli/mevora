@@ -3382,7 +3382,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorLabSubtitle =>
-      'Watch short clips and memes, then rate how funny they are.';
+      'We\'ll show different funny videos and images. Rate what actually makes you laugh — the more you rate, the better your humor profile.';
+
+  @override
+  String get humorAttributionGiphy => 'Powered by GIPHY';
+
+  @override
+  String get humorAttributionYoutube => 'YouTube';
+
+  @override
+  String get humorAttributionGeneric => 'Source';
+
+  @override
+  String get humorOpenOnYoutube => 'Open on YouTube';
 
   @override
   String get humorLabDiscoverCta => 'Open Humor Lab';
@@ -3443,6 +3455,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorHowFunny => 'How funny is this?';
+
+  @override
+  String get humorAdSponsoredLabel => 'Sponsored';
+
+  @override
+  String get humorAdPreparing => 'Preparing ad…';
+
+  @override
+  String get humorAdCompleted => 'Ad finished.';
+
+  @override
+  String get humorAdContinue => 'Continue';
+
+  @override
+  String humorAdCountdown(int seconds) {
+    return 'Continue in ${seconds}s…';
+  }
+
+  @override
+  String get humorPremiumAdFree => 'Ad-free Humor Lab with Premium';
 
   @override
   String get humorReportReasonOffensive => 'Offensive';

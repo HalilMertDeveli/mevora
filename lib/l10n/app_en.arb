@@ -1448,7 +1448,11 @@
   "musicNoCommonTracks": "No shared songs yet 🎵",
   "musicRecentlyPlayedHeading": "Recently played",
   "humorLabTitle": "Humor Lab",
-  "humorLabSubtitle": "Watch short clips and memes, then rate how funny they are.",
+  "humorLabSubtitle": "We'll show different funny videos and images. Rate what actually makes you laugh — the more you rate, the better your humor profile.",
+  "humorAttributionGiphy": "Powered by GIPHY",
+  "humorAttributionYoutube": "YouTube",
+  "humorAttributionGeneric": "Source",
+  "humorOpenOnYoutube": "Open on YouTube",
   "humorLabDiscoverCta": "Open Humor Lab",
   "humorLoadingFeed": "Preparing content…",
   "humorRatingVeryFunny": "Hilarious",
@@ -1469,6 +1473,19 @@
   "humorReport": "Report",
   "humorReportSuccess": "Thanks — we'll review this content.",
   "humorHowFunny": "How funny is this?",
+  "humorAdSponsoredLabel": "Sponsored",
+  "humorAdPreparing": "Preparing ad…",
+  "humorAdCompleted": "Ad finished.",
+  "humorAdContinue": "Continue",
+  "humorAdCountdown": "Continue in {seconds}s…",
+  "@humorAdCountdown": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "humorPremiumAdFree": "Ad-free Humor Lab with Premium",
   "humorReportReasonOffensive": "Offensive",
   "humorReportReasonSpam": "Spam",
   "humorReportReasonMisleading": "Misleading",

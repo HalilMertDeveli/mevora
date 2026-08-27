@@ -65,6 +65,14 @@ abstract final class AnalyticsEvents {
   static const String humorCompatibilityViewed = 'humor_compatibility_viewed';
   static const String humorChatStarterShown = 'humor_chat_starter_shown';
   static const String humorChatStarterUsed = 'humor_chat_starter_used';
+  static const String humorAdEligible = 'humor_ad_eligible';
+  static const String humorAdRequested = 'humor_ad_requested';
+  static const String humorAdLoaded = 'humor_ad_loaded';
+  static const String humorAdShown = 'humor_ad_shown';
+  static const String humorAdCompleted = 'humor_ad_completed';
+  static const String humorAdFailed = 'humor_ad_failed';
+  static const String humorPremiumAdFree = 'humor_premium_ad_free';
+  static const String humorFeedPageLoaded = 'humor_feed_page_loaded';
 }
 
 abstract class AnalyticsProvider {

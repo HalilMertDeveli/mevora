@@ -12,26 +12,30 @@ rate “how funny?”, and build a **UserHumorProfile**.
 ## Content pipeline
 
 ```text
-Giphy (licensed API, lang=tr) ──┐
-Internal Turkish media seed ────┼─► validate → moderate → tag → humorContent
-                                │
-Flutter vertical feed ◄── getHumorFeed ◄── Firestore
+YouTube Data API (embed) ──┐
+GIPHY (CDN stream) ────────┼─► validate → moderate → tag → humorContent
+(Tenor: disabled) ─────────┤
+Internal licensed pool ────┘
+        │
+Flutter vertical feed ◄── getHumorFeed ◄── Firestore (+ live top-up)
         │
  submitHumorFeedback → users/{uid}/humorInteractions + humor/summary
 ```
 
-**No** Instagram / TikTok / YouTube scraping.
+**No** Instagram / TikTok scraping. **No** copying YouTube/GIPHY bytes into Storage.
 
-### Provider
+See [HUMOR_LAB_PROVIDERS.md](./HUMOR_LAB_PROVIDERS.md) for ToS, quotas, and keys.
 
-- Adapter: `functions/src/humor/sourceAdapter.ts` + `giphySource.ts`
-- Config: `GIPHY_API_KEY` via `firebase functions:secrets:set GIPHY_API_KEY`
-- Admin sync: `syncHumorFromProvider` (requires admin claim + key)
-- Without key: Turkish-first **internal seed** with real HTTPS MP4/images still works
+### Providers
+
+- `youtubeSource.ts` + `giphySource.ts` + `providerOrchestrator.ts`
+- Secrets: `YOUTUBE_DATA_API_KEY`, `GIPHY_API_KEY` (server-only)
+- Admin: `syncHumorFromProvider`, `seedInternalHumorContent`
+- Without keys: Turkish-first **internal seed** still works
 
 ### Feed language
 
-Default preference: `tr` then `en`. App language TR → Turkish content first.
+Default preference: `tr` then `en`.
 
 ## Feature flag
 
@@ -39,24 +43,25 @@ Default preference: `tr` then `en`. App language TR → Turkish content first.
 
 ## Flutter media
 
-- `video_player` for MP4 autoplay / mute / loop / pause when off-screen
-- Images/memes via `MevoraNetworkImages`
+- `video_player` for Giphy/internal MP4
+- `youtube_player_iframe` for YouTube embeds
+- Attribution chips when required
 - Vertical `PageView` + 5-level rating bar + undo
 
 ## Setup
 
 ```bash
-# Optional production Giphy
-firebase functions:secrets:set GIPHY_API_KEY
+firebase functions:secrets:set YOUTUBE_DATA_API_KEY --project mevora-d6ed0
+firebase functions:secrets:set GIPHY_API_KEY --project mevora-d6ed0
 
-# Seed internal catalog (admin callable)
+# Seed internal catalog (admin)
 # seedInternalHumorContent
 
-# Sync licensed GIFs (admin)
+# Sync / top-up (admin)
 # syncHumorFromProvider { language: "tr", limit: 24 }
 ```
 
-Client mock (default `USE_MOCK_HUMOR=true`) uses the same Turkish media URLs for local QA.
+Client mock (default `USE_MOCK_HUMOR=true`) uses Turkish media URLs for local QA.
 Pass `--dart-define=USE_MOCK_HUMOR=false` to hit Cloud Functions.
 
 ## Compatibility

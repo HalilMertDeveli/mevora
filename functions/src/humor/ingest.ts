@@ -42,7 +42,12 @@ export async function ingestHumorSourceItem(
   db: Firestore,
   item: HumorSourceItem,
   provider: string,
-  options?: {probe?: boolean},
+  options?: {
+    probe?: boolean;
+    forcedCategory?: string;
+    attributionRequired?: boolean;
+    embedUrl?: string | null;
+  },
 ): Promise<{upserted: boolean; contentId: string; reason?: string}> {
   const validation = validateHumorSourceItem(item);
   if (!validation.ok) {
@@ -50,9 +55,16 @@ export async function ingestHumorSourceItem(
   }
 
   if (options?.probe !== false) {
-    const ok = await probeMediaUrl(item.media.downloadUrl);
-    if (!ok) {
-      return {upserted: false, contentId: "", reason: "media-unreachable"};
+    const probeUrl =
+      item.media.downloadUrl.includes("youtube.com/embed") ||
+      item.media.downloadUrl.includes("youtu.be")
+        ? item.media.thumbUrl || item.media.previewUrl
+        : item.media.downloadUrl;
+    if (probeUrl) {
+      const ok = await probeMediaUrl(probeUrl);
+      if (!ok) {
+        return {upserted: false, contentId: "", reason: "media-unreachable"};
+      }
     }
   }
 
@@ -62,7 +74,10 @@ export async function ingestHumorSourceItem(
     return {upserted: false, contentId, reason: "duplicate"};
   }
 
-  const categoryGuess = guessCategory(item);
+  const categoryGuess =
+    options?.forcedCategory && isHumorCategory(options.forcedCategory)
+      ? options.forcedCategory
+      : guessCategory(item);
   const tagged = applyHumorAiTagging({
     suggestedCategory: isHumorCategory(categoryGuess) ? categoryGuess : "meme",
     suggestedTags: [
@@ -73,6 +88,14 @@ export async function ingestHumorSourceItem(
     suggestedSafetyFlags: {},
   });
 
+  const embedUrl = options?.embedUrl ?? item.media.embedUrl ?? null;
+  const attributionRequired =
+    options?.attributionRequired === true ||
+    item.media.attributionRequired === true ||
+    provider === "giphy" ||
+    provider === "youtube";
+
+  // Never copy third-party bytes into Firebase Storage — CDN/embed URLs only.
   const input: UpsertHumorContentInput = {
     contentId,
     type: item.type === "video" ? "video" : item.type === "image" ? "image" : "meme",
@@ -81,11 +104,17 @@ export async function ingestHumorSourceItem(
     humorTags: tagged.humorTags.length ? tagged.humorTags : item.tags,
     humorVector: tagged.humorVector,
     media: {
-      downloadUrl: item.media.downloadUrl,
+      downloadUrl: embedUrl && !item.media.downloadUrl.includes("giphy")
+        ? null
+        : item.media.downloadUrl.includes("youtube.com/embed")
+          ? null
+          : item.media.downloadUrl,
       thumbUrl: item.media.thumbUrl ?? item.media.previewUrl ?? null,
       durationMs: item.media.durationMs ?? null,
       aspectRatio: item.media.aspectRatio ?? null,
       textBody: item.media.textBody ?? item.title ?? null,
+      embedUrl,
+      attributionRequired,
     },
     safetyFlags: tagged.safetyFlags,
     safetyStatus: tagged.safetyStatus === "approved" ? "approved" : tagged.safetyStatus,
@@ -95,7 +124,11 @@ export async function ingestHumorSourceItem(
     licenseRef: item.sourceUrl ?? null,
   };
 
-  // Persist sourceId for dedup queries
+  // For YouTube: downloadUrl null + embedUrl set — still need a playable path for clients.
+  if (input.media && !input.media.downloadUrl && embedUrl) {
+    input.media.downloadUrl = embedUrl;
+  }
+
   const doc = await upsertHumorContentDoc(db, input);
   await db.collection("humorContent").doc(doc.contentId).set(
     {
@@ -103,6 +136,8 @@ export async function ingestHumorSourceItem(
       sourceUrl: item.sourceUrl ?? null,
       thumbnailUrl: item.media.thumbUrl ?? null,
       duration: item.media.durationMs ?? null,
+      "media.embedUrl": embedUrl,
+      "media.attributionRequired": attributionRequired,
     },
     {merge: true},
   );

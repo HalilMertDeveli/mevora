@@ -203,10 +203,18 @@ class MockHumorDataSource implements HumorDataSource {
         final bRank = bi < 0 ? 99 : bi;
         return aRank.compareTo(bRank);
       });
-    final start = cursor == null || cursor.isEmpty ? 0 : int.tryParse(cursor) ?? 0;
-    final end = (start + pageSize).clamp(0, ranked.length);
-    final page = ranked.sublist(start.clamp(0, ranked.length), end);
-    final next = end < ranked.length ? '$end' : null;
+    // Infinite: cursor encodes absolute offset; wraps forever.
+    final start = cursor == null || cursor.isEmpty
+        ? 0
+        : (int.tryParse(cursor) ?? 0);
+    final page = <HumorContent>[];
+    for (var i = 0; i < pageSize; i++) {
+      if (ranked.isEmpty) {
+        break;
+      }
+      page.add(ranked[(start + i) % ranked.length]);
+    }
+    final next = ranked.isEmpty ? null : '${start + page.length}';
     return HumorFeedPage(
       items: page,
       nextCursor: next,

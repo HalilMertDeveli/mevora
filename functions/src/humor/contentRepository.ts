@@ -19,6 +19,7 @@ import type {
 export const HUMOR_CONTENT_COLLECTION = "humorContent";
 
 export function toFeedSafeContent(doc: HumorContentDoc): HumorFeedItem {
+  const media = doc.media ?? {};
   return {
     contentId: doc.contentId,
     type: doc.type,
@@ -26,12 +27,20 @@ export function toFeedSafeContent(doc: HumorContentDoc): HumorFeedItem {
     category: doc.category,
     humorTags: doc.humorTags,
     media: {
-      downloadUrl: doc.media?.downloadUrl ?? null,
-      thumbUrl: doc.media?.thumbUrl ?? null,
-      durationMs: doc.media?.durationMs ?? null,
-      aspectRatio: doc.media?.aspectRatio ?? null,
-      textBody: doc.media?.textBody ?? null,
+      downloadUrl: media.downloadUrl ?? null,
+      thumbUrl: media.thumbUrl ?? null,
+      durationMs: media.durationMs ?? null,
+      aspectRatio: media.aspectRatio ?? null,
+      textBody: media.textBody ?? null,
+      embedUrl: media.embedUrl ?? null,
+      attributionRequired: media.attributionRequired === true,
     },
+    provider: doc.source?.provider ?? null,
+    attributionRequired:
+      media.attributionRequired === true ||
+      doc.source?.provider === "giphy" ||
+      doc.source?.provider === "youtube",
+    sourceUrl: doc.source?.licenseRef ?? null,
   };
 }
 

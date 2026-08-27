@@ -16,6 +16,7 @@ import 'package:mevora/core/di/location_services_factory.dart';
 import 'package:mevora/core/di/match_score_services_factory.dart';
 import 'package:mevora/core/di/music_services_factory.dart';
 import 'package:mevora/core/di/humor_services_factory.dart';
+import 'package:mevora/features/subscription/data/repositories/firestore_subscription_repository.dart';
 import 'package:mevora/core/di/relationship_services_factory.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_services_factory.dart';
@@ -107,7 +108,13 @@ Future<void> bootstrap(AppEnvironment environment) async {
     config: config,
     spotifyAuthService: spotifyAuthService,
   );
-  final humorServices = createHumorServices(config: config);
+  final subscriptionRepository = FirestoreSubscriptionRepository(
+    uidSource: uidSource,
+  );
+  final humorServices = createHumorServices(
+    config: config,
+    subscriptionRepository: subscriptionRepository,
+  );
   final relationshipServices = createRelationshipServices(config: config);
   final matchScoreServices = createMatchScoreServices(
     config: config,
@@ -155,6 +162,9 @@ Future<void> bootstrap(AppEnvironment environment) async {
       discoveryRepository: discoveryServices.discoveryRepository,
       musicRepository: musicServices.repository,
       humorRepository: humorServices.repository,
+      humorAdService: humorServices.adService,
+      humorAdsSettings: humorServices.adsSettings,
+      subscriptionRepository: humorServices.subscriptionRepository,
       relationshipRepository: relationshipServices.repository,
       profileQuestionAnswerRepository: relationshipServices.profileAnswers,
       matchScoreRepository: matchScoreServices.repository,

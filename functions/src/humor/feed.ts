@@ -1,11 +1,16 @@
 import type {Firestore} from "firebase-admin/firestore";
+import {logger} from "firebase-functions";
 import {listCandidateHumorContent, toFeedSafeContent} from "./contentRepository.js";
 import {canServeHumorContent} from "./moderation.js";
 import {defaultUserHumorProfile} from "./profile.js";
+import {topUpHumorFromProviders} from "./providerOrchestrator.js";
 import {rankHumorFeed} from "./ranking.js";
+import {safeLogMeta} from "../security/logHygiene.js";
+import {isUserPremium} from "../premium.js";
 import {
   HUMOR_FEED_PAGE_SIZE,
   HUMOR_PROFILE_BUILDING_THRESHOLD,
+  type HumorContentDoc,
   type HumorFeedItem,
   type UserHumorProfileDoc,
 } from "./types.js";
@@ -61,6 +66,46 @@ function encodeCursor(seenIds: string[]): string {
   return Buffer.from(JSON.stringify({seen: trimmed}), "utf8").toString("base64url");
 }
 
+/** Avoid long runs of the same provider in a page. */
+export function diversifyByProvider(items: HumorContentDoc[]): HumorContentDoc[] {
+  if (items.length <= 2) {
+    return items;
+  }
+  const remaining = [...items];
+  const out: HumorContentDoc[] = [];
+  let lastProvider: string | null = null;
+  while (remaining.length > 0) {
+    let idx = remaining.findIndex((c) => (c.source?.provider ?? "") !== lastProvider);
+    if (idx < 0) {
+      idx = 0;
+    }
+    const [picked] = remaining.splice(idx, 1);
+    out.push(picked);
+    lastProvider = picked.source?.provider ?? null;
+  }
+  return out;
+}
+
+/** Prefer category spread within a page. */
+export function diversifyByCategory(items: HumorContentDoc[]): HumorContentDoc[] {
+  if (items.length <= 2) {
+    return items;
+  }
+  const remaining = [...items];
+  const out: HumorContentDoc[] = [];
+  let lastCategory: string | null = null;
+  while (remaining.length > 0) {
+    let idx = remaining.findIndex((c) => String(c.category) !== lastCategory);
+    if (idx < 0) {
+      idx = 0;
+    }
+    const [picked] = remaining.splice(idx, 1);
+    out.push(picked);
+    lastCategory = String(picked.category);
+  }
+  return out;
+}
+
 export async function buildHumorFeed(input: {
   db: Firestore;
   uid: string;
@@ -72,6 +117,12 @@ export async function buildHumorFeed(input: {
   nextCursor: string | null;
   profileBuilding: boolean;
   interactionCount: number;
+  isPremium: boolean;
+  adsEnabled: boolean;
+  providerMeta?: {
+    attempts: unknown[];
+    toppedUp: number;
+  };
 }> {
   const limit = Math.min(15, Math.max(10, input.limit ?? HUMOR_FEED_PAGE_SIZE));
   const languages =
@@ -79,43 +130,101 @@ export async function buildHumorFeed(input: {
       ? (input.languages ?? []).map((l) => l.toLowerCase())
       : ["tr", "en"];
 
-  const [profile, seenFromDb] = await Promise.all([
+  const [profile, seenFromDb, premium] = await Promise.all([
     loadUserHumorProfile(input.db, input.uid),
     loadSeenContentIds(input.db, input.uid),
+    isUserPremium(input.uid),
   ]);
   const cursorSeen = decodeCursor(input.cursor);
   const seen = new Set([...seenFromDb, ...cursorSeen]);
-  const candidates = await listCandidateHumorContent(input.db, {
+
+  let candidates = await listCandidateHumorContent(input.db, {
     languages,
     limit: 120,
   });
-  const eligible = candidates.filter((c) =>
+  let eligible = candidates.filter((c) =>
     canServeHumorContent({active: c.active, safetyStatus: c.safetyStatus}),
   );
-  const ranked = rankHumorFeed({
-    profile,
-    items: eligible.map((content) => ({
-      content,
-      seen: seen.has(content.contentId),
-    })),
-    userLanguages: languages,
-    limit,
-  }).filter((c) => !seen.has(c.contentId));
+  let unseenEligible = eligible.filter((c) => !seen.has(c.contentId));
+
+  let providerMeta: {attempts: unknown[]; toppedUp: number} | undefined;
+
+  // Live top-up when pool is thin — YouTube → GIPHY → (Tenor off) → internal.
+  if (unseenEligible.length < limit) {
+    try {
+      const topUp = await topUpHumorFromProviders({
+        db: input.db,
+        languages,
+        needed: limit - unseenEligible.length + 4,
+        excludeIds: new Set([...seen, ...eligible.map((c) => c.contentId)]),
+      });
+      providerMeta = {
+        attempts: topUp.attempts,
+        toppedUp: topUp.contentIds.length,
+      };
+      if (topUp.contentIds.length > 0) {
+        candidates = await listCandidateHumorContent(input.db, {
+          languages,
+          limit: 120,
+        });
+        eligible = candidates.filter((c) =>
+          canServeHumorContent({active: c.active, safetyStatus: c.safetyStatus}),
+        );
+        unseenEligible = eligible.filter((c) => !seen.has(c.contentId));
+      }
+    } catch (error) {
+      logger.warn(
+        "humor live top-up failed; serving internal pool",
+        safeLogMeta({uid: input.uid, error: String(error)}),
+      );
+    }
+  }
+
+  let ranked = diversifyByCategory(
+    diversifyByProvider(
+      rankHumorFeed({
+        profile,
+        items: eligible.map((content) => ({
+          content,
+          seen: seen.has(content.contentId),
+        })),
+        userLanguages: languages,
+        limit: limit * 2,
+      }).filter((c) => !seen.has(c.contentId)),
+    ),
+  );
+
+  // Infinite feed: recycle seen catalog when unseen pool is exhausted.
+  if (ranked.length < limit && eligible.length > 0) {
+    const recycled = diversifyByCategory(
+      diversifyByProvider(
+        rankHumorFeed({
+          profile,
+          items: eligible.map((content) => ({
+            content,
+            seen: true,
+          })),
+          userLanguages: languages,
+          limit: limit * 2,
+        }).filter((c) => !ranked.some((r) => r.contentId === c.contentId)),
+      ),
+    );
+    ranked = [...ranked, ...recycled].slice(0, limit);
+  }
 
   const page = ranked.slice(0, limit);
   const pageIds = page.map((c) => c.contentId);
   const nextSeen = [...seen, ...pageIds];
-  const nextCursor =
-    page.length > 0 && eligible.length > page.length
-      ? encodeCursor(nextSeen)
-      : page.length >= limit
-        ? encodeCursor(nextSeen)
-        : null;
+  // Keep paging while catalog has anything to show.
+  const nextCursor = eligible.length > 0 && page.length > 0 ? encodeCursor(nextSeen) : null;
 
   return {
     items: page.map((c) => toFeedSafeContent(c)),
     nextCursor,
     profileBuilding: profile.interactionCount < HUMOR_PROFILE_BUILDING_THRESHOLD,
     interactionCount: profile.interactionCount,
+    isPremium: premium,
+    adsEnabled: !premium,
+    providerMeta,
   };
 }

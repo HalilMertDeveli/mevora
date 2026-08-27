@@ -1448,7 +1448,11 @@
   "musicNoCommonTracks": "Henüz ortak dinlediğiniz bir şarkı yok 🎵",
   "musicRecentlyPlayedHeading": "Son dinlenenler",
   "humorLabTitle": "Mizah Labı",
-  "humorLabSubtitle": "Kısa klipleri ve memeleri izle, ne kadar komik olduğunu değerlendir.",
+  "humorLabSubtitle": "Sana farklı komik videolar ve görseller göstereceğiz. Hangilerinin seni gerçekten güldürdüğünü değerlendir. Ne kadar çok değerlendirirsen, mizah profilin o kadar doğru oluşur.",
+  "humorAttributionGiphy": "Powered by GIPHY",
+  "humorAttributionYoutube": "YouTube",
+  "humorAttributionGeneric": "Kaynak",
+  "humorOpenOnYoutube": "YouTube'da aç",
   "humorLabDiscoverCta": "Mizah Labı'nı aç",
   "humorLoadingFeed": "İçerikler hazırlanıyor…",
   "humorRatingVeryFunny": "Çok komik",
@@ -1469,6 +1473,19 @@
   "humorReport": "Şikayet et",
   "humorReportSuccess": "Teşekkürler — bu içeriği inceleyeceğiz.",
   "humorHowFunny": "Ne kadar komik?",
+  "humorAdSponsoredLabel": "Sponsorlu",
+  "humorAdPreparing": "Reklam hazırlanıyor…",
+  "humorAdCompleted": "Reklam tamamlandı.",
+  "humorAdContinue": "Devam et",
+  "humorAdCountdown": "Devam etmek için {seconds} sn…",
+  "@humorAdCountdown": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "humorPremiumAdFree": "Premium ile reklamsız Mizah Labı",
   "humorReportReasonOffensive": "Rahatsız edici",
   "humorReportReasonSpam": "Spam",
   "humorReportReasonMisleading": "Yanıltıcı",

@@ -14,11 +14,23 @@ const ALLOWED_HOST_HINTS = [
   "media2.giphy.com",
   "media3.giphy.com",
   "media4.giphy.com",
+  "youtube.com",
+  "www.youtube.com",
+  "youtu.be",
+  "i.ytimg.com",
+  "yt3.ggpht.com",
   "commondatastorage.googleapis.com",
   "picsum.photos",
   "images.unsplash.com",
   "firebasestorage.googleapis.com",
 ];
+
+function hostAllowed(host: string): boolean {
+  const h = host.toLowerCase();
+  return ALLOWED_HOST_HINTS.some(
+    (hint) => h === hint || h.endsWith(`.${hint}`) || h.includes(hint),
+  );
+}
 
 export function validateHumorSourceItem(
   item: HumorSourceItem,
@@ -40,14 +52,15 @@ export function validateHumorSourceItem(
     return {ok: false, reason: "insecure-url"};
   }
   const host = parsed.hostname.toLowerCase();
-  const allowed = ALLOWED_HOST_HINTS.some(
-    (hint) => host === hint || host.endsWith(`.${hint}`) || host.includes(hint),
-  );
+  const allowed = hostAllowed(host);
   if (!allowed && item.sourceUrl) {
-    // Still allow if sourceUrl is giphy page and media is https
     try {
       const src = new URL(item.sourceUrl);
-      if (!src.hostname.includes("giphy.com")) {
+      if (
+        !src.hostname.includes("giphy.com") &&
+        !src.hostname.includes("youtube.com") &&
+        !src.hostname.includes("youtu.be")
+      ) {
         return {ok: false, reason: "host-not-allowed"};
       }
     } catch {
@@ -55,6 +68,16 @@ export function validateHumorSourceItem(
     }
   } else if (!allowed) {
     return {ok: false, reason: "host-not-allowed"};
+  }
+  if (item.media.embedUrl) {
+    try {
+      const embed = new URL(item.media.embedUrl);
+      if (embed.protocol !== "https:" || !hostAllowed(embed.hostname)) {
+        return {ok: false, reason: "embed-host-not-allowed"};
+      }
+    } catch {
+      return {ok: false, reason: "invalid-embed-url"};
+    }
   }
   return {ok: true};
 }

@@ -7,6 +7,7 @@ import 'package:mevora/features/discovery/domain/entities/discovery_candidate.da
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
 import 'package:mevora/features/relationship/data/datasources/firestore_relationship_answers_reader.dart';
 import 'package:mevora/features/relationship/data/datasources/relationship_data_source.dart';
+import 'package:mevora/features/relationship/domain/entities/matching_game_round.dart';
 import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 
@@ -78,6 +79,64 @@ class FunctionsRelationshipDataSource implements RelationshipDataSource {
   @override
   Future<Map<String, String>> getSavedAnswers(String uid) {
     return FirestoreRelationshipAnswersReader().loadAnswers(uid);
+  }
+
+  @override
+  Future<MatchingGameRoundInfo> getMatchingGameRound() async {
+    final data = await _invoke('getMatchingGameRound');
+    return MatchingGameRoundInfo(
+      roundId: data['roundId'] as String? ?? '',
+      status: data['status'] as String? ?? 'OPEN',
+      timezone: data['timezone'] as String? ?? 'Europe/Istanbul',
+      serverNowMs: firestoreInt(data['serverNowMs'], 0),
+      nextRoundAtMs: firestoreInt(data['nextRoundAtMs'], 0),
+      closesAtMs: firestoreInt(data['closesAtMs'], 0),
+    );
+  }
+
+  @override
+  Future<void> joinMatchingGameRound(String roundId) async {
+    await _invoke('joinMatchingGameRound', {'roundId': roundId});
+  }
+
+  @override
+  Future<MatchingGameResultInfo> submitMatchingGameAnswers({
+    required String roundId,
+    required List<String> questionIds,
+    required Map<String, String> answers,
+  }) async {
+    final data = await _invoke('submitMatchingGameAnswers', {
+      'roundId': roundId,
+      'questionIds': questionIds,
+      'answers': answers,
+    });
+    return MatchingGameResultInfo(
+      roundId: data['roundId'] as String? ?? roundId,
+      roundStatus: 'COLLECTING',
+      participantStatus: data['status'] as String? ?? 'submitted',
+    );
+  }
+
+  @override
+  Future<MatchingGameResultInfo> getMatchingGameResult(String roundId) async {
+    final data = await _invoke('getMatchingGameResult', {'roundId': roundId});
+    final partner = data['partner'];
+    Map<String, dynamic>? partnerMap;
+    if (partner is Map) {
+      partnerMap = Map<String, dynamic>.from(partner);
+    }
+    return MatchingGameResultInfo(
+      roundId: data['roundId'] as String? ?? roundId,
+      roundStatus: data['roundStatus'] as String? ?? 'OPEN',
+      participantStatus: data['participantStatus'] as String?,
+      matchId: data['matchId'] as String?,
+      compatibilityScore: data['compatibilityScore'] is int
+          ? data['compatibilityScore'] as int
+          : null,
+      partnerUid: partnerMap?['uid'] as String?,
+      partnerName: partnerMap?['displayName'] as String?,
+      partnerPhotoUrl: partnerMap?['photoUrl'] as String?,
+    );
   }
 
   Future<Map<String, dynamic>> _invoke(

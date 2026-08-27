@@ -1,4 +1,5 @@
 import 'package:mevora/core/errors/result.dart';
+import 'package:mevora/features/relationship/domain/entities/matching_game_round.dart';
 import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 
 class RelationshipAnswerSnapshot {
@@ -43,4 +44,16 @@ abstract class RelationshipRepository {
 
   /// Owner-only saved answers (questionId → answerId).
   Future<Result<Map<String, String>>> getSavedAnswers(String uid);
+
+  Future<Result<MatchingGameRoundInfo>> getMatchingGameRound();
+
+  Future<Result<void>> joinMatchingGameRound(String roundId);
+
+  Future<Result<MatchingGameResultInfo>> submitMatchingGameAnswers({
+    required String roundId,
+    required List<String> questionIds,
+    required Map<String, String> answers,
+  });
+
+  Future<Result<MatchingGameResultInfo>> getMatchingGameResult(String roundId);
 }

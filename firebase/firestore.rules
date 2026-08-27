@@ -675,6 +675,24 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Hourly global matching game — Admin SDK writes only.
+    // Authenticated clients may read their own participant doc + round meta.
+    match /matchingGameRounds/{roundId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+
+      match /participants/{userId} {
+        allow read: if isAuthenticated() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      match /matches/{matchId} {
+        allow read: if isAuthenticated()
+          && request.auth.uid in resource.data.userIds;
+        allow create, update, delete: if false;
+      }
+    }
+
     match /failedNotifications/{id} {
       allow read, write: if false;
     }

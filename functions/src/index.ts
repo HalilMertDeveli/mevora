@@ -26,5 +26,13 @@ export {
   syncProfileQuestionAnswers,
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
+export {
+  matchingGameHourlyTick,
+  getMatchingGameRound,
+  joinMatchingGameRound,
+  submitMatchingGameAnswers,
+  getMatchingGameResult,
+  runMatchingGameRoundNow,
+} from "./hourlyMatchingGame";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
 export {createSumsubAccessToken, sumsubWebhook} from "./sumsub/index.js";

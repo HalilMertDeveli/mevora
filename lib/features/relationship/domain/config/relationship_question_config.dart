@@ -2,11 +2,13 @@ import 'package:flutter/foundation.dart';
 
 /// Relationship / matching-event timings.
 ///
-/// Spontaneous offer while on Discovery uses [matchingEventDuration]
-/// (alias of [productionInterval]). Change this single constant to retune
-/// event length (3 → 5 → 10 → 15 minutes) without hunting magic numbers.
+/// When [hourlyGlobalMatchingGame] is true (default), the Discovery dwell
+/// timer is disabled and offers follow Europe/Istanbul hourly rounds.
 abstract final class RelationshipQuestionConfig {
-  /// Configurable matching-event length (default: 3 minutes).
+  /// Replaces the old "3 minutes on Discover with zero chats" dwell trigger.
+  static const bool hourlyGlobalMatchingGame = true;
+
+  /// Legacy dwell length — kept for cooldown aliases / debug only.
   static const Duration matchingEventDuration = Duration(minutes: 3);
 
   /// @nodoc Keep older call sites compiling — same value as [matchingEventDuration].

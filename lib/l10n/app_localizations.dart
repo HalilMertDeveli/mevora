@@ -3731,25 +3731,25 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipTestTitle.
   ///
   /// In en, this message translates to:
-  /// **'Relationship Test'**
+  /// **'Matching Game'**
   String get relationshipTestTitle;
 
   /// No description provided for @relationshipTestHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Discover people who share your views'**
+  /// **'This hour\'s Matching Game'**
   String get relationshipTestHeadline;
 
   /// No description provided for @relationshipTestMessage.
   ///
   /// In en, this message translates to:
-  /// **'Answer 3 short questions to see people who may think similarly.'**
+  /// **'Take this round\'s personality test — same answers, stronger match.'**
   String get relationshipTestMessage;
 
   /// No description provided for @relationshipTestStart.
   ///
   /// In en, this message translates to:
-  /// **'Start the Relationship Test'**
+  /// **'Join the Matching Game'**
   String get relationshipTestStart;
 
   /// No description provided for @relationshipTestLater.
@@ -3757,6 +3757,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not now'**
   String get relationshipTestLater;
+
+  /// No description provided for @matchingGameCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Match Game: {countdown}'**
+  String matchingGameCountdown(String countdown);
+
+  /// No description provided for @matchingGameRoundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00 Matching Game'**
+  String matchingGameRoundLabel(String hour);
 
   /// No description provided for @relationshipContinueTitle.
   ///
@@ -3899,7 +3911,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipMatchBadge.
   ///
   /// In en, this message translates to:
-  /// **'Relationship Test'**
+  /// **'Matching Game'**
   String get relationshipMatchBadge;
 
   /// No description provided for @relationshipPromptProgress.

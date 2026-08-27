@@ -1974,20 +1974,30 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yeni sorular hazırlanıyor. Lütfen biraz sonra tekrar deneyin.';
 
   @override
-  String get relationshipTestTitle => 'İlişki Testi';
+  String get relationshipTestTitle => 'Eşleşme Oyunu';
 
   @override
-  String get relationshipTestHeadline => 'Görüşlerine yakın insanları keşfet';
+  String get relationshipTestHeadline => 'Bu saatin Eşleşme Oyunu';
 
   @override
   String get relationshipTestMessage =>
-      '3 kısa soruyla benzer düşünebilen kişileri gör.';
+      'Bu turun kişilik testine katıl. Bak bakalım bu saatte kiminle eşleşeceksin?';
 
   @override
-  String get relationshipTestStart => 'İlişki Testine Başla';
+  String get relationshipTestStart => 'Eşleşme Oyununa Katıl';
 
   @override
   String get relationshipTestLater => 'Daha Sonra';
+
+  @override
+  String matchingGameCountdown(String countdown) {
+    return 'Sonraki Eşleşme Oyunu: $countdown';
+  }
+
+  @override
+  String matchingGameRoundLabel(String hour) {
+    return '$hour:00 Eşleşme Oyunu';
+  }
 
   @override
   String get relationshipContinueTitle => 'Eşleşmeye devam etmek ister misin?';
@@ -2064,7 +2074,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relationshipTestOpenChat => 'Sohbete git';
 
   @override
-  String get relationshipMatchBadge => 'İlişki Testi';
+  String get relationshipMatchBadge => 'Eşleşme Oyunu';
 
   @override
   String relationshipPromptProgress(int answered, int total) {

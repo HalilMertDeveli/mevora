@@ -1,15 +1,16 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
-import 'package:mevora/core/errors/failure.dart';
-import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
-import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
+import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
+import 'package:mevora/features/relationship/domain/entities/matching_game_round.dart';
 import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/features/relationship/domain/services/relationship_question_sets.dart';
+import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
+import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
+import 'package:mevora/core/errors/failure.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'dart:async';
 
-/// Discovery tab dwell time → offer if no normal matches → 3-question test.
+/// Hourly Istanbul matching game (default) or legacy Discovery dwell offer.
 class RelationshipController extends ChangeNotifier with WidgetsBindingObserver {
   RelationshipController({
     required RelationshipRepository repository,
@@ -18,19 +19,25 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     Duration idleTimeout = RelationshipQuestionConfig.idleTimeout,
     DateTime Function()? clock,
     bool? enforceOfferGates,
+    bool? hourlyGlobalMatchingGame,
   }) : _repository = repository,
        _interval = interval ?? RelationshipQuestionConfig.interval,
        _clock = clock ?? DateTime.now,
        _enforceOfferGates =
-           enforceOfferGates ?? !RelationshipQuestionConfig.bypassOfferGates;
+           enforceOfferGates ?? !RelationshipQuestionConfig.bypassOfferGates,
+       _hourlyGlobalMatchingGame =
+           hourlyGlobalMatchingGame ??
+           RelationshipQuestionConfig.hourlyGlobalMatchingGame;
 
   final RelationshipRepository _repository;
   final Duration _interval;
   final DateTime Function() _clock;
   final bool _enforceOfferGates;
+  final bool _hourlyGlobalMatchingGame;
 
   Timer? _timer;
   Timer? _heartbeat;
+  Timer? _roundPoll;
   Duration _elapsed = Duration.zero;
   DateTime? _runningSince;
   DateTime? _offerCooldownUntil;
@@ -45,11 +52,15 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   var _resultsVisible = false;
   var _emptyResults = false;
   var _unavailable = false;
+  var _waitingForRoundResult = false;
   var _normalMatchCount = 0;
   var _matchingEventCount = 0;
   var _matchingPaused = false;
   String? _lastError;
+  String? _activeRoundId;
+  MatchingGameRoundInfo? _roundInfo;
   Set<String> _answeredIds = {};
+  final Map<String, String> _sessionAnswers = {};
   List<RelationshipQuestion> _session = const [];
   var _sessionIndex = 0;
   List<RelationshipMatchSuggestion> _suggestions = const [];
@@ -77,6 +88,31 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   bool get hasUnavailableFallback => _unavailable && !isPromptVisible;
   bool get submitting => _submitting;
   bool get sessionLocked => _sessionLocked;
+  bool get waitingForRoundResult => _waitingForRoundResult;
+  bool get hourlyGlobalMatchingGame => _hourlyGlobalMatchingGame;
+  MatchingGameRoundInfo? get roundInfo => _roundInfo;
+  String? get activeRoundId => _activeRoundId;
+
+  /// Istanbul round hour digits for UI (e.g. "14"), from server round id.
+  String? get hourlyRoundHour {
+    if (!_hourlyGlobalMatchingGame) {
+      return null;
+    }
+    final id = _activeRoundId ?? _roundInfo?.roundId;
+    if (id == null || id.length < 10) {
+      return null;
+    }
+    return id.substring(id.length - 2);
+  }
+
+  Duration? get hourlyCountdownRemaining {
+    final round = _roundInfo;
+    if (!_hourlyGlobalMatchingGame || round == null) {
+      return null;
+    }
+    return round.timeUntilClose;
+  }
+
   int get matchingEventCount => _matchingEventCount;
   bool get matchingPaused => _matchingPaused;
   Duration get interval => _interval;
@@ -116,6 +152,8 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
 
   void pause() {
     _pauseTimer();
+    _roundPoll?.cancel();
+    _roundPoll = null;
     if (!_observing) {
       return;
     }
@@ -159,6 +197,10 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     }
     _normalMatchCount = count;
     _log('Active conversations: $count');
+    // Hourly game: active chats no longer block participation.
+    if (_hourlyGlobalMatchingGame) {
+      return;
+    }
     if (count > 0 && _enforceOfferGates && (_offerVisible || _continuePromptVisible)) {
       _offerVisible = false;
       _continuePromptVisible = false;
@@ -221,6 +263,20 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     _log('Opening relationship test');
     _offerVisible = false;
     _lastError = null;
+    _sessionAnswers.clear();
+    if (_hourlyGlobalMatchingGame) {
+      final roundId = _activeRoundId ?? _roundInfo?.roundId;
+      if (roundId != null && roundId.isNotEmpty) {
+        final joined = await _repository.joinMatchingGameRound(roundId);
+        if (joined.isError) {
+          _lastError = joined.failureOrNull?.message;
+          _offerVisible = true;
+          notifyListeners();
+          return;
+        }
+        _activeRoundId = roundId;
+      }
+    }
     _log('Questions requested');
     final questions = RelationshipQuestionSets.nextUnanswered(_answeredIds);
     if (questions == null ||
@@ -233,6 +289,7 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     }
     _session = questions;
     _sessionIndex = 0;
+    _sessionLocked = true;
     _unavailable = false;
     _log('Questions received: ${_session.length}');
     _log('Question set: ${_session.map((item) => item.id).join(',')}');
@@ -324,12 +381,17 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     }
     _answeredIds =
         result.valueOrNull?.answeredIds ?? {..._answeredIds, question.id};
+    _sessionAnswers[question.id] = answerId;
     _log('Answers saved successfully ${question.id}=$answerId');
     _sessionIndex += 1;
     if (_sessionIndex >= _session.length) {
       final questionIds = _session.map((item) => item.id).toList();
       _session = const [];
       _sessionIndex = 0;
+      if (_hourlyGlobalMatchingGame) {
+        await _completeHourlyRound(questionIds);
+        return true;
+      }
       _log('Relationship pool query started');
       final completed = await _repository.completeTest(questionIds: questionIds);
       _submitting = false;
@@ -453,6 +515,10 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   }
 
   void _armTimer() {
+    if (_hourlyGlobalMatchingGame) {
+      unawaited(_syncHourlyRoundOffer());
+      return;
+    }
     if (!_discoveryVisible || _sessionLocked || _appPaused) {
       _log(
         'Dwell timer idle (visible=$_discoveryVisible locked=$_sessionLocked paused=$_appPaused)',
@@ -498,6 +564,150 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     _log(
       'Dwell timer armed for ${remaining.inSeconds}s (elapsed ${_elapsed.inSeconds}s)',
     );
+  }
+
+  Future<void> _syncHourlyRoundOffer() async {
+    if (!_discoveryVisible || _sessionLocked || _appPaused) {
+      return;
+    }
+    if (_offerVisible || _resultsVisible || _waitingForRoundResult) {
+      return;
+    }
+    if (_matchingPaused && _enforceOfferGates) {
+      return;
+    }
+    if (_cooldownActive && _enforceOfferGates) {
+      return;
+    }
+    final roundResult = await _repository.getMatchingGameRound();
+    if (roundResult.isError) {
+      _logFailure('getMatchingGameRound', roundResult.failureOrNull);
+      return;
+    }
+    final round = roundResult.valueOrNull;
+    if (round == null || round.roundId.isEmpty) {
+      return;
+    }
+    _roundInfo = round;
+    _activeRoundId = round.roundId;
+    notifyListeners();
+    if (!round.isOpen) {
+      _log('Hourly round ${round.roundId} not open (${round.status})');
+      return;
+    }
+    // Check if already submitted this round.
+    final existing = await _repository.getMatchingGameResult(round.roundId);
+    final status = existing.valueOrNull?.participantStatus;
+    if (status == 'submitted' || status == 'matched' || status == 'unmatched') {
+      if (status == 'submitted') {
+        _waitingForRoundResult = true;
+        _startRoundResultPoll(round.roundId);
+      } else if (status == 'matched' || status == 'unmatched') {
+        await _applyGameResult(existing.valueOrNull!);
+      }
+      notifyListeners();
+      return;
+    }
+    _log('Hourly matching game offer for ${round.roundId}');
+    _triggerOffer();
+  }
+
+  Future<void> _completeHourlyRound(List<String> questionIds) async {
+    final roundId = _activeRoundId ?? _roundInfo?.roundId;
+    if (roundId == null || roundId.isEmpty) {
+      _submitting = false;
+      _emptyResults = true;
+      _resultsVisible = true;
+      notifyListeners();
+      return;
+    }
+    final answers = <String, String>{
+      for (final id in questionIds)
+        if (_sessionAnswers.containsKey(id)) id: _sessionAnswers[id]!,
+    };
+    _log('Submitting hourly game answers for $roundId');
+    final submitted = await _repository.submitMatchingGameAnswers(
+      roundId: roundId,
+      questionIds: questionIds,
+      answers: answers,
+    );
+    _submitting = false;
+    _elapsed = Duration.zero;
+    _runningSince = null;
+    _sessionAnswers.clear();
+    if (submitted.isError) {
+      _lastError = submitted.failureOrNull?.message;
+      _emptyResults = true;
+      _resultsVisible = true;
+      notifyListeners();
+      return;
+    }
+    _matchingEventCount += 1;
+    _waitingForRoundResult = true;
+    _resultsVisible = false;
+    notifyListeners();
+    _startRoundResultPoll(roundId);
+  }
+
+  void _startRoundResultPoll(String roundId) {
+    _roundPoll?.cancel();
+    _roundPoll = Timer.periodic(const Duration(seconds: 12), (_) {
+      unawaited(_pollRoundResult(roundId));
+    });
+    unawaited(_pollRoundResult(roundId));
+  }
+
+  Future<void> _pollRoundResult(String roundId) async {
+    final result = await _repository.getMatchingGameResult(roundId);
+    if (result.isError) {
+      return;
+    }
+    final info = result.valueOrNull;
+    if (info == null) {
+      return;
+    }
+    if (info.roundStatus == 'COMPLETED' ||
+        info.isMatched ||
+        info.isUnmatched) {
+      _roundPoll?.cancel();
+      _roundPoll = null;
+      _waitingForRoundResult = false;
+      await _applyGameResult(info);
+    }
+  }
+
+  Future<void> _applyGameResult(MatchingGameResultInfo info) async {
+    if (info.isMatched && info.partnerUid != null) {
+      _testResults = [
+        RelationshipMatchSuggestion(
+          candidate: DiscoveryCandidate(
+            uid: info.partnerUid!,
+            displayName: info.partnerName ?? '',
+            age: 0,
+            photos: [
+              if (info.partnerPhotoUrl != null &&
+                  info.partnerPhotoUrl!.isNotEmpty)
+                info.partnerPhotoUrl!,
+            ],
+            relationshipCompatibilityScore: info.compatibilityScore,
+          ),
+          score: info.compatibilityScore ?? 0,
+          sharedQuestionCount: RelationshipQuestionConfig.questionsPerSession,
+          alignedCount: info.compatibilityScore == 100
+              ? RelationshipQuestionConfig.questionsPerSession
+              : 0,
+          matchId: info.matchId,
+        ),
+      ];
+      _suggestions = _testResults;
+      _emptyResults = false;
+    } else {
+      _testResults = const [];
+      _emptyResults = true;
+    }
+    _resultsVisible = true;
+    _sessionLocked = true;
+    notifyListeners();
   }
 
   void _pauseTimer() {
@@ -550,7 +760,9 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       _log('Relationship trigger condition: FALSE');
       return;
     }
-    if (_normalMatchCount > 0 && _enforceOfferGates) {
+    if (!_hourlyGlobalMatchingGame &&
+        _normalMatchCount > 0 &&
+        _enforceOfferGates) {
       _log('Offer skipped — active conversation');
       _log('Relationship trigger condition: FALSE');
       return;
@@ -572,6 +784,7 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     _emptyResults = false;
     _lastError = null;
     final needsContinue =
+        !_hourlyGlobalMatchingGame &&
         _matchingEventCount >=
             RelationshipQuestionConfig.eventsBeforeContinuePrompt &&
         _enforceOfferGates;

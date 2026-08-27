@@ -395,6 +395,18 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      // Owner may read own humor summary. Peers never read raw humor vectors.
+      // Clients never write — Cloud Functions only.
+      match /humor/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /humorInteractions/{contentId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
       match /rateLimits/{docId} {
         allow read, write: if false;
       }
@@ -645,6 +657,27 @@ service cloud.firestore {
 
     match /weeklyMusicStats/{weekId} {
       allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    // Humor Lab catalog — clients may read approved/active cards for offline
+    // cache; all writes are Admin SDK / Cloud Functions only.
+    // Peers never read raw humor vectors.
+    match /humorContent/{contentId} {
+      allow read: if isAuthenticated()
+        && resource.data.get('active', false) == true
+        && resource.data.get('safetyStatus', '') == 'approved';
+      allow create, update, delete: if false;
+    }
+
+    match /humorReports/{reportId} {
+      allow read: if isAdmin()
+        || (isAuthenticated() && resource.data.reporterId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /humorModerationQueue/{contentId} {
+      allow read: if isAdmin();
       allow create, update, delete: if false;
     }
 

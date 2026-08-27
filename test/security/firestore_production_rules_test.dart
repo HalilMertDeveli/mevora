@@ -78,7 +78,7 @@ void main() {
       expect(rules.contains('messageCreatePayloadValid'), isTrue);
       expect(rules.contains('messageEncryptedFieldsValid'), isTrue);
       expect(rules.contains('chatStoragePathOwned'), isTrue);
-      expect(rules.contains("request.resource.data.encrypted == true"), isTrue);
+      expect(rules.contains('request.resource.data.encrypted == true'), isTrue);
     });
 
     test('support tickets are owner-read and create-only', () {
@@ -111,6 +111,34 @@ void main() {
     test('subscription entitlement is owner-read and server-write only', () {
       expect(rules.contains('match /subscription/{docId}'), isTrue);
       expect(rules.contains('allow create, update, delete: if false;'), isTrue);
+    });
+  });
+
+  group('humor lab isolation', () {
+    test('humor summary and interactions are owner-read CF-write only', () {
+      expect(rules.contains('match /humor/{docId}'), isTrue);
+      expect(rules.contains('match /humorInteractions/{contentId}'), isTrue);
+      expect(
+        rules.contains('Peers never read raw humor vectors'),
+        isTrue,
+      );
+    });
+
+    test('humorContent is readable only when approved and active', () {
+      expect(rules.contains('match /humorContent/{contentId}'), isTrue);
+      expect(
+        rules.contains("resource.data.get('safetyStatus', '') == 'approved'"),
+        isTrue,
+      );
+      expect(
+        rules.contains("resource.data.get('active', false) == true"),
+        isTrue,
+      );
+    });
+
+    test('humor reports and moderation queue are not client-writable', () {
+      expect(rules.contains('match /humorReports/{reportId}'), isTrue);
+      expect(rules.contains('match /humorModerationQueue/{contentId}'), isTrue);
     });
   });
 }

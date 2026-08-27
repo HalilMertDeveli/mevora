@@ -3477,6 +3477,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorPremiumAdFree => 'Ad-free Humor Lab with Premium';
 
   @override
+  String get humorPremiumCardTitle => 'Premium';
+
+  @override
+  String get humorPremiumCardBody => 'Ad-free Humor Lab';
+
+  @override
+  String get humorPremiumCardCta => 'Explore Premium';
+
+  @override
+  String get humorPremiumActiveBadge => 'Ad-free Humor Lab';
+
+  @override
+  String get humorMediaErrorSkip => 'Couldn\'t load this item — moving on.';
+
+  @override
   String get humorReportReasonOffensive => 'Offensive';
 
   @override
@@ -3533,10 +3548,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorIntroBody3 =>
-      'The more you rate, the clearer your humor profile becomes.';
+      'The more you rate, the more personalized your humor profile becomes.';
 
   @override
-  String get humorIntroCta => 'Discover my humor';
+  String get humorIntroCta => 'Discover My Humor';
 
   @override
   String get humorRatingHelp =>
@@ -3642,14 +3657,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorInfoStep2Body => 'Choose how funny each one feels.';
 
   @override
-  String get humorInfoStep3Title => 'Discover your humor';
+  String get humorInfoStep3Title => 'Build your humor profile';
 
   @override
   String get humorInfoStep3Body =>
       'Your ratings form a personal humor profile.';
 
   @override
-  String get humorInfoStep4Title => 'Find better fits';
+  String get humorInfoStep4Title => 'Discover more compatible people';
 
   @override
   String get humorInfoStep4Body =>

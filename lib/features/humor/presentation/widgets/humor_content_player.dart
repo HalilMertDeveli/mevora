@@ -12,17 +12,21 @@ import 'package:video_player/video_player.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 /// Full-bleed humor media: MP4, Giphy stream, YouTube embed, or image/meme/text.
+///
+/// Never throws out of build — broken media reports [onMediaError] instead.
 class HumorContentPlayer extends StatefulWidget {
   const HumorContentPlayer({
     super.key,
     required this.content,
     this.isActive = true,
     this.replayToken = 0,
+    this.onMediaError,
   });
 
   final HumorContent content;
   final bool isActive;
   final int replayToken;
+  final ValueChanged<String>? onMediaError;
 
   @override
   State<HumorContentPlayer> createState() => _HumorContentPlayerState();
@@ -34,6 +38,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
   var _muted = true;
   var _videoError = false;
   var _initializing = false;
+  var _errorReported = false;
 
   bool get _isYoutube => widget.content.isYoutube;
 
@@ -62,6 +67,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.content.contentId != widget.content.contentId ||
         oldWidget.replayToken != widget.replayToken) {
+      _errorReported = false;
       unawaited(_disposeMedia());
       _videoError = false;
       unawaited(_boot());
@@ -73,16 +79,36 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
   }
 
   Future<void> _boot() async {
-    if (_isYoutube) {
-      await _initYoutube();
-    } else if (_isDirectVideo) {
-      await _initVideo();
+    try {
+      if (_isYoutube) {
+        await _initYoutube();
+      } else if (_isDirectVideo) {
+        await _initVideo();
+      }
+    } catch (error, stack) {
+      debugPrint('HumorContentPlayer boot failed: $error\n$stack');
+      _markError();
     }
+  }
+
+  void _markError() {
+    if (!mounted) {
+      return;
+    }
+    setState(() => _videoError = true);
+    if (_errorReported) {
+      return;
+    }
+    _errorReported = true;
+    widget.onMediaError?.call(widget.content.contentId);
   }
 
   Future<void> _initYoutube() async {
     final videoId = widget.content.youtubeVideoId;
     if (videoId == null || videoId.isEmpty || _initializing) {
+      if (videoId == null || videoId.isEmpty) {
+        _markError();
+      }
       return;
     }
     _initializing = true;
@@ -106,10 +132,9 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         _videoError = false;
       });
       _syncPlayback();
-    } catch (_) {
-      if (mounted) {
-        setState(() => _videoError = true);
-      }
+    } catch (error, stack) {
+      debugPrint('Humor YouTube init failed: $error\n$stack');
+      _markError();
     } finally {
       _initializing = false;
     }
@@ -118,12 +143,27 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
   Future<void> _initVideo() async {
     final url = widget.content.downloadUrl;
     if (url == null || url.isEmpty || _initializing) {
+      if (url == null || url.isEmpty) {
+        _markError();
+      }
       return;
     }
     _initializing = true;
-    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    VideoPlayerController? controller;
     try {
+      final uri = Uri.tryParse(url);
+      if (uri == null) {
+        _markError();
+        return;
+      }
+      controller = VideoPlayerController.networkUrl(uri);
       await controller.initialize();
+      final size = controller.value.size;
+      if (size.width <= 0 || size.height <= 0) {
+        await controller.dispose();
+        _markError();
+        return;
+      }
       await controller.setLooping(true);
       await controller.setVolume(_muted ? 0 : 1);
       if (!mounted) {
@@ -134,34 +174,39 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         _video = controller;
         _videoError = false;
       });
+      controller = null;
       _syncPlayback();
-    } catch (_) {
-      await controller.dispose();
-      if (mounted) {
-        setState(() => _videoError = true);
-      }
+    } catch (error, stack) {
+      debugPrint('Humor video init failed: $error\n$stack');
+      await controller?.dispose();
+      _markError();
     } finally {
       _initializing = false;
     }
   }
 
   void _syncPlayback() {
-    final youtube = _youtube;
-    if (youtube != null) {
-      if (widget.isActive) {
-        unawaited(youtube.playVideo());
-      } else {
-        unawaited(youtube.pauseVideo());
+    try {
+      final youtube = _youtube;
+      if (youtube != null) {
+        if (widget.isActive) {
+          unawaited(youtube.playVideo());
+        } else {
+          unawaited(youtube.pauseVideo());
+        }
       }
-    }
-    final video = _video;
-    if (video == null || !video.value.isInitialized) {
-      return;
-    }
-    if (widget.isActive) {
-      unawaited(video.play());
-    } else {
-      unawaited(video.pause());
+      final video = _video;
+      if (video == null || !video.value.isInitialized) {
+        return;
+      }
+      if (widget.isActive) {
+        unawaited(video.play());
+      } else {
+        unawaited(video.pause());
+      }
+    } catch (error, stack) {
+      debugPrint('Humor playback sync failed: $error\n$stack');
+      _markError();
     }
   }
 
@@ -169,12 +214,16 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     final youtube = _youtube;
     _youtube = null;
     if (youtube != null) {
-      await youtube.close();
+      try {
+        await youtube.close();
+      } catch (_) {}
     }
     final video = _video;
     _video = null;
     if (video != null) {
-      await video.dispose();
+      try {
+        await video.dispose();
+      } catch (_) {}
     }
   }
 
@@ -185,28 +234,30 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
   }
 
   Future<void> _toggleMute() async {
-    final youtube = _youtube;
-    if (youtube != null) {
-      final next = !_muted;
-      if (next) {
-        await youtube.mute();
-      } else {
-        await youtube.unMute();
+    try {
+      final youtube = _youtube;
+      if (youtube != null) {
+        final next = !_muted;
+        if (next) {
+          await youtube.mute();
+        } else {
+          await youtube.unMute();
+        }
+        if (mounted) {
+          setState(() => _muted = next);
+        }
+        return;
       }
+      final video = _video;
+      if (video == null) {
+        return;
+      }
+      final next = !_muted;
+      await video.setVolume(next ? 0 : 1);
       if (mounted) {
         setState(() => _muted = next);
       }
-      return;
-    }
-    final video = _video;
-    if (video == null) {
-      return;
-    }
-    final next = !_muted;
-    await video.setVolume(next ? 0 : 1);
-    if (mounted) {
-      setState(() => _muted = next);
-    }
+    } catch (_) {}
   }
 
   Future<void> _openSource() async {
@@ -246,11 +297,14 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
                 _videoError &&
                 widget.content.thumbUrl != null)
               _buildImage(theme, l10n)
+            else if (_videoError)
+              _TextBody(text: l10n.humorMediaErrorSkip)
             else
               _TextBody(
                 text: widget.content.textBody ?? l10n.humorEmptyFeed,
               ),
             if (widget.content.hasText &&
+                widget.content.textBody != null &&
                 (widget.content.type != HumorContentType.text ||
                     widget.content.hasMedia))
               _CaptionOverlay(text: widget.content.textBody!),
@@ -274,7 +328,8 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
                 ),
               ),
             if ((_isDirectVideo || _isYoutube) &&
-                (_video != null || _youtube != null))
+                (_video != null || _youtube != null) &&
+                !_videoError)
               Positioned(
                 right: AppSpacing.md,
                 top: AppSpacing.md,
@@ -314,9 +369,19 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         ],
       );
     }
-    return YoutubePlayer(
-      controller: youtube,
-      aspectRatio: widget.content.aspectRatio ?? 9 / 16,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final ratio = widget.content.aspectRatio ?? 9 / 16;
+        return Center(
+          child: AspectRatio(
+            aspectRatio: ratio,
+            child: YoutubePlayer(
+              controller: youtube,
+              aspectRatio: ratio,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -335,11 +400,16 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         ],
       );
     }
+    final size = video.value.size;
+    if (size.width <= 0 || size.height <= 0) {
+      return _TextBody(text: l10n.humorMediaErrorSkip);
+    }
     return FittedBox(
       fit: BoxFit.cover,
+      clipBehavior: Clip.hardEdge,
       child: SizedBox(
-        width: video.value.size.width,
-        height: video.value.size.height,
+        width: size.width,
+        height: size.height,
         child: VideoPlayer(video),
       ),
     );
@@ -355,9 +425,16 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     return Image(
       image: image,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _TextBody(
-        text: widget.content.textBody ?? l10n.humorEmptyFeed,
-      ),
+      errorBuilder: (_, _, _) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _markError();
+          }
+        });
+        return _TextBody(
+          text: widget.content.textBody ?? l10n.humorMediaErrorSkip,
+        );
+      },
     );
   }
 

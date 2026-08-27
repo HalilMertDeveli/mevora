@@ -6392,6 +6392,36 @@ abstract class AppLocalizations {
   /// **'Ad-free Humor Lab with Premium'**
   String get humorPremiumAdFree;
 
+  /// No description provided for @humorPremiumCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get humorPremiumCardTitle;
+
+  /// No description provided for @humorPremiumCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ad-free Humor Lab'**
+  String get humorPremiumCardBody;
+
+  /// No description provided for @humorPremiumCardCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Premium'**
+  String get humorPremiumCardCta;
+
+  /// No description provided for @humorPremiumActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Ad-free Humor Lab'**
+  String get humorPremiumActiveBadge;
+
+  /// No description provided for @humorMediaErrorSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this item — moving on.'**
+  String get humorMediaErrorSkip;
+
   /// No description provided for @humorReportReasonOffensive.
   ///
   /// In en, this message translates to:
@@ -6503,13 +6533,13 @@ abstract class AppLocalizations {
   /// No description provided for @humorIntroBody3.
   ///
   /// In en, this message translates to:
-  /// **'The more you rate, the clearer your humor profile becomes.'**
+  /// **'The more you rate, the more personalized your humor profile becomes.'**
   String get humorIntroBody3;
 
   /// No description provided for @humorIntroCta.
   ///
   /// In en, this message translates to:
-  /// **'Discover my humor'**
+  /// **'Discover My Humor'**
   String get humorIntroCta;
 
   /// No description provided for @humorRatingHelp.
@@ -6689,7 +6719,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorInfoStep3Title.
   ///
   /// In en, this message translates to:
-  /// **'Discover your humor'**
+  /// **'Build your humor profile'**
   String get humorInfoStep3Title;
 
   /// No description provided for @humorInfoStep3Body.
@@ -6701,7 +6731,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorInfoStep4Title.
   ///
   /// In en, this message translates to:
-  /// **'Find better fits'**
+  /// **'Discover more compatible people'**
   String get humorInfoStep4Title;
 
   /// No description provided for @humorInfoStep4Body.

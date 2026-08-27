@@ -3473,6 +3473,21 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorPremiumAdFree => 'Premium ile reklamsız Mizah Labı';
 
   @override
+  String get humorPremiumCardTitle => 'Premium';
+
+  @override
+  String get humorPremiumCardBody => 'Reklamsız Mizah Labı';
+
+  @override
+  String get humorPremiumCardCta => 'Premium\'u İncele';
+
+  @override
+  String get humorPremiumActiveBadge => 'Reklamsız Mizah Labı';
+
+  @override
+  String get humorMediaErrorSkip => 'İçerik yüklenemedi, sonrakine geçiliyor.';
+
+  @override
   String get humorReportReasonOffensive => 'Rahatsız edici';
 
   @override
@@ -3530,7 +3545,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorIntroBody3 =>
-      'Ne kadar çok değerlendirirsen, mizah profilin o kadar doğru oluşur.';
+      'Ne kadar çok değerlendirirsen, mizah profilin o kadar kişiselleşir.';
 
   @override
   String get humorIntroCta => 'Mizahımı Keşfet';
@@ -3621,7 +3636,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Humor Lab\'daki seçimlerin mizah tercihlerini anlamak için kullanılır. Mesaj içeriklerin Humor Profile oluşturmak için analiz edilmez.';
 
   @override
-  String get humorInfoTitle => 'Humor Lab nasıl çalışıyor?';
+  String get humorInfoTitle => 'Mizah Labı nasıl çalışıyor?';
 
   @override
   String get humorInfoStep1Title => 'İzle';
@@ -3636,7 +3651,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorInfoStep2Body => 'Ne kadar komik bulduğunu seç.';
 
   @override
-  String get humorInfoStep3Title => 'Mizahını keşfet';
+  String get humorInfoStep3Title => 'Mizah profilini oluştur';
 
   @override
   String get humorInfoStep3Body =>
@@ -3650,7 +3665,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Mizah anlayışın ileride uyumlu insanları bulmana yardımcı olabilir.';
 
   @override
-  String get humorAdInfoTitle => 'Humor Lab ücretsiz';
+  String get humorAdInfoTitle => 'Mizah Labı ücretsiz';
 
   @override
   String get humorAdInfoBody =>
@@ -3658,11 +3673,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorAdInfoPremiumHint =>
-      'Premium ile Humor Lab\'ı reklamsız kullanabilirsin.';
+      'Premium ile Mizah Labı\'nı reklamsız kullanabilirsin.';
 
   @override
   String get humorAdInfoPremiumCta => 'Premium\'u İncele';
 
   @override
-  String get humorInfoTooltip => 'Humor Lab nasıl çalışıyor?';
+  String get humorInfoTooltip => 'Mizah Labı nasıl çalışıyor?';
 }

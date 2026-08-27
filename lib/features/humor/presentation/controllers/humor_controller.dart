@@ -338,6 +338,36 @@ class HumorController extends ChangeNotifier {
 
   Future<void> skip() => rate(HumorRating.neutral, skipped: true);
 
+  /// Drop a broken media item and advance without crashing the feed.
+  Future<void> skipBrokenMedia(String contentId) async {
+    final items = List<HumorContent>.from(_state.items);
+    final index = items.indexWhere((e) => e.contentId == contentId);
+    if (index < 0) {
+      return;
+    }
+    items.removeAt(index);
+    if (items.isEmpty) {
+      _state = _state.copyWith(
+        items: const [],
+        currentIndex: 0,
+        clearLastRated: true,
+        canUndo: false,
+      );
+      notifyListeners();
+      await _maybePrefetch();
+      return;
+    }
+    final nextIndex = index.clamp(0, items.length - 1);
+    _state = _state.copyWith(
+      items: items,
+      currentIndex: nextIndex,
+      clearLastRated: true,
+    );
+    notifyListeners();
+    _markViewed(items[nextIndex]);
+    await _maybePrefetch();
+  }
+
   Future<void> rateSwipeUp() => rate(HumorRating.funny, swipeUp: true);
 
   Future<void> rateSwipeDown() =>

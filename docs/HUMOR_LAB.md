@@ -67,3 +67,12 @@ Pass `--dart-define=USE_MOCK_HUMOR=false` to hit Cloud Functions.
 ## Compatibility
 
 MVP does **not** change `calculateCompatibility` / Discover ranking.
+Humor Compatibility match badges stay behind `HumorCompatibilityUi.enabled` (false).
+
+## User education
+
+- First-open intro (`HumorIntroView`); uid-scoped prefs via `HumorEducationStore`
+- Sparse hints / milestone sheets (12 shaping, 20 profile)
+- Info sheet (ⓘ), enriched profile (why it matters / privacy / how calculated)
+- Progress banner while profile is building
+- One-time free-user ad explainer before first sponsored break

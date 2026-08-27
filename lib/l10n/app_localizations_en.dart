@@ -3520,4 +3520,155 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorCategoryTeasing => 'Teasing';
+
+  @override
+  String get humorIntroTitle => 'Discover your humor';
+
+  @override
+  String get humorIntroBody1 =>
+      'We\'ll show you short funny videos and images.';
+
+  @override
+  String get humorIntroBody2 => 'Rate which ones actually make you laugh.';
+
+  @override
+  String get humorIntroBody3 =>
+      'The more you rate, the clearer your humor profile becomes.';
+
+  @override
+  String get humorIntroCta => 'Discover my humor';
+
+  @override
+  String get humorRatingHelp =>
+      'Your choices help us understand your humor style.';
+
+  @override
+  String get humorRatingHelpDismiss => 'Hide tip';
+
+  @override
+  String get humorHintFirstRating =>
+      'Nice! We\'re starting to learn your humor.';
+
+  @override
+  String get humorHintFiveRatings => 'Your humor profile is taking shape.';
+
+  @override
+  String get humorHintTenRatings =>
+      'We\'re getting to know you a little better.';
+
+  @override
+  String get humorHintFifteenRatings =>
+      'Your humor preferences are getting clearer.';
+
+  @override
+  String get humorProgressTitle => 'Your humor profile is forming';
+
+  @override
+  String humorProgressCount(int count) {
+    return 'You\'ve rated $count items.';
+  }
+
+  @override
+  String get humorProgressHint =>
+      'A few more ratings help us understand your humor better.';
+
+  @override
+  String get humorMilestoneShapingTitle => 'We\'re starting to get your humor';
+
+  @override
+  String get humorMilestoneShapingBody =>
+      'From your ratings, we\'re learning which humor styles you enjoy.';
+
+  @override
+  String get humorMilestoneProfileTitle => 'Your humor profile';
+
+  @override
+  String get humorMilestoneProfileBody =>
+      'You\'ve rated enough for a clearer picture of your humor preferences.';
+
+  @override
+  String get humorMilestoneViewProfile => 'View my profile';
+
+  @override
+  String get humorMilestoneContinue => 'Continue';
+
+  @override
+  String get humorProfileReadyTitle => 'Your humor profile';
+
+  @override
+  String get humorProfileNotReady =>
+      'Not enough ratings yet — keep going to refine your profile.';
+
+  @override
+  String get humorProfileHowForms =>
+      'This profile grows over time from your Humor Lab ratings. The more you rate, the more personal it becomes.';
+
+  @override
+  String get humorWhyMattersTitle => 'Why this matters';
+
+  @override
+  String get humorWhyMattersBody1 =>
+      'At Mevora we care about shared interests — and about people you can laugh with.';
+
+  @override
+  String get humorWhyMattersBody2 =>
+      'Your humor profile may help you discover people with a more compatible sense of humor over time.';
+
+  @override
+  String get humorHowCalculatedTitle => 'How is this calculated?';
+
+  @override
+  String get humorHowCalculatedBody =>
+      'It comes from the ratings you give in Humor Lab. Reactions to different humor styles build your personal profile. It can change as you keep rating. Your chat messages are never used to build this profile.';
+
+  @override
+  String get humorPrivacyNote =>
+      'Humor Lab choices are used to understand humor preferences. Message contents are not analyzed to build your Humor Profile.';
+
+  @override
+  String get humorInfoTitle => 'How Humor Lab works';
+
+  @override
+  String get humorInfoStep1Title => 'Watch';
+
+  @override
+  String get humorInfoStep1Body =>
+      'We show you different humor clips and images.';
+
+  @override
+  String get humorInfoStep2Title => 'Rate';
+
+  @override
+  String get humorInfoStep2Body => 'Choose how funny each one feels.';
+
+  @override
+  String get humorInfoStep3Title => 'Discover your humor';
+
+  @override
+  String get humorInfoStep3Body =>
+      'Your ratings form a personal humor profile.';
+
+  @override
+  String get humorInfoStep4Title => 'Find better fits';
+
+  @override
+  String get humorInfoStep4Body =>
+      'Your humor style may help you discover more compatible people later.';
+
+  @override
+  String get humorAdInfoTitle => 'Humor Lab is free';
+
+  @override
+  String get humorAdInfoBody =>
+      'In free use, ads may appear from time to time.';
+
+  @override
+  String get humorAdInfoPremiumHint =>
+      'With Premium you can use Humor Lab without ads.';
+
+  @override
+  String get humorAdInfoPremiumCta => 'Explore Premium';
+
+  @override
+  String get humorInfoTooltip => 'How Humor Lab works';
 }

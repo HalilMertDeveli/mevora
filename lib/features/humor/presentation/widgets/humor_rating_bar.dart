@@ -11,11 +11,15 @@ class HumorRatingBar extends StatelessWidget {
     required this.onRated,
     this.selected,
     this.enabled = true,
+    this.subtitle,
+    this.onDismissHelp,
   });
 
   final ValueChanged<HumorRating> onRated;
   final HumorRating? selected;
   final bool enabled;
+  final String? subtitle;
+  final VoidCallback? onDismissHelp;
 
   static const _order = HumorRating.values;
 
@@ -37,6 +41,30 @@ class HumorRatingBar extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    subtitle!,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (onDismissHelp != null)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: l10n.humorRatingHelpDismiss,
+                    onPressed: onDismissHelp,
+                    icon: const Icon(Icons.close, size: 16),
+                  ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [

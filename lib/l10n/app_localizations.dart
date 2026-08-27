@@ -6481,6 +6481,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Teasing'**
   String get humorCategoryTeasing;
+
+  /// No description provided for @humorIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover your humor'**
+  String get humorIntroTitle;
+
+  /// No description provided for @humorIntroBody1.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll show you short funny videos and images.'**
+  String get humorIntroBody1;
+
+  /// No description provided for @humorIntroBody2.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate which ones actually make you laugh.'**
+  String get humorIntroBody2;
+
+  /// No description provided for @humorIntroBody3.
+  ///
+  /// In en, this message translates to:
+  /// **'The more you rate, the clearer your humor profile becomes.'**
+  String get humorIntroBody3;
+
+  /// No description provided for @humorIntroCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover my humor'**
+  String get humorIntroCta;
+
+  /// No description provided for @humorRatingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your choices help us understand your humor style.'**
+  String get humorRatingHelp;
+
+  /// No description provided for @humorRatingHelpDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide tip'**
+  String get humorRatingHelpDismiss;
+
+  /// No description provided for @humorHintFirstRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Nice! We\'re starting to learn your humor.'**
+  String get humorHintFirstRating;
+
+  /// No description provided for @humorHintFiveRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile is taking shape.'**
+  String get humorHintFiveRatings;
+
+  /// No description provided for @humorHintTenRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re getting to know you a little better.'**
+  String get humorHintTenRatings;
+
+  /// No description provided for @humorHintFifteenRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor preferences are getting clearer.'**
+  String get humorHintFifteenRatings;
+
+  /// No description provided for @humorProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile is forming'**
+  String get humorProgressTitle;
+
+  /// No description provided for @humorProgressCount.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve rated {count} items.'**
+  String humorProgressCount(int count);
+
+  /// No description provided for @humorProgressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A few more ratings help us understand your humor better.'**
+  String get humorProgressHint;
+
+  /// No description provided for @humorMilestoneShapingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re starting to get your humor'**
+  String get humorMilestoneShapingTitle;
+
+  /// No description provided for @humorMilestoneShapingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'From your ratings, we\'re learning which humor styles you enjoy.'**
+  String get humorMilestoneShapingBody;
+
+  /// No description provided for @humorMilestoneProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile'**
+  String get humorMilestoneProfileTitle;
+
+  /// No description provided for @humorMilestoneProfileBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve rated enough for a clearer picture of your humor preferences.'**
+  String get humorMilestoneProfileBody;
+
+  /// No description provided for @humorMilestoneViewProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View my profile'**
+  String get humorMilestoneViewProfile;
+
+  /// No description provided for @humorMilestoneContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get humorMilestoneContinue;
+
+  /// No description provided for @humorProfileReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile'**
+  String get humorProfileReadyTitle;
+
+  /// No description provided for @humorProfileNotReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough ratings yet — keep going to refine your profile.'**
+  String get humorProfileNotReady;
+
+  /// No description provided for @humorProfileHowForms.
+  ///
+  /// In en, this message translates to:
+  /// **'This profile grows over time from your Humor Lab ratings. The more you rate, the more personal it becomes.'**
+  String get humorProfileHowForms;
+
+  /// No description provided for @humorWhyMattersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why this matters'**
+  String get humorWhyMattersTitle;
+
+  /// No description provided for @humorWhyMattersBody1.
+  ///
+  /// In en, this message translates to:
+  /// **'At Mevora we care about shared interests — and about people you can laugh with.'**
+  String get humorWhyMattersBody1;
+
+  /// No description provided for @humorWhyMattersBody2.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile may help you discover people with a more compatible sense of humor over time.'**
+  String get humorWhyMattersBody2;
+
+  /// No description provided for @humorHowCalculatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How is this calculated?'**
+  String get humorHowCalculatedTitle;
+
+  /// No description provided for @humorHowCalculatedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It comes from the ratings you give in Humor Lab. Reactions to different humor styles build your personal profile. It can change as you keep rating. Your chat messages are never used to build this profile.'**
+  String get humorHowCalculatedBody;
+
+  /// No description provided for @humorPrivacyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor Lab choices are used to understand humor preferences. Message contents are not analyzed to build your Humor Profile.'**
+  String get humorPrivacyNote;
+
+  /// No description provided for @humorInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How Humor Lab works'**
+  String get humorInfoTitle;
+
+  /// No description provided for @humorInfoStep1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch'**
+  String get humorInfoStep1Title;
+
+  /// No description provided for @humorInfoStep1Body.
+  ///
+  /// In en, this message translates to:
+  /// **'We show you different humor clips and images.'**
+  String get humorInfoStep1Body;
+
+  /// No description provided for @humorInfoStep2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get humorInfoStep2Title;
+
+  /// No description provided for @humorInfoStep2Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how funny each one feels.'**
+  String get humorInfoStep2Body;
+
+  /// No description provided for @humorInfoStep3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover your humor'**
+  String get humorInfoStep3Title;
+
+  /// No description provided for @humorInfoStep3Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Your ratings form a personal humor profile.'**
+  String get humorInfoStep3Body;
+
+  /// No description provided for @humorInfoStep4Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Find better fits'**
+  String get humorInfoStep4Title;
+
+  /// No description provided for @humorInfoStep4Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor style may help you discover more compatible people later.'**
+  String get humorInfoStep4Body;
+
+  /// No description provided for @humorAdInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor Lab is free'**
+  String get humorAdInfoTitle;
+
+  /// No description provided for @humorAdInfoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'In free use, ads may appear from time to time.'**
+  String get humorAdInfoBody;
+
+  /// No description provided for @humorAdInfoPremiumHint.
+  ///
+  /// In en, this message translates to:
+  /// **'With Premium you can use Humor Lab without ads.'**
+  String get humorAdInfoPremiumHint;
+
+  /// No description provided for @humorAdInfoPremiumCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Premium'**
+  String get humorAdInfoPremiumCta;
+
+  /// No description provided for @humorInfoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'How Humor Lab works'**
+  String get humorInfoTooltip;
 }
 
 class _AppLocalizationsDelegate

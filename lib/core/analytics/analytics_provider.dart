@@ -73,6 +73,16 @@ abstract final class AnalyticsEvents {
   static const String humorAdFailed = 'humor_ad_failed';
   static const String humorPremiumAdFree = 'humor_premium_ad_free';
   static const String humorFeedPageLoaded = 'humor_feed_page_loaded';
+  static const String humorIntroShown = 'humor_intro_shown';
+  static const String humorIntroCompleted = 'humor_intro_completed';
+  static const String humorInfoOpened = 'humor_info_opened';
+  static const String humorRatingHelpViewed = 'humor_rating_help_viewed';
+  static const String humorProfileMilestoneReached =
+      'humor_profile_milestone_reached';
+  static const String humorProfileOpened = 'humor_profile_opened';
+  static const String humorWhyMatchViewed = 'humor_why_match_viewed';
+  static const String humorAdInfoShown = 'humor_ad_info_shown';
+  static const String humorAdInfoDismissed = 'humor_ad_info_dismissed';
 }
 
 abstract class AnalyticsProvider {

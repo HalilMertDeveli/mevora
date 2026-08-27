@@ -3516,4 +3516,153 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorCategoryTeasing => 'Takılma';
+
+  @override
+  String get humorIntroTitle => 'Mizahını keşfet';
+
+  @override
+  String get humorIntroBody1 =>
+      'Sana farklı komik videolar ve görseller göstereceğiz.';
+
+  @override
+  String get humorIntroBody2 =>
+      'Hangilerinin seni gerçekten güldürdüğünü değerlendir.';
+
+  @override
+  String get humorIntroBody3 =>
+      'Ne kadar çok değerlendirirsen, mizah profilin o kadar doğru oluşur.';
+
+  @override
+  String get humorIntroCta => 'Mizahımı Keşfet';
+
+  @override
+  String get humorRatingHelp =>
+      'Seçimlerin, sana uygun insanları keşfetmemize yardımcı olur.';
+
+  @override
+  String get humorRatingHelpDismiss => 'İpucunu gizle';
+
+  @override
+  String get humorHintFirstRating => 'Harika! Mizahını öğrenmeye başlıyoruz.';
+
+  @override
+  String get humorHintFiveRatings => 'Mizah profilin şekilleniyor.';
+
+  @override
+  String get humorHintTenRatings => 'Seni biraz daha tanıyoruz.';
+
+  @override
+  String get humorHintFifteenRatings =>
+      'Mizah tercihlerin artık daha belirgin.';
+
+  @override
+  String get humorProgressTitle => 'Mizah profilin oluşuyor';
+
+  @override
+  String humorProgressCount(int count) {
+    return '$count içerik değerlendirdin.';
+  }
+
+  @override
+  String get humorProgressHint =>
+      'Biraz daha değerlendirerek mizahını daha iyi keşfedebilirsin.';
+
+  @override
+  String get humorMilestoneShapingTitle => 'Mizahını biraz tanımaya başladık';
+
+  @override
+  String get humorMilestoneShapingBody =>
+      'Verdiğin cevaplardan hangi mizah türlerini sevdiğini anlamaya başlıyoruz.';
+
+  @override
+  String get humorMilestoneProfileTitle => 'Senin mizah profilin';
+
+  @override
+  String get humorMilestoneProfileBody =>
+      'Mizah tercihlerini daha net görmek için yeterli değerlendirme yaptın.';
+
+  @override
+  String get humorMilestoneViewProfile => 'Profilimi Gör';
+
+  @override
+  String get humorMilestoneContinue => 'Devam Et';
+
+  @override
+  String get humorProfileReadyTitle => 'Senin Mizah Profilin';
+
+  @override
+  String get humorProfileNotReady =>
+      'Henüz yeterli veri yok — profilini netleştirmek için değerlendirmeye devam et.';
+
+  @override
+  String get humorProfileHowForms =>
+      'Bu profil, Humor Lab\'da verdiğin cevaplardan zaman içinde oluşur. Ne kadar çok içerik değerlendirirsen, profilin o kadar kişiselleşir.';
+
+  @override
+  String get humorWhyMattersTitle => 'Bu neden önemli?';
+
+  @override
+  String get humorWhyMattersBody1 =>
+      'Mevora\'da sadece ortak ilgi alanlarına değil, birlikte gülebileceğin insanlara da önem veriyoruz.';
+
+  @override
+  String get humorWhyMattersBody2 =>
+      'Mizah profilin, ileride sana mizah anlayışı daha uyumlu insanları keşfetmene yardımcı olabilir.';
+
+  @override
+  String get humorHowCalculatedTitle => 'Nasıl hesaplanıyor?';
+
+  @override
+  String get humorHowCalculatedBody =>
+      'Humor Lab\'da verdiğin değerlendirmelerden oluşur. Farklı mizah türlerine verdiğin tepkiler kişisel mizah profilini oluşturur. Profilin zaman içinde değişebilir. Mesaj içeriklerin bu profil için analiz edilmez.';
+
+  @override
+  String get humorPrivacyNote =>
+      'Humor Lab\'daki seçimlerin mizah tercihlerini anlamak için kullanılır. Mesaj içeriklerin Humor Profile oluşturmak için analiz edilmez.';
+
+  @override
+  String get humorInfoTitle => 'Humor Lab nasıl çalışıyor?';
+
+  @override
+  String get humorInfoStep1Title => 'İzle';
+
+  @override
+  String get humorInfoStep1Body => 'Sana farklı mizah içerikleri gösteriyoruz.';
+
+  @override
+  String get humorInfoStep2Title => 'Değerlendir';
+
+  @override
+  String get humorInfoStep2Body => 'Ne kadar komik bulduğunu seç.';
+
+  @override
+  String get humorInfoStep3Title => 'Mizahını keşfet';
+
+  @override
+  String get humorInfoStep3Body =>
+      'Seçimlerinden kişisel mizah profilin oluşur.';
+
+  @override
+  String get humorInfoStep4Title => 'Daha uyumlu insanları keşfet';
+
+  @override
+  String get humorInfoStep4Body =>
+      'Mizah anlayışın ileride uyumlu insanları bulmana yardımcı olabilir.';
+
+  @override
+  String get humorAdInfoTitle => 'Humor Lab ücretsiz';
+
+  @override
+  String get humorAdInfoBody =>
+      'Ücretsiz kullanımda zaman zaman reklam gösterilir.';
+
+  @override
+  String get humorAdInfoPremiumHint =>
+      'Premium ile Humor Lab\'ı reklamsız kullanabilirsin.';
+
+  @override
+  String get humorAdInfoPremiumCta => 'Premium\'u İncele';
+
+  @override
+  String get humorInfoTooltip => 'Humor Lab nasıl çalışıyor?';
 }

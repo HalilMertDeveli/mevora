@@ -97,7 +97,10 @@ export async function sendUserPush(options: {
   data: Record<string, string>;
   prefKey: PushPrefKey;
   bodyOverride?: string;
+  /** Optional; reserved for failed-notification retry keys. */
+  idempotencyKey?: string;
 }): Promise<void> {
+  void options.idempotencyKey;
   const [legacyPref, settings] = await Promise.all([
     db.doc(`users/${options.uid}/settings/notifications`).get(),
     db.doc(`userSettings/${options.uid}`).get(),

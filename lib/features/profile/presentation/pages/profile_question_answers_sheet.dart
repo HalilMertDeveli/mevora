@@ -15,7 +15,23 @@ Future<void> showProfileQuestionAnswersSheet(
 }) {
   final l10n = AppLocalizations.of(context);
   final locale = Localizations.localeOf(context).languageCode;
-  final cards = answers
+  // When premium-locked, never resolve answer text even if a stale answerId
+  // sneaks into the list (defense in depth vs CF / parser bugs).
+  final safeAnswers = premiumLocked && !isOwner
+      ? answers
+          .map(
+            (item) => ProfileQuestionAnswer(
+              questionId: item.questionId,
+              answerId: '',
+              isVisible: item.isVisible,
+              answerLocked: true,
+              createdAt: item.createdAt,
+              updatedAt: item.updatedAt,
+            ),
+          )
+          .toList(growable: false)
+      : answers;
+  final cards = safeAnswers
       .map((item) => ProfileQuestionAnswerDisplay.resolve(item, locale))
       .whereType<ProfileQuestionAnswerDisplay>()
       .toList(growable: false);

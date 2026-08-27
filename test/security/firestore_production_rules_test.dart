@@ -42,14 +42,20 @@ void main() {
       expect(rules.contains('allow create, update, delete: if false'), isTrue);
     });
 
-    test('profile question answers are readable only when visible to others', () {
+    test('profile question answers are owner-read only (peers use CF)', () {
       expect(rules.contains('match /questionAnswers/{questionId}'), isTrue);
-      expect(rules.contains('function hasActiveMatchWith(otherUid)'), isTrue);
-      expect(rules.contains('function canonicalMatchId(uidA, uidB)'), isTrue);
-      // Legacy docs omit isVisible — default true so matched viewers still see them.
+      expect(rules.contains('getPartnerQuestionAnswers'), isTrue);
+      expect(rules.contains('function hasActiveMatchWith(otherUid)'), isFalse);
+      // Owner-only client read — no peer isVisible gate in rules.
+      final questionAnswersBlock = RegExp(
+        r'match /questionAnswers/\{questionId\} \{[^}]+\}',
+        multiLine: true,
+      ).firstMatch(rules)?.group(0);
+      expect(questionAnswersBlock, isNotNull);
+      expect(questionAnswersBlock!, contains('allow read: if isOwner(userId)'));
       expect(
-        rules.contains("resource.data.get('isVisible', true) == true"),
-        isTrue,
+        questionAnswersBlock.contains("resource.data.get('isVisible'"),
+        isFalse,
       );
     });
   });

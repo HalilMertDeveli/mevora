@@ -225,11 +225,15 @@ class _ProfileQuestionAnswersSectionState
   }
 
   void _subscribeAnswers(ProfileQuestionAnswerRepository repository) {
+    // Hard gate: peer profiles must never Firestore-watch questionAnswers.
+    if (!widget.isOwner) {
+      unawaited(_loadPartnerAnswers(repository));
+      return;
+    }
     unawaited(_answersSubscription?.cancel());
-    final visibleOnly = !widget.isOwner;
     _loading = true;
     _answersSubscription = repository
-        .watchAnswers(widget.uid, visibleOnly: visibleOnly)
+        .watchAnswers(widget.uid, visibleOnly: false)
         .listen(
       (value) async {
         if (!mounted) {

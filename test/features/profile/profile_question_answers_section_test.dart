@@ -22,6 +22,8 @@ import '../../helpers/pump_app.dart';
 class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
   final _controller = StreamController<List<ProfileQuestionAnswer>>.broadcast();
   var syncCalls = 0;
+  var watchCalls = 0;
+  var partnerFetchCalls = 0;
   PartnerQuestionAnswersSnapshot partnerSnapshot =
       PartnerQuestionAnswersSnapshot.empty;
 
@@ -29,14 +31,18 @@ class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
   Stream<List<ProfileQuestionAnswer>> watchAnswers(
     String uid, {
     bool visibleOnly = false,
-  }) =>
-      _controller.stream;
+  }) {
+    watchCalls += 1;
+    return _controller.stream;
+  }
 
   @override
   Future<Result<PartnerQuestionAnswersSnapshot>> fetchPartnerAnswers(
     String partnerUid,
-  ) async =>
-      Success(partnerSnapshot);
+  ) async {
+    partnerFetchCalls += 1;
+    return Success(partnerSnapshot);
+  }
 
   @override
   Future<Result<void>> syncFromMatching() async {
@@ -223,6 +229,9 @@ void main() {
     expect(find.textContaining('Coffee'), findsWidgets);
     // Answer option labels must not appear for free peers.
     expect(find.textContaining('"'), findsNothing);
+    // Peer path must use CF fetch — never Firestore watchAnswers.
+    expect(answers.partnerFetchCalls, greaterThan(0));
+    expect(answers.watchCalls, 0);
   });
 
   testWidgets('premium peer sees unlocked question and answer', (tester) async {
@@ -275,5 +284,7 @@ void main() {
     expect(find.text(l10n.questionAnswersPremiumAnswerHidden), findsNothing);
     expect(find.textContaining('Coffee'), findsWidgets);
     expect(find.textContaining('"'), findsWidgets);
+    expect(answers.partnerFetchCalls, greaterThan(0));
+    expect(answers.watchCalls, 0);
   });
 }

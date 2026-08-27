@@ -99,6 +99,8 @@ class FirebaseProfileQuestionAnswerDataSource
     String uid, {
     bool visibleOnly = false,
   }) {
+    // Owner path only. Peer UIs must use [fetchPartnerAnswers] (CF) — never
+    // Firestore-watch another user's questionAnswers (rules deny peer reads).
     Query<Map<String, dynamic>> query = _answers(uid);
     if (visibleOnly) {
       query = query.where('isVisible', isEqualTo: true);

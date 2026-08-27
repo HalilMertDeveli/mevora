@@ -63,20 +63,6 @@ service cloud.firestore {
         || exists(/databases/$(database)/documents/blocks/$(b + '_' + a));
     }
 
-    function canonicalMatchId(uidA, uidB) {
-      return uidA < uidB ? uidA + '_' + uidB : uidB + '_' + uidA;
-    }
-
-    function hasActiveMatchWith(otherUid) {
-      return isAuthenticated()
-        && otherUid != request.auth.uid
-        && !isBlockedPair(request.auth.uid, otherUid)
-        && exists(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid)))
-        && get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.isActive == true
-        && request.auth.uid in get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.userIds
-        && otherUid in get(/databases/$(database)/documents/matches/$(canonicalMatchId(request.auth.uid, otherUid))).data.userIds;
-    }
-
     function unchangedOrFalse(key) {
       return request.resource.data.get(key, false) == resource.data.get(key, false)
         || request.resource.data.get(key, false) == false;

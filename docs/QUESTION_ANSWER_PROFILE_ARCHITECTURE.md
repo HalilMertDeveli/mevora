@@ -81,7 +81,7 @@ Wired through `RelationshipScope.profileAnswers`.
 |---|---|
 | Profile tab | Owner preview (up to 3) + edit link |
 | Edit profile | Same section with edit action |
-| Discovery profile details | Other user's visible answers only |
+| Discovery profile details | Peer Q&A via CF (Free: prompts+lock; Premium: answers) |
 | Profile answers editor | Answer chips + "Show on profile" toggle |
 
 ## Privacy

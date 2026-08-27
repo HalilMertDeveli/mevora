@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/features/profile/data/datasources/firebase_profile_question_answer_data_source.dart';
+import 'package:mevora/features/profile/domain/models/profile_question_answer.dart';
+import 'package:mevora/features/profile/domain/services/profile_question_answer_display.dart';
 
 void main() {
   group('parsePartnerQuestionAnswersPayload', () {
@@ -54,6 +56,22 @@ void main() {
       });
       expect(snapshot.matchRequired, isTrue);
       expect(snapshot.items, isEmpty);
+    });
+  });
+
+  group('premium-locked sheet defense', () {
+    test('locked display never surfaces answer text from a leaked answerId', () {
+      const sanitized = ProfileQuestionAnswer(
+        questionId: 'rq_001',
+        answerId: '',
+        isVisible: true,
+        answerLocked: true,
+      );
+      final display = ProfileQuestionAnswerDisplay.resolve(sanitized, 'en');
+      expect(display, isNotNull);
+      expect(display!.isLocked, isTrue);
+      expect(display.answerText, isEmpty);
+      expect(display.questionText, isNotEmpty);
     });
   });
 }

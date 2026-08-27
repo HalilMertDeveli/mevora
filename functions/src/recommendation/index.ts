@@ -5,6 +5,7 @@ export {
 export {
   computeProfileQuality,
   profileQualityFromDocs,
+  personalityAnswerCountFromSummary,
   PROFILE_QUALITY_FLOOR,
   PROFILE_PHOTO_TARGET,
   PROFILE_PERSONALITY_TARGET,

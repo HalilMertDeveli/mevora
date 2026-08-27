@@ -1,8 +1,10 @@
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
-import {answersFromSummary} from "../relationshipCompatibility.js";
-import {profileQualityFromDocs} from "./profileQuality.js";
+import {
+  personalityAnswerCountFromSummary,
+  profileQualityFromDocs,
+} from "./profileQuality.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -35,11 +37,9 @@ export const getProfileQualityScore = onCall(callableOptions, async (request) =>
       db.collection(`users/${uid}/relationshipAnswers`).limit(120).get(),
     ]);
 
-  const summaryAnswers = answersFromSummary(summarySnap.data());
   const answerCount = Math.max(
-    Object.keys(summaryAnswers).length,
+    personalityAnswerCountFromSummary(summarySnap.data() ?? null),
     answersSnap.size,
-    Number(summarySnap.data()?.answerCount ?? 0),
   );
 
   const quality = profileQualityFromDocs({

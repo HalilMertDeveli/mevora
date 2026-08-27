@@ -31,7 +31,7 @@ import {
 } from "./discoveryFallback.js";
 import {userLanguage} from "./language.js";
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
-import {profileQualityFromDocs} from "./recommendation/profileQuality.js";
+import {profileQualityFromDocs, personalityAnswerCountFromSummary} from "./recommendation/profileQuality.js";
 import {musicRankingBonus} from "./musicCompatibility.js";
 import {ensureMatchScore, preservedMatchScoreFields} from "./matchScore.js";
 import {musicScoreForPair} from "./spotifyMusic.js";
@@ -158,6 +158,29 @@ async function loadUserLocations(
   return out;
 }
 
+/** Batch-load personality answer counts from relationshipMatch/summary. */
+async function loadPersonalityAnswerCounts(
+  uids: string[],
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  const unique = [...new Set(uids)].filter((id) => id.length > 0);
+  for (let i = 0; i < unique.length; i += 30) {
+    const chunk = unique.slice(i, i + 30);
+    const snaps = await Promise.all(
+      chunk.map((id) => db.doc(`users/${id}/relationshipMatch/summary`).get()),
+    );
+    snaps.forEach((snap, index) => {
+      out.set(
+        chunk[index],
+        personalityAnswerCountFromSummary(
+          (snap.data() as Record<string, unknown> | undefined) ?? null,
+        ),
+      );
+    });
+  }
+  return out;
+}
+
 export const getDiscoveryCandidates = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const callerAccount = await db.doc(`users/${uid}`).get();
@@ -235,11 +258,13 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
       break;
     }
     const candidateUids = profiles.docs.map((doc) => doc.id);
-    const [lastActiveByUid, accountsByUid, preferencesByUid, locationsByUid] = await Promise.all([
+    const [lastActiveByUid, accountsByUid, preferencesByUid, locationsByUid, personalityCountsByUid] =
+      await Promise.all([
       loadLastActiveAt(db, candidateUids),
       loadUserAccounts(candidateUids),
       loadPreferencesByUid(db, candidateUids),
       hasViewerLocation ? loadUserLocations(candidateUids) : Promise.resolve(new Map()),
+      loadPersonalityAnswerCounts(candidateUids),
     ]);
 
     for (const doc of profiles.docs) {
@@ -337,8 +362,11 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
           ...(accountsByUid.get(doc.id) ?? {}),
           lastActiveAt: lastActiveByUid.get(doc.id) ?? null,
         },
-        personalityAnswerCount: Number(
-          (data as {relationshipAnswerCount?: unknown}).relationshipAnswerCount ?? 0,
+        personalityAnswerCount: Math.max(
+          Number(
+            (data as {relationshipAnswerCount?: unknown}).relationshipAnswerCount ?? 0,
+          ) || 0,
+          personalityCountsByUid.get(doc.id) ?? 0,
         ),
         nowMs: Date.now(),
       });

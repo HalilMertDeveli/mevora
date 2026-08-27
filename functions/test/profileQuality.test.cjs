@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const {
   computeProfileQuality,
   profileQualityFromDocs,
+  personalityAnswerCountFromSummary,
   PROFILE_QUALITY_FLOOR,
   PROFILE_PHOTO_TARGET,
 } = require("../lib/recommendation/profileQuality.js");
@@ -122,5 +123,60 @@ describe("profile quality score", () => {
     });
     assert.ok(result.baseScore > 0);
     assert.ok(result.signals.profileQuality >= 0.05);
+  });
+
+  it("reads personality count from relationshipMatch summary", () => {
+    const fromAnswers = personalityAnswerCountFromSummary({
+      answers: {
+        rq_001: "a",
+        rq_002: "b",
+        rq_003: "c",
+      },
+      answerCount: 1,
+    });
+    const fromFieldOnly = personalityAnswerCountFromSummary({
+      answerCount: 4,
+    });
+    const empty = personalityAnswerCountFromSummary(null);
+    assert.equal(fromAnswers, 3);
+    assert.equal(fromFieldOnly, 4);
+    assert.equal(empty, 0);
+
+    const withSummary = profileQualityFromDocs({
+      profile: {
+        photos: [
+          {id: "1", storagePath: "a.jpg", moderationStatus: "approved"},
+          {id: "2", storagePath: "b.jpg", moderationStatus: "approved"},
+          {id: "3", storagePath: "c.jpg", moderationStatus: "approved"},
+        ],
+        bio: "Hello there friend",
+        age: 28,
+        city: "Istanbul",
+        relationshipGoal: "longTerm",
+        profileCompleted: true,
+      },
+      user: {lastActiveAt: Date.now()},
+      personalityAnswerCount: fromAnswers,
+      nowMs: Date.now(),
+    });
+    const withoutPersonality = profileQualityFromDocs({
+      profile: {
+        photos: [
+          {id: "1", storagePath: "a.jpg", moderationStatus: "approved"},
+          {id: "2", storagePath: "b.jpg", moderationStatus: "approved"},
+          {id: "3", storagePath: "c.jpg", moderationStatus: "approved"},
+        ],
+        bio: "Hello there friend",
+        age: 28,
+        city: "Istanbul",
+        relationshipGoal: "longTerm",
+        profileCompleted: true,
+      },
+      user: {lastActiveAt: Date.now()},
+      personalityAnswerCount: 0,
+      nowMs: Date.now(),
+    });
+    assert.equal(withSummary.factors.personality, 20);
+    assert.ok(withSummary.score > withoutPersonality.score);
   });
 });

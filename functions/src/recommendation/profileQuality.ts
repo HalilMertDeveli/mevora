@@ -6,6 +6,8 @@
  * A floor keeps sparse profiles from scoring to zero.
  */
 
+import {answersFromSummary} from "../relationshipCompatibility.js";
+
 export const PROFILE_QUALITY_FLOOR = 15;
 export const PROFILE_PHOTO_TARGET = 3;
 export const PROFILE_PERSONALITY_TARGET = 3;
@@ -126,6 +128,22 @@ export type ProfileQualityDocsArgs = {
   personalityAnswerCount?: number;
   nowMs?: number;
 };
+
+/**
+ * Personality answer count from `users/{uid}/relationshipMatch/summary`.
+ * Prefers the larger of validated `answers` keys and stored `answerCount`.
+ */
+export function personalityAnswerCountFromSummary(
+  data: Record<string, unknown> | null | undefined,
+): number {
+  if (!data) {
+    return 0;
+  }
+  const fromAnswers = Object.keys(answersFromSummary(data)).length;
+  const rawField = Number(data.answerCount ?? 0);
+  const fromField = Number.isFinite(rawField) ? Math.max(0, rawField) : 0;
+  return Math.max(fromAnswers, fromField);
+}
 
 export function profileQualityFromDocs(args: ProfileQualityDocsArgs): ProfileQualityResult {
   const profile = args.profile ?? {};

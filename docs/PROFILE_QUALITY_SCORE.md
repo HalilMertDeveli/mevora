@@ -33,6 +33,12 @@ Core weights sum to **100 without Spotify**. Spotify can push raw slightly over 
 | Discover attach | `profileQualityScore` on discovery cards (`backend.ts`) |
 | Soft rank lift | +0–4 in `computeDiscoveryRankScore` (`boost/ranking.ts`) |
 
+### Personality count on Discover
+
+Discover batch-loads `users/{uid}/relationshipMatch/summary` per candidate page (`loadPersonalityAnswerCounts`) and uses `personalityAnswerCountFromSummary` (max of validated `answers` keys and stored `answerCount`). That count is combined with `profile.relationshipAnswerCount` via `Math.max`, so missing profile fields no longer under-weight personality.
+
+The owner callable still also considers `relationshipAnswers` collection size when higher than the summary.
+
 ## Flutter
 
 | Piece | Path |
@@ -41,9 +47,15 @@ Core weights sum to **100 without Spotify**. Spotify can push raw slightly over 
 | Profile / edit UI | `ProfileQualitySection` → “Profile Quality N%” + missing list |
 | Boost | Soft tip only via `ProfileQualityBoostHint` (purchase stays enabled) |
 
-## Gaps / follow-ups
+## Constraints (unchanged)
 
-- Discover currently uses `relationshipAnswerCount` on the profile doc when present; most users only have counts on `relationshipMatch/summary`, so personality weight may under-count in Discover until a cheap batch summary load is added.
+- Spotify remains optional bonus-only.
+- Floor stays at 15.
+- Never blocks Boost purchase.
+- Never hard-excludes Discover candidates.
+
+## Remaining follow-ups
+
 - `UserProfile.lastActiveAt` is not always hydrated from Firestore on the client; activity factor often uses the gentle “unknown” partial credit.
-- Smart Boost preview UI is not on `main` yet; soft tip is on the classic Boost screen.
+- Smart Boost preview UI is not on this branch; soft tip is on the classic Boost screen.
 - Optional Spotify tip is intentionally **not** in the missing-items list.

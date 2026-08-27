@@ -1332,6 +1332,31 @@
       }
     }
   },
+  "profileQualityTitle": "Profil Kalitesi %{percent}",
+  "@profileQualityTitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "profileQualityMissing": "Geliştir: {fields}",
+  "@profileQualityMissing": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "profileQualityBoostHint": "İpucu: daha güçlü bir profil ({fields}) Boost etkisini artırabilir. Satın alma yine açık.",
+  "@profileQualityBoostHint": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "profileQualityFieldPersonality": "Kişilik soruları",
   "profileFieldDisplayName": "İsim",
   "profileFieldBirthDate": "Doğum tarihi",
   "profileFieldGender": "Cinsiyet",

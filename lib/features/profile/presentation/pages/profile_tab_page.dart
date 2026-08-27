@@ -16,6 +16,7 @@ import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.da
 import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_quality_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
@@ -67,6 +68,7 @@ class ProfileTabPage extends StatelessWidget {
             ),
           ],
           const SizedBox(height: AppSpacing.xl),
+          const ProfileQualitySection(),
           if (user?.id != null) ...[
             ProfileQuestionAnswersSection(
               uid: user!.id,

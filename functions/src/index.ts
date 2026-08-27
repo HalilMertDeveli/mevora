@@ -27,4 +27,5 @@ export {
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {getProfileQualityScore} from "./recommendation/getProfileQualityScore.js";
 export {createSumsubAccessToken, sumsubWebhook} from "./sumsub/index.js";

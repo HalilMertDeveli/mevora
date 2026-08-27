@@ -5606,6 +5606,30 @@ abstract class AppLocalizations {
   /// **'Still missing: {fields}'**
   String profileCompletionMissing(String fields);
 
+  /// No description provided for @profileQualityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile Quality {percent}%'**
+  String profileQualityTitle(int percent);
+
+  /// No description provided for @profileQualityMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Improve: {fields}'**
+  String profileQualityMissing(String fields);
+
+  /// No description provided for @profileQualityBoostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: a stronger profile ({fields}) can make Boost work better. Purchase is still available.'**
+  String profileQualityBoostHint(String fields);
+
+  /// No description provided for @profileQualityFieldPersonality.
+  ///
+  /// In en, this message translates to:
+  /// **'Personality questions'**
+  String get profileQualityFieldPersonality;
+
   /// No description provided for @profileFieldDisplayName.
   ///
   /// In en, this message translates to:

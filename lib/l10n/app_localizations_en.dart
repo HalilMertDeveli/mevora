@@ -3072,6 +3072,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String profileQualityTitle(int percent) {
+    return 'Profile Quality $percent%';
+  }
+
+  @override
+  String profileQualityMissing(String fields) {
+    return 'Improve: $fields';
+  }
+
+  @override
+  String profileQualityBoostHint(String fields) {
+    return 'Tip: a stronger profile ($fields) can make Boost work better. Purchase is still available.';
+  }
+
+  @override
+  String get profileQualityFieldPersonality => 'Personality questions';
+
+  @override
   String get profileFieldDisplayName => 'Name';
 
   @override

@@ -22,4 +22,15 @@ abstract final class ProfileLabels {
       _ => key,
     };
   }
+
+  static String qualityField(AppLocalizations l10n, String key) {
+    return switch (key) {
+      'photos' => l10n.profileFieldPhotos,
+      'bio' => l10n.profileFieldBio,
+      'location' => l10n.profileFieldCity,
+      'relationshipGoal' => l10n.profileFieldRelationshipGoal,
+      'personality' => l10n.profileQualityFieldPersonality,
+      _ => completionField(l10n, key),
+    };
+  }
 }

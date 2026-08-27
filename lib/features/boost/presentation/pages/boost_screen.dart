@@ -19,6 +19,7 @@ import 'package:mevora/features/boost/presentation/controllers/purchase_controll
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_history_list.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_pack_sheet.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_quality_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
@@ -178,6 +179,7 @@ class _ProductView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
+        const ProfileQualitySection(boostHint: true),
         MevoraCard(
           emphasis: MevoraCardEmphasis.elevated,
           child: Column(

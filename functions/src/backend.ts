@@ -31,6 +31,7 @@ import {
 } from "./discoveryFallback.js";
 import {userLanguage} from "./language.js";
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
+import {profileQualityFromDocs} from "./recommendation/profileQuality.js";
 import {musicRankingBonus} from "./musicCompatibility.js";
 import {ensureMatchScore, preservedMatchScoreFields} from "./matchScore.js";
 import {musicScoreForPair} from "./spotifyMusic.js";
@@ -330,6 +331,17 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
           : null,
         musicScore: music?.score ?? null,
       });
+      const quality = profileQualityFromDocs({
+        profile: data,
+        user: {
+          ...(accountsByUid.get(doc.id) ?? {}),
+          lastActiveAt: lastActiveByUid.get(doc.id) ?? null,
+        },
+        personalityAnswerCount: Number(
+          (data as {relationshipAnswerCount?: unknown}).relationshipAnswerCount ?? 0,
+        ),
+        nowMs: Date.now(),
+      });
       buckets[tier].push({
         uid: doc.id,
         profile: {
@@ -338,6 +350,7 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
         },
         distanceLabel: label,
         distanceKm,
+        profileQualityScore: quality.score,
         compatibilityScore: compat.overallScore,
         compatibilityBreakdown: {
           overallScore: compat.overallScore,

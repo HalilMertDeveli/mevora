@@ -1332,6 +1332,31 @@
       }
     }
   },
+  "profileQualityTitle": "Profile Quality {percent}%",
+  "@profileQualityTitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "profileQualityMissing": "Improve: {fields}",
+  "@profileQualityMissing": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "profileQualityBoostHint": "Tip: a stronger profile ({fields}) can make Boost work better. Purchase is still available.",
+  "@profileQualityBoostHint": {
+    "placeholders": {
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "profileQualityFieldPersonality": "Personality questions",
   "profileFieldDisplayName": "Name",
   "profileFieldBirthDate": "Birth date",
   "profileFieldGender": "Gender",

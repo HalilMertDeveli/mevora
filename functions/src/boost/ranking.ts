@@ -72,6 +72,11 @@ export function computeDiscoveryRankScore(
 
   let score = compatibility + musicBonus;
   score += distanceRankContribution(distanceKm, radiusKm, isBoosted);
+  // Soft profile-quality lift only (0–4). Never gates Discover eligibility.
+  const quality = Number(item.profileQualityScore ?? 0);
+  if (Number.isFinite(quality) && quality > 0) {
+    score += Math.min(4, Math.floor(quality / 25));
+  }
   if (isBoosted) {
     score += BOOST_PRIORITY_BONUS;
   }

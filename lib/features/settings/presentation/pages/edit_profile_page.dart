@@ -14,6 +14,7 @@ import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/services/profile_completion_calculator.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_completion_banner.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_quality_section.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_extended_lifestyle_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_height_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_hobby_picker.dart';
@@ -113,6 +114,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     child: ListView(
                       padding: const EdgeInsets.all(AppSpacing.screenPadding),
                       children: [
+                        const ProfileQualitySection(compact: true),
                         ProfileCompletionBanner(
                           result: ProfileCompletionCalculator.calculate(profile),
                         ),

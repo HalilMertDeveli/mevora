@@ -3067,6 +3067,24 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String profileQualityTitle(int percent) {
+    return 'Profil Kalitesi %$percent';
+  }
+
+  @override
+  String profileQualityMissing(String fields) {
+    return 'Geliştir: $fields';
+  }
+
+  @override
+  String profileQualityBoostHint(String fields) {
+    return 'İpucu: daha güçlü bir profil ($fields) Boost etkisini artırabilir. Satın alma yine açık.';
+  }
+
+  @override
+  String get profileQualityFieldPersonality => 'Kişilik soruları';
+
+  @override
   String get profileFieldDisplayName => 'İsim';
 
   @override

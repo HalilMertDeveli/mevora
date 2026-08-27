@@ -133,7 +133,10 @@ void main() {
       120,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text(_l10n.deleteAccount));
+    final deleteAccount = find.text(_l10n.deleteAccount);
+    await tester.ensureVisible(deleteAccount);
+    await tester.pumpAndSettle();
+    await tester.tap(deleteAccount);
     await tester.pumpAndSettle();
     await tester.tap(find.text(_l10n.deleteConfirm));
     await tester.pump();

@@ -77,7 +77,7 @@ export async function buildHumorFeed(input: {
   const languages =
     (input.languages ?? []).map((l) => l.toLowerCase()).filter(Boolean).length > 0
       ? (input.languages ?? []).map((l) => l.toLowerCase())
-      : ["en", "tr"];
+      : ["tr", "en"];
 
   const [profile, seenFromDb] = await Promise.all([
     loadUserHumorProfile(input.db, input.uid),

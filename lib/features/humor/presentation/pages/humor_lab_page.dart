@@ -189,7 +189,7 @@ class _HumorLabPageState extends State<HumorLabPage> {
           body: SafeArea(
             child: state.isLoading
                 ? MevoraLoading.page(
-                    message: l10n.loading,
+                    message: l10n.humorLoadingFeed,
                     asset: MevoraRiveAssets.empty,
                   )
                 : state.failure != null && state.items.isEmpty
@@ -285,6 +285,7 @@ class _HumorFeedBody extends StatelessWidget {
                       onDoubleTap: controller.replayCurrent,
                       child: HumorContentPlayer(
                         content: item,
+                        isActive: index == state.currentIndex,
                         replayToken: state.replayToken,
                       ),
                     );

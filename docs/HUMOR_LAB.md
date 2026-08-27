@@ -1,129 +1,64 @@
 # Mevora Humor Lab
 
-Isolated product surface that learns what makes a user laugh and builds a
-**UserHumorProfile** over time. MVP is intentionally **not** wired into
-Discover ranking, overall Compatibility Engine weights, Relationship Questions,
-Spotify, or E2EE messaging.
+Isolated Reels-style humor discovery. Users watch vertical video/image content,
+rate “how funny?”, and build a **UserHumorProfile**.
 
-## Architecture
+## Product entry
+
+- **Discover** promo card (`HumorLabDiscoverEntry`) when `humorLabEnabled`
+- **Profile** tile (same flag)
+- Route: `/humor-lab` overlay — **not** a 5th tab, **not** under Settings
+
+## Content pipeline
 
 ```text
-Internal humorContent catalog
-        ↓
-getHumorFeed (personalized + exploration)
-        ↓
-Humor Lab vertical feed (Flutter)
-        ↓
-submitHumorFeedback (5-level rating)
-        ↓
-users/{uid}/humor/summary  (CF-only write)
+Giphy (licensed API, lang=tr) ──┐
+Internal Turkish media seed ────┼─► validate → moderate → tag → humorContent
+                                │
+Flutter vertical feed ◄── getHumorFeed ◄── Firestore
+        │
+ submitHumorFeedback → users/{uid}/humorInteractions + humor/summary
 ```
 
-AI may tag **content** (category / tags / vector / safety) only.
-User ratings are the sole humor-model signal. Runtime feed does not call AI.
+**No** Instagram / TikTok / YouTube scraping.
+
+### Provider
+
+- Adapter: `functions/src/humor/sourceAdapter.ts` + `giphySource.ts`
+- Config: `GIPHY_API_KEY` via `firebase functions:secrets:set GIPHY_API_KEY`
+- Admin sync: `syncHumorFromProvider` (requires admin claim + key)
+- Without key: Turkish-first **internal seed** with real HTTPS MP4/images still works
+
+### Feed language
+
+Default preference: `tr` then `en`. App language TR → Turkish content first.
 
 ## Feature flag
 
-- Client: `FeatureFlags.humorLabEnabled` (product default **`false`**)
-- Local QA enablement (no Remote Config required):
-  - Debug + development builds: ON via `resolveHumorLabEnabled`
-  - Force: `--dart-define=HUMOR_LAB_ENABLED=true` or `false`
-- Remote Config key: `humorLabEnabled` (can enable; does not disable local QA ON)
-- When off: `/humor-lab` redirects to Discover, Profile tile hidden, no Humor UI
+`FeatureFlags.humorLabEnabled` (product default false). Debug+dev ON via `resolveHumorLabEnabled`.
 
-Rollback = set flag false (and `HUMOR_LAB_ENABLED=false` if forcing). Data may remain.
+## Flutter media
 
-Content datasource: mock by default (`USE_MOCK_HUMOR=true`). Use
-`--dart-define=USE_MOCK_HUMOR=false` after deploying humor callables + seeding content.
+- `video_player` for MP4 autoplay / mute / loop / pause when off-screen
+- Images/memes via `MevoraNetworkImages`
+- Vertical `PageView` + 5-level rating bar + undo
 
-## Firestore
-
-| Path | Client |
-|------|--------|
-| `humorContent/{contentId}` | Read approved+active only; write CF/Admin |
-| `users/{uid}/humor/summary` | Owner read; write CF only |
-| `users/{uid}/humorInteractions/{contentId}` | Owner read; write CF only |
-| `humorReports/{id}` | Reporter/admin read; write CF |
-| `humorModerationQueue/{id}` | Admin read; write CF |
-
-Peers never read raw humor vectors. Pair scores are computed on demand.
-
-## Cloud Functions (`europe-west1`)
-
-| Callable | Role |
-|----------|------|
-| `getHumorFeed` | Paginated personalized feed |
-| `submitHumorFeedback` | Rating → EMA profile update |
-| `getHumorProfile` | Own profile (basic / detailed) |
-| `getMatchHumorCompatibility` | Standalone pair score (MVP unused by Discover) |
-| `reportHumorContent` | User report → moderation queue |
-| `upsertHumorContent` | Admin CMS upsert |
-| `runHumorModeration` | Admin safety decision |
-| `seedInternalHumorContent` | Admin internal seed (no scraping) |
-
-Source: `functions/src/humor/`.
-
-## Flutter
-
-- Feature module: `lib/features/humor/`
-- DI: `HumorScope` + `createHumorServices` (mock by default via `USE_MOCK_HUMOR=true`)
-- Route: `/humor-lab` (overlay; **no** 5th tab)
-- Entry: Profile tile when flag enabled
-
-## Scoring
-
-Rating weights: very_funny +1.0, funny +0.6, neutral 0, not_funny −0.5, not_at_all −1.0.
-
-EMA updates profile dims to **0..100**. Confidence grows with interaction count.
-UI “building” state until ~15 interactions.
-
-Feed ranking: 0.55 affinity + 0.15 novelty + 0.15 exploration + 0.10 quality + 0.05 language,
-with ~18% exploration slots.
-
-Pair formula (standalone / V2): 0.70 cosine + 0.20 topK overlap + 0.10 (1 − divergence).
-
-## Moderation
-
-Zero-tolerance auto-reject: `minorRelated`, `illegal`, `extreme`.
-Borderline (nsfw/hate/harassment/violent/sexual) → `needs_review`.
-Only `active && safetyStatus==approved` is served.
-
-## Privacy
-
-- Interactions & summary: owner + CF only
-- Account delete clears `users/{uid}/humor` and `humorInteractions`
-- Analytics: metadata only (contentId, rating, category) — no PII / message text
-
-## Analytics
-
-`humor_lab_opened`, `humor_content_viewed`, `humor_content_rated`,
-`humor_content_skipped`, `humor_content_replayed`, `humor_content_saved`,
-`humor_profile_viewed`, `humor_compatibility_viewed`,
-`humor_chat_starter_shown`, `humor_chat_starter_used`
-
-## Compatibility regression
-
-With `humorLabEnabled = false`, `calculateCompatibility` is unchanged
-(no `humorScore` field). Covered by `functions/test/humorLab.test.cjs`.
-
-## MVP / V2 / V3
-
-| Phase | Scope |
-|-------|--------|
-| **MVP** | Feed → rating → profile; flag off by default; isolated |
-| **V2** | Match humor badge/sheet, Why You Match reason, chat starter chip, premium detailed profile |
-| **V3** | Optional overall weight ~0.10 with renormalize; Discover soft ranking |
-
-## Testing
+## Setup
 
 ```bash
-cd functions && npm test   # includes humorLab + compatibility baseline
-flutter analyze
-flutter test
+# Optional production Giphy
+firebase functions:secrets:set GIPHY_API_KEY
+
+# Seed internal catalog (admin callable)
+# seedInternalHumorContent
+
+# Sync licensed GIFs (admin)
+# syncHumorFromProvider { language: "tr", limit: 24 }
 ```
 
-## Rollback
+Client mock (default `USE_MOCK_HUMOR=true`) uses the same Turkish media URLs for local QA.
+Pass `--dart-define=USE_MOCK_HUMOR=false` to hit Cloud Functions.
 
-1. `humorLabEnabled = false`
-2. Confirm Discover / Matching / Music / Chat unchanged
-3. Callables may remain deployed; clients stop calling them
+## Compatibility
+
+MVP does **not** change `calculateCompatibility` / Discover ranking.

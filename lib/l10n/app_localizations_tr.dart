@@ -3374,11 +3374,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicRecentlyPlayedHeading => 'Son dinlenenler';
 
   @override
-  String get humorLabTitle => 'Mizah Lab';
+  String get humorLabTitle => 'Mizah Labı';
 
   @override
   String get humorLabSubtitle =>
-      'Kısa şaka ve memeleri puanla, mizah vibesını oluştur.';
+      'Kısa klipleri ve memeleri izle, ne kadar komik olduğunu değerlendir.';
+
+  @override
+  String get humorLabDiscoverCta => 'Mizah Labı\'nı aç';
+
+  @override
+  String get humorLoadingFeed => 'İçerikler hazırlanıyor…';
 
   @override
   String get humorRatingVeryFunny => 'Çok komik';
@@ -3387,13 +3393,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorRatingFunny => 'Komik';
 
   @override
-  String get humorRatingNeutral => 'Eh';
+  String get humorRatingNeutral => 'Nötr';
 
   @override
   String get humorRatingNotFunny => 'Komik değil';
 
   @override
-  String get humorRatingNotAtAll => 'Hiç değil';
+  String get humorRatingNotAtAll => 'Hiç komik değil';
 
   @override
   String get humorProfileBuilding => 'Mizah vibesın hâlâ öğreniliyor…';
@@ -3402,10 +3408,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorProfileTitle => 'Mizah profilin';
 
   @override
-  String get humorEmptyFeed => 'Şimdilik başka mizah yok. Sonra tekrar bak.';
+  String get humorEmptyFeed => 'Şimdilik gösterecek yeni bir içerik yok.';
 
   @override
-  String get humorFeedError => 'Mizah Lab yüklenemedi. Lütfen tekrar dene.';
+  String get humorFeedError => 'İçerik yüklenemedi. Tekrar dene.';
 
   @override
   String get humorTryAgain => 'Tekrar dene';

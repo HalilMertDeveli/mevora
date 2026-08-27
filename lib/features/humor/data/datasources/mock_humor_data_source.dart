@@ -6,7 +6,7 @@ import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 import 'package:mevora/features/humor/domain/services/humor_feed_policy.dart';
 
-/// In-memory Humor Lab stand-in for tests and local UI (MVP default).
+/// In-memory Humor Lab with Turkish-first real playable media URLs.
 class MockHumorDataSource implements HumorDataSource {
   MockHumorDataSource({
     List<HumorContent>? seed,
@@ -29,100 +29,154 @@ class MockHumorDataSource implements HumorDataSource {
 
   static const seedCatalog = <HumorContent>[
     HumorContent(
-      contentId: 'hc_seed_001',
-      type: HumorContentType.text,
-      language: 'en',
-      category: HumorCategory.wordplay,
-      humorTags: ['pun', 'office'],
-      textBody: 'I told my computer I needed a break… it froze.',
-    ),
-    HumorContent(
-      contentId: 'hc_seed_002',
-      type: HumorContentType.text,
-      language: 'en',
-      category: HumorCategory.sarcasm,
-      humorTags: ['sarcasm', 'monday'],
-      textBody: "Oh great, another meeting that could've been an email.",
-    ),
-    HumorContent(
-      contentId: 'hc_seed_003',
-      type: HumorContentType.text,
-      language: 'en',
+      contentId: 'hc_tr_vid_001',
+      type: HumorContentType.video,
+      language: 'tr',
       category: HumorCategory.absurd,
-      humorTags: ['absurd', 'animals'],
-      textBody: 'A goose just billed me for emotional damages.',
+      humorTags: ['absürt', 'video'],
+      textBody: 'Alarm değil, sabah sabotajı.',
+      downloadUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      thumbUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg',
+      durationMs: 15000,
+      aspectRatio: 16 / 9,
     ),
     HumorContent(
-      contentId: 'hc_seed_004',
-      type: HumorContentType.text,
-      language: 'en',
-      category: HumorCategory.romantic,
-      humorTags: ['romantic', 'flirty'],
-      textBody: 'Are you Wi-Fi? Because I feel a connection.',
+      contentId: 'hc_tr_vid_002',
+      type: HumorContentType.video,
+      language: 'tr',
+      category: HumorCategory.situational,
+      humorTags: ['günlük', 'video'],
+      textBody: 'Buzdolabı yine boş fikirler sunuyor.',
+      downloadUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      thumbUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg',
+      durationMs: 15000,
+      aspectRatio: 16 / 9,
     ),
     HumorContent(
-      contentId: 'hc_seed_005',
-      type: HumorContentType.meme,
-      language: 'en',
-      category: HumorCategory.meme,
-      humorTags: ['meme', 'relatable'],
-      textBody: 'Me explaining my sleep schedule to my future self',
-    ),
-    HumorContent(
-      contentId: 'hc_seed_006',
-      type: HumorContentType.text,
+      contentId: 'hc_tr_vid_003',
+      type: HumorContentType.video,
       language: 'tr',
       category: HumorCategory.silly,
-      humorTags: ['silly', 'everyday'],
-      textBody: 'Çalar saat değil, moral sabotajcısı.',
+      humorTags: ['saçma', 'video'],
+      textBody: 'Planım vardı… sonra pazartesi oldu.',
+      downloadUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+      thumbUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerFun.jpg',
+      durationMs: 60000,
+      aspectRatio: 16 / 9,
     ),
     HumorContent(
-      contentId: 'hc_seed_007',
-      type: HumorContentType.text,
+      contentId: 'hc_tr_vid_004',
+      type: HumorContentType.video,
+      language: 'tr',
+      category: HumorCategory.meme,
+      humorTags: ['meme', 'video'],
+      textBody: 'Wi‑Fi şifresi kadar karmaşık bir ruh hali.',
+      downloadUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+      thumbUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg',
+      durationMs: 15000,
+      aspectRatio: 16 / 9,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_001',
+      type: HumorContentType.meme,
       language: 'tr',
       category: HumorCategory.sarcasm,
-      humorTags: ['sarcasm'],
+      humorTags: ['ironi', 'meme'],
       textBody: 'Tabii, trafik yine benim yüzümden oluştu.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-1/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-1/540/960',
+      aspectRatio: 9 / 16,
     ),
     HumorContent(
-      contentId: 'hc_seed_008',
-      type: HumorContentType.text,
-      language: 'en',
-      category: HumorCategory.dark,
-      humorTags: ['dark', 'mild'],
-      textBody: 'My plants and I have a mutual neglect agreement.',
-    ),
-    HumorContent(
-      contentId: 'hc_seed_009',
-      type: HumorContentType.text,
-      language: 'en',
-      category: HumorCategory.teasing,
-      humorTags: ['teasing'],
-      textBody: 'Nice try. Your poker face is on vacation.',
-    ),
-    HumorContent(
-      contentId: 'hc_seed_010',
-      type: HumorContentType.text,
-      language: 'en',
-      category: HumorCategory.cringe,
-      humorTags: ['cringe', 'social'],
-      textBody: 'Waved at someone who was waving at the person behind me.',
-    ),
-    HumorContent(
-      contentId: 'hc_seed_011',
-      type: HumorContentType.text,
+      contentId: 'hc_tr_img_002',
+      type: HumorContentType.image,
       language: 'tr',
       category: HumorCategory.wordplay,
-      humorTags: ['wordplay'],
+      humorTags: ['kelime', 'espri'],
       textBody: "Kahve olmadan ben 'ben' değilim; 'be n'.",
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-2/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-2/540/960',
+      aspectRatio: 9 / 16,
     ),
     HumorContent(
-      contentId: 'hc_seed_012',
-      type: HumorContentType.text,
+      contentId: 'hc_tr_img_003',
+      type: HumorContentType.meme,
+      language: 'tr',
+      category: HumorCategory.teasing,
+      humorTags: ['takılma'],
+      textBody: 'Poker suratın tatilde galiba.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-3/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-3/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_004',
+      type: HumorContentType.image,
+      language: 'tr',
+      category: HumorCategory.cringe,
+      humorTags: ['cringe', 'sosyal'],
+      textBody: 'Arkandaki kişiye el sallayanı sandım. Klasik.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-4/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-4/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_005',
+      type: HumorContentType.meme,
+      language: 'tr',
+      category: HumorCategory.dark,
+      humorTags: ['kuru', 'bitki'],
+      textBody: 'Bitkilerimle karşılıklı ihmal anlaşmamız var.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-5/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-5/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_vid_005',
+      type: HumorContentType.video,
+      language: 'tr',
+      category: HumorCategory.romantic,
+      humorTags: ['romantik', 'espri'],
+      textBody: 'Sen Wi‑Fi misin? Bağlantı hissediyorum.',
+      downloadUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+      thumbUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerMeltdowns.jpg',
+      durationMs: 15000,
+      aspectRatio: 16 / 9,
+    ),
+    HumorContent(
+      contentId: 'hc_en_vid_001',
+      type: HumorContentType.video,
       language: 'en',
-      category: HumorCategory.situational,
-      humorTags: ['situational', 'home'],
-      textBody: 'Opened the fridge for the third time. Still no new ideas.',
+      category: HumorCategory.silly,
+      humorTags: ['silly', 'fallback'],
+      textBody: 'English fallback clip for bilingual users.',
+      downloadUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      thumbUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg',
+      durationMs: 60000,
+      aspectRatio: 16 / 9,
+    ),
+    HumorContent(
+      contentId: 'hc_en_img_001',
+      type: HumorContentType.image,
+      language: 'en',
+      category: HumorCategory.meme,
+      humorTags: ['meme', 'fallback'],
+      textBody: 'English fallback still — TR feed stays primary.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-en-1/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-en-1/540/960',
+      aspectRatio: 9 / 16,
     ),
   ];
 
@@ -134,27 +188,36 @@ class MockHumorDataSource implements HumorDataSource {
   }) async {
     feedCalls += 1;
     if (failFeed) {
-      throw StateError('mock-humor-feed-failed');
+      throw StateError('mock-feed-failed');
     }
-    final pageLimit = limit ?? HumorFeedPolicy.pageSize;
-    var start = 0;
-    if (cursor != null && cursor.isNotEmpty) {
-      start = int.tryParse(cursor) ?? 0;
-    }
-    final filtered = languages == null || languages.isEmpty
-        ? _items
-        : _items
-              .where((item) => languages.contains(item.language))
-              .toList(growable: false);
-    final slice = filtered.skip(start).take(pageLimit).toList();
-    final next = start + slice.length;
-    final hasMore = next < filtered.length;
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    final pageSize = limit ?? HumorFeedPolicy.pageSize;
+    final preferred = (languages ?? const ['tr', 'en'])
+        .map((l) => l.toLowerCase())
+        .toList();
+    final ranked = [..._items]
+      ..sort((a, b) {
+        final ai = preferred.indexOf(a.language);
+        final bi = preferred.indexOf(b.language);
+        final aRank = ai < 0 ? 99 : ai;
+        final bRank = bi < 0 ? 99 : bi;
+        return aRank.compareTo(bRank);
+      });
+    final start = cursor == null || cursor.isEmpty ? 0 : int.tryParse(cursor) ?? 0;
+    final end = (start + pageSize).clamp(0, ranked.length);
+    final page = ranked.sublist(start.clamp(0, ranked.length), end);
+    final next = end < ranked.length ? '$end' : null;
     return HumorFeedPage(
-      items: slice,
-      nextCursor: hasMore ? '$next' : null,
-      profileBuilding: HumorFeedPolicy.isBuilding(_profile.interactionCount),
+      items: page,
+      nextCursor: next,
+      profileBuilding: _profile.profileBuilding,
       interactionCount: _profile.interactionCount,
     );
+  }
+
+  @override
+  Future<UserHumorProfile> getProfile({bool detailed = false}) async {
+    return _profile;
   }
 
   @override
@@ -170,63 +233,31 @@ class MockHumorDataSource implements HumorDataSource {
   }) async {
     feedbackCalls += 1;
     if (failFeedback) {
-      throw StateError('mock-humor-feedback-failed');
+      throw StateError('mock-feedback-failed');
     }
-    final already = _ratings.containsKey(contentId);
     _ratings[contentId] = rating;
     if (saved) {
       _saved.add(contentId);
     }
-    if (!already && !skipped) {
-      final count = _profile.interactionCount + 1;
-      final vibes = _deriveTopVibes(contentId, rating);
-      _profile = _profile.copyWith(
-        interactionCount: count,
-        profileBuilding: HumorFeedPolicy.isBuilding(count),
-        confidence: (count / 40).clamp(0.0, 1.0),
-        topVibes: vibes,
-      );
-    }
+    final nextCount = _profile.interactionCount + 1;
+    final confidence = (nextCount / 40).clamp(0.0, 1.0);
+    final building = nextCount < HumorFeedPolicy.buildingThreshold;
+    _profile = _profile.copyWith(
+      confidence: confidence,
+      interactionCount: nextCount,
+      profileBuilding: building,
+    );
     return HumorFeedbackResult(
       ok: true,
-      profileBuilding: _profile.profileBuilding,
-      interactionCount: _profile.interactionCount,
-      confidence: _profile.confidence,
+      profileBuilding: building,
+      interactionCount: nextCount,
+      confidence: confidence,
     );
-  }
-
-  @override
-  Future<UserHumorProfile> getProfile({bool detailed = false}) async {
-    if (!detailed) {
-      return UserHumorProfile(
-        confidence: _profile.confidence,
-        interactionCount: _profile.interactionCount,
-        profileBuilding: _profile.profileBuilding,
-        topVibes: _profile.topVibes,
-        version: _profile.version,
-      );
-    }
-    return _profile;
   }
 
   @override
   Future<HumorCompatibility> getMatchCompatibility(String matchId) async {
-    if (_profile.interactionCount < 8) {
-      return const HumorCompatibility(
-        available: false,
-        reason: 'building',
-        confidence: 0,
-      );
-    }
-    return HumorCompatibility(
-      available: true,
-      score: 72,
-      strongestShared: _profile.topVibes.map((v) => v.category).take(2).toList(),
-      differences: const [
-        HumorDifference(dim: HumorCategory.dark, a: 40, b: 70),
-      ],
-      confidence: _profile.confidence,
-    );
+    return HumorCompatibility.unavailable;
   }
 
   @override
@@ -235,33 +266,4 @@ class MockHumorDataSource implements HumorDataSource {
     String reason = 'other',
     String details = '',
   }) async {}
-
-  /// Test helper: clear rated set and optionally reset profile.
-  void reset({UserHumorProfile? profile}) {
-    _ratings.clear();
-    _saved.clear();
-    _profile = profile ?? UserHumorProfile.empty;
-  }
-
-  List<HumorVibe> _deriveTopVibes(String contentId, HumorRating rating) {
-    HumorContent? content;
-    for (final item in _items) {
-      if (item.contentId == contentId) {
-        content = item;
-        break;
-      }
-    }
-    final category = content?.category ?? HumorCategory.meme;
-    final boost = switch (rating) {
-      HumorRating.veryFunny => 90,
-      HumorRating.funny => 75,
-      HumorRating.neutral => 55,
-      HumorRating.notFunny => 35,
-      HumorRating.notAtAll => 20,
-    };
-    final existing = List<HumorVibe>.from(_profile.topVibes);
-    existing.removeWhere((v) => v.category == category);
-    existing.insert(0, HumorVibe(category: category, value: boost));
-    return existing.take(3).toList();
-  }
 }

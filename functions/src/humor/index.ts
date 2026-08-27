@@ -281,6 +281,44 @@ export const seedInternalHumorContent = onCall(callableOptions, async (request) 
   return {ok: true, seeded: count};
 });
 
+/**
+ * Admin: pull licensed Giphy content (lang=tr preferred) into humorContent.
+ * Requires GIPHY_API_KEY secret/env. No scraping.
+ */
+export const syncHumorFromProvider = onCall(
+  {
+    ...callableOptions,
+    // Secret optional at deploy; runtime checks configuration.
+    secrets: [],
+  },
+  async (request) => {
+    const uid = requireUid(request);
+    await requireAdmin(uid);
+    const data = (request.data ?? {}) as {language?: string; limit?: number};
+    const {syncHumorFromGiphy} = await import("./ingest.js");
+    const {isGiphyConfigured} = await import("./humorApiConfig.js");
+    if (!isGiphyConfigured()) {
+      return {
+        ok: false,
+        configured: false,
+        message: "Set GIPHY_API_KEY (firebase functions:secrets:set GIPHY_API_KEY).",
+      };
+    }
+    const result = await syncHumorFromGiphy({
+      db,
+      language: data.language ?? "tr",
+      limit: typeof data.limit === "number" ? data.limit : 24,
+      probe: true,
+    });
+    return {ok: true, ...result};
+  },
+);
+
+export {isGiphyConfigured} from "./humorApiConfig.js";
+export {GiphyHumorSource} from "./giphySource.js";
+export {validateHumorSourceItem} from "./contentValidation.js";
+export {syncHumorFromGiphy} from "./ingest.js";
+
 // Re-export pure helpers for tests / future V3 wiring (not used by Discover in MVP).
 export {humorScoreForPair} from "./compatibility.js";
 export {

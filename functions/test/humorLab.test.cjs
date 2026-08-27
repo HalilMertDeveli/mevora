@@ -253,16 +253,15 @@ test("AI tagging is metadata-only and never used for user scoring", () => {
   assert.ok(fallback.humorVector.silly >= 0.7);
 });
 
-test("internal seed has 12 en+tr items and feed-safe omits vectors", () => {
+test("internal seed is Turkish-first with real media URLs", () => {
   assert.equal(INTERNAL_HUMOR_SEED.length, 12);
-  const langs = new Set(INTERNAL_HUMOR_SEED.map((item) => item.language));
-  assert.ok(langs.has("en"));
-  assert.ok(langs.has("tr"));
+  const tr = INTERNAL_HUMOR_SEED.filter((item) => item.language === "tr");
+  assert.ok(tr.length >= 8);
   for (const item of INTERNAL_HUMOR_SEED) {
-    assert.ok(item.contentId.startsWith("hc_seed_"));
-    assert.ok(["text", "meme"].includes(item.type));
+    assert.ok(item.media?.downloadUrl, "seed must include media URL");
+    assert.ok(String(item.media.downloadUrl).startsWith("https://"));
   }
-  const parsed = parseHumorContent("hc_seed_001", {
+  const parsed = parseHumorContent(INTERNAL_HUMOR_SEED[0].contentId, {
     ...INTERNAL_HUMOR_SEED[0],
     safetyStatus: "approved",
     safetyFlags: emptySafetyFlags(),
@@ -271,9 +270,35 @@ test("internal seed has 12 en+tr items and feed-safe omits vectors", () => {
   });
   assert.ok(parsed);
   const safe = toFeedSafeContent(parsed);
-  assert.equal(safe.contentId, "hc_seed_001");
+  assert.equal(safe.contentId, INTERNAL_HUMOR_SEED[0].contentId);
+  assert.ok(safe.media.downloadUrl);
   assert.equal("humorVector" in safe, false);
   assert.equal("safetyFlags" in safe, false);
+});
+
+test("content validation rejects empty and accepts sample video hosts", () => {
+  const {validateHumorSourceItem} = require("../lib/humor/contentValidation.js");
+  assert.equal(
+    validateHumorSourceItem({
+      sourceId: "x",
+      type: "video",
+      language: "tr",
+      media: {downloadUrl: ""},
+    }).ok,
+    false,
+  );
+  assert.equal(
+    validateHumorSourceItem({
+      sourceId: "x",
+      type: "video",
+      language: "tr",
+      media: {
+        downloadUrl:
+          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      },
+    }).ok,
+    true,
+  );
 });
 
 test("source adapters resolve internal and licensed stubs", () => {

@@ -21,7 +21,10 @@ void main() {
     expect(controller.state.isLoading, isFalse);
     expect(controller.state.failure, isNull);
     expect(controller.state.items, isNotEmpty);
-    expect(controller.state.current?.contentId, 'hc_seed_001');
+    expect(controller.state.current?.contentId, 'hc_tr_vid_001');
+    expect(controller.state.current?.type, HumorContentType.video);
+    expect(controller.state.current?.language, 'tr');
+    expect(controller.state.current?.hasMedia, isTrue);
     expect(source.feedCalls, 1);
   });
 

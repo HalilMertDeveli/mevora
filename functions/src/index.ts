@@ -38,4 +38,5 @@ export {
   upsertHumorContent,
   runHumorModeration,
   seedInternalHumorContent,
+  syncHumorFromProvider,
 } from "./humor/index.js";

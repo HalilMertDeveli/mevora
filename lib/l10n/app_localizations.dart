@@ -6209,8 +6209,20 @@ abstract class AppLocalizations {
   /// No description provided for @humorLabSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Rate short jokes and memes to build your humor vibe.'**
+  /// **'Watch short clips and memes, then rate how funny they are.'**
   String get humorLabSubtitle;
+
+  /// No description provided for @humorLabDiscoverCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Humor Lab'**
+  String get humorLabDiscoverCta;
+
+  /// No description provided for @humorLoadingFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing content…'**
+  String get humorLoadingFeed;
 
   /// No description provided for @humorRatingVeryFunny.
   ///
@@ -6227,7 +6239,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorRatingNeutral.
   ///
   /// In en, this message translates to:
-  /// **'Meh'**
+  /// **'Neutral'**
   String get humorRatingNeutral;
 
   /// No description provided for @humorRatingNotFunny.
@@ -6239,7 +6251,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorRatingNotAtAll.
   ///
   /// In en, this message translates to:
-  /// **'Nope'**
+  /// **'Not funny at all'**
   String get humorRatingNotAtAll;
 
   /// No description provided for @humorProfileBuilding.
@@ -6257,13 +6269,13 @@ abstract class AppLocalizations {
   /// No description provided for @humorEmptyFeed.
   ///
   /// In en, this message translates to:
-  /// **'No more humor for now. Check back later.'**
+  /// **'No new content to show right now.'**
   String get humorEmptyFeed;
 
   /// No description provided for @humorFeedError.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t load Humor Lab. Please try again.'**
+  /// **'Couldn\'t load content. Try again.'**
   String get humorFeedError;
 
   /// No description provided for @humorTryAgain.

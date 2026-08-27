@@ -3382,7 +3382,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorLabSubtitle =>
-      'Rate short jokes and memes to build your humor vibe.';
+      'Watch short clips and memes, then rate how funny they are.';
+
+  @override
+  String get humorLabDiscoverCta => 'Open Humor Lab';
+
+  @override
+  String get humorLoadingFeed => 'Preparing content…';
 
   @override
   String get humorRatingVeryFunny => 'Hilarious';
@@ -3391,13 +3397,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorRatingFunny => 'Funny';
 
   @override
-  String get humorRatingNeutral => 'Meh';
+  String get humorRatingNeutral => 'Neutral';
 
   @override
   String get humorRatingNotFunny => 'Not funny';
 
   @override
-  String get humorRatingNotAtAll => 'Nope';
+  String get humorRatingNotAtAll => 'Not funny at all';
 
   @override
   String get humorProfileBuilding => 'Still learning your humor vibe…';
@@ -3406,10 +3412,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorProfileTitle => 'Your humor profile';
 
   @override
-  String get humorEmptyFeed => 'No more humor for now. Check back later.';
+  String get humorEmptyFeed => 'No new content to show right now.';
 
   @override
-  String get humorFeedError => 'Couldn\'t load Humor Lab. Please try again.';
+  String get humorFeedError => 'Couldn\'t load content. Try again.';
 
   @override
   String get humorTryAgain => 'Try again';

@@ -1,6 +1,8 @@
 # Smart Boost — Implementation Report
 
 **Branch:** `feature/smart-boost`  
+**Commit:** `d74197418ea5c7aef86ed6329db7eea40d03a65c`  
+**Pushed:** yes (`origin/feature/smart-boost`) — **not merged**  
 **Scope:** Smart Boost only (no Premium answer gating / Premium IAP)
 
 ## Shipped

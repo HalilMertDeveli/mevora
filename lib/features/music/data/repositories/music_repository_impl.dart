@@ -1,6 +1,7 @@
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/music/data/datasources/music_data_source.dart';
+import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/domain/entities/weekly_music_stats.dart';
@@ -62,6 +63,17 @@ class MusicRepositoryImpl implements MusicRepository {
   Future<Result<List<SameTasteMatch>>> getSameTasteProfiles() async {
     try {
       return Success(await _dataSource.getSameTasteProfiles());
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  @override
+  Future<Result<MatchMusicCompatibility>> getMatchMusicCompatibility(
+    String matchId,
+  ) async {
+    try {
+      return Success(await _dataSource.getMatchMusicCompatibility(matchId));
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
     }

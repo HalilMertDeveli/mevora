@@ -1,5 +1,6 @@
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/music/data/datasources/music_data_source.dart';
+import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
@@ -220,5 +221,30 @@ class MockMusicDataSource implements MusicDataSource {
           ),
         )
         .toList(growable: false);
+  }
+
+  /// Mock scenarios for Match UI / premium gating tests.
+  MatchMusicCompatibility? matchMusicOverride;
+
+  @override
+  Future<MatchMusicCompatibility> getMatchMusicCompatibility(
+    String matchId,
+  ) async {
+    if (matchMusicOverride != null) {
+      return matchMusicOverride!;
+    }
+    if (!_profile.connected || matchId.isEmpty) {
+      return MatchMusicCompatibility.unavailable;
+    }
+    return MatchMusicCompatibility(
+      available: true,
+      score: 87,
+      sharedTrackCount: 2,
+      sharedArtistCount: 2,
+      sharedRecentTrackCount: 1,
+      sharedTracks: seedTracks.take(2).toList(),
+      sharedArtists: seedArtists,
+      sharedGenres: const ['indie', 'jazz'],
+    );
   }
 }

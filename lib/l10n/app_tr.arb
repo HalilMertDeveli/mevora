@@ -522,7 +522,9 @@
   "exportMyDataSuccess": "Dışa aktarım kaydedildi: {path}",
   "@exportMyDataSuccess": {
     "placeholders": {
-      "path": {"type": "String"}
+      "path": {
+        "type": "String"
+      }
     }
   },
   "exportMyDataFailed": "Verilerin dışa aktarılamadı. Lütfen sonra tekrar dene.",
@@ -536,8 +538,8 @@
   "notificationNewMatch": "Yeni bir eşleşmen var!",
   "notificationNewMessage": "Yeni bir mesajın var",
   "notificationSuperLike": "Birisi seni Süper Beğendi",
-  "boostTitle": "BOOST",
-  "boostSubtitle": "Profilini daha fazla kişiye göster ve keşfedilme şansını artır.",
+  "boostTitle": "Smart Boost",
+  "boostSubtitle": "Daha fazla rastgele kişiye değil — sana uygun daha fazla kişiye görün.",
   "boostDuration": "Profilini öne çıkar",
   "boostActivate": "Kalan bakiyeyi kullan",
   "boostBuy": "Boost satın al",
@@ -990,6 +992,8 @@
   "questionAnswersLoadError": "Cevaplar yüklenirken bir sorun oluştu.",
   "questionAnswersMatchRequired": "Bu kişinin cevaplarını görmek için eşleşmeniz gerekiyor.",
   "questionAnswersMatchedSubtitle": "Ortak yönlerinizi keşfedin.",
+  "questionAnswersPremiumRequired": "Cevaplarını görmek için Premium'a geç.",
+  "questionAnswersPremiumLockedAnswer": "Cevabını görmek için Premium'a geç",
   "questionAnswersPeerEmpty": "Bu kişi henüz profilinde soru cevabı paylaşmamış.",
   "matchViewAnswers": "Cevapları gör",
   "chatDiscoverAnswersPrompt": "Onu biraz daha tanı",
@@ -1384,8 +1388,6 @@
   "cohabitationMaybeLater": "İleride olabilir",
   "cohabitationUnsure": "Emin değilim",
   "cohabitationNo": "İstemiyorum",
-  "languageTurkish": "Türkçe 🇹🇷",
-  "languageEnglish": "English 🇬🇧",
   "languageGerman": "Almanca",
   "languageFrench": "Fransızca",
   "languageSpanish": "İspanyolca",
@@ -1436,5 +1438,13 @@
         "type": "String"
       }
     }
-  }
+  },
+  "musicPrivacyNotice": "Spotify verilerin yalnızca müzik uyumluluğunu hesaplamak ve eşleşmelerinde ortak dinleme bilgilerini göstermek için kullanılır. Tokenlar sunucuda kalır — cihazında tutulmaz.",
+  "musicDisconnectCta": "Spotify bağlantısını kaldır",
+  "musicDisconnectConfirmTitle": "Spotify bağlantısı kaldırılsın mı?",
+  "musicDisconnectConfirmBody": "Spotify bağlantın ve önbellekteki müzik zevki verilerin silinir. Yeniden bağlanana kadar eşleşme müzik uyumu gösterilmez.",
+  "musicMatchTeaser": "🎵 Müzik zevkiniz uyumlu olabilir — detaylar Premium ile",
+  "musicPremiumUnlock": "Aç",
+  "musicNoCommonTracks": "Henüz ortak dinlediğiniz bir şarkı yok 🎵",
+  "musicRecentlyPlayedHeading": "Son dinlenenler"
 }

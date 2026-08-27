@@ -522,7 +522,9 @@
   "exportMyDataSuccess": "Export saved to: {path}",
   "@exportMyDataSuccess": {
     "placeholders": {
-      "path": {"type": "String"}
+      "path": {
+        "type": "String"
+      }
     }
   },
   "exportMyDataFailed": "Could not export your data. Try again later.",
@@ -536,8 +538,8 @@
   "notificationNewMatch": "You have a new match!",
   "notificationNewMessage": "You have a new message",
   "notificationSuperLike": "Someone Super Liked you",
-  "boostTitle": "BOOST",
-  "boostSubtitle": "Show your profile to more people and get discovered faster.",
+  "boostTitle": "Smart Boost",
+  "boostSubtitle": "Not more random people — more people who actually fit you.",
   "boostDuration": "Boost your profile",
   "boostActivate": "Use leftover Boost",
   "boostBuy": "Buy Boost",
@@ -990,6 +992,8 @@
   "questionAnswersLoadError": "Something went wrong while loading answers.",
   "questionAnswersMatchRequired": "Match with this person to see their answers.",
   "questionAnswersMatchedSubtitle": "Discover what you have in common.",
+  "questionAnswersPremiumRequired": "Upgrade to Premium to see their answers.",
+  "questionAnswersPremiumLockedAnswer": "Unlock with Premium to see their answer",
   "questionAnswersPeerEmpty": "This person hasn't shared any profile answers yet.",
   "matchViewAnswers": "View answers",
   "chatDiscoverAnswersPrompt": "Learn more about them",
@@ -1384,8 +1388,6 @@
   "cohabitationMaybeLater": "Maybe later",
   "cohabitationUnsure": "Not sure",
   "cohabitationNo": "No",
-  "languageTurkish": "Türkçe 🇹🇷",
-  "languageEnglish": "English 🇬🇧",
   "languageGerman": "German",
   "languageFrench": "French",
   "languageSpanish": "Spanish",
@@ -1436,5 +1438,13 @@
         "type": "String"
       }
     }
-  }
+  },
+  "musicPrivacyNotice": "Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers — never on your device.",
+  "musicDisconnectCta": "Disconnect Spotify",
+  "musicDisconnectConfirmTitle": "Disconnect Spotify?",
+  "musicDisconnectConfirmBody": "We'll remove your Spotify link and clear cached music taste. Match music compatibility will stop showing until you reconnect.",
+  "musicMatchTeaser": "🎵 Your music tastes may align — unlock full insights with Premium",
+  "musicPremiumUnlock": "Unlock",
+  "musicNoCommonTracks": "No shared songs yet 🎵",
+  "musicRecentlyPlayedHeading": "Recently played"
 }

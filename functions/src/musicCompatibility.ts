@@ -3,6 +3,8 @@ export const MUSIC_SCOPES =
 export const SYNC_MIN_INTERVAL_MS = 6 * 60 * 60 * 1000;
 export const MUSIC_RANKING_WEIGHT = 0.15;
 export const MUSIC_PROFILE_VERSION = 2;
+/** MVP: last N unique recently-played Spotify track IDs (deduped by track id). */
+export const RECENT_UNIQUE_TRACK_LIMIT = 10;
 
 /** Default weights when playlist overlap data is unavailable. */
 export const MUSIC_WEIGHTS_BASE = {

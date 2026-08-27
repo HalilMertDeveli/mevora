@@ -10,7 +10,6 @@ import 'package:mevora/features/compatibility/presentation/widgets/compatibility
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
-import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -133,19 +132,7 @@ class DiscoveryProfileCard extends StatelessWidget {
                                   ? onWhyTap
                                   : null,
                             ),
-                          if (candidate.musicCompatibilityScore != null)
-                            MusicCompatibilityBadge(
-                              score: candidate.musicCompatibilityScore!,
-                              sharedTracks: candidate.sharedMusicTracks,
-                              sharedArtists: candidate.sharedMusicArtists,
-                              sharedGenres: candidate.sharedMusicGenres,
-                              insights: candidate.musicInsights,
-                              sharedTrackCount: candidate.sharedMusicTrackCount,
-                              sharedArtistCount:
-                                  candidate.sharedMusicArtistCount,
-                              sharedPlaylistTrackCount:
-                                  candidate.sharedMusicPlaylistTrackCount,
-                            ),
+                          // Music compatibility UI is match-only (see chat banner).
                           if (candidate.relationshipCompatibilityScore != null)
                             RelationshipCompatibilityBadge(
                               score: candidate.relationshipCompatibilityScore!,

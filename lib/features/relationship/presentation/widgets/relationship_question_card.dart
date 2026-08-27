@@ -177,6 +177,15 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
               },
             ),
           )
+        else if (showPrompt && controller.waitingForRoundResult)
+          Positioned.fill(
+            child: MatchingGameWaitingCard(
+              onDismiss: () {
+                // Keep polling; only hide overlay so Discover stays usable.
+                controller.acknowledgeWaitingOverlay();
+              },
+            ),
+          )
         else if (showPrompt && question != null)
           Positioned.fill(
             child: RelationshipQuestionCard(
@@ -430,6 +439,56 @@ class RelationshipContinueMatchingCard extends StatelessWidget {
                     label: l10n.relationshipContinueNo,
                     variant: MevoraButtonVariant.secondary,
                     onPressed: onNotNow,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MatchingGameWaitingCard extends StatelessWidget {
+  const MatchingGameWaitingCard({super.key, required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return ColoredBox(
+      color: Colors.black.withValues(alpha: 0.42),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: MevoraCard(
+              emphasis: MevoraCardEmphasis.elevated,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    l10n.matchingGameWaitingTitle,
+                    style: theme.textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    l10n.matchingGameWaitingMessage,
+                    style: theme.textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  MevoraButton(
+                    label: l10n.matchingGameWaitingDismiss,
+                    variant: MevoraButtonVariant.secondary,
+                    onPressed: onDismiss,
                   ),
                 ],
               ),

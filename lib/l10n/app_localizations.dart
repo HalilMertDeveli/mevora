@@ -3770,6 +3770,24 @@ abstract class AppLocalizations {
   /// **'{hour}:00 Matching Game'**
   String matchingGameRoundLabel(String hour);
 
+  /// No description provided for @matchingGameWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching in progress'**
+  String get matchingGameWaitingTitle;
+
+  /// No description provided for @matchingGameWaitingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers are in. We\'ll show your match when this hour\'s round completes.'**
+  String get matchingGameWaitingMessage;
+
+  /// No description provided for @matchingGameWaitingDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get matchingGameWaitingDismiss;
+
   /// No description provided for @relationshipContinueTitle.
   ///
   /// In en, this message translates to:

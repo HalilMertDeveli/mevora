@@ -2005,6 +2005,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get matchingGameWaitingTitle => 'Matching in progress';
+
+  @override
+  String get matchingGameWaitingMessage =>
+      'Your answers are in. We\'ll show your match when this hour\'s round completes.';
+
+  @override
+  String get matchingGameWaitingDismiss => 'OK';
+
+  @override
   String get relationshipContinueTitle => 'Keep matching?';
 
   @override

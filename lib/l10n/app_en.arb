@@ -852,6 +852,9 @@
       }
     }
   },
+  "matchingGameWaitingTitle": "Matching in progress",
+  "matchingGameWaitingMessage": "Your answers are in. We'll show your match when this hour's round completes.",
+  "matchingGameWaitingDismiss": "OK",
   "relationshipContinueTitle": "Keep matching?",
   "relationshipContinueMessage": "You've completed 5 matching rounds. Do you want to continue finding people who share your answers?",
   "relationshipContinueYes": "Continue",

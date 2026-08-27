@@ -2000,6 +2000,16 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get matchingGameWaitingTitle => 'Eşleşme hesaplanıyor';
+
+  @override
+  String get matchingGameWaitingMessage =>
+      'Cevapların kaydedildi. Bu saatin turu tamamlanınca eşleşmen gösterilecek.';
+
+  @override
+  String get matchingGameWaitingDismiss => 'Tamam';
+
+  @override
   String get relationshipContinueTitle => 'Eşleşmeye devam etmek ister misin?';
 
   @override

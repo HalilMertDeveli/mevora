@@ -53,6 +53,7 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   var _emptyResults = false;
   var _unavailable = false;
   var _waitingForRoundResult = false;
+  var _waitingOverlayDismissed = false;
   var _normalMatchCount = 0;
   var _matchingEventCount = 0;
   var _matchingPaused = false;
@@ -88,7 +89,8 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   bool get hasUnavailableFallback => _unavailable && !isPromptVisible;
   bool get submitting => _submitting;
   bool get sessionLocked => _sessionLocked;
-  bool get waitingForRoundResult => _waitingForRoundResult;
+  bool get waitingForRoundResult =>
+      _waitingForRoundResult && !_waitingOverlayDismissed;
   bool get hourlyGlobalMatchingGame => _hourlyGlobalMatchingGame;
   MatchingGameRoundInfo? get roundInfo => _roundInfo;
   String? get activeRoundId => _activeRoundId;
@@ -644,9 +646,19 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     }
     _matchingEventCount += 1;
     _waitingForRoundResult = true;
+    _waitingOverlayDismissed = false;
     _resultsVisible = false;
     notifyListeners();
     _startRoundResultPoll(roundId);
+  }
+
+  /// User closed the waiting overlay; polling continues in the background.
+  void acknowledgeWaitingOverlay() {
+    if (!_waitingForRoundResult) {
+      return;
+    }
+    _waitingOverlayDismissed = true;
+    notifyListeners();
   }
 
   void _startRoundResultPoll(String roundId) {
@@ -672,6 +684,7 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       _roundPoll?.cancel();
       _roundPoll = null;
       _waitingForRoundResult = false;
+      _waitingOverlayDismissed = false;
       await _applyGameResult(info);
     }
   }

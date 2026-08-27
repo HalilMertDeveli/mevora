@@ -852,6 +852,9 @@
       }
     }
   },
+  "matchingGameWaitingTitle": "Eşleşme hesaplanıyor",
+  "matchingGameWaitingMessage": "Cevapların kaydedildi. Bu saatin turu tamamlanınca eşleşmen gösterilecek.",
+  "matchingGameWaitingDismiss": "Tamam",
   "relationshipContinueTitle": "Eşleşmeye devam etmek ister misin?",
   "relationshipContinueMessage": "5 eşleşme turunu tamamladın. Aynı cevaplara sahip insanları bulmaya devam etmek ister misin?",
   "relationshipContinueYes": "Devam Et",

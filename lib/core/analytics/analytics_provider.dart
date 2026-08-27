@@ -40,6 +40,12 @@ abstract final class AnalyticsEvents {
   static const String boostPurchaseFailed = 'boost_purchase_failed';
   static const String boostActivated = 'boost_activated';
   static const String boostExpired = 'boost_expired';
+  /// Alias for boost_activated (Smart Boost started).
+  static const String boostStarted = 'boost_started';
+  /// Alias for boost_expired (Smart Boost completed).
+  static const String boostCompleted = 'boost_completed';
+  static const String boostMatch = 'boost_match';
+  static const String boostLike = 'boost_like';
   static const String compatibilityViewed = 'compatibility_viewed';
   static const String whyYouMatchOpened = 'why_you_match_opened';
   static const String hiddenCompatibilitySeen = 'hidden_compatibility_seen';

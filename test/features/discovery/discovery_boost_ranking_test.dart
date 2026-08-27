@@ -26,7 +26,7 @@ void main() {
       expect(normalScore, greaterThan(inactiveBoostScore));
     });
 
-    test('active boost raises ranking priority', () {
+    test('active boost raises ranking via multiplier', () {
       final normal = DiscoveryBoostRanking.rankScore(
         uid: 'normal',
         compatibilityScore: 70,
@@ -45,8 +45,8 @@ void main() {
       );
       expect(boostedScore, greaterThan(normal));
       expect(
-        boostedScore - normal,
-        DiscoveryBoostRanking.boostPriorityBonus,
+        boostedScore,
+        closeTo(normal * DiscoveryBoostRanking.smartBoostMultiplier, 0.2),
       );
     });
 
@@ -77,6 +77,26 @@ void main() {
       expect(compatibility, 42);
     });
 
+    test('high compatibility beats boosted low compatibility', () {
+      final high = DiscoveryBoostRanking.rankScore(
+        uid: 'high',
+        compatibilityScore: 95,
+        musicRankingBonus: 0,
+        distanceKm: 10,
+        radiusKm: 25,
+        boostedUids: boosted,
+      );
+      final boostedLow = DiscoveryBoostRanking.rankScore(
+        uid: 'boost-user',
+        compatibilityScore: 60,
+        musicRankingBonus: 0,
+        distanceKm: 10,
+        radiusKm: 25,
+        boostedUids: boosted,
+      );
+      expect(high, greaterThan(boostedLow));
+    });
+
     test('expired boost returns to normal ranking', () {
       final active = DiscoveryBoostRanking.rankScore(
         uid: 'boost-user',
@@ -95,10 +115,6 @@ void main() {
         boostedUids: const {},
       );
       expect(active, greaterThan(expired));
-      expect(
-        active - expired,
-        DiscoveryBoostRanking.boostPriorityBonus,
-      );
     });
 
     test('diversifies boosted and normal profiles', () {

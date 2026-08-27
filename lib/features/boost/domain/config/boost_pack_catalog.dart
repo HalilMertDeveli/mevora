@@ -1,11 +1,11 @@
 import 'package:mevora/features/boost/domain/entities/boost_pack.dart';
 
-/// Offline / default Boost packs. Firestore `boostProducts` is the live source
-/// of truth; this catalog is used when the backend is unreachable.
-///
-/// Storefront SKUs are one-time consumable time grants (not auto-renewing
-/// subscriptions). Prices are never stored here.
+/// Offline / default Boost packs. Firestore `boostProducts` is live source.
+/// Prices are never stored here — store provides them.
 abstract final class BoostPackCatalog {
+  static const String starter30m = 'mevora_smart_boost_30m';
+  static const String popular1h = 'mevora_smart_boost_1h';
+  static const String power24h = 'mevora_smart_boost_24h';
   static const String week = 'mevora_boost_7_days';
   static const String month = 'mevora_boost_1_month';
   static const String year = 'mevora_boost_1_year';
@@ -15,6 +15,9 @@ abstract final class BoostPackCatalog {
   static const String pack5 = 'com.mevora.app.boost.5';
   static const String pack10 = 'com.mevora.app.boost.10';
 
+  static const Duration starterDuration = Duration(minutes: 30);
+  static const Duration popularDuration = Duration(hours: 1);
+  static const Duration powerDuration = Duration(hours: 24);
   static const Duration weekDuration = Duration(days: 7);
   static const Duration monthDuration = Duration(days: 30);
   static const Duration yearDuration = Duration(days: 365);
@@ -22,22 +25,43 @@ abstract final class BoostPackCatalog {
 
   static const List<BoostPack> defaults = [
     BoostPack(
-      productId: week,
+      productId: starter30m,
       displayOrder: 0,
+      duration: starterDuration,
+      title: 'Starter',
+    ),
+    BoostPack(
+      productId: popular1h,
+      displayOrder: 1,
+      duration: popularDuration,
+      featured: true,
+      title: 'Popular',
+    ),
+    BoostPack(
+      productId: power24h,
+      displayOrder: 2,
+      duration: powerDuration,
+      title: 'Power',
+    ),
+    BoostPack(
+      productId: week,
+      displayOrder: 10,
       duration: weekDuration,
+      storefront: false,
       title: '1 Week',
     ),
     BoostPack(
       productId: month,
-      displayOrder: 1,
+      displayOrder: 11,
       duration: monthDuration,
+      storefront: false,
       title: '1 Month',
     ),
     BoostPack(
       productId: year,
-      displayOrder: 2,
+      displayOrder: 12,
       duration: yearDuration,
-      featured: true,
+      storefront: false,
       title: '1 Year',
     ),
     BoostPack(
@@ -75,6 +99,9 @@ abstract final class BoostPackCatalog {
   ];
 
   static const Set<String> skus = {
+    starter30m,
+    popular1h,
+    power24h,
     week,
     month,
     year,
@@ -84,7 +111,11 @@ abstract final class BoostPackCatalog {
     pack10,
   };
 
-  static const Set<String> storefrontSkus = {week, month, year};
+  static const Set<String> storefrontSkus = {
+    starter30m,
+    popular1h,
+    power24h,
+  };
 
   static List<BoostPack> get storefrontPacks => defaults
       .where((pack) => pack.storefront && pack.active)
@@ -113,7 +144,6 @@ abstract final class BoostPackCatalog {
     return packFor(productId, catalog: catalog)?.duration ?? Duration.zero;
   }
 
-  /// Parses a Remote Config / Firestore JSON array. Invalid rows are skipped.
   static List<BoostPack> parse(Object? raw, {bool storefrontOnly = true}) {
     if (raw is! List) {
       return List<BoostPack>.from(storefrontPacks);
@@ -160,7 +190,9 @@ abstract final class BoostPackCatalog {
     final visible = parsed
         .where(
           (pack) =>
-              pack.storefront && pack.active && pack.duration.inDays >= 7,
+              pack.storefront &&
+              pack.active &&
+              pack.duration.inMinutes >= 30,
         )
         .toList();
     return visible.isEmpty ? List<BoostPack>.from(storefrontPacks) : visible;

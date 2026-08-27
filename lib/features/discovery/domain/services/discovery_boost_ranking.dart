@@ -1,6 +1,7 @@
-/// Client-side mirror of server boost ranking rules for mocks and tests.
+/// Client-side mirror of server Smart Boost ranking rules for mocks and tests.
 abstract final class DiscoveryBoostRanking {
   static const int boostPriorityBonus = 35;
+  static const double smartBoostMultiplier = 1.25;
   static const double distanceExtensionRatio = 0.25;
   static const int distanceScoreMax = 20;
 
@@ -28,7 +29,7 @@ abstract final class DiscoveryBoostRanking {
     return (distanceScoreMax * (1 - normalized)).round();
   }
 
-  static int rankScore({
+  static double rankScore({
     required String uid,
     required int compatibilityScore,
     required int musicRankingBonus,
@@ -37,16 +38,21 @@ abstract final class DiscoveryBoostRanking {
     required Set<String> boostedUids,
   }) {
     final boosted = boostedUids.contains(uid);
-    var score = compatibilityScore + musicRankingBonus;
-    score += distanceRankContribution(
-      distanceKm,
-      radiusKm,
-      boosted: boosted,
-    );
-    if (boosted) {
-      score += boostPriorityBonus;
+    var base =
+        compatibilityScore +
+        musicRankingBonus +
+        distanceRankContribution(
+          distanceKm,
+          radiusKm,
+          boosted: boosted,
+        );
+    if (base < 1) {
+      base = 1;
     }
-    return score;
+    if (boosted) {
+      return (base * smartBoostMultiplier * 10).round() / 10;
+    }
+    return base.toDouble();
   }
 
   static List<T> sortCandidates<T>({

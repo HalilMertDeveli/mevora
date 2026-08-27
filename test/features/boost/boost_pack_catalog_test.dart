@@ -3,16 +3,25 @@ import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/services/boost_credit_service.dart';
 
 void main() {
-  test('storefront packs are 7 / 30 / 365 day grants', () {
-    expect(BoostPackCatalog.durationFor(BoostPackCatalog.week).inDays, 7);
-    expect(BoostPackCatalog.durationFor(BoostPackCatalog.month).inDays, 30);
-    expect(BoostPackCatalog.durationFor(BoostPackCatalog.year).inDays, 365);
+  test('storefront packs are Smart Boost Starter / Popular / Power', () {
+    expect(
+      BoostPackCatalog.durationFor(BoostPackCatalog.starter30m).inMinutes,
+      30,
+    );
+    expect(
+      BoostPackCatalog.durationFor(BoostPackCatalog.popular1h).inHours,
+      1,
+    );
+    expect(
+      BoostPackCatalog.durationFor(BoostPackCatalog.power24h).inHours,
+      24,
+    );
     expect(
       BoostPackCatalog.storefrontPacks.map((pack) => pack.productId),
       [
-        BoostPackCatalog.week,
-        BoostPackCatalog.month,
-        BoostPackCatalog.year,
+        BoostPackCatalog.starter30m,
+        BoostPackCatalog.popular1h,
+        BoostPackCatalog.power24h,
       ],
     );
     expect(BoostPackCatalog.isAllowed('com.other.boost'), isFalse);
@@ -22,20 +31,22 @@ void main() {
   test('catalog parse keeps duration packs and skips invalid rows', () {
     final packs = BoostPackCatalog.parse([
       {
-        'productId': BoostPackCatalog.week,
-        'durationDays': 7,
+        'productId': BoostPackCatalog.starter30m,
+        'durationMinutes': 30,
         'displayOrder': 0,
+        'storefront': true,
       },
       {'productId': 'bad', 'boostCount': 0},
       {
-        'sku': BoostPackCatalog.month,
-        'days': 30,
+        'sku': BoostPackCatalog.popular1h,
+        'durationMinutes': 60,
         'order': 1,
+        'storefront': true,
       },
     ]);
     expect(packs.map((pack) => pack.productId), [
-      BoostPackCatalog.week,
-      BoostPackCatalog.month,
+      BoostPackCatalog.starter30m,
+      BoostPackCatalog.popular1h,
     ]);
   });
 
@@ -58,7 +69,7 @@ void main() {
     expect(again.alreadyProcessed, isTrue);
 
     final duration = service.credit(
-      productId: BoostPackCatalog.week,
+      productId: BoostPackCatalog.starter30m,
       currentBalance: 2,
       alreadyCredited: false,
     );

@@ -1,5 +1,10 @@
 import type {Firestore} from "firebase-admin/firestore";
-import {BOOST_PRODUCT_IDS, LEGACY_DURATION_MS} from "./config.js";
+import {
+  BOOST_PRODUCT_IDS,
+  LEGACY_DURATION_MS,
+  SMART_BOOST_DURATION_MS,
+  SMART_BOOST_MULTIPLIER,
+} from "./config.js";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
@@ -16,44 +21,98 @@ export interface BoostPack {
   active: boolean;
   storefront: boolean;
   featured: boolean;
+  boostType?: "smart" | "classic";
+  multiplier?: number;
+  title?: string;
 }
 
 export const DEFAULT_BOOST_PACKS: BoostPack[] = [
   {
-    productId: BOOST_PRODUCT_IDS.week,
+    productId: BOOST_PRODUCT_IDS.starter30m,
     boostCount: 0,
     displayOrder: 0,
+    fallbackPriceAmount: 0,
+    fallbackCurrency: "TRY",
+    durationMs: SMART_BOOST_DURATION_MS.starter30m,
+    durationDays: 0,
+    active: true,
+    storefront: true,
+    featured: false,
+    boostType: "smart",
+    multiplier: SMART_BOOST_MULTIPLIER,
+    title: "Starter",
+  },
+  {
+    productId: BOOST_PRODUCT_IDS.popular1h,
+    boostCount: 0,
+    displayOrder: 1,
+    fallbackPriceAmount: 0,
+    fallbackCurrency: "TRY",
+    durationMs: SMART_BOOST_DURATION_MS.popular1h,
+    durationDays: 0,
+    active: true,
+    storefront: true,
+    featured: true,
+    boostType: "smart",
+    multiplier: SMART_BOOST_MULTIPLIER,
+    title: "Popular",
+  },
+  {
+    productId: BOOST_PRODUCT_IDS.power24h,
+    boostCount: 0,
+    displayOrder: 2,
+    fallbackPriceAmount: 0,
+    fallbackCurrency: "TRY",
+    durationMs: SMART_BOOST_DURATION_MS.power24h,
+    durationDays: 1,
+    active: true,
+    storefront: true,
+    featured: false,
+    boostType: "smart",
+    multiplier: SMART_BOOST_MULTIPLIER,
+    title: "Power",
+  },
+  {
+    productId: BOOST_PRODUCT_IDS.week,
+    boostCount: 0,
+    displayOrder: 10,
     fallbackPriceAmount: 0,
     fallbackCurrency: "TRY",
     durationMs: WEEK_MS,
     durationDays: 7,
     active: true,
-    storefront: true,
+    storefront: false,
     featured: false,
+    boostType: "classic",
+    multiplier: SMART_BOOST_MULTIPLIER,
   },
   {
     productId: BOOST_PRODUCT_IDS.month,
     boostCount: 0,
-    displayOrder: 1,
+    displayOrder: 11,
     fallbackPriceAmount: 0,
     fallbackCurrency: "TRY",
     durationMs: MONTH_MS,
     durationDays: 30,
     active: true,
-    storefront: true,
+    storefront: false,
     featured: false,
+    boostType: "classic",
+    multiplier: SMART_BOOST_MULTIPLIER,
   },
   {
     productId: BOOST_PRODUCT_IDS.year,
     boostCount: 0,
-    displayOrder: 2,
+    displayOrder: 12,
     fallbackPriceAmount: 0,
     fallbackCurrency: "TRY",
     durationMs: YEAR_MS,
     durationDays: 365,
     active: true,
-    storefront: true,
-    featured: true,
+    storefront: false,
+    featured: false,
+    boostType: "classic",
+    multiplier: SMART_BOOST_MULTIPLIER,
   },
   {
     productId: "com.mevora.app.boost.1",
@@ -66,6 +125,8 @@ export const DEFAULT_BOOST_PACKS: BoostPack[] = [
     active: true,
     storefront: false,
     featured: false,
+    boostType: "classic",
+    multiplier: SMART_BOOST_MULTIPLIER,
   },
   {
     productId: "com.mevora.app.boost.5",
@@ -78,6 +139,8 @@ export const DEFAULT_BOOST_PACKS: BoostPack[] = [
     active: true,
     storefront: false,
     featured: false,
+    boostType: "classic",
+    multiplier: SMART_BOOST_MULTIPLIER,
   },
   {
     productId: "com.mevora.app.boost.10",
@@ -90,9 +153,12 @@ export const DEFAULT_BOOST_PACKS: BoostPack[] = [
     active: true,
     storefront: false,
     featured: false,
+    boostType: "classic",
+    multiplier: SMART_BOOST_MULTIPLIER,
   },
   {
-    productId: process.env.BOOST_IOS_PRODUCT_ID ??
+    productId:
+      process.env.BOOST_IOS_PRODUCT_ID ??
       process.env.BOOST_ANDROID_PRODUCT_ID ??
       "com.mevora.app.boost",
     boostCount: 1,
@@ -104,32 +170,50 @@ export const DEFAULT_BOOST_PACKS: BoostPack[] = [
     active: true,
     storefront: false,
     featured: false,
+    boostType: "classic",
+    multiplier: SMART_BOOST_MULTIPLIER,
   },
 ];
 
+/**
+ * Duration packs auto-activate (including Smart Boost 30m / 1h / 24h).
+ * Credit packs keep boostCount >= 1.
+ */
 export function isDurationPack(pack: BoostPack): boolean {
-  return pack.durationMs >= 24 * 60 * 60 * 1000;
+  return pack.durationMs > 0 && pack.boostCount === 0;
 }
 
 export function defaultPackFor(productId: string): BoostPack | null {
   const found = DEFAULT_BOOST_PACKS.find(
-    (pack) => pack.productId === productId && pack.active && (pack.durationMs > 0 || pack.boostCount > 0),
+    (pack) =>
+      pack.productId === productId &&
+      pack.active &&
+      (pack.durationMs > 0 || pack.boostCount > 0),
   );
   return found ?? null;
 }
 
-export function isAllowedProduct(productId: string, _platform?: "ios" | "android"): boolean {
+export function isAllowedProduct(
+  productId: string,
+  _platform?: "ios" | "android",
+): boolean {
   return defaultPackFor(productId) != null;
 }
 
-function durationFromData(data: Record<string, unknown>): {durationMs: number; durationDays: number} {
+function durationFromData(data: Record<string, unknown>): {
+  durationMs: number;
+  durationDays: number;
+} {
   const days = Number(data.durationDays ?? 0);
   if (days > 0) {
     return {durationDays: days, durationMs: days * 24 * 60 * 60 * 1000};
   }
   const ms = Number(data.durationMs ?? 0);
   if (ms > 0) {
-    return {durationMs: ms, durationDays: Math.round(ms / (24 * 60 * 60 * 1000))};
+    return {
+      durationMs: ms,
+      durationDays: Math.round(ms / (24 * 60 * 60 * 1000)),
+    };
   }
   const minutes = Number(data.durationMinutes ?? 0);
   if (minutes > 0) {
@@ -138,7 +222,10 @@ function durationFromData(data: Record<string, unknown>): {durationMs: number; d
   return {durationMs: 0, durationDays: 0};
 }
 
-export async function resolveBoostPack(db: Firestore, productId: string): Promise<BoostPack | null> {
+export async function resolveBoostPack(
+  db: Firestore,
+  productId: string,
+): Promise<BoostPack | null> {
   if (!productId) {
     return null;
   }
@@ -164,6 +251,9 @@ export async function resolveBoostPack(db: Firestore, productId: string): Promis
       active: true,
       storefront: data.storefront !== false,
       featured: data.featured === true,
+      boostType: data.boostType === "smart" ? "smart" : "classic",
+      multiplier: Number(data.multiplier ?? SMART_BOOST_MULTIPLIER),
+      title: typeof data.title === "string" ? data.title : undefined,
     };
   }
   return defaultPackFor(productId);
@@ -183,17 +273,25 @@ function packDocument(pack: BoostPack) {
     active: pack.active,
     storefront: pack.storefront,
     featured: pack.featured,
+    boostType: pack.boostType ?? "classic",
+    multiplier: pack.multiplier ?? SMART_BOOST_MULTIPLIER,
+    title: pack.title ?? null,
   };
 }
 
+/** Seeds any missing default products (idempotent per product id). */
 export async function ensureDefaultCatalog(db: Firestore): Promise<void> {
-  const week = await db.doc(`boostProducts/${BOOST_PRODUCT_IDS.week}`).get();
-  if (week.exists) {
-    return;
-  }
   const batch = db.batch();
+  let writes = 0;
   for (const pack of DEFAULT_BOOST_PACKS) {
-    batch.set(db.doc(`boostProducts/${pack.productId}`), packDocument(pack), {merge: true});
+    const ref = db.doc(`boostProducts/${pack.productId}`);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      batch.set(ref, packDocument(pack), {merge: true});
+      writes++;
+    }
   }
-  await batch.commit();
+  if (writes > 0) {
+    await batch.commit();
+  }
 }

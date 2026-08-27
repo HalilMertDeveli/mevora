@@ -304,6 +304,7 @@ class PurchaseController extends ChangeNotifier {
     notifyListeners();
     await _analytics.logEvent(AnalyticsEvents.boostPurchaseSuccess);
     await _analytics.logEvent(AnalyticsEvents.boostActivated);
+    await _analytics.logEvent(AnalyticsEvents.boostStarted);
   }
 
   Future<void> _fail(Failure failure) async {

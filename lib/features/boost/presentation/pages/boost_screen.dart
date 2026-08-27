@@ -19,6 +19,7 @@ import 'package:mevora/features/boost/presentation/controllers/purchase_controll
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_history_list.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_pack_sheet.dart';
+import 'package:mevora/features/boost/presentation/widgets/smart_boost_preview_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
@@ -178,30 +179,12 @@ class _ProductView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
       children: [
+        const SmartBoostPreviewCard(),
+        const SizedBox(height: AppSpacing.lg),
         MevoraCard(
           emphasis: MevoraCardEmphasis.elevated,
           child: Column(
             children: [
-              Icon(
-                Icons.bolt_rounded,
-                size: 56,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                l10n.boostTitle,
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                l10n.boostSubtitle,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: AppSpacing.md),
               BoostActiveBadge(boost: state.activeBoost),
               if (state.hasActiveBoost) ...[
                 const SizedBox(height: AppSpacing.sm),

@@ -4,17 +4,19 @@ const {BoostActivationService} = require("../lib/boost/boostActivationService.js
 const {DEFAULT_BOOST_PACKS, isDurationPack, defaultPackFor} = require("../lib/boost/catalog.js");
 
 describe("boost duration packs", () => {
-  it("exposes 7 / 30 / 365 day storefront SKUs", () => {
-    const week = defaultPackFor("mevora_boost_7_days");
-    const month = defaultPackFor("mevora_boost_1_month");
-    const year = defaultPackFor("mevora_boost_1_year");
-    assert.equal(week.durationDays, 7);
-    assert.equal(month.durationDays, 30);
-    assert.equal(year.durationDays, 365);
-    assert.equal(isDurationPack(week), true);
+  it("exposes Smart Boost storefront SKUs (30m / 1h / 24h)", () => {
+    const starter = defaultPackFor("mevora_smart_boost_30m");
+    const popular = defaultPackFor("mevora_smart_boost_1h");
+    const power = defaultPackFor("mevora_smart_boost_24h");
+    assert.equal(starter.durationMs, 30 * 60 * 1000);
+    assert.equal(popular.durationMs, 60 * 60 * 1000);
+    assert.equal(power.durationMs, 24 * 60 * 60 * 1000);
+    assert.equal(isDurationPack(starter), true);
+    assert.equal(isDurationPack(popular), true);
+    assert.equal(isDurationPack(power), true);
     assert.equal(
       DEFAULT_BOOST_PACKS.filter((pack) => pack.storefront).map((pack) => pack.productId).join(","),
-      "mevora_boost_7_days,mevora_boost_1_month,mevora_boost_1_year",
+      "mevora_smart_boost_30m,mevora_smart_boost_1h,mevora_smart_boost_24h",
     );
   });
 

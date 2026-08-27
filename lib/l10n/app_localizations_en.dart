@@ -1310,11 +1310,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationSuperLike => 'Someone Super Liked you';
 
   @override
-  String get boostTitle => 'BOOST';
+  String get boostTitle => 'Smart Boost';
 
   @override
   String get boostSubtitle =>
-      'Show your profile to more people and get discovered faster.';
+      'Not more random people — more people who actually fit you.';
 
   @override
   String get boostDuration => 'Boost your profile';

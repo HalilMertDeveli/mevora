@@ -1310,11 +1310,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationSuperLike => 'Someone Super Liked you';
 
   @override
-  String get boostTitle => 'BOOST';
+  String get boostTitle => 'Smart Boost';
 
   @override
   String get boostSubtitle =>
-      'Show your profile to more people and get discovered faster.';
+      'Not more random people — more people who actually fit you.';
 
   @override
   String get boostDuration => 'Boost your profile';
@@ -2326,6 +2326,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get questionAnswersMatchedSubtitle =>
       'Discover what you have in common.';
+
+  @override
+  String get questionAnswersPremiumRequired =>
+      'Upgrade to Premium to see their answers.';
+
+  @override
+  String get questionAnswersPremiumLockedAnswer =>
+      'Unlock with Premium to see their answer';
 
   @override
   String get questionAnswersPeerEmpty =>
@@ -3368,4 +3376,116 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicRecentlyPlayedHeading => 'Recently played';
+
+  @override
+  String get humorLabTitle => 'Humor Lab';
+
+  @override
+  String get humorLabSubtitle =>
+      'Watch short clips and memes, then rate how funny they are.';
+
+  @override
+  String get humorLabDiscoverCta => 'Open Humor Lab';
+
+  @override
+  String get humorLoadingFeed => 'Preparing content…';
+
+  @override
+  String get humorRatingVeryFunny => 'Hilarious';
+
+  @override
+  String get humorRatingFunny => 'Funny';
+
+  @override
+  String get humorRatingNeutral => 'Neutral';
+
+  @override
+  String get humorRatingNotFunny => 'Not funny';
+
+  @override
+  String get humorRatingNotAtAll => 'Not funny at all';
+
+  @override
+  String get humorProfileBuilding => 'Still learning your humor vibe…';
+
+  @override
+  String get humorProfileTitle => 'Your humor profile';
+
+  @override
+  String get humorEmptyFeed => 'No new content to show right now.';
+
+  @override
+  String get humorFeedError => 'Couldn\'t load content. Try again.';
+
+  @override
+  String get humorTryAgain => 'Try again';
+
+  @override
+  String get humorUndoRating => 'Undo rating';
+
+  @override
+  String get humorCompatibilityTitle => 'Humor match';
+
+  @override
+  String get humorChatStarter => 'Something that made me laugh…';
+
+  @override
+  String get humorTopVibes => 'Top vibes';
+
+  @override
+  String get humorSaved => 'Saved';
+
+  @override
+  String get humorReport => 'Report';
+
+  @override
+  String get humorReportSuccess => 'Thanks — we\'ll review this content.';
+
+  @override
+  String get humorHowFunny => 'How funny is this?';
+
+  @override
+  String get humorReportReasonOffensive => 'Offensive';
+
+  @override
+  String get humorReportReasonSpam => 'Spam';
+
+  @override
+  String get humorReportReasonMisleading => 'Misleading';
+
+  @override
+  String get humorReportReasonOther => 'Other';
+
+  @override
+  String get humorCategorySarcasm => 'Sarcasm';
+
+  @override
+  String get humorCategoryAbsurd => 'Absurd';
+
+  @override
+  String get humorCategorySilly => 'Silly';
+
+  @override
+  String get humorCategoryRomantic => 'Romantic';
+
+  @override
+  String get humorCategoryDark => 'Dark';
+
+  @override
+  String get humorCategoryMeme => 'Meme';
+
+  @override
+  String get humorCategoryDry => 'Dry';
+
+  @override
+  String get humorCategoryWordplay => 'Wordplay';
+
+  @override
+  String get humorCategorySituational => 'Situational';
+
+  @override
+  String get humorCategoryCringe => 'Cringe';
+
+  @override
+  String get humorCategoryTeasing => 'Teasing';
 }

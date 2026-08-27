@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
@@ -89,6 +90,13 @@ class ProfileTabPage extends StatelessWidget {
             title: l10n.musicTitle,
             onTap: () => context.go(AppRoutes.music),
           ),
+          if (AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled ==
+              true)
+            _ProfileTile(
+              icon: Icons.theater_comedy_outlined,
+              title: l10n.humorLabTitle,
+              onTap: () => context.push(AppRoutes.humorLab),
+            ),
           _ProfileTile(
             icon: Icons.tune_rounded,
             title: l10n.discoveryPreferences,

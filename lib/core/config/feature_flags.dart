@@ -7,6 +7,7 @@ class FeatureFlags {
     this.spotifyLoginEnabled = false,
     this.premiumEnabled = false,
     this.aiRecommendationsEnabled = false,
+    this.humorLabEnabled = false,
     this.minimumAge = 18,
     this.maxDiscoveryDistanceKm = 100,
     this.maxDailyLikes = 100,
@@ -17,6 +18,7 @@ class FeatureFlags {
   final bool spotifyLoginEnabled;
   final bool premiumEnabled;
   final bool aiRecommendationsEnabled;
+  final bool humorLabEnabled;
   final int minimumAge;
   final int maxDiscoveryDistanceKm;
   final int maxDailyLikes;
@@ -27,6 +29,7 @@ class FeatureFlags {
     bool? spotifyLoginEnabled,
     bool? premiumEnabled,
     bool? aiRecommendationsEnabled,
+    bool? humorLabEnabled,
     int? minimumAge,
     int? maxDiscoveryDistanceKm,
     int? maxDailyLikes,
@@ -38,6 +41,7 @@ class FeatureFlags {
       premiumEnabled: premiumEnabled ?? this.premiumEnabled,
       aiRecommendationsEnabled:
           aiRecommendationsEnabled ?? this.aiRecommendationsEnabled,
+      humorLabEnabled: humorLabEnabled ?? this.humorLabEnabled,
       minimumAge: minimumAge ?? this.minimumAge,
       maxDiscoveryDistanceKm:
           maxDiscoveryDistanceKm ?? this.maxDiscoveryDistanceKm,

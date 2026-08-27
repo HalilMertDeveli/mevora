@@ -59,12 +59,11 @@ class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
 class _FakeRelationshipRepo implements RelationshipRepository {
   _FakeRelationshipRepo({
     this.saved = const {},
-    this.delay = Duration.zero,
     this.failLoad = false,
   });
 
   Map<String, String> saved;
-  final Duration delay;
+  final Duration delay = Duration.zero;
   final bool failLoad;
   final List<(String, String)> saveCalls = [];
 

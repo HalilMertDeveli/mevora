@@ -1307,11 +1307,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationSuperLike => 'Birisi seni Süper Beğendi';
 
   @override
-  String get boostTitle => 'BOOST';
+  String get boostTitle => 'Smart Boost';
 
   @override
   String get boostSubtitle =>
-      'Profilini daha fazla kişiye göster ve keşfedilme şansını artır.';
+      'Daha fazla rastgele kişiye değil — sana uygun daha fazla kişiye görün.';
 
   @override
   String get boostDuration => 'Profilini öne çıkar';
@@ -2320,6 +2320,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get questionAnswersMatchedSubtitle => 'Ortak yönlerinizi keşfedin.';
+
+  @override
+  String get questionAnswersPremiumRequired =>
+      'Cevaplarını görmek için Premium\'a geç.';
+
+  @override
+  String get questionAnswersPremiumLockedAnswer =>
+      'Cevabını görmek için Premium\'a geç';
 
   @override
   String get questionAnswersPeerEmpty =>
@@ -3364,4 +3372,116 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get musicRecentlyPlayedHeading => 'Son dinlenenler';
+
+  @override
+  String get humorLabTitle => 'Mizah Labı';
+
+  @override
+  String get humorLabSubtitle =>
+      'Kısa klipleri ve memeleri izle, ne kadar komik olduğunu değerlendir.';
+
+  @override
+  String get humorLabDiscoverCta => 'Mizah Labı\'nı aç';
+
+  @override
+  String get humorLoadingFeed => 'İçerikler hazırlanıyor…';
+
+  @override
+  String get humorRatingVeryFunny => 'Çok komik';
+
+  @override
+  String get humorRatingFunny => 'Komik';
+
+  @override
+  String get humorRatingNeutral => 'Nötr';
+
+  @override
+  String get humorRatingNotFunny => 'Komik değil';
+
+  @override
+  String get humorRatingNotAtAll => 'Hiç komik değil';
+
+  @override
+  String get humorProfileBuilding => 'Mizah vibesın hâlâ öğreniliyor…';
+
+  @override
+  String get humorProfileTitle => 'Mizah profilin';
+
+  @override
+  String get humorEmptyFeed => 'Şimdilik gösterecek yeni bir içerik yok.';
+
+  @override
+  String get humorFeedError => 'İçerik yüklenemedi. Tekrar dene.';
+
+  @override
+  String get humorTryAgain => 'Tekrar dene';
+
+  @override
+  String get humorUndoRating => 'Puanı geri al';
+
+  @override
+  String get humorCompatibilityTitle => 'Mizah uyumu';
+
+  @override
+  String get humorChatStarter => 'Beni güldüren bir şey…';
+
+  @override
+  String get humorTopVibes => 'Öne çıkan vibes';
+
+  @override
+  String get humorSaved => 'Kaydedildi';
+
+  @override
+  String get humorReport => 'Şikayet et';
+
+  @override
+  String get humorReportSuccess => 'Teşekkürler — bu içeriği inceleyeceğiz.';
+
+  @override
+  String get humorHowFunny => 'Ne kadar komik?';
+
+  @override
+  String get humorReportReasonOffensive => 'Rahatsız edici';
+
+  @override
+  String get humorReportReasonSpam => 'Spam';
+
+  @override
+  String get humorReportReasonMisleading => 'Yanıltıcı';
+
+  @override
+  String get humorReportReasonOther => 'Diğer';
+
+  @override
+  String get humorCategorySarcasm => 'İroni';
+
+  @override
+  String get humorCategoryAbsurd => 'Absürt';
+
+  @override
+  String get humorCategorySilly => 'Saçma sapan';
+
+  @override
+  String get humorCategoryRomantic => 'Romantik';
+
+  @override
+  String get humorCategoryDark => 'Kara mizah';
+
+  @override
+  String get humorCategoryMeme => 'Meme';
+
+  @override
+  String get humorCategoryDry => 'Kuru';
+
+  @override
+  String get humorCategoryWordplay => 'Kelime oyunu';
+
+  @override
+  String get humorCategorySituational => 'Durumsal';
+
+  @override
+  String get humorCategoryCringe => 'Cringe';
+
+  @override
+  String get humorCategoryTeasing => 'Takılma';
 }

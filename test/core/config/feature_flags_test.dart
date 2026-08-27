@@ -9,6 +9,7 @@ void main() {
     expect(flags.spotifyLoginEnabled, isFalse);
     expect(flags.premiumEnabled, isFalse);
     expect(flags.aiRecommendationsEnabled, isFalse);
+    expect(flags.humorLabEnabled, isFalse);
   });
 
   test('copyWith updates a single flag without scattering ifs', () {
@@ -17,5 +18,14 @@ void main() {
 
     expect(enabled.videoCallsEnabled, isTrue);
     expect(enabled.premiumEnabled, isFalse);
+    expect(enabled.humorLabEnabled, isFalse);
+  });
+
+  test('copyWith can enable humor lab without touching other flags', () {
+    const flags = FeatureFlags();
+    final enabled = flags.copyWith(humorLabEnabled: true);
+
+    expect(enabled.humorLabEnabled, isTrue);
+    expect(enabled.videoCallsEnabled, isFalse);
   });
 }

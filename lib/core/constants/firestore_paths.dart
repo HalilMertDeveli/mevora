@@ -31,6 +31,11 @@ abstract final class FirestorePaths {
   static const String relationshipMatch = 'relationshipMatch';
   static const String relationshipSeen = 'relationshipSeen';
   static const String questionAnswers = 'questionAnswers';
+  static const String humor = 'humor';
+  static const String humorInteractions = 'humorInteractions';
+  static const String humorContent = 'humorContent';
+  static const String humorReports = 'humorReports';
+  static const String humorModerationQueue = 'humorModerationQueue';
 
   static String supportTicket(String ticketId) => '$supportTickets/$ticketId';
 
@@ -118,6 +123,14 @@ abstract final class FirestorePaths {
 
   static String userQuestionAnswers(String uid) =>
       '$users/$uid/$questionAnswers';
+
+  static String humorSummary(String uid) => '$users/$uid/$humor/summary';
+
+  static String humorInteraction(String uid, String contentId) =>
+      '$users/$uid/$humorInteractions/$contentId';
+
+  static String humorContentDoc(String contentId) =>
+      '$humorContent/$contentId';
 }
 
 abstract final class StoragePaths {

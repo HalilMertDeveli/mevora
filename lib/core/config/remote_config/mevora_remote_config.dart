@@ -8,6 +8,7 @@ abstract final class RemoteConfigKeys {
   static const String maxDailyLikes = 'maxDailyLikes';
   static const String videoCallEnabled = 'videoCallEnabled';
   static const String premiumEnabled = 'premiumEnabled';
+  static const String humorLabEnabled = 'humorLabEnabled';
   static const String maintenanceMode = 'maintenanceMode';
   static const String boostCatalogJson = 'boostCatalogJson';
 }
@@ -19,6 +20,7 @@ class MevoraRemoteConfig {
     this.maxDailyLikes = 100,
     this.videoCallEnabled = false,
     this.premiumEnabled = false,
+    this.humorLabEnabled = false,
     this.maintenanceMode = false,
     this.boostCatalogJson = defaultBoostCatalogJson,
   });
@@ -28,6 +30,7 @@ class MevoraRemoteConfig {
   final int maxDailyLikes;
   final bool videoCallEnabled;
   final bool premiumEnabled;
+  final bool humorLabEnabled;
   final bool maintenanceMode;
 
   /// JSON array of Boost packs. Firestore `boostProducts` is authoritative;
@@ -50,6 +53,9 @@ class MevoraRemoteConfig {
       maxDailyLikes: maxDailyLikes,
       videoCallsEnabled: videoCallEnabled,
       premiumEnabled: premiumEnabled,
+      // Local bootstrap / dart-define can enable for QA; RC can also enable.
+      // RC alone cannot force-disable a local QA enablement.
+      humorLabEnabled: current.humorLabEnabled || humorLabEnabled,
       maintenanceMode: maintenanceMode,
     );
   }

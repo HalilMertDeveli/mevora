@@ -11,6 +11,7 @@ import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/music_scope.dart';
+import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
@@ -38,6 +39,7 @@ import 'package:mevora/features/match_score/domain/repositories/match_score_repo
 import 'package:mevora/features/chat/e2ee/services/e2ee_bootstrap_controller.dart';
 import 'package:mevora/features/matching/presentation/controllers/presence_lifecycle_controller.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
+import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
@@ -57,6 +59,7 @@ class MevoraApp extends StatefulWidget {
     this.locationRepository,
     this.discoveryRepository,
     this.musicRepository,
+    this.humorRepository,
     this.matchScoreRepository,
     this.relationshipRepository,
     this.profileQuestionAnswerRepository,
@@ -80,6 +83,7 @@ class MevoraApp extends StatefulWidget {
   final LocationRepository? locationRepository;
   final DiscoveryRepository? discoveryRepository;
   final MusicRepository? musicRepository;
+  final HumorRepository? humorRepository;
   final MatchScoreRepository? matchScoreRepository;
   final RelationshipRepository? relationshipRepository;
   final ProfileQuestionAnswerRepository? profileQuestionAnswerRepository;
@@ -276,6 +280,11 @@ class _MevoraAppState extends State<MevoraApp> {
     final music = widget.musicRepository;
     if (music != null) {
       child = MusicScope(repository: music, child: child);
+    }
+
+    final humor = widget.humorRepository;
+    if (humor != null) {
+      child = HumorScope(repository: humor, child: child);
     }
 
     final relationship = widget.relationshipRepository;

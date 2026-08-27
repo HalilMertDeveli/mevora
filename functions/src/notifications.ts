@@ -17,6 +17,7 @@ export const FcmTypes = {
   newVoice: "newVoice",
   incomingCall: "incomingCall",
   missedCall: "missedCall",
+  incomingLike: "incomingLike",
   boostActivated: "boostActivated",
   boostExpired: "boostExpired",
 } as const;
@@ -27,6 +28,7 @@ export type PushPrefKey =
   | "messageNotifications"
   | "matchNotifications"
   | "callNotifications"
+  | "likeNotifications"
   | "notificationsEnabled";
 
 const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: string; body: string}}> = {
@@ -53,6 +55,10 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
   missedCall: {
     tr: {title: "Mevora", body: "Cevapsız görüntülü arama"},
     en: {title: "Mevora", body: "Missed video call"},
+  },
+  incomingLike: {
+    tr: {title: "Mevora", body: "Birisi seni beğendi"},
+    en: {title: "Mevora", body: "Someone liked you"},
   },
   boostActivated: {
     tr: {title: "Mevora", body: "Boost aktif"},
@@ -85,6 +91,7 @@ export async function sendUserPush(options: {
   data: Record<string, string>;
   prefKey: PushPrefKey;
   bodyOverride?: string;
+  idempotencyKey?: string;
 }): Promise<void> {
   const [legacyPref, settings] = await Promise.all([
     db.doc(`users/${options.uid}/settings/notifications`).get(),

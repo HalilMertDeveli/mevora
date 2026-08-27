@@ -28,6 +28,7 @@ import 'package:mevora/features/discovery/presentation/pages/discovery_profile_d
 import 'package:mevora/features/discovery/presentation/widgets/discovery_action_buttons.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_card_stack.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_filters_sheet.dart';
+import 'package:mevora/features/humor/presentation/widgets/humor_lab_discover_entry.dart';
 import 'package:mevora/features/location/presentation/screens/location_permission_screen.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
@@ -386,6 +387,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         children: [
+          const HumorLabDiscoverEntry(),
           if (state.hiddenCompatibility != null &&
               !state.hiddenCompatibilityDismissed)
             Padding(

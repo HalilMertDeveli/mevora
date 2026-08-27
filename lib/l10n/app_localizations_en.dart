@@ -2332,6 +2332,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'This person hasn\'t shared any profile answers yet.';
 
   @override
+  String get questionAnswersPremiumLockedMessage =>
+      'Questions are visible. Upgrade to Premium to see their answers.';
+
+  @override
+  String get questionAnswersPremiumUnlockCta => 'Unlock with Premium';
+
+  @override
+  String get questionAnswersPremiumAnswerHidden =>
+      'Answer hidden — Premium required';
+
+  @override
   String get matchViewAnswers => 'View answers';
 
   @override

@@ -22,6 +22,8 @@ import '../../helpers/pump_app.dart';
 class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
   final _controller = StreamController<List<ProfileQuestionAnswer>>.broadcast();
   var syncCalls = 0;
+  PartnerQuestionAnswersSnapshot partnerSnapshot =
+      PartnerQuestionAnswersSnapshot.empty;
 
   @override
   Stream<List<ProfileQuestionAnswer>> watchAnswers(
@@ -29,6 +31,12 @@ class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
     bool visibleOnly = false,
   }) =>
       _controller.stream;
+
+  @override
+  Future<Result<PartnerQuestionAnswersSnapshot>> fetchPartnerAnswers(
+    String partnerUid,
+  ) async =>
+      Success(partnerSnapshot);
 
   @override
   Future<Result<void>> syncFromMatching() async {
@@ -158,5 +166,114 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('Coffee'), findsWidgets);
+  });
+
+  testWidgets('free peer sees question prompts with Premium lock, not answers', (
+    tester,
+  ) async {
+    final answers = _FakeProfileAnswers();
+    addTearDown(answers.dispose);
+    answers.partnerSnapshot = const PartnerQuestionAnswersSnapshot(
+      locked: true,
+      matchRequired: false,
+      premiumRequired: true,
+      isPremium: false,
+      items: [
+        ProfileQuestionAnswer(
+          questionId: 'rq_001',
+          answerId: '',
+          isVisible: true,
+          answerLocked: true,
+        ),
+      ],
+    );
+    final relationshipController = RelationshipController(
+      repository: _FakeRelationshipRepo(),
+    );
+    addTearDown(relationshipController.dispose);
+    final auth = _auth();
+    addTearDown(auth.dispose);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await tester.pumpWidget(
+      wrapWithApp(
+        AuthScope(
+          controller: auth,
+          child: RelationshipScope(
+            repository: _FakeRelationshipRepo(),
+            profileAnswers: answers,
+            controller: relationshipController,
+            child: const ProfileQuestionAnswersSection(
+              uid: 'peer-1',
+              requireMatch: false,
+              previewLimit: 5,
+            ),
+          ),
+        ),
+        scaffold: false,
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text(l10n.questionAnswersPremiumLockedMessage), findsOneWidget);
+    expect(find.text(l10n.questionAnswersPremiumUnlockCta), findsWidgets);
+    expect(find.text(l10n.questionAnswersPremiumAnswerHidden), findsOneWidget);
+    expect(find.textContaining('Coffee'), findsWidgets);
+    // Answer option labels must not appear for free peers.
+    expect(find.textContaining('"'), findsNothing);
+  });
+
+  testWidgets('premium peer sees unlocked question and answer', (tester) async {
+    final answers = _FakeProfileAnswers();
+    addTearDown(answers.dispose);
+    answers.partnerSnapshot = const PartnerQuestionAnswersSnapshot(
+      locked: false,
+      matchRequired: false,
+      premiumRequired: false,
+      isPremium: true,
+      items: [
+        ProfileQuestionAnswer(
+          questionId: 'rq_001',
+          answerId: 'a',
+          isVisible: true,
+        ),
+      ],
+    );
+    final relationshipController = RelationshipController(
+      repository: _FakeRelationshipRepo(),
+    );
+    addTearDown(relationshipController.dispose);
+    final auth = _auth();
+    addTearDown(auth.dispose);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
+    await tester.pumpWidget(
+      wrapWithApp(
+        AuthScope(
+          controller: auth,
+          child: RelationshipScope(
+            repository: _FakeRelationshipRepo(),
+            profileAnswers: answers,
+            controller: relationshipController,
+            child: const ProfileQuestionAnswersSection(
+              uid: 'peer-1',
+              requireMatch: false,
+              previewLimit: 5,
+            ),
+          ),
+        ),
+        scaffold: false,
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text(l10n.questionAnswersPremiumLockedMessage), findsNothing);
+    expect(find.text(l10n.questionAnswersPremiumAnswerHidden), findsNothing);
+    expect(find.textContaining('Coffee'), findsWidgets);
+    expect(find.textContaining('"'), findsWidgets);
   });
 }

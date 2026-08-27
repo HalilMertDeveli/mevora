@@ -4334,6 +4334,24 @@ abstract class AppLocalizations {
   /// **'This person hasn\'t shared any profile answers yet.'**
   String get questionAnswersPeerEmpty;
 
+  /// No description provided for @questionAnswersPremiumLockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions are visible. Upgrade to Premium to see their answers.'**
+  String get questionAnswersPremiumLockedMessage;
+
+  /// No description provided for @questionAnswersPremiumUnlockCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with Premium'**
+  String get questionAnswersPremiumUnlockCta;
+
+  /// No description provided for @questionAnswersPremiumAnswerHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer hidden — Premium required'**
+  String get questionAnswersPremiumAnswerHidden;
+
   /// No description provided for @matchViewAnswers.
   ///
   /// In en, this message translates to:

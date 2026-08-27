@@ -6,19 +6,30 @@ class ProfileQuestionAnswerDisplay {
     required this.answer,
     required this.questionText,
     required this.answerText,
+    this.isLocked = false,
   });
 
   final ProfileQuestionAnswer answer;
   final String questionText;
   final String answerText;
+  final bool isLocked;
 
   static ProfileQuestionAnswerDisplay? resolve(
     ProfileQuestionAnswer answer,
     String locale,
   ) {
     final question = RelationshipQuestionCatalog.byId(answer.questionId);
-    if (question == null || answer.answerId.isEmpty) {
+    if (question == null) {
       return null;
+    }
+    final questionText = question.promptFor(locale);
+    if (answer.answerLocked || answer.answerId.isEmpty) {
+      return ProfileQuestionAnswerDisplay(
+        answer: answer,
+        questionText: questionText,
+        answerText: '',
+        isLocked: true,
+      );
     }
     final option = question.answers
         .where((item) => item.id == answer.answerId)
@@ -28,7 +39,7 @@ class ProfileQuestionAnswerDisplay {
     }
     return ProfileQuestionAnswerDisplay(
       answer: answer,
-      questionText: question.promptFor(locale),
+      questionText: questionText,
       answerText: option.labelFor(locale),
     );
   }

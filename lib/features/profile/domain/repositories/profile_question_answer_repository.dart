@@ -7,6 +7,11 @@ abstract class ProfileQuestionAnswerRepository {
     bool visibleOnly = false,
   });
 
+  /// Peer answers via Cloud Function — never reads peer Firestore docs.
+  Future<Result<PartnerQuestionAnswersSnapshot>> fetchPartnerAnswers(
+    String partnerUid,
+  );
+
   Future<Result<void>> syncFromMatching();
 
   Future<Result<void>> setVisibility({

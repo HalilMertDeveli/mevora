@@ -370,12 +370,11 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
-      // Profile question answers: owner or actively matched users (visible only).
-      // Default isVisible=true when the field is absent (legacy / backfill).
+      // Profile question answers: owner-only client read.
+      // Peers must use getPartnerQuestionAnswers (Premium + active match).
+      // Matching still uses private relationshipAnswers (unchanged).
       match /questionAnswers/{questionId} {
-        allow read: if isOwner(userId)
-          || (hasActiveMatchWith(userId)
-            && resource.data.get('isVisible', true) == true);
+        allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
 

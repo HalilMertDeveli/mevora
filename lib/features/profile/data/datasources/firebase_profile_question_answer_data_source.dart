@@ -5,6 +5,80 @@ import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/profile/data/datasources/profile_question_answer_data_source.dart';
 import 'package:mevora/features/profile/domain/models/profile_question_answer.dart';
 
+/// Maps `getPartnerQuestionAnswers` CF payload → UI snapshot.
+/// Free clients never receive answer fields even if a buggy payload includes them.
+PartnerQuestionAnswersSnapshot parsePartnerQuestionAnswersPayload(
+  Map<String, dynamic> raw,
+) {
+  final isPremium = raw['isPremium'] == true;
+  final premiumRequired = raw['premiumRequired'] == true;
+  final matchRequired = raw['matchRequired'] == true;
+  final locked = raw['locked'] == true || premiumRequired || matchRequired;
+
+  final answersRaw = raw['answers'];
+  final questionsRaw = raw['questions'];
+
+  if (isPremium && !locked && answersRaw is List) {
+    final items = <ProfileQuestionAnswer>[];
+    for (final row in answersRaw) {
+      if (row is! Map) {
+        continue;
+      }
+      final map = Map<String, dynamic>.from(row);
+      final questionId = map['questionId'] as String? ?? '';
+      final answerId = map['answerId'] as String? ?? '';
+      if (questionId.isEmpty || answerId.isEmpty) {
+        continue;
+      }
+      items.add(
+        ProfileQuestionAnswer(
+          questionId: questionId,
+          answerId: answerId,
+          isVisible: map['isVisible'] != false,
+        ),
+      );
+    }
+    return PartnerQuestionAnswersSnapshot(
+      locked: false,
+      matchRequired: false,
+      premiumRequired: false,
+      isPremium: true,
+      items: items,
+    );
+  }
+
+  // Free / locked: question ids only — never trust answer fields from payload.
+  final items = <ProfileQuestionAnswer>[];
+  if (questionsRaw is List) {
+    for (final row in questionsRaw) {
+      if (row is! Map) {
+        continue;
+      }
+      final map = Map<String, dynamic>.from(row);
+      final questionId = map['questionId'] as String? ?? '';
+      if (questionId.isEmpty) {
+        continue;
+      }
+      items.add(
+        ProfileQuestionAnswer(
+          questionId: questionId,
+          answerId: '',
+          isVisible: true,
+          answerLocked: true,
+        ),
+      );
+    }
+  }
+
+  return PartnerQuestionAnswersSnapshot(
+    locked: locked || !isPremium,
+    matchRequired: matchRequired,
+    premiumRequired: premiumRequired || (!matchRequired && !isPremium),
+    isPremium: isPremium,
+    items: items,
+  );
+}
+
 class FirebaseProfileQuestionAnswerDataSource
     implements ProfileQuestionAnswerDataSource {
   FirebaseProfileQuestionAnswerDataSource({
@@ -38,6 +112,16 @@ class FirebaseProfileQuestionAnswerDataSource
       });
       return items;
     });
+  }
+
+  @override
+  Future<PartnerQuestionAnswersSnapshot> fetchPartnerAnswers(
+    String partnerUid,
+  ) async {
+    final raw = await _backend.invoke('getPartnerQuestionAnswers', {
+      'partnerUid': partnerUid,
+    });
+    return parsePartnerQuestionAnswersPayload(raw);
   }
 
   @override

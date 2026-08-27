@@ -6,6 +6,8 @@ abstract class ProfileQuestionAnswerDataSource {
     bool visibleOnly = false,
   });
 
+  Future<PartnerQuestionAnswersSnapshot> fetchPartnerAnswers(String partnerUid);
+
   Future<void> syncFromMatching();
 
   Future<void> setVisibility({

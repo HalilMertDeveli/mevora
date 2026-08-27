@@ -9,6 +9,9 @@ class MemoryProfileQuestionAnswerDataSource
   final Map<String, StreamController<List<ProfileQuestionAnswer>>> _controllers =
       {};
 
+  PartnerQuestionAnswersSnapshot partnerSnapshot =
+      PartnerQuestionAnswersSnapshot.empty;
+
   @override
   Stream<List<ProfileQuestionAnswer>> watchAnswers(
     String uid, {
@@ -20,6 +23,13 @@ class MemoryProfileQuestionAnswerDataSource
     );
     scheduleMicrotask(() => controller.add(_list(uid, visibleOnly: visibleOnly)));
     return controller.stream;
+  }
+
+  @override
+  Future<PartnerQuestionAnswersSnapshot> fetchPartnerAnswers(
+    String partnerUid,
+  ) async {
+    return partnerSnapshot;
   }
 
   @override
@@ -39,6 +49,7 @@ class MemoryProfileQuestionAnswerDataSource
         questionId: current.questionId,
         answerId: current.answerId,
         isVisible: isVisible,
+        answerLocked: current.answerLocked,
         createdAt: current.createdAt,
         updatedAt: DateTime.now(),
       );

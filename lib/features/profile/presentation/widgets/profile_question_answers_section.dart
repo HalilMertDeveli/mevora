@@ -6,7 +6,9 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
+import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/profile/domain/models/profile_question_answer.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
@@ -49,11 +51,13 @@ class _ProfileQuestionAnswersSectionState
   var _syncAttempted = false;
   var _canView = false;
   var _matchChecked = false;
+  var _premiumRequired = false;
   String? _error;
 
   String? _boundViewerUid;
   String? _boundUid;
   bool _boundIsOwner = false;
+  var _partnerFetchToken = 0;
 
   ProfileQuestionAnswerRepository? get _repository =>
       RelationshipScope.profileAnswersOf(context);
@@ -79,6 +83,7 @@ class _ProfileQuestionAnswersSectionState
       _matchSubscription = null;
       _syncAttempted = false;
       _boundUid = null;
+      _partnerFetchToken += 1;
       _ensureListening();
     }
   }
@@ -88,7 +93,9 @@ class _ProfileQuestionAnswersSectionState
     if (_boundUid == widget.uid &&
         _boundIsOwner == widget.isOwner &&
         _boundViewerUid == viewerUid &&
-        (_answersSubscription != null || _matchSubscription != null || _matchChecked)) {
+        (_answersSubscription != null ||
+            _matchSubscription != null ||
+            _matchChecked)) {
       return;
     }
     _boundUid = widget.uid;
@@ -106,6 +113,7 @@ class _ProfileQuestionAnswersSectionState
         _answers = const [];
         _canView = false;
         _matchChecked = true;
+        _premiumRequired = false;
       });
       return;
     }
@@ -113,6 +121,7 @@ class _ProfileQuestionAnswersSectionState
     if (widget.isOwner) {
       _canView = true;
       _matchChecked = true;
+      _premiumRequired = false;
       _subscribeAnswers(repository);
       return;
     }
@@ -120,7 +129,7 @@ class _ProfileQuestionAnswersSectionState
     if (!widget.requireMatch) {
       _canView = true;
       _matchChecked = true;
-      _subscribeAnswers(repository);
+      unawaited(_loadPartnerAnswers(repository));
       return;
     }
 
@@ -130,6 +139,7 @@ class _ProfileQuestionAnswersSectionState
         _loading = false;
         _canView = false;
         _matchChecked = true;
+        _premiumRequired = false;
       });
       return;
     }
@@ -148,7 +158,7 @@ class _ProfileQuestionAnswersSectionState
           _matchChecked = true;
         });
         if (canView) {
-          _subscribeAnswers(repository);
+          unawaited(_loadPartnerAnswers(repository));
         } else {
           unawaited(_answersSubscription?.cancel());
           _answersSubscription = null;
@@ -156,19 +166,11 @@ class _ProfileQuestionAnswersSectionState
             _answers = const [];
             _loading = false;
             _error = null;
+            _premiumRequired = false;
           });
         }
       },
       onError: (Object error) {
-        // #region agent log
-        // ignore: avoid_print
-        print(
-          '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"photo-swipe",'
-          '"hypothesisId":"H5","location":"profile_question_answers_section.dart",'
-          '"message":"match_watch_error","data":{"error":"$error"},'
-          '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
-        );
-        // #endregion
         if (!mounted) {
           return;
         }
@@ -178,9 +180,48 @@ class _ProfileQuestionAnswersSectionState
           _loading = false;
           _answers = const [];
           _error = null;
+          _premiumRequired = false;
         });
       },
     );
+  }
+
+  Future<void> _loadPartnerAnswers(
+    ProfileQuestionAnswerRepository repository,
+  ) async {
+    final token = ++_partnerFetchToken;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final result = await repository.fetchPartnerAnswers(widget.uid);
+    if (!mounted || token != _partnerFetchToken) {
+      return;
+    }
+    switch (result) {
+      case Success(:final value):
+        if (value.matchRequired) {
+          setState(() {
+            _canView = false;
+            _premiumRequired = false;
+            _answers = const [];
+            _loading = false;
+            _error = null;
+          });
+          return;
+        }
+        setState(() {
+          _answers = value.items;
+          _premiumRequired = value.premiumRequired || value.locked;
+          _loading = false;
+          _error = null;
+        });
+      case Err():
+        setState(() {
+          _loading = false;
+          _error = AppLocalizations.of(context).questionAnswersLoadError;
+        });
+    }
   }
 
   void _subscribeAnswers(ProfileQuestionAnswerRepository repository) {
@@ -203,8 +244,6 @@ class _ProfileQuestionAnswersSectionState
           } on Object {
             // Stream stays subscribed; UI shows empty / error below.
           }
-          // Do not paint the pre-sync empty snapshot as final — wait for the
-          // next Firestore emission after dual-write / backfill.
           if (!mounted) {
             return;
           }
@@ -238,6 +277,7 @@ class _ProfileQuestionAnswersSectionState
 
   @override
   void dispose() {
+    _partnerFetchToken += 1;
     unawaited(_answersSubscription?.cancel());
     unawaited(_matchSubscription?.cancel());
     super.dispose();
@@ -300,6 +340,7 @@ class _ProfileQuestionAnswersSectionState
     final preview = cards.take(widget.previewLimit).toList(growable: false);
     final hiddenCount = cards.length - preview.length;
     final theme = Theme.of(context);
+    final showPremiumGate = !widget.isOwner && _premiumRequired;
 
     final content = Padding(
       padding: widget.highlightWhenMatched
@@ -334,9 +375,20 @@ class _ProfileQuestionAnswersSectionState
                 ),
               ),
             ],
+            if (showPremiumGate) ...[
+              const SizedBox(height: AppSpacing.sm),
+              _PremiumAnswersBanner(
+                onUpgrade: () => context.push(AppRoutes.boost),
+              ),
+            ],
             const SizedBox(height: AppSpacing.sm),
             for (final card in preview) ...[
-              _AnswerCard(display: card),
+              _AnswerCard(
+                display: card,
+                onUpgrade: showPremiumGate
+                    ? () => context.push(AppRoutes.boost)
+                    : null,
+              ),
               const SizedBox(height: AppSpacing.sm),
             ],
             if (hiddenCount > 0)
@@ -348,6 +400,7 @@ class _ProfileQuestionAnswersSectionState
                     uid: widget.uid,
                     isOwner: widget.isOwner,
                     answers: visibleAnswers,
+                    premiumLocked: showPremiumGate,
                   ),
                   child: Text(l10n.seeAllAnswers(hiddenCount)),
                 ),
@@ -474,14 +527,56 @@ class _LockedAnswersCard extends StatelessWidget {
   }
 }
 
-class _AnswerCard extends StatelessWidget {
-  const _AnswerCard({required this.display});
+class _PremiumAnswersBanner extends StatelessWidget {
+  const _PremiumAnswersBanner({required this.onUpgrade});
 
-  final ProfileQuestionAnswerDisplay display;
+  final VoidCallback onUpgrade;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: AppColors.premiumGradient,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.questionAnswersPremiumLockedMessage,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonal(
+                onPressed: onUpgrade,
+                child: Text(l10n.questionAnswersPremiumUnlockCta),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnswerCard extends StatelessWidget {
+  const _AnswerCard({required this.display, this.onUpgrade});
+
+  final ProfileQuestionAnswerDisplay display;
+  final VoidCallback? onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
@@ -510,10 +605,41 @@ class _AnswerCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              '"${display.answerText}"',
-              style: theme.textTheme.bodyLarge,
-            ),
+            if (display.isLocked)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.questionAnswersPremiumAnswerHidden,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (onUpgrade != null)
+                          TextButton(
+                            onPressed: onUpgrade,
+                            child: Text(l10n.questionAnswersPremiumUnlockCta),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            else
+              Text(
+                '"${display.answerText}"',
+                style: theme.textTheme.bodyLarge,
+              ),
           ],
         ),
       ),

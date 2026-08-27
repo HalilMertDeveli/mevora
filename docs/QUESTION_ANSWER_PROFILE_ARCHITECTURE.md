@@ -86,27 +86,29 @@ Wired through `RelationshipScope.profileAnswers`.
 
 ## Privacy
 
-- `isVisible == true`: readable by owner and **actively matched** users only
-- `isVisible == false`: owner-only read; hidden from profile; matching data unchanged
-- Non-matched users cannot read `questionAnswers` (Firestore rules + client gate)
-- Unmatch sets `matches/{id}.isActive = false` → access revoked in rules and UI
-- Blocked pairs cannot match; `hasActiveMatchWith` checks `isBlockedPair`
+- **Owner**: always reads own `questionAnswers` from Firestore
+- **Peers**: never read peer `questionAnswers` from Firestore (rules deny)
+- Peer UI uses Cloud Function `getPartnerQuestionAnswers`:
+  - Active match required
+  - **Free**: question ids / prompts only + Premium lock CTA (no `answerId`)
+  - **Premium**: question + answer
+- `isVisible: false`: excluded from CF peer payloads; matching data unchanged
+- Matching continues on private `relationshipAnswers` only
+- See [PREMIUM_QUESTION_ANSWERS.md](./PREMIUM_QUESTION_ANSWERS.md)
 
 ### Security rules
 
 ```javascript
-function hasActiveMatchWith(otherUid) {
-  return isAuthenticated()
-    && otherUid != request.auth.uid
-    && !isBlockedPair(request.auth.uid, otherUid)
-    && exists(/databases/$(database)/documents/matches/$(canonicalMatchId(...)))
-    && get(...).data.isActive == true
-    && request.auth.uid in get(...).data.userIds;
+// relationshipAnswers — matching private (unchanged)
+match /relationshipAnswers/{questionId} {
+  allow read: if isOwner(userId);
+  allow create, update, delete: if false;
 }
 
+// questionAnswers — owner-only; peers use getPartnerQuestionAnswers
 match /questionAnswers/{questionId} {
-  allow read: if isOwner(userId)
-    || (hasActiveMatchWith(userId) && resource.data.isVisible == true);
+  allow read: if isOwner(userId);
+  allow create, update, delete: if false;
 }
 ```
 

@@ -37,6 +37,12 @@ class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
       _controller.stream;
 
   @override
+  Future<Result<PartnerQuestionAnswersSnapshot>> fetchPartnerAnswers(
+    String partnerUid,
+  ) async =>
+      const Success(PartnerQuestionAnswersSnapshot.empty);
+
+  @override
   Future<Result<void>> syncFromMatching() async {
     syncCalls += 1;
     return const Success(null);

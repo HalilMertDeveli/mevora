@@ -42,6 +42,20 @@ void main() {
     expect(map['rq_002']!.answerId, 'b');
   });
 
+  test('locked peer answers resolve question text without answer text', () {
+    const answer = ProfileQuestionAnswer(
+      questionId: 'rq_001',
+      answerId: '',
+      isVisible: true,
+      answerLocked: true,
+    );
+    final display = ProfileQuestionAnswerDisplay.resolve(answer, 'en');
+    expect(display, isNotNull);
+    expect(display!.isLocked, isTrue);
+    expect(display.questionText, isNotEmpty);
+    expect(display.answerText, isEmpty);
+  });
+
   test('localization keys exist for question answers profile UI', () {
     expect(tr.questionAnswersTitle, 'Soru & Cevap');
     expect(en.questionAnswersTitle, 'Question & Answers');
@@ -55,6 +69,9 @@ void main() {
     expect(en.questionAnswersLoadError, isNotEmpty);
     expect(en.questionAnswersSaveError, isNotEmpty);
     expect(tr.questionAnswersSaveError, isNotEmpty);
+    expect(en.questionAnswersPremiumLockedMessage, isNotEmpty);
+    expect(en.questionAnswersPremiumUnlockCta, isNotEmpty);
+    expect(en.questionAnswersPremiumAnswerHidden, isNotEmpty);
   });
 
   test('catalog includes rq_111 which server must accept', () {

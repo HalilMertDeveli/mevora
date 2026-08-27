@@ -2326,6 +2326,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu kişi henüz profilinde soru cevabı paylaşmamış.';
 
   @override
+  String get questionAnswersPremiumLockedMessage =>
+      'Sorular görünür. Cevaplarını görmek için Premium\'a geç.';
+
+  @override
+  String get questionAnswersPremiumUnlockCta => 'Premium ile aç';
+
+  @override
+  String get questionAnswersPremiumAnswerHidden =>
+      'Cevap gizli — Premium gerekli';
+
+  @override
   String get matchViewAnswers => 'Cevapları gör';
 
   @override

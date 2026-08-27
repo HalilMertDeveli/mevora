@@ -1022,6 +1022,8 @@
   "compatRevealSubtitle": "Discover up to 3 real things you share",
   "compatRevealCta": "Reveal Your Chemistry",
   "compatRevealLoading": "Revealing…",
+  "compatRevealError": "We couldn't load your chemistry right now. Please try again.",
+  "compatRevealRetry": "Try again",
   "compatRevealPremiumCta": "Unlock full chemistry breakdown",
   "compatRevealBreakdownTitle": "Detailed breakdown",
   "compatRevealKindPersonality": "Personality",

@@ -2356,10 +2356,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get compatRevealSubtitle => '3 gerçek ortak noktanızı keşfet';
 
   @override
-  String get compatRevealCta => 'Reveal Your Chemistry';
+  String get compatRevealCta => 'Kimyanızı ortaya çıkarın';
 
   @override
   String get compatRevealLoading => 'Açılıyor…';
+
+  @override
+  String get compatRevealError =>
+      'Kimyanızı şu an yükleyemedik. Lütfen tekrar deneyin.';
+
+  @override
+  String get compatRevealRetry => 'Tekrar dene';
 
   @override
   String get compatRevealPremiumCta => 'Tam uyum dökümünü aç';

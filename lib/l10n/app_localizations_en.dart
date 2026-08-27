@@ -2368,6 +2368,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compatRevealLoading => 'Revealing…';
 
   @override
+  String get compatRevealError =>
+      'We couldn\'t load your chemistry right now. Please try again.';
+
+  @override
+  String get compatRevealRetry => 'Try again';
+
+  @override
   String get compatRevealPremiumCta => 'Unlock full chemistry breakdown';
 
   @override

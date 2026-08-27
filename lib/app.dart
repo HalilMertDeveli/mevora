@@ -17,10 +17,12 @@ import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
+import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/support_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/features/compatibility/data/repositories/compatibility_reveal_repository.dart';
+import 'package:mevora/features/subscription/domain/repositories/subscription_repository.dart';
 import 'package:mevora/core/localization/language_controller.dart';
 import 'package:mevora/core/localization/language_repository.dart';
 import 'package:mevora/core/localization/language_scope.dart';
@@ -67,6 +69,7 @@ class MevoraApp extends StatefulWidget {
     this.purchaseRepository,
     this.verificationRepository,
     this.compatibilityRevealRepository,
+    this.subscriptionRepository,
     this.analytics,
     this.languageController,
     this.permissionService,
@@ -91,6 +94,7 @@ class MevoraApp extends StatefulWidget {
   final PurchaseRepository? purchaseRepository;
   final VerificationRepository? verificationRepository;
   final CompatibilityRevealRepository? compatibilityRevealRepository;
+  final SubscriptionRepository? subscriptionRepository;
   final AnalyticsProvider? analytics;
   final LanguageController? languageController;
   final PermissionService? permissionService;
@@ -332,6 +336,11 @@ class _MevoraAppState extends State<MevoraApp> {
         repository: compatibilityReveal,
         child: child,
       );
+    }
+
+    final subscription = widget.subscriptionRepository;
+    if (subscription != null) {
+      child = SubscriptionScope(repository: subscription, child: child);
     }
 
     return AppScope(

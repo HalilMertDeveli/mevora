@@ -4394,6 +4394,18 @@ abstract class AppLocalizations {
   /// **'Revealing…'**
   String get compatRevealLoading;
 
+  /// No description provided for @compatRevealError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your chemistry right now. Please try again.'**
+  String get compatRevealError;
+
+  /// No description provided for @compatRevealRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get compatRevealRetry;
+
   /// No description provided for @compatRevealPremiumCta.
   ///
   /// In en, this message translates to:

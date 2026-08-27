@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/compatibility_reveal_scope.dart';
+import 'package:mevora/core/di/subscription_scope.dart';
+import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
@@ -12,8 +14,11 @@ import 'package:mevora/features/compatibility/domain/entities/compatibility_reve
 import 'package:mevora/features/compatibility/domain/services/compatibility_reveal_builder.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/animated_compatibility_score.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/subscription/domain/repositories/subscription_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
+
+enum CompatibilityRevealUiState { idle, loading, success, empty, error }
 
 /// Post-match Compatibility Reveal: score → CTA → verified common points.
 class CompatibilityRevealSection extends StatefulWidget {
@@ -35,6 +40,8 @@ class CompatibilityRevealSection extends StatefulWidget {
   /// Verified relationship topics from the match candidate (never invented).
   final List<String> questionTopTopics;
   final AnalyticsProvider? analytics;
+  /// Optional initial hint only. Live entitlement comes from SubscriptionScope
+  /// and the server response always wins after reveal.
   final bool isPremium;
 
   @override
@@ -45,9 +52,16 @@ class CompatibilityRevealSection extends StatefulWidget {
 class _CompatibilityRevealSectionState extends State<CompatibilityRevealSection>
     with SingleTickerProviderStateMixin {
   CompatibilityReveal? _reveal;
-  var _revealed = false;
-  var _loading = false;
+  var _uiState = CompatibilityRevealUiState.idle;
+  var _entitlementPremium = false;
+  var _serverAuthoritative = false;
+  StreamSubscription<PremiumStatus>? _premiumSub;
   late final AnimationController _expand;
+
+  bool get _effectivePremium =>
+      _serverAuthoritative
+          ? (_reveal?.isPremium ?? false)
+          : (_entitlementPremium || widget.isPremium);
 
   @override
   void initState() {
@@ -56,56 +70,108 @@ class _CompatibilityRevealSectionState extends State<CompatibilityRevealSection>
       vsync: this,
       duration: const Duration(milliseconds: 320),
     );
-    _reveal = CompatibilityRevealBuilder.build(
-      viewer: widget.viewer,
-      candidate: widget.candidate,
-      breakdown: widget.breakdown,
-      isPremium: widget.isPremium,
-      questionTopTopics: widget.questionTopTopics,
-    );
+    _entitlementPremium = widget.isPremium;
+    _rebuildLocalSeed();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final repo = SubscriptionScope.maybeOf(context);
+    if (repo == null || _premiumSub != null) {
+      return;
+    }
+    _premiumSub = repo.watch().listen((status) {
+      if (!mounted || _serverAuthoritative) {
+        return;
+      }
+      setState(() {
+        _entitlementPremium = status.isPremium;
+        if (_uiState == CompatibilityRevealUiState.idle ||
+            _uiState == CompatibilityRevealUiState.empty) {
+          _rebuildLocalSeed();
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
+    unawaited(_premiumSub?.cancel());
     _expand.dispose();
     super.dispose();
   }
 
+  void _rebuildLocalSeed() {
+    _reveal = CompatibilityRevealBuilder.build(
+      viewer: widget.viewer,
+      candidate: widget.candidate,
+      breakdown: widget.breakdown,
+      isPremium: _effectivePremium,
+      questionTopTopics: widget.questionTopTopics,
+    );
+  }
+
   Future<void> _onReveal() async {
-    if (_revealed || _loading) {
+    if (_uiState == CompatibilityRevealUiState.loading ||
+        _uiState == CompatibilityRevealUiState.success) {
       return;
     }
-    setState(() => _loading = true);
+    setState(() => _uiState = CompatibilityRevealUiState.loading);
     unawaited(
       widget.analytics?.logEvent(
         AnalyticsEvents.compatibilityRevealOpened,
-        parameters: {'premium': widget.isPremium},
+        parameters: {'premium': _effectivePremium},
       ),
     );
 
     final matchId = widget.matchId;
     final repo = CompatibilityRevealScope.maybeOf(context);
-    if (matchId != null && matchId.isNotEmpty && repo != null) {
-      final result = await repo.getReveal(matchId);
+    if (matchId == null || matchId.isEmpty || repo == null) {
       if (!mounted) {
         return;
       }
-      final remote = result.valueOrNull;
-      if (remote != null) {
-        // Server is authoritative for premium gating when reachable.
-        setState(() => _reveal = remote);
-      }
-      // On callable failure: keep local verified seed; do not invent points.
+      _applyLocalRevealOutcome();
+      return;
     }
 
+    final result = await repo.getReveal(matchId);
     if (!mounted) {
       return;
     }
+
+    switch (result) {
+      case Success(:final value):
+        setState(() {
+          _reveal = value;
+          _serverAuthoritative = true;
+          _entitlementPremium = value.isPremium;
+          if (!value.available || value.points.isEmpty) {
+            _uiState = CompatibilityRevealUiState.empty;
+          } else {
+            _uiState = CompatibilityRevealUiState.success;
+          }
+        });
+        unawaited(_expand.forward(from: 0));
+      case Err():
+        // Do not invent points. Keep local seed but surface a safe error.
+        setState(() {
+          _uiState = CompatibilityRevealUiState.error;
+        });
+    }
+  }
+
+  void _applyLocalRevealOutcome() {
+    _rebuildLocalSeed();
+    final reveal = _reveal;
     setState(() {
-      _loading = false;
-      _revealed = true;
+      if (reveal == null || !reveal.available || reveal.points.isEmpty) {
+        _uiState = CompatibilityRevealUiState.empty;
+      } else {
+        _uiState = CompatibilityRevealUiState.success;
+      }
     });
-    unawaited(_expand.forward());
+    unawaited(_expand.forward(from: 0));
   }
 
   @override
@@ -117,7 +183,8 @@ class _CompatibilityRevealSectionState extends State<CompatibilityRevealSection>
 
     if (score <= 0 &&
         (reveal == null || !reveal.available) &&
-        widget.breakdown.dataQuality == CompatibilityDataQuality.insufficient) {
+        widget.breakdown.dataQuality == CompatibilityDataQuality.insufficient &&
+        _uiState == CompatibilityRevealUiState.idle) {
       return Text(l10n.compatNotEnoughData, style: theme.textTheme.bodyMedium);
     }
 
@@ -143,19 +210,46 @@ class _CompatibilityRevealSectionState extends State<CompatibilityRevealSection>
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.md),
-        if (!_revealed)
+        if (_uiState == CompatibilityRevealUiState.idle ||
+            _uiState == CompatibilityRevealUiState.loading ||
+            _uiState == CompatibilityRevealUiState.error) ...[
+          if (_uiState == CompatibilityRevealUiState.error) ...[
+            Text(
+              l10n.compatRevealError,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           MevoraButton(
-            label: _loading ? l10n.compatRevealLoading : l10n.compatRevealCta,
-            onPressed: _loading ? null : () => unawaited(_onReveal()),
-          )
-        else ...[
+            label: _uiState == CompatibilityRevealUiState.loading
+                ? l10n.compatRevealLoading
+                : (_uiState == CompatibilityRevealUiState.error
+                      ? l10n.compatRevealRetry
+                      : l10n.compatRevealCta),
+            onPressed: _uiState == CompatibilityRevealUiState.loading
+                ? null
+                : () => unawaited(_onReveal()),
+          ),
+        ] else ...[
           SizeTransition(
             sizeFactor: CurvedAnimation(
               parent: _expand,
               curve: Curves.easeOutCubic,
             ),
             axisAlignment: -1,
-            child: _RevealBody(reveal: reveal),
+            child: _uiState == CompatibilityRevealUiState.empty
+                ? Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: Text(
+                      l10n.compatNotEnoughData,
+                      style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : _RevealBody(reveal: reveal),
           ),
           if (reveal?.showPremiumUpsell == true) ...[
             const SizedBox(height: AppSpacing.md),

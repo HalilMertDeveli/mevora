@@ -3556,6 +3556,38 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorRatingNotAtAll => 'Hiç komik değil';
 
   @override
+  String get humorHowFunny => 'Bunu komik buldun mu?';
+
+  @override
+  String get humorRatingHelp =>
+      'Seçimlerin mizah profilini oluşturmamıza yardımcı olur.';
+
+  @override
+  String get humorIntroTitle => 'Mizahını keşfet';
+
+  @override
+  String get humorIntroBody1 =>
+      'Sana farklı komik videolar ve görseller göstereceğiz.';
+
+  @override
+  String get humorIntroBody2 =>
+      'Komik bulduğun veya bulmadığın içerikleri seç.';
+
+  @override
+  String get humorIntroBody3 =>
+      'Seçimlerin zamanla kişisel mizah profilini oluşturur.';
+
+  @override
+  String get humorIntroCta => 'Mizahımı Keşfet';
+
+  @override
+  String get humorProfileEmptyData =>
+      'Henüz mizah profilini oluşturmak için yeterli veri yok.';
+
+  @override
+  String get humorFavoriteHumor => 'En sevdiğin mizah';
+
+  @override
   String get humorProfileBuilding => 'Mizah vibesın hâlâ öğreniliyor…';
 
   @override
@@ -3590,9 +3622,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorReportSuccess => 'Teşekkürler — bu içeriği inceleyeceğiz.';
-
-  @override
-  String get humorHowFunny => 'Ne kadar komik?';
 
   @override
   String get humorAdSponsoredLabel => 'Sponsorlu';
@@ -3675,28 +3704,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorCategoryTeasing => 'Takılma';
 
   @override
-  String get humorIntroTitle => 'Mizahını keşfet';
-
-  @override
-  String get humorIntroBody1 =>
-      'Sana farklı komik videolar ve görseller göstereceğiz.';
-
-  @override
-  String get humorIntroBody2 =>
-      'Hangilerinin seni gerçekten güldürdüğünü değerlendir.';
-
-  @override
-  String get humorIntroBody3 =>
-      'Ne kadar çok değerlendirirsen, mizah profilin o kadar kişiselleşir.';
-
-  @override
-  String get humorIntroCta => 'Mizahımı Keşfet';
-
-  @override
-  String get humorRatingHelp =>
-      'Seçimlerin, sana uygun insanları keşfetmemize yardımcı olur.';
-
-  @override
   String get humorRatingHelpDismiss => 'İpucunu gizle';
 
   @override
@@ -3745,11 +3752,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorMilestoneContinue => 'Devam Et';
 
   @override
-  String get humorProfileReadyTitle => 'Senin Mizah Profilin';
+  String get humorProfileReadyTitle => '🎭 Mizah Profilin';
 
   @override
   String get humorProfileNotReady =>
-      'Henüz yeterli veri yok — profilini netleştirmek için değerlendirmeye devam et.';
+      'Henüz mizah profilini oluşturmak için yeterli veri yok.';
 
   @override
   String get humorProfileHowForms =>
@@ -3790,7 +3797,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorInfoStep2Title => 'Değerlendir';
 
   @override
-  String get humorInfoStep2Body => 'Ne kadar komik bulduğunu seç.';
+  String get humorInfoStep2Body =>
+      'Komik veya Komik değil\'e dokun — tek dokunuşla sonraki içeriğe geçersin.';
 
   @override
   String get humorInfoStep3Title => 'Mizah profilini oluştur';

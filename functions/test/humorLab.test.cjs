@@ -88,11 +88,11 @@ test("humor categories are stable and normalize correctly", () => {
 
 test("rating weights and EMA feedback move profile toward content", () => {
   assert.equal(RATING_WEIGHTS.very_funny, 1);
-  assert.equal(RATING_WEIGHTS.funny, 0.6);
+  assert.equal(RATING_WEIGHTS.funny, 1);
   assert.equal(RATING_WEIGHTS.neutral, 0);
-  assert.equal(RATING_WEIGHTS.not_funny, -0.5);
+  assert.equal(RATING_WEIGHTS.not_funny, -1);
   assert.equal(RATING_WEIGHTS.not_at_all, -1);
-  assert.equal(ratingWeight("funny"), 0.6);
+  assert.equal(ratingWeight("funny"), 1);
   assert.deepEqual([...HUMOR_RATINGS], [
     "very_funny",
     "funny",
@@ -103,6 +103,8 @@ test("rating weights and EMA feedback move profile toward content", () => {
 
   const profile = defaultUserHumorProfile();
   assert.equal(profile.version, HUMOR_PROFILE_VERSION);
+  assert.equal(profile.funnyCount, 0);
+  assert.equal(profile.notFunnyCount, 0);
   assert.equal(isProfileBuilding(0), true);
   assert.equal(isProfileBuilding(HUMOR_PROFILE_BUILDING_THRESHOLD), false);
 
@@ -110,7 +112,7 @@ test("rating weights and EMA feedback move profile toward content", () => {
     profile,
     contentVector: {meme: 1, sarcasm: 0},
     category: "meme",
-    rating: "very_funny",
+    rating: "funny",
   });
   assert.equal(next.interactionCount, 1);
   assert.ok(next.confidence > 0);
@@ -118,6 +120,31 @@ test("rating weights and EMA feedback move profile toward content", () => {
   assert.ok(next.exploredCategories.includes("meme"));
   assert.ok(learningRate(0) > learningRate(1));
   assert.ok(confidenceFromInteractions(40) > confidenceFromInteractions(5));
+});
+
+test("binary rating validation accepts only funny and not_funny", () => {
+  const {isValidHumorRating} = require("../lib/humor/feedback.js");
+  const {HUMOR_BINARY_RATINGS} = require("../lib/humor/types.js");
+  assert.deepEqual([...HUMOR_BINARY_RATINGS], ["funny", "not_funny"]);
+  assert.equal(isValidHumorRating("funny"), true);
+  assert.equal(isValidHumorRating("not_funny"), true);
+  assert.equal(isValidHumorRating("very_funny"), false);
+  assert.equal(isValidHumorRating("neutral"), false);
+  assert.equal(isValidHumorRating("not_at_all"), false);
+  assert.equal(isValidHumorRating("lol"), false);
+  assert.equal(isValidHumorRating(1), false);
+});
+
+test("negative binary rating lowers matching content dims", () => {
+  const profile = defaultUserHumorProfile();
+  const next = applyFeedbackToProfile({
+    profile,
+    contentVector: {absurd: 1, meme: 0},
+    category: "absurd",
+    rating: "not_funny",
+  });
+  assert.equal(next.interactionCount, 1);
+  assert.ok(next.vector.absurd < 50);
 });
 
 test("affinity and cosine are deterministic", () => {

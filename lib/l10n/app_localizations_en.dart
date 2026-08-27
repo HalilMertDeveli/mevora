@@ -3563,6 +3563,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorRatingNotAtAll => 'Not funny at all';
 
   @override
+  String get humorHowFunny => 'Did you find this funny?';
+
+  @override
+  String get humorRatingHelp =>
+      'Your choices help us build your humor profile.';
+
+  @override
+  String get humorIntroTitle => 'Discover your humor';
+
+  @override
+  String get humorIntroBody1 =>
+      'We\'ll show you short funny videos and images.';
+
+  @override
+  String get humorIntroBody2 => 'Pick funny or not funny for each one.';
+
+  @override
+  String get humorIntroBody3 =>
+      'Your choices gradually build your personal humor profile.';
+
+  @override
+  String get humorIntroCta => 'Discover My Humor';
+
+  @override
+  String get humorProfileEmptyData =>
+      'Not enough data yet to build your humor profile.';
+
+  @override
+  String get humorFavoriteHumor => 'Your favorite humor';
+
+  @override
   String get humorProfileBuilding => 'Still learning your humor vibe…';
 
   @override
@@ -3597,9 +3628,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorReportSuccess => 'Thanks — we\'ll review this content.';
-
-  @override
-  String get humorHowFunny => 'How funny is this?';
 
   @override
   String get humorAdSponsoredLabel => 'Sponsored';
@@ -3682,27 +3710,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorCategoryTeasing => 'Teasing';
 
   @override
-  String get humorIntroTitle => 'Discover your humor';
-
-  @override
-  String get humorIntroBody1 =>
-      'We\'ll show you short funny videos and images.';
-
-  @override
-  String get humorIntroBody2 => 'Rate which ones actually make you laugh.';
-
-  @override
-  String get humorIntroBody3 =>
-      'The more you rate, the more personalized your humor profile becomes.';
-
-  @override
-  String get humorIntroCta => 'Discover My Humor';
-
-  @override
-  String get humorRatingHelp =>
-      'Your choices help us understand your humor style.';
-
-  @override
   String get humorRatingHelpDismiss => 'Hide tip';
 
   @override
@@ -3753,11 +3760,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorMilestoneContinue => 'Continue';
 
   @override
-  String get humorProfileReadyTitle => 'Your humor profile';
+  String get humorProfileReadyTitle => '🎭 Your humor profile';
 
   @override
   String get humorProfileNotReady =>
-      'Not enough ratings yet — keep going to refine your profile.';
+      'Not enough data yet to build your humor profile.';
 
   @override
   String get humorProfileHowForms =>
@@ -3799,7 +3806,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorInfoStep2Title => 'Rate';
 
   @override
-  String get humorInfoStep2Body => 'Choose how funny each one feels.';
+  String get humorInfoStep2Body =>
+      'Tap Funny or Not funny — one tap moves to the next item.';
 
   @override
   String get humorInfoStep3Title => 'Build your humor profile';

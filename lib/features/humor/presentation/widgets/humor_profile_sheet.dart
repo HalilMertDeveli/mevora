@@ -6,7 +6,6 @@ import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 import 'package:mevora/features/humor/domain/services/humor_feed_policy.dart';
 import 'package:mevora/features/humor/domain/services/humor_profile_display.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/widgets/mevora_chip.dart';
 
 class HumorProfileSheet extends StatelessWidget {
   const HumorProfileSheet({
@@ -56,14 +55,14 @@ class HumorProfileSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                hasEnoughData
-                    ? l10n.humorProfileReadyTitle
-                    : HumorProfileDisplay.buildingLabel(l10n, profile),
-                style: theme.textTheme.headlineSmall,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              if (!hasEnoughData) ...[
+                Text(
+                  hasEnoughData
+                      ? l10n.humorProfileReadyTitle
+                      : l10n.humorProfileEmptyData,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                if (!hasEnoughData) ...[
                 LinearProgressIndicator(value: progress),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
@@ -79,28 +78,33 @@ class HumorProfileSheet extends StatelessWidget {
                 ),
               ] else ...[
                 Text(
-                  l10n.humorTopVibes,
+                  l10n.humorFavoriteHumor,
                   style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 if (vibes.isEmpty)
                   Text(
-                    l10n.humorProfileNotReady,
+                    l10n.humorProfileEmptyData,
                     style: theme.textTheme.bodyMedium,
                   )
                 else
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: [
-                      for (final vibe in vibes)
-                        MevoraChip(
-                          label:
-                              '${HumorProfileDisplay.categoryLabel(l10n, vibe.category)} · %${vibe.value.clamp(0, 100)}',
-                          selected: true,
-                        ),
-                    ],
-                  ),
+                  for (final vibe in vibes) ...[
+                    Text(
+                      HumorProfileDisplay.categoryLabel(l10n, vibe.category),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: (vibe.value.clamp(0, 100)) / 100,
+                        minHeight: 10,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   l10n.humorProfileHowForms,

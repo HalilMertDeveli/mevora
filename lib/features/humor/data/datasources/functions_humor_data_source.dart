@@ -68,6 +68,8 @@ class FunctionsHumorDataSource implements HumorDataSource {
       profileBuilding: data['profileBuilding'] == true,
       interactionCount: firestoreInt(data['interactionCount'], 0),
       confidence: _asDouble(data['confidence']),
+      funnyCount: firestoreInt(data['funnyCount'], 0),
+      notFunnyCount: firestoreInt(data['notFunnyCount'], 0),
     );
   }
 
@@ -196,6 +198,8 @@ class FunctionsHumorDataSource implements HumorDataSource {
     return UserHumorProfile(
       confidence: _asDouble(data['confidence']),
       interactionCount: interactionCount,
+      funnyCount: firestoreInt(data['funnyCount'], 0),
+      notFunnyCount: firestoreInt(data['notFunnyCount'], 0),
       profileBuilding:
           data['profileBuilding'] == true ||
           HumorFeedPolicy.isBuilding(interactionCount),

@@ -142,6 +142,7 @@ class HumorController extends ChangeNotifier {
   _UndoEntry? _undo;
   final Map<String, int> _replayCounts = {};
   final Map<String, DateTime> _viewStartedAt = {};
+  final Set<String> _ratingInFlight = {};
   final Set<String> _sessionSeenIds = {};
   int? _lastViewCountedIndex;
   StreamSubscription<PremiumStatus>? _premiumSub;
@@ -283,60 +284,110 @@ class HumorController extends ChangeNotifier {
     if (item == null || _state.isLoading) {
       return;
     }
+    // Binary UI only; coerce legacy levels if any caller still sends them.
+    final normalized = switch (rating) {
+      HumorRating.funny || HumorRating.veryFunny => HumorRating.funny,
+      HumorRating.notFunny ||
+      HumorRating.notAtAll ||
+      HumorRating.neutral => HumorRating.notFunny,
+    };
     final contentId = item.contentId;
+    if (_ratingInFlight.contains(contentId)) {
+      return;
+    }
+    _ratingInFlight.add(contentId);
+
     final dwell = _dwellMs(contentId);
     final replayCount = _replayCounts[contentId] ?? 0;
     final index = _state.currentIndex;
 
-    final result = await _repository.submitFeedback(
+    // Optimistic: advance immediately so rating never blocks playback UX.
+    final optimisticCount = _state.profile.interactionCount + 1;
+    final optimisticFunny =
+        _state.profile.funnyCount +
+        (normalized == HumorRating.funny ? 1 : 0);
+    final optimisticNotFunny =
+        _state.profile.notFunnyCount +
+        (normalized == HumorRating.notFunny ? 1 : 0);
+    _undo = _UndoEntry(
+      index: index,
       contentId: contentId,
-      rating: rating,
-      dwellMs: dwell,
-      replayCount: replayCount,
-      skipped: skipped,
-      swipeUp: swipeUp,
-      swipeDown: swipeDown,
+      rating: normalized,
     );
-
-    result.when(
-      success: (feedback) {
-        _undo = _UndoEntry(
-          index: index,
-          contentId: contentId,
-          rating: rating,
-        );
-        _state = _state.copyWith(
-          lastRated: rating,
-          canUndo: true,
-          profile: _state.profile.copyWith(
-            interactionCount: feedback.interactionCount,
-            profileBuilding: feedback.profileBuilding,
-            confidence: feedback.confidence,
-          ),
-          clearFailure: true,
-        );
-        _log(
-          skipped
-              ? AnalyticsEvents.humorContentSkipped
-              : AnalyticsEvents.humorContentRated,
-          parameters: {
-            'content_id': contentId,
-            'rating': rating.apiValue,
-          },
-        );
-      },
-      err: (failure) {
-        _state = _state.copyWith(failure: failure);
-      },
+    _state = _state.copyWith(
+      lastRated: normalized,
+      canUndo: true,
+      profile: _state.profile.copyWith(
+        interactionCount: optimisticCount,
+        funnyCount: optimisticFunny,
+        notFunnyCount: optimisticNotFunny,
+        profileBuilding: optimisticCount < 15,
+      ),
+      clearFailure: true,
     );
     notifyListeners();
+    unawaited(_advanceAfterRate());
 
-    if (result.isSuccess) {
-      await _advanceAfterRate();
+    _log(
+      skipped
+          ? AnalyticsEvents.humorContentSkipped
+          : normalized == HumorRating.funny
+          ? AnalyticsEvents.humorRatingFunny
+          : AnalyticsEvents.humorRatingNotFunny,
+      parameters: {
+        'content_id': contentId,
+        'rating': normalized.apiValue,
+      },
+    );
+    if (!skipped) {
+      _log(
+        AnalyticsEvents.humorContentRated,
+        parameters: {
+          'content_id': contentId,
+          'rating': normalized.apiValue,
+        },
+      );
+    }
+
+    try {
+      final result = await _repository.submitFeedback(
+        contentId: contentId,
+        rating: normalized,
+        dwellMs: dwell,
+        replayCount: replayCount,
+        skipped: skipped,
+        swipeUp: swipeUp,
+        swipeDown: swipeDown,
+      );
+
+      result.when(
+        success: (feedback) {
+          _state = _state.copyWith(
+            profile: _state.profile.copyWith(
+              interactionCount: feedback.interactionCount,
+              profileBuilding: feedback.profileBuilding,
+              confidence: feedback.confidence,
+              funnyCount: feedback.funnyCount,
+              notFunnyCount: feedback.notFunnyCount,
+            ),
+            clearFailure: true,
+          );
+          _log(AnalyticsEvents.humorProfileUpdated, parameters: {
+            'interaction_count': feedback.interactionCount,
+          });
+        },
+        err: (failure) {
+          // Soft-fail: UX already advanced; keep a non-blocking failure flag.
+          _state = _state.copyWith(failure: failure);
+        },
+      );
+      notifyListeners();
+    } finally {
+      _ratingInFlight.remove(contentId);
     }
   }
 
-  Future<void> skip() => rate(HumorRating.neutral, skipped: true);
+  Future<void> skip() => rate(HumorRating.notFunny, skipped: true);
 
   /// Drop a broken media item and advance without crashing the feed.
   Future<void> skipBrokenMedia(String contentId) async {

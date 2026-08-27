@@ -15,12 +15,12 @@ import {
   type UserHumorProfileDoc,
 } from "./types.js";
 
-/** Rating → signed weight for EMA update. */
+/** Rating → signed weight for EMA update. Binary UI uses funny / not_funny (±1). */
 export const RATING_WEIGHTS: Record<HumorRating, number> = {
   very_funny: 1.0,
-  funny: 0.6,
+  funny: 1.0,
   neutral: 0.0,
-  not_funny: -0.5,
+  not_funny: -1.0,
   not_at_all: -1.0,
 };
 
@@ -48,6 +48,8 @@ export function defaultUserHumorProfile(): UserHumorProfileDoc {
     vector: emptyHumorVector(50),
     confidence: 0,
     interactionCount: 0,
+    funnyCount: 0,
+    notFunnyCount: 0,
     exploredCategories: [],
     version: HUMOR_PROFILE_VERSION,
   };
@@ -86,6 +88,8 @@ export function applyFeedbackToProfile(input: {
     vector: nextVector,
     confidence,
     interactionCount: nextCount,
+    funnyCount: Math.max(0, Number(prev.funnyCount ?? 0)),
+    notFunnyCount: Math.max(0, Number(prev.notFunnyCount ?? 0)),
     exploredCategories: [...explored].sort(),
     version: HUMOR_PROFILE_VERSION,
   };

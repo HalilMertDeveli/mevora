@@ -90,13 +90,38 @@ void main() {
     final controller = buildController(source: source);
     await controller.load();
 
-    await controller.rate(HumorRating.veryFunny);
+    await controller.rate(HumorRating.funny);
 
     expect(controller.state.currentIndex, 1);
     expect(controller.state.canUndo, isTrue);
-    expect(controller.state.lastRated, HumorRating.veryFunny);
+    expect(controller.state.lastRated, HumorRating.funny);
     expect(source.feedbackCalls, 1);
     expect(source.profile.interactionCount, 1);
+    expect(source.profile.funnyCount, 1);
+  });
+
+  test('not funny advances and increments notFunnyCount', () async {
+    final source = MockHumorDataSource();
+    final controller = buildController(source: source);
+    await controller.load();
+
+    await controller.rate(HumorRating.notFunny);
+
+    expect(controller.state.currentIndex, 1);
+    expect(controller.state.lastRated, HumorRating.notFunny);
+    expect(source.profile.notFunnyCount, 1);
+    expect(source.profile.funnyCount, 0);
+  });
+
+  test('legacy veryFunny maps to funny', () async {
+    final source = MockHumorDataSource();
+    final controller = buildController(source: source);
+    await controller.load();
+
+    await controller.rate(HumorRating.veryFunny);
+
+    expect(controller.state.lastRated, HumorRating.funny);
+    expect(source.profile.funnyCount, 1);
   });
 
   test('undo returns to previous item', () async {
@@ -233,7 +258,7 @@ void main() {
 
     // Force prefetch by advancing near end.
     for (var i = 0; i < firstCount - 1; i++) {
-      await controller.rate(HumorRating.neutral);
+      await controller.rate(HumorRating.funny);
     }
     expect(source.feedCalls, greaterThan(1));
     expect(controller.state.items.length, greaterThanOrEqualTo(firstCount));

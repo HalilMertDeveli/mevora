@@ -12,6 +12,8 @@ class UserHumorProfile {
   const UserHumorProfile({
     this.confidence = 0,
     this.interactionCount = 0,
+    this.funnyCount = 0,
+    this.notFunnyCount = 0,
     this.profileBuilding = true,
     this.topVibes = const [],
     this.vector = const {},
@@ -23,6 +25,8 @@ class UserHumorProfile {
 
   final double confidence;
   final int interactionCount;
+  final int funnyCount;
+  final int notFunnyCount;
   final bool profileBuilding;
   final List<HumorVibe> topVibes;
   final Map<HumorCategory, double> vector;
@@ -32,6 +36,8 @@ class UserHumorProfile {
   UserHumorProfile copyWith({
     double? confidence,
     int? interactionCount,
+    int? funnyCount,
+    int? notFunnyCount,
     bool? profileBuilding,
     List<HumorVibe>? topVibes,
     Map<HumorCategory, double>? vector,
@@ -41,6 +47,8 @@ class UserHumorProfile {
     return UserHumorProfile(
       confidence: confidence ?? this.confidence,
       interactionCount: interactionCount ?? this.interactionCount,
+      funnyCount: funnyCount ?? this.funnyCount,
+      notFunnyCount: notFunnyCount ?? this.notFunnyCount,
       profileBuilding: profileBuilding ?? this.profileBuilding,
       topVibes: topVibes ?? this.topVibes,
       vector: vector ?? this.vector,
@@ -56,10 +64,14 @@ class HumorFeedbackResult {
     required this.profileBuilding,
     required this.interactionCount,
     required this.confidence,
+    this.funnyCount = 0,
+    this.notFunnyCount = 0,
   });
 
   final bool ok;
   final bool profileBuilding;
   final int interactionCount;
   final double confidence;
+  final int funnyCount;
+  final int notFunnyCount;
 }

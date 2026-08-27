@@ -4,7 +4,7 @@ import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
-/// Always-visible 5-level humor rating bar.
+/// Binary Humor Lab rating: Funny / Not funny — one tap advances the feed.
 class HumorRatingBar extends StatelessWidget {
   const HumorRatingBar({
     super.key,
@@ -21,8 +21,6 @@ class HumorRatingBar extends StatelessWidget {
   final String? subtitle;
   final VoidCallback? onDismissHelp;
 
-  static const _order = HumorRating.values;
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -38,7 +36,7 @@ class HumorRatingBar extends StatelessWidget {
             l10n.humorHowFunny,
             textAlign: TextAlign.center,
             style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
           if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
@@ -50,6 +48,8 @@ class HumorRatingBar extends StatelessWidget {
                   child: Text(
                     subtitle!,
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -68,17 +68,19 @@ class HumorRatingBar extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
-              for (final rating in _order)
+              for (final rating in HumorRating.binaryChoices)
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: _RatingChip(
-                      label: _label(l10n, rating),
-                      icon: _icon(rating),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                    child: _BinaryRatingButton(
+                      emoji: rating == HumorRating.funny ? '😂' : '😐',
+                      label: rating == HumorRating.funny
+                          ? l10n.humorRatingFunny
+                          : l10n.humorRatingNotFunny,
                       selected: selected == rating,
                       enabled: enabled,
                       onTap: () => onRated(rating),
-                      color: theme.colorScheme,
+                      emphasizePositive: rating == HumorRating.funny,
                     ),
                   ),
                 ),
@@ -88,77 +90,68 @@ class HumorRatingBar extends StatelessWidget {
       ),
     );
   }
-
-  static String _label(AppLocalizations l10n, HumorRating rating) {
-    return switch (rating) {
-      HumorRating.veryFunny => l10n.humorRatingVeryFunny,
-      HumorRating.funny => l10n.humorRatingFunny,
-      HumorRating.neutral => l10n.humorRatingNeutral,
-      HumorRating.notFunny => l10n.humorRatingNotFunny,
-      HumorRating.notAtAll => l10n.humorRatingNotAtAll,
-    };
-  }
-
-  static IconData _icon(HumorRating rating) {
-    return switch (rating) {
-      HumorRating.veryFunny => Icons.sentiment_very_satisfied_rounded,
-      HumorRating.funny => Icons.sentiment_satisfied_alt_rounded,
-      HumorRating.neutral => Icons.sentiment_neutral_rounded,
-      HumorRating.notFunny => Icons.sentiment_dissatisfied_rounded,
-      HumorRating.notAtAll => Icons.sentiment_very_dissatisfied_rounded,
-    };
-  }
 }
 
-class _RatingChip extends StatelessWidget {
-  const _RatingChip({
+class _BinaryRatingButton extends StatelessWidget {
+  const _BinaryRatingButton({
+    required this.emoji,
     required this.label,
-    required this.icon,
     required this.selected,
     required this.enabled,
     required this.onTap,
-    required this.color,
+    required this.emphasizePositive,
   });
 
+  final String emoji;
   final String label;
-  final IconData icon;
   final bool selected;
   final bool enabled;
   final VoidCallback onTap;
-  final ColorScheme color;
+  final bool emphasizePositive;
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? color.primary : color.surfaceContainerHighest;
-    final fg = selected ? color.onPrimary : color.onSurfaceVariant;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final bg = selected
+        ? (emphasizePositive ? scheme.primary : scheme.secondaryContainer)
+        : scheme.surfaceContainerHighest;
+    final fg = selected
+        ? (emphasizePositive ? scheme.onPrimary : scheme.onSecondaryContainer)
+        : scheme.onSurface;
 
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(AppRadii.md),
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      elevation: selected ? 1 : 0,
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-            horizontal: AppSpacing.xs,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 22, color: fg),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: fg,
-                  fontSize: 9,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.md,
+              horizontal: AppSpacing.sm,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 28)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

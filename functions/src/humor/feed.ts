@@ -30,6 +30,8 @@ export async function loadUserHumorProfile(
     vector: {...base.vector, ...(data.vector ?? {})},
     confidence: Number(data.confidence ?? 0),
     interactionCount: Number(data.interactionCount ?? 0),
+    funnyCount: Math.max(0, Number(data.funnyCount ?? 0)),
+    notFunnyCount: Math.max(0, Number(data.notFunnyCount ?? 0)),
     exploredCategories: Array.isArray(data.exploredCategories)
       ? data.exploredCategories.map((c: unknown) => String(c))
       : [],

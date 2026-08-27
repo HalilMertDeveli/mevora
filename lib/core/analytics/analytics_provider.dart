@@ -58,6 +58,9 @@ abstract final class AnalyticsEvents {
   static const String humorLabOpened = 'humor_lab_opened';
   static const String humorContentViewed = 'humor_content_viewed';
   static const String humorContentRated = 'humor_content_rated';
+  static const String humorRatingFunny = 'humor_rating_funny';
+  static const String humorRatingNotFunny = 'humor_rating_not_funny';
+  static const String humorProfileUpdated = 'humor_profile_updated';
   static const String humorContentSkipped = 'humor_content_skipped';
   static const String humorContentReplayed = 'humor_content_replayed';
   static const String humorContentSaved = 'humor_content_saved';

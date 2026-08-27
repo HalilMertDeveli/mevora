@@ -277,16 +277,49 @@ class MockHumorDataSource implements HumorDataSource {
     if (failFeedback) {
       throw StateError('mock-feedback-failed');
     }
-    _ratings[contentId] = rating;
+    final normalized = rating.isBinary
+        ? rating
+        : (rating == HumorRating.funny || rating == HumorRating.veryFunny
+              ? HumorRating.funny
+              : HumorRating.notFunny);
+    final already = _ratings.containsKey(contentId);
+    final previous = _ratings[contentId];
+    _ratings[contentId] = normalized;
     if (saved) {
       _saved.add(contentId);
     }
-    final nextCount = _profile.interactionCount + 1;
+
+    var funnyCount = _profile.funnyCount;
+    var notFunnyCount = _profile.notFunnyCount;
+    var nextCount = _profile.interactionCount;
+
+    if (!already) {
+      nextCount += 1;
+      if (normalized == HumorRating.funny) {
+        funnyCount += 1;
+      } else {
+        notFunnyCount += 1;
+      }
+    } else if (previous != normalized) {
+      if (previous == HumorRating.funny) {
+        funnyCount = (funnyCount - 1).clamp(0, 1 << 30);
+      } else if (previous == HumorRating.notFunny) {
+        notFunnyCount = (notFunnyCount - 1).clamp(0, 1 << 30);
+      }
+      if (normalized == HumorRating.funny) {
+        funnyCount += 1;
+      } else {
+        notFunnyCount += 1;
+      }
+    }
+
     final confidence = (nextCount / 40).clamp(0.0, 1.0);
     final building = nextCount < HumorFeedPolicy.buildingThreshold;
     _profile = _profile.copyWith(
       confidence: confidence,
       interactionCount: nextCount,
+      funnyCount: funnyCount,
+      notFunnyCount: notFunnyCount,
       profileBuilding: building,
     );
     return HumorFeedbackResult(
@@ -294,6 +327,8 @@ class MockHumorDataSource implements HumorDataSource {
       profileBuilding: building,
       interactionCount: nextCount,
       confidence: confidence,
+      funnyCount: funnyCount,
+      notFunnyCount: notFunnyCount,
     );
   }
 

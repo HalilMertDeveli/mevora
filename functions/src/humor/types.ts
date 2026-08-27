@@ -11,6 +11,7 @@ export type HumorRating =
   | "not_funny"
   | "not_at_all";
 
+/** Legacy five-level union retained for stored interactions / weights. */
 export const HUMOR_RATINGS: readonly HumorRating[] = [
   "very_funny",
   "funny",
@@ -18,6 +19,10 @@ export const HUMOR_RATINGS: readonly HumorRating[] = [
   "not_funny",
   "not_at_all",
 ] as const;
+
+/** Live Humor Lab UI / submitHumorFeedback accepts only these. */
+export const HUMOR_BINARY_RATINGS = ["funny", "not_funny"] as const;
+export type HumorBinaryRating = (typeof HUMOR_BINARY_RATINGS)[number];
 
 export type HumorSafetyFlags = {
   nsfw: boolean;
@@ -75,6 +80,10 @@ export type UserHumorProfileDoc = {
   vector: HumorVector;
   confidence: number;
   interactionCount: number;
+  /** Aggregate binary funny ratings (unique contents). */
+  funnyCount?: number;
+  /** Aggregate binary not_funny ratings (unique contents). */
+  notFunnyCount?: number;
   exploredCategories: string[];
   lastUpdatedAt?: unknown;
   version: number;

@@ -6506,6 +6506,60 @@ abstract class AppLocalizations {
   /// **'Not funny at all'**
   String get humorRatingNotAtAll;
 
+  /// No description provided for @humorHowFunny.
+  ///
+  /// In en, this message translates to:
+  /// **'Did you find this funny?'**
+  String get humorHowFunny;
+
+  /// No description provided for @humorRatingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Your choices help us build your humor profile.'**
+  String get humorRatingHelp;
+
+  /// No description provided for @humorIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover your humor'**
+  String get humorIntroTitle;
+
+  /// No description provided for @humorIntroBody1.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll show you short funny videos and images.'**
+  String get humorIntroBody1;
+
+  /// No description provided for @humorIntroBody2.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick funny or not funny for each one.'**
+  String get humorIntroBody2;
+
+  /// No description provided for @humorIntroBody3.
+  ///
+  /// In en, this message translates to:
+  /// **'Your choices gradually build your personal humor profile.'**
+  String get humorIntroBody3;
+
+  /// No description provided for @humorIntroCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover My Humor'**
+  String get humorIntroCta;
+
+  /// No description provided for @humorProfileEmptyData.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough data yet to build your humor profile.'**
+  String get humorProfileEmptyData;
+
+  /// No description provided for @humorFavoriteHumor.
+  ///
+  /// In en, this message translates to:
+  /// **'Your favorite humor'**
+  String get humorFavoriteHumor;
+
   /// No description provided for @humorProfileBuilding.
   ///
   /// In en, this message translates to:
@@ -6577,12 +6631,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Thanks — we\'ll review this content.'**
   String get humorReportSuccess;
-
-  /// No description provided for @humorHowFunny.
-  ///
-  /// In en, this message translates to:
-  /// **'How funny is this?'**
-  String get humorHowFunny;
 
   /// No description provided for @humorAdSponsoredLabel.
   ///
@@ -6740,42 +6788,6 @@ abstract class AppLocalizations {
   /// **'Teasing'**
   String get humorCategoryTeasing;
 
-  /// No description provided for @humorIntroTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Discover your humor'**
-  String get humorIntroTitle;
-
-  /// No description provided for @humorIntroBody1.
-  ///
-  /// In en, this message translates to:
-  /// **'We\'ll show you short funny videos and images.'**
-  String get humorIntroBody1;
-
-  /// No description provided for @humorIntroBody2.
-  ///
-  /// In en, this message translates to:
-  /// **'Rate which ones actually make you laugh.'**
-  String get humorIntroBody2;
-
-  /// No description provided for @humorIntroBody3.
-  ///
-  /// In en, this message translates to:
-  /// **'The more you rate, the more personalized your humor profile becomes.'**
-  String get humorIntroBody3;
-
-  /// No description provided for @humorIntroCta.
-  ///
-  /// In en, this message translates to:
-  /// **'Discover My Humor'**
-  String get humorIntroCta;
-
-  /// No description provided for @humorRatingHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Your choices help us understand your humor style.'**
-  String get humorRatingHelp;
-
   /// No description provided for @humorRatingHelpDismiss.
   ///
   /// In en, this message translates to:
@@ -6863,13 +6875,13 @@ abstract class AppLocalizations {
   /// No description provided for @humorProfileReadyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your humor profile'**
+  /// **'🎭 Your humor profile'**
   String get humorProfileReadyTitle;
 
   /// No description provided for @humorProfileNotReady.
   ///
   /// In en, this message translates to:
-  /// **'Not enough ratings yet — keep going to refine your profile.'**
+  /// **'Not enough data yet to build your humor profile.'**
   String get humorProfileNotReady;
 
   /// No description provided for @humorProfileHowForms.
@@ -6941,7 +6953,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorInfoStep2Body.
   ///
   /// In en, this message translates to:
-  /// **'Choose how funny each one feels.'**
+  /// **'Tap Funny or Not funny — one tap moves to the next item.'**
   String get humorInfoStep2Body;
 
   /// No description provided for @humorInfoStep3Title.

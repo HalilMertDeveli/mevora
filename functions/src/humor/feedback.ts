@@ -8,10 +8,53 @@ import {
   isProfileBuilding,
   ratingWeight,
 } from "./profile.js";
-import {HUMOR_RATINGS, type HumorRating, type UserHumorProfileDoc} from "./types.js";
+import {
+  HUMOR_BINARY_RATINGS,
+  type HumorBinaryRating,
+  type HumorRating,
+  type UserHumorProfileDoc,
+} from "./types.js";
 
-export function isValidHumorRating(value: unknown): value is HumorRating {
-  return typeof value === "string" && (HUMOR_RATINGS as readonly string[]).includes(value);
+function isPositiveBinary(rating: HumorRating): boolean {
+  return rating === "funny" || rating === "very_funny";
+}
+
+function isNegativeBinary(rating: HumorRating): boolean {
+  return rating === "not_funny" || rating === "not_at_all";
+}
+
+/** Live submit accepts only funny / not_funny. */
+export function isValidHumorRating(value: unknown): value is HumorBinaryRating {
+  return (
+    typeof value === "string" &&
+    (HUMOR_BINARY_RATINGS as readonly string[]).includes(value)
+  );
+}
+
+function adjustBinaryCounts(
+  profile: UserHumorProfileDoc,
+  previous: HumorRating | undefined,
+  next: HumorRating,
+  alreadyCounted: boolean,
+): UserHumorProfileDoc {
+  let funnyCount = Math.max(0, Number(profile.funnyCount ?? 0));
+  let notFunnyCount = Math.max(0, Number(profile.notFunnyCount ?? 0));
+
+  if (alreadyCounted && previous) {
+    if (isPositiveBinary(previous)) {
+      funnyCount = Math.max(0, funnyCount - 1);
+    } else if (isNegativeBinary(previous)) {
+      notFunnyCount = Math.max(0, notFunnyCount - 1);
+    }
+  }
+
+  if (isPositiveBinary(next)) {
+    funnyCount += 1;
+  } else if (isNegativeBinary(next)) {
+    notFunnyCount += 1;
+  }
+
+  return {...profile, funnyCount, notFunnyCount};
 }
 
 /**
@@ -35,6 +78,8 @@ export async function submitHumorFeedbackTx(input: {
   profileBuilding: boolean;
   interactionCount: number;
   confidence: number;
+  funnyCount: number;
+  notFunnyCount: number;
 }> {
   const content = await loadHumorContent(input.db, input.contentId);
   if (
@@ -59,7 +104,7 @@ export async function submitHumorFeedbackTx(input: {
     ]);
 
     const existingRating = interactionSnap.exists
-      ? interactionSnap.data()?.rating
+      ? (interactionSnap.data()?.rating as HumorRating | undefined)
       : undefined;
     const alreadyCounted = interactionSnap.exists === true;
 
@@ -74,12 +119,13 @@ export async function submitHumorFeedbackTx(input: {
         }
       : defaultUserHumorProfile();
 
-    // Load via helper shape
     profile = {
       ...defaultUserHumorProfile(),
       ...profile,
       interactionCount: Number(profile.interactionCount ?? 0),
       confidence: Number(profile.confidence ?? 0),
+      funnyCount: Math.max(0, Number(profile.funnyCount ?? 0)),
+      notFunnyCount: Math.max(0, Number(profile.notFunnyCount ?? 0)),
       exploredCategories: Array.isArray(profile.exploredCategories)
         ? profile.exploredCategories
         : [],
@@ -87,9 +133,6 @@ export async function submitHumorFeedbackTx(input: {
 
     const sameRating = alreadyCounted && existingRating === input.rating;
     if (!sameRating) {
-      // For first rating: apply EMA and increment.
-      // For changed rating: apply EMA once more without inventing a second content exposure
-      // by temporarily decrementing count before apply when already counted.
       if (alreadyCounted) {
         profile = {
           ...profile,
@@ -102,6 +145,12 @@ export async function submitHumorFeedbackTx(input: {
         category: content.category,
         rating: input.rating,
       });
+      profile = adjustBinaryCounts(
+        profile,
+        existingRating,
+        input.rating,
+        alreadyCounted,
+      );
     }
 
     const now = FieldValue.serverTimestamp();
@@ -128,6 +177,8 @@ export async function submitHumorFeedbackTx(input: {
       profileRef,
       {
         ...profile,
+        funnyCount: profile.funnyCount ?? 0,
+        notFunnyCount: profile.notFunnyCount ?? 0,
         lastUpdatedAt: now,
       },
       {merge: true},
@@ -161,6 +212,8 @@ export async function submitHumorFeedbackTx(input: {
     profileBuilding: isProfileBuilding(result.interactionCount),
     interactionCount: result.interactionCount,
     confidence: result.confidence,
+    funnyCount: Number(result.funnyCount ?? 0),
+    notFunnyCount: Number(result.notFunnyCount ?? 0),
   };
 }
 
@@ -177,6 +230,8 @@ export async function getHumorProfileView(
   const basic = {
     confidence: profile.confidence,
     interactionCount: profile.interactionCount,
+    funnyCount: Number(profile.funnyCount ?? 0),
+    notFunnyCount: Number(profile.notFunnyCount ?? 0),
     profileBuilding: isProfileBuilding(profile.interactionCount),
     topVibes: top,
     version: profile.version,

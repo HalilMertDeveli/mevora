@@ -6139,6 +6139,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You both enjoy {hobbies}'**
   String compatReasonSharedHobbies(String hobbies);
+
+  /// No description provided for @musicPrivacyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers — never on your device.'**
+  String get musicPrivacyNotice;
+
+  /// No description provided for @musicDisconnectCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect Spotify'**
+  String get musicDisconnectCta;
+
+  /// No description provided for @musicDisconnectConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect Spotify?'**
+  String get musicDisconnectConfirmTitle;
+
+  /// No description provided for @musicDisconnectConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll remove your Spotify link and clear cached music taste. Match music compatibility will stop showing until you reconnect.'**
+  String get musicDisconnectConfirmBody;
+
+  /// No description provided for @musicMatchTeaser.
+  ///
+  /// In en, this message translates to:
+  /// **'🎵 Your music tastes may align — unlock full insights with Premium'**
+  String get musicMatchTeaser;
+
+  /// No description provided for @musicPremiumUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get musicPremiumUnlock;
+
+  /// No description provided for @musicNoCommonTracks.
+  ///
+  /// In en, this message translates to:
+  /// **'No shared songs yet 🎵'**
+  String get musicNoCommonTracks;
+
+  /// No description provided for @musicRecentlyPlayedHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently played'**
+  String get musicRecentlyPlayedHeading;
 }
 
 class _AppLocalizationsDelegate

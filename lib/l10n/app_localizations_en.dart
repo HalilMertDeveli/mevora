@@ -3341,4 +3341,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String compatReasonSharedHobbies(String hobbies) {
     return 'You both enjoy $hobbies';
   }
+
+  @override
+  String get musicPrivacyNotice =>
+      'Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers — never on your device.';
+
+  @override
+  String get musicDisconnectCta => 'Disconnect Spotify';
+
+  @override
+  String get musicDisconnectConfirmTitle => 'Disconnect Spotify?';
+
+  @override
+  String get musicDisconnectConfirmBody =>
+      'We\'ll remove your Spotify link and clear cached music taste. Match music compatibility will stop showing until you reconnect.';
+
+  @override
+  String get musicMatchTeaser =>
+      '🎵 Your music tastes may align — unlock full insights with Premium';
+
+  @override
+  String get musicPremiumUnlock => 'Unlock';
+
+  @override
+  String get musicNoCommonTracks => 'No shared songs yet 🎵';
+
+  @override
+  String get musicRecentlyPlayedHeading => 'Recently played';
 }

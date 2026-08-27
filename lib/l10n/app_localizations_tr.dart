@@ -3336,4 +3336,32 @@ class AppLocalizationsTr extends AppLocalizations {
   String compatReasonSharedHobbies(String hobbies) {
     return 'İkiniz de $hobbies yapmayı seviyorsunuz';
   }
+
+  @override
+  String get musicPrivacyNotice =>
+      'Spotify verilerin yalnızca müzik uyumluluğunu hesaplamak ve eşleşmelerinde ortak dinleme bilgilerini göstermek için kullanılır. Tokenlar sunucuda kalır — cihazında tutulmaz.';
+
+  @override
+  String get musicDisconnectCta => 'Spotify bağlantısını kaldır';
+
+  @override
+  String get musicDisconnectConfirmTitle =>
+      'Spotify bağlantısı kaldırılsın mı?';
+
+  @override
+  String get musicDisconnectConfirmBody =>
+      'Spotify bağlantın ve önbellekteki müzik zevki verilerin silinir. Yeniden bağlanana kadar eşleşme müzik uyumu gösterilmez.';
+
+  @override
+  String get musicMatchTeaser =>
+      '🎵 Müzik zevkiniz uyumlu olabilir — detaylar Premium ile';
+
+  @override
+  String get musicPremiumUnlock => 'Aç';
+
+  @override
+  String get musicNoCommonTracks => 'Henüz ortak dinlediğiniz bir şarkı yok 🎵';
+
+  @override
+  String get musicRecentlyPlayedHeading => 'Son dinlenenler';
 }

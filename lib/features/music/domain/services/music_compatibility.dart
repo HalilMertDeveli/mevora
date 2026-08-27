@@ -25,6 +25,34 @@ class MusicInsight {
 
   final MusicInsightCode code;
   final Map<String, Object> params;
+
+  static List<MusicInsight> parseList(Object? raw) {
+    if (raw is! List) {
+      return const [];
+    }
+    final out = <MusicInsight>[];
+    for (final item in raw) {
+      if (item is! Map) {
+        continue;
+      }
+      final map = Map<String, dynamic>.from(item);
+      final code = MusicCompatibilityCalculator.parseInsightCode(
+        map['code'] as String?,
+      );
+      final paramsRaw = map['params'];
+      final params = <String, Object>{};
+      if (paramsRaw is Map) {
+        for (final entry in paramsRaw.entries) {
+          final value = entry.value;
+          if (value is String || value is num || value is bool) {
+            params[entry.key.toString()] = value as Object;
+          }
+        }
+      }
+      out.add(MusicInsight(code: code, params: params));
+    }
+    return out;
+  }
 }
 
 class MusicCompatibilityBreakdown {

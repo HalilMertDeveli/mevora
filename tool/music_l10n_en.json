@@ -55,5 +55,13 @@
       "count": {"type": "int"}
     }
   },
-  "musicMatchDetailsCta": "Why this music match?"
+  "musicMatchDetailsCta": "Why this music match?",
+  "musicPrivacyNotice": "Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers — never on your device.",
+  "musicDisconnectCta": "Disconnect Spotify",
+  "musicDisconnectConfirmTitle": "Disconnect Spotify?",
+  "musicDisconnectConfirmBody": "We'll remove your Spotify link and clear cached music taste. Match music compatibility will stop showing until you reconnect.",
+  "musicMatchTeaser": "🎵 Your music tastes may align — unlock full insights with Premium",
+  "musicPremiumUnlock": "Unlock",
+  "musicNoCommonTracks": "No shared songs yet 🎵",
+  "musicRecentlyPlayedHeading": "Recently played"
 }

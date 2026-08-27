@@ -2,10 +2,12 @@ import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/music/data/datasources/music_data_source.dart';
+import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/domain/entities/weekly_music_stats.dart';
+import 'package:mevora/features/music/domain/services/music_compatibility.dart';
 
 /// Cloud Functions surface. The UI never stores Spotify tokens.
 class FunctionsMusicDataSource implements MusicDataSource {
@@ -92,6 +94,43 @@ class FunctionsMusicDataSource implements MusicDataSource {
       );
     }
     return items;
+  }
+
+  @override
+  Future<MatchMusicCompatibility> getMatchMusicCompatibility(
+    String matchId,
+  ) async {
+    final data = await _backend.invoke('getMatchMusicCompatibility', {
+      'matchId': matchId,
+    });
+    if (data['available'] != true) {
+      return MatchMusicCompatibility(
+        available: false,
+        reason: data['reason'] as String?,
+      );
+    }
+    if (data['teaser'] == true || data['premiumRequired'] == true) {
+      return const MatchMusicCompatibility(
+        available: true,
+        premiumRequired: true,
+        teaser: true,
+      );
+    }
+    final score = firestoreInt(data['score'], 0);
+    if (score <= 0) {
+      return MatchMusicCompatibility.unavailable;
+    }
+    return MatchMusicCompatibility(
+      available: true,
+      score: score,
+      sharedTrackCount: firestoreInt(data['sharedTrackCount'], 0),
+      sharedArtistCount: firestoreInt(data['sharedArtistCount'], 0),
+      sharedRecentTrackCount: firestoreInt(data['sharedRecentTrackCount'], 0),
+      sharedTracks: _parseTracks(data['sharedTracks']),
+      sharedArtists: _parseArtists(data['sharedArtists']),
+      sharedGenres: firestoreStringList(data['sharedGenres']),
+      insights: MusicInsight.parseList(data['musicInsights']),
+    );
   }
 
   MusicProfile _parseProfile(Map<String, dynamic> data) {

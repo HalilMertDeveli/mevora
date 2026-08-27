@@ -55,7 +55,25 @@ void main() {
     expect(find.textContaining('91'), findsWidgets);
   });
 
-  testWidgets('profile details show music compatibility badge', (tester) async {
+  testWidgets('connected music tab shows disconnect CTA', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final source = MockMusicDataSource();
+    await source.connectSpotify();
+    final controller = MusicController(
+      repository: MusicRepositoryImpl(dataSource: source),
+    );
+    await tester.pumpWidget(wrap(MusicPage(controller: controller)));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_en.musicConnected), findsOneWidget);
+    expect(find.text(_en.musicDisconnectCta), findsOneWidget);
+  });
+
+  testWidgets('profile details hide music badge before match', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -74,8 +92,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text(_en.musicCompatibilityPercent(91)), findsOneWidget);
-    expect(find.text(_en.musicCompatibilityShort(91)), findsOneWidget);
+    expect(find.text(_en.musicCompatibilityPercent(91)), findsNothing);
+    expect(find.text(_en.musicCompatibilityShort(91)), findsNothing);
     expect(find.text(_en.compatDiscoverBadge(78)), findsWidgets);
   });
 }

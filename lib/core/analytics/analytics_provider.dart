@@ -45,6 +45,16 @@ abstract final class AnalyticsEvents {
   static const String hiddenCompatibilitySeen = 'hidden_compatibility_seen';
   static const String hiddenCompatibilityClicked = 'hidden_compatibility_clicked';
   static const String compatibilityMatchCreated = 'compatibility_match_created';
+  static const String spotifyConnectStarted = 'spotify_connect_started';
+  static const String spotifyConnectSuccess = 'spotify_connect_success';
+  static const String spotifyConnectFailed = 'spotify_connect_failed';
+  static const String spotifyDisconnected = 'spotify_disconnected';
+  static const String spotifySyncStarted = 'spotify_sync_started';
+  static const String spotifySyncSuccess = 'spotify_sync_success';
+  static const String spotifySyncFailed = 'spotify_sync_failed';
+  static const String musicCompatibilityViewed = 'music_compatibility_viewed';
+  static const String commonTracksViewed = 'common_tracks_viewed';
+  static const String musicInsightsUnlocked = 'music_insights_unlocked';
 }
 
 abstract class AnalyticsProvider {

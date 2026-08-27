@@ -16,6 +16,7 @@ export {
   getSameTasteProfiles,
   getWeeklyMusicStats,
   aggregateWeeklyMusicStats,
+  getMatchMusicCompatibility,
 } from "./spotifyMusic.js";
 export {
   saveRelationshipAnswer,

@@ -135,6 +135,12 @@ class _UnconnectedMusicView extends StatelessWidget {
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge,
         ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          l10n.musicPrivacyNotice,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall,
+        ),
         if (error != null) ...[
           const SizedBox(height: AppSpacing.md),
           Text(
@@ -198,6 +204,14 @@ class _ConnectedMusicView extends StatelessWidget {
                   style: theme.textTheme.bodySmall,
                 ),
               ],
+              const SizedBox(height: AppSpacing.sm),
+              MevoraButton(
+                label: l10n.musicDisconnectCta,
+                variant: MevoraButtonVariant.ghost,
+                onPressed: syncing
+                    ? null
+                    : () => unawaited(_confirmDisconnect(context, controller)),
+              ),
             ],
           ),
         ),
@@ -436,4 +450,31 @@ String? _musicError(AppLocalizations l10n, Failure? failure) {
     return l10n.musicNetwork;
   }
   return L10nErrors.failure(l10n, failure);
+}
+
+Future<void> _confirmDisconnect(
+  BuildContext context,
+  MusicController controller,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l10n.musicDisconnectConfirmTitle),
+      content: Text(l10n.musicDisconnectConfirmBody),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(l10n.cancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(l10n.musicDisconnectCta),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true) {
+    await controller.disconnect();
+  }
 }

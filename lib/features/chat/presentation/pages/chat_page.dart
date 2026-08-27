@@ -20,6 +20,7 @@ import 'package:mevora/features/chat/domain/services/chat_voice_recorder.dart';
 import 'package:mevora/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:mevora/features/chat/presentation/widgets/chat_widgets.dart';
 import 'package:mevora/features/match_score/presentation/widgets/match_feedback_prompt.dart';
+import 'package:mevora/features/music/presentation/widgets/match_music_compatibility_banner.dart';
 import 'package:mevora/features/profile/data/services/profile_image_pipeline.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/safety/presentation/widgets/chat_more_sheet.dart';
@@ -225,6 +226,8 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                   ),
                 ),
+              if (controller.canChat)
+                MatchMusicCompatibilityBanner(matchId: controller.matchId),
               if (controller.error != null)
                 MevoraErrorView(
                   message: L10nErrors.message(l10n, controller.error),

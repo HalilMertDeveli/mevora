@@ -9,12 +9,14 @@ import {
   interestedInAllows,
   isTasteEmpty,
   MUSIC_PROFILE_VERSION,
+  RECENT_UNIQUE_TRACK_LIMIT,
   scoreMusicCompatibility,
   SYNC_MIN_INTERVAL_MS,
   type MusicTaste,
   type NamedMusicItem,
 } from "./musicCompatibility.js";
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
+import {isUserPremium} from "./premium.js";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
 
 if (getApps().length === 0) {
@@ -38,6 +40,7 @@ type SpotifyTokenSet = {
 };
 
 type NamedItem = {
+  playedAt?: string;
   id: string;
   name: string;
   artist?: string;
@@ -348,11 +351,13 @@ function summarizeTracks(items: Array<DocumentData>, limit = 20): NamedItem[] {
     const artists = Array.isArray(track.artists)
       ? track.artists.map((artist: DocumentData) => String(artist.name ?? "")).filter(Boolean)
       : [];
+    const playedAt = typeof item.played_at === "string" ? item.played_at : undefined;
     out.push({
       id,
       name: String(track.name ?? ""),
       artist: artists.join(", "),
       image: imageUrl((track.album as DocumentData | undefined)?.images as Array<{url?: string}> | undefined),
+      ...(playedAt ? {playedAt} : {}),
     });
     if (out.length >= limit) break;
   }
@@ -410,7 +415,8 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
   ]);
   const tracks = summarizeTracks(topTracks.items ?? []);
   const artists = summarizeArtists(topArtists.items ?? []);
-  const recent = summarizeTracks(recentlyPlayed.items ?? [], 20);
+  // Last N unique recently-played tracks by Spotify track id (no string-name matching).
+  const recent = summarizeTracks(recentlyPlayed.items ?? [], RECENT_UNIQUE_TRACK_LIMIT);
   const genres = genreShares(artists);
   const musicProfile = {
     genres,
@@ -428,6 +434,14 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
     )].slice(0, 30),
     playlistTrackIds: playlistTaste.playlistTrackIds,
     playlists: playlistTaste.playlists,
+    // Compact fingerprint used by Music Compatibility (IDs only).
+    musicFingerprint: {
+      version: MUSIC_PROFILE_VERSION,
+      trackIds: tracks.map((item) => item.id),
+      artistIds: artists.map((item) => item.id),
+      recentTrackIds: recent.map((item) => item.id),
+      genreNames: genres.map((item) => item.name),
+    },
   };
   const summaryRef = db.doc(`users/${uid}/music/summary`);
   const existing = await summaryRef.get();
@@ -686,3 +700,110 @@ export async function musicScoreForPair(
     ...catalogFromSummary(candidate.data()),
   ]);
 }
+
+/**
+ * Match-only music compatibility. Hidden unless both users are Spotify-connected
+ * with usable taste data and share an active match. Premium unlocks detailed lists.
+ */
+export const getMatchMusicCompatibility = onCall(
+  {enforceAppCheck, region: "europe-west1"},
+  async (request) => {
+    const uid = requireUid(request);
+    const matchId = requireString(request.data?.matchId, "matchId");
+    const matchSnap = await db.doc(`matches/${matchId}`).get();
+    if (!matchSnap.exists || matchSnap.data()?.isActive !== true) {
+      return {available: false, reason: "no_match"};
+    }
+    const userIds = (matchSnap.data()?.userIds as string[]) ?? [];
+    if (!userIds.includes(uid) || userIds.length !== 2) {
+      throw new HttpsError("permission-denied", "not-participant");
+    }
+    const otherUid = userIds.find((id) => id !== uid) ?? "";
+    if (!otherUid) {
+      return {available: false, reason: "no_match"};
+    }
+
+    const [viewerSummary, otherSummary] = await Promise.all([
+      db.doc(`users/${uid}/music/summary`).get(),
+      db.doc(`users/${otherUid}/music/summary`).get(),
+    ]);
+    const viewerTaste = tasteFromSummary(viewerSummary.data());
+    const otherTaste = tasteFromSummary(otherSummary.data());
+    if (
+      !viewerTaste ||
+      !otherTaste ||
+      isTasteEmpty(viewerTaste) ||
+      isTasteEmpty(otherTaste)
+    ) {
+      return {available: false, reason: "data_unavailable"};
+    }
+
+    const scored = scoreMusicCompatibility(viewerTaste, otherTaste);
+    if (scored.score <= 0) {
+      return {available: false, reason: "data_unavailable"};
+    }
+    const enriched = enrichMusicCompatibility(scored, [
+      ...catalogFromSummary(viewerSummary.data()),
+      ...catalogFromSummary(otherSummary.data()),
+    ]);
+
+    const premium = await isUserPremium(uid);
+    if (!premium) {
+      return {
+        available: true,
+        premiumRequired: true,
+        teaser: true,
+      };
+    }
+
+    const mediaById = new Map<string, {name: string; artist: string; image: string | null}>();
+    for (const data of [viewerSummary.data(), otherSummary.data()]) {
+      for (const key of ["topTracks", "recentlyPlayed", "topArtists"] as const) {
+        const list = Array.isArray(data?.[key]) ? data![key] : [];
+        for (const raw of list) {
+          if (!raw || typeof raw !== "object") continue;
+          const item = raw as DocumentData;
+          const id = typeof item.id === "string" ? item.id : "";
+          if (!id || mediaById.has(id)) continue;
+          mediaById.set(id, {
+            name: String(item.name ?? ""),
+            artist: String(item.artist ?? ""),
+            image: typeof item.image === "string" ? item.image : null,
+          });
+        }
+      }
+    }
+
+    const sharedTracksDetailed = enriched.sharedTracks.slice(0, 8).map((id) => {
+      const hit = mediaById.get(id);
+      return {
+        id,
+        name: hit?.name || enriched.sharedTrackNames.find((_, i) => enriched.sharedTracks[i] === id) || id,
+        artist: hit?.artist ?? "",
+        image: hit?.image ?? null,
+      };
+    });
+    const sharedArtistsDetailed = enriched.sharedArtists.slice(0, 8).map((id) => {
+      const hit = mediaById.get(id);
+      return {
+        id,
+        name: hit?.name || enriched.sharedArtistNames.find((_, i) => enriched.sharedArtists[i] === id) || id,
+        image: hit?.image ?? null,
+      };
+    });
+
+    return {
+      available: true,
+      premiumRequired: false,
+      teaser: false,
+      score: enriched.score,
+      sharedTrackCount: enriched.sharedTracks.length,
+      sharedArtistCount: enriched.sharedArtists.length,
+      sharedRecentTrackCount: enriched.sharedRecentTracks.length,
+      sharedTracks: sharedTracksDetailed,
+      sharedArtists: sharedArtistsDetailed,
+      sharedGenres: enriched.sharedGenres.slice(0, 5),
+      musicInsights: enriched.insights,
+    };
+  },
+);

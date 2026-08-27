@@ -55,5 +55,13 @@
       "count": {"type": "int"}
     }
   },
-  "musicMatchDetailsCta": "Bu müzik eşleşmesi neden?"
+  "musicMatchDetailsCta": "Bu müzik eşleşmesi neden?",
+  "musicPrivacyNotice": "Spotify verilerin yalnızca müzik uyumluluğunu hesaplamak ve eşleşmelerinde ortak dinleme bilgilerini göstermek için kullanılır. Tokenlar sunucuda kalır — cihazında tutulmaz.",
+  "musicDisconnectCta": "Spotify bağlantısını kaldır",
+  "musicDisconnectConfirmTitle": "Spotify bağlantısı kaldırılsın mı?",
+  "musicDisconnectConfirmBody": "Spotify bağlantın ve önbellekteki müzik zevki verilerin silinir. Yeniden bağlanana kadar eşleşme müzik uyumu gösterilmez.",
+  "musicMatchTeaser": "🎵 Müzik zevkiniz uyumlu olabilir — detaylar Premium ile",
+  "musicPremiumUnlock": "Aç",
+  "musicNoCommonTracks": "Henüz ortak dinlediğiniz bir şarkı yok 🎵",
+  "musicRecentlyPlayedHeading": "Son dinlenenler"
 }

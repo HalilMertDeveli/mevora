@@ -379,6 +379,22 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      // Matching streak — Admin SDK only. Clients may read own state.
+      match /matchingStreak/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /matchingStreakDays/{dayKey} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /matchingStreakRewards/{rewardId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
       // Match points + private feedback. Clients never write scores.
       match /matchScoreHistory/{entryId} {
         allow read: if isOwner(userId);

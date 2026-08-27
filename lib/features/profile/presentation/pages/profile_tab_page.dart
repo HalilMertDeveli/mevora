@@ -6,6 +6,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
+import 'package:mevora/core/di/matching_streak_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
@@ -14,6 +15,7 @@ import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
 import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
+import 'package:mevora/features/matching_streak/presentation/widgets/matching_streak_tile.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -77,6 +79,7 @@ class ProfileTabPage extends StatelessWidget {
           ],
           const _ProfileVerificationTile(),
           const _ProfileBoostTile(),
+          const _ProfileMatchingStreakTile(),
           const _ProfileMatchScoreTile(),
           const _ProfileRelationshipTile(),
           _ProfileTile(
@@ -181,6 +184,20 @@ class _ProfileMatchScoreTile extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return MatchScoreTile(uid: uid, repository: repository);
+  }
+}
+
+class _ProfileMatchingStreakTile extends StatelessWidget {
+  const _ProfileMatchingStreakTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = AuthScope.maybeOf(context)?.user?.id;
+    final repository = MatchingStreakScope.maybeOf(context);
+    if (uid == null || repository == null) {
+      return const SizedBox.shrink();
+    }
+    return MatchingStreakTile(uid: uid, repository: repository);
   }
 }
 

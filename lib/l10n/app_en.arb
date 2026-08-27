@@ -532,7 +532,28 @@
   "messageNotifications": "Message notifications",
   "matchNotifications": "Match notifications",
   "callNotifications": "Call notifications",
+  "streakNotifications": "Streak reminders",
+  "streakNotificationsSubtitle": "Remind me if I have not joined today's Match Game",
   "hideOnlineStatus": "Hide my online status",
+  "matchingStreakTitle": "🔥 {count} Day Streak",
+  "@matchingStreakTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "matchingStreakEmptyTitle": "🔥 Start your Matching Streak",
+  "matchingStreakKeepPrompt": "Join today's game and keep your streak.",
+  "matchingStreakKeptToday": "You kept your streak today.",
+  "matchingStreakBest": "Best {count}",
+  "@matchingStreakBest": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationNewMatch": "You have a new match!",
   "notificationNewMessage": "You have a new message",
   "notificationSuperLike": "Someone Super Liked you",

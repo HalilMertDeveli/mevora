@@ -19,6 +19,8 @@ export const FcmTypes = {
   missedCall: "missedCall",
   boostActivated: "boostActivated",
   boostExpired: "boostExpired",
+  streakReminder: "streakReminder",
+  incomingLike: "incomingLike",
 } as const;
 
 export type FcmType = (typeof FcmTypes)[keyof typeof FcmTypes];
@@ -27,6 +29,8 @@ export type PushPrefKey =
   | "messageNotifications"
   | "matchNotifications"
   | "callNotifications"
+  | "streakNotifications"
+  | "likeNotifications"
   | "notificationsEnabled";
 
 const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: string; body: string}}> = {
@@ -61,6 +65,14 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
   boostExpired: {
     tr: {title: "Mevora", body: "Boost süresi doldu"},
     en: {title: "Mevora", body: "Your Boost has ended"},
+  },
+  streakReminder: {
+    tr: {title: "Mevora", body: "🔥 Streak'ini korumayı unutma."},
+    en: {title: "Mevora", body: "🔥 Don't forget to keep your streak."},
+  },
+  incomingLike: {
+    tr: {title: "Mevora", body: "Yeni bir beğeni"},
+    en: {title: "Mevora", body: "You have a new like"},
   },
 };
 
@@ -141,6 +153,9 @@ function routeFor(type: FcmType, data: Record<string, string>): string | null {
   }
   if ((type === "boostActivated" || type === "boostExpired")) {
     return "/boost";
+  }
+  if (type === "streakReminder") {
+    return "/matches";
   }
   if (data.matchId) {
     return `/chat/${data.matchId}`;

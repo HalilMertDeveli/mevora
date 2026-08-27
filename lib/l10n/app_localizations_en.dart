@@ -1298,7 +1298,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get callNotifications => 'Call notifications';
 
   @override
+  String get streakNotifications => 'Streak reminders';
+
+  @override
+  String get streakNotificationsSubtitle =>
+      'Remind me if I have not joined today\'s Match Game';
+
+  @override
   String get hideOnlineStatus => 'Hide my online status';
+
+  @override
+  String matchingStreakTitle(int count) {
+    return '🔥 $count Day Streak';
+  }
+
+  @override
+  String get matchingStreakEmptyTitle => '🔥 Start your Matching Streak';
+
+  @override
+  String get matchingStreakKeepPrompt =>
+      'Join today\'s game and keep your streak.';
+
+  @override
+  String get matchingStreakKeptToday => 'You kept your streak today.';
+
+  @override
+  String matchingStreakBest(int count) {
+    return 'Best $count';
+  }
 
   @override
   String get notificationNewMatch => 'You have a new match!';

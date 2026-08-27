@@ -2,27 +2,31 @@ class NotificationPrefs {
   const NotificationPrefs({
     this.messageNotifications = true,
     this.matchNotifications = true,
+    this.streakNotifications = true,
     this.hideOnlineStatus = false,
   });
 
   final bool messageNotifications;
   final bool matchNotifications;
+  final bool streakNotifications;
   final bool hideOnlineStatus;
 
   NotificationPrefs copyWith({
     bool? messageNotifications,
     bool? matchNotifications,
+    bool? streakNotifications,
     bool? hideOnlineStatus,
   }) {
     return NotificationPrefs(
       messageNotifications: messageNotifications ?? this.messageNotifications,
       matchNotifications: matchNotifications ?? this.matchNotifications,
+      streakNotifications: streakNotifications ?? this.streakNotifications,
       hideOnlineStatus: hideOnlineStatus ?? this.hideOnlineStatus,
     );
   }
 }
 
-enum PushType { message, match, incomingCall, missedCall }
+enum PushType { message, match, incomingCall, missedCall, streakReminder }
 
 class PushPayload {
   const PushPayload({
@@ -44,6 +48,7 @@ class PushPayload {
       'newMatch' || 'match' => PushType.match,
       'incomingCall' || 'incoming_call' => PushType.incomingCall,
       'missedCall' || 'missed_call' => PushType.missedCall,
+      'streakReminder' || 'streak_reminder' => PushType.streakReminder,
       _ => null,
     };
     if (type == null) {

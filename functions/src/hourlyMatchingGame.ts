@@ -16,6 +16,7 @@ import {
   normalizeAnswerId,
   setIdFor,
 } from "./relationshipCompatibility.js";
+import {recordMatchingGameParticipation} from "./matchingStreak.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -394,6 +395,8 @@ export const joinMatchingGameRound = onCall(callableOptions, async (request) => 
   const pref = participantRef(roundId, uid);
   const existing = await pref.get();
   if (existing.exists) {
+    // Rejoin still counts as daily participation (idempotent per Istanbul day).
+    await recordMatchingGameParticipation(uid, roundId);
     return {
       roundId,
       status: existing.data()?.status ?? "joined",
@@ -411,6 +414,7 @@ export const joinMatchingGameRound = onCall(callableOptions, async (request) => 
     {participantCount: FieldValue.increment(1), status: "COLLECTING"},
     {merge: true},
   );
+  await recordMatchingGameParticipation(uid, roundId);
   return {roundId, status: "joined", alreadyJoined: false};
 });
 

@@ -34,5 +34,9 @@ export {
   getMatchingGameResult,
   runMatchingGameRoundNow,
 } from "./hourlyMatchingGame";
+export {
+  getMatchingStreak,
+  matchingStreakReminderTick,
+} from "./matchingStreak";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
 export {createSumsubAccessToken, sumsubWebhook} from "./sumsub/index.js";

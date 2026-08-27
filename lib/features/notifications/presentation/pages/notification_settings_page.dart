@@ -60,6 +60,19 @@ class NotificationSettingsPage extends StatelessWidget {
                 },
               ),
               SwitchListTile(
+                title: Text(l10n.streakNotifications),
+                subtitle: Text(l10n.streakNotificationsSubtitle),
+                value: prefs.streakNotifications,
+                onChanged: (value) {
+                  unawaited(
+                    social.notificationRepository.savePrefs(
+                      uid,
+                      prefs.copyWith(streakNotifications: value),
+                    ),
+                  );
+                },
+              ),
+              SwitchListTile(
                 title: Text(l10n.hideOnlineStatus),
                 value: prefs.hideOnlineStatus,
                 onChanged: (value) {

@@ -1295,7 +1295,33 @@ class AppLocalizationsTr extends AppLocalizations {
   String get callNotifications => 'Arama bildirimleri';
 
   @override
+  String get streakNotifications => 'Streak hatırlatmaları';
+
+  @override
+  String get streakNotificationsSubtitle =>
+      'Bugünkü Match Game\'e katılmadıysam hatırlat';
+
+  @override
   String get hideOnlineStatus => 'Çevrimiçi durumunu gizle';
+
+  @override
+  String matchingStreakTitle(int count) {
+    return '🔥 $count Günlük Seri';
+  }
+
+  @override
+  String get matchingStreakEmptyTitle => '🔥 Matching Streak\'ini başlat';
+
+  @override
+  String get matchingStreakKeepPrompt => 'Bugünkü oyuna katıl ve serini koru.';
+
+  @override
+  String get matchingStreakKeptToday => 'Bugün serini korudun.';
+
+  @override
+  String matchingStreakBest(int count) {
+    return 'En iyi $count';
+  }
 
   @override
   String get notificationNewMatch => 'Yeni bir eşleşmen var!';

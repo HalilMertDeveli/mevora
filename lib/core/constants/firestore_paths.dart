@@ -31,6 +31,9 @@ abstract final class FirestorePaths {
   static const String relationshipMatch = 'relationshipMatch';
   static const String relationshipSeen = 'relationshipSeen';
   static const String questionAnswers = 'questionAnswers';
+  static const String matchingStreak = 'matchingStreak';
+  static const String matchingStreakDays = 'matchingStreakDays';
+  static const String matchingStreakRewards = 'matchingStreakRewards';
 
   static String supportTicket(String ticketId) => '$supportTickets/$ticketId';
 
@@ -118,6 +121,12 @@ abstract final class FirestorePaths {
 
   static String userQuestionAnswers(String uid) =>
       '$users/$uid/$questionAnswers';
+
+  static String matchingStreakCurrent(String uid) =>
+      '$users/$uid/$matchingStreak/current';
+
+  static String matchingStreakDay(String uid, String dayKey) =>
+      '$users/$uid/$matchingStreakDays/$dayKey';
 }
 
 abstract final class StoragePaths {

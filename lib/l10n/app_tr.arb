@@ -532,7 +532,28 @@
   "messageNotifications": "Mesaj bildirimleri",
   "matchNotifications": "Eşleşme bildirimleri",
   "callNotifications": "Arama bildirimleri",
+  "streakNotifications": "Streak hatırlatmaları",
+  "streakNotificationsSubtitle": "Bugünkü Match Game'e katılmadıysam hatırlat",
   "hideOnlineStatus": "Çevrimiçi durumunu gizle",
+  "matchingStreakTitle": "🔥 {count} Günlük Seri",
+  "@matchingStreakTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "matchingStreakEmptyTitle": "🔥 Matching Streak'ini başlat",
+  "matchingStreakKeepPrompt": "Bugünkü oyuna katıl ve serini koru.",
+  "matchingStreakKeptToday": "Bugün serini korudun.",
+  "matchingStreakBest": "En iyi {count}",
+  "@matchingStreakBest": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationNewMatch": "Yeni bir eşleşmen var!",
   "notificationNewMessage": "Yeni bir mesajın var",
   "notificationSuperLike": "Birisi seni Süper Beğendi",

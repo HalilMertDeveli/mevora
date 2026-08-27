@@ -2498,11 +2498,53 @@ abstract class AppLocalizations {
   /// **'Call notifications'**
   String get callNotifications;
 
+  /// No description provided for @streakNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak reminders'**
+  String get streakNotifications;
+
+  /// No description provided for @streakNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me if I have not joined today\'s Match Game'**
+  String get streakNotificationsSubtitle;
+
   /// No description provided for @hideOnlineStatus.
   ///
   /// In en, this message translates to:
   /// **'Hide my online status'**
   String get hideOnlineStatus;
+
+  /// No description provided for @matchingStreakTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'🔥 {count} Day Streak'**
+  String matchingStreakTitle(int count);
+
+  /// No description provided for @matchingStreakEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'🔥 Start your Matching Streak'**
+  String get matchingStreakEmptyTitle;
+
+  /// No description provided for @matchingStreakKeepPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Join today\'s game and keep your streak.'**
+  String get matchingStreakKeepPrompt;
+
+  /// No description provided for @matchingStreakKeptToday.
+  ///
+  /// In en, this message translates to:
+  /// **'You kept your streak today.'**
+  String get matchingStreakKeptToday;
+
+  /// No description provided for @matchingStreakBest.
+  ///
+  /// In en, this message translates to:
+  /// **'Best {count}'**
+  String matchingStreakBest(int count);
 
   /// No description provided for @notificationNewMatch.
   ///

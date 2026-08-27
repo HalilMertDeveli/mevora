@@ -12,6 +12,7 @@ import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/di/discovery_services_factory.dart';
 import 'package:mevora/core/di/location_services_factory.dart';
 import 'package:mevora/core/di/match_score_services_factory.dart';
+import 'package:mevora/core/di/matching_streak_services_factory.dart';
 import 'package:mevora/core/di/music_services_factory.dart';
 import 'package:mevora/core/di/relationship_services_factory.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
@@ -104,6 +105,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
     config: config,
     uidSource: uidSource,
   );
+  final matchingStreakServices = createMatchingStreakServices(config: config);
   final socialServices = createFirebaseSocialServices(
     uidSource: uidSource,
     demoHub: demoHub,
@@ -148,6 +150,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       relationshipRepository: relationshipServices.repository,
       profileQuestionAnswerRepository: relationshipServices.profileAnswers,
       matchScoreRepository: matchScoreServices.repository,
+      matchingStreakRepository: matchingStreakServices.repository,
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,
       verificationRepository: verificationServices.repository,

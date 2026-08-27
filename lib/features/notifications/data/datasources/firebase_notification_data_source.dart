@@ -43,6 +43,7 @@ class FirebaseNotificationDataSource
     return _settings.doc(uid).set({
       'messageNotifications': prefs.messageNotifications,
       'matchNotifications': prefs.matchNotifications,
+      'streakNotifications': prefs.streakNotifications,
       'showOnlineStatus': !prefs.hideOnlineStatus,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -95,6 +96,7 @@ class FirebaseNotificationDataSource
     return NotificationPrefs(
       messageNotifications: data['messageNotifications'] as bool? ?? true,
       matchNotifications: data['matchNotifications'] as bool? ?? true,
+      streakNotifications: data['streakNotifications'] as bool? ?? true,
       hideOnlineStatus: data['showOnlineStatus'] == false,
     );
   }

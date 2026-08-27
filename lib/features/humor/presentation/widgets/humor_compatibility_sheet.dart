@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
 
@@ -19,6 +23,10 @@ class HumorCompatibilitySheet extends StatelessWidget {
     required int score,
     List<String> strongestShared = const [],
   }) {
+    final analytics = BoostScope.maybeOf(context)?.analytics;
+    if (analytics != null) {
+      unawaited(analytics.logEvent(AnalyticsEvents.humorCompatibilityViewed));
+    }
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,

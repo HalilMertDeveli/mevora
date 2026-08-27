@@ -10,6 +10,7 @@ import 'package:mevora/features/humor/presentation/controllers/humor_controller.
 import 'package:mevora/features/humor/presentation/widgets/humor_content_player.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_profile_sheet.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_rating_bar.dart';
+import 'package:mevora/features/humor/presentation/widgets/humor_report_sheet.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_swipe_hints.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
@@ -151,18 +152,34 @@ class _HumorLabPageState extends State<HumorLabPage> {
               ),
               IconButton(
                 tooltip: l10n.humorReport,
-                onPressed: () {
+                onPressed: () async {
                   final item = controller.state.current;
                   if (item == null) {
                     return;
                   }
+                  final reason = await HumorReportSheet.show(context);
+                  if (reason == null || !context.mounted) {
+                    return;
+                  }
                   final repo = HumorScope.maybeOf(context);
-                  unawaited(
-                    repo?.reportContent(contentId: item.contentId) ??
-                        Future<void>.value(),
+                  if (repo == null) {
+                    return;
+                  }
+                  final result = await repo.reportContent(
+                    contentId: item.contentId,
+                    reason: reason,
                   );
+                  if (!context.mounted) {
+                    return;
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.humorReport)),
+                    SnackBar(
+                      content: Text(
+                        result.isError
+                            ? l10n.humorFeedError
+                            : l10n.humorReportSuccess,
+                      ),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.flag_outlined),

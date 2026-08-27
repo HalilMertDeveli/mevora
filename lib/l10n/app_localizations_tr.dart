@@ -3427,4 +3427,55 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorReport => 'Şikayet et';
+
+  @override
+  String get humorReportSuccess => 'Teşekkürler — bu içeriği inceleyeceğiz.';
+
+  @override
+  String get humorHowFunny => 'Ne kadar komik?';
+
+  @override
+  String get humorReportReasonOffensive => 'Rahatsız edici';
+
+  @override
+  String get humorReportReasonSpam => 'Spam';
+
+  @override
+  String get humorReportReasonMisleading => 'Yanıltıcı';
+
+  @override
+  String get humorReportReasonOther => 'Diğer';
+
+  @override
+  String get humorCategorySarcasm => 'İroni';
+
+  @override
+  String get humorCategoryAbsurd => 'Absürt';
+
+  @override
+  String get humorCategorySilly => 'Saçma sapan';
+
+  @override
+  String get humorCategoryRomantic => 'Romantik';
+
+  @override
+  String get humorCategoryDark => 'Kara mizah';
+
+  @override
+  String get humorCategoryMeme => 'Meme';
+
+  @override
+  String get humorCategoryDry => 'Kuru';
+
+  @override
+  String get humorCategoryWordplay => 'Kelime oyunu';
+
+  @override
+  String get humorCategorySituational => 'Durumsal';
+
+  @override
+  String get humorCategoryCringe => 'Cringe';
+
+  @override
+  String get humorCategoryTeasing => 'Takılma';
 }

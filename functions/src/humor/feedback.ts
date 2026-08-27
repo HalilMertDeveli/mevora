@@ -6,6 +6,7 @@ import {
   applyFeedbackToProfile,
   defaultUserHumorProfile,
   isProfileBuilding,
+  ratingWeight,
 } from "./profile.js";
 import {HUMOR_RATINGS, type HumorRating, type UserHumorProfileDoc} from "./types.js";
 
@@ -129,12 +130,19 @@ export async function submitHumorFeedbackTx(input: {
     );
     if (!alreadyCounted) {
       const contentRef = input.db.doc(`humorContent/${input.contentId}`);
+      const prevCount = Number(content.stats?.ratingCount ?? 0);
+      const prevAvg = Number(content.stats?.avgRating ?? 0);
+      const weight = ratingWeight(input.rating);
+      const nextCount = prevCount + 1;
+      const nextAvg =
+        prevCount <= 0 ? weight : (prevAvg * prevCount + weight) / nextCount;
       tx.set(
         contentRef,
         {
           stats: {
             ratingCount: FieldValue.increment(1),
             viewCount: FieldValue.increment(1),
+            avgRating: nextAvg,
           },
           updatedAt: now,
         },

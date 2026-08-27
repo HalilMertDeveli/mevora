@@ -53,7 +53,9 @@ class MevoraRemoteConfig {
       maxDailyLikes: maxDailyLikes,
       videoCallsEnabled: videoCallEnabled,
       premiumEnabled: premiumEnabled,
-      humorLabEnabled: humorLabEnabled,
+      // Local bootstrap / dart-define can enable for QA; RC can also enable.
+      // RC alone cannot force-disable a local QA enablement.
+      humorLabEnabled: current.humorLabEnabled || humorLabEnabled,
       maintenanceMode: maintenanceMode,
     );
   }

@@ -6307,6 +6307,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Report'**
   String get humorReport;
+
+  /// No description provided for @humorReportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks — we\'ll review this content.'**
+  String get humorReportSuccess;
+
+  /// No description provided for @humorHowFunny.
+  ///
+  /// In en, this message translates to:
+  /// **'How funny is this?'**
+  String get humorHowFunny;
+
+  /// No description provided for @humorReportReasonOffensive.
+  ///
+  /// In en, this message translates to:
+  /// **'Offensive'**
+  String get humorReportReasonOffensive;
+
+  /// No description provided for @humorReportReasonSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Spam'**
+  String get humorReportReasonSpam;
+
+  /// No description provided for @humorReportReasonMisleading.
+  ///
+  /// In en, this message translates to:
+  /// **'Misleading'**
+  String get humorReportReasonMisleading;
+
+  /// No description provided for @humorReportReasonOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get humorReportReasonOther;
+
+  /// No description provided for @humorCategorySarcasm.
+  ///
+  /// In en, this message translates to:
+  /// **'Sarcasm'**
+  String get humorCategorySarcasm;
+
+  /// No description provided for @humorCategoryAbsurd.
+  ///
+  /// In en, this message translates to:
+  /// **'Absurd'**
+  String get humorCategoryAbsurd;
+
+  /// No description provided for @humorCategorySilly.
+  ///
+  /// In en, this message translates to:
+  /// **'Silly'**
+  String get humorCategorySilly;
+
+  /// No description provided for @humorCategoryRomantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Romantic'**
+  String get humorCategoryRomantic;
+
+  /// No description provided for @humorCategoryDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get humorCategoryDark;
+
+  /// No description provided for @humorCategoryMeme.
+  ///
+  /// In en, this message translates to:
+  /// **'Meme'**
+  String get humorCategoryMeme;
+
+  /// No description provided for @humorCategoryDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Dry'**
+  String get humorCategoryDry;
+
+  /// No description provided for @humorCategoryWordplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Wordplay'**
+  String get humorCategoryWordplay;
+
+  /// No description provided for @humorCategorySituational.
+  ///
+  /// In en, this message translates to:
+  /// **'Situational'**
+  String get humorCategorySituational;
+
+  /// No description provided for @humorCategoryCringe.
+  ///
+  /// In en, this message translates to:
+  /// **'Cringe'**
+  String get humorCategoryCringe;
+
+  /// No description provided for @humorCategoryTeasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Teasing'**
+  String get humorCategoryTeasing;
 }
 
 class _AppLocalizationsDelegate

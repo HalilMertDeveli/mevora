@@ -1464,5 +1464,22 @@
   "humorChatStarter": "Something that made me laugh…",
   "humorTopVibes": "Top vibes",
   "humorSaved": "Saved",
-  "humorReport": "Report"
+  "humorReport": "Report",
+  "humorReportSuccess": "Thanks — we'll review this content.",
+  "humorHowFunny": "How funny is this?",
+  "humorReportReasonOffensive": "Offensive",
+  "humorReportReasonSpam": "Spam",
+  "humorReportReasonMisleading": "Misleading",
+  "humorReportReasonOther": "Other",
+  "humorCategorySarcasm": "Sarcasm",
+  "humorCategoryAbsurd": "Absurd",
+  "humorCategorySilly": "Silly",
+  "humorCategoryRomantic": "Romantic",
+  "humorCategoryDark": "Dark",
+  "humorCategoryMeme": "Meme",
+  "humorCategoryDry": "Dry",
+  "humorCategoryWordplay": "Wordplay",
+  "humorCategorySituational": "Situational",
+  "humorCategoryCringe": "Cringe",
+  "humorCategoryTeasing": "Teasing"
 }

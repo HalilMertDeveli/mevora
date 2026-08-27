@@ -30,6 +30,7 @@ void main() {
       ),
     );
 
+    expect(find.text(_en.humorHowFunny), findsOneWidget);
     expect(find.text(_en.humorRatingVeryFunny), findsOneWidget);
     expect(find.text(_en.humorRatingFunny), findsOneWidget);
     expect(find.text(_en.humorRatingNeutral), findsOneWidget);

@@ -3431,4 +3431,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorReport => 'Report';
+
+  @override
+  String get humorReportSuccess => 'Thanks — we\'ll review this content.';
+
+  @override
+  String get humorHowFunny => 'How funny is this?';
+
+  @override
+  String get humorReportReasonOffensive => 'Offensive';
+
+  @override
+  String get humorReportReasonSpam => 'Spam';
+
+  @override
+  String get humorReportReasonMisleading => 'Misleading';
+
+  @override
+  String get humorReportReasonOther => 'Other';
+
+  @override
+  String get humorCategorySarcasm => 'Sarcasm';
+
+  @override
+  String get humorCategoryAbsurd => 'Absurd';
+
+  @override
+  String get humorCategorySilly => 'Silly';
+
+  @override
+  String get humorCategoryRomantic => 'Romantic';
+
+  @override
+  String get humorCategoryDark => 'Dark';
+
+  @override
+  String get humorCategoryMeme => 'Meme';
+
+  @override
+  String get humorCategoryDry => 'Dry';
+
+  @override
+  String get humorCategoryWordplay => 'Wordplay';
+
+  @override
+  String get humorCategorySituational => 'Situational';
+
+  @override
+  String get humorCategoryCringe => 'Cringe';
+
+  @override
+  String get humorCategoryTeasing => 'Teasing';
 }

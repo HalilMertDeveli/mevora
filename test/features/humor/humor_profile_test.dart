@@ -56,7 +56,7 @@ void main() {
     );
     expect(
       HumorProfileDisplay.categoryLabel(l10n, HumorCategory.wordplay),
-      'wordplay',
+      l10n.humorCategoryWordplay,
     );
   });
 

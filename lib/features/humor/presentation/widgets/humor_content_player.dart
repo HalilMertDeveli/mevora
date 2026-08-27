@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
+import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 
@@ -61,7 +62,7 @@ class HumorContentPlayer extends StatelessWidget {
                     vertical: AppSpacing.xs,
                   ),
                   child: Text(
-                    content.category.apiValue,
+                    _categoryLabel(l10n, content.category),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onInverseSurface,
                     ),
@@ -73,6 +74,22 @@ class HumorContentPlayer extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _categoryLabel(AppLocalizations l10n, HumorCategory category) {
+    return switch (category) {
+      HumorCategory.sarcasm => l10n.humorCategorySarcasm,
+      HumorCategory.absurd => l10n.humorCategoryAbsurd,
+      HumorCategory.silly => l10n.humorCategorySilly,
+      HumorCategory.romantic => l10n.humorCategoryRomantic,
+      HumorCategory.dark => l10n.humorCategoryDark,
+      HumorCategory.meme => l10n.humorCategoryMeme,
+      HumorCategory.dry => l10n.humorCategoryDry,
+      HumorCategory.wordplay => l10n.humorCategoryWordplay,
+      HumorCategory.situational => l10n.humorCategorySituational,
+      HumorCategory.cringe => l10n.humorCategoryCringe,
+      HumorCategory.teasing => l10n.humorCategoryTeasing,
+    };
   }
 }
 

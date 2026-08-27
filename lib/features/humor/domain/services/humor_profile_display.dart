@@ -6,10 +6,19 @@ import 'package:mevora/l10n/app_localizations.dart';
 /// Presentation helpers for humor profile sheets (no hardcoded English).
 abstract final class HumorProfileDisplay {
   static String categoryLabel(AppLocalizations l10n, HumorCategory category) {
-    // Category names are product taxonomy; keep stable English tokens for MVP
-    // until dedicated per-category l10n keys exist. Surfaces still wrap with
-    // localized section titles (humorTopVibes / humorProfileTitle).
-    return category.apiValue;
+    return switch (category) {
+      HumorCategory.sarcasm => l10n.humorCategorySarcasm,
+      HumorCategory.absurd => l10n.humorCategoryAbsurd,
+      HumorCategory.silly => l10n.humorCategorySilly,
+      HumorCategory.romantic => l10n.humorCategoryRomantic,
+      HumorCategory.dark => l10n.humorCategoryDark,
+      HumorCategory.meme => l10n.humorCategoryMeme,
+      HumorCategory.dry => l10n.humorCategoryDry,
+      HumorCategory.wordplay => l10n.humorCategoryWordplay,
+      HumorCategory.situational => l10n.humorCategorySituational,
+      HumorCategory.cringe => l10n.humorCategoryCringe,
+      HumorCategory.teasing => l10n.humorCategoryTeasing,
+    };
   }
 
   static String buildingLabel(AppLocalizations l10n, UserHumorProfile profile) {

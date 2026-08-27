@@ -24,11 +24,17 @@ User ratings are the sole humor-model signal. Runtime feed does not call AI.
 
 ## Feature flag
 
-- Client: `FeatureFlags.humorLabEnabled` (default **`false`**)
-- Remote Config key: `humorLabEnabled`
+- Client: `FeatureFlags.humorLabEnabled` (product default **`false`**)
+- Local QA enablement (no Remote Config required):
+  - Debug + development builds: ON via `resolveHumorLabEnabled`
+  - Force: `--dart-define=HUMOR_LAB_ENABLED=true` or `false`
+- Remote Config key: `humorLabEnabled` (can enable; does not disable local QA ON)
 - When off: `/humor-lab` redirects to Discover, Profile tile hidden, no Humor UI
 
-Rollback = set flag false. Data may remain; no need to delete.
+Rollback = set flag false (and `HUMOR_LAB_ENABLED=false` if forcing). Data may remain.
+
+Content datasource: mock by default (`USE_MOCK_HUMOR=true`). Use
+`--dart-define=USE_MOCK_HUMOR=false` after deploying humor callables + seeding content.
 
 ## Firestore
 

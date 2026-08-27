@@ -25,23 +25,37 @@ class HumorRatingBar extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Semantics(
-      label: l10n.humorLabTitle,
-      child: Row(
+      label: l10n.humorHowFunny,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final rating in _order)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: _RatingChip(
-                  label: _label(l10n, rating),
-                  icon: _icon(rating),
-                  selected: selected == rating,
-                  enabled: enabled,
-                  onTap: () => onRated(rating),
-                  color: theme.colorScheme,
-                ),
-              ),
+          Text(
+            l10n.humorHowFunny,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              for (final rating in _order)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: _RatingChip(
+                      label: _label(l10n, rating),
+                      icon: _icon(rating),
+                      selected: selected == rating,
+                      enabled: enabled,
+                      onTap: () => onRated(rating),
+                      color: theme.colorScheme,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );

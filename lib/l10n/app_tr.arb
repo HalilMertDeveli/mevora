@@ -1464,5 +1464,22 @@
   "humorChatStarter": "Beni güldüren bir şey…",
   "humorTopVibes": "Öne çıkan vibes",
   "humorSaved": "Kaydedildi",
-  "humorReport": "Şikayet et"
+  "humorReport": "Şikayet et",
+  "humorReportSuccess": "Teşekkürler — bu içeriği inceleyeceğiz.",
+  "humorHowFunny": "Ne kadar komik?",
+  "humorReportReasonOffensive": "Rahatsız edici",
+  "humorReportReasonSpam": "Spam",
+  "humorReportReasonMisleading": "Yanıltıcı",
+  "humorReportReasonOther": "Diğer",
+  "humorCategorySarcasm": "İroni",
+  "humorCategoryAbsurd": "Absürt",
+  "humorCategorySilly": "Saçma sapan",
+  "humorCategoryRomantic": "Romantik",
+  "humorCategoryDark": "Kara mizah",
+  "humorCategoryMeme": "Meme",
+  "humorCategoryDry": "Kuru",
+  "humorCategoryWordplay": "Kelime oyunu",
+  "humorCategorySituational": "Durumsal",
+  "humorCategoryCringe": "Cringe",
+  "humorCategoryTeasing": "Takılma"
 }

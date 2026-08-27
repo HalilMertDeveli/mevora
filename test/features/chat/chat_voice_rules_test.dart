@@ -13,7 +13,7 @@ void main() {
     expect(rules.contains('match /users/{userId}/chat/{matchId}/{fileId}'), isTrue);
     expect(rules.contains('isMatchParticipant(matchId)'), isTrue);
     expect(rules.contains("audio/mp4"), isTrue);
-    expect(rules.contains('8 * 1024 * 1024'), isTrue);
+    expect(rules.contains('25 * 1024 * 1024'), isTrue);
   });
 
   test('firestore allows voice message type', () {

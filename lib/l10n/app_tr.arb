@@ -833,11 +833,27 @@
   "matchFeedbackFailed": "Not kaydedilemedi. Tekrar dene.",
   "relationshipPromptTitle": "İlişkiler hakkında ne düşünüyorsun?",
   "relationshipQuestionsPreparing": "Yeni sorular hazırlanıyor. Lütfen biraz sonra tekrar deneyin.",
-  "relationshipTestTitle": "İlişki Testi",
-  "relationshipTestHeadline": "Görüşlerine yakın insanları keşfet",
-  "relationshipTestMessage": "3 kısa soruyla benzer düşünebilen kişileri gör.",
-  "relationshipTestStart": "İlişki Testine Başla",
+  "relationshipTestTitle": "Eşleşme Oyunu",
+  "relationshipTestHeadline": "Bu saatin Eşleşme Oyunu",
+  "relationshipTestMessage": "Bu turun kişilik testine katıl. Bak bakalım bu saatte kiminle eşleşeceksin?",
+  "relationshipTestStart": "Eşleşme Oyununa Katıl",
   "relationshipTestLater": "Daha Sonra",
+  "matchingGameCountdown": "Sonraki Eşleşme Oyunu: {countdown}",
+  "@matchingGameCountdown": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "matchingGameRoundLabel": "{hour}:00 Eşleşme Oyunu",
+  "@matchingGameRoundLabel": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipContinueTitle": "Eşleşmeye devam etmek ister misin?",
   "relationshipContinueMessage": "5 eşleşme turunu tamamladın. Aynı cevaplara sahip insanları bulmaya devam etmek ister misin?",
   "relationshipContinueYes": "Devam Et",
@@ -868,7 +884,7 @@
   "relationshipTestEmpty": "Şu an yakınında benzer düşünen kimse yok.",
   "relationshipTestViewProfile": "Profili Gör",
   "relationshipTestOpenChat": "Sohbete git",
-  "relationshipMatchBadge": "İlişki Testi",
+  "relationshipMatchBadge": "Eşleşme Oyunu",
   "relationshipPromptProgress": "{answered} / {total}",
   "@relationshipPromptProgress": {
     "placeholders": {
@@ -1006,6 +1022,29 @@
     }
   },
   "compatNotEnoughData": "Henüz yeterli veri yok",
+  "compatRevealTitle": "Compatibility Reveal",
+  "compatRevealSubtitle": "3 gerçek ortak noktanızı keşfet",
+  "compatRevealCta": "Kimyanızı ortaya çıkarın",
+  "compatRevealLoading": "Açılıyor…",
+  "compatRevealError": "Kimyanızı şu an yükleyemedik. Lütfen tekrar deneyin.",
+  "compatRevealRetry": "Tekrar dene",
+  "compatRevealPremiumCta": "Tam uyum dökümünü aç",
+  "compatRevealBreakdownTitle": "Detaylı döküm",
+  "compatRevealKindPersonality": "Kişilik",
+  "compatRevealKindQuestions": "Soru Cevapları",
+  "compatRevealKindMusic": "Müzik",
+  "compatRevealKindRelationship": "İlişki",
+  "compatRevealKindPreference": "Tercihler",
+  "compatRevealKindLifestyle": "Yaşam tarzı",
+  "compatRevealPersonalityAligned": "{count} kişilik cevabında aynı hizasınız",
+  "@compatRevealPersonalityAligned": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "compatRevealSimilarPersonality": "Yaşam tarzınız benzer bir kişilik enerjisine işaret ediyor",
   "compatStrongestConnection": "En güçlü bağ",
   "compatPotentialDifference": "Potansiyel fark",
   "compatCategoryOverall": "Genel",

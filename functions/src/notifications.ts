@@ -19,6 +19,7 @@ export const FcmTypes = {
   missedCall: "missedCall",
   boostActivated: "boostActivated",
   boostExpired: "boostExpired",
+  incomingLike: "incomingLike",
 } as const;
 
 export type FcmType = (typeof FcmTypes)[keyof typeof FcmTypes];
@@ -27,6 +28,7 @@ export type PushPrefKey =
   | "messageNotifications"
   | "matchNotifications"
   | "callNotifications"
+  | "likeNotifications"
   | "notificationsEnabled";
 
 const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: string; body: string}}> = {
@@ -62,6 +64,10 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
     tr: {title: "Mevora", body: "Boost süresi doldu"},
     en: {title: "Mevora", body: "Your Boost has ended"},
   },
+  incomingLike: {
+    tr: {title: "Mevora", body: "Yeni bir beğeni"},
+    en: {title: "Mevora", body: "You have a new like"},
+  },
 };
 
 export async function collectDeviceTokens(uid: string): Promise<string[]> {
@@ -85,7 +91,10 @@ export async function sendUserPush(options: {
   data: Record<string, string>;
   prefKey: PushPrefKey;
   bodyOverride?: string;
+  /** Optional dedupe key; accepted for callers, best-effort unused locally. */
+  idempotencyKey?: string;
 }): Promise<void> {
+  void options.idempotencyKey;
   const [legacyPref, settings] = await Promise.all([
     db.doc(`users/${options.uid}/settings/notifications`).get(),
     db.doc(`userSettings/${options.uid}`).get(),

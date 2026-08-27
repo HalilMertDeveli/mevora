@@ -210,6 +210,8 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
               onLater: () {
                 unawaited(controller.dismissOffer());
               },
+              roundHour: controller.hourlyRoundHour,
+              countdown: controller.hourlyCountdownRemaining,
             ),
           ),
       ],
@@ -444,15 +446,35 @@ class RelationshipTestOfferCard extends StatelessWidget {
     super.key,
     required this.onStart,
     required this.onLater,
+    this.roundHour,
+    this.countdown,
   });
 
   final VoidCallback onStart;
   final VoidCallback onLater;
+  final String? roundHour;
+  final Duration? countdown;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final hour = roundHour;
+    final headline = hour == null || hour.isEmpty
+        ? l10n.relationshipTestHeadline
+        : l10n.matchingGameRoundLabel(hour);
+    final remain = countdown;
+    String? countdownLabel;
+    if (remain != null) {
+      final h = remain.inHours;
+      final m = remain.inMinutes.remainder(60);
+      final s = remain.inSeconds.remainder(60);
+      final padded =
+          '${h.toString().padLeft(2, '0')}:'
+          '${m.toString().padLeft(2, '0')}:'
+          '${s.toString().padLeft(2, '0')}';
+      countdownLabel = l10n.matchingGameCountdown(padded);
+    }
     return ColoredBox(
       color: Colors.black.withValues(alpha: 0.42),
       child: SafeArea(
@@ -480,7 +502,7 @@ class RelationshipTestOfferCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    l10n.relationshipTestHeadline,
+                    headline,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -488,6 +510,15 @@ class RelationshipTestOfferCard extends StatelessWidget {
                     l10n.relationshipTestMessage,
                     style: theme.textTheme.bodyLarge,
                   ),
+                  if (countdownLabel != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      countdownLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.lg),
                   MevoraButton(
                     label: l10n.relationshipTestStart,

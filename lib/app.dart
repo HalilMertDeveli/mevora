@@ -7,6 +7,7 @@ import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
+import 'package:mevora/core/di/compatibility_reveal_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
@@ -16,9 +17,12 @@ import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
+import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/support_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_scope.dart';
+import 'package:mevora/features/compatibility/data/repositories/compatibility_reveal_repository.dart';
+import 'package:mevora/features/subscription/domain/repositories/subscription_repository.dart';
 import 'package:mevora/core/localization/language_controller.dart';
 import 'package:mevora/core/localization/language_repository.dart';
 import 'package:mevora/core/localization/language_scope.dart';
@@ -64,6 +68,8 @@ class MevoraApp extends StatefulWidget {
     this.socialServices,
     this.purchaseRepository,
     this.verificationRepository,
+    this.compatibilityRevealRepository,
+    this.subscriptionRepository,
     this.analytics,
     this.languageController,
     this.permissionService,
@@ -87,6 +93,8 @@ class MevoraApp extends StatefulWidget {
   final SocialServices? socialServices;
   final PurchaseRepository? purchaseRepository;
   final VerificationRepository? verificationRepository;
+  final CompatibilityRevealRepository? compatibilityRevealRepository;
+  final SubscriptionRepository? subscriptionRepository;
   final AnalyticsProvider? analytics;
   final LanguageController? languageController;
   final PermissionService? permissionService;
@@ -320,6 +328,19 @@ class _MevoraAppState extends State<MevoraApp> {
     final verification = widget.verificationRepository;
     if (verification != null) {
       child = VerificationScope(repository: verification, child: child);
+    }
+
+    final compatibilityReveal = widget.compatibilityRevealRepository;
+    if (compatibilityReveal != null) {
+      child = CompatibilityRevealScope(
+        repository: compatibilityReveal,
+        child: child,
+      );
+    }
+
+    final subscription = widget.subscriptionRepository;
+    if (subscription != null) {
+      child = SubscriptionScope(repository: subscription, child: child);
     }
 
     return AppScope(

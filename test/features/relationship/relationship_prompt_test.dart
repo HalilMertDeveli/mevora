@@ -25,6 +25,7 @@ RelationshipController _controller({
   RelationshipRepository? repository,
   Duration interval = AppDurations.relationshipPrompt,
   bool enforceOfferGates = true,
+  bool hourlyGlobalMatchingGame = false,
 }) {
   final controller = RelationshipController(
     repository:
@@ -32,6 +33,7 @@ RelationshipController _controller({
         RelationshipRepositoryImpl(dataSource: MockRelationshipDataSource()),
     interval: interval,
     enforceOfferGates: enforceOfferGates,
+    hourlyGlobalMatchingGame: hourlyGlobalMatchingGame,
   );
   addTearDown(() {
     controller.pause();
@@ -182,6 +184,7 @@ void main() {
       interval: const Duration(minutes: 30),
       clock: () => now,
       enforceOfferGates: true,
+      hourlyGlobalMatchingGame: false,
     );
     addTearDown(() {
       controller.pause();
@@ -222,6 +225,7 @@ void main() {
       interval: const Duration(minutes: 30),
       clock: () => now,
       enforceOfferGates: true,
+      hourlyGlobalMatchingGame: false,
     );
     addTearDown(() {
       controller.pause();
@@ -354,7 +358,7 @@ void main() {
         ),
       ),
     );
-    expect(find.textContaining('Relationship Test'), findsOneWidget);
+    expect(find.textContaining('Matching Game'), findsOneWidget);
   });
 
   testWidgets('host timer shows the offer without swiping', (tester) async {
@@ -363,6 +367,7 @@ void main() {
         dataSource: MockRelationshipDataSource(),
       ),
       interval: const Duration(seconds: 2),
+      hourlyGlobalMatchingGame: false,
     );
     addTearDown(() {
       controller.pause();

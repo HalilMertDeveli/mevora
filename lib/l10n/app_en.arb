@@ -833,11 +833,27 @@
   "matchFeedbackFailed": "Couldn't save that note. Try again.",
   "relationshipPromptTitle": "What do you think about relationships?",
   "relationshipQuestionsPreparing": "New questions are being prepared. Please try again in a bit.",
-  "relationshipTestTitle": "Relationship Test",
-  "relationshipTestHeadline": "Discover people who share your views",
-  "relationshipTestMessage": "Answer 3 short questions to see people who may think similarly.",
-  "relationshipTestStart": "Start the Relationship Test",
+  "relationshipTestTitle": "Matching Game",
+  "relationshipTestHeadline": "This hour's Matching Game",
+  "relationshipTestMessage": "Take this round's personality test — same answers, stronger match.",
+  "relationshipTestStart": "Join the Matching Game",
   "relationshipTestLater": "Not now",
+  "matchingGameCountdown": "Next Match Game: {countdown}",
+  "@matchingGameCountdown": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "matchingGameRoundLabel": "{hour}:00 Matching Game",
+  "@matchingGameRoundLabel": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipContinueTitle": "Keep matching?",
   "relationshipContinueMessage": "You've completed 5 matching rounds. Do you want to continue finding people who share your answers?",
   "relationshipContinueYes": "Continue",
@@ -868,7 +884,7 @@
   "relationshipTestEmpty": "There's no one nearby who thinks like you right now.",
   "relationshipTestViewProfile": "View profile",
   "relationshipTestOpenChat": "Open chat",
-  "relationshipMatchBadge": "Relationship Test",
+  "relationshipMatchBadge": "Matching Game",
   "relationshipPromptProgress": "{answered} / {total}",
   "@relationshipPromptProgress": {
     "placeholders": {
@@ -1006,6 +1022,29 @@
     }
   },
   "compatNotEnoughData": "Not enough data yet",
+  "compatRevealTitle": "Compatibility Reveal",
+  "compatRevealSubtitle": "Discover up to 3 real things you share",
+  "compatRevealCta": "Reveal Your Chemistry",
+  "compatRevealLoading": "Revealing…",
+  "compatRevealError": "We couldn't load your chemistry right now. Please try again.",
+  "compatRevealRetry": "Try again",
+  "compatRevealPremiumCta": "Unlock full chemistry breakdown",
+  "compatRevealBreakdownTitle": "Detailed breakdown",
+  "compatRevealKindPersonality": "Personality",
+  "compatRevealKindQuestions": "Question Answers",
+  "compatRevealKindMusic": "Music",
+  "compatRevealKindRelationship": "Relationship",
+  "compatRevealKindPreference": "Preferences",
+  "compatRevealKindLifestyle": "Lifestyle",
+  "compatRevealPersonalityAligned": "You share {count} aligned personality answers",
+  "@compatRevealPersonalityAligned": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "compatRevealSimilarPersonality": "Your lifestyles point to a similar personality vibe",
   "compatStrongestConnection": "Strongest connection",
   "compatPotentialDifference": "Potential difference",
   "compatCategoryOverall": "Overall",

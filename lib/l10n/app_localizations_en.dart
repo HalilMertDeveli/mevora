@@ -1979,20 +1979,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'New questions are being prepared. Please try again in a bit.';
 
   @override
-  String get relationshipTestTitle => 'Relationship Test';
+  String get relationshipTestTitle => 'Matching Game';
 
   @override
-  String get relationshipTestHeadline => 'Discover people who share your views';
+  String get relationshipTestHeadline => 'This hour\'s Matching Game';
 
   @override
   String get relationshipTestMessage =>
-      'Answer 3 short questions to see people who may think similarly.';
+      'Take this round\'s personality test — same answers, stronger match.';
 
   @override
-  String get relationshipTestStart => 'Start the Relationship Test';
+  String get relationshipTestStart => 'Join the Matching Game';
 
   @override
   String get relationshipTestLater => 'Not now';
+
+  @override
+  String matchingGameCountdown(String countdown) {
+    return 'Next Match Game: $countdown';
+  }
+
+  @override
+  String matchingGameRoundLabel(String hour) {
+    return '$hour:00 Matching Game';
+  }
 
   @override
   String get relationshipContinueTitle => 'Keep matching?';
@@ -2071,7 +2081,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipTestOpenChat => 'Open chat';
 
   @override
-  String get relationshipMatchBadge => 'Relationship Test';
+  String get relationshipMatchBadge => 'Matching Game';
 
   @override
   String relationshipPromptProgress(int answered, int total) {
@@ -2344,6 +2354,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get compatNotEnoughData => 'Not enough data yet';
+
+  @override
+  String get compatRevealTitle => 'Compatibility Reveal';
+
+  @override
+  String get compatRevealSubtitle => 'Discover up to 3 real things you share';
+
+  @override
+  String get compatRevealCta => 'Reveal Your Chemistry';
+
+  @override
+  String get compatRevealLoading => 'Revealing…';
+
+  @override
+  String get compatRevealError =>
+      'We couldn\'t load your chemistry right now. Please try again.';
+
+  @override
+  String get compatRevealRetry => 'Try again';
+
+  @override
+  String get compatRevealPremiumCta => 'Unlock full chemistry breakdown';
+
+  @override
+  String get compatRevealBreakdownTitle => 'Detailed breakdown';
+
+  @override
+  String get compatRevealKindPersonality => 'Personality';
+
+  @override
+  String get compatRevealKindQuestions => 'Question Answers';
+
+  @override
+  String get compatRevealKindMusic => 'Music';
+
+  @override
+  String get compatRevealKindRelationship => 'Relationship';
+
+  @override
+  String get compatRevealKindPreference => 'Preferences';
+
+  @override
+  String get compatRevealKindLifestyle => 'Lifestyle';
+
+  @override
+  String compatRevealPersonalityAligned(String count) {
+    return 'You share $count aligned personality answers';
+  }
+
+  @override
+  String get compatRevealSimilarPersonality =>
+      'Your lifestyles point to a similar personality vibe';
 
   @override
   String get compatStrongestConnection => 'Strongest connection';

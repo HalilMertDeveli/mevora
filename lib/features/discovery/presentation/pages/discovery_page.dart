@@ -6,6 +6,7 @@ import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/services/profile/profile_update_notifier.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/features/compatibility/domain/services/compatibility_breakdown_mapper.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_reveal_section.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_ui.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/core/constants/app_durations.dart';
@@ -259,18 +260,23 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       final match = state.matchedCandidate!;
       final viewer = _viewerProfile(context);
       final breakdown = controller.breakdownFor(match);
-      final reasons = CompatibilityBreakdownMapper.reasonsFor(
-        viewer: viewer,
-        candidate: match,
-        breakdown: breakdown,
-      );
       return MevoraMatchCelebration(
         leftName: l10n.you,
         rightName: match.displayName,
         rightImage: MevoraNetworkImages.provider(match.photoUrl),
-        compatibilitySection: WhyYouMatchPanel(
+        compatibilitySection: CompatibilityRevealSection(
+          matchId: controller.state.matchedMatchId,
+          viewer: viewer,
+          candidate: UserProfile(
+            uid: match.uid,
+            displayName: match.displayName,
+            age: match.age,
+            interests: match.interests,
+            relationshipGoal: match.relationshipGoal,
+            city: match.city,
+          ),
           breakdown: breakdown,
-          reasons: reasons,
+          questionTopTopics: match.relationshipSummaryTopics,
         ),
         onSendMessage: () {
           final matchId = controller.state.matchedMatchId;

@@ -3731,25 +3731,25 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipTestTitle.
   ///
   /// In en, this message translates to:
-  /// **'Relationship Test'**
+  /// **'Matching Game'**
   String get relationshipTestTitle;
 
   /// No description provided for @relationshipTestHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Discover people who share your views'**
+  /// **'This hour\'s Matching Game'**
   String get relationshipTestHeadline;
 
   /// No description provided for @relationshipTestMessage.
   ///
   /// In en, this message translates to:
-  /// **'Answer 3 short questions to see people who may think similarly.'**
+  /// **'Take this round\'s personality test — same answers, stronger match.'**
   String get relationshipTestMessage;
 
   /// No description provided for @relationshipTestStart.
   ///
   /// In en, this message translates to:
-  /// **'Start the Relationship Test'**
+  /// **'Join the Matching Game'**
   String get relationshipTestStart;
 
   /// No description provided for @relationshipTestLater.
@@ -3757,6 +3757,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not now'**
   String get relationshipTestLater;
+
+  /// No description provided for @matchingGameCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Match Game: {countdown}'**
+  String matchingGameCountdown(String countdown);
+
+  /// No description provided for @matchingGameRoundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00 Matching Game'**
+  String matchingGameRoundLabel(String hour);
 
   /// No description provided for @relationshipContinueTitle.
   ///
@@ -3899,7 +3911,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipMatchBadge.
   ///
   /// In en, this message translates to:
-  /// **'Relationship Test'**
+  /// **'Matching Game'**
   String get relationshipMatchBadge;
 
   /// No description provided for @relationshipPromptProgress.
@@ -4357,6 +4369,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not enough data yet'**
   String get compatNotEnoughData;
+
+  /// No description provided for @compatRevealTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility Reveal'**
+  String get compatRevealTitle;
+
+  /// No description provided for @compatRevealSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover up to 3 real things you share'**
+  String get compatRevealSubtitle;
+
+  /// No description provided for @compatRevealCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Reveal Your Chemistry'**
+  String get compatRevealCta;
+
+  /// No description provided for @compatRevealLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Revealing…'**
+  String get compatRevealLoading;
+
+  /// No description provided for @compatRevealError.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your chemistry right now. Please try again.'**
+  String get compatRevealError;
+
+  /// No description provided for @compatRevealRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get compatRevealRetry;
+
+  /// No description provided for @compatRevealPremiumCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock full chemistry breakdown'**
+  String get compatRevealPremiumCta;
+
+  /// No description provided for @compatRevealBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed breakdown'**
+  String get compatRevealBreakdownTitle;
+
+  /// No description provided for @compatRevealKindPersonality.
+  ///
+  /// In en, this message translates to:
+  /// **'Personality'**
+  String get compatRevealKindPersonality;
+
+  /// No description provided for @compatRevealKindQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Question Answers'**
+  String get compatRevealKindQuestions;
+
+  /// No description provided for @compatRevealKindMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get compatRevealKindMusic;
+
+  /// No description provided for @compatRevealKindRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get compatRevealKindRelationship;
+
+  /// No description provided for @compatRevealKindPreference.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get compatRevealKindPreference;
+
+  /// No description provided for @compatRevealKindLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get compatRevealKindLifestyle;
+
+  /// No description provided for @compatRevealPersonalityAligned.
+  ///
+  /// In en, this message translates to:
+  /// **'You share {count} aligned personality answers'**
+  String compatRevealPersonalityAligned(String count);
+
+  /// No description provided for @compatRevealSimilarPersonality.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lifestyles point to a similar personality vibe'**
+  String get compatRevealSimilarPersonality;
 
   /// No description provided for @compatStrongestConnection.
   ///

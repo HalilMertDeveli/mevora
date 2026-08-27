@@ -42,6 +42,7 @@ abstract final class AnalyticsEvents {
   static const String boostExpired = 'boost_expired';
   static const String compatibilityViewed = 'compatibility_viewed';
   static const String whyYouMatchOpened = 'why_you_match_opened';
+  static const String compatibilityRevealOpened = 'compatibility_reveal_opened';
   static const String hiddenCompatibilitySeen = 'hidden_compatibility_seen';
   static const String hiddenCompatibilityClicked = 'hidden_compatibility_clicked';
   static const String compatibilityMatchCreated = 'compatibility_match_created';

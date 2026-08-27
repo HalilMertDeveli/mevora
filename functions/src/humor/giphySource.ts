@@ -7,17 +7,19 @@ import type {
 
 /** Turkish-first humor search queries for Giphy lang=tr. */
 export const GIPHY_TR_QUERIES = [
+  "komik",
+  "mizah",
+  "meme",
+  "komik tepki",
+  "kahkaha",
+  "absürt",
+  "sarkastik",
+  "komik kedi",
+  "komik köpek",
+  "komik reaksiyon",
   "komik video",
   "komik anlar",
   "türk komedi",
-  "hayvan komik",
-  "fail",
-  "prank",
-  "absürt komedi",
-  "meme",
-  "komik skeç",
-  "komik",
-  "mizah",
   "gülmek",
 ] as const;
 

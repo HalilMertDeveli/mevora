@@ -133,4 +133,20 @@ void main() {
     );
     expect(reveal.points.length, lessThanOrEqualTo(3));
   });
+
+  test('unavailable when no real overlaps', () {
+    final reveal = CompatibilityRevealBuilder.build(
+      viewer: viewer,
+      candidate: const UserProfile(uid: 'c', displayName: 'C', age: 22),
+      breakdown: const CompatibilityBreakdown(
+        overallScore: 30,
+        relationshipScore: 35,
+        interestScore: 20,
+        lifestyleScore: 40,
+      ),
+      isPremium: false,
+    );
+    expect(reveal.available, isFalse);
+    expect(reveal.points, isEmpty);
+  });
 }

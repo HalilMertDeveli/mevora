@@ -3806,6 +3806,132 @@ abstract class AppLocalizations {
   /// **'Join the Challenge'**
   String get mevoraHourJoin;
 
+  /// No description provided for @mevoraHourJoinNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Join now'**
+  String get mevoraHourJoinNow;
+
+  /// No description provided for @mevoraHourLiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'MEVORA HOUR — LIVE'**
+  String get mevoraHourLiveBadge;
+
+  /// No description provided for @mevoraHourLiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00 Compatibility Hour is live'**
+  String mevoraHourLiveTitle(String hour);
+
+  /// No description provided for @mevoraHourUpcomingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00 MEVORA HOUR'**
+  String mevoraHourUpcomingTitle(String hour);
+
+  /// No description provided for @mevoraHourUpcomingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The next Compatibility Hour is approaching. Discover compatibility with other active users.'**
+  String get mevoraHourUpcomingBody;
+
+  /// No description provided for @mevoraHourUpcomingCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts in {countdown}'**
+  String mevoraHourUpcomingCountdown(String countdown);
+
+  /// No description provided for @mevoraHourJoinedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re in this hour\'s Challenge'**
+  String get mevoraHourJoinedTitle;
+
+  /// No description provided for @mevoraHourJoinedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer the questions to join this Compatibility Hour.'**
+  String get mevoraHourJoinedBody;
+
+  /// No description provided for @mevoraHourAnsweredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers saved'**
+  String get mevoraHourAnsweredTitle;
+
+  /// No description provided for @mevoraHourAnsweredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for other participants. We\'ll show your compatibility when this hour completes.'**
+  String get mevoraHourAnsweredBody;
+
+  /// No description provided for @mevoraHourResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibilities from this hour'**
+  String get mevoraHourResultTitle;
+
+  /// No description provided for @mevoraHourResultBody.
+  ///
+  /// In en, this message translates to:
+  /// **'People who answered like you in this Mevora Hour.'**
+  String get mevoraHourResultBody;
+
+  /// No description provided for @mevoraHourEndedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00 Mevora Hour ended'**
+  String mevoraHourEndedTitle(String hour);
+
+  /// No description provided for @mevoraHourEndedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Compatibility Hour: {hour}:00'**
+  String mevoraHourEndedBody(String hour);
+
+  /// No description provided for @mevoraHourRemindMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me'**
+  String get mevoraHourRemindMe;
+
+  /// No description provided for @mevoraHourReminderOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder on'**
+  String get mevoraHourReminderOn;
+
+  /// No description provided for @mevoraHourReminderSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll notify you when Mevora Hour starts.'**
+  String get mevoraHourReminderSaved;
+
+  /// No description provided for @mevoraHourReminderNeedPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable notifications to get Mevora Hour reminders.'**
+  String get mevoraHourReminderNeedPermission;
+
+  /// No description provided for @mevoraHourReminderNeedSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to set a reminder.'**
+  String get mevoraHourReminderNeedSignIn;
+
+  /// No description provided for @mevoraHourRemindersSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora Hour reminders'**
+  String get mevoraHourRemindersSetting;
+
+  /// No description provided for @mevoraHourRemindersSettingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional alert when each Compatibility Hour opens (Europe/Istanbul).'**
+  String get mevoraHourRemindersSettingSubtitle;
+
   /// No description provided for @mevoraHourCountdown.
   ///
   /// In en, this message translates to:

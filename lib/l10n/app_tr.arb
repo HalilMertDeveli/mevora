@@ -846,6 +846,52 @@
   "mevoraHourHeadline": "Bu saatin Compatibility Challenge'ı",
   "mevoraHourMessage": "Bu saatin Compatibility Challenge'ına katıl ve benzer cevap verenlerle eşleş.",
   "mevoraHourJoin": "Challenge'a Katıl",
+  "mevoraHourJoinNow": "Şimdi Katıl",
+  "mevoraHourLiveBadge": "MEVORA HOUR — CANLI",
+  "mevoraHourLiveTitle": "{hour}:00 Compatibility Hour başladı",
+  "@mevoraHourLiveTitle": {
+    "placeholders": {
+      "hour": { "type": "String" }
+    }
+  },
+  "mevoraHourUpcomingTitle": "{hour}:00 MEVORA HOUR",
+  "@mevoraHourUpcomingTitle": {
+    "placeholders": {
+      "hour": { "type": "String" }
+    }
+  },
+  "mevoraHourUpcomingBody": "Bir sonraki Compatibility Hour yaklaşıyor. Bu saatte diğer aktif kullanıcılarla uyumluluğunu keşfet.",
+  "mevoraHourUpcomingCountdown": "{countdown} sonra başlıyor",
+  "@mevoraHourUpcomingCountdown": {
+    "placeholders": {
+      "countdown": { "type": "String" }
+    }
+  },
+  "mevoraHourJoinedTitle": "Bu saatin Challenge'ına katıldın",
+  "mevoraHourJoinedBody": "Uyumluluk için soruları yanıtla.",
+  "mevoraHourAnsweredTitle": "Cevapların kaydedildi",
+  "mevoraHourAnsweredBody": "Diğer katılımcıların cevapları bekleniyor. Bu saat tamamlanınca uyumlulukların gösterilecek.",
+  "mevoraHourResultTitle": "Bu saatte keşfettiğin uyumluluklar",
+  "mevoraHourResultBody": "Bu Mevora Hour'da benzer cevap veren kişiler.",
+  "mevoraHourEndedTitle": "{hour}:00 Mevora Hour sona erdi",
+  "@mevoraHourEndedTitle": {
+    "placeholders": {
+      "hour": { "type": "String" }
+    }
+  },
+  "mevoraHourEndedBody": "Bir sonraki Compatibility Hour: {hour}:00",
+  "@mevoraHourEndedBody": {
+    "placeholders": {
+      "hour": { "type": "String" }
+    }
+  },
+  "mevoraHourRemindMe": "Bana Hatırlat",
+  "mevoraHourReminderOn": "Hatırlatıcı açık",
+  "mevoraHourReminderSaved": "Mevora Hour başlayınca seni bilgilendireceğiz.",
+  "mevoraHourReminderNeedPermission": "Mevora Hour hatırlatması için bildirim izni gerekli.",
+  "mevoraHourReminderNeedSignIn": "Hatırlatıcı için giriş yap.",
+  "mevoraHourRemindersSetting": "Mevora Hour hatırlatıcıları",
+  "mevoraHourRemindersSettingSubtitle": "Her Compatibility Hour açılınca isteğe bağlı bildirim (Europe/Istanbul).",
   "mevoraHourCountdown": "{countdown} kaldı",
   "@mevoraHourCountdown": {
     "placeholders": {

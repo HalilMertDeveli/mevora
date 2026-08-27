@@ -846,6 +846,52 @@
   "mevoraHourHeadline": "This hour's Compatibility Challenge",
   "mevoraHourMessage": "Join this hour's Compatibility Challenge and meet people who answered like you.",
   "mevoraHourJoin": "Join the Challenge",
+  "mevoraHourJoinNow": "Join now",
+  "mevoraHourLiveBadge": "MEVORA HOUR — LIVE",
+  "mevoraHourLiveTitle": "{hour}:00 Compatibility Hour is live",
+  "@mevoraHourLiveTitle": {
+    "placeholders": {
+      "hour": { "type": "String" }
+    }
+  },
+  "mevoraHourUpcomingTitle": "{hour}:00 MEVORA HOUR",
+  "@mevoraHourUpcomingTitle": {
+    "placeholders": {
+      "hour": { "type": "String" }
+    }
+  },
+  "mevoraHourUpcomingBody": "The next Compatibility Hour is approaching. Discover compatibility with other active users.",
+  "mevoraHourUpcomingCountdown": "Starts in {countdown}",
+  "@mevoraHourUpcomingCountdown": {
+    "placeholders": {
+      "countdown": { "type": "String" }
+    }
+  },
+  "mevoraHourJoinedTitle": "You're in this hour's Challenge",
+  "mevoraHourJoinedBody": "Answer the questions to join this Compatibility Hour.",
+  "mevoraHourAnsweredTitle": "Answers saved",
+  "mevoraHourAnsweredBody": "Waiting for other participants. We'll show your compatibility when this hour completes.",
+  "mevoraHourResultTitle": "Compatibilities from this hour",
+  "mevoraHourResultBody": "People who answered like you in this Mevora Hour.",
+  "mevoraHourEndedTitle": "{hour}:00 Mevora Hour ended",
+  "@mevoraHourEndedTitle": {
+    "placeholders": {
+      "hour": { "type": "String" }
+    }
+  },
+  "mevoraHourEndedBody": "Next Compatibility Hour: {hour}:00",
+  "@mevoraHourEndedBody": {
+    "placeholders": {
+      "hour": { "type": "String" }
+    }
+  },
+  "mevoraHourRemindMe": "Remind me",
+  "mevoraHourReminderOn": "Reminder on",
+  "mevoraHourReminderSaved": "We'll notify you when Mevora Hour starts.",
+  "mevoraHourReminderNeedPermission": "Enable notifications to get Mevora Hour reminders.",
+  "mevoraHourReminderNeedSignIn": "Sign in to set a reminder.",
+  "mevoraHourRemindersSetting": "Mevora Hour reminders",
+  "mevoraHourRemindersSettingSubtitle": "Optional alert when each Compatibility Hour opens (Europe/Istanbul).",
   "mevoraHourCountdown": "{countdown} left",
   "@mevoraHourCountdown": {
     "placeholders": {

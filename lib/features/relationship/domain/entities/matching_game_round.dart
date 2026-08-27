@@ -17,12 +17,41 @@ class MatchingGameRoundInfo {
 
   bool get isOpen => status == 'OPEN' || status == 'COLLECTING';
 
+  bool get isCompleted => status == 'COMPLETED' || status == 'MATCHING';
+
   Duration get timeUntilClose {
     final remain = closesAtMs - serverNowMs;
     if (remain <= 0) {
       return Duration.zero;
     }
     return Duration(milliseconds: remain);
+  }
+
+  /// Time until the next Istanbul hour boundary (same as close while LIVE).
+  Duration get timeUntilNextRound {
+    final remain = nextRoundAtMs - serverNowMs;
+    if (remain <= 0) {
+      return Duration.zero;
+    }
+    return Duration(milliseconds: remain);
+  }
+
+  /// Hour digits from round id `YYYYMMDDHH` (Istanbul wall clock).
+  String? get displayHour {
+    if (roundId.length < 10) {
+      return null;
+    }
+    return roundId.substring(roundId.length - 2);
+  }
+
+  /// Next hour label from [nextRoundAtMs] is not derivable without TZ math;
+  /// clients format [displayHour] + 1 mod 24 when teasing the following event.
+  String get nextDisplayHour {
+    final current = int.tryParse(displayHour ?? '');
+    if (current == null) {
+      return '--';
+    }
+    return ((current + 1) % 24).toString().padLeft(2, '0');
   }
 }
 

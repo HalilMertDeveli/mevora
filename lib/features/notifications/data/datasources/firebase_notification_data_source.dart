@@ -43,9 +43,23 @@ class FirebaseNotificationDataSource
     return _settings.doc(uid).set({
       'messageNotifications': prefs.messageNotifications,
       'matchNotifications': prefs.matchNotifications,
+      'mevoraHourReminders': prefs.mevoraHourReminders,
       'showOnlineStatus': !prefs.hideOnlineStatus,
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    }, SetOptions(merge: true)).then((_) async {
+      final reminderRef = _firestore.doc('mevoraHourReminders/$uid');
+      if (prefs.mevoraHourReminders) {
+        await reminderRef.set({
+          'enabled': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        await reminderRef.set({
+          'enabled': false,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+    });
   }
 
   @override
@@ -95,6 +109,7 @@ class FirebaseNotificationDataSource
     return NotificationPrefs(
       messageNotifications: data['messageNotifications'] as bool? ?? true,
       matchNotifications: data['matchNotifications'] as bool? ?? true,
+      mevoraHourReminders: data['mevoraHourReminders'] as bool? ?? false,
       hideOnlineStatus: data['showOnlineStatus'] == false,
     );
   }

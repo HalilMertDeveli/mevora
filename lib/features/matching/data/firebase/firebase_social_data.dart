@@ -530,6 +530,7 @@ class FirebaseNotificationRepository implements NotificationRepository {
     return NotificationPrefs(
       messageNotifications: data?['messageNotifications'] as bool? ?? true,
       matchNotifications: data?['matchNotifications'] as bool? ?? true,
+      mevoraHourReminders: data?['mevoraHourReminders'] as bool? ?? false,
       hideOnlineStatus: data?['hideOnlineStatus'] as bool? ?? false,
     );
   }
@@ -548,11 +549,21 @@ class FirebaseNotificationRepository implements NotificationRepository {
   }
 
   @override
-  Future<void> savePrefs(String uid, NotificationPrefs prefs) {
-    return _db.doc(FirestorePaths.notificationSettings(uid)).set({
+  Future<void> savePrefs(String uid, NotificationPrefs prefs) async {
+    await _db.doc(FirestorePaths.notificationSettings(uid)).set({
       'messageNotifications': prefs.messageNotifications,
       'matchNotifications': prefs.matchNotifications,
+      'mevoraHourReminders': prefs.mevoraHourReminders,
       'hideOnlineStatus': prefs.hideOnlineStatus,
+    }, SetOptions(merge: true));
+    // Mirrored for CF sendUserPush (reads userSettings + legacy settings).
+    await _db.doc('userSettings/$uid').set({
+      'mevoraHourReminders': prefs.mevoraHourReminders,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await _db.doc('mevoraHourReminders/$uid').set({
+      'enabled': prefs.mevoraHourReminders,
+      'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
 

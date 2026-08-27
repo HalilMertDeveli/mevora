@@ -9,6 +9,10 @@ import 'package:mevora/features/discovery/presentation/pages/discovery_profile_d
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
 import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
+import 'package:mevora/features/relationship/presentation/widgets/mevora_hour_event_card.dart';
+import 'package:mevora/features/relationship/domain/entities/mevora_hour_phase.dart';
+import 'package:mevora/core/di/social_scope.dart';
+import 'package:mevora/features/notifications/data/datasources/firebase_messaging_data_source.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
@@ -179,11 +183,14 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
           )
         else if (showPrompt && controller.waitingForRoundResult)
           Positioned.fill(
-            child: MatchingGameWaitingCard(
-              onDismiss: () {
-                // Keep polling; only hide overlay so Discover stays usable.
-                controller.acknowledgeWaitingOverlay();
-              },
+            child: MevoraHourEventCard(
+              phase: MevoraHourPhase.answered,
+              hourLabel: controller.hourlyRoundHour,
+              nextHourLabel: controller.nextMevoraHourLabel,
+              countdown: controller.hourlyCountdownRemaining,
+              reminderEnabled: controller.mevoraHourReminderEnabled,
+              onPrimary: controller.acknowledgeWaitingOverlay,
+              onRemind: () {},
             ),
           )
         else if (showPrompt && question != null)
@@ -210,6 +217,27 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
               },
             ),
           )
+        else if (showPrompt &&
+            controller.isOfferVisible &&
+            controller.isHourlyOffer)
+          Positioned.fill(
+            child: MevoraHourEventCard(
+              phase: MevoraHourPhase.live,
+              hourLabel: controller.hourlyRoundHour,
+              nextHourLabel: controller.nextMevoraHourLabel,
+              countdown: controller.hourlyCountdownRemaining,
+              reminderEnabled: controller.mevoraHourReminderEnabled,
+              onPrimary: () {
+                unawaited(controller.acceptOffer());
+              },
+              onRemind: () {
+                unawaited(_enableMevoraHourReminder(context, controller));
+              },
+              onDismiss: () {
+                unawaited(controller.dismissOffer());
+              },
+            ),
+          )
         else if (showPrompt && controller.isOfferVisible)
           Positioned.fill(
             child: RelationshipTestOfferCard(
@@ -220,43 +248,69 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
                 unawaited(controller.dismissOffer());
               },
               isInitial: controller.isInitialOffer,
-              roundHour: controller.isHourlyOffer
-                  ? controller.hourlyRoundHour
-                  : null,
-              countdown: controller.isHourlyOffer
-                  ? controller.hourlyCountdownRemaining
-                  : null,
             ),
           )
         else if (showPrompt &&
-            controller.hourlyUnavailable &&
-            !controller.needsInitialPersonalityTest)
+            (controller.mevoraHourPhase == MevoraHourPhase.upcoming ||
+                controller.mevoraHourPhase == MevoraHourPhase.ended))
           Positioned(
             left: AppSpacing.md,
             right: AppSpacing.md,
             bottom: AppSpacing.lg,
-            child: MevoraCard(
-              emphasis: MevoraCardEmphasis.elevated,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    AppLocalizations.of(context).mevoraHourUnavailableTitle,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    AppLocalizations.of(context).mevoraHourUnavailableMessage,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
+            child: MevoraHourEventCard(
+              phase: controller.mevoraHourPhase,
+              compact: true,
+              hourLabel: controller.mevoraHourPhase == MevoraHourPhase.ended
+                  ? controller.hourlyRoundHour
+                  : controller.nextMevoraHourLabel ??
+                      controller.hourlyRoundHour,
+              nextHourLabel: controller.nextMevoraHourLabel,
+              countdown: controller.hourlyCountdownRemaining,
+              reminderEnabled: controller.mevoraHourReminderEnabled,
+              onPrimary: controller.openLiveMevoraHour,
+              onRemind: () {
+                unawaited(_enableMevoraHourReminder(context, controller));
+              },
             ),
           ),
       ],
     );
   }
+}
+
+Future<void> _enableMevoraHourReminder(
+  BuildContext context,
+  RelationshipController controller,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final social = SocialScope.maybeOf(context);
+  final uid = social?.uidSource.currentUid;
+  if (social == null || uid == null) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.mevoraHourReminderNeedSignIn)),
+    );
+    return;
+  }
+  final perm = await FirebaseMessagingDataSource().requestPermission();
+  if (!context.mounted) {
+    return;
+  }
+  if (perm.failureOrNull != null) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.mevoraHourReminderNeedPermission)),
+    );
+    return;
+  }
+  final prefs = await social.notificationRepository.loadPrefs(uid);
+  await social.notificationRepository.savePrefs(
+    uid,
+    prefs.copyWith(mevoraHourReminders: true),
+  );
+  controller.setMevoraHourReminderEnabled(true);
+  messenger.showSnackBar(
+    SnackBar(content: Text(l10n.mevoraHourReminderSaved)),
+  );
 }
 
 class RelationshipQuestionCard extends StatelessWidget {

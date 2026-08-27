@@ -2022,6 +2022,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mevoraHourJoin => 'Join the Challenge';
 
   @override
+  String get mevoraHourJoinNow => 'Join now';
+
+  @override
+  String get mevoraHourLiveBadge => 'MEVORA HOUR — LIVE';
+
+  @override
+  String mevoraHourLiveTitle(String hour) {
+    return '$hour:00 Compatibility Hour is live';
+  }
+
+  @override
+  String mevoraHourUpcomingTitle(String hour) {
+    return '$hour:00 MEVORA HOUR';
+  }
+
+  @override
+  String get mevoraHourUpcomingBody =>
+      'The next Compatibility Hour is approaching. Discover compatibility with other active users.';
+
+  @override
+  String mevoraHourUpcomingCountdown(String countdown) {
+    return 'Starts in $countdown';
+  }
+
+  @override
+  String get mevoraHourJoinedTitle => 'You\'re in this hour\'s Challenge';
+
+  @override
+  String get mevoraHourJoinedBody =>
+      'Answer the questions to join this Compatibility Hour.';
+
+  @override
+  String get mevoraHourAnsweredTitle => 'Answers saved';
+
+  @override
+  String get mevoraHourAnsweredBody =>
+      'Waiting for other participants. We\'ll show your compatibility when this hour completes.';
+
+  @override
+  String get mevoraHourResultTitle => 'Compatibilities from this hour';
+
+  @override
+  String get mevoraHourResultBody =>
+      'People who answered like you in this Mevora Hour.';
+
+  @override
+  String mevoraHourEndedTitle(String hour) {
+    return '$hour:00 Mevora Hour ended';
+  }
+
+  @override
+  String mevoraHourEndedBody(String hour) {
+    return 'Next Compatibility Hour: $hour:00';
+  }
+
+  @override
+  String get mevoraHourRemindMe => 'Remind me';
+
+  @override
+  String get mevoraHourReminderOn => 'Reminder on';
+
+  @override
+  String get mevoraHourReminderSaved =>
+      'We\'ll notify you when Mevora Hour starts.';
+
+  @override
+  String get mevoraHourReminderNeedPermission =>
+      'Enable notifications to get Mevora Hour reminders.';
+
+  @override
+  String get mevoraHourReminderNeedSignIn => 'Sign in to set a reminder.';
+
+  @override
+  String get mevoraHourRemindersSetting => 'Mevora Hour reminders';
+
+  @override
+  String get mevoraHourRemindersSettingSubtitle =>
+      'Optional alert when each Compatibility Hour opens (Europe/Istanbul).';
+
+  @override
   String mevoraHourCountdown(String countdown) {
     return '$countdown left';
   }

@@ -1,5 +1,6 @@
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/relationship/domain/entities/matching_game_round.dart';
+import 'package:mevora/features/relationship/domain/entities/mevora_hour_phase.dart';
 import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/features/relationship/domain/services/relationship_question_sets.dart';
@@ -43,6 +44,9 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   var _hourlyBackendReady = true;
   var _hourlyUnavailable = false;
   RelationshipOfferKind? _offerKind;
+  var _liveDismissed = false;
+  String? _completedHourlyRoundId;
+  var _mevoraHourReminderEnabled = false;
 
   Timer? _timer;
   Timer? _heartbeat;
@@ -112,28 +116,81 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   RelationshipOfferKind? get offerKind => _offerKind;
   bool get isInitialOffer => _offerKind == RelationshipOfferKind.initial;
   bool get isHourlyOffer => _offerKind == RelationshipOfferKind.hourly;
+  bool get mevoraHourReminderEnabled => _mevoraHourReminderEnabled;
   MatchingGameRoundInfo? get roundInfo => _roundInfo;
   String? get activeRoundId => _activeRoundId;
 
+  /// Derived Mevora Hour EVENT phase for Discover chrome.
+  MevoraHourPhase get mevoraHourPhase {
+    if (!_hourlyGlobalMatchingGame) {
+      return MevoraHourPhase.none;
+    }
+    if (needsInitialPersonalityTest || isInitialOffer) {
+      return MevoraHourPhase.none;
+    }
+    if (isResultVisible &&
+        (_offerKind == RelationshipOfferKind.hourly ||
+            _completedHourlyRoundId != null)) {
+      return MevoraHourPhase.result;
+    }
+    if (waitingForRoundResult) {
+      return MevoraHourPhase.answered;
+    }
+    if (currentQuestion != null &&
+        _offerKind == RelationshipOfferKind.hourly) {
+      return MevoraHourPhase.joined;
+    }
+    if (isOfferVisible && isHourlyOffer) {
+      return MevoraHourPhase.live;
+    }
+    final round = _roundInfo;
+    if (round == null) {
+      return _hourlyUnavailable ? MevoraHourPhase.upcoming : MevoraHourPhase.none;
+    }
+    if (_completedHourlyRoundId == round.roundId) {
+      return MevoraHourPhase.ended;
+    }
+    if (_liveDismissed || _hourlyUnavailable || !round.isOpen) {
+      return MevoraHourPhase.upcoming;
+    }
+    return MevoraHourPhase.none;
+  }
+
+  bool get showsMevoraHourChrome =>
+      mevoraHourPhase == MevoraHourPhase.upcoming ||
+      mevoraHourPhase == MevoraHourPhase.ended ||
+      mevoraHourPhase == MevoraHourPhase.live;
+
   /// Istanbul round hour digits for UI (e.g. "14"), from server round id.
   String? get hourlyRoundHour {
-    if (!isHourlyOffer && !hourlyGlobalMatchingGame) {
+    if (!isHourlyOffer &&
+        mevoraHourPhase == MevoraHourPhase.none &&
+        !hourlyGlobalMatchingGame) {
       return null;
     }
-    final id = _activeRoundId ?? _roundInfo?.roundId;
-    if (id == null || id.length < 10) {
-      return null;
-    }
-    return id.substring(id.length - 2);
+    return _roundInfo?.displayHour ??
+        (() {
+          final id = _activeRoundId;
+          if (id == null || id.length < 10) {
+            return null;
+          }
+          return id.substring(id.length - 2);
+        })();
   }
+
+  String? get nextMevoraHourLabel => _roundInfo?.nextDisplayHour;
 
   Duration? get hourlyCountdownRemaining {
     final round = _roundInfo;
-    if (!isHourlyOffer && !hourlyGlobalMatchingGame) {
-      return null;
-    }
     if (round == null) {
       return null;
+    }
+    if (mevoraHourPhase == MevoraHourPhase.upcoming ||
+        mevoraHourPhase == MevoraHourPhase.ended) {
+      return round.timeUntilNextRound;
+    }
+    if (isHourlyOffer || mevoraHourPhase == MevoraHourPhase.live) {
+      return round.timeUntilClose;
     }
     return round.timeUntilClose;
   }
@@ -325,15 +382,39 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     if (!_offerVisible) {
       return;
     }
-    _log('Offer dismissed');
+    _log('Offer dismissed ($_offerKind)');
     _offerVisible = false;
     _sessionLocked = false;
     _elapsed = Duration.zero;
+    if (_offerKind == RelationshipOfferKind.hourly) {
+      _liveDismissed = true;
+      notifyListeners();
+      return;
+    }
     await _applyCooldown(matchTaken: false);
     notifyListeners();
     if (_discoveryVisible) {
       _armTimer();
     }
+  }
+
+  void setMevoraHourReminderEnabled(bool enabled) {
+    _mevoraHourReminderEnabled = enabled;
+    notifyListeners();
+  }
+
+  /// Re-open LIVE join CTA from an upcoming/ended banner.
+  void openLiveMevoraHour() {
+    if (_roundInfo == null || !_roundInfo!.isOpen) {
+      unawaited(_syncHourlyRoundOffer());
+      return;
+    }
+    if (_completedHourlyRoundId == _roundInfo!.roundId) {
+      return;
+    }
+    _liveDismissed = false;
+    _offerKind = RelationshipOfferKind.hourly;
+    _triggerOffer();
   }
 
   Future<void> continueMatchingEvents() async {
@@ -457,13 +538,20 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
 
   /// Closed result without taking the match → 3 min, then survey can return.
   Future<void> dismissResults() async {
+    if (_offerKind == RelationshipOfferKind.hourly ||
+        _activeRoundId != null) {
+      _completedHourlyRoundId = _activeRoundId ?? _roundInfo?.roundId;
+      _liveDismissed = true;
+    }
     _resultsVisible = false;
     _emptyResults = false;
     _sessionLocked = false;
     _testResults = const [];
     _lastError = null;
     _elapsed = Duration.zero;
-    await _applyCooldown(matchTaken: false);
+    if (_offerKind != RelationshipOfferKind.hourly) {
+      await _applyCooldown(matchTaken: false);
+    }
     notifyListeners();
     if (_discoveryVisible) {
       _armTimer();
@@ -472,13 +560,20 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
 
   /// User took the relationship match (open chat) → 30 min survey break.
   Future<void> acceptMatchResult() async {
+    if (_offerKind == RelationshipOfferKind.hourly ||
+        _activeRoundId != null) {
+      _completedHourlyRoundId = _activeRoundId ?? _roundInfo?.roundId;
+      _liveDismissed = true;
+    }
     _resultsVisible = false;
     _emptyResults = false;
     _sessionLocked = false;
     _testResults = const [];
     _lastError = null;
     _elapsed = Duration.zero;
-    await _applyCooldown(matchTaken: true);
+    if (_offerKind != RelationshipOfferKind.hourly) {
+      await _applyCooldown(matchTaken: true);
+    }
     notifyListeners();
     if (_discoveryVisible) {
       _armTimer();
@@ -647,6 +742,11 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     }
     _roundInfo = round;
     _activeRoundId = round.roundId;
+    if (_completedHourlyRoundId != null &&
+        _completedHourlyRoundId != round.roundId) {
+      _completedHourlyRoundId = null;
+      _liveDismissed = false;
+    }
     notifyListeners();
     if (!round.isOpen) {
       _log('Mevora Hour round ${round.roundId} not open (${round.status})');
@@ -667,6 +767,15 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       return;
     }
     _log('Mevora Hour offer for ${round.roundId}');
+    if (_completedHourlyRoundId == round.roundId) {
+      _liveDismissed = true;
+      notifyListeners();
+      return;
+    }
+    if (_liveDismissed) {
+      notifyListeners();
+      return;
+    }
     _offerKind = RelationshipOfferKind.hourly;
     _triggerOffer();
   }

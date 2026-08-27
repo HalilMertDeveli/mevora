@@ -35,14 +35,22 @@ Ranking: exact aligned → avg distance → score → uid tie-break.
 Matching: top-K edges (default 20) + greedy 1:1 (deterministic).
 Repeat pairs from the predecessor round get a score penalty.
 
-## Flutter
+## Flutter EVENT experience
 
-- `needsInitialPersonalityTest` → immediate initial offer (no dwell).
-- After `matchingEventCount >= 1` → Mevora Hour sync via `getMatchingGameRound`.
-- `legacyDwellOffersEnabled = false` in production; tests may re-enable for
-  legacy regression only.
-- Hourly CF not-found/unavailable → “next Compatibility Hour soon” state,
-  **never** 3-minute dwell.
+Mevora Hour is a **hourly Compatibility Event**, not a dwell survey:
+
+| Phase | Meaning |
+|-------|---------|
+| UPCOMING | Next Istanbul hour teased + optional Remind me |
+| LIVE | Current round OPEN — Join now |
+| JOINED / answering | In-challenge questions |
+| ANSWERED | Waiting for round match |
+| RESULT | Compatibilities from this hour |
+| ENDED | Hour finished — tease next + Remind me |
+
+Reminders are **opt-in only** (`mevoraHourReminders` + `mevoraHourReminders/{uid}`).
+`matchingGameHourlyTick` fans out `FcmTypes.mevoraHourLive` via existing `sendUserPush`.
+Pre-registration is never required to join.
 
 Discover swipe and messaging continue independently.
 

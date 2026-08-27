@@ -16,6 +16,7 @@ import {
   normalizeAnswerId,
   setIdFor,
 } from "./relationshipCompatibility.js";
+import {FcmTypes, sendUserPush} from "./notifications.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -333,6 +334,10 @@ export const matchingGameHourlyTick = onSchedule(
     const currentId = istanbulRoundId(now);
     const previousId = previousIstanbulRoundId(now);
     await ensureRoundOpen(currentId, now);
+    // Opt-in reminders only — never required to join the hour.
+    await notifyMevoraHourReminders(currentId).catch((error: unknown) => {
+      gameLog("reminder fanout failed", String(error));
+    });
     if (previousId === currentId) return;
     const prev = await roundRef(previousId).get();
     if (!prev.exists) {
@@ -345,6 +350,40 @@ export const matchingGameHourlyTick = onSchedule(
     }
   },
 );
+
+async function notifyMevoraHourReminders(roundId: string): Promise<void> {
+  const hour = roundId.length >= 2 ? roundId.slice(-2) : "";
+  const snap = await db
+    .collection("mevoraHourReminders")
+    .where("enabled", "==", true)
+    .limit(400)
+    .get();
+  if (snap.empty) {
+    gameLog(`no reminder subscribers for ${roundId}`);
+    return;
+  }
+  gameLog(`notifying ${snap.size} Mevora Hour reminder subscribers for ${roundId}`);
+  const bodyTr = `${hour}:00 Compatibility Hour başladı. Uyumluluğunu keşfet.`;
+  const bodyEn = `${hour}:00 Compatibility Hour started. Discover your compatibility.`;
+  await Promise.all(
+    snap.docs.map(async (doc) => {
+      const settings = await db.doc(`userSettings/${doc.id}`).get();
+      const lang = String(settings.data()?.languageCode ?? "en")
+        .toLowerCase()
+        .startsWith("tr")
+        ? "tr"
+        : "en";
+      await sendUserPush({
+        uid: doc.id,
+        type: FcmTypes.mevoraHourLive,
+        prefKey: "mevoraHourReminders",
+        data: {roundId},
+        bodyOverride: lang === "tr" ? bodyTr : bodyEn,
+        idempotencyKey: `mevoraHourLive:${roundId}:${doc.id}`,
+      });
+    }),
+  );
+}
 
 function nextIstanbulHourMs(now: Date): number {
   const parts = new Intl.DateTimeFormat("en-US", {

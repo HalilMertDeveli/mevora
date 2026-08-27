@@ -28,6 +28,9 @@ abstract final class PushRouteResolver {
       case 'boostActivated':
       case 'boostExpired':
         return AppRoutes.boost;
+      case 'mevoraHourLive':
+      case 'mevora_hour_live':
+        return AppRoutes.discovery;
       default:
         return null;
     }

@@ -20,6 +20,7 @@ export const FcmTypes = {
   incomingLike: "incomingLike",
   boostActivated: "boostActivated",
   boostExpired: "boostExpired",
+  mevoraHourLive: "mevoraHourLive",
 } as const;
 
 export type FcmType = (typeof FcmTypes)[keyof typeof FcmTypes];
@@ -29,6 +30,7 @@ export type PushPrefKey =
   | "matchNotifications"
   | "callNotifications"
   | "likeNotifications"
+  | "mevoraHourReminders"
   | "notificationsEnabled";
 
 const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: string; body: string}}> = {
@@ -68,6 +70,10 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
     tr: {title: "Mevora", body: "Boost süresi doldu"},
     en: {title: "Mevora", body: "Your Boost has ended"},
   },
+  mevoraHourLive: {
+    tr: {title: "🧬 Mevora Hour başlıyor", body: "Compatibility Hour başladı. Uyumluluğunu keşfet."},
+    en: {title: "🧬 Mevora Hour is live", body: "Compatibility Hour started. Discover your compatibility."},
+  },
 };
 
 export async function collectDeviceTokens(uid: string): Promise<string[]> {
@@ -99,6 +105,10 @@ export async function sendUserPush(options: {
   ]);
   const prefs = {...(settings.data() ?? {}), ...(legacyPref.data() ?? {})};
   if (prefs.notificationsEnabled === false) {
+    return;
+  }
+  // Mevora Hour reminders are opt-in (default off).
+  if (options.prefKey === "mevoraHourReminders" && prefs.mevoraHourReminders !== true) {
     return;
   }
   if (prefs[options.prefKey] === false) {
@@ -153,6 +163,9 @@ function routeFor(type: FcmType, data: Record<string, string>): string | null {
   }
   if ((type === "boostActivated" || type === "boostExpired")) {
     return "/boost";
+  }
+  if (type === "mevoraHourLive") {
+    return "/discovery";
   }
   if (data.matchId) {
     return `/chat/${data.matchId}`;

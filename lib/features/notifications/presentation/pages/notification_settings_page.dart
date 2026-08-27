@@ -60,6 +60,19 @@ class NotificationSettingsPage extends StatelessWidget {
                 },
               ),
               SwitchListTile(
+                title: Text(l10n.mevoraHourRemindersSetting),
+                subtitle: Text(l10n.mevoraHourRemindersSettingSubtitle),
+                value: prefs.mevoraHourReminders,
+                onChanged: (value) {
+                  unawaited(
+                    social.notificationRepository.savePrefs(
+                      uid,
+                      prefs.copyWith(mevoraHourReminders: value),
+                    ),
+                  );
+                },
+              ),
+              SwitchListTile(
                 title: Text(l10n.hideOnlineStatus),
                 value: prefs.hideOnlineStatus,
                 onChanged: (value) {

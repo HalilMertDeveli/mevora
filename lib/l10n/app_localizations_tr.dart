@@ -2016,6 +2016,85 @@ class AppLocalizationsTr extends AppLocalizations {
   String get mevoraHourJoin => 'Challenge\'a Katıl';
 
   @override
+  String get mevoraHourJoinNow => 'Şimdi Katıl';
+
+  @override
+  String get mevoraHourLiveBadge => 'MEVORA HOUR — CANLI';
+
+  @override
+  String mevoraHourLiveTitle(String hour) {
+    return '$hour:00 Compatibility Hour başladı';
+  }
+
+  @override
+  String mevoraHourUpcomingTitle(String hour) {
+    return '$hour:00 MEVORA HOUR';
+  }
+
+  @override
+  String get mevoraHourUpcomingBody =>
+      'Bir sonraki Compatibility Hour yaklaşıyor. Bu saatte diğer aktif kullanıcılarla uyumluluğunu keşfet.';
+
+  @override
+  String mevoraHourUpcomingCountdown(String countdown) {
+    return '$countdown sonra başlıyor';
+  }
+
+  @override
+  String get mevoraHourJoinedTitle => 'Bu saatin Challenge\'ına katıldın';
+
+  @override
+  String get mevoraHourJoinedBody => 'Uyumluluk için soruları yanıtla.';
+
+  @override
+  String get mevoraHourAnsweredTitle => 'Cevapların kaydedildi';
+
+  @override
+  String get mevoraHourAnsweredBody =>
+      'Diğer katılımcıların cevapları bekleniyor. Bu saat tamamlanınca uyumlulukların gösterilecek.';
+
+  @override
+  String get mevoraHourResultTitle => 'Bu saatte keşfettiğin uyumluluklar';
+
+  @override
+  String get mevoraHourResultBody =>
+      'Bu Mevora Hour\'da benzer cevap veren kişiler.';
+
+  @override
+  String mevoraHourEndedTitle(String hour) {
+    return '$hour:00 Mevora Hour sona erdi';
+  }
+
+  @override
+  String mevoraHourEndedBody(String hour) {
+    return 'Bir sonraki Compatibility Hour: $hour:00';
+  }
+
+  @override
+  String get mevoraHourRemindMe => 'Bana Hatırlat';
+
+  @override
+  String get mevoraHourReminderOn => 'Hatırlatıcı açık';
+
+  @override
+  String get mevoraHourReminderSaved =>
+      'Mevora Hour başlayınca seni bilgilendireceğiz.';
+
+  @override
+  String get mevoraHourReminderNeedPermission =>
+      'Mevora Hour hatırlatması için bildirim izni gerekli.';
+
+  @override
+  String get mevoraHourReminderNeedSignIn => 'Hatırlatıcı için giriş yap.';
+
+  @override
+  String get mevoraHourRemindersSetting => 'Mevora Hour hatırlatıcıları';
+
+  @override
+  String get mevoraHourRemindersSettingSubtitle =>
+      'Her Compatibility Hour açılınca isteğe bağlı bildirim (Europe/Istanbul).';
+
+  @override
   String mevoraHourCountdown(String countdown) {
     return '$countdown kaldı';
   }

@@ -338,7 +338,11 @@ test("compatibility baseline overallScore is 80 and has no humorScore field", ()
 });
 
 test("youtube mapper builds embed-only normalized content", () => {
-  const {mapYoutubeItem, youtubeEmbedUrl} = require("../lib/humor/youtubeSource.js");
+  const {
+    mapYoutubeItem,
+    youtubeEmbedUrl,
+    normalizedToSourceItem,
+  } = require("../lib/humor/youtubeSource.js");
   const mapped = mapYoutubeItem(
     {
       id: {videoId: "abc123XYZ12"},
@@ -358,6 +362,15 @@ test("youtube mapper builds embed-only normalized content", () => {
   assert.equal(mapped.embedUrl, youtubeEmbedUrl("abc123XYZ12"));
   assert.equal(mapped.attributionRequired, true);
   assert.equal(mapped.category, "absurd");
+  const source = normalizedToSourceItem(mapped);
+  assert.ok(source);
+  assert.equal(source.media.downloadUrl, mapped.thumbnailUrl);
+  assert.equal(source.media.embedUrl, mapped.embedUrl);
+  assert.equal(source.media.mimeHint, "image/jpeg");
+  assert.equal(
+    String(source.media.downloadUrl).includes("youtube.com/embed"),
+    false,
+  );
   const nsfw = mapYoutubeItem(
     {id: {videoId: "bad"}, snippet: {title: "xxx nsfw clip"}},
     "en",
@@ -375,13 +388,77 @@ test("youtube embed host is allowlisted for validation", () => {
       language: "tr",
       sourceUrl: "https://www.youtube.com/watch?v=abc123XYZ12",
       media: {
-        downloadUrl: "https://www.youtube.com/embed/abc123XYZ12",
+        downloadUrl: "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg",
         embedUrl: "https://www.youtube.com/embed/abc123XYZ12",
         thumbUrl: "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg",
+        mimeHint: "image/jpeg",
       },
     }).ok,
     true,
   );
+});
+
+test("youtube api key placeholder is rejected", () => {
+  const prev = process.env.YOUTUBE_DATA_API_KEY;
+  try {
+    process.env.YOUTUBE_DATA_API_KEY = "UNSET_PLACEHOLDER";
+    const {resolveYoutubeDataApiKey} = require("../lib/humor/humorApiConfig.js");
+    assert.equal(resolveYoutubeDataApiKey(), null);
+    process.env.YOUTUBE_DATA_API_KEY = "short";
+    assert.equal(resolveYoutubeDataApiKey(), null);
+  } finally {
+    if (prev === undefined) {
+      delete process.env.YOUTUBE_DATA_API_KEY;
+    } else {
+      process.env.YOUTUBE_DATA_API_KEY = prev;
+    }
+  }
+});
+
+test("toFeedSafeContent exposes provider sourceId", () => {
+  const {toFeedSafeContent, parseHumorContent} = require(
+    "../lib/humor/contentRepository.js",
+  );
+  const parsed = parseHumorContent("ext_youtube_abc123XYZ12", {
+    type: "video",
+    language: "tr",
+    category: "meme",
+    humorTags: [],
+    humorVector: {},
+    media: {
+      downloadUrl: "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/abc123XYZ12",
+      attributionRequired: true,
+    },
+    safetyStatus: "approved",
+    safetyFlags: {},
+    source: {type: "licensed_api", provider: "youtube", licenseRef: null},
+    active: true,
+    stats: {viewCount: 0, ratingCount: 0, avgRating: 0},
+  });
+  assert.ok(parsed);
+  const safe = toFeedSafeContent(parsed);
+  assert.equal(safe.sourceId, "abc123XYZ12");
+  assert.equal(safe.provider, "youtube");
+});
+
+test("provider error classifier maps key/access failures", () => {
+  const {classifyProviderFetchError} = require(
+    "../lib/humor/providerOrchestrator.js",
+  );
+  assert.equal(
+    classifyProviderFetchError("youtube-keyInvalid"),
+    "invalid_api_key",
+  );
+  assert.equal(
+    classifyProviderFetchError("youtube-accessNotConfigured"),
+    "invalid_api_key",
+  );
+  assert.equal(
+    classifyProviderFetchError("youtube-quotaExceeded"),
+    "rate_limit",
+  );
+  assert.equal(classifyProviderFetchError("youtube-empty"), "empty_result");
 });
 
 test("tenor provider is disabled", () => {

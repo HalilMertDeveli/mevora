@@ -95,9 +95,14 @@ export function mapYoutubeItem(
 export function normalizedToSourceItem(
   item: NormalizedHumorContent,
 ): HumorSourceItem | null {
-  // YouTube: stream via embed only — use embed as media URL marker for ingest.
-  const downloadUrl = item.contentUrl || item.embedUrl;
-  if (!downloadUrl) {
+  // YouTube: embed/player only — never invent an MP4 download URL.
+  // Use thumbnail as downloadUrl for validation/poster; clients play via embedUrl.
+  const embedUrl = item.embedUrl;
+  const poster = item.thumbnailUrl || item.contentUrl;
+  if (!embedUrl || !item.providerContentId) {
+    return null;
+  }
+  if (!poster) {
     return null;
   }
   return {
@@ -108,13 +113,13 @@ export function normalizedToSourceItem(
     title: item.title,
     tags: item.tags,
     media: {
-      downloadUrl,
+      downloadUrl: poster,
       thumbUrl: item.thumbnailUrl,
       previewUrl: item.thumbnailUrl,
       durationMs: item.durationMs,
       textBody: item.title,
-      mimeHint: item.type === "gif" ? "image/gif" : "video/mp4",
-      embedUrl: item.embedUrl,
+      mimeHint: "image/jpeg",
+      embedUrl,
       attributionRequired: item.attributionRequired,
     },
   };
@@ -178,7 +183,23 @@ export class YoutubeHumorSource implements HumorContentSource {
     }
 
     if (res.status === 403 || res.status === 401) {
-      throw new Error("youtube-invalid-or-forbidden");
+      let reason = "forbidden";
+      try {
+        const errBody = (await res.json()) as YoutubeSearchResponse;
+        reason =
+          errBody.error?.errors?.[0]?.reason ??
+          errBody.error?.message ??
+          reason;
+      } catch {
+        // ignore parse failure
+      }
+      if (reason === "quotaExceeded" || reason === "dailyLimitExceeded") {
+        throw new Error("youtube-quotaExceeded");
+      }
+      if (reason === "keyInvalid" || reason === "accessNotConfigured") {
+        throw new Error(`youtube-${reason}`);
+      }
+      throw new Error(`youtube-invalid-or-forbidden:${reason}`);
     }
     if (res.status === 429) {
       throw new Error("youtube-rate-limit");

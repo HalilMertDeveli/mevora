@@ -178,6 +178,40 @@ class MockHumorDataSource implements HumorDataSource {
       thumbUrl: 'https://picsum.photos/seed/mevora-en-1/540/960',
       aspectRatio: 9 / 16,
     ),
+    // Mixed-provider fixtures (keep hc_tr_vid_001 first for existing tests).
+    HumorContent(
+      contentId: 'ext_youtube_dQw4w9WgXcQ',
+      type: HumorContentType.video,
+      language: 'tr',
+      category: HumorCategory.silly,
+      humorTags: ['youtube', 'embed'],
+      textBody: 'YouTube embed fixture for mixed-provider tests.',
+      downloadUrl: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+      thumbUrl: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+      embedUrl:
+          'https://www.youtube.com/embed/dQw4w9WgXcQ?playsinline=1&rel=0&modestbranding=1',
+      sourceId: 'dQw4w9WgXcQ',
+      provider: 'youtube',
+      attributionRequired: true,
+      sourceUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      aspectRatio: 16 / 9,
+    ),
+    HumorContent(
+      contentId: 'ext_giphy_mockMp4Fixture01',
+      type: HumorContentType.video,
+      language: 'tr',
+      category: HumorCategory.meme,
+      humorTags: ['giphy', 'mp4'],
+      textBody: 'Giphy-style MP4 fixture for mixed-provider tests.',
+      downloadUrl:
+          'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.mp4',
+      thumbUrl: 'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
+      sourceId: 'mockMp4Fixture01',
+      provider: 'giphy',
+      attributionRequired: true,
+      sourceUrl: 'https://giphy.com/gifs/3oEjI6SIIHBdRxXI40',
+      aspectRatio: 1,
+    ),
   ];
 
   @override

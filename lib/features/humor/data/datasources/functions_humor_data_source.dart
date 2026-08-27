@@ -151,6 +151,7 @@ class FunctionsHumorDataSource implements HumorDataSource {
               ? null
               : _asDouble(media['aspectRatio']),
           provider: map['provider'] as String?,
+          sourceId: map['sourceId'] as String?,
           attributionRequired:
               map['attributionRequired'] == true ||
               media['attributionRequired'] == true,

@@ -51,7 +51,15 @@ export function isGiphyConfigured(): boolean {
 }
 
 export function resolveYoutubeDataApiKey(): string | null {
-  return readSecret("YOUTUBE_DATA_API_KEY", youtubeDataApiKey);
+  const value = readSecret("YOUTUBE_DATA_API_KEY", youtubeDataApiKey);
+  if (!value) {
+    return null;
+  }
+  // Reject deploy placeholders so live top-up does not call YouTube with junk.
+  if (value === "UNSET_PLACEHOLDER" || value.length < 20) {
+    return null;
+  }
+  return value;
 }
 
 export function isYoutubeConfigured(): boolean {

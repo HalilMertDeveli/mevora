@@ -20,6 +20,8 @@ export const HUMOR_CONTENT_COLLECTION = "humorContent";
 
 export function toFeedSafeContent(doc: HumorContentDoc): HumorFeedItem {
   const media = doc.media ?? {};
+  const provider = doc.source?.provider ?? null;
+  const sourceId = extractProviderSourceId(doc.contentId, provider);
   return {
     contentId: doc.contentId,
     type: doc.type,
@@ -35,13 +37,29 @@ export function toFeedSafeContent(doc: HumorContentDoc): HumorFeedItem {
       embedUrl: media.embedUrl ?? null,
       attributionRequired: media.attributionRequired === true,
     },
-    provider: doc.source?.provider ?? null,
+    provider,
+    sourceId,
     attributionRequired:
       media.attributionRequired === true ||
-      doc.source?.provider === "giphy" ||
-      doc.source?.provider === "youtube",
+      provider === "giphy" ||
+      provider === "youtube",
     sourceUrl: doc.source?.licenseRef ?? null,
   };
+}
+
+/** Prefer `ext_<provider>_<sourceId>` content ids written by ingest. */
+export function extractProviderSourceId(
+  contentId: string,
+  provider: string | null | undefined,
+): string | null {
+  if (!provider || provider === "mevora-internal") {
+    return null;
+  }
+  const prefix = `ext_${provider}_`;
+  if (contentId.startsWith(prefix) && contentId.length > prefix.length) {
+    return contentId.slice(prefix.length);
+  }
+  return null;
 }
 
 export function parseHumorContent(

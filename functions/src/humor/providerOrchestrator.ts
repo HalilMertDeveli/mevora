@@ -43,18 +43,32 @@ export type ProviderAttempt = {
   detail?: string;
 };
 
-function classifyError(message: string): ProviderFetchErrorCode {
+/** Exported for unit tests — keep in sync with live provider attempt handling. */
+export function classifyProviderFetchError(
+  message: string,
+): ProviderFetchErrorCode {
   const m = message.toLowerCase();
   if (m.includes("abort") || m.includes("timeout")) return "timeout";
   if (m.includes("rate") || m.includes("429") || m.includes("quota")) {
     return "rate_limit";
   }
-  if (m.includes("invalid") || m.includes("401") || m.includes("403") || m.includes("forbidden")) {
+  if (
+    m.includes("invalid") ||
+    m.includes("401") ||
+    m.includes("403") ||
+    m.includes("forbidden") ||
+    m.includes("keyinvalid") ||
+    m.includes("accessnotconfigured")
+  ) {
     return "invalid_api_key";
   }
   if (m.includes("tenor")) return "tenor_disabled";
   if (m.includes("empty")) return "empty_result";
   return "unknown";
+}
+
+function classifyError(message: string): ProviderFetchErrorCode {
+  return classifyProviderFetchError(message);
 }
 
 function giphyItemToNormalized(

@@ -95,7 +95,15 @@ export async function ingestHumorSourceItem(
     provider === "giphy" ||
     provider === "youtube";
 
+  const isYoutube =
+    provider === "youtube" || Boolean(embedUrl?.includes("youtube.com/embed"));
+  const rawDownload = item.media.downloadUrl ?? "";
+  const isYoutubeEmbedDownload =
+    rawDownload.includes("youtube.com/embed") ||
+    rawDownload.includes("youtu.be/");
+
   // Never copy third-party bytes into Firebase Storage — CDN/embed URLs only.
+  // YouTube: keep poster/thumb in downloadUrl (or null); play only via embedUrl + iframe.
   const input: UpsertHumorContentInput = {
     contentId,
     type: item.type === "video" ? "video" : item.type === "image" ? "image" : "meme",
@@ -104,11 +112,10 @@ export async function ingestHumorSourceItem(
     humorTags: tagged.humorTags.length ? tagged.humorTags : item.tags,
     humorVector: tagged.humorVector,
     media: {
-      downloadUrl: embedUrl && !item.media.downloadUrl.includes("giphy")
-        ? null
-        : item.media.downloadUrl.includes("youtube.com/embed")
-          ? null
-          : item.media.downloadUrl,
+      downloadUrl:
+        isYoutube || isYoutubeEmbedDownload
+          ? item.media.thumbUrl ?? item.media.previewUrl ?? null
+          : rawDownload || null,
       thumbUrl: item.media.thumbUrl ?? item.media.previewUrl ?? null,
       durationMs: item.media.durationMs ?? null,
       aspectRatio: item.media.aspectRatio ?? null,
@@ -123,11 +130,6 @@ export async function ingestHumorSourceItem(
     provider,
     licenseRef: item.sourceUrl ?? null,
   };
-
-  // For YouTube: downloadUrl null + embedUrl set — still need a playable path for clients.
-  if (input.media && !input.media.downloadUrl && embedUrl) {
-    input.media.downloadUrl = embedUrl;
-  }
 
   const doc = await upsertHumorContentDoc(db, input);
   await db.collection("humorContent").doc(doc.contentId).set(

@@ -101,6 +101,8 @@ export type HumorFeedItem = {
   humorTags: string[];
   media: HumorMedia;
   provider?: string | null;
+  /** Provider-native id (e.g. YouTube videoId) when contentId is ext_<provider>_<id>. */
+  sourceId?: string | null;
   attributionRequired?: boolean;
   sourceUrl?: string | null;
 };

@@ -3758,6 +3758,108 @@ abstract class AppLocalizations {
   /// **'Not now'**
   String get relationshipTestLater;
 
+  /// No description provided for @relationshipInitialTestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your first Compatibility Test'**
+  String get relationshipInitialTestTitle;
+
+  /// No description provided for @relationshipInitialTestHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Build your compatibility profile'**
+  String get relationshipInitialTestHeadline;
+
+  /// No description provided for @relationshipInitialTestMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer 3 short questions once. After this, Compatibility Challenges run every hour as Mevora Hour.'**
+  String get relationshipInitialTestMessage;
+
+  /// No description provided for @relationshipInitialTestStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start my first test'**
+  String get relationshipInitialTestStart;
+
+  /// No description provided for @mevoraHourTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'MEVORA HOUR'**
+  String get mevoraHourTitle;
+
+  /// No description provided for @mevoraHourHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'This hour\'s Compatibility Challenge'**
+  String get mevoraHourHeadline;
+
+  /// No description provided for @mevoraHourMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Join this hour\'s Compatibility Challenge and meet people who answered like you.'**
+  String get mevoraHourMessage;
+
+  /// No description provided for @mevoraHourJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join the Challenge'**
+  String get mevoraHourJoin;
+
+  /// No description provided for @mevoraHourCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'{countdown} left'**
+  String mevoraHourCountdown(String countdown);
+
+  /// No description provided for @mevoraHourRoundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00 Mevora Hour'**
+  String mevoraHourRoundLabel(String hour);
+
+  /// No description provided for @mevoraHourUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Compatibility Hour coming soon'**
+  String get mevoraHourUnavailableTitle;
+
+  /// No description provided for @mevoraHourUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No open Mevora Hour right now. Check back at the top of the next hour (Europe/Istanbul).'**
+  String get mevoraHourUnavailableMessage;
+
+  /// No description provided for @matchingGameCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Match Game: {countdown}'**
+  String matchingGameCountdown(String countdown);
+
+  /// No description provided for @matchingGameRoundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00 Matching Game'**
+  String matchingGameRoundLabel(String hour);
+
+  /// No description provided for @matchingGameWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching in progress'**
+  String get matchingGameWaitingTitle;
+
+  /// No description provided for @matchingGameWaitingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers are in. We\'ll show your match when this hour\'s round completes.'**
+  String get matchingGameWaitingMessage;
+
+  /// No description provided for @matchingGameWaitingDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get matchingGameWaitingDismiss;
+
   /// No description provided for @relationshipContinueTitle.
   ///
   /// In en, this message translates to:

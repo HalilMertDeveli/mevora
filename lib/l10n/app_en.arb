@@ -838,6 +838,51 @@
   "relationshipTestMessage": "Answer 3 short questions to see people who may think similarly.",
   "relationshipTestStart": "Start the Relationship Test",
   "relationshipTestLater": "Not now",
+  "relationshipInitialTestTitle": "Your first Compatibility Test",
+  "relationshipInitialTestHeadline": "Build your compatibility profile",
+  "relationshipInitialTestMessage": "Answer 3 short questions once. After this, Compatibility Challenges run every hour as Mevora Hour.",
+  "relationshipInitialTestStart": "Start my first test",
+  "mevoraHourTitle": "MEVORA HOUR",
+  "mevoraHourHeadline": "This hour's Compatibility Challenge",
+  "mevoraHourMessage": "Join this hour's Compatibility Challenge and meet people who answered like you.",
+  "mevoraHourJoin": "Join the Challenge",
+  "mevoraHourCountdown": "{countdown} left",
+  "@mevoraHourCountdown": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "mevoraHourRoundLabel": "{hour}:00 Mevora Hour",
+  "@mevoraHourRoundLabel": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "mevoraHourUnavailableTitle": "Next Compatibility Hour coming soon",
+  "mevoraHourUnavailableMessage": "No open Mevora Hour right now. Check back at the top of the next hour (Europe/Istanbul).",
+  "matchingGameCountdown": "Next Match Game: {countdown}",
+  "@matchingGameCountdown": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "matchingGameRoundLabel": "{hour}:00 Matching Game",
+  "@matchingGameRoundLabel": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "matchingGameWaitingTitle": "Matching in progress",
+  "matchingGameWaitingMessage": "Your answers are in. We'll show your match when this hour's round completes.",
+  "matchingGameWaitingDismiss": "OK",
   "relationshipContinueTitle": "Keep matching?",
   "relationshipContinueMessage": "You've completed 5 matching rounds. Do you want to continue finding people who share your answers?",
   "relationshipContinueYes": "Continue",

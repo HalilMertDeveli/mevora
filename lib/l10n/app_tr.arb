@@ -838,6 +838,51 @@
   "relationshipTestMessage": "3 kısa soruyla benzer düşünebilen kişileri gör.",
   "relationshipTestStart": "İlişki Testine Başla",
   "relationshipTestLater": "Daha Sonra",
+  "relationshipInitialTestTitle": "İlk Uyumluluk Testin",
+  "relationshipInitialTestHeadline": "Uyumluluk profilini oluştur",
+  "relationshipInitialTestMessage": "3 kısa soruyu bir kez yanıtla. Bundan sonra uyumluluk etkinlikleri her saat Mevora Hour olarak açılır.",
+  "relationshipInitialTestStart": "İlk testime başla",
+  "mevoraHourTitle": "MEVORA HOUR",
+  "mevoraHourHeadline": "Bu saatin Compatibility Challenge'ı",
+  "mevoraHourMessage": "Bu saatin Compatibility Challenge'ına katıl ve benzer cevap verenlerle eşleş.",
+  "mevoraHourJoin": "Challenge'a Katıl",
+  "mevoraHourCountdown": "{countdown} kaldı",
+  "@mevoraHourCountdown": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "mevoraHourRoundLabel": "{hour}:00 Mevora Hour",
+  "@mevoraHourRoundLabel": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "mevoraHourUnavailableTitle": "Sonraki Compatibility Hour yakında",
+  "mevoraHourUnavailableMessage": "Şu an açık bir Mevora Hour yok. Bir sonraki saat başında tekrar bak (Europe/Istanbul).",
+  "matchingGameCountdown": "Sonraki Eşleşme Oyunu: {countdown}",
+  "@matchingGameCountdown": {
+    "placeholders": {
+      "countdown": {
+        "type": "String"
+      }
+    }
+  },
+  "matchingGameRoundLabel": "{hour}:00 Eşleşme Oyunu",
+  "@matchingGameRoundLabel": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "matchingGameWaitingTitle": "Eşleşme hesaplanıyor",
+  "matchingGameWaitingMessage": "Cevapların kaydedildi. Bu saatin turu tamamlanınca eşleşmen gösterilecek.",
+  "matchingGameWaitingDismiss": "Tamam",
   "relationshipContinueTitle": "Eşleşmeye devam etmek ister misin?",
   "relationshipContinueMessage": "5 eşleşme turunu tamamladın. Aynı cevaplara sahip insanları bulmaya devam etmek ister misin?",
   "relationshipContinueYes": "Devam Et",

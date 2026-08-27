@@ -1,13 +1,14 @@
-import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
-import 'package:mevora/features/matching/domain/match_engine.dart';
-import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
-import 'package:mevora/features/relationship/data/datasources/relationship_data_source.dart';
-import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
+import 'package:mevora/features/relationship/domain/entities/matching_game_round.dart';
 import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/features/relationship/domain/services/relationship_compatibility_key.dart';
 import 'package:mevora/features/relationship/domain/services/relationship_match_rules.dart';
 import 'package:mevora/features/relationship/domain/services/relationship_question_sets.dart';
+import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
+import 'package:mevora/features/relationship/data/datasources/relationship_data_source.dart';
+import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
+import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
+import 'package:mevora/features/matching/domain/match_engine.dart';
 
 class MockRelationshipDataSource implements RelationshipDataSource {
   MockRelationshipDataSource({
@@ -17,11 +18,13 @@ class MockRelationshipDataSource implements RelationshipDataSource {
     List<MockRelationshipPeer>? peers,
     Map<String, DateTime?>? lastActiveAtByUid,
     DateTime? offerCooldownUntil,
+    int matchingEventCount = 0,
   }) : _clock = clock ?? DateTime.now,
        _answers = Map<String, String>.from(answers ?? const {}),
        _peers = List<MockRelationshipPeer>.from(peers ?? seedPeers),
        _lastActiveAtByUid = lastActiveAtByUid ?? const {},
-       _offerCooldownUntil = offerCooldownUntil;
+       _offerCooldownUntil = offerCooldownUntil,
+       _matchingEventCount = matchingEventCount;
 
   final String selfUid;
   final DateTime Function() _clock;
@@ -126,6 +129,89 @@ class MockRelationshipDataSource implements RelationshipDataSource {
       return const {};
     }
     return Map<String, String>.from(_answers);
+  }
+
+  @override
+  Future<MatchingGameRoundInfo> getMatchingGameRound() async {
+    final now = _clock();
+    final next = now.add(const Duration(minutes: 30));
+    return MatchingGameRoundInfo(
+      roundId: 'mock_${now.year}${now.month}${now.day}${now.hour}',
+      status: 'OPEN',
+      timezone: 'Europe/Istanbul',
+      serverNowMs: now.millisecondsSinceEpoch,
+      nextRoundAtMs: next.millisecondsSinceEpoch,
+      closesAtMs: next.millisecondsSinceEpoch,
+    );
+  }
+
+  @override
+  Future<void> joinMatchingGameRound(String roundId) async {}
+
+  @override
+  Future<MatchingGameResultInfo> submitMatchingGameAnswers({
+    required String roundId,
+    required List<String> questionIds,
+    required Map<String, String> answers,
+  }) async {
+    for (final entry in answers.entries) {
+      _answers[entry.key] = entry.value;
+    }
+    _completedQuestionIds = List<String>.from(questionIds);
+    _matchingEventCount += 1;
+    final suggestions = _exactSuggestions(questionIds);
+    if (suggestions.isEmpty) {
+      return MatchingGameResultInfo(
+        roundId: roundId,
+        roundStatus: 'COMPLETED',
+        participantStatus: 'unmatched',
+      );
+    }
+    final hit = suggestions.first;
+    return MatchingGameResultInfo(
+      roundId: roundId,
+      roundStatus: 'COMPLETED',
+      participantStatus: 'matched',
+      matchId: hit.matchId,
+      compatibilityScore: hit.score,
+      partnerUid: hit.candidate.uid,
+      partnerName: hit.candidate.displayName,
+      partnerPhotoUrl: hit.candidate.photos.isEmpty
+          ? null
+          : hit.candidate.photos.first,
+    );
+  }
+
+  @override
+  Future<MatchingGameResultInfo> getMatchingGameResult(String roundId) async {
+    if (_completedQuestionIds.isEmpty) {
+      return MatchingGameResultInfo(
+        roundId: roundId,
+        roundStatus: 'OPEN',
+        participantStatus: null,
+      );
+    }
+    final suggestions = _exactSuggestions(_completedQuestionIds);
+    if (suggestions.isEmpty) {
+      return MatchingGameResultInfo(
+        roundId: roundId,
+        roundStatus: 'COMPLETED',
+        participantStatus: 'unmatched',
+      );
+    }
+    final hit = suggestions.first;
+    return MatchingGameResultInfo(
+      roundId: roundId,
+      roundStatus: 'COMPLETED',
+      participantStatus: 'matched',
+      matchId: hit.matchId,
+      compatibilityScore: hit.score,
+      partnerUid: hit.candidate.uid,
+      partnerName: hit.candidate.displayName,
+      partnerPhotoUrl: hit.candidate.photos.isEmpty
+          ? null
+          : hit.candidate.photos.first,
+    );
   }
 
   @override

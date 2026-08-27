@@ -1995,6 +1995,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipTestLater => 'Not now';
 
   @override
+  String get relationshipInitialTestTitle => 'Your first Compatibility Test';
+
+  @override
+  String get relationshipInitialTestHeadline =>
+      'Build your compatibility profile';
+
+  @override
+  String get relationshipInitialTestMessage =>
+      'Answer 3 short questions once. After this, Compatibility Challenges run every hour as Mevora Hour.';
+
+  @override
+  String get relationshipInitialTestStart => 'Start my first test';
+
+  @override
+  String get mevoraHourTitle => 'MEVORA HOUR';
+
+  @override
+  String get mevoraHourHeadline => 'This hour\'s Compatibility Challenge';
+
+  @override
+  String get mevoraHourMessage =>
+      'Join this hour\'s Compatibility Challenge and meet people who answered like you.';
+
+  @override
+  String get mevoraHourJoin => 'Join the Challenge';
+
+  @override
+  String mevoraHourCountdown(String countdown) {
+    return '$countdown left';
+  }
+
+  @override
+  String mevoraHourRoundLabel(String hour) {
+    return '$hour:00 Mevora Hour';
+  }
+
+  @override
+  String get mevoraHourUnavailableTitle =>
+      'Next Compatibility Hour coming soon';
+
+  @override
+  String get mevoraHourUnavailableMessage =>
+      'No open Mevora Hour right now. Check back at the top of the next hour (Europe/Istanbul).';
+
+  @override
+  String matchingGameCountdown(String countdown) {
+    return 'Next Match Game: $countdown';
+  }
+
+  @override
+  String matchingGameRoundLabel(String hour) {
+    return '$hour:00 Matching Game';
+  }
+
+  @override
+  String get matchingGameWaitingTitle => 'Matching in progress';
+
+  @override
+  String get matchingGameWaitingMessage =>
+      'Your answers are in. We\'ll show your match when this hour\'s round completes.';
+
+  @override
+  String get matchingGameWaitingDismiss => 'OK';
+
+  @override
   String get relationshipContinueTitle => 'Keep matching?';
 
   @override

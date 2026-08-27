@@ -1990,6 +1990,69 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relationshipTestLater => 'Daha Sonra';
 
   @override
+  String get relationshipInitialTestTitle => 'İlk Uyumluluk Testin';
+
+  @override
+  String get relationshipInitialTestHeadline => 'Uyumluluk profilini oluştur';
+
+  @override
+  String get relationshipInitialTestMessage =>
+      '3 kısa soruyu bir kez yanıtla. Bundan sonra uyumluluk etkinlikleri her saat Mevora Hour olarak açılır.';
+
+  @override
+  String get relationshipInitialTestStart => 'İlk testime başla';
+
+  @override
+  String get mevoraHourTitle => 'MEVORA HOUR';
+
+  @override
+  String get mevoraHourHeadline => 'Bu saatin Compatibility Challenge\'ı';
+
+  @override
+  String get mevoraHourMessage =>
+      'Bu saatin Compatibility Challenge\'ına katıl ve benzer cevap verenlerle eşleş.';
+
+  @override
+  String get mevoraHourJoin => 'Challenge\'a Katıl';
+
+  @override
+  String mevoraHourCountdown(String countdown) {
+    return '$countdown kaldı';
+  }
+
+  @override
+  String mevoraHourRoundLabel(String hour) {
+    return '$hour:00 Mevora Hour';
+  }
+
+  @override
+  String get mevoraHourUnavailableTitle => 'Sonraki Compatibility Hour yakında';
+
+  @override
+  String get mevoraHourUnavailableMessage =>
+      'Şu an açık bir Mevora Hour yok. Bir sonraki saat başında tekrar bak (Europe/Istanbul).';
+
+  @override
+  String matchingGameCountdown(String countdown) {
+    return 'Sonraki Eşleşme Oyunu: $countdown';
+  }
+
+  @override
+  String matchingGameRoundLabel(String hour) {
+    return '$hour:00 Eşleşme Oyunu';
+  }
+
+  @override
+  String get matchingGameWaitingTitle => 'Eşleşme hesaplanıyor';
+
+  @override
+  String get matchingGameWaitingMessage =>
+      'Cevapların kaydedildi. Bu saatin turu tamamlanınca eşleşmen gösterilecek.';
+
+  @override
+  String get matchingGameWaitingDismiss => 'Tamam';
+
+  @override
   String get relationshipContinueTitle => 'Eşleşmeye devam etmek ister misin?';
 
   @override

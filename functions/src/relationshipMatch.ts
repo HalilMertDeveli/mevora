@@ -32,7 +32,7 @@ const callableOptions = {
 const RESULT_LIMIT = 1;
 const skipRadius = process.env.FUNCTIONS_EMULATOR === "true";
 
-/** Configurable matching-event length (ms). Change once to retune 3→5→10→15 min. */
+/** Post-dismiss / post-complete offer cooldown (ms). Not a Discover dwell trigger. */
 export const MATCHING_EVENT_DURATION_MS = 3 * 60 * 1000;
 /** Recent message window that counts as an active conversation. */
 export const ACTIVE_CONVERSATION_WINDOW_MS = 30 * 60 * 1000;

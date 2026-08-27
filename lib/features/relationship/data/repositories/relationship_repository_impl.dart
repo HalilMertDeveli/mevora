@@ -5,6 +5,7 @@ import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/relationship/data/datasources/relationship_data_source.dart';
+import 'package:mevora/features/relationship/domain/entities/matching_game_round.dart';
 import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 
@@ -59,6 +60,36 @@ class RelationshipRepositoryImpl implements RelationshipRepository {
   @override
   Future<Result<Map<String, String>>> getSavedAnswers(String uid) {
     return _guard(() => _dataSource.getSavedAnswers(uid));
+  }
+
+  @override
+  Future<Result<MatchingGameRoundInfo>> getMatchingGameRound() {
+    return _guard(_dataSource.getMatchingGameRound);
+  }
+
+  @override
+  Future<Result<void>> joinMatchingGameRound(String roundId) {
+    return _guard(() => _dataSource.joinMatchingGameRound(roundId));
+  }
+
+  @override
+  Future<Result<MatchingGameResultInfo>> submitMatchingGameAnswers({
+    required String roundId,
+    required List<String> questionIds,
+    required Map<String, String> answers,
+  }) {
+    return _guard(
+      () => _dataSource.submitMatchingGameAnswers(
+        roundId: roundId,
+        questionIds: questionIds,
+        answers: answers,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<MatchingGameResultInfo>> getMatchingGameResult(String roundId) {
+    return _guard(() => _dataSource.getMatchingGameResult(roundId));
   }
 
   Future<Result<T>> _guard<T>(Future<T> Function() action) async {

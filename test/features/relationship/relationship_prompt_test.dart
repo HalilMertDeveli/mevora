@@ -25,6 +25,8 @@ RelationshipController _controller({
   RelationshipRepository? repository,
   Duration interval = AppDurations.relationshipPrompt,
   bool enforceOfferGates = true,
+  bool hourlyGlobalMatchingGame = false,
+  bool legacyDwellOffersEnabled = true,
 }) {
   final controller = RelationshipController(
     repository:
@@ -32,6 +34,8 @@ RelationshipController _controller({
         RelationshipRepositoryImpl(dataSource: MockRelationshipDataSource()),
     interval: interval,
     enforceOfferGates: enforceOfferGates,
+    hourlyGlobalMatchingGame: hourlyGlobalMatchingGame,
+    legacyDwellOffersEnabled: legacyDwellOffersEnabled,
   );
   addTearDown(() {
     controller.pause();
@@ -58,13 +62,60 @@ void main() {
   testWidgets('discovery dwell with zero matches opens the test offer', (
     tester,
   ) async {
-    final controller = _controller();
+    // Legacy path kept for regression when explicitly re-enabled.
+    final controller = _controller(legacyDwellOffersEnabled: true);
     await controller.refreshAnswered();
     controller.setDiscoveryVisible(true);
     controller.setNormalMatchCount(0);
     controller.debugElapse(AppDurations.relationshipPrompt);
     expect(controller.isOfferVisible, isTrue);
     expect(controller.currentQuestion, isNull);
+    controller.pause();
+  });
+
+  testWidgets('product model: dwell disabled never opens offer after elapsed', (
+    tester,
+  ) async {
+    final controller = _controller(
+      legacyDwellOffersEnabled: false,
+      hourlyGlobalMatchingGame: false,
+    );
+    await controller.refreshAnswered();
+    // Seed completed initial so arm path isn't initial-offer.
+    final seeded = RelationshipController(
+      repository: RelationshipRepositoryImpl(
+        dataSource: MockRelationshipDataSource(matchingEventCount: 2),
+      ),
+      interval: AppDurations.relationshipPrompt,
+      enforceOfferGates: true,
+      hourlyGlobalMatchingGame: false,
+      legacyDwellOffersEnabled: false,
+    );
+    addTearDown(() {
+      seeded.pause();
+      seeded.dispose();
+    });
+    await seeded.refreshAnswered();
+    seeded.setDiscoveryVisible(true);
+    seeded.setNormalMatchCount(0);
+    seeded.debugElapse(AppDurations.relationshipPrompt);
+    expect(seeded.isOfferVisible, isFalse);
+    controller.pause();
+  });
+
+  testWidgets('product model: new user gets immediate initial offer', (
+    tester,
+  ) async {
+    final controller = _controller(
+      legacyDwellOffersEnabled: false,
+      hourlyGlobalMatchingGame: true,
+    );
+    await controller.start();
+    controller.setDiscoveryVisible(true);
+    await tester.pump();
+    expect(controller.needsInitialPersonalityTest, isTrue);
+    expect(controller.isOfferVisible, isTrue);
+    expect(controller.isInitialOffer, isTrue);
     controller.pause();
   });
 
@@ -83,7 +134,13 @@ void main() {
   testWidgets('a normal match blocks the relationship test offer', (
     tester,
   ) async {
-    final controller = _controller();
+    final controller = _controller(
+      repository: RelationshipRepositoryImpl(
+        dataSource: MockRelationshipDataSource(matchingEventCount: 2),
+      ),
+      legacyDwellOffersEnabled: true,
+      hourlyGlobalMatchingGame: false,
+    );
     await controller.refreshAnswered();
     controller.setDiscoveryVisible(true);
     controller.setNormalMatchCount(1);
@@ -96,7 +153,14 @@ void main() {
   testWidgets('debug bypass still offers the test when a match exists', (
     tester,
   ) async {
-    final controller = _controller(enforceOfferGates: false);
+    final controller = _controller(
+      enforceOfferGates: false,
+      repository: RelationshipRepositoryImpl(
+        dataSource: MockRelationshipDataSource(matchingEventCount: 2),
+      ),
+      legacyDwellOffersEnabled: true,
+      hourlyGlobalMatchingGame: false,
+    );
     await controller.refreshAnswered();
     controller.setDiscoveryVisible(true);
     controller.setNormalMatchCount(2);
@@ -182,6 +246,8 @@ void main() {
       interval: const Duration(minutes: 30),
       clock: () => now,
       enforceOfferGates: true,
+      hourlyGlobalMatchingGame: false,
+      legacyDwellOffersEnabled: true,
     );
     addTearDown(() {
       controller.pause();
@@ -222,6 +288,8 @@ void main() {
       interval: const Duration(minutes: 30),
       clock: () => now,
       enforceOfferGates: true,
+      hourlyGlobalMatchingGame: false,
+      legacyDwellOffersEnabled: true,
     );
     addTearDown(() {
       controller.pause();
@@ -290,15 +358,30 @@ void main() {
     expect(find.text(question.answers[0].labelEn), findsOneWidget);
   });
 
-  testWidgets('offer card uses the relationship test copy', (tester) async {
+  testWidgets('offer card uses Mevora Hour copy by default', (tester) async {
     await tester.pumpWidget(
       wrapWithApp(
         RelationshipTestOfferCard(onStart: () {}, onLater: () {}),
       ),
     );
-    expect(find.text(_l10n.relationshipTestHeadline), findsOneWidget);
-    expect(find.text(_l10n.relationshipTestStart), findsOneWidget);
+    expect(find.text(_l10n.mevoraHourTitle), findsOneWidget);
+    expect(find.text(_l10n.mevoraHourHeadline), findsOneWidget);
+    expect(find.text(_l10n.mevoraHourJoin), findsOneWidget);
     expect(find.text(_l10n.relationshipTestLater), findsOneWidget);
+  });
+
+  testWidgets('offer card uses initial test copy when flagged', (tester) async {
+    await tester.pumpWidget(
+      wrapWithApp(
+        RelationshipTestOfferCard(
+          onStart: () {},
+          onLater: () {},
+          isInitial: true,
+        ),
+      ),
+    );
+    expect(find.text(_l10n.relationshipInitialTestHeadline), findsOneWidget);
+    expect(find.text(_l10n.relationshipInitialTestStart), findsOneWidget);
   });
 
   testWidgets('result card shows the nearest match and profile action', (
@@ -354,15 +437,17 @@ void main() {
         ),
       ),
     );
-    expect(find.textContaining('Relationship Test'), findsOneWidget);
+    expect(find.textContaining(_l10n.relationshipMatchBadge), findsOneWidget);
   });
 
-  testWidgets('host timer shows the offer without swiping', (tester) async {
+  testWidgets('host shows immediate initial offer without dwell', (tester) async {
     final controller = RelationshipController(
       repository: RelationshipRepositoryImpl(
         dataSource: MockRelationshipDataSource(),
       ),
       interval: const Duration(seconds: 2),
+      hourlyGlobalMatchingGame: true,
+      legacyDwellOffersEnabled: false,
     );
     addTearDown(() {
       controller.pause();
@@ -377,13 +462,13 @@ void main() {
         ),
       ),
     );
+    await controller.start();
     await tester.pump();
-    expect(find.text(_l10n.relationshipTestStart), findsNothing);
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     expect(controller.isOfferVisible, isTrue);
-    expect(find.text(_l10n.relationshipTestStart), findsOneWidget);
-    expect(find.text(_l10n.relationshipTestHeadline), findsOneWidget);
+    expect(controller.isInitialOffer, isTrue);
+    expect(find.text(_l10n.relationshipInitialTestStart), findsOneWidget);
+    expect(find.text(_l10n.relationshipInitialTestHeadline), findsOneWidget);
     controller.pause();
   });
 }

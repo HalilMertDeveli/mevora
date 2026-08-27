@@ -177,6 +177,15 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
               },
             ),
           )
+        else if (showPrompt && controller.waitingForRoundResult)
+          Positioned.fill(
+            child: MatchingGameWaitingCard(
+              onDismiss: () {
+                // Keep polling; only hide overlay so Discover stays usable.
+                controller.acknowledgeWaitingOverlay();
+              },
+            ),
+          )
         else if (showPrompt && question != null)
           Positioned.fill(
             child: RelationshipQuestionCard(
@@ -210,6 +219,39 @@ class _RelationshipPromptHostState extends State<RelationshipPromptHost> {
               onLater: () {
                 unawaited(controller.dismissOffer());
               },
+              isInitial: controller.isInitialOffer,
+              roundHour: controller.isHourlyOffer
+                  ? controller.hourlyRoundHour
+                  : null,
+              countdown: controller.isHourlyOffer
+                  ? controller.hourlyCountdownRemaining
+                  : null,
+            ),
+          )
+        else if (showPrompt &&
+            controller.hourlyUnavailable &&
+            !controller.needsInitialPersonalityTest)
+          Positioned(
+            left: AppSpacing.md,
+            right: AppSpacing.md,
+            bottom: AppSpacing.lg,
+            child: MevoraCard(
+              emphasis: MevoraCardEmphasis.elevated,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    AppLocalizations.of(context).mevoraHourUnavailableTitle,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    AppLocalizations.of(context).mevoraHourUnavailableMessage,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
             ),
           ),
       ],
@@ -439,20 +481,109 @@ class RelationshipContinueMatchingCard extends StatelessWidget {
   }
 }
 
-class RelationshipTestOfferCard extends StatelessWidget {
-  const RelationshipTestOfferCard({
-    super.key,
-    required this.onStart,
-    required this.onLater,
-  });
+class MatchingGameWaitingCard extends StatelessWidget {
+  const MatchingGameWaitingCard({super.key, required this.onDismiss});
 
-  final VoidCallback onStart;
-  final VoidCallback onLater;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    return ColoredBox(
+      color: Colors.black.withValues(alpha: 0.42),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: MevoraCard(
+              emphasis: MevoraCardEmphasis.elevated,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    l10n.matchingGameWaitingTitle,
+                    style: theme.textTheme.titleMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    l10n.matchingGameWaitingMessage,
+                    style: theme.textTheme.bodyLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  MevoraButton(
+                    label: l10n.matchingGameWaitingDismiss,
+                    variant: MevoraButtonVariant.secondary,
+                    onPressed: onDismiss,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class RelationshipTestOfferCard extends StatelessWidget {
+  const RelationshipTestOfferCard({
+    super.key,
+    required this.onStart,
+    required this.onLater,
+    this.roundHour,
+    this.countdown,
+    this.isInitial = false,
+  });
+
+  final VoidCallback onStart;
+  final VoidCallback onLater;
+  final String? roundHour;
+  final Duration? countdown;
+  final bool isInitial;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final hour = roundHour;
+    final String headline;
+    final String message;
+    final String startLabel;
+    final String titleSemantics;
+    if (isInitial) {
+      headline = l10n.relationshipInitialTestHeadline;
+      message = l10n.relationshipInitialTestMessage;
+      startLabel = l10n.relationshipInitialTestStart;
+      titleSemantics = l10n.relationshipInitialTestTitle;
+    } else if (hour != null && hour.isNotEmpty) {
+      headline = l10n.mevoraHourRoundLabel(hour);
+      message = l10n.mevoraHourMessage;
+      startLabel = l10n.mevoraHourJoin;
+      titleSemantics = l10n.mevoraHourTitle;
+    } else {
+      headline = l10n.mevoraHourHeadline;
+      message = l10n.mevoraHourMessage;
+      startLabel = l10n.mevoraHourJoin;
+      titleSemantics = l10n.mevoraHourTitle;
+    }
+    final remain = countdown;
+    String? countdownLabel;
+    if (!isInitial && remain != null) {
+      final h = remain.inHours;
+      final m = remain.inMinutes.remainder(60);
+      final s = remain.inSeconds.remainder(60);
+      final padded =
+          '${h.toString().padLeft(2, '0')}:'
+          '${m.toString().padLeft(2, '0')}:'
+          '${s.toString().padLeft(2, '0')}';
+      countdownLabel = l10n.mevoraHourCountdown(padded);
+    }
     return ColoredBox(
       color: Colors.black.withValues(alpha: 0.42),
       child: SafeArea(
@@ -471,7 +602,7 @@ class RelationshipTestOfferCard extends StatelessWidget {
                       asset: MevoraRiveAssets.relationshipResult,
                       width: 48,
                       height: 48,
-                      semanticsLabel: l10n.relationshipTestTitle,
+                      semanticsLabel: titleSemantics,
                       fallback: Icon(
                         Icons.favorite_outline,
                         color: theme.colorScheme.primary,
@@ -479,18 +610,38 @@ class RelationshipTestOfferCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  if (!isInitial) ...[
+                    Text(
+                      l10n.mevoraHourTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
                   Text(
-                    l10n.relationshipTestHeadline,
+                    headline,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    l10n.relationshipTestMessage,
+                    message,
                     style: theme.textTheme.bodyLarge,
                   ),
+                  if (countdownLabel != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      countdownLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.lg),
                   MevoraButton(
-                    label: l10n.relationshipTestStart,
+                    label: startLabel,
                     onPressed: onStart,
                   ),
                   const SizedBox(height: AppSpacing.sm),

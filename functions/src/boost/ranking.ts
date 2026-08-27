@@ -13,6 +13,14 @@ const DISTANCE_SCORE_MAX = 20;
 /** Floor so multiplicative boost never zeros a candidate. */
 const SCORE_FLOOR = 1;
 
+function boostExpiresAt(data: Record<string, unknown>): Date | null {
+  const expires = data.expiresAt as Timestamp | undefined;
+  if (expires && typeof expires.toDate === "function") {
+    return expires.toDate();
+  }
+  return null;
+}
+
 export async function loadActiveBoostedUserIds(
   db: Firestore,
   now = new Date(),
@@ -25,11 +33,7 @@ export async function loadActiveBoostedUserIds(
     const ids = new Set<string>();
     for (const doc of snap.docs) {
       const data = doc.data();
-      const expires = data.expiresAt as Timestamp | undefined;
-      const expiresAt =
-        expires && typeof expires.toDate === "function"
-          ? expires.toDate()
-          : null;
+      const expiresAt = boostExpiresAt(data);
       if (
         expiresAt &&
         expiresAt.getTime() > now.getTime() &&
@@ -45,6 +49,70 @@ export async function loadActiveBoostedUserIds(
     });
     return new Set();
   }
+}
+
+/** True when the user has a non-expired active Smart/Boost. */
+export async function hasActiveBoostForUser(
+  db: Firestore,
+  uid: string,
+  now = new Date(),
+): Promise<boolean> {
+  try {
+    const snap = await db
+      .collection(`users/${uid}/boosts`)
+      .where("status", "==", "active")
+      .get();
+    for (const doc of snap.docs) {
+      const expiresAt = boostExpiresAt(doc.data());
+      if (expiresAt && expiresAt.getTime() > now.getTime()) {
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    logger.warn("hasActiveBoostForUser_failed", {
+      uid,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return false;
+  }
+}
+
+/** Server analytics: like/superLike while actor has an active boost. */
+export async function emitBoostLikeAnalytics(
+  db: Firestore,
+  params: {actorUid: string; targetUid: string; action: string},
+): Promise<void> {
+  if (!(await hasActiveBoostForUser(db, params.actorUid))) {
+    return;
+  }
+  logger.info("boost_like", {
+    userId: params.actorUid,
+    targetUserId: params.targetUid,
+    action: params.action,
+  });
+}
+
+/** Server analytics: match created while at least one participant is boosted. */
+export async function emitBoostMatchAnalytics(
+  db: Firestore,
+  params: {matchId: string; userIds: string[]},
+): Promise<void> {
+  const checks = await Promise.all(
+    params.userIds.map(async (uid) => ({
+      uid,
+      boosted: await hasActiveBoostForUser(db, uid),
+    })),
+  );
+  const boostedUserIds = checks.filter((c) => c.boosted).map((c) => c.uid);
+  if (boostedUserIds.length === 0) {
+    return;
+  }
+  logger.info("boost_match", {
+    matchId: params.matchId,
+    userIds: params.userIds,
+    boostedUserIds,
+  });
 }
 
 export function effectiveRadiusKm(

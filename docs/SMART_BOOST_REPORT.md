@@ -36,7 +36,6 @@ Replaced flat `+35` with controlled multiplier so:
 
 ## Gaps / follow-ups
 
-- Wire `boost_match` / `boost_like` emits at match/like call sites when boost active
 - Register new SKUs in App Store Connect / Play Console
 - Seed `boostProducts` in production via deploy/`ensureDefaultCatalog`
 - Real-device purchase QA on 2 devices

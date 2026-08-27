@@ -19,6 +19,10 @@ import {
 } from "./matchScore.js";
 import {enforceMessageRateLimit} from "./messageRateLimit.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
+import {
+  emitBoostLikeAnalytics,
+  emitBoostMatchAnalytics,
+} from "./boost/ranking.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -147,7 +151,7 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
   const forwardId = likeId(uid, targetUserId);
   const reverseId = likeId(targetUserId, uid);
   const matchId = canonicalMatchId(uid, targetUserId);
-  return db.runTransaction(async (tx) => {
+  const result = await db.runTransaction(async (tx) => {
     const forwardRef = db.doc(`likes/${forwardId}`);
     const existing = await tx.get(forwardRef);
     if (existing.exists) {
@@ -160,18 +164,18 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
       createdAt: FieldValue.serverTimestamp(),
     });
     if (action === "pass") {
-      return {matched: false};
+      return {matched: false as const, matchCreated: false as const};
     }
     const reverse = await tx.get(db.doc(`likes/${reverseId}`));
     const reverseAction = reverse.data()?.action as string | undefined;
     const positive = reverse.exists && reverseAction !== "pass";
     if (!positive) {
-      return {matched: false};
+      return {matched: false as const, matchCreated: false as const};
     }
     const matchRef = db.doc(`matches/${matchId}`);
     const matchSnap = await tx.get(matchRef);
     if (matchSnap.exists && matchSnap.data()?.isActive === true) {
-      return {matched: true, matchId};
+      return {matched: true as const, matchId, matchCreated: false as const};
     }
     const actor = await profilePreview(uid);
     const other = await profilePreview(targetUserId);
@@ -198,8 +202,24 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
       ...preservedMatchScoreFields(previousMatch),
       source: "mutual_like",
     });
-    return {matched: true, matchId};
+    return {matched: true as const, matchId, matchCreated: true as const};
   });
+  if (action === "like" || action === "superLike") {
+    await emitBoostLikeAnalytics(db, {
+      actorUid: uid,
+      targetUid: targetUserId,
+      action,
+    });
+  }
+  if (result.matchCreated && result.matchId) {
+    await emitBoostMatchAnalytics(db, {
+      matchId: result.matchId,
+      userIds: [uid, targetUserId].sort(),
+    });
+  }
+  return result.matched
+    ? {matched: true, matchId: result.matchId}
+    : {matched: false};
 });
 
 export const unmatchUser = onCall(socialCallable, async (request) => {

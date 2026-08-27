@@ -23,7 +23,14 @@ import {
   passesDiscoveryProfileFilters,
   passesGenderPreferences,
 } from "./discoveryMatching.js";
-import {loadActiveBoostedUserIds, effectiveRadiusKm, isBoostedCandidate, sortByBoostVisibility} from "./boost/ranking.js";
+import {
+  loadActiveBoostedUserIds,
+  effectiveRadiusKm,
+  isBoostedCandidate,
+  sortByBoostVisibility,
+  emitBoostLikeAnalytics,
+  emitBoostMatchAnalytics,
+} from "./boost/ranking.js";
 import {
   classifyDiscoveryDistance,
   fillFromDistanceTiers,
@@ -497,11 +504,17 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
     });
     return {matched: false};
   }
+  const likeAction = action === "superLike" ? "superLike" : "like";
   await db.doc(`likes/${uid}_${candidateUid}`).set({
     fromUserId: uid,
     toUserId: candidateUid,
-    action: action === "superLike" ? "superLike" : "like",
+    action: likeAction,
     createdAt: FieldValue.serverTimestamp(),
+  });
+  await emitBoostLikeAnalytics(db, {
+    actorUid: uid,
+    targetUid: candidateUid,
+    action: likeAction,
   });
   const reverse = await db.doc(`likes/${candidateUid}_${uid}`).get();
   const reverseAction = reverse.data()?.action as string | undefined;
@@ -518,11 +531,14 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   }
   const matchId = [uid, candidateUid].sort().join("_");
   const matchRef = db.doc(`matches/${matchId}`);
+  let matchCreated = false;
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(matchRef);
     if (snap.exists && snap.data()?.isActive === true) {
+      matchCreated = false;
       return;
     }
+    matchCreated = true;
     const existing = snap.data();
     tx.set(matchRef, {
       userIds: [uid, candidateUid].sort(),
@@ -537,6 +553,12 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
       ...preservedMatchScoreFields(existing),
     });
   });
+  if (matchCreated) {
+    await emitBoostMatchAnalytics(db, {
+      matchId,
+      userIds: [uid, candidateUid].sort(),
+    });
+  }
   return {matched: true, matchId};
 });
 

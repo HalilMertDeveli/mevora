@@ -43,9 +43,16 @@ Discover swipe and messaging continue independently.
 
 ## Production readiness (2026-08-27 QA)
 
-**Build + deploy on `mevora-d6ed0`: PASS** (all six hourly functions live).
+**Build + deploy on `mevora-d6ed0`: PASS** (6/6 hourly functions).
 
-**End-to-end / scheduler tick / two-device: still NOT PRODUCTION READY** — see root `QA_STATUS.md` / `QA_REPORT.md`.
+**Live Istanbul `:00` scheduler: PASS** — observed 13:00 TR with
+`[HOURLY_GAME] round created 2026082713` and Firestore
+`matchingGameRounds/2026082713` (`timezone: Europe/Istanbul`).
 
-Client safety: if `getMatchingGameRound` returns not-found/unavailable, Flutter falls back to legacy Discovery dwell.
+**Still NOT PRODUCTION READY** until two-user callable E2E + match/chat +
+full OPEN→COMPLETED lifecycle are proven. See root `QA_STATUS.md` /
+`QA_REPORT.md`.
+
+Client safety: if `getMatchingGameRound` returns not-found/unavailable,
+Flutter falls back to legacy Discovery dwell.
 

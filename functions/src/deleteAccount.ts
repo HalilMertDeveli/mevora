@@ -84,6 +84,8 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/crypto`),
       deleteCollectionDocs(`users/${uid}/settings`),
       deleteCollectionDocs(`users/${uid}/music`),
+      deleteCollectionDocs(`users/${uid}/humor`),
+      deleteCollectionDocs(`users/${uid}/humorInteractions`),
       deleteCollectionDocs(`users/${uid}/verification`),
       deleteCollectionDocs(`users/${uid}/rateLimits`),
     ]);
@@ -153,6 +155,7 @@ export const deleteUserAccount = onCall(
     await batchDelete([
       db.doc(`users/${uid}`),
       db.doc(`users/${uid}/music/summary`),
+      db.doc(`users/${uid}/humor/summary`),
       db.doc(`users/${uid}/relationshipMatch/summary`),
       db.doc(`users/${uid}/verification/sumsub`),
       db.doc(`spotifySecrets/${uid}`),

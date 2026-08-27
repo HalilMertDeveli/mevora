@@ -510,9 +510,8 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
     await sendUserPush({
       uid: candidateUid,
       type: FcmTypes.incomingLike,
-      data: {},
-      prefKey: "likeNotifications",
-      idempotencyKey: `incomingLike_${uid}_${candidateUid}`,
+      data: {fromUserId: uid},
+      prefKey: "matchNotifications",
     });
     return {matched: false};
   }

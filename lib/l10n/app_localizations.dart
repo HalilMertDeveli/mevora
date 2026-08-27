@@ -2525,13 +2525,13 @@ abstract class AppLocalizations {
   /// No description provided for @boostTitle.
   ///
   /// In en, this message translates to:
-  /// **'BOOST'**
+  /// **'Smart Boost'**
   String get boostTitle;
 
   /// No description provided for @boostSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Show your profile to more people and get discovered faster.'**
+  /// **'Not more random people — more people who actually fit you.'**
   String get boostSubtitle;
 
   /// No description provided for @boostDuration.
@@ -4327,6 +4327,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discover what you have in common.'**
   String get questionAnswersMatchedSubtitle;
+
+  /// No description provided for @questionAnswersPremiumRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Premium to see their answers.'**
+  String get questionAnswersPremiumRequired;
+
+  /// No description provided for @questionAnswersPremiumLockedAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with Premium to see their answer'**
+  String get questionAnswersPremiumLockedAnswer;
 
   /// No description provided for @questionAnswersPeerEmpty.
   ///
@@ -6187,6 +6199,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recently played'**
   String get musicRecentlyPlayedHeading;
+
+  /// No description provided for @humorLabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor Lab'**
+  String get humorLabTitle;
+
+  /// No description provided for @humorLabSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate short jokes and memes to build your humor vibe.'**
+  String get humorLabSubtitle;
+
+  /// No description provided for @humorRatingVeryFunny.
+  ///
+  /// In en, this message translates to:
+  /// **'Hilarious'**
+  String get humorRatingVeryFunny;
+
+  /// No description provided for @humorRatingFunny.
+  ///
+  /// In en, this message translates to:
+  /// **'Funny'**
+  String get humorRatingFunny;
+
+  /// No description provided for @humorRatingNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'Meh'**
+  String get humorRatingNeutral;
+
+  /// No description provided for @humorRatingNotFunny.
+  ///
+  /// In en, this message translates to:
+  /// **'Not funny'**
+  String get humorRatingNotFunny;
+
+  /// No description provided for @humorRatingNotAtAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Nope'**
+  String get humorRatingNotAtAll;
+
+  /// No description provided for @humorProfileBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'Still learning your humor vibe…'**
+  String get humorProfileBuilding;
+
+  /// No description provided for @humorProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile'**
+  String get humorProfileTitle;
+
+  /// No description provided for @humorEmptyFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'No more humor for now. Check back later.'**
+  String get humorEmptyFeed;
+
+  /// No description provided for @humorFeedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load Humor Lab. Please try again.'**
+  String get humorFeedError;
+
+  /// No description provided for @humorTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get humorTryAgain;
+
+  /// No description provided for @humorUndoRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo rating'**
+  String get humorUndoRating;
+
+  /// No description provided for @humorCompatibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor match'**
+  String get humorCompatibilityTitle;
+
+  /// No description provided for @humorChatStarter.
+  ///
+  /// In en, this message translates to:
+  /// **'Something that made me laugh…'**
+  String get humorChatStarter;
+
+  /// No description provided for @humorTopVibes.
+  ///
+  /// In en, this message translates to:
+  /// **'Top vibes'**
+  String get humorTopVibes;
+
+  /// No description provided for @humorSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get humorSaved;
+
+  /// No description provided for @humorReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get humorReport;
 }
 
 class _AppLocalizationsDelegate

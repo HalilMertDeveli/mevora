@@ -32,6 +32,7 @@ import 'package:mevora/features/matching/presentation/pages/app_shell.dart';
 import 'package:mevora/features/matching/presentation/pages/likes_you_page.dart';
 import 'package:mevora/features/matching/presentation/pages/matches_page.dart';
 import 'package:mevora/features/music/presentation/pages/music_page.dart';
+import 'package:mevora/features/humor/presentation/pages/humor_lab_page.dart';
 import 'package:mevora/features/notifications/presentation/pages/notification_settings_page.dart';
 import 'package:mevora/features/permissions/presentation/pages/privacy_permissions_page.dart';
 import 'package:mevora/features/profile/presentation/pages/profile_tab_page.dart';
@@ -255,6 +256,19 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const BoostScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.humorLab,
+        redirect: (context, state) {
+          if (!config.featureFlags.humorLabEnabled) {
+            return AppRoutes.discovery;
+          }
+          return null;
+        },
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const HumorLabPage(),
         ),
       ),
       GoRoute(

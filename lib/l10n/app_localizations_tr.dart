@@ -1307,11 +1307,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationSuperLike => 'Birisi seni Süper Beğendi';
 
   @override
-  String get boostTitle => 'BOOST';
+  String get boostTitle => 'Smart Boost';
 
   @override
   String get boostSubtitle =>
-      'Profilini daha fazla kişiye göster ve keşfedilme şansını artır.';
+      'Daha fazla rastgele kişiye değil — sana uygun daha fazla kişiye görün.';
 
   @override
   String get boostDuration => 'Profilini öne çıkar';
@@ -2320,6 +2320,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get questionAnswersMatchedSubtitle => 'Ortak yönlerinizi keşfedin.';
+
+  @override
+  String get questionAnswersPremiumRequired =>
+      'Cevaplarını görmek için Premium\'a geç.';
+
+  @override
+  String get questionAnswersPremiumLockedAnswer =>
+      'Cevabını görmek için Premium\'a geç';
 
   @override
   String get questionAnswersPeerEmpty =>
@@ -3364,4 +3372,59 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get musicRecentlyPlayedHeading => 'Son dinlenenler';
+
+  @override
+  String get humorLabTitle => 'Mizah Lab';
+
+  @override
+  String get humorLabSubtitle =>
+      'Kısa şaka ve memeleri puanla, mizah vibesını oluştur.';
+
+  @override
+  String get humorRatingVeryFunny => 'Çok komik';
+
+  @override
+  String get humorRatingFunny => 'Komik';
+
+  @override
+  String get humorRatingNeutral => 'Eh';
+
+  @override
+  String get humorRatingNotFunny => 'Komik değil';
+
+  @override
+  String get humorRatingNotAtAll => 'Hiç değil';
+
+  @override
+  String get humorProfileBuilding => 'Mizah vibesın hâlâ öğreniliyor…';
+
+  @override
+  String get humorProfileTitle => 'Mizah profilin';
+
+  @override
+  String get humorEmptyFeed => 'Şimdilik başka mizah yok. Sonra tekrar bak.';
+
+  @override
+  String get humorFeedError => 'Mizah Lab yüklenemedi. Lütfen tekrar dene.';
+
+  @override
+  String get humorTryAgain => 'Tekrar dene';
+
+  @override
+  String get humorUndoRating => 'Puanı geri al';
+
+  @override
+  String get humorCompatibilityTitle => 'Mizah uyumu';
+
+  @override
+  String get humorChatStarter => 'Beni güldüren bir şey…';
+
+  @override
+  String get humorTopVibes => 'Öne çıkan vibes';
+
+  @override
+  String get humorSaved => 'Kaydedildi';
+
+  @override
+  String get humorReport => 'Şikayet et';
 }

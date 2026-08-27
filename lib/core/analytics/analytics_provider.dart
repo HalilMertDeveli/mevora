@@ -55,6 +55,16 @@ abstract final class AnalyticsEvents {
   static const String musicCompatibilityViewed = 'music_compatibility_viewed';
   static const String commonTracksViewed = 'common_tracks_viewed';
   static const String musicInsightsUnlocked = 'music_insights_unlocked';
+  static const String humorLabOpened = 'humor_lab_opened';
+  static const String humorContentViewed = 'humor_content_viewed';
+  static const String humorContentRated = 'humor_content_rated';
+  static const String humorContentSkipped = 'humor_content_skipped';
+  static const String humorContentReplayed = 'humor_content_replayed';
+  static const String humorContentSaved = 'humor_content_saved';
+  static const String humorProfileViewed = 'humor_profile_viewed';
+  static const String humorCompatibilityViewed = 'humor_compatibility_viewed';
+  static const String humorChatStarterShown = 'humor_chat_starter_shown';
+  static const String humorChatStarterUsed = 'humor_chat_starter_used';
 }
 
 abstract class AnalyticsProvider {

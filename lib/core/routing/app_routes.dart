@@ -9,6 +9,7 @@ abstract final class AppRoutes {
   static const String discovery = '/discovery';
   static const String matches = '/matches';
   static const String music = '/music';
+  static const String humorLab = '/humor-lab';
   static const String profile = '/profile';
   static const String chat = '/chat/:matchId';
   static const String incomingCall = '/call/incoming/:callId';

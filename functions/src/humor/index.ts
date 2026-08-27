@@ -20,6 +20,7 @@ import {classifyHumorSafety, emptySafetyFlags} from "./moderation.js";
 import {applyHumorAiTagging} from "./aiTagging.js";
 import {safeLogMeta} from "../security/logHygiene.js";
 import type {HumorContentType, HumorSafetyStatus} from "./types.js";
+import {humorProviderSecrets} from "./humorApiConfig.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -29,6 +30,12 @@ const db = getFirestore();
 const auth = getAuth();
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 const callableOptions = {enforceAppCheck, region: "europe-west1" as const};
+/** Feed/sync may top-up from GIPHY/YouTube — secrets must be bound. */
+const humorLiveCallable = {
+  enforceAppCheck,
+  region: "europe-west1" as const,
+  secrets: [...humorProviderSecrets],
+};
 
 function requireUid(request: CallableRequest): string {
   const uid = request.auth?.uid;
@@ -45,7 +52,7 @@ async function requireAdmin(uid: string): Promise<void> {
   }
 }
 
-export const getHumorFeed = onCall(callableOptions, async (request) => {
+export const getHumorFeed = onCall(humorLiveCallable, async (request) => {
   const uid = requireUid(request);
   const data = (request.data ?? {}) as Record<string, unknown>;
   try {
@@ -296,7 +303,7 @@ export const seedInternalHumorContent = onCall(callableOptions, async (request) 
  * into humorContent. Requires API keys via env/Secret Manager.
  * Never downloads media bytes into Firebase Storage.
  */
-export const syncHumorFromProvider = onCall(callableOptions, async (request) => {
+export const syncHumorFromProvider = onCall(humorLiveCallable, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
   const data = (request.data ?? {}) as {

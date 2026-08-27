@@ -43,18 +43,18 @@ export const BUCKET_TO_CATEGORY: Record<HumorSearchBucket, HumorCategory> = {
 
 /** Turkish-first allowlisted queries per bucket. */
 export const BUCKET_QUERIES_TR: Record<HumorSearchBucket, readonly string[]> = {
-  absurd: ["absürt komedi", "absürt komik", "saçma komik kısa"],
+  absurd: ["absürt", "absürt komedi", "absürt komik", "saçma komik kısa"],
   dark: ["kara mizah", "karanlık mizah komik"],
   situational: ["situasyon komedisi", "komik anlar", "günlük komedi"],
-  social: ["sosyal mizah", "sosyal komedi kısa"],
-  animal: ["hayvan komik", "komik hayvanlar", "funny animals"],
+  social: ["sosyal mizah", "sosyal komedi kısa", "sarkastik"],
+  animal: ["komik kedi", "komik köpek", "hayvan komik", "komik hayvanlar"],
   fail: ["fail komik", "komik fail", "epic fail short"],
   prank: ["prank komik", "şaka videosu kısa", "funny prank short"],
-  turkish: ["türk komedi", "türk mizahı", "komik video türkçe"],
+  turkish: ["türk komedi", "türk mizahı", "komik video türkçe", "mizah", "kahkaha", "komik"],
   british: ["british humor short", "ingiliz mizahı"],
   meme: ["meme", "komik meme", "türk meme"],
   sketch: ["komik skeç", "kısa skeç", "comedy sketch short"],
-  reaction: ["reaction komik", "komik reaction", "funny reaction short"],
+  reaction: ["komik tepki", "komik reaksiyon", "reaction komik", "funny reaction short"],
 };
 
 export const BUCKET_QUERIES_EN: Record<HumorSearchBucket, readonly string[]> = {

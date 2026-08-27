@@ -35,7 +35,15 @@ function readSecret(
 }
 
 export function resolveGiphyApiKey(): string | null {
-  return readSecret("GIPHY_API_KEY", giphyApiKey);
+  const value = readSecret("GIPHY_API_KEY", giphyApiKey);
+  if (!value) {
+    return null;
+  }
+  // Reject deploy placeholders so live top-up does not call GIPHY with junk.
+  if (value === "UNSET_PLACEHOLDER" || value.length < 16) {
+    return null;
+  }
+  return value;
 }
 
 export function isGiphyConfigured(): boolean {

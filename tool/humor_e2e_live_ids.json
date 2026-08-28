@@ -1,0 +1,358 @@
+{
+  "report": {
+    "phase": "humor_phase1_e2e",
+    "timestamp": "2026-08-28T12:08:26.941Z",
+    "config": {
+      "USE_MOCK_HUMOR": false,
+      "HUMOR_LAB_ENABLED": "test via dart-define when running Flutter E2E",
+      "mockPath": "OFF",
+      "realPath": "ON"
+    },
+    "firebaseCallable": {
+      "pass": true,
+      "httpStatus": 200,
+      "error": null
+    },
+    "youtubeApi": {
+      "pass": true,
+      "request": "SUCCESS"
+    },
+    "feed": {
+      "page1": {
+        "httpStatus": 200,
+        "count": 12,
+        "youtube": 12,
+        "giphy": 0,
+        "internal": 0,
+        "uniqueVideoIds": 12,
+        "validVideoIds": true,
+        "hasCursor": true
+      },
+      "page2": {
+        "httpStatus": 200,
+        "count": 12,
+        "overlapWithPage1": 0
+      },
+      "paginationUnique": true,
+      "giphyCount": 0
+    },
+    "rating": {
+      "contentId": "ext_youtube_37ZWxIEXzCY",
+      "funnyStatus": 200,
+      "notFunnyStatus": 200,
+      "funnyOk": true,
+      "profileBuilding": true,
+      "interactionCount": 6
+    },
+    "firestore": {
+      "skipped": true,
+      "reason": "Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started fo"
+    },
+    "videoIds": [
+      "37ZWxIEXzCY",
+      "K8n-dO5rpQ0",
+      "3JJGq7a7GLE",
+      "Nrk2_lEV7Hc",
+      "5bCJEvTaEfE",
+      "OS4NA9dLl5A",
+      "6n0gPOQXWtw",
+      "PqVg_u7VUwA",
+      "7jCiNDotPSg",
+      "1ghbXC__8hc",
+      "GcvpOJIG5Qs",
+      "6EsBLnYvSNU",
+      "J0m7NxM9PnY",
+      "VBCuSmZv50E",
+      "Nh3-MrFqYjY",
+      "7ZeCbCtPLIU",
+      "PuxiIxy7cDU",
+      "RF0KVdrQQwc",
+      "QikbQjIEGOI",
+      "qVz---KOtPA"
+    ],
+    "items": [
+      {
+        "contentId": "ext_youtube_37ZWxIEXzCY",
+        "videoId": "37ZWxIEXzCY",
+        "embedUrl": "https://www.youtube.com/embed/37ZWxIEXzCY?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/37ZWxIEXzCY/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_K8n-dO5rpQ0",
+        "videoId": "K8n-dO5rpQ0",
+        "embedUrl": "https://www.youtube.com/embed/K8n-dO5rpQ0?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/K8n-dO5rpQ0/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_3JJGq7a7GLE",
+        "videoId": "3JJGq7a7GLE",
+        "embedUrl": "https://www.youtube.com/embed/3JJGq7a7GLE?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/3JJGq7a7GLE/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_Nrk2_lEV7Hc",
+        "videoId": "Nrk2_lEV7Hc",
+        "embedUrl": "https://www.youtube.com/embed/Nrk2_lEV7Hc?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/Nrk2_lEV7Hc/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_5bCJEvTaEfE",
+        "videoId": "5bCJEvTaEfE",
+        "embedUrl": "https://www.youtube.com/embed/5bCJEvTaEfE?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/5bCJEvTaEfE/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_OS4NA9dLl5A",
+        "videoId": "OS4NA9dLl5A",
+        "embedUrl": "https://www.youtube.com/embed/OS4NA9dLl5A?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/OS4NA9dLl5A/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_6n0gPOQXWtw",
+        "videoId": "6n0gPOQXWtw",
+        "embedUrl": "https://www.youtube.com/embed/6n0gPOQXWtw?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/6n0gPOQXWtw/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_PqVg_u7VUwA",
+        "videoId": "PqVg_u7VUwA",
+        "embedUrl": "https://www.youtube.com/embed/PqVg_u7VUwA?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/PqVg_u7VUwA/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_7jCiNDotPSg",
+        "videoId": "7jCiNDotPSg",
+        "embedUrl": "https://www.youtube.com/embed/7jCiNDotPSg?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/7jCiNDotPSg/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_1ghbXC__8hc",
+        "videoId": "1ghbXC__8hc",
+        "embedUrl": "https://www.youtube.com/embed/1ghbXC__8hc?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/1ghbXC__8hc/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_GcvpOJIG5Qs",
+        "videoId": "GcvpOJIG5Qs",
+        "embedUrl": "https://www.youtube.com/embed/GcvpOJIG5Qs?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/GcvpOJIG5Qs/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_6EsBLnYvSNU",
+        "videoId": "6EsBLnYvSNU",
+        "embedUrl": "https://www.youtube.com/embed/6EsBLnYvSNU?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/6EsBLnYvSNU/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_J0m7NxM9PnY",
+        "videoId": "J0m7NxM9PnY",
+        "embedUrl": "https://www.youtube.com/embed/J0m7NxM9PnY?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/J0m7NxM9PnY/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_VBCuSmZv50E",
+        "videoId": "VBCuSmZv50E",
+        "embedUrl": "https://www.youtube.com/embed/VBCuSmZv50E?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/VBCuSmZv50E/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_Nh3-MrFqYjY",
+        "videoId": "Nh3-MrFqYjY",
+        "embedUrl": "https://www.youtube.com/embed/Nh3-MrFqYjY?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/Nh3-MrFqYjY/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_7ZeCbCtPLIU",
+        "videoId": "7ZeCbCtPLIU",
+        "embedUrl": "https://www.youtube.com/embed/7ZeCbCtPLIU?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/7ZeCbCtPLIU/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_PuxiIxy7cDU",
+        "videoId": "PuxiIxy7cDU",
+        "embedUrl": "https://www.youtube.com/embed/PuxiIxy7cDU?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/PuxiIxy7cDU/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_RF0KVdrQQwc",
+        "videoId": "RF0KVdrQQwc",
+        "embedUrl": "https://www.youtube.com/embed/RF0KVdrQQwc?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/RF0KVdrQQwc/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_QikbQjIEGOI",
+        "videoId": "QikbQjIEGOI",
+        "embedUrl": "https://www.youtube.com/embed/QikbQjIEGOI?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/QikbQjIEGOI/hqdefault.jpg",
+        "provider": "youtube"
+      },
+      {
+        "contentId": "ext_youtube_qVz---KOtPA",
+        "videoId": "qVz---KOtPA",
+        "embedUrl": "https://www.youtube.com/embed/qVz---KOtPA?playsinline=1&rel=0&modestbranding=1",
+        "thumbUrl": "https://i.ytimg.com/vi/qVz---KOtPA/hqdefault.jpg",
+        "provider": "youtube"
+      }
+    ]
+  },
+  "items": [
+    {
+      "contentId": "ext_youtube_37ZWxIEXzCY",
+      "videoId": "37ZWxIEXzCY",
+      "embedUrl": "https://www.youtube.com/embed/37ZWxIEXzCY?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/37ZWxIEXzCY/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_K8n-dO5rpQ0",
+      "videoId": "K8n-dO5rpQ0",
+      "embedUrl": "https://www.youtube.com/embed/K8n-dO5rpQ0?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/K8n-dO5rpQ0/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_3JJGq7a7GLE",
+      "videoId": "3JJGq7a7GLE",
+      "embedUrl": "https://www.youtube.com/embed/3JJGq7a7GLE?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/3JJGq7a7GLE/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_Nrk2_lEV7Hc",
+      "videoId": "Nrk2_lEV7Hc",
+      "embedUrl": "https://www.youtube.com/embed/Nrk2_lEV7Hc?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/Nrk2_lEV7Hc/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_5bCJEvTaEfE",
+      "videoId": "5bCJEvTaEfE",
+      "embedUrl": "https://www.youtube.com/embed/5bCJEvTaEfE?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/5bCJEvTaEfE/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_OS4NA9dLl5A",
+      "videoId": "OS4NA9dLl5A",
+      "embedUrl": "https://www.youtube.com/embed/OS4NA9dLl5A?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/OS4NA9dLl5A/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_6n0gPOQXWtw",
+      "videoId": "6n0gPOQXWtw",
+      "embedUrl": "https://www.youtube.com/embed/6n0gPOQXWtw?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/6n0gPOQXWtw/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_PqVg_u7VUwA",
+      "videoId": "PqVg_u7VUwA",
+      "embedUrl": "https://www.youtube.com/embed/PqVg_u7VUwA?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/PqVg_u7VUwA/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_7jCiNDotPSg",
+      "videoId": "7jCiNDotPSg",
+      "embedUrl": "https://www.youtube.com/embed/7jCiNDotPSg?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/7jCiNDotPSg/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_1ghbXC__8hc",
+      "videoId": "1ghbXC__8hc",
+      "embedUrl": "https://www.youtube.com/embed/1ghbXC__8hc?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/1ghbXC__8hc/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_GcvpOJIG5Qs",
+      "videoId": "GcvpOJIG5Qs",
+      "embedUrl": "https://www.youtube.com/embed/GcvpOJIG5Qs?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/GcvpOJIG5Qs/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_6EsBLnYvSNU",
+      "videoId": "6EsBLnYvSNU",
+      "embedUrl": "https://www.youtube.com/embed/6EsBLnYvSNU?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/6EsBLnYvSNU/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_J0m7NxM9PnY",
+      "videoId": "J0m7NxM9PnY",
+      "embedUrl": "https://www.youtube.com/embed/J0m7NxM9PnY?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/J0m7NxM9PnY/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_VBCuSmZv50E",
+      "videoId": "VBCuSmZv50E",
+      "embedUrl": "https://www.youtube.com/embed/VBCuSmZv50E?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/VBCuSmZv50E/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_Nh3-MrFqYjY",
+      "videoId": "Nh3-MrFqYjY",
+      "embedUrl": "https://www.youtube.com/embed/Nh3-MrFqYjY?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/Nh3-MrFqYjY/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_7ZeCbCtPLIU",
+      "videoId": "7ZeCbCtPLIU",
+      "embedUrl": "https://www.youtube.com/embed/7ZeCbCtPLIU?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/7ZeCbCtPLIU/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_PuxiIxy7cDU",
+      "videoId": "PuxiIxy7cDU",
+      "embedUrl": "https://www.youtube.com/embed/PuxiIxy7cDU?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/PuxiIxy7cDU/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_RF0KVdrQQwc",
+      "videoId": "RF0KVdrQQwc",
+      "embedUrl": "https://www.youtube.com/embed/RF0KVdrQQwc?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/RF0KVdrQQwc/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_QikbQjIEGOI",
+      "videoId": "QikbQjIEGOI",
+      "embedUrl": "https://www.youtube.com/embed/QikbQjIEGOI?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/QikbQjIEGOI/hqdefault.jpg",
+      "provider": "youtube"
+    },
+    {
+      "contentId": "ext_youtube_qVz---KOtPA",
+      "videoId": "qVz---KOtPA",
+      "embedUrl": "https://www.youtube.com/embed/qVz---KOtPA?playsinline=1&rel=0&modestbranding=1",
+      "thumbUrl": "https://i.ytimg.com/vi/qVz---KOtPA/hqdefault.jpg",
+      "provider": "youtube"
+    }
+  ]
+}

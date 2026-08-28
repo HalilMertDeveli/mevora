@@ -55,6 +55,7 @@ flutter:
   generate: true
   uses-material-design: true
   assets:
+    - integration_test/fixtures/humor_e2e_live_ids.json
     - assets/images/login_background.jpg
     - assets/images/portraits/
     - assets/rive/common/

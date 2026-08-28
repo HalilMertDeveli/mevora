@@ -3607,11 +3607,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'We\'ll show you short funny videos and images.';
 
   @override
-  String get humorIntroBody2 => 'Pick funny or not funny for each one.';
+  String get humorIntroBody2 =>
+      'Rate whether each one actually made you laugh.';
 
   @override
   String get humorIntroBody3 =>
-      'Your choices gradually build your personal humor profile.';
+      'The more you rate, the more accurate your humor profile becomes.';
 
   @override
   String get humorIntroCta => 'Discover My Humor';

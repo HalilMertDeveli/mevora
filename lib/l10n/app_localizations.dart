@@ -6581,13 +6581,13 @@ abstract class AppLocalizations {
   /// No description provided for @humorIntroBody2.
   ///
   /// In en, this message translates to:
-  /// **'Pick funny or not funny for each one.'**
+  /// **'Rate whether each one actually made you laugh.'**
   String get humorIntroBody2;
 
   /// No description provided for @humorIntroBody3.
   ///
   /// In en, this message translates to:
-  /// **'Your choices gradually build your personal humor profile.'**
+  /// **'The more you rate, the more accurate your humor profile becomes.'**
   String get humorIntroBody3;
 
   /// No description provided for @humorIntroCta.

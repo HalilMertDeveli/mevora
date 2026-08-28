@@ -3600,11 +3600,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorIntroBody2 =>
-      'Komik bulduğun veya bulmadığın içerikleri seç.';
+      'Hangilerinin seni gerçekten güldürdüğünü değerlendir.';
 
   @override
   String get humorIntroBody3 =>
-      'Seçimlerin zamanla kişisel mizah profilini oluşturur.';
+      'Ne kadar çok değerlendirirsen, mizah profilin o kadar doğru oluşur.';
 
   @override
   String get humorIntroCta => 'Mizahımı Keşfet';

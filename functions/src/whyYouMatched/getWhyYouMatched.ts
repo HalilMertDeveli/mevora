@@ -278,14 +278,15 @@ export const getWhyYouMatched = onCall(callableOptions, async (request) => {
   const sanitized = sanitizeForClient(payload);
 
   // Cache for participants (Admin SDK). Clients cannot write this meta doc.
-  await cacheRef.set(
-    {
-      ...sanitized,
-      expiresAtMs: generatedAtMs + WHY_YOU_MATCHED_CACHE_TTL_MS,
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    {merge: true},
-  );
+  const cacheDoc: Record<string, unknown> = {
+    ...sanitized,
+    expiresAtMs: generatedAtMs + WHY_YOU_MATCHED_CACHE_TTL_MS,
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  if (cacheDoc.reason === undefined) {
+    delete cacheDoc.reason;
+  }
+  await cacheRef.set(cacheDoc, {merge: true});
 
   return sanitizeForClient({...sanitized, cacheHit: false});
 });

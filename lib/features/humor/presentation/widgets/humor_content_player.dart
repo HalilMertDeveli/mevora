@@ -452,22 +452,34 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     _cancelLoadWatchdog();
     _bootGeneration += 1;
     _releaseStubs();
-    final ytSub = _youtubeSub;
-    _youtubeSub = null;
-    await ytSub?.cancel();
 
+    // Drop live-controller counts synchronously before any await. Previously
+    // `await ytSub?.cancel()` yielded first, so rapid PageView transitions
+    // could boot the next YouTube iframe while the previous one was still
+    // counted live (peak=2 on physical devices).
     final youtube = _youtube;
     _youtube = null;
     if (youtube != null) {
-      try {
-        await youtube.close();
-      } catch (_) {}
       HumorMediaControllerStats.onYoutubeDisposed();
     }
+
     final video = _video;
     final videoListener = _videoListener;
     _video = null;
     _videoListener = null;
+    if (video != null) {
+      HumorMediaControllerStats.onVideoDisposed();
+    }
+
+    final ytSub = _youtubeSub;
+    _youtubeSub = null;
+    await ytSub?.cancel();
+
+    if (youtube != null) {
+      try {
+        await youtube.close();
+      } catch (_) {}
+    }
     if (video != null) {
       try {
         if (videoListener != null) {
@@ -475,7 +487,6 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         }
         await video.dispose();
       } catch (_) {}
-      HumorMediaControllerStats.onVideoDisposed();
     }
   }
 

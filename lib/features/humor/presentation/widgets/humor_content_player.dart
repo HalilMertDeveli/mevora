@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/responsive/responsive_media.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
+import 'package:mevora/features/humor/presentation/widgets/humor_media_controller_stats.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -22,12 +24,26 @@ class HumorContentPlayer extends StatefulWidget {
     this.isActive = true,
     this.replayToken = 0,
     this.onMediaError,
+    this.mediaLoadTimeout = const Duration(seconds: 12),
   });
+
+  /// When true, skips VideoPlayer / YouTube iframe init (widget stress tests).
+  /// Still exercises active/inactive dispose paths via [HumorMediaControllerStats]
+  /// lightweight stubs when [debugTrackStubControllers] is also true.
+  @visibleForTesting
+  static bool debugDisableHeavyMedia = false;
+
+  /// Counts stub create/dispose when heavy media is disabled (leak accounting).
+  @visibleForTesting
+  static bool debugTrackStubControllers = false;
 
   final HumorContent content;
   final bool isActive;
   final int replayToken;
   final ValueChanged<String>? onMediaError;
+
+  /// Soft ceiling so a hung CDN/iframe never spins forever.
+  final Duration mediaLoadTimeout;
 
   @override
   State<HumorContentPlayer> createState() => _HumorContentPlayerState();
@@ -43,6 +59,9 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
   var _videoError = false;
   var _initializing = false;
   var _errorReported = false;
+  Timer? _loadWatchdog;
+  var _stubYoutubeHeld = false;
+  var _stubVideoHeld = false;
 
   /// Cancel token — incremented on dispose / content change so stale boots abort.
   var _bootGeneration = 0;
@@ -97,34 +116,83 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.content.contentId != widget.content.contentId ||
         oldWidget.replayToken != widget.replayToken) {
-      _errorReported = false;
-      unawaited(_disposeMedia());
-      _videoError = false;
-      unawaited(_boot());
+      unawaited(_restartForContentChange());
       return;
     }
     if (oldWidget.isActive != widget.isActive) {
-      if (widget.isActive && _isYoutube && _youtube == null && !_videoError) {
-        unawaited(_boot());
+      if (widget.isActive) {
+        // Offscreen pages release controllers; re-boot when becoming active.
+        if (!_videoError &&
+            ((_isYoutube && _youtube == null) ||
+                (_isDirectVideo && _video == null))) {
+          unawaited(_boot());
+        } else {
+          _syncPlayback();
+        }
       } else {
-        _syncPlayback();
+        // Keep at most one heavy decoder/iframe alive across PageView cache.
+        unawaited(_disposeMedia());
+        if (mounted) {
+          setState(() {
+            _videoError = false;
+          });
+        }
       }
     }
+  }
+
+  Future<void> _restartForContentChange() async {
+    _errorReported = false;
+    await _disposeMedia();
+    if (!mounted) {
+      return;
+    }
+    _videoError = false;
+    await _boot();
   }
 
   Future<void> _boot() async {
     final gen = ++_bootGeneration;
     _logState('boot-start');
+    _armLoadWatchdog(gen);
     try {
+      if (HumorContentPlayer.debugDisableHeavyMedia) {
+        _cancelLoadWatchdog();
+        if (!widget.isActive) {
+          _logState('boot-stub-deferred');
+          return;
+        }
+        if (HumorContentPlayer.debugTrackStubControllers) {
+          if (_isYoutube) {
+            HumorMediaControllerStats.onYoutubeCreated();
+            _stubYoutubeHeld = true;
+          } else if (_isDirectVideo) {
+            HumorMediaControllerStats.onVideoCreated();
+            _stubVideoHeld = true;
+          }
+        }
+        _logState('boot-stub');
+        return;
+      }
       if (_isYoutube) {
         // Lazy: only create the iframe when the card is the active page.
         if (!widget.isActive) {
+          _cancelLoadWatchdog();
           _logState('boot-yt-deferred');
           return;
         }
         await _initYoutube(gen);
       } else if (_isDirectVideo) {
+        // Same lazy rule as YouTube — prevents N VideoPlayerControllers in
+        // PageView cache during fast swipe stress.
+        if (!widget.isActive) {
+          _cancelLoadWatchdog();
+          _logState('boot-video-deferred');
+          return;
+        }
         await _initVideo(gen);
+      } else {
+        _cancelLoadWatchdog();
       }
     } catch (error, stack) {
       debugPrint('HumorContentPlayer boot failed: $error\n$stack');
@@ -134,12 +202,53 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     }
   }
 
+  void _armLoadWatchdog(int gen) {
+    _cancelLoadWatchdog();
+    final timeout = widget.mediaLoadTimeout;
+    if (timeout <= Duration.zero) {
+      return;
+    }
+    _loadWatchdog = Timer(timeout, () {
+      if (_isStale(gen) || _videoError) {
+        return;
+      }
+      // Direct video: ready once initialized. YouTube: wait for player state
+      // (controller may exist while iframe is still broken/hung).
+      final videoReady = _video != null && _video!.value.isInitialized;
+      if (videoReady) {
+        return;
+      }
+      if (_isYoutube && _youtube != null) {
+        // Controller exists but never reached a playable state → soft-fail.
+        debugPrint(
+          'HumorContentPlayer youtube-load-timeout '
+          'contentId=${widget.content.contentId} '
+          'after=${timeout.inMilliseconds}ms',
+        );
+        _markError();
+        return;
+      }
+      debugPrint(
+        'HumorContentPlayer load-timeout '
+        'contentId=${widget.content.contentId} '
+        'after=${timeout.inMilliseconds}ms',
+      );
+      _markError();
+    });
+  }
+
+  void _cancelLoadWatchdog() {
+    _loadWatchdog?.cancel();
+    _loadWatchdog = null;
+  }
+
   bool _isStale(int gen) => gen != _bootGeneration || !mounted;
 
   void _markError() {
     if (!mounted) {
       return;
     }
+    _cancelLoadWatchdog();
     setState(() => _videoError = true);
     if (_errorReported) {
       return;
@@ -170,7 +279,9 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
           strictRelatedVideos: true,
         ),
       );
+      HumorMediaControllerStats.onYoutubeCreated();
       if (_isStale(gen)) {
+        HumorMediaControllerStats.onYoutubeDisposed();
         await controller.close();
         return;
       }
@@ -185,6 +296,14 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
             'contentId=${widget.content.contentId}',
           );
           _markError();
+          return;
+        }
+        // Iframe became usable — stop the hung-load watchdog.
+        final state = value.playerState;
+        if (state == PlayerState.playing ||
+            state == PlayerState.paused ||
+            state == PlayerState.cued) {
+          _cancelLoadWatchdog();
         }
       });
       setState(() {
@@ -228,13 +347,16 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         return;
       }
       controller = VideoPlayerController.networkUrl(uri);
+      HumorMediaControllerStats.onVideoCreated();
       await controller.initialize();
       if (_isStale(gen)) {
+        HumorMediaControllerStats.onVideoDisposed();
         await controller.dispose();
         return;
       }
       final size = controller.value.size;
       if (size.width <= 0 || size.height <= 0) {
+        HumorMediaControllerStats.onVideoDisposed();
         await controller.dispose();
         _markError();
         return;
@@ -242,6 +364,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
       await controller.setLooping(true);
       await controller.setVolume(_muted ? 0 : 1);
       if (_isStale(gen)) {
+        HumorMediaControllerStats.onVideoDisposed();
         await controller.dispose();
         return;
       }
@@ -265,6 +388,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         _videoError = false;
       });
       controller = null;
+      _cancelLoadWatchdog();
       _logState('video-ready');
       _syncPlayback();
     } catch (error, stack) {
@@ -275,6 +399,9 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         _videoListener = null;
       }
       await controller?.dispose();
+      if (controller != null) {
+        HumorMediaControllerStats.onVideoDisposed();
+      }
       if (!_isStale(gen)) {
         _markError();
       }
@@ -310,8 +437,21 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     }
   }
 
+  void _releaseStubs() {
+    if (_stubYoutubeHeld) {
+      _stubYoutubeHeld = false;
+      HumorMediaControllerStats.onYoutubeDisposed();
+    }
+    if (_stubVideoHeld) {
+      _stubVideoHeld = false;
+      HumorMediaControllerStats.onVideoDisposed();
+    }
+  }
+
   Future<void> _disposeMedia() async {
+    _cancelLoadWatchdog();
     _bootGeneration += 1;
+    _releaseStubs();
     final ytSub = _youtubeSub;
     _youtubeSub = null;
     await ytSub?.cancel();
@@ -322,6 +462,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
       try {
         await youtube.close();
       } catch (_) {}
+      HumorMediaControllerStats.onYoutubeDisposed();
     }
     final video = _video;
     final videoListener = _videoListener;
@@ -334,11 +475,13 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         }
         await video.dispose();
       } catch (_) {}
+      HumorMediaControllerStats.onVideoDisposed();
     }
   }
 
   @override
   void dispose() {
+    _releaseStubs();
     unawaited(_disposeMedia());
     super.dispose();
   }
@@ -402,7 +545,11 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
             return Stack(
               fit: StackFit.expand,
               children: [
-                if (_isYoutube && !_videoError)
+                if (HumorContentPlayer.debugDisableHeavyMedia)
+                  _TextBody(
+                    text: widget.content.textBody ?? l10n.humorEmptyFeed,
+                  )
+                else if (_isYoutube && !_videoError)
                   _buildYoutube(theme, l10n, constraints)
                 else if (_isDirectVideo && !_videoError)
                   _buildVideo(theme, l10n, constraints)
@@ -485,7 +632,11 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         fit: StackFit.expand,
         children: [
           if (thumb != null)
-            Image(image: thumb, fit: BoxFit.cover)
+            Image(
+              image: thumb,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+            )
           else
             const ColoredBox(color: Colors.black),
           if (widget.isActive)
@@ -496,13 +647,19 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) {
       return const SizedBox.shrink();
     }
-    final ratio = widget.content.aspectRatio ?? 9 / 16;
-    return Center(
-      child: AspectRatio(
-        aspectRatio: ratio,
-        child: YoutubePlayer(
-          controller: youtube,
+    final ratio = ResponsiveMedia.clampAspect(
+      widget.content.aspectRatio,
+      fallback: ResponsiveMedia.storyAspect,
+    );
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: AspectRatio(
           aspectRatio: ratio,
+          child: YoutubePlayer(
+            controller: youtube,
+            aspectRatio: ratio,
+          ),
         ),
       ),
     );
@@ -520,7 +677,11 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         fit: StackFit.expand,
         children: [
           if (thumb != null)
-            Image(image: thumb, fit: BoxFit.cover)
+            Image(
+              image: thumb,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+            )
           else
             const ColoredBox(color: Colors.black),
           const Center(child: CircularProgressIndicator()),
@@ -534,13 +695,20 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
         constraints.maxHeight <= 0) {
       return _TextBody(text: l10n.humorMediaErrorSkip);
     }
-    return FittedBox(
-      fit: BoxFit.cover,
-      clipBehavior: Clip.hardEdge,
-      child: SizedBox(
-        width: size.width,
-        height: size.height,
-        child: VideoPlayer(video),
+    final videoAspect = size.width / size.height;
+    // Portrait / near-square: full-bleed cover. Landscape: contain so content
+    // is not horizontally crushed on tall phone frames.
+    final fit = videoAspect >= 1.15 ? BoxFit.contain : BoxFit.cover;
+    return ColoredBox(
+      color: Colors.black,
+      child: FittedBox(
+        fit: fit,
+        clipBehavior: Clip.hardEdge,
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
+          child: VideoPlayer(video),
+        ),
       ),
     );
   }
@@ -552,19 +720,25 @@ class _HumorContentPlayerState extends State<HumorContentPlayer> {
     if (image == null) {
       return _TextBody(text: widget.content.textBody ?? l10n.humorEmptyFeed);
     }
-    return Image(
-      image: image,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _markError();
-          }
-        });
-        return _TextBody(
-          text: widget.content.textBody ?? l10n.humorMediaErrorSkip,
-        );
-      },
+    final ratio = widget.content.aspectRatio;
+    final fit = (ratio != null && ratio >= 1.15) ? BoxFit.contain : BoxFit.cover;
+    return ColoredBox(
+      color: Colors.black,
+      child: Image(
+        image: image,
+        fit: fit,
+        alignment: Alignment.center,
+        errorBuilder: (_, _, _) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _markError();
+            }
+          });
+          return _TextBody(
+            text: widget.content.textBody ?? l10n.humorMediaErrorSkip,
+          );
+        },
+      ),
     );
   }
 

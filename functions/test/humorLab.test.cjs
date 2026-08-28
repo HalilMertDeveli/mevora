@@ -469,24 +469,161 @@ test("toFeedSafeContent exposes provider sourceId", () => {
   assert.equal(safe.provider, "youtube");
 });
 
-test("provider error classifier maps key/access failures", () => {
+test("toFeedSafeContent strips YouTube HTML downloadUrl (crash vector)", () => {
+  const {
+    toFeedSafeContent,
+    parseHumorContent,
+    isYoutubeHtmlPlaybackUrl,
+    sanitizeYoutubeFeedMedia,
+  } = require("../lib/humor/contentRepository.js");
+  assert.equal(
+    isYoutubeHtmlPlaybackUrl("https://www.youtube.com/embed/abc123XYZ12"),
+    true,
+  );
+  assert.equal(
+    isYoutubeHtmlPlaybackUrl("https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg"),
+    false,
+  );
+  const scrubbed = sanitizeYoutubeFeedMedia({
+    downloadUrl: "https://www.youtube.com/embed/abc123XYZ12?playsinline=1",
+    thumbUrl: "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg",
+    embedUrl: "https://www.youtube.com/embed/abc123XYZ12",
+  });
+  assert.equal(
+    scrubbed.downloadUrl,
+    "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg",
+  );
+  assert.ok(scrubbed.embedUrl?.includes("/embed/"));
+
+  const parsed = parseHumorContent("ext_youtube_abc123XYZ12", {
+    type: "video",
+    language: "tr",
+    category: "meme",
+    humorTags: [],
+    humorVector: {},
+    media: {
+      downloadUrl: "https://www.youtube.com/embed/abc123XYZ12",
+      thumbUrl: "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg",
+      embedUrl: "https://www.youtube.com/embed/abc123XYZ12",
+    },
+    safetyStatus: "approved",
+    safetyFlags: {},
+    source: {type: "licensed_api", provider: "youtube", licenseRef: null},
+    active: true,
+    stats: {viewCount: 0, ratingCount: 0, avgRating: 0},
+  });
+  assert.ok(parsed);
+  const safe = toFeedSafeContent(parsed);
+  assert.equal(
+    safe.media.downloadUrl,
+    "https://i.ytimg.com/vi/abc123XYZ12/hqdefault.jpg",
+  );
+  assert.equal(
+    String(safe.media.downloadUrl).includes("youtube.com/embed"),
+    false,
+  );
+});
+
+test("provider error classifier maps phase14 youtube/giphy failures", () => {
   const {classifyProviderFetchError} = require(
     "../lib/humor/providerOrchestrator.js",
   );
-  assert.equal(
-    classifyProviderFetchError("youtube-keyInvalid"),
-    "invalid_api_key",
-  );
-  assert.equal(
-    classifyProviderFetchError("youtube-accessNotConfigured"),
-    "invalid_api_key",
-  );
-  assert.equal(
-    classifyProviderFetchError("youtube-quotaExceeded"),
-    "rate_limit",
-  );
-  assert.equal(classifyProviderFetchError("youtube-empty"), "empty_result");
+  const cases = [
+    ["youtube-http-401", "invalid_api_key"],
+    ["youtube-invalid-or-forbidden:forbidden", "invalid_api_key"],
+    ["youtube-http-403", "invalid_api_key"],
+    ["youtube-quotaExceeded", "rate_limit"],
+    ["youtube-rate-limit", "rate_limit"],
+    ["AbortError: The operation was aborted", "timeout"],
+    ["youtube-timeout", "timeout"],
+    ["youtube-empty", "empty_result"],
+    ["giphy-empty", "empty_result"],
+    ["giphy-http-500", "unknown"],
+    ["giphy-timeout", "timeout"],
+    ["giphy-http-401", "invalid_api_key"],
+    ["giphy-http-403", "invalid_api_key"],
+    ["embedding disabled by uploader", "provider_unavailable"],
+    ["video embeddable=false", "provider_unavailable"],
+    ["Video unavailable", "provider_unavailable"],
+  ];
+  for (const [msg, expected] of cases) {
+    assert.equal(
+      classifyProviderFetchError(msg),
+      expected,
+      `${msg} -> ${expected}`,
+    );
+  }
 });
+
+test("fallback chain order is youtube then internal only", () => {
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "../src/humor/providerOrchestrator.ts"),
+    "utf8",
+  );
+  const chainStart = src.indexOf("const chain: Array<{");
+  assert.ok(chainStart > 0, "provider chain declared");
+  const chainBlock = src.slice(chainStart, chainStart + 800);
+  const yt = chainBlock.indexOf('provider: "youtube"');
+  const gp = chainBlock.indexOf('provider: "giphy"');
+  const internal = src.indexOf('providersActive.push("mevora-internal")');
+  assert.ok(yt > 0, "youtube in chain");
+  assert.equal(gp, -1, "giphy not in live top-up chain");
+  assert.ok(internal > chainStart, "internal after provider attempts");
+  assert.match(src, /YouTube Data API → internal Firestore pool/);
+});
+
+test("giphy source request uses abort timeout", () => {
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "../src/humor/giphySource.ts"),
+    "utf8",
+  );
+  assert.match(src, /AbortController/);
+  assert.match(src, /giphy-timeout/);
+  assert.match(src, /8000/);
+});
+
+test("validateHumorSourceItem rejects invalid media urls", () => {
+  const {validateHumorSourceItem} = require("../lib/humor/contentValidation.js");
+  assert.equal(
+    validateHumorSourceItem({
+      sourceId: "x",
+      type: "meme",
+      language: "tr",
+      media: {downloadUrl: ""},
+    }).ok,
+    false,
+  );
+  assert.equal(
+    validateHumorSourceItem({
+      sourceId: "x",
+      type: "meme",
+      language: "tr",
+      media: {downloadUrl: "http://evil.example/a.gif"},
+    }).ok,
+    false,
+  );
+  assert.equal(
+    validateHumorSourceItem({
+      sourceId: "x",
+      type: "meme",
+      language: "tr",
+      media: {downloadUrl: "not-a-url"},
+    }).ok,
+    false,
+  );
+  assert.equal(
+    validateHumorSourceItem({
+      sourceId: "ok",
+      type: "video",
+      language: "tr",
+      media: {
+        downloadUrl: "https://media.giphy.com/media/abc/giphy.mp4",
+      },
+    }).ok,
+    true,
+  );
+});
+
 
 test("tenor provider is disabled", () => {
   const {TENOR_API_STATUS, TenorHumorSource} = require("../lib/humor/tenorSource.js");
@@ -505,6 +642,36 @@ test("category query buckets are allowlisted and turkish-first", () => {
   const q = pickBucketQuery("turkish", "tr", 0);
   assert.match(q, /türk|komedi|komik/i);
   assert.equal(BUCKET_TO_CATEGORY.animal, "silly");
+});
+
+test("provider cache merges unique items by id", () => {
+  const {mergeProviderCacheItems} = require("../lib/humor/providerCache.js");
+  const a = [
+    {id: "ext_youtube_aaaaaaaaaaa", provider: "youtube", providerContentId: "aaaaaaaaaaa"},
+    {id: "ext_youtube_bbbbbbbbbbb", provider: "youtube", providerContentId: "bbbbbbbbbbb"},
+  ];
+  const b = [
+    {id: "ext_youtube_bbbbbbbbbbb", provider: "youtube", providerContentId: "bbbbbbbbbbb"},
+    {id: "ext_youtube_ccccccccccc", provider: "youtube", providerContentId: "ccccccccccc"},
+  ];
+  const merged = mergeProviderCacheItems(a, b);
+  assert.equal(merged.length, 3);
+  assert.ok(merged.some((x) => x.id === "ext_youtube_ccccccccccc"));
+});
+
+test("youtube-primary feed filter excludes giphy when youtube exists", () => {
+  const {filterYoutubePrimaryFeed} = require("../lib/humor/feed.js");
+  const yt = contentDoc({
+    contentId: "ext_youtube_abcdefghijk",
+    source: {type: "licensed_api", provider: "youtube"},
+  });
+  const gp = contentDoc({
+    contentId: "ext_giphy_abc",
+    source: {type: "licensed_api", provider: "giphy"},
+  });
+  const out = filterYoutubePrimaryFeed([gp, yt]);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].contentId, "ext_youtube_abcdefghijk");
 });
 
 test("provider diversification avoids long same-provider runs", () => {

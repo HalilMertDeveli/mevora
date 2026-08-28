@@ -15,6 +15,21 @@ import {
   type UserHumorProfileDoc,
 } from "./types.js";
 
+/** YouTube-primary feed: serve licensed YouTube + internal seed; exclude GIPHY from live feed. */
+export function filterYoutubePrimaryFeed(
+  items: HumorContentDoc[],
+): HumorContentDoc[] {
+  const isYoutube = (c: HumorContentDoc) =>
+    c.source?.provider === "youtube" || c.contentId.startsWith("ext_youtube_");
+  const isInternal = (c: HumorContentDoc) =>
+    c.source?.provider === "mevora-internal" || c.contentId.startsWith("hc_");
+  const youtube = items.filter(isYoutube);
+  if (youtube.length > 0) {
+    return youtube;
+  }
+  return items.filter((c) => isInternal(c));
+}
+
 export async function loadUserHumorProfile(
   db: Firestore,
   uid: string,
@@ -142,22 +157,25 @@ export async function buildHumorFeed(input: {
 
   let candidates = await listCandidateHumorContent(input.db, {
     languages,
-    limit: 120,
+    limit: 200,
   });
   let eligible = candidates.filter((c) =>
     canServeHumorContent({active: c.active, safetyStatus: c.safetyStatus}),
   );
+  eligible = filterYoutubePrimaryFeed(eligible);
   let unseenEligible = eligible.filter((c) => !seen.has(c.contentId));
 
   let providerMeta: {attempts: unknown[]; toppedUp: number} | undefined;
 
-  // Live top-up when pool is thin — YouTube → GIPHY → (Tenor off) → internal.
-  if (unseenEligible.length < limit) {
+  // Keep a reserve of unseen items so pagination/prefetch stays unique without
+  // calling search.list on every swipe (top-up uses provider cache + pageToken).
+  const topUpReserve = Math.max(limit * 2, 24);
+  if (unseenEligible.length < topUpReserve) {
     try {
       const topUp = await topUpHumorFromProviders({
         db: input.db,
         languages,
-        needed: limit - unseenEligible.length + 4,
+        needed: Math.min(20, topUpReserve - unseenEligible.length + 4),
         excludeIds: new Set([...seen, ...eligible.map((c) => c.contentId)]),
       });
       providerMeta = {
@@ -167,11 +185,12 @@ export async function buildHumorFeed(input: {
       if (topUp.contentIds.length > 0) {
         candidates = await listCandidateHumorContent(input.db, {
           languages,
-          limit: 120,
+          limit: 200,
         });
         eligible = candidates.filter((c) =>
           canServeHumorContent({active: c.active, safetyStatus: c.safetyStatus}),
         );
+        eligible = filterYoutubePrimaryFeed(eligible);
         unseenEligible = eligible.filter((c) => !seen.has(c.contentId));
       }
     } catch (error) {
@@ -196,7 +215,58 @@ export async function buildHumorFeed(input: {
     ),
   );
 
-  // Infinite feed: recycle seen catalog when unseen pool is exhausted.
+  // Prefer another provider top-up before recycling seen catalog.
+  if (ranked.length < limit) {
+    try {
+      const topUp = await topUpHumorFromProviders({
+        db: input.db,
+        languages,
+        needed: limit - ranked.length + 6,
+        excludeIds: new Set([
+          ...seen,
+          ...eligible.map((c) => c.contentId),
+          ...ranked.map((c) => c.contentId),
+        ]),
+      });
+      providerMeta = {
+        attempts: [
+          ...((providerMeta?.attempts as unknown[]) ?? []),
+          ...(topUp.attempts as unknown[]),
+        ],
+        toppedUp: (providerMeta?.toppedUp ?? 0) + topUp.contentIds.length,
+      };
+      if (topUp.contentIds.length > 0) {
+        candidates = await listCandidateHumorContent(input.db, {
+          languages,
+          limit: 200,
+        });
+        eligible = candidates.filter((c) =>
+          canServeHumorContent({active: c.active, safetyStatus: c.safetyStatus}),
+        );
+        eligible = filterYoutubePrimaryFeed(eligible);
+        ranked = diversifyByCategory(
+          diversifyByProvider(
+            rankHumorFeed({
+              profile,
+              items: eligible.map((content) => ({
+                content,
+                seen: seen.has(content.contentId),
+              })),
+              userLanguages: languages,
+              limit: limit * 2,
+            }).filter((c) => !seen.has(c.contentId)),
+          ),
+        );
+      }
+    } catch (error) {
+      logger.warn(
+        "humor secondary top-up failed",
+        safeLogMeta({uid: input.uid, error: String(error)}),
+      );
+    }
+  }
+
+  // Infinite feed: recycle seen catalog only when unseen + top-up are exhausted.
   if (ranked.length < limit && eligible.length > 0) {
     const recycled = diversifyByCategory(
       diversifyByProvider(

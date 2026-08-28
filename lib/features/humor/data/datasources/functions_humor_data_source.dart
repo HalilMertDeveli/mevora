@@ -136,7 +136,7 @@ class FunctionsHumorDataSource implements HumorDataSource {
           ? Map<String, dynamic>.from(map['media'] as Map)
           : const <String, dynamic>{};
       items.add(
-        HumorContent(
+        HumorContent.sanitized(
           contentId: id,
           type: HumorContent.parseType(map['type'] as String?),
           language: (map['language'] as String?) ?? 'en',

@@ -392,11 +392,11 @@ class HumorController extends ChangeNotifier {
   /// Drop a broken media item and advance without crashing the feed.
   Future<void> skipBrokenMedia(String contentId) async {
     final items = List<HumorContent>.from(_state.items);
-    final index = items.indexWhere((e) => e.contentId == contentId);
-    if (index < 0) {
+    final beforeLen = items.length;
+    items.removeWhere((e) => e.contentId == contentId);
+    if (items.length == beforeLen) {
       return;
     }
-    items.removeAt(index);
     if (items.isEmpty) {
       _state = _state.copyWith(
         items: const [],
@@ -408,7 +408,7 @@ class HumorController extends ChangeNotifier {
       await _maybePrefetch();
       return;
     }
-    final nextIndex = index.clamp(0, items.length - 1);
+    final nextIndex = _state.currentIndex.clamp(0, items.length - 1);
     _state = _state.copyWith(
       items: items,
       currentIndex: nextIndex,
@@ -683,10 +683,10 @@ class HumorController extends ChangeNotifier {
             added++;
           }
         }
-        // Catalog recycled for infinite feed — allow re-queue of known ids.
-        if (added == 0 && page.items.isNotEmpty) {
+        // Prefer unique continuous feed. Only recycle known ids after the
+        // session already has a solid unique runway (avoids A→B→A loops early).
+        if (added == 0 && page.items.isNotEmpty && merged.length >= 20) {
           for (final item in page.items) {
-            _sessionSeenIds.add(item.contentId);
             merged.add(item);
           }
         }

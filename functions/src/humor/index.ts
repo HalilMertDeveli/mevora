@@ -30,7 +30,7 @@ const db = getFirestore();
 const auth = getAuth();
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 const callableOptions = {enforceAppCheck, region: "europe-west1" as const};
-/** Feed/sync may top-up from GIPHY/YouTube — secrets must be bound. */
+/** Feed/sync top-up uses YouTube Secret Manager key only for live ingest. */
 const humorLiveCallable = {
   enforceAppCheck,
   region: "europe-west1" as const,
@@ -346,14 +346,13 @@ export const syncHumorFromProvider = onCall(humorLiveCallable, async (request) =
     excludeIds: new Set(),
   });
   return {
-    ok: topUp.contentIds.length > 0 || isYoutubeConfigured() || isGiphyConfigured(),
-    mode: "fallback_chain",
+    ok: topUp.contentIds.length > 0 || isYoutubeConfigured(),
+    mode: "youtube_primary",
     providers: status,
     ...topUp,
-    message:
-      !isYoutubeConfigured() && !isGiphyConfigured()
-        ? "No live API keys. Set YOUTUBE_DATA_API_KEY and/or GIPHY_API_KEY. Internal pool still works after seedInternalHumorContent."
-        : undefined,
+    message: !isYoutubeConfigured()
+      ? "Set YOUTUBE_DATA_API_KEY. Internal pool still works after seedInternalHumorContent."
+      : undefined,
   };
 });
 
@@ -363,8 +362,8 @@ export {YoutubeHumorSource} from "./youtubeSource.js";
 export {TENOR_API_STATUS} from "./tenorSource.js";
 export {validateHumorSourceItem} from "./contentValidation.js";
 export {syncHumorFromGiphy} from "./ingest.js";
-export {topUpHumorFromProviders} from "./providerOrchestrator.js";
-export {diversifyByProvider, diversifyByCategory} from "./feed.js";
+export {topUpHumorFromProviders, fetchGiphyNormalized} from "./providerOrchestrator.js";
+export {diversifyByProvider, diversifyByCategory, filterYoutubePrimaryFeed} from "./feed.js";
 
 // Re-export pure helpers for tests / future V3 wiring (not used by Discover in MVP).
 export {humorScoreForPair} from "./compatibility.js";

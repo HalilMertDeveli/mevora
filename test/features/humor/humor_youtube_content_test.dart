@@ -36,6 +36,27 @@ void main() {
       expect(item.youtubeVideoId, isNull);
     });
 
+    test('sanitized strips embed HTML from downloadUrl', () {
+      final item = HumorContent.sanitized(
+        contentId: 'ext_youtube_abcdefghijk',
+        type: HumorContentType.video,
+        language: 'tr',
+        category: HumorCategory.meme,
+        provider: 'youtube',
+        sourceId: 'abcdefghijk',
+        downloadUrl: 'https://www.youtube.com/embed/abcdefghijk?playsinline=1',
+        thumbUrl: 'https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg',
+        embedUrl: 'https://www.youtube.com/embed/abcdefghijk',
+      );
+      expect(item.isYoutube, isTrue);
+      expect(item.downloadUrl, 'https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg');
+      expect(
+        HumorContent.isYoutubeHtmlPlaybackUrl(item.downloadUrl),
+        isFalse,
+      );
+      expect(item.embedUrl?.contains('/embed/'), isTrue);
+    });
+
     test('never treats youtube poster url as giphy', () {
       const item = HumorContent(
         contentId: 'ext_youtube_abcdefghijk',

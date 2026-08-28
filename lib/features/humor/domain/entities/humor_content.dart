@@ -125,6 +125,60 @@ class HumorContent {
     return id;
   }
 
+  /// True when [url] is a YouTube HTML page (embed/watch), not a poster asset.
+  static bool isYoutubeHtmlPlaybackUrl(String? url) {
+    final lower = (url ?? '').toLowerCase();
+    return lower.contains('youtube.com/embed') ||
+        lower.contains('youtube.com/watch') ||
+        lower.contains('youtu.be/');
+  }
+
+  /// Strip HTML playback URLs from [downloadUrl] so VideoPlayer never sees them.
+  /// Proven crash vector: ExoPlayer decoding youtube.com/embed HTML.
+  factory HumorContent.sanitized({
+    required String contentId,
+    required HumorContentType type,
+    required String language,
+    required HumorCategory category,
+    List<String> humorTags = const [],
+    String? textBody,
+    String? downloadUrl,
+    String? thumbUrl,
+    String? embedUrl,
+    int? durationMs,
+    double? aspectRatio,
+    String? provider,
+    String? sourceId,
+    bool attributionRequired = false,
+    String? sourceUrl,
+  }) {
+    var safeDownload = downloadUrl;
+    final looksYoutube =
+        (provider?.toLowerCase() == 'youtube') ||
+        isYoutubeHtmlPlaybackUrl(downloadUrl) ||
+        isYoutubeHtmlPlaybackUrl(embedUrl);
+    if (looksYoutube && isYoutubeHtmlPlaybackUrl(safeDownload)) {
+      safeDownload = isYoutubeHtmlPlaybackUrl(thumbUrl) ? null : thumbUrl;
+    }
+    return HumorContent(
+      contentId: contentId,
+      type: type,
+      language: language,
+      category: category,
+      humorTags: humorTags,
+      textBody: textBody,
+      downloadUrl: safeDownload,
+      thumbUrl: thumbUrl,
+      embedUrl: embedUrl,
+      durationMs: durationMs,
+      aspectRatio: aspectRatio,
+      provider: provider,
+      sourceId: sourceId,
+      attributionRequired: attributionRequired,
+      sourceUrl: sourceUrl,
+    );
+  }
+
   static HumorContentType parseType(String? raw) {
     switch (raw) {
       case 'image':

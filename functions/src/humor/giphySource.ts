@@ -188,13 +188,36 @@ export class GiphyHumorSource implements HumorContentSource {
     for (const [k, v] of Object.entries(params)) {
       url.searchParams.set(k, String(v));
     }
-    const res = await fetch(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    let res: Response;
+    try {
+      res = await fetch(url, {signal: controller.signal});
+    } catch (err) {
+      const msg = String(err ?? "");
+      if (msg.toLowerCase().includes("abort")) {
+        throw new Error("giphy-timeout");
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
     if (!res.ok) {
       throw new Error(`giphy-http-${res.status}`);
     }
-    return (await res.json()) as {
-      data: GiphyGif[];
+    const body = (await res.json()) as {
+      data?: GiphyGif[];
+      meta?: {status?: number; msg?: string};
       pagination?: {total_count?: number; count?: number; offset?: number};
+    };
+    if (body.meta?.status && body.meta.status >= 400) {
+      throw new Error(
+        `giphy-api-${body.meta.status}:${body.meta.msg ?? "error"}`,
+      );
+    }
+    return {
+      data: Array.isArray(body.data) ? body.data : [],
+      pagination: body.pagination,
     };
   }
 

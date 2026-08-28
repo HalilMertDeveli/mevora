@@ -842,37 +842,49 @@
   "relationshipInitialTestHeadline": "Build your compatibility profile",
   "relationshipInitialTestMessage": "Answer 3 short questions once. After this, Compatibility Challenges run every hour as Mevora Hour.",
   "relationshipInitialTestStart": "Start my first test",
-  "mevoraHourTitle": "MEVORA HOUR",
+  "mevoraHourTitle": "🧬 MEVORA HOUR",
   "mevoraHourHeadline": "This hour's Compatibility Challenge",
-  "mevoraHourMessage": "Join this hour's Compatibility Challenge and meet people who answered like you.",
+  "mevoraHourMessage": "Answer this hour's questions and discover your compatibility.",
   "mevoraHourJoin": "Join the Challenge",
   "mevoraHourJoinNow": "Join now",
-  "mevoraHourLiveBadge": "MEVORA HOUR — LIVE",
-  "mevoraHourLiveTitle": "{hour}:00 Compatibility Hour is live",
+  "mevoraHourLiveBadge": "🔴 MEVORA HOUR — LIVE",
+  "mevoraHourLiveTitle": "{hour}:00 Compatibility Challenge is live",
   "@mevoraHourLiveTitle": {
     "placeholders": {
       "hour": { "type": "String" }
     }
   },
-  "mevoraHourUpcomingTitle": "{hour}:00 MEVORA HOUR",
+  "mevoraHourLiveBody": "Answer this hour's questions and discover your compatibility.",
+  "mevoraHourUpcomingTitle": "{hour}:00 Compatibility Hour",
   "@mevoraHourUpcomingTitle": {
     "placeholders": {
       "hour": { "type": "String" }
     }
   },
-  "mevoraHourUpcomingBody": "The next Compatibility Hour is approaching. Discover compatibility with other active users.",
-  "mevoraHourUpcomingCountdown": "Starts in {countdown}",
-  "@mevoraHourUpcomingCountdown": {
+  "mevoraHourUpcomingBody": "The next hourly Compatibility Event is approaching.",
+  "mevoraHourUpcomingStartsInMinutes": "Starts in {minutes} min.",
+  "@mevoraHourUpcomingStartsInMinutes": {
     "placeholders": {
-      "countdown": { "type": "String" }
+      "minutes": { "type": "int" }
     }
   },
-  "mevoraHourJoinedTitle": "You're in this hour's Challenge",
-  "mevoraHourJoinedBody": "Answer the questions to join this Compatibility Hour.",
+  "mevoraHourMinutesRemaining": "{minutes} min left",
+  "@mevoraHourMinutesRemaining": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "mevoraHourJoinedTitle": "You joined this hour's Compatibility Challenge",
+  "mevoraHourJoinedBody": "Answer the questions for this hour.",
   "mevoraHourAnsweredTitle": "Answers saved",
-  "mevoraHourAnsweredBody": "Waiting for other participants. We'll show your compatibility when this hour completes.",
-  "mevoraHourResultTitle": "Compatibilities from this hour",
-  "mevoraHourResultBody": "People who answered like you in this Mevora Hour.",
+  "mevoraHourAnsweredBody": "Your compatibility results are being prepared.",
+  "mevoraHourResultTitle": "Who did you discover compatibility with this hour?",
+  "mevoraHourResultBody": "People whose answers aligned with yours in this Mevora Hour.",
+  "mevoraCompatibilityScoreLabel": "Mevora Compatibility Score",
+  "mevoraCompatibilityScoreDisclaimer": "Calculated from your answers and compatibility signals on Mevora.",
+  "mevoraHourCompatibleUsers": "Compatible users",
+  "mevoraHourWhyCompatible": "Why you're compatible",
+  "mevoraHourNoDiscoveries": "No strong compatibilities this hour yet. Join the next Mevora Hour.",
   "mevoraHourEndedTitle": "{hour}:00 Mevora Hour ended",
   "@mevoraHourEndedTitle": {
     "placeholders": {
@@ -885,7 +897,7 @@
       "hour": { "type": "String" }
     }
   },
-  "mevoraHourRemindMe": "Remind me",
+  "mevoraHourRemindMe": "🔔 Remind me",
   "mevoraHourReminderOn": "Reminder on",
   "mevoraHourReminderSaved": "We'll notify you when Mevora Hour starts.",
   "mevoraHourReminderNeedPermission": "Enable notifications to get Mevora Hour reminders.",
@@ -1037,7 +1049,7 @@
   "verificationNotConfigured": "Verification is temporarily unavailable.",
   "verificationCooldown": "Please wait a few minutes before trying again.",
   "verificationAttemptLimit": "You've reached today's verification limit. Try again tomorrow.",
-  "whyYouMatch": "Why you match",
+  "whyYouMatch": "Why You Matched",
   "compatWhyButton": "Why?",
   "compatDiscoverBadge": "{percent}% Compatible",
   "@compatDiscoverBadge": {
@@ -1563,7 +1575,7 @@
   "humorProfileBuilding": "Still learning your humor vibe…",
   "humorProfileTitle": "Your humor profile",
   "humorEmptyFeed": "No new content to show right now.",
-  "humorFeedError": "Couldn't load content. Try again.",
+  "humorFeedError": "Videos can't load right now. Try again.",
   "humorTryAgain": "Try again",
   "humorUndoRating": "Undo rating",
   "humorCompatibilityTitle": "Humor match",
@@ -1648,5 +1660,109 @@
   "humorAdInfoBody": "In free use, ads may appear from time to time.",
   "humorAdInfoPremiumHint": "With Premium you can use Humor Lab without ads.",
   "humorAdInfoPremiumCta": "Explore Premium",
-  "humorInfoTooltip": "How Humor Lab works"
+  "humorInfoTooltip": "How Humor Lab works",
+
+  "wymHumorTitle": "Your sense of humor is similar.",
+  "wymHumorEvidence": "You made similar choices on {matching} of {total} questions.",
+  "@wymHumorEvidence": {
+    "placeholders": {
+      "matching": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "wymHumorDimsEvidence": "You share {matching} humor style signals.",
+  "@wymHumorDimsEvidence": {
+    "placeholders": {
+      "matching": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "wymHumorScoreEvidence": "Your humor profiles line up ({score}%).",
+  "@wymHumorScoreEvidence": {
+    "placeholders": {
+      "score": { "type": "String" }
+    }
+  },
+  "wymMusicTitle": "Your music tastes overlap.",
+  "wymMusicArtistsNamedEvidence": "{names} are among {count} artists you both listen to.",
+  "@wymMusicArtistsNamedEvidence": {
+    "placeholders": {
+      "names": { "type": "String" },
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicArtistsCountEvidence": "You share {count} of your top artists.",
+  "@wymMusicArtistsCountEvidence": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicTracksEvidence": "You share {count} tracks you both like.",
+  "@wymMusicTracksEvidence": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicGenresNamedEvidence": "{names} are among {count} genres you both enjoy.",
+  "@wymMusicGenresNamedEvidence": {
+    "placeholders": {
+      "names": { "type": "String" },
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicGenresCountEvidence": "You share {count} music genres.",
+  "@wymMusicGenresCountEvidence": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicScoreEvidence": "Your listening tastes are similar ({score}%).",
+  "@wymMusicScoreEvidence": {
+    "placeholders": {
+      "score": { "type": "String" }
+    }
+  },
+  "wymInterestsTitle": "You have interests in common.",
+  "wymInterestsEvidence": "You both like {names} — {count} shared interests.",
+  "@wymInterestsEvidence": {
+    "placeholders": {
+      "names": { "type": "String" },
+      "count": { "type": "String" }
+    }
+  },
+  "wymLifestyleTitle": "Your lifestyles fit well.",
+  "wymLifestyleEvidence": "You match on {labels} ({matching} of {comparable} lifestyle points).",
+  "@wymLifestyleEvidence": {
+    "placeholders": {
+      "labels": { "type": "String" },
+      "matching": { "type": "String" },
+      "comparable": { "type": "String" }
+    }
+  },
+  "wymPreferencesTitle": "You share language preferences.",
+  "wymPreferencesLanguageEvidence": "You can both speak {languages}.",
+  "@wymPreferencesLanguageEvidence": {
+    "placeholders": {
+      "languages": { "type": "String" }
+    }
+  },
+  "wymCommunicationTitle": "You communicate in similar ways.",
+  "wymCommunicationEvidence": "You answered alike on communication topics.",
+  "wymDistanceNearbyTitle": "You are close to each other.",
+  "wymDistanceNearbyEvidence": "You are near each other.",
+  "wymDistanceTitle": "You live nearby.",
+  "wymDistanceKmEvidence": "You are about {km} km apart.",
+  "@wymDistanceKmEvidence": {
+    "placeholders": {
+      "km": { "type": "String" }
+    }
+  },
+  "wymInsufficientData": "Not enough common ground yet.",
+  "wymLoadingMessage": "Finding what you have in common…",
+  "wymErrorMessage": "We could not load match reasons. Try again.",
+  "wymEmptyTitle": "Not enough in common yet",
+  "wymNetworkErrorMessage": "Check your connection and try again.",
+  "wymTimeoutErrorMessage": "This is taking too long. Try again.",
+  "wymInvalidDataMessage": "Match reasons are temporarily unavailable.",
+  "wymReasonListSemantics": "Reasons you matched"
 }

@@ -842,37 +842,49 @@
   "relationshipInitialTestHeadline": "Uyumluluk profilini oluştur",
   "relationshipInitialTestMessage": "3 kısa soruyu bir kez yanıtla. Bundan sonra uyumluluk etkinlikleri her saat Mevora Hour olarak açılır.",
   "relationshipInitialTestStart": "İlk testime başla",
-  "mevoraHourTitle": "MEVORA HOUR",
+  "mevoraHourTitle": "🧬 MEVORA HOUR",
   "mevoraHourHeadline": "Bu saatin Compatibility Challenge'ı",
-  "mevoraHourMessage": "Bu saatin Compatibility Challenge'ına katıl ve benzer cevap verenlerle eşleş.",
+  "mevoraHourMessage": "Bu saatin sorularını cevapla ve uyumluluğunu keşfet.",
   "mevoraHourJoin": "Challenge'a Katıl",
   "mevoraHourJoinNow": "Şimdi Katıl",
-  "mevoraHourLiveBadge": "MEVORA HOUR — CANLI",
-  "mevoraHourLiveTitle": "{hour}:00 Compatibility Hour başladı",
+  "mevoraHourLiveBadge": "🔴 MEVORA HOUR — CANLI",
+  "mevoraHourLiveTitle": "{hour}:00 Compatibility Challenge başladı",
   "@mevoraHourLiveTitle": {
     "placeholders": {
       "hour": { "type": "String" }
     }
   },
-  "mevoraHourUpcomingTitle": "{hour}:00 MEVORA HOUR",
+  "mevoraHourLiveBody": "Bu saatin sorularını cevapla ve uyumluluğunu keşfet.",
+  "mevoraHourUpcomingTitle": "{hour}:00 Compatibility Hour",
   "@mevoraHourUpcomingTitle": {
     "placeholders": {
       "hour": { "type": "String" }
     }
   },
-  "mevoraHourUpcomingBody": "Bir sonraki Compatibility Hour yaklaşıyor. Bu saatte diğer aktif kullanıcılarla uyumluluğunu keşfet.",
-  "mevoraHourUpcomingCountdown": "{countdown} sonra başlıyor",
-  "@mevoraHourUpcomingCountdown": {
+  "mevoraHourUpcomingBody": "Saatlik Compatibility Event yaklaşıyor.",
+  "mevoraHourUpcomingStartsInMinutes": "{minutes} dakika sonra başlıyor.",
+  "@mevoraHourUpcomingStartsInMinutes": {
     "placeholders": {
-      "countdown": { "type": "String" }
+      "minutes": { "type": "int" }
     }
   },
-  "mevoraHourJoinedTitle": "Bu saatin Challenge'ına katıldın",
-  "mevoraHourJoinedBody": "Uyumluluk için soruları yanıtla.",
+  "mevoraHourMinutesRemaining": "{minutes} dakika kaldı.",
+  "@mevoraHourMinutesRemaining": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "mevoraHourJoinedTitle": "Bu saatin Compatibility Challenge'ına katıldın",
+  "mevoraHourJoinedBody": "Bu saatin sorularını yanıtla.",
   "mevoraHourAnsweredTitle": "Cevapların kaydedildi",
-  "mevoraHourAnsweredBody": "Diğer katılımcıların cevapları bekleniyor. Bu saat tamamlanınca uyumlulukların gösterilecek.",
-  "mevoraHourResultTitle": "Bu saatte keşfettiğin uyumluluklar",
-  "mevoraHourResultBody": "Bu Mevora Hour'da benzer cevap veren kişiler.",
+  "mevoraHourAnsweredBody": "Uyumluluk sonuçların hazırlanıyor.",
+  "mevoraHourResultTitle": "Bu saatte kimlerle uyumluluk keşfettin?",
+  "mevoraHourResultBody": "Bu Mevora Hour'da cevaplarınla uyumlu kişiler.",
+  "mevoraCompatibilityScoreLabel": "Mevora Uyumluluk Skoru",
+  "mevoraCompatibilityScoreDisclaimer": "Verdiğiniz cevaplara ve Mevora'daki uyumluluk sinyallerine göre hesaplanır.",
+  "mevoraHourCompatibleUsers": "Uyumlu kullanıcılar",
+  "mevoraHourWhyCompatible": "Neden uyumlusunuz",
+  "mevoraHourNoDiscoveries": "Bu saatte güçlü bir uyumluluk keşfedilmedi. Sonraki Mevora Hour'a katıl.",
   "mevoraHourEndedTitle": "{hour}:00 Mevora Hour sona erdi",
   "@mevoraHourEndedTitle": {
     "placeholders": {
@@ -885,7 +897,7 @@
       "hour": { "type": "String" }
     }
   },
-  "mevoraHourRemindMe": "Bana Hatırlat",
+  "mevoraHourRemindMe": "🔔 Bana Hatırlat",
   "mevoraHourReminderOn": "Hatırlatıcı açık",
   "mevoraHourReminderSaved": "Mevora Hour başlayınca seni bilgilendireceğiz.",
   "mevoraHourReminderNeedPermission": "Mevora Hour hatırlatması için bildirim izni gerekli.",
@@ -1037,7 +1049,7 @@
   "verificationNotConfigured": "Doğrulama geçici olarak kullanılamıyor.",
   "verificationCooldown": "Tekrar denemeden önce birkaç dakika bekleyin.",
   "verificationAttemptLimit": "Bugünkü doğrulama limitine ulaştınız. Yarın tekrar deneyin.",
-  "whyYouMatch": "Neden eşleşiyorsunuz?",
+  "whyYouMatch": "Neden Eşleştiniz?",
   "compatWhyButton": "Neden?",
   "compatDiscoverBadge": "%{percent} Uyumlu",
   "@compatDiscoverBadge": {
@@ -1563,7 +1575,7 @@
   "humorProfileBuilding": "Mizah vibesın hâlâ öğreniliyor…",
   "humorProfileTitle": "Mizah profilin",
   "humorEmptyFeed": "Şimdilik gösterecek yeni bir içerik yok.",
-  "humorFeedError": "İçerik yüklenemedi. Tekrar dene.",
+  "humorFeedError": "Videolar şu anda yüklenemiyor. Tekrar dene.",
   "humorTryAgain": "Tekrar dene",
   "humorUndoRating": "Puanı geri al",
   "humorCompatibilityTitle": "Mizah uyumu",
@@ -1648,5 +1660,109 @@
   "humorAdInfoBody": "Ücretsiz kullanımda zaman zaman reklam gösterilir.",
   "humorAdInfoPremiumHint": "Premium ile Mizah Labı'nı reklamsız kullanabilirsin.",
   "humorAdInfoPremiumCta": "Premium'u İncele",
-  "humorInfoTooltip": "Mizah Labı nasıl çalışıyor?"
+  "humorInfoTooltip": "Mizah Labı nasıl çalışıyor?",
+
+  "wymHumorTitle": "Mizah anlayışınız benziyor.",
+  "wymHumorEvidence": "{total} sorunun {matching}'ünde benzer seçim yaptınız.",
+  "@wymHumorEvidence": {
+    "placeholders": {
+      "matching": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "wymHumorDimsEvidence": "{matching} mizah stili sinyaliniz ortak.",
+  "@wymHumorDimsEvidence": {
+    "placeholders": {
+      "matching": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "wymHumorScoreEvidence": "Mizah profilleriniz yakın ({score}%).",
+  "@wymHumorScoreEvidence": {
+    "placeholders": {
+      "score": { "type": "String" }
+    }
+  },
+  "wymMusicTitle": "Müzik zevkiniz örtüşüyor.",
+  "wymMusicArtistsNamedEvidence": "{names}, ortak dinlediğiniz {count} sanatçı arasında.",
+  "@wymMusicArtistsNamedEvidence": {
+    "placeholders": {
+      "names": { "type": "String" },
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicArtistsCountEvidence": "En çok dinlediğiniz sanatçıların {count}'ü ortak.",
+  "@wymMusicArtistsCountEvidence": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicTracksEvidence": "{count} ortak parçanız var.",
+  "@wymMusicTracksEvidence": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicGenresNamedEvidence": "{names}, ortak {count} türünüz arasında.",
+  "@wymMusicGenresNamedEvidence": {
+    "placeholders": {
+      "names": { "type": "String" },
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicGenresCountEvidence": "{count} ortak müzik türünüz var.",
+  "@wymMusicGenresCountEvidence": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "wymMusicScoreEvidence": "Dinleme zevkiniz benzer ({score}%).",
+  "@wymMusicScoreEvidence": {
+    "placeholders": {
+      "score": { "type": "String" }
+    }
+  },
+  "wymInterestsTitle": "Ortak ilgi alanlarınız var.",
+  "wymInterestsEvidence": "{names} gibi {count} ortak ilgi alanınız bulunuyor.",
+  "@wymInterestsEvidence": {
+    "placeholders": {
+      "names": { "type": "String" },
+      "count": { "type": "String" }
+    }
+  },
+  "wymLifestyleTitle": "Yaşam tarzınız uyumlu.",
+  "wymLifestyleEvidence": "{labels} konularında benzer ({matching}/{comparable}).",
+  "@wymLifestyleEvidence": {
+    "placeholders": {
+      "labels": { "type": "String" },
+      "matching": { "type": "String" },
+      "comparable": { "type": "String" }
+    }
+  },
+  "wymPreferencesTitle": "Ortak dil tercihleriniz var.",
+  "wymPreferencesLanguageEvidence": "İkiniz de {languages} konuşabiliyorsunuz.",
+  "@wymPreferencesLanguageEvidence": {
+    "placeholders": {
+      "languages": { "type": "String" }
+    }
+  },
+  "wymCommunicationTitle": "İletişim tarzınız benzer.",
+  "wymCommunicationEvidence": "İletişim konularında benzer cevaplar verdiniz.",
+  "wymDistanceNearbyTitle": "Birbirinize yakınsınız.",
+  "wymDistanceNearbyEvidence": "Birbirinize yakınsınız.",
+  "wymDistanceTitle": "Yakınlarda yaşıyorsunuz.",
+  "wymDistanceKmEvidence": "Yaklaşık {km} km uzaktasınız.",
+  "@wymDistanceKmEvidence": {
+    "placeholders": {
+      "km": { "type": "String" }
+    }
+  },
+  "wymInsufficientData": "Henüz yeterli ortak nokta bulunamadı.",
+  "wymLoadingMessage": "Ortak yönleriniz hazırlanıyor…",
+  "wymErrorMessage": "Eşleşme nedenleri yüklenemedi. Tekrar deneyin.",
+  "wymEmptyTitle": "Henüz yeterli ortak nokta yok",
+  "wymNetworkErrorMessage": "Bağlantını kontrol edip tekrar dene.",
+  "wymTimeoutErrorMessage": "İşlem uzun sürdü. Tekrar dene.",
+  "wymInvalidDataMessage": "Eşleşme nedenleri geçici olarak kullanılamıyor.",
+  "wymReasonListSemantics": "Eşleşme nedenleri"
 }

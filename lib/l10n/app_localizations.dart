@@ -3785,7 +3785,7 @@ abstract class AppLocalizations {
   /// No description provided for @mevoraHourTitle.
   ///
   /// In en, this message translates to:
-  /// **'MEVORA HOUR'**
+  /// **'🧬 MEVORA HOUR'**
   String get mevoraHourTitle;
 
   /// No description provided for @mevoraHourHeadline.
@@ -3797,7 +3797,7 @@ abstract class AppLocalizations {
   /// No description provided for @mevoraHourMessage.
   ///
   /// In en, this message translates to:
-  /// **'Join this hour\'s Compatibility Challenge and meet people who answered like you.'**
+  /// **'Answer this hour\'s questions and discover your compatibility.'**
   String get mevoraHourMessage;
 
   /// No description provided for @mevoraHourJoin.
@@ -3815,43 +3815,55 @@ abstract class AppLocalizations {
   /// No description provided for @mevoraHourLiveBadge.
   ///
   /// In en, this message translates to:
-  /// **'MEVORA HOUR — LIVE'**
+  /// **'🔴 MEVORA HOUR — LIVE'**
   String get mevoraHourLiveBadge;
 
   /// No description provided for @mevoraHourLiveTitle.
   ///
   /// In en, this message translates to:
-  /// **'{hour}:00 Compatibility Hour is live'**
+  /// **'{hour}:00 Compatibility Challenge is live'**
   String mevoraHourLiveTitle(String hour);
+
+  /// No description provided for @mevoraHourLiveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer this hour\'s questions and discover your compatibility.'**
+  String get mevoraHourLiveBody;
 
   /// No description provided for @mevoraHourUpcomingTitle.
   ///
   /// In en, this message translates to:
-  /// **'{hour}:00 MEVORA HOUR'**
+  /// **'{hour}:00 Compatibility Hour'**
   String mevoraHourUpcomingTitle(String hour);
 
   /// No description provided for @mevoraHourUpcomingBody.
   ///
   /// In en, this message translates to:
-  /// **'The next Compatibility Hour is approaching. Discover compatibility with other active users.'**
+  /// **'The next hourly Compatibility Event is approaching.'**
   String get mevoraHourUpcomingBody;
 
-  /// No description provided for @mevoraHourUpcomingCountdown.
+  /// No description provided for @mevoraHourUpcomingStartsInMinutes.
   ///
   /// In en, this message translates to:
-  /// **'Starts in {countdown}'**
-  String mevoraHourUpcomingCountdown(String countdown);
+  /// **'Starts in {minutes} min.'**
+  String mevoraHourUpcomingStartsInMinutes(int minutes);
+
+  /// No description provided for @mevoraHourMinutesRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min left'**
+  String mevoraHourMinutesRemaining(int minutes);
 
   /// No description provided for @mevoraHourJoinedTitle.
   ///
   /// In en, this message translates to:
-  /// **'You\'re in this hour\'s Challenge'**
+  /// **'You joined this hour\'s Compatibility Challenge'**
   String get mevoraHourJoinedTitle;
 
   /// No description provided for @mevoraHourJoinedBody.
   ///
   /// In en, this message translates to:
-  /// **'Answer the questions to join this Compatibility Hour.'**
+  /// **'Answer the questions for this hour.'**
   String get mevoraHourJoinedBody;
 
   /// No description provided for @mevoraHourAnsweredTitle.
@@ -3863,20 +3875,50 @@ abstract class AppLocalizations {
   /// No description provided for @mevoraHourAnsweredBody.
   ///
   /// In en, this message translates to:
-  /// **'Waiting for other participants. We\'ll show your compatibility when this hour completes.'**
+  /// **'Your compatibility results are being prepared.'**
   String get mevoraHourAnsweredBody;
 
   /// No description provided for @mevoraHourResultTitle.
   ///
   /// In en, this message translates to:
-  /// **'Compatibilities from this hour'**
+  /// **'Who did you discover compatibility with this hour?'**
   String get mevoraHourResultTitle;
 
   /// No description provided for @mevoraHourResultBody.
   ///
   /// In en, this message translates to:
-  /// **'People who answered like you in this Mevora Hour.'**
+  /// **'People whose answers aligned with yours in this Mevora Hour.'**
   String get mevoraHourResultBody;
+
+  /// No description provided for @mevoraCompatibilityScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora Compatibility Score'**
+  String get mevoraCompatibilityScoreLabel;
+
+  /// No description provided for @mevoraCompatibilityScoreDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculated from your answers and compatibility signals on Mevora.'**
+  String get mevoraCompatibilityScoreDisclaimer;
+
+  /// No description provided for @mevoraHourCompatibleUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatible users'**
+  String get mevoraHourCompatibleUsers;
+
+  /// No description provided for @mevoraHourWhyCompatible.
+  ///
+  /// In en, this message translates to:
+  /// **'Why you\'re compatible'**
+  String get mevoraHourWhyCompatible;
+
+  /// No description provided for @mevoraHourNoDiscoveries.
+  ///
+  /// In en, this message translates to:
+  /// **'No strong compatibilities this hour yet. Join the next Mevora Hour.'**
+  String get mevoraHourNoDiscoveries;
 
   /// No description provided for @mevoraHourEndedTitle.
   ///
@@ -3893,7 +3935,7 @@ abstract class AppLocalizations {
   /// No description provided for @mevoraHourRemindMe.
   ///
   /// In en, this message translates to:
-  /// **'Remind me'**
+  /// **'🔔 Remind me'**
   String get mevoraHourRemindMe;
 
   /// No description provided for @mevoraHourReminderOn.
@@ -4367,7 +4409,7 @@ abstract class AppLocalizations {
   /// No description provided for @whyYouMatch.
   ///
   /// In en, this message translates to:
-  /// **'Why you match'**
+  /// **'Why You Matched'**
   String get whyYouMatch;
 
   /// No description provided for @compatWhyButton.
@@ -6581,7 +6623,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorFeedError.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t load content. Try again.'**
+  /// **'Videos can\'t load right now. Try again.'**
   String get humorFeedError;
 
   /// No description provided for @humorTryAgain.
@@ -7009,6 +7051,196 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'How Humor Lab works'**
   String get humorInfoTooltip;
+
+  /// No description provided for @wymHumorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sense of humor is similar.'**
+  String get wymHumorTitle;
+
+  /// No description provided for @wymHumorEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You made similar choices on {matching} of {total} questions.'**
+  String wymHumorEvidence(String matching, String total);
+
+  /// No description provided for @wymHumorDimsEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You share {matching} humor style signals.'**
+  String wymHumorDimsEvidence(String matching, String total);
+
+  /// No description provided for @wymHumorScoreEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profiles line up ({score}%).'**
+  String wymHumorScoreEvidence(String score);
+
+  /// No description provided for @wymMusicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music tastes overlap.'**
+  String get wymMusicTitle;
+
+  /// No description provided for @wymMusicArtistsNamedEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'{names} are among {count} artists you both listen to.'**
+  String wymMusicArtistsNamedEvidence(String names, String count);
+
+  /// No description provided for @wymMusicArtistsCountEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You share {count} of your top artists.'**
+  String wymMusicArtistsCountEvidence(String count);
+
+  /// No description provided for @wymMusicTracksEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You share {count} tracks you both like.'**
+  String wymMusicTracksEvidence(String count);
+
+  /// No description provided for @wymMusicGenresNamedEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'{names} are among {count} genres you both enjoy.'**
+  String wymMusicGenresNamedEvidence(String names, String count);
+
+  /// No description provided for @wymMusicGenresCountEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You share {count} music genres.'**
+  String wymMusicGenresCountEvidence(String count);
+
+  /// No description provided for @wymMusicScoreEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Your listening tastes are similar ({score}%).'**
+  String wymMusicScoreEvidence(String score);
+
+  /// No description provided for @wymInterestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You have interests in common.'**
+  String get wymInterestsTitle;
+
+  /// No description provided for @wymInterestsEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You both like {names} — {count} shared interests.'**
+  String wymInterestsEvidence(String names, String count);
+
+  /// No description provided for @wymLifestyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lifestyles fit well.'**
+  String get wymLifestyleTitle;
+
+  /// No description provided for @wymLifestyleEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You match on {labels} ({matching} of {comparable} lifestyle points).'**
+  String wymLifestyleEvidence(
+    String labels,
+    String matching,
+    String comparable,
+  );
+
+  /// No description provided for @wymPreferencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You share language preferences.'**
+  String get wymPreferencesTitle;
+
+  /// No description provided for @wymPreferencesLanguageEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You can both speak {languages}.'**
+  String wymPreferencesLanguageEvidence(String languages);
+
+  /// No description provided for @wymCommunicationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You communicate in similar ways.'**
+  String get wymCommunicationTitle;
+
+  /// No description provided for @wymCommunicationEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You answered alike on communication topics.'**
+  String get wymCommunicationEvidence;
+
+  /// No description provided for @wymDistanceNearbyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You are close to each other.'**
+  String get wymDistanceNearbyTitle;
+
+  /// No description provided for @wymDistanceNearbyEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You are near each other.'**
+  String get wymDistanceNearbyEvidence;
+
+  /// No description provided for @wymDistanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You live nearby.'**
+  String get wymDistanceTitle;
+
+  /// No description provided for @wymDistanceKmEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'You are about {km} km apart.'**
+  String wymDistanceKmEvidence(String km);
+
+  /// No description provided for @wymInsufficientData.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough common ground yet.'**
+  String get wymInsufficientData;
+
+  /// No description provided for @wymLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding what you have in common…'**
+  String get wymLoadingMessage;
+
+  /// No description provided for @wymErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not load match reasons. Try again.'**
+  String get wymErrorMessage;
+
+  /// No description provided for @wymEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough in common yet'**
+  String get wymEmptyTitle;
+
+  /// No description provided for @wymNetworkErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get wymNetworkErrorMessage;
+
+  /// No description provided for @wymTimeoutErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This is taking too long. Try again.'**
+  String get wymTimeoutErrorMessage;
+
+  /// No description provided for @wymInvalidDataMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Match reasons are temporarily unavailable.'**
+  String get wymInvalidDataMessage;
+
+  /// No description provided for @wymReasonListSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasons you matched'**
+  String get wymReasonListSemantics;
 }
 
 class _AppLocalizationsDelegate

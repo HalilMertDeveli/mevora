@@ -50,7 +50,21 @@ export const BUCKET_QUERIES_TR: Record<HumorSearchBucket, readonly string[]> = {
   animal: ["komik kedi", "komik köpek", "hayvan komik", "komik hayvanlar"],
   fail: ["fail komik", "komik fail", "epic fail short"],
   prank: ["prank komik", "şaka videosu kısa", "funny prank short"],
-  turkish: ["türk komedi", "türk mizahı", "komik video türkçe", "mizah", "kahkaha", "komik"],
+  turkish: [
+    "komik shorts",
+    "komik video",
+    "komik anlar",
+    "mizah shorts",
+    "komedi shorts",
+    "komik tepki",
+    "absürt komedi",
+    "türk komedi",
+    "türk mizahı",
+    "komik video türkçe",
+    "mizah",
+    "kahkaha",
+    "komik",
+  ],
   british: ["british humor short", "ingiliz mizahı"],
   meme: ["meme", "komik meme", "türk meme"],
   sketch: ["komik skeç", "kısa skeç", "comedy sketch short"],
@@ -89,7 +103,14 @@ export function pickBucketQuery(
   salt = Date.now(),
 ): string {
   const queries = queriesForBucket(bucket, language);
-  return queries[Math.abs(salt) % queries.length] ?? queries[0];
+  let q = queries[Math.abs(salt) % queries.length] ?? queries[0];
+  // Short-form discovery for YouTube Shorts (allowlisted suffix only).
+  if (Math.abs(salt) % 3 === 0) {
+    const hint =
+      SHORT_FORM_HINTS[Math.abs(salt >> 2) % SHORT_FORM_HINTS.length] ?? "short";
+    q = `${q} ${hint}`.trim();
+  }
+  return q;
 }
 
 export function pickBalancedBuckets(count: number, salt = Date.now()): HumorSearchBucket[] {

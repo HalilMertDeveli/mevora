@@ -2009,14 +2009,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipInitialTestStart => 'Start my first test';
 
   @override
-  String get mevoraHourTitle => 'MEVORA HOUR';
+  String get mevoraHourTitle => '🧬 MEVORA HOUR';
 
   @override
   String get mevoraHourHeadline => 'This hour\'s Compatibility Challenge';
 
   @override
   String get mevoraHourMessage =>
-      'Join this hour\'s Compatibility Challenge and meet people who answered like you.';
+      'Answer this hour\'s questions and discover your compatibility.';
 
   @override
   String get mevoraHourJoin => 'Join the Challenge';
@@ -2025,47 +2025,74 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mevoraHourJoinNow => 'Join now';
 
   @override
-  String get mevoraHourLiveBadge => 'MEVORA HOUR — LIVE';
+  String get mevoraHourLiveBadge => '🔴 MEVORA HOUR — LIVE';
 
   @override
   String mevoraHourLiveTitle(String hour) {
-    return '$hour:00 Compatibility Hour is live';
+    return '$hour:00 Compatibility Challenge is live';
   }
 
   @override
+  String get mevoraHourLiveBody =>
+      'Answer this hour\'s questions and discover your compatibility.';
+
+  @override
   String mevoraHourUpcomingTitle(String hour) {
-    return '$hour:00 MEVORA HOUR';
+    return '$hour:00 Compatibility Hour';
   }
 
   @override
   String get mevoraHourUpcomingBody =>
-      'The next Compatibility Hour is approaching. Discover compatibility with other active users.';
+      'The next hourly Compatibility Event is approaching.';
 
   @override
-  String mevoraHourUpcomingCountdown(String countdown) {
-    return 'Starts in $countdown';
+  String mevoraHourUpcomingStartsInMinutes(int minutes) {
+    return 'Starts in $minutes min.';
   }
 
   @override
-  String get mevoraHourJoinedTitle => 'You\'re in this hour\'s Challenge';
+  String mevoraHourMinutesRemaining(int minutes) {
+    return '$minutes min left';
+  }
 
   @override
-  String get mevoraHourJoinedBody =>
-      'Answer the questions to join this Compatibility Hour.';
+  String get mevoraHourJoinedTitle =>
+      'You joined this hour\'s Compatibility Challenge';
+
+  @override
+  String get mevoraHourJoinedBody => 'Answer the questions for this hour.';
 
   @override
   String get mevoraHourAnsweredTitle => 'Answers saved';
 
   @override
   String get mevoraHourAnsweredBody =>
-      'Waiting for other participants. We\'ll show your compatibility when this hour completes.';
+      'Your compatibility results are being prepared.';
 
   @override
-  String get mevoraHourResultTitle => 'Compatibilities from this hour';
+  String get mevoraHourResultTitle =>
+      'Who did you discover compatibility with this hour?';
 
   @override
   String get mevoraHourResultBody =>
-      'People who answered like you in this Mevora Hour.';
+      'People whose answers aligned with yours in this Mevora Hour.';
+
+  @override
+  String get mevoraCompatibilityScoreLabel => 'Mevora Compatibility Score';
+
+  @override
+  String get mevoraCompatibilityScoreDisclaimer =>
+      'Calculated from your answers and compatibility signals on Mevora.';
+
+  @override
+  String get mevoraHourCompatibleUsers => 'Compatible users';
+
+  @override
+  String get mevoraHourWhyCompatible => 'Why you\'re compatible';
+
+  @override
+  String get mevoraHourNoDiscoveries =>
+      'No strong compatibilities this hour yet. Join the next Mevora Hour.';
 
   @override
   String mevoraHourEndedTitle(String hour) {
@@ -2078,7 +2105,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get mevoraHourRemindMe => 'Remind me';
+  String get mevoraHourRemindMe => '🔔 Remind me';
 
   @override
   String get mevoraHourReminderOn => 'Reminder on';
@@ -2365,7 +2392,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'ve reached today\'s verification limit. Try again tomorrow.';
 
   @override
-  String get whyYouMatch => 'Why you match';
+  String get whyYouMatch => 'Why You Matched';
 
   @override
   String get compatWhyButton => 'Why?';
@@ -3603,7 +3630,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorEmptyFeed => 'No new content to show right now.';
 
   @override
-  String get humorFeedError => 'Couldn\'t load content. Try again.';
+  String get humorFeedError => 'Videos can\'t load right now. Try again.';
 
   @override
   String get humorTryAgain => 'Try again';
@@ -3839,4 +3866,129 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorInfoTooltip => 'How Humor Lab works';
+
+  @override
+  String get wymHumorTitle => 'Your sense of humor is similar.';
+
+  @override
+  String wymHumorEvidence(String matching, String total) {
+    return 'You made similar choices on $matching of $total questions.';
+  }
+
+  @override
+  String wymHumorDimsEvidence(String matching, String total) {
+    return 'You share $matching humor style signals.';
+  }
+
+  @override
+  String wymHumorScoreEvidence(String score) {
+    return 'Your humor profiles line up ($score%).';
+  }
+
+  @override
+  String get wymMusicTitle => 'Your music tastes overlap.';
+
+  @override
+  String wymMusicArtistsNamedEvidence(String names, String count) {
+    return '$names are among $count artists you both listen to.';
+  }
+
+  @override
+  String wymMusicArtistsCountEvidence(String count) {
+    return 'You share $count of your top artists.';
+  }
+
+  @override
+  String wymMusicTracksEvidence(String count) {
+    return 'You share $count tracks you both like.';
+  }
+
+  @override
+  String wymMusicGenresNamedEvidence(String names, String count) {
+    return '$names are among $count genres you both enjoy.';
+  }
+
+  @override
+  String wymMusicGenresCountEvidence(String count) {
+    return 'You share $count music genres.';
+  }
+
+  @override
+  String wymMusicScoreEvidence(String score) {
+    return 'Your listening tastes are similar ($score%).';
+  }
+
+  @override
+  String get wymInterestsTitle => 'You have interests in common.';
+
+  @override
+  String wymInterestsEvidence(String names, String count) {
+    return 'You both like $names — $count shared interests.';
+  }
+
+  @override
+  String get wymLifestyleTitle => 'Your lifestyles fit well.';
+
+  @override
+  String wymLifestyleEvidence(
+    String labels,
+    String matching,
+    String comparable,
+  ) {
+    return 'You match on $labels ($matching of $comparable lifestyle points).';
+  }
+
+  @override
+  String get wymPreferencesTitle => 'You share language preferences.';
+
+  @override
+  String wymPreferencesLanguageEvidence(String languages) {
+    return 'You can both speak $languages.';
+  }
+
+  @override
+  String get wymCommunicationTitle => 'You communicate in similar ways.';
+
+  @override
+  String get wymCommunicationEvidence =>
+      'You answered alike on communication topics.';
+
+  @override
+  String get wymDistanceNearbyTitle => 'You are close to each other.';
+
+  @override
+  String get wymDistanceNearbyEvidence => 'You are near each other.';
+
+  @override
+  String get wymDistanceTitle => 'You live nearby.';
+
+  @override
+  String wymDistanceKmEvidence(String km) {
+    return 'You are about $km km apart.';
+  }
+
+  @override
+  String get wymInsufficientData => 'Not enough common ground yet.';
+
+  @override
+  String get wymLoadingMessage => 'Finding what you have in common…';
+
+  @override
+  String get wymErrorMessage => 'We could not load match reasons. Try again.';
+
+  @override
+  String get wymEmptyTitle => 'Not enough in common yet';
+
+  @override
+  String get wymNetworkErrorMessage => 'Check your connection and try again.';
+
+  @override
+  String get wymTimeoutErrorMessage => 'This is taking too long. Try again.';
+
+  @override
+  String get wymInvalidDataMessage =>
+      'Match reasons are temporarily unavailable.';
+
+  @override
+  String get wymReasonListSemantics => 'Reasons you matched';
 }

@@ -2003,14 +2003,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relationshipInitialTestStart => 'İlk testime başla';
 
   @override
-  String get mevoraHourTitle => 'MEVORA HOUR';
+  String get mevoraHourTitle => '🧬 MEVORA HOUR';
 
   @override
   String get mevoraHourHeadline => 'Bu saatin Compatibility Challenge\'ı';
 
   @override
   String get mevoraHourMessage =>
-      'Bu saatin Compatibility Challenge\'ına katıl ve benzer cevap verenlerle eşleş.';
+      'Bu saatin sorularını cevapla ve uyumluluğunu keşfet.';
 
   @override
   String get mevoraHourJoin => 'Challenge\'a Katıl';
@@ -2019,46 +2019,72 @@ class AppLocalizationsTr extends AppLocalizations {
   String get mevoraHourJoinNow => 'Şimdi Katıl';
 
   @override
-  String get mevoraHourLiveBadge => 'MEVORA HOUR — CANLI';
+  String get mevoraHourLiveBadge => '🔴 MEVORA HOUR — CANLI';
 
   @override
   String mevoraHourLiveTitle(String hour) {
-    return '$hour:00 Compatibility Hour başladı';
+    return '$hour:00 Compatibility Challenge başladı';
   }
 
   @override
+  String get mevoraHourLiveBody =>
+      'Bu saatin sorularını cevapla ve uyumluluğunu keşfet.';
+
+  @override
   String mevoraHourUpcomingTitle(String hour) {
-    return '$hour:00 MEVORA HOUR';
+    return '$hour:00 Compatibility Hour';
   }
 
   @override
   String get mevoraHourUpcomingBody =>
-      'Bir sonraki Compatibility Hour yaklaşıyor. Bu saatte diğer aktif kullanıcılarla uyumluluğunu keşfet.';
+      'Saatlik Compatibility Event yaklaşıyor.';
 
   @override
-  String mevoraHourUpcomingCountdown(String countdown) {
-    return '$countdown sonra başlıyor';
+  String mevoraHourUpcomingStartsInMinutes(int minutes) {
+    return '$minutes dakika sonra başlıyor.';
   }
 
   @override
-  String get mevoraHourJoinedTitle => 'Bu saatin Challenge\'ına katıldın';
+  String mevoraHourMinutesRemaining(int minutes) {
+    return '$minutes dakika kaldı.';
+  }
 
   @override
-  String get mevoraHourJoinedBody => 'Uyumluluk için soruları yanıtla.';
+  String get mevoraHourJoinedTitle =>
+      'Bu saatin Compatibility Challenge\'ına katıldın';
+
+  @override
+  String get mevoraHourJoinedBody => 'Bu saatin sorularını yanıtla.';
 
   @override
   String get mevoraHourAnsweredTitle => 'Cevapların kaydedildi';
 
   @override
-  String get mevoraHourAnsweredBody =>
-      'Diğer katılımcıların cevapları bekleniyor. Bu saat tamamlanınca uyumlulukların gösterilecek.';
+  String get mevoraHourAnsweredBody => 'Uyumluluk sonuçların hazırlanıyor.';
 
   @override
-  String get mevoraHourResultTitle => 'Bu saatte keşfettiğin uyumluluklar';
+  String get mevoraHourResultTitle => 'Bu saatte kimlerle uyumluluk keşfettin?';
 
   @override
   String get mevoraHourResultBody =>
-      'Bu Mevora Hour\'da benzer cevap veren kişiler.';
+      'Bu Mevora Hour\'da cevaplarınla uyumlu kişiler.';
+
+  @override
+  String get mevoraCompatibilityScoreLabel => 'Mevora Uyumluluk Skoru';
+
+  @override
+  String get mevoraCompatibilityScoreDisclaimer =>
+      'Verdiğiniz cevaplara ve Mevora\'daki uyumluluk sinyallerine göre hesaplanır.';
+
+  @override
+  String get mevoraHourCompatibleUsers => 'Uyumlu kullanıcılar';
+
+  @override
+  String get mevoraHourWhyCompatible => 'Neden uyumlusunuz';
+
+  @override
+  String get mevoraHourNoDiscoveries =>
+      'Bu saatte güçlü bir uyumluluk keşfedilmedi. Sonraki Mevora Hour\'a katıl.';
 
   @override
   String mevoraHourEndedTitle(String hour) {
@@ -2071,7 +2097,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get mevoraHourRemindMe => 'Bana Hatırlat';
+  String get mevoraHourRemindMe => '🔔 Bana Hatırlat';
 
   @override
   String get mevoraHourReminderOn => 'Hatırlatıcı açık';
@@ -2358,7 +2384,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bugünkü doğrulama limitine ulaştınız. Yarın tekrar deneyin.';
 
   @override
-  String get whyYouMatch => 'Neden eşleşiyorsunuz?';
+  String get whyYouMatch => 'Neden Eşleştiniz?';
 
   @override
   String get compatWhyButton => 'Neden?';
@@ -3597,7 +3623,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorEmptyFeed => 'Şimdilik gösterecek yeni bir içerik yok.';
 
   @override
-  String get humorFeedError => 'İçerik yüklenemedi. Tekrar dene.';
+  String get humorFeedError => 'Videolar şu anda yüklenemiyor. Tekrar dene.';
 
   @override
   String get humorTryAgain => 'Tekrar dene';
@@ -3830,4 +3856,130 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorInfoTooltip => 'Mizah Labı nasıl çalışıyor?';
+
+  @override
+  String get wymHumorTitle => 'Mizah anlayışınız benziyor.';
+
+  @override
+  String wymHumorEvidence(String matching, String total) {
+    return '$total sorunun $matching\'ünde benzer seçim yaptınız.';
+  }
+
+  @override
+  String wymHumorDimsEvidence(String matching, String total) {
+    return '$matching mizah stili sinyaliniz ortak.';
+  }
+
+  @override
+  String wymHumorScoreEvidence(String score) {
+    return 'Mizah profilleriniz yakın ($score%).';
+  }
+
+  @override
+  String get wymMusicTitle => 'Müzik zevkiniz örtüşüyor.';
+
+  @override
+  String wymMusicArtistsNamedEvidence(String names, String count) {
+    return '$names, ortak dinlediğiniz $count sanatçı arasında.';
+  }
+
+  @override
+  String wymMusicArtistsCountEvidence(String count) {
+    return 'En çok dinlediğiniz sanatçıların $count\'ü ortak.';
+  }
+
+  @override
+  String wymMusicTracksEvidence(String count) {
+    return '$count ortak parçanız var.';
+  }
+
+  @override
+  String wymMusicGenresNamedEvidence(String names, String count) {
+    return '$names, ortak $count türünüz arasında.';
+  }
+
+  @override
+  String wymMusicGenresCountEvidence(String count) {
+    return '$count ortak müzik türünüz var.';
+  }
+
+  @override
+  String wymMusicScoreEvidence(String score) {
+    return 'Dinleme zevkiniz benzer ($score%).';
+  }
+
+  @override
+  String get wymInterestsTitle => 'Ortak ilgi alanlarınız var.';
+
+  @override
+  String wymInterestsEvidence(String names, String count) {
+    return '$names gibi $count ortak ilgi alanınız bulunuyor.';
+  }
+
+  @override
+  String get wymLifestyleTitle => 'Yaşam tarzınız uyumlu.';
+
+  @override
+  String wymLifestyleEvidence(
+    String labels,
+    String matching,
+    String comparable,
+  ) {
+    return '$labels konularında benzer ($matching/$comparable).';
+  }
+
+  @override
+  String get wymPreferencesTitle => 'Ortak dil tercihleriniz var.';
+
+  @override
+  String wymPreferencesLanguageEvidence(String languages) {
+    return 'İkiniz de $languages konuşabiliyorsunuz.';
+  }
+
+  @override
+  String get wymCommunicationTitle => 'İletişim tarzınız benzer.';
+
+  @override
+  String get wymCommunicationEvidence =>
+      'İletişim konularında benzer cevaplar verdiniz.';
+
+  @override
+  String get wymDistanceNearbyTitle => 'Birbirinize yakınsınız.';
+
+  @override
+  String get wymDistanceNearbyEvidence => 'Birbirinize yakınsınız.';
+
+  @override
+  String get wymDistanceTitle => 'Yakınlarda yaşıyorsunuz.';
+
+  @override
+  String wymDistanceKmEvidence(String km) {
+    return 'Yaklaşık $km km uzaktasınız.';
+  }
+
+  @override
+  String get wymInsufficientData => 'Henüz yeterli ortak nokta bulunamadı.';
+
+  @override
+  String get wymLoadingMessage => 'Ortak yönleriniz hazırlanıyor…';
+
+  @override
+  String get wymErrorMessage =>
+      'Eşleşme nedenleri yüklenemedi. Tekrar deneyin.';
+
+  @override
+  String get wymEmptyTitle => 'Henüz yeterli ortak nokta yok';
+
+  @override
+  String get wymNetworkErrorMessage => 'Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get wymTimeoutErrorMessage => 'İşlem uzun sürdü. Tekrar dene.';
+
+  @override
+  String get wymInvalidDataMessage =>
+      'Eşleşme nedenleri geçici olarak kullanılamıyor.';
+
+  @override
+  String get wymReasonListSemantics => 'Eşleşme nedenleri';
 }

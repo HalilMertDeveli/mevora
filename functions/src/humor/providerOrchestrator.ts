@@ -6,14 +6,14 @@ import {
   pickBucketQuery,
 } from "./categoryQueries.js";
 import {GiphyHumorSource} from "./giphySource.js";
-import {isGiphyConfigured, isYoutubeConfigured} from "./humorApiConfig.js";
+import {isYoutubeConfigured} from "./humorApiConfig.js";
 import {ingestHumorSourceItem} from "./ingest.js";
 import {
   contentIdFromProvider,
   type NormalizedHumorContent,
   type NormalizedHumorProvider,
 } from "./normalizedContent.js";
-import {readProviderCache, writeProviderCache} from "./providerCache.js";
+import {readProviderCache, readProviderCachePage, writeProviderCache, mergeProviderCacheItems} from "./providerCache.js";
 import {safeLogMeta} from "../security/logHygiene.js";
 import {TENOR_API_STATUS} from "./tenorSource.js";
 import {
@@ -64,6 +64,15 @@ export function classifyProviderFetchError(
   }
   if (m.includes("tenor")) return "tenor_disabled";
   if (m.includes("empty")) return "empty_result";
+  if (
+    m.includes("unavailable") ||
+    m.includes("not found") ||
+    m.includes("embedding") ||
+    m.includes("embeddable") ||
+    m.includes("playback")
+  ) {
+    return "provider_unavailable";
+  }
   return "unknown";
 }
 
@@ -102,30 +111,78 @@ async function fetchYoutubeNormalized(input: {
   language: string;
   bucket: HumorSearchBucket;
   limit: number;
+  /** Prefer items not already in the humorContent pool / feed seen set. */
+  excludeIds?: Set<string>;
 }): Promise<NormalizedHumorContent[]> {
   const query = pickBucketQuery(input.bucket, input.language);
   const cacheKey = `yt_${input.language}_${input.bucket}_${query}`;
-  const cached = await readProviderCache(input.db, "youtube", cacheKey);
-  if (cached && cached.length > 0) {
-    return cached.slice(0, input.limit);
+  const exclude = input.excludeIds ?? new Set<string>();
+  const freshOf = (list: NormalizedHumorContent[]) =>
+    list.filter((n) => Boolean(n?.id) && !exclude.has(n.id));
+
+  let cached = await readProviderCachePage(input.db, "youtube", cacheKey);
+  let items = cached?.items ?? [];
+  let nextPageToken: string | null = cached?.nextPageToken ?? null;
+  let usable = freshOf(items);
+
+  // Enough unseen in cache → do not call search.list (swipe/prefetch safe).
+  if (usable.length >= input.limit) {
+    return usable.slice(0, input.limit);
   }
+
   const source = YoutubeHumorSource.tryCreate();
   if (!source) {
+    if (usable.length > 0) {
+      return usable.slice(0, input.limit);
+    }
     throw new Error("youtube-not_configured");
   }
-  const page = await source.searchByBucket({
-    bucket: input.bucket,
-    language: input.language,
-    limit: input.limit,
-  });
-  if (page.normalized.length === 0) {
+
+  // Cold cache or cache exhausted by dedup → paginate with pageToken (max 3 pages).
+  for (let page = 0; page < 3 && usable.length < input.limit; page += 1) {
+    const isCold = items.length === 0;
+    if (!isCold && !nextPageToken) {
+      break;
+    }
+    const apiPage = await source.searchByBucket({
+      bucket: input.bucket,
+      language: input.language,
+      limit: Math.max(input.limit, 10),
+      cursor: isCold ? null : nextPageToken,
+    });
+    if (apiPage.normalized.length === 0) {
+      nextPageToken = apiPage.nextCursor;
+      await writeProviderCache(
+        input.db,
+        "youtube",
+        cacheKey,
+        items,
+        undefined,
+        nextPageToken,
+      );
+      break;
+    }
+    items = mergeProviderCacheItems(items, apiPage.normalized);
+    nextPageToken = apiPage.nextCursor;
+    await writeProviderCache(
+      input.db,
+      "youtube",
+      cacheKey,
+      items,
+      undefined,
+      nextPageToken,
+    );
+    usable = freshOf(items);
+  }
+
+  if (usable.length === 0 && items.length === 0) {
     throw new Error("youtube-empty");
   }
-  await writeProviderCache(input.db, "youtube", cacheKey, page.normalized);
-  return page.normalized.slice(0, input.limit);
+  return usable.slice(0, input.limit);
 }
 
-async function fetchGiphyNormalized(input: {
+/** Admin / explicit GIPHY sync — not used in live YouTube-primary feed top-up. */
+export async function fetchGiphyNormalized(input: {
   db: Firestore;
   language: string;
   bucket: HumorSearchBucket;
@@ -155,9 +212,10 @@ async function fetchGiphyNormalized(input: {
 }
 
 /**
- * Fallback chain (Terms-safe, free-tier oriented):
- * YouTube Data API → GIPHY → (Tenor disabled) → caller uses internal Firestore pool.
+ * Live feed top-up chain (MVP):
+ * YouTube Data API → internal Firestore pool.
  *
+ * GIPHY remains available via explicit admin sync only — not in live feed top-up.
  * Never downloads provider media into Firebase Storage.
  */
 export async function topUpHumorFromProviders(input: {
@@ -198,13 +256,13 @@ export async function topUpHumorFromProviders(input: {
       provider: "youtube",
       enabled: isYoutubeConfigured(),
       fetch: (bucket, limit) =>
-        fetchYoutubeNormalized({db: input.db, language, bucket, limit}),
-    },
-    {
-      provider: "giphy",
-      enabled: isGiphyConfigured(),
-      fetch: (bucket, limit) =>
-        fetchGiphyNormalized({db: input.db, language, bucket, limit}),
+        fetchYoutubeNormalized({
+          db: input.db,
+          language,
+          bucket,
+          limit,
+          excludeIds: input.excludeIds,
+        }),
     },
   ];
 
@@ -237,11 +295,8 @@ export async function topUpHumorFromProviders(input: {
         const batch = await step.fetch(bucket, Math.max(3, remaining));
         fetched += batch.length;
 
-        // Prefer playable stream URLs for in-app players; YouTube is embed-only.
-        const ordered =
-          step.provider === "giphy"
-            ? batch
-            : batch.filter((n) => n.embedUrl || n.contentUrl);
+        // YouTube: embed-only items with validated video ids.
+        const ordered = batch.filter((n) => n.embedUrl && n.providerContentId);
 
         for (const normalized of ordered) {
           if (contentIds.length >= needed) {
@@ -271,7 +326,7 @@ export async function topUpHumorFromProviders(input: {
               // Skip probe for YouTube embeds (HEAD often blocked); probe Giphy CDN.
               probe:
                 input.probe ??
-                (step.provider === "giphy"),
+                false,
               forcedCategory: normalized.category,
               attributionRequired: normalized.attributionRequired,
               embedUrl: normalized.embedUrl,

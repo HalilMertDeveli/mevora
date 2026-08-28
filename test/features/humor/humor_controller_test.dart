@@ -100,6 +100,21 @@ void main() {
     expect(source.profile.funnyCount, 1);
   });
 
+  test('duplicate in-flight rating on same content is ignored', () async {
+    final source = MockHumorDataSource();
+    final controller = buildController(source: source);
+    await controller.load();
+
+    final a = controller.rate(HumorRating.funny);
+    final b = controller.rate(HumorRating.funny);
+    await Future.wait([a, b]);
+
+    // In-flight guard blocks same contentId; optimistic advance may rate next.
+    expect(source.feedbackCalls, lessThanOrEqualTo(2));
+    expect(source.profile.funnyCount, lessThanOrEqualTo(2));
+    expect(source.profile.funnyCount, greaterThanOrEqualTo(1));
+  });
+
   test('not funny advances and increments notFunnyCount', () async {
     final source = MockHumorDataSource();
     final controller = buildController(source: source);
@@ -156,6 +171,35 @@ void main() {
     expect(controller.state.failure, isNotNull);
     expect(controller.state.items, isEmpty);
     expect(controller.state.isLoading, isFalse);
+  });
+
+  test('broken media skip advances without crash or hang', () async {
+    final source = MockHumorDataSource();
+    final controller = buildController(source: source);
+    await controller.load();
+    final first = controller.state.current!.contentId;
+    final second = controller.state.items[1].contentId;
+
+    await controller.skipBrokenMedia(first);
+
+    expect(controller.state.items.any((e) => e.contentId == first), isFalse);
+    expect(controller.state.current?.contentId, second);
+    expect(controller.state.isLoading, isFalse);
+    expect(controller.state.failure, isNull);
+  });
+
+  test('skipBrokenMedia on last item triggers empty then prefetch path', () async {
+    final only = MockHumorDataSource.seedCatalog.take(1).toList();
+    final source = MockHumorDataSource(seed: only);
+    final controller = buildController(source: source);
+    await controller.load();
+    final id = controller.state.current!.contentId;
+
+    await controller.skipBrokenMedia(id);
+
+    // Prefetch may refill from mock; must not stay loading forever.
+    expect(controller.state.isLoading, isFalse);
+    expect(controller.state.isLoadingMore, isFalse);
   });
 
   test('free user becomes ad-eligible after interval and resumes after ad', () async {

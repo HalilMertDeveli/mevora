@@ -18,10 +18,41 @@ import type {
 
 export const HUMOR_CONTENT_COLLECTION = "humorContent";
 
+/** True when a URL is a YouTube watch/embed page (not a poster/CDN asset). */
+export function isYoutubeHtmlPlaybackUrl(url: string | null | undefined): boolean {
+  const lower = String(url ?? "").toLowerCase();
+  return (
+    lower.includes("youtube.com/embed") ||
+    lower.includes("youtube.com/watch") ||
+    lower.includes("youtu.be/")
+  );
+}
+
+/**
+ * YouTube must never expose HTML embed/watch URLs as downloadUrl — clients
+ * historically fed that into VideoPlayer/ExoPlayer and crashed.
+ * Prefer thumb/poster; keep embedUrl for iframe playback only.
+ */
+export function sanitizeYoutubeFeedMedia(media: HumorMedia): HumorMedia {
+  const thumb = media.thumbUrl ?? null;
+  const download = media.downloadUrl ?? null;
+  if (!isYoutubeHtmlPlaybackUrl(download)) {
+    return media;
+  }
+  return {
+    ...media,
+    downloadUrl: thumb && !isYoutubeHtmlPlaybackUrl(thumb) ? thumb : null,
+  };
+}
+
 export function toFeedSafeContent(doc: HumorContentDoc): HumorFeedItem {
-  const media = doc.media ?? {};
   const provider = doc.source?.provider ?? null;
   const sourceId = extractProviderSourceId(doc.contentId, provider);
+  const rawMedia = doc.media ?? {};
+  const media =
+    provider === "youtube" || isYoutubeHtmlPlaybackUrl(rawMedia.downloadUrl)
+      ? sanitizeYoutubeFeedMedia(rawMedia)
+      : rawMedia;
   return {
     contentId: doc.contentId,
     type: doc.type,

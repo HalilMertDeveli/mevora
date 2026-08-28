@@ -38,6 +38,16 @@ interface YoutubeSearchResponse {
 const NSFW_BLOCK =
   /\b(nsfw|porn|xxx|sex|nude|naked|erotik|pornografi|gore|kill|murder|suicide)\b/i;
 
+const YOUTUBE_VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
+
+/** Eleven-char YouTube video id (RFC-style). */
+export function isValidYoutubeVideoId(id: string | null | undefined): boolean {
+  if (id == null) {
+    return false;
+  }
+  return YOUTUBE_VIDEO_ID.test(id.trim());
+}
+
 export function youtubeEmbedUrl(videoId: string): string {
   return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?playsinline=1&rel=0&modestbranding=1`;
 }
@@ -56,7 +66,7 @@ export function mapYoutubeItem(
   bucket: HumorSearchBucket,
 ): NormalizedHumorContent | null {
   const videoId = item.id?.videoId?.trim();
-  if (!videoId) {
+  if (!videoId || !isValidYoutubeVideoId(videoId)) {
     return null;
   }
   const title = (item.snippet?.title ?? "").trim() || "YouTube";
@@ -145,6 +155,63 @@ export class YoutubeHumorSource implements HumorContentSource {
     return new YoutubeHumorSource(key);
   }
 
+  /** Batch `videos.list` — confirm embeddable before ingest (quota-aware). */
+  private async embeddableVideoIds(
+    videoIds: string[],
+  ): Promise<{verified: boolean; ids: Set<string>}> {
+    const unique = [...new Set(videoIds.filter(isValidYoutubeVideoId))];
+    if (unique.length === 0) {
+      return {verified: false, ids: new Set()};
+    }
+    const out = new Set<string>();
+    let verified = false;
+    for (let i = 0; i < unique.length; i += 50) {
+      const chunk = unique.slice(i, i + 50);
+      const url = new URL(`${this.baseUrl}/videos`);
+      url.searchParams.set("key", this.apiKey);
+      url.searchParams.set("part", "status");
+      url.searchParams.set("id", chunk.join(","));
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      try {
+        const res = await fetch(url, {signal: controller.signal});
+        if (!res.ok) {
+          continue;
+        }
+        verified = true;
+        const body = (await res.json()) as {
+          items?: Array<{id?: string; status?: {embeddable?: boolean}}>;
+        };
+        for (const v of body.items ?? []) {
+          if (v.id && v.status?.embeddable === true) {
+            out.add(v.id);
+          }
+        }
+      } catch {
+        // Soft-fail: keep search.list embeddable filter only for this batch.
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    return {verified, ids: out};
+  }
+
+  private dedupeByVideoId(
+    items: NormalizedHumorContent[],
+  ): NormalizedHumorContent[] {
+    const seen = new Set<string>();
+    const out: NormalizedHumorContent[] = [];
+    for (const item of items) {
+      const id = item.providerContentId;
+      if (!id || seen.has(id)) {
+        continue;
+      }
+      seen.add(id);
+      out.push(item);
+    }
+    return out;
+  }
+
   private async searchInternal(input: {
     query: string;
     language: string;
@@ -214,9 +281,22 @@ export class YoutubeHumorSource implements HumorContentSource {
       throw new Error(`youtube-api-${reason}`);
     }
 
-    const normalized = (body.items ?? [])
+    let normalized = (body.items ?? [])
       .map((item) => mapYoutubeItem(item, input.language, input.bucket))
       .filter((item): item is NormalizedHumorContent => item != null);
+
+    normalized = this.dedupeByVideoId(normalized);
+
+    if (normalized.length > 0) {
+      const embeddable = await this.embeddableVideoIds(
+        normalized.map((n) => n.providerContentId),
+      );
+      if (embeddable.verified) {
+        normalized = normalized.filter((n) =>
+          embeddable.ids.has(n.providerContentId),
+        );
+      }
+    }
 
     return {
       normalized,

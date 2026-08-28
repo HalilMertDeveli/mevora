@@ -9,6 +9,8 @@ export type HumorProviderCacheDoc = {
   provider: string;
   queryKey: string;
   items: NormalizedHumorContent[];
+  /** YouTube search.list / GIPHY next page cursor — omit search.list when cache hit is enough. */
+  nextPageToken?: string | null;
   expiresAtMs: number;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -24,6 +26,15 @@ export async function readProviderCache(
   provider: string,
   queryKey: string,
 ): Promise<NormalizedHumorContent[] | null> {
+  const page = await readProviderCachePage(db, provider, queryKey);
+  return page?.items ?? null;
+}
+
+export async function readProviderCachePage(
+  db: Firestore,
+  provider: string,
+  queryKey: string,
+): Promise<{items: NormalizedHumorContent[]; nextPageToken: string | null} | null> {
   const id = cacheDocId(provider, queryKey);
   const snap = await db.collection(HUMOR_PROVIDER_CACHE_COLLECTION).doc(id).get();
   if (!snap.exists) {
@@ -33,7 +44,10 @@ export async function readProviderCache(
   if (!data || Number(data.expiresAtMs ?? 0) < Date.now()) {
     return null;
   }
-  return Array.isArray(data.items) ? data.items : null;
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    nextPageToken: data.nextPageToken ?? null,
+  };
 }
 
 export async function writeProviderCache(
@@ -42,6 +56,7 @@ export async function writeProviderCache(
   queryKey: string,
   items: NormalizedHumorContent[],
   ttlMs = DEFAULT_TTL_MS,
+  nextPageToken: string | null = null,
 ): Promise<void> {
   const id = cacheDocId(provider, queryKey);
   await db
@@ -52,12 +67,28 @@ export async function writeProviderCache(
         provider,
         queryKey,
         items,
+        nextPageToken,
         expiresAtMs: Date.now() + ttlMs,
         updatedAt: FieldValue.serverTimestamp(),
         createdAt: FieldValue.serverTimestamp(),
       },
       {merge: true},
     );
+}
+
+/** Merge unique items by id; keep latest nextPageToken. */
+export function mergeProviderCacheItems(
+  existing: NormalizedHumorContent[],
+  incoming: NormalizedHumorContent[],
+): NormalizedHumorContent[] {
+  const byId = new Map<string, NormalizedHumorContent>();
+  for (const item of existing) {
+    if (item?.id) byId.set(item.id, item);
+  }
+  for (const item of incoming) {
+    if (item?.id) byId.set(item.id, item);
+  }
+  return [...byId.values()];
 }
 
 /** Drop a cached entry when content is deleted / unsafe. */

@@ -12,7 +12,7 @@ Date: 2026-08-28
 
 Starting Commit: `4c71b8f` (`docs: fix phase 7 report git metadata`)
 
-Ending Commit: `73e3bec` (`fix: export QUESTION_TOPICS for WYM humor answer comparison`)
+Ending Commit: `9156323` (`docs: add phase 8 release blocker closure report`; fix: `73e3bec`)
 
 Worktree: `D:/Mevora-phase3-recovery` (active) | Primary `D:/Mevora` on `feature/spotify-music-compatibility`
 
@@ -520,8 +520,8 @@ Internal release blockers (build, WYM tests, APK) **closed**. External/staging/d
 | Field | Value |
 |-------|-------|
 | Starting Commit | `4c71b8f` |
-| Ending Commit | `73e3bec` |
-| Commit | `fix: export QUESTION_TOPICS for WYM humor answer comparison` |
+| Ending Commit | `9156323` |
+| Commits | `73e3bec` fix QUESTION_TOPICS; `9156323` phase 8 report |
 | Push | **SUCCESS** → `origin/feature/humor-lab-mvp` |
 
 ============================================================
@@ -538,7 +538,7 @@ Internal release blockers (build, WYM tests, APK) **closed**. External/staging/d
 8. Flutter analyze 0 errors; full 789/790; WYM 32/32.
 9. APK debug PASS.
 10. App Check probe inconclusive.
-11. Committed and pushed `73e3bec`.
+11. Committed and pushed `73e3bec` (fix) and `9156323` (report).
 12. Production safety all NO.
 
 ============================================================

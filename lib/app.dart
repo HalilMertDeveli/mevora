@@ -7,6 +7,7 @@ import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
+import 'package:mevora/core/di/compatibility_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
@@ -35,6 +36,7 @@ import 'package:mevora/features/boost/domain/repositories/purchase_repository.da
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
+import 'package:mevora/features/compatibility/domain/repositories/why_you_matched_repository.dart';
 import 'package:mevora/features/match_score/domain/repositories/match_score_repository.dart';
 import 'package:mevora/features/chat/e2ee/services/e2ee_bootstrap_controller.dart';
 import 'package:mevora/features/matching/presentation/controllers/presence_lifecycle_controller.dart';
@@ -67,6 +69,7 @@ class MevoraApp extends StatefulWidget {
     this.humorAdsSettings,
     this.subscriptionRepository,
     this.matchScoreRepository,
+    this.whyYouMatchedRepository,
     this.relationshipRepository,
     this.profileQuestionAnswerRepository,
     this.locationController,
@@ -94,6 +97,7 @@ class MevoraApp extends StatefulWidget {
   final HumorAdsSettings? humorAdsSettings;
   final SubscriptionRepository? subscriptionRepository;
   final MatchScoreRepository? matchScoreRepository;
+  final WhyYouMatchedRepository? whyYouMatchedRepository;
   final RelationshipRepository? relationshipRepository;
   final ProfileQuestionAnswerRepository? profileQuestionAnswerRepository;
   final LocationController? locationController;
@@ -319,6 +323,14 @@ class _MevoraAppState extends State<MevoraApp> {
     final matchScore = widget.matchScoreRepository;
     if (matchScore != null) {
       child = MatchScoreScope(repository: matchScore, child: child);
+    }
+
+    final whyYouMatched = widget.whyYouMatchedRepository;
+    if (whyYouMatched != null) {
+      child = CompatibilityScope(
+        whyYouMatchedRepository: whyYouMatched,
+        child: child,
+      );
     }
 
     final location =

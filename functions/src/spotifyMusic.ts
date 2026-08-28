@@ -338,10 +338,12 @@ function toClientProfile(data: DocumentData | undefined): Record<string, unknown
     return {spotifyConnected: false, connected: false, provider: null};
   }
   const musicProfile = (data.musicProfile ?? {}) as DocumentData;
+  const spotifyConnected = data.spotifyConnected === true;
+  const connected = data.connected === true || spotifyConnected;
   return {
-    spotifyConnected: true,
-    connected: true,
-    provider: data.provider ?? "spotify",
+    spotifyConnected,
+    connected,
+    provider: data.provider ?? (spotifyConnected ? "spotify" : null),
     spotifyUserId: data.spotifyUserId ?? null,
     displayName: data.displayName ?? null,
     topTracks: data.topTracks ?? [],

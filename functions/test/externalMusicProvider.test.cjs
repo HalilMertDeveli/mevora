@@ -249,10 +249,23 @@ test("no token or secret exposed in normalized profile or summary", () => {
   }
 });
 
-test("provider registry resolves external provider", () => {
+test("provider registry rejects external when API not configured", () => {
+  clearExternalEnv();
+  assert.throws(
+    () => resolveMusicProvider("external"),
+    (error) => error.code === "failed-precondition" && error.message === "external-api-not-configured",
+  );
+  restoreEnv();
+});
+
+test("provider registry resolves external when API configured", () => {
+  process.env.EXTERNAL_MUSIC_API_KEY = "key";
+  process.env.EXTERNAL_MUSIC_API_SECRET = "secret";
+  process.env.EXTERNAL_MUSIC_API_BASE_URL = "https://example.com";
   const provider = resolveMusicProvider("external");
   assert.ok(provider instanceof ExternalMusicProvider);
   assert.equal(provider.providerId, "external");
+  restoreEnv();
 });
 
 test("external config is not configured without secrets", () => {

@@ -48,3 +48,4 @@ export {
   seedInternalHumorContent,
   syncHumorFromProvider,
 } from "./humor/index.js";
+export {getWhyYouMatched} from "./whyYouMatched/getWhyYouMatched.js";

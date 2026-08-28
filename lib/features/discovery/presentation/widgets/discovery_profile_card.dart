@@ -90,101 +90,97 @@ class DiscoveryProfileCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md,
-                    AppSpacing.md,
-                    AppSpacing.md,
-                    AppSpacing.md,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${candidate.displayName}, ${candidate.age}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (candidate.city != null) ...[
-                        const SizedBox(height: 2),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          candidate.city!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          '${candidate.displayName}, ${candidate.age}',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
-                      if (candidate.bio != null && candidate.bio!.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          candidate.bio!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                        if (candidate.city != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            candidate.city!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                      ],
-                      if (showScore) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        DiscoveryCompatibilityScore(
-                          score: candidate.compatibilityScore,
-                          status: candidate.compatibilityStatus,
-                          onWhyTap: candidate.hasCompatibilityScore
-                              ? onWhyTap
-                              : null,
-                        ),
-                      ],
-                      if (categoryBars.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        ...categoryBars,
-                      ],
-                      if (distance != null && distance.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        MevoraChip(label: distance, compact: true),
-                      ],
-                      if (candidate.sharedInterests.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          l10n.sharedHobbiesCount(
-                            candidate.sharedInterests.length,
+                        ],
+                        if (candidate.bio != null &&
+                            candidate.bio!.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            candidate.bio!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                        ],
+                        if (showScore) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          DiscoveryCompatibilityScore(
+                            score: candidate.compatibilityScore,
+                            status: candidate.compatibilityStatus,
+                            onWhyTap: candidate.hasCompatibilityScore
+                                ? onWhyTap
+                                : null,
                           ),
-                        ),
-                      ],
-                      if (candidate.interests.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Wrap(
-                          spacing: AppSpacing.xs,
-                          runSpacing: AppSpacing.xs,
-                          children: candidate.interests
-                              .take(3)
-                              .map(
-                                (interest) => MevoraChip(
-                                  label: interest,
-                                  compact: true,
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                      if (candidate.compatibilityReasons.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          candidate.compatibilityReasons.first,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                        ],
+                        if (categoryBars.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          ...categoryBars,
+                        ],
+                        if (distance != null && distance.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          MevoraChip(label: distance, compact: true),
+                        ],
+                        if (candidate.sharedInterests.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            l10n.sharedHobbiesCount(
+                              candidate.sharedInterests.length,
+                            ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
+                        ],
+                        if (candidate.interests.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Wrap(
+                            spacing: AppSpacing.xs,
+                            runSpacing: AppSpacing.xs,
+                            children: candidate.interests
+                                .map(
+                                  (interest) => MevoraChip(
+                                    label: interest,
+                                    compact: true,
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ],
+                        if (candidate.compatibilityReasons.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            candidate.compatibilityReasons.first,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ],

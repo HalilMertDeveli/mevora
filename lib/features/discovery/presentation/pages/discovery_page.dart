@@ -203,10 +203,17 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(l10n.discoverBestMatchesTitle),
+            Text(
+              l10n.discoverBestMatchesTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             Text(
               l10n.discoverBestMatchesSubtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

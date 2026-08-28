@@ -20,35 +20,50 @@ class DiscoveryActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Row(
-      children: [
-        Expanded(
-          child: MevoraButton(
-            label: l10n.pass,
-            variant: MevoraButtonVariant.secondary,
-            size: MevoraButtonSize.medium,
-            onPressed: enabled ? onPass : null,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: MevoraButton(
-            label: l10n.discoveryActionPriorityIntro,
-            variant: MevoraButtonVariant.ghost,
-            size: MevoraButtonSize.medium,
-            onPressed: enabled ? onSuperLike : null,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          flex: 2,
-          child: MevoraButton(
-            label: l10n.discoveryActionConnect,
-            size: MevoraButtonSize.medium,
-            onPressed: enabled ? onLike : null,
-          ),
-        ),
-      ],
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 400 || textScale > 1.15;
+        final size =
+            compact ? MevoraButtonSize.small : MevoraButtonSize.medium;
+        final connectFlex = compact ? 1 : 2;
+        final spacing = compact ? AppSpacing.xs : AppSpacing.sm;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: MevoraButton(
+                label: l10n.pass,
+                variant: MevoraButtonVariant.secondary,
+                size: size,
+                wrapLabel: compact,
+                onPressed: enabled ? onPass : null,
+              ),
+            ),
+            SizedBox(width: spacing),
+            Expanded(
+              child: MevoraButton(
+                label: l10n.discoveryActionPriorityIntro,
+                variant: MevoraButtonVariant.ghost,
+                size: size,
+                wrapLabel: compact,
+                onPressed: enabled ? onSuperLike : null,
+              ),
+            ),
+            SizedBox(width: spacing),
+            Expanded(
+              flex: connectFlex,
+              child: MevoraButton(
+                label: l10n.discoveryActionConnect,
+                size: size,
+                wrapLabel: compact,
+                onPressed: enabled ? onLike : null,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

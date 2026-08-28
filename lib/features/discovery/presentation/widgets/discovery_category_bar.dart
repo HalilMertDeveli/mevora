@@ -46,11 +46,12 @@ class DiscoveryCategoryBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          SizedBox(
-            width: 36,
+          Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.sm),
             child: Text(
               '$score%',
               textAlign: TextAlign.end,
+              maxLines: 1,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w600,

@@ -5,10 +5,10 @@ import 'package:mevora/app.dart';
 import 'package:mevora/core/analytics/firebase_analytics_adapter.dart';
 import 'package:mevora/core/analytics/noop_analytics_provider.dart';
 import 'package:mevora/core/cache/image_cache_policy.dart';
-import 'package:flutter/foundation.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/feature_flags.dart';
+import 'package:mevora/core/config/humor_runtime_config.dart';
 import 'package:mevora/core/di/boost_services_factory.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/di/discovery_services_factory.dart';
@@ -180,16 +180,3 @@ Future<void> bootstrap(AppEnvironment environment) async {
   );
 }
 
-/// Humor Lab flag resolution:
-/// - `--dart-define=HUMOR_LAB_ENABLED=true|false` forces the value
-/// - otherwise: ON in debug development builds (manual device QA), OFF elsewhere
-bool resolveHumorLabEnabled(AppEnvironment environment) {
-  const forced = String.fromEnvironment('HUMOR_LAB_ENABLED', defaultValue: '');
-  if (forced == 'true') {
-    return true;
-  }
-  if (forced == 'false') {
-    return false;
-  }
-  return environment.isDevelopment && kDebugMode;
-}

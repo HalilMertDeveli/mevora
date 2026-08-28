@@ -1,4 +1,6 @@
 import 'package:mevora/core/config/app_config.dart';
+import 'package:mevora/core/config/app_environment.dart';
+import 'package:mevora/core/config/humor_runtime_config.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/features/humor/data/datasources/functions_humor_data_source.dart';
@@ -24,8 +26,8 @@ class HumorServices {
   final HumorAdsSettings adsSettings;
 }
 
-/// Prefer mock by default for MVP local UI safety.
-/// Pass `--dart-define=USE_MOCK_HUMOR=false` to hit Cloud Functions.
+/// Mock only in debug development unless `--dart-define=USE_MOCK_HUMOR` overrides.
+/// Staging/production release builds use real Cloud Functions by default.
 HumorServices createHumorServices({
   AppConfig? config,
   BackendCallable? backend,
@@ -48,10 +50,8 @@ HumorServices createHumorServices({
       adsSettings: settings,
     );
   }
-  const useMock = bool.fromEnvironment(
-    'USE_MOCK_HUMOR',
-    defaultValue: true,
-  );
+  final environment = config?.environment ?? AppEnvironment.production;
+  final useMock = resolveUseMockHumor(environment);
   if (useMock) {
     return HumorServices(
       repository: HumorRepositoryImpl(dataSource: MockHumorDataSource()),

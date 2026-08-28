@@ -1446,5 +1446,25 @@
   "musicMatchTeaser": "🎵 Müzik zevkiniz uyumlu olabilir — detaylar Premium ile",
   "musicPremiumUnlock": "Aç",
   "musicNoCommonTracks": "Henüz ortak dinlediğiniz bir şarkı yok 🎵",
-  "musicRecentlyPlayedHeading": "Son dinlenenler"
+  "musicRecentlyPlayedHeading": "Son dinlenenler",
+  "musicOverallCompatibilityTitle": "❤️ Uyumluluk — %{percent}",
+  "@musicOverallCompatibilityTitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "musicCompatibilityTitle": "🎵 Müzik Uyumluluğu — %{percent}",
+  "@musicCompatibilityTitle": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSimilarGenresHeading": "🎶 Benzer Türler",
+  "musicRecentArtistsHeading": "🎤 Son Dinlenen Sanatçılar",
+  "musicRecentArtistsYou": "Sen",
+  "musicRecentArtistsThem": "O"
 }

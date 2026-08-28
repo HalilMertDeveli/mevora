@@ -3372,4 +3372,26 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get musicRecentlyPlayedHeading => 'Son dinlenenler';
+
+  @override
+  String musicOverallCompatibilityTitle(int percent) {
+    return '❤️ Uyumluluk — %$percent';
+  }
+
+  @override
+  String musicCompatibilityTitle(int percent) {
+    return '🎵 Müzik Uyumluluğu — %$percent';
+  }
+
+  @override
+  String get musicSimilarGenresHeading => '🎶 Benzer Türler';
+
+  @override
+  String get musicRecentArtistsHeading => '🎤 Son Dinlenen Sanatçılar';
+
+  @override
+  String get musicRecentArtistsYou => 'Sen';
+
+  @override
+  String get musicRecentArtistsThem => 'O';
 }

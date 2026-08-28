@@ -5,6 +5,18 @@
       "percent": {"type": "int"}
     }
   },
+  "musicOverallCompatibilityTitle": "❤️ Uyumluluk — %{percent}",
+  "@musicOverallCompatibilityTitle": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicCompatibilityTitle": "🎵 Müzik Uyumluluğu — %{percent}",
+  "@musicCompatibilityTitle": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
   "musicInsightBandHigh": "Müzik zevkiniz oldukça benzer.",
   "musicInsightBandMid": "Bazı güçlü ortak müzik zevkleriniz var.",
   "musicInsightBandLow": "Müzik zevkleriniz farklı olsa da birkaç ortak sanatçınız var.",
@@ -49,6 +61,10 @@
   "musicSharedTracksHeading": "🎵 Ortak şarkılarınız",
   "musicSharedArtistsHeading": "🎤 Ortak sanatçılarınız",
   "musicSharedGenresHeading": "🎶 Ortak türler",
+  "musicSimilarGenresHeading": "🎶 Benzer Türler",
+  "musicRecentArtistsHeading": "🎤 Son Dinlenen Sanatçılar",
+  "musicRecentArtistsYou": "Sen",
+  "musicRecentArtistsThem": "O",
   "musicViewAllShared": "Tümünü gör ({count})",
   "@musicViewAllShared": {
     "placeholders": {

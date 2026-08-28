@@ -5453,7 +5453,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicMatchTitle.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Music Match — {percent}%'**
+  /// **'?? Music Match ? {percent}%'**
   String musicMatchTitle(int percent);
 
   /// No description provided for @musicInsightBandHigh.
@@ -5477,37 +5477,37 @@ abstract class AppLocalizations {
   /// No description provided for @musicInsightSharedTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You have {count} shared songs.'**
+  /// **'?? You have {count} shared songs.'**
   String musicInsightSharedTracks(int count);
 
   /// No description provided for @musicInsightSharedArtists.
   ///
   /// In en, this message translates to:
-  /// **'🎤 You have {count} shared artists.'**
+  /// **'?? You have {count} shared artists.'**
   String musicInsightSharedArtists(int count);
 
   /// No description provided for @musicInsightSharedPlaylistTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎧 Your playlists share {count} songs.'**
+  /// **'?? Your playlists share {count} songs.'**
   String musicInsightSharedPlaylistTracks(int count);
 
   /// No description provided for @musicInsightSharedRecentTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You recently listened to {count} of the same songs.'**
+  /// **'?? You recently listened to {count} of the same songs.'**
   String musicInsightSharedRecentTracks(int count);
 
   /// No description provided for @musicInsightTopSharedArtist.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You both listen to {name} a lot.'**
+  /// **'?? You both listen to {name} a lot.'**
   String musicInsightTopSharedArtist(String name);
 
   /// No description provided for @musicInsightTopSharedGenres.
   ///
   /// In en, this message translates to:
-  /// **'🎶 Your tastes overlap most in {genres}.'**
+  /// **'?? Your tastes overlap most in {genres}.'**
   String musicInsightTopSharedGenres(String genres);
 
   /// No description provided for @musicInsightDataUnavailable.
@@ -5525,19 +5525,19 @@ abstract class AppLocalizations {
   /// No description provided for @musicSharedTracksHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Songs you both like'**
+  /// **'?? Songs you both like'**
   String get musicSharedTracksHeading;
 
   /// No description provided for @musicSharedArtistsHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎤 Artists you both like'**
+  /// **'?? Artists you both like'**
   String get musicSharedArtistsHeading;
 
   /// No description provided for @musicSharedGenresHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎶 Shared genres'**
+  /// **'?? Shared genres'**
   String get musicSharedGenresHeading;
 
   /// No description provided for @musicViewAllShared.
@@ -6155,7 +6155,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicPrivacyNotice.
   ///
   /// In en, this message translates to:
-  /// **'Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers — never on your device.'**
+  /// **'Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers ? never on your device.'**
   String get musicPrivacyNotice;
 
   /// No description provided for @musicDisconnectCta.
@@ -6179,7 +6179,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicMatchTeaser.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Your music tastes may align — unlock full insights with Premium'**
+  /// **'?? Your music tastes may align ? unlock full insights with Premium'**
   String get musicMatchTeaser;
 
   /// No description provided for @musicPremiumUnlock.
@@ -6191,7 +6191,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicNoCommonTracks.
   ///
   /// In en, this message translates to:
-  /// **'No shared songs yet 🎵'**
+  /// **'No shared songs yet ??'**
   String get musicNoCommonTracks;
 
   /// No description provided for @musicRecentlyPlayedHeading.
@@ -6199,6 +6199,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recently played'**
   String get musicRecentlyPlayedHeading;
+
+  /// No description provided for @musicOverallCompatibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'?? Compatibility ? {percent}%'**
+  String musicOverallCompatibilityTitle(int percent);
+
+  /// No description provided for @musicCompatibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'?? Music Compatibility ? {percent}%'**
+  String musicCompatibilityTitle(int percent);
+
+  /// No description provided for @musicSimilarGenresHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'?? Similar Genres'**
+  String get musicSimilarGenresHeading;
+
+  /// No description provided for @musicRecentArtistsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'?? Recent Artists'**
+  String get musicRecentArtistsHeading;
+
+  /// No description provided for @musicRecentArtistsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get musicRecentArtistsYou;
+
+  /// No description provided for @musicRecentArtistsThem.
+  ///
+  /// In en, this message translates to:
+  /// **'Them'**
+  String get musicRecentArtistsThem;
 }
 
 class _AppLocalizationsDelegate

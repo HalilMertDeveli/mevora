@@ -2973,7 +2973,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String musicMatchTitle(int percent) {
-    return '🎵 Music Match — $percent%';
+    return '?? Music Match ? $percent%';
   }
 
   @override
@@ -2988,32 +2988,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String musicInsightSharedTracks(int count) {
-    return '🎵 You have $count shared songs.';
+    return '?? You have $count shared songs.';
   }
 
   @override
   String musicInsightSharedArtists(int count) {
-    return '🎤 You have $count shared artists.';
+    return '?? You have $count shared artists.';
   }
 
   @override
   String musicInsightSharedPlaylistTracks(int count) {
-    return '🎧 Your playlists share $count songs.';
+    return '?? Your playlists share $count songs.';
   }
 
   @override
   String musicInsightSharedRecentTracks(int count) {
-    return '🎵 You recently listened to $count of the same songs.';
+    return '?? You recently listened to $count of the same songs.';
   }
 
   @override
   String musicInsightTopSharedArtist(String name) {
-    return '🎵 You both listen to $name a lot.';
+    return '?? You both listen to $name a lot.';
   }
 
   @override
   String musicInsightTopSharedGenres(String genres) {
-    return '🎶 Your tastes overlap most in $genres.';
+    return '?? Your tastes overlap most in $genres.';
   }
 
   @override
@@ -3024,13 +3024,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get musicSpotifyNotConnected => 'Spotify not connected';
 
   @override
-  String get musicSharedTracksHeading => '🎵 Songs you both like';
+  String get musicSharedTracksHeading => '?? Songs you both like';
 
   @override
-  String get musicSharedArtistsHeading => '🎤 Artists you both like';
+  String get musicSharedArtistsHeading => '?? Artists you both like';
 
   @override
-  String get musicSharedGenresHeading => '🎶 Shared genres';
+  String get musicSharedGenresHeading => '?? Shared genres';
 
   @override
   String musicViewAllShared(int count) {
@@ -3352,7 +3352,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicPrivacyNotice =>
-      'Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers — never on your device.';
+      'Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers ? never on your device.';
 
   @override
   String get musicDisconnectCta => 'Disconnect Spotify';
@@ -3366,14 +3366,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicMatchTeaser =>
-      '🎵 Your music tastes may align — unlock full insights with Premium';
+      '?? Your music tastes may align ? unlock full insights with Premium';
 
   @override
   String get musicPremiumUnlock => 'Unlock';
 
   @override
-  String get musicNoCommonTracks => 'No shared songs yet 🎵';
+  String get musicNoCommonTracks => 'No shared songs yet ??';
 
   @override
   String get musicRecentlyPlayedHeading => 'Recently played';
+
+  @override
+  String musicOverallCompatibilityTitle(int percent) {
+    return '?? Compatibility ? $percent%';
+  }
+
+  @override
+  String musicCompatibilityTitle(int percent) {
+    return '?? Music Compatibility ? $percent%';
+  }
+
+  @override
+  String get musicSimilarGenresHeading => '?? Similar Genres';
+
+  @override
+  String get musicRecentArtistsHeading => '?? Recent Artists';
+
+  @override
+  String get musicRecentArtistsYou => 'You';
+
+  @override
+  String get musicRecentArtistsThem => 'Them';
 }

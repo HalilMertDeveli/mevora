@@ -1,6 +1,18 @@
 {
-  "musicMatchTitle": "🎵 Music Match — {percent}%",
+  "musicMatchTitle": "?? Music Match ? {percent}%",
   "@musicMatchTitle": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicOverallCompatibilityTitle": "?? Compatibility ? {percent}%",
+  "@musicOverallCompatibilityTitle": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "musicCompatibilityTitle": "?? Music Compatibility ? {percent}%",
+  "@musicCompatibilityTitle": {
     "placeholders": {
       "percent": {"type": "int"}
     }
@@ -8,37 +20,37 @@
   "musicInsightBandHigh": "Your music tastes are quite similar.",
   "musicInsightBandMid": "You share some strong music tastes.",
   "musicInsightBandLow": "Your music tastes differ, but you still share a few artists.",
-  "musicInsightSharedTracks": "🎵 You have {count} shared songs.",
+  "musicInsightSharedTracks": "?? You have {count} shared songs.",
   "@musicInsightSharedTracks": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "musicInsightSharedArtists": "🎤 You have {count} shared artists.",
+  "musicInsightSharedArtists": "?? You have {count} shared artists.",
   "@musicInsightSharedArtists": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "musicInsightSharedPlaylistTracks": "🎧 Your playlists share {count} songs.",
+  "musicInsightSharedPlaylistTracks": "?? Your playlists share {count} songs.",
   "@musicInsightSharedPlaylistTracks": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "musicInsightSharedRecentTracks": "🎵 You recently listened to {count} of the same songs.",
+  "musicInsightSharedRecentTracks": "?? You recently listened to {count} of the same songs.",
   "@musicInsightSharedRecentTracks": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "musicInsightTopSharedArtist": "🎵 You both listen to {name} a lot.",
+  "musicInsightTopSharedArtist": "?? You both listen to {name} a lot.",
   "@musicInsightTopSharedArtist": {
     "placeholders": {
       "name": {"type": "String"}
     }
   },
-  "musicInsightTopSharedGenres": "🎶 Your tastes overlap most in {genres}.",
+  "musicInsightTopSharedGenres": "?? Your tastes overlap most in {genres}.",
   "@musicInsightTopSharedGenres": {
     "placeholders": {
       "genres": {"type": "String"}
@@ -46,9 +58,13 @@
   },
   "musicInsightDataUnavailable": "Not enough Spotify taste data to compare yet.",
   "musicSpotifyNotConnected": "Spotify not connected",
-  "musicSharedTracksHeading": "🎵 Songs you both like",
-  "musicSharedArtistsHeading": "🎤 Artists you both like",
-  "musicSharedGenresHeading": "🎶 Shared genres",
+  "musicSharedTracksHeading": "?? Songs you both like",
+  "musicSharedArtistsHeading": "?? Artists you both like",
+  "musicSharedGenresHeading": "?? Shared genres",
+  "musicSimilarGenresHeading": "?? Similar Genres",
+  "musicRecentArtistsHeading": "?? Recent Artists",
+  "musicRecentArtistsYou": "You",
+  "musicRecentArtistsThem": "Them",
   "musicViewAllShared": "View all ({count})",
   "@musicViewAllShared": {
     "placeholders": {
@@ -56,12 +72,12 @@
     }
   },
   "musicMatchDetailsCta": "Why this music match?",
-  "musicPrivacyNotice": "Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers — never on your device.",
+  "musicPrivacyNotice": "Spotify data is used only to compute music compatibility and show shared listening on matches. Tokens stay on our servers ? never on your device.",
   "musicDisconnectCta": "Disconnect Spotify",
   "musicDisconnectConfirmTitle": "Disconnect Spotify?",
   "musicDisconnectConfirmBody": "We'll remove your Spotify link and clear cached music taste. Match music compatibility will stop showing until you reconnect.",
-  "musicMatchTeaser": "🎵 Your music tastes may align — unlock full insights with Premium",
+  "musicMatchTeaser": "?? Your music tastes may align ? unlock full insights with Premium",
   "musicPremiumUnlock": "Unlock",
-  "musicNoCommonTracks": "No shared songs yet 🎵",
+  "musicNoCommonTracks": "No shared songs yet ??",
   "musicRecentlyPlayedHeading": "Recently played"
 }

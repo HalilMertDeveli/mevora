@@ -149,6 +149,37 @@ void main() {
     expect(find.text(_en.photoCounter(3, 3)), findsOneWidget);
   });
 
+  testWidgets('profile photo carousel fast fling still advances one page', (
+    tester,
+  ) async {
+    const candidate = DiscoveryCandidate(
+      uid: 'mock-photos-fast',
+      displayName: 'PhotoUser',
+      age: 28,
+      photos: [
+        'mock://mock-01/0',
+        'mock://mock-02/0',
+        'mock://mock-03/0',
+      ],
+    );
+
+    await tester.pumpWidget(
+      wrap(const DiscoveryProfileDetailsPage(candidate: candidate)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text(_en.photoCounter(1, 3)), findsOneWidget);
+
+    // High velocity that previously skipped 0 → 2 in one gesture.
+    await tester.fling(find.byType(PageView), const Offset(-800, 0), 3000);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text(_en.photoCounter(2, 3)), findsOneWidget);
+    expect(find.text(_en.photoCounter(3, 3)), findsNothing);
+  });
+
   testWidgets('discovery supports dark theme layout', (tester) async {
     const candidate = DiscoveryCandidate(
       uid: 'mock-02',

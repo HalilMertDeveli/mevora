@@ -1,17 +1,18 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
+import 'package:mevora/core/responsive/responsive_media.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
-import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
+import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
@@ -276,6 +277,10 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
   late final PageController _pageController = PageController();
   int _photoIndex = 0;
 
+  static const double _flingVelocityThreshold = 200;
+  static const Duration _pageAnimDuration = Duration(milliseconds: 280);
+  static const Curve _pageAnimCurve = Curves.easeOutCubic;
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -283,26 +288,6 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
   }
 
   void _onPhotoChanged(int index) {
-    // #region agent log
-    try {
-      final entry = <String, Object?>{
-        'sessionId': '80971b',
-        'runId': 'post-fix',
-        'hypothesisId': 'H5',
-        'location': 'discovery_profile_details_page.dart',
-        'message': 'photo_page_changed',
-        'data': <String, Object?>{
-          'index': index,
-          'total': widget.photos.length,
-        },
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-      };
-      // ignore: avoid_print
-      print('[PHOTO_DEBUG] ${jsonEncode(entry)}');
-    } on Object {
-      // Ignore.
-    }
-    // #endregion
     setState(() => _photoIndex = index);
     final photos = widget.photos;
     final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -316,67 +301,101 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
     }
   }
 
+  Future<void> _goToAdjacentPage(int delta) async {
+    final target = _photoIndex + delta;
+    if (target < 0 || target >= widget.photos.length) {
+      return;
+    }
+    await _pageController.animateToPage(
+      target,
+      duration: _pageAnimDuration,
+      curve: _pageAnimCurve,
+    );
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity <= -_flingVelocityThreshold) {
+      // Swipe left (finger moves left) → next photo.
+      unawaited(_goToAdjacentPage(1));
+    } else if (velocity >= _flingVelocityThreshold) {
+      // Swipe right → previous photo.
+      unawaited(_goToAdjacentPage(-1));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final photos = widget.photos;
+    final maxHeight = ResponsiveMedia.galleryMaxHeight(context);
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.55,
-      ),
-      child: AspectRatio(
-        aspectRatio: 3 / 4,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          child: RepaintBoundary(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (photos.isEmpty)
-                  ColoredBox(
-                    color: theme.colorScheme.primaryContainer,
-                    child: Icon(
-                      Icons.person_outline,
-                      size: 72,
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  )
-                else
-                  PageView.builder(
-                    controller: _pageController,
-                    itemCount: photos.length,
-                    // Load neighbors only after swipe; preloading full pending
-                    // Storage JPGs hangs the carousel on flaky networks.
-                    allowImplicitScrolling: false,
-                    onPageChanged: _onPhotoChanged,
-                    itemBuilder: (context, index) {
-                      return DiscoveryNetworkImage(url: photos[index]);
-                    },
-                  ),
-                if (photos.length > 1)
-                  Positioned(
-                    top: AppSpacing.sm,
-                    right: AppSpacing.sm,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface.withValues(alpha: 0.82),
-                        borderRadius: BorderRadius.circular(AppRadii.pill),
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: AspectRatio(
+          aspectRatio: ResponsiveMedia.portraitAspect,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            child: RepaintBoundary(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (photos.isEmpty)
+                    ColoredBox(
+                      color: theme.colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.person_outline,
+                        size: ResponsiveMedia.mediaPlaceholderIcon(maxHeight),
+                        color: theme.colorScheme.onPrimaryContainer,
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.xs,
-                        ),
-                        child: Text(
-                          l10n.photoCounter(_photoIndex + 1, photos.length),
-                          style: theme.textTheme.labelMedium,
-                        ),
+                    )
+                  else
+                    // Own horizontal drag recognizer so one gesture always
+                    // advances exactly one photo. Default PageView physics can
+                    // drag/ballistic across multiple pages when fling distance
+                    // exceeds the viewport width (regression Phase 10).
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onHorizontalDragStart: (_) {},
+                      onHorizontalDragUpdate: (_) {},
+                      onHorizontalDragEnd: _onHorizontalDragEnd,
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: photos.length,
+                        physics: const NeverScrollableScrollPhysics(),
+                        allowImplicitScrolling: false,
+                        onPageChanged: _onPhotoChanged,
+                        itemBuilder: (context, index) {
+                          return DiscoveryNetworkImage(url: photos[index]);
+                        },
                       ),
                     ),
-                  ),
-              ],
+                  if (photos.length > 1)
+                    Positioned(
+                      top: AppSpacing.sm,
+                      right: AppSpacing.sm,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface.withValues(alpha: 0.82),
+                          borderRadius: BorderRadius.circular(AppRadii.pill),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
+                          ),
+                          child: Text(
+                            l10n.photoCounter(_photoIndex + 1, photos.length),
+                            style: theme.textTheme.labelMedium,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -384,3 +403,4 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
     );
   }
 }
+

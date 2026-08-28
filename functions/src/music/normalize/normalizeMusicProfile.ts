@@ -204,6 +204,7 @@ export function normalizedToMusicProfile(normalized: NormalizedMusicProfile): Do
 export function normalizedToSummaryFields(normalized: NormalizedMusicProfile): DocumentData {
   return {
     provider: normalized.provider,
+    connected: normalized.connected,
     spotifyConnected: normalized.provider === SPOTIFY_PROVIDER_ID,
     spotifyUserId: normalized.providerUserId,
     displayName: normalized.displayName,

@@ -3,10 +3,16 @@
   "appName": "Mevora",
   "tagline": "Find compatible people, not just nearby people.",
   "connectTagline": "Connect with people who match you.",
-  "loginSlogan": "Don't just meet people.\nMeet someone compatible.",
+  "loginSlogan": "Meet someone who fits you.",
   "@loginSlogan": {
-    "description": "Welcome/login hero slogan. Keep the line break."
+    "description": "Welcome/login hero slogan."
   },
+  "discoverBestMatchesTitle": "Your best matches",
+  "discoverBestMatchesSubtitle": "Selected based on your compatibility",
+  "onboardingUnderstandingMessage": "Your answers help us understand your compatibility.",
+  "discoveryActionConnect": "Connect",
+  "discoveryActionPriorityIntro": "Priority intro",
+  "compatScoreHeading": "Compatibility",
   "continueWithEmail": "Continue with email",
   "somethingWentWrong": "Something went wrong",
   "tryAgain": "Try again",

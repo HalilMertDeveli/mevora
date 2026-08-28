@@ -24,11 +24,25 @@ class AuthLayout extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
           children: [
             const SizedBox(height: AppSpacing.lg),
-            const MevoraLogo(size: 56),
+            MevoraLogo(
+              size: 56,
+              onDark: theme.brightness == Brightness.dark,
+            ),
             const SizedBox(height: AppSpacing.xl),
-            Text(title, style: theme.textTheme.headlineSmall),
+            Text(
+              title,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
-            Text(subtitle, style: theme.textTheme.bodyMedium),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
             const SizedBox(height: AppSpacing.lg),
             MevoraCard(child: child),
           ],

@@ -116,11 +116,47 @@ abstract class AppLocalizations {
   /// **'Connect with people who match you.'**
   String get connectTagline;
 
-  /// Welcome/login hero slogan. Keep the line break.
+  /// Welcome/login hero slogan.
   ///
   /// In en, this message translates to:
-  /// **'Don\'t just meet people.\nMeet someone compatible.'**
+  /// **'Meet someone who fits you.'**
   String get loginSlogan;
+
+  /// No description provided for @discoverBestMatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your best matches'**
+  String get discoverBestMatchesTitle;
+
+  /// No description provided for @discoverBestMatchesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected based on your compatibility'**
+  String get discoverBestMatchesSubtitle;
+
+  /// No description provided for @onboardingUnderstandingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers help us understand your compatibility.'**
+  String get onboardingUnderstandingMessage;
+
+  /// No description provided for @discoveryActionConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get discoveryActionConnect;
+
+  /// No description provided for @discoveryActionPriorityIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority intro'**
+  String get discoveryActionPriorityIntro;
+
+  /// No description provided for @compatScoreHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility'**
+  String get compatScoreHeading;
 
   /// No description provided for @continueWithEmail.
   ///

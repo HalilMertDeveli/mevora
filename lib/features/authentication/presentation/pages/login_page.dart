@@ -123,6 +123,7 @@ class _LoginPageState extends State<LoginPage>
   Widget build(BuildContext context) {
     final auth = AuthScope.of(context);
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final error = localizeAuthError(l10n, auth);
     final busyProvider = switch (auth.status) {
       Authenticating(:final provider) => provider,
@@ -131,7 +132,6 @@ class _LoginPageState extends State<LoginPage>
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: LoginHeroBackground(
         child: SafeArea(
           child: AnimatedBuilder(
@@ -149,7 +149,10 @@ class _LoginPageState extends State<LoginPage>
                   SizedBox(height: MediaQuery.sizeOf(context).height * 0.06),
                   FadeTransition(
                     opacity: _logoOpacity,
-                    child: const MevoraLogo(size: 72, onDark: true),
+                    child: MevoraLogo(
+                      size: 72,
+                      onDark: theme.brightness == Brightness.dark,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   FadeTransition(
@@ -159,13 +162,9 @@ class _LoginPageState extends State<LoginPage>
                       child: Text(
                         l10n.loginSlogan,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: theme.textTheme.headlineSmall?.copyWith(
                           fontFamily: AppTypography.displayFontFamily,
-                          color: AppColors.primaryText,
-                          fontSize: 26,
                           fontWeight: FontWeight.w600,
-                          height: 1.25,
-                          letterSpacing: -0.2,
                         ),
                       ),
                     ),
@@ -194,12 +193,7 @@ class _LoginPageState extends State<LoginPage>
                             onEmail: () => unawaited(_revealEmailForm()),
                           ),
                           Theme(
-                            data: Theme.of(context).copyWith(
-                              textTheme: Theme.of(context).textTheme.apply(
-                                bodyColor: AppColors.secondaryText,
-                                displayColor: AppColors.primaryText,
-                              ),
-                            ),
+                            data: theme,
                             child: AuthLegalFooter(
                               onTerms: () => context.push(AppRoutes.legalTerms),
                               onPrivacy: () =>

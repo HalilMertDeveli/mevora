@@ -18,8 +18,26 @@ class AppLocalizationsTr extends AppLocalizations {
   String get connectTagline => 'Sana uyan insanlarla tanış.';
 
   @override
-  String get loginSlogan =>
-      'Sadece insanları değil,\nsana uygun insanları keşfet.';
+  String get loginSlogan => 'Sana uygun birini keşfet.';
+
+  @override
+  String get discoverBestMatchesTitle => 'En iyi eşleşmelerin';
+
+  @override
+  String get discoverBestMatchesSubtitle => 'Uyumluluğuna göre seçildi';
+
+  @override
+  String get onboardingUnderstandingMessage =>
+      'Cevapların uyumluluğunu anlamamıza yardımcı olur.';
+
+  @override
+  String get discoveryActionConnect => 'Bağlan';
+
+  @override
+  String get discoveryActionPriorityIntro => 'Öncelikli tanışma';
+
+  @override
+  String get compatScoreHeading => 'Uyumluluk';
 
   @override
   String get continueWithEmail => 'E-posta ile devam et';

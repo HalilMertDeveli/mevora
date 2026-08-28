@@ -3,7 +3,13 @@
   "appName": "Mevora",
   "tagline": "Sadece yakındakileri değil, uyumlu insanları bul.",
   "connectTagline": "Sana uyan insanlarla tanış.",
-  "loginSlogan": "Sadece insanları değil,\nsana uygun insanları keşfet.",
+  "loginSlogan": "Sana uygun birini keşfet.",
+  "discoverBestMatchesTitle": "En iyi eşleşmelerin",
+  "discoverBestMatchesSubtitle": "Uyumluluğuna göre seçildi",
+  "onboardingUnderstandingMessage": "Cevapların uyumluluğunu anlamamıza yardımcı olur.",
+  "discoveryActionConnect": "Bağlan",
+  "discoveryActionPriorityIntro": "Öncelikli tanışma",
+  "compatScoreHeading": "Uyumluluk",
   "@loginSlogan": {
     "description": "Welcome/login hero slogan. Keep the line break."
   },

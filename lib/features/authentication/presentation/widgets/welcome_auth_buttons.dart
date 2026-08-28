@@ -5,7 +5,7 @@ import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_press_scale.dart';
 
-/// Premium provider CTAs for the login welcome hero (on photo).
+/// Premium provider CTAs for the login welcome screen.
 class WelcomeAuthButtons extends StatelessWidget {
   const WelcomeAuthButtons({
     super.key,
@@ -29,6 +29,7 @@ class WelcomeAuthButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -38,7 +39,7 @@ class WelcomeAuthButtons extends StatelessWidget {
           isLoading: busyProvider == 'google',
           onPressed: enabled && busyProvider != 'google' ? onGoogle : null,
           leading: const _GoogleMark(),
-          style: _WelcomeButtonStyle.filledLight,
+          style: _WelcomeButtonStyle.outlined,
         ),
         const SizedBox(height: AppSpacing.sm),
         _WelcomeProviderButton(
@@ -46,8 +47,8 @@ class WelcomeAuthButtons extends StatelessWidget {
           loadingLabel: l10n.signingIn,
           isLoading: busyProvider == 'apple',
           onPressed: enabled && busyProvider != 'apple' ? onApple : null,
-          leading: const Icon(Icons.apple, size: 22, color: Colors.white),
-          style: _WelcomeButtonStyle.filledDark,
+          leading: Icon(Icons.apple, size: 22, color: theme.colorScheme.onSurface),
+          style: _WelcomeButtonStyle.outlined,
         ),
         const SizedBox(height: AppSpacing.sm),
         _WelcomeProviderButton(
@@ -55,12 +56,12 @@ class WelcomeAuthButtons extends StatelessWidget {
           loadingLabel: l10n.signingIn,
           isLoading: busyProvider == 'phone',
           onPressed: enabled && busyProvider != 'phone' ? onPhone : null,
-          leading: const Icon(
+          leading: Icon(
             Icons.phone_iphone_rounded,
             size: 20,
-            color: AppColors.primaryText,
+            color: theme.colorScheme.onSurface,
           ),
-          style: _WelcomeButtonStyle.glass,
+          style: _WelcomeButtonStyle.outlined,
         ),
         const SizedBox(height: AppSpacing.sm),
         _WelcomeProviderButton(
@@ -77,19 +78,19 @@ class WelcomeAuthButtons extends StatelessWidget {
           loadingLabel: l10n.signingIn,
           isLoading: busyProvider == 'email',
           onPressed: enabled && busyProvider != 'email' ? onEmail : null,
-          leading: const Icon(
+          leading: Icon(
             Icons.mail_outline_rounded,
             size: 20,
-            color: AppColors.primaryText,
+            color: theme.colorScheme.onPrimary,
           ),
-          style: _WelcomeButtonStyle.glass,
+          style: _WelcomeButtonStyle.primary,
         ),
       ],
     );
   }
 }
 
-enum _WelcomeButtonStyle { filledLight, filledDark, glass, spotify }
+enum _WelcomeButtonStyle { primary, outlined, spotify }
 
 class _WelcomeProviderButton extends StatelessWidget {
   const _WelcomeProviderButton({
@@ -111,7 +112,8 @@ class _WelcomeProviderButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null && !isLoading;
-    final colors = _colorsFor(style);
+    final theme = Theme.of(context);
+    final colors = _colorsFor(style, theme);
     return Semantics(
       button: true,
       enabled: enabled,
@@ -120,79 +122,76 @@ class _WelcomeProviderButton extends StatelessWidget {
         child: MevoraPressScale(
           enabled: enabled,
           child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: Material(
-            color: colors.background,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              side: BorderSide(color: colors.border),
-            ),
-            child: InkWell(
-              onTap: enabled ? onPressed : null,
-              borderRadius: BorderRadius.circular(AppRadii.md),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: isLoading
-                    ? Center(
-                        child: SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colors.foreground,
-                          ),
-                        ),
-                      )
-                    : Row(
-                        children: [
-                          SizedBox(width: 28, child: Center(child: leading)),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              label,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.labelLarge
-                                  ?.copyWith(color: colors.foreground),
+            width: double.infinity,
+            height: 52,
+            child: Material(
+              color: colors.background,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                side: BorderSide(color: colors.border),
+              ),
+              child: InkWell(
+                onTap: enabled ? onPressed : null,
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: isLoading
+                      ? Center(
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.foreground,
                             ),
                           ),
-                          const SizedBox(width: 28),
-                        ],
-                      ),
+                        )
+                      : Row(
+                          children: [
+                            SizedBox(width: 28, child: Center(child: leading)),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                label,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colors.foreground,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 28),
+                          ],
+                        ),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 
   static ({Color background, Color foreground, Color border}) _colorsFor(
     _WelcomeButtonStyle style,
+    ThemeData theme,
   ) {
     return switch (style) {
-      _WelcomeButtonStyle.filledLight => (
-        background: const Color(0xFFF7F3F0),
-        foreground: const Color(0xFF1C1420),
-        border: const Color(0x00FFFFFF),
+      _WelcomeButtonStyle.primary => (
+        background: theme.colorScheme.primary,
+        foreground: theme.colorScheme.onPrimary,
+        border: theme.colorScheme.primary,
       ),
-      _WelcomeButtonStyle.filledDark => (
-        background: AppColors.card,
-        foreground: AppColors.primaryText,
-        border: AppColors.glassBorder,
+      _WelcomeButtonStyle.outlined => (
+        background: AppColors.surface,
+        foreground: theme.colorScheme.onSurface,
+        border: AppColors.outline,
       ),
       _WelcomeButtonStyle.spotify => (
         background: const Color(0xFF1DB954),
-        foreground: const Color(0xFF04140A),
-        border: const Color(0x00FFFFFF),
-      ),
-      _WelcomeButtonStyle.glass => (
-        background: AppColors.glassFill.withValues(alpha: 0.45),
-        foreground: AppColors.primaryText,
-        border: AppColors.glassBorder,
+        foreground: AppColors.midnight,
+        border: const Color(0xFF1DB954),
       ),
     };
   }
@@ -222,7 +221,7 @@ class _SpotifyMark extends StatelessWidget {
     return const Icon(
       Icons.graphic_eq_rounded,
       size: 20,
-      color: Color(0xFF04140A),
+      color: AppColors.midnight,
     );
   }
 }

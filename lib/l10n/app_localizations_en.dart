@@ -18,8 +18,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectTagline => 'Connect with people who match you.';
 
   @override
-  String get loginSlogan =>
-      'Don\'t just meet people.\nMeet someone compatible.';
+  String get loginSlogan => 'Meet someone who fits you.';
+
+  @override
+  String get discoverBestMatchesTitle => 'Your best matches';
+
+  @override
+  String get discoverBestMatchesSubtitle =>
+      'Selected based on your compatibility';
+
+  @override
+  String get onboardingUnderstandingMessage =>
+      'Your answers help us understand your compatibility.';
+
+  @override
+  String get discoveryActionConnect => 'Connect';
+
+  @override
+  String get discoveryActionPriorityIntro => 'Priority intro';
+
+  @override
+  String get compatScoreHeading => 'Compatibility';
 
   @override
   String get continueWithEmail => 'Continue with email';

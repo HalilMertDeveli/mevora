@@ -12,7 +12,7 @@ Date: 2026-08-28
 
 Starting Commit: `759dc5c` (`docs: finalize phase 3 humor WYM report git metadata`)
 
-Ending Commit: _(see Section 22)_
+Ending Commit: `d0ae789` (`feat: wire why-you-matched into match detail`)
 
 ============================================================
 

@@ -2,9 +2,11 @@ export const MUSIC_SCOPES =
   "user-top-read user-read-recently-played playlist-read-private";
 export const SYNC_MIN_INTERVAL_MS = 6 * 60 * 60 * 1000;
 export const MUSIC_RANKING_WEIGHT = 0.15;
-export const MUSIC_PROFILE_VERSION = 2;
+export const MUSIC_PROFILE_VERSION = 3;
 /** MVP: last N unique recently-played Spotify track IDs (deduped by track id). */
 export const RECENT_UNIQUE_TRACK_LIMIT = 10;
+/** Display: chronological unique recent artists for normalized profile. */
+export const RECENT_UNIQUE_ARTIST_DISPLAY_LIMIT = 5;
 
 /** Default weights when playlist overlap data is unavailable. */
 export const MUSIC_WEIGHTS_BASE = {

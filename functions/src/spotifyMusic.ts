@@ -9,12 +9,16 @@ import {
   interestedInAllows,
   isTasteEmpty,
   MUSIC_PROFILE_VERSION,
-  RECENT_UNIQUE_TRACK_LIMIT,
   scoreMusicCompatibility,
   SYNC_MIN_INTERVAL_MS,
   type MusicTaste,
   type NamedMusicItem,
 } from "./musicCompatibility.js";
+import {
+  normalizedToSummaryFields,
+  tasteFromSummaryDocument,
+} from "./music/normalize/normalizeMusicProfile.js";
+import {SpotifyMusicProvider} from "./music/providers/spotifyMusicProvider.js";
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
 import {isUserPremium} from "./premium.js";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
@@ -76,31 +80,8 @@ function basicAuth(clientId: string, clientSecret: string): string {
   return `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`;
 }
 
-function imageUrl(images: Array<{url?: string}> | undefined): string | null {
-  return images?.find((item) => typeof item.url === "string" && item.url)?.url ?? null;
-}
-
-function asStringList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-}
-
 function tasteFromSummary(data: DocumentData | undefined): MusicTaste | null {
-  if (!data || data.spotifyConnected !== true) return null;
-  const profile = (data.musicProfile ?? {}) as DocumentData;
-  const genres = Array.isArray(profile.genres)
-    ? profile.genres
-      .map((item) => (item && typeof item === "object" ? String((item as {name?: string}).name ?? "") : String(item)))
-      .filter((name) => name.length > 0)
-    : asStringList(profile.genreNames);
-  return {
-    trackIds: asStringList(profile.trackIds),
-    artistIds: asStringList(profile.artistIds),
-    genres,
-    recentTrackIds: asStringList(profile.recentTrackIds),
-    recentArtistIds: asStringList(profile.recentArtistIds),
-    playlistTrackIds: asStringList(profile.playlistTrackIds),
-  };
+  return tasteFromSummaryDocument(data);
 }
 
 function catalogFromSummary(data: DocumentData | undefined): NamedMusicItem[] {
@@ -129,78 +110,6 @@ function catalogFromSummary(data: DocumentData | undefined): NamedMusicItem[] {
     out.push({id, name});
   }
   return out;
-}
-
-function hasPlaylistScope(scope: string | undefined): boolean {
-  if (!scope) return false;
-  return scope.includes("playlist-read-private") || scope.includes("playlist-read-collaborative");
-}
-
-async function fetchPlaylistTaste(
-  accessToken: string,
-  scope: string | undefined,
-): Promise<{
-  playlistTrackIds: string[];
-  playlists: Array<{id: string; name: string; trackCount: number}>;
-}> {
-  if (!hasPlaylistScope(scope)) {
-    return {playlistTrackIds: [], playlists: []};
-  }
-  try {
-    type PlaylistPage = {
-      items?: Array<{
-        id?: string;
-        name?: string;
-        tracks?: {total?: number; href?: string};
-      }>;
-    };
-    type TracksPage = {
-      items?: Array<{track?: {id?: string} | null}>;
-    };
-    const page = await spotifyGet<PlaylistPage>(
-      accessToken,
-      "/me/playlists?limit=10",
-    );
-    const playlists: Array<{id: string; name: string; trackCount: number}> = [];
-    const trackIds: string[] = [];
-    const seen = new Set<string>();
-    for (const playlist of page.items ?? []) {
-      const id = typeof playlist.id === "string" ? playlist.id : "";
-      const name = typeof playlist.name === "string" ? playlist.name.trim() : "";
-      if (!id || !name) continue;
-      const trackCount = typeof playlist.tracks?.total === "number"
-        ? playlist.tracks.total
-        : 0;
-      if (playlists.length < 10) {
-        playlists.push({id, name, trackCount});
-      }
-      if (playlists.length > 5 || trackIds.length >= 200) {
-        continue;
-      }
-      try {
-        const tracks = await spotifyGet<TracksPage>(
-          accessToken,
-          `/playlists/${id}/tracks?fields=items(track(id))&limit=50`,
-        );
-        for (const row of tracks.items ?? []) {
-          const trackId = row.track?.id;
-          if (!trackId || seen.has(trackId)) continue;
-          seen.add(trackId);
-          trackIds.push(trackId);
-          if (trackIds.length >= 200) break;
-        }
-      } catch (error) {
-        logger.warn("playlist tracks fetch failed", {playlistId: id, error});
-      }
-    }
-    return {
-      playlistTrackIds: trackIds.slice(0, 200),
-      playlists: playlists.slice(0, 10),
-    };
-  } catch (error) {
-    logger.warn("playlist taste unavailable", {error});
-    return {playlistTrackIds: [], playlists: []};
-  }
 }
 
 async function exchangeAuthorizationCode(input: {
@@ -295,6 +204,8 @@ async function spotifyGet<T>(accessToken: string, path: string): Promise<T> {
   return await response.json() as T;
 }
 
+const spotifyMusicProvider = new SpotifyMusicProvider(spotifyGet);
+
 async function loadSecrets(uid: string): Promise<SpotifyTokenSet | null> {
   const snap = await db.doc(`spotifySecrets/${uid}`).get();
   if (!snap.exists) return null;
@@ -340,128 +251,26 @@ async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
   return next;
 }
 
-function summarizeTracks(items: Array<DocumentData>, limit = 20): NamedItem[] {
-  const out: NamedItem[] = [];
-  const seen = new Set<string>();
-  for (const item of items) {
-    const track = (item.track ?? item) as DocumentData;
-    const id = typeof track.id === "string" ? track.id : "";
-    if (!id || seen.has(id)) continue;
-    seen.add(id);
-    const artists = Array.isArray(track.artists)
-      ? track.artists.map((artist: DocumentData) => String(artist.name ?? "")).filter(Boolean)
-      : [];
-    const playedAt = typeof item.played_at === "string" ? item.played_at : undefined;
-    out.push({
-      id,
-      name: String(track.name ?? ""),
-      artist: artists.join(", "),
-      image: imageUrl((track.album as DocumentData | undefined)?.images as Array<{url?: string}> | undefined),
-      ...(playedAt ? {playedAt} : {}),
-    });
-    if (out.length >= limit) break;
-  }
-  return out;
-}
-
-function summarizeArtists(items: Array<DocumentData>, limit = 20): NamedItem[] {
-  const out: NamedItem[] = [];
-  for (const item of items) {
-    const id = typeof item.id === "string" ? item.id : "";
-    if (!id) continue;
-    out.push({
-      id,
-      name: String(item.name ?? ""),
-      image: imageUrl(item.images as Array<{url?: string}> | undefined),
-      genres: asStringList(item.genres),
-    });
-    if (out.length >= limit) break;
-  }
-  return out;
-}
-
-function genreShares(artists: NamedItem[]): Array<{name: string; percent: number}> {
-  const counts = new Map<string, number>();
-  for (const artist of artists) {
-    for (const genre of artist.genres ?? []) {
-      const key = genre.trim().toLowerCase();
-      if (!key) continue;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-  }
-  const total = [...counts.values()].reduce((sum, value) => sum + value, 0);
-  if (total === 0) return [];
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([name, count]) => ({
-      name,
-      percent: Math.max(1, Math.round((count / total) * 100)),
-    }));
-}
-
 async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise<DocumentData> {
-  type Me = {id?: string; display_name?: string};
-  type Paging<T> = {items?: T[]};
-  const me = await spotifyGet<Me>(tokens.accessToken, "/me");
-  if (!me.id) {
-    throw new HttpsError("unauthenticated", "oauth");
-  }
-  const [topTracks, topArtists, recentlyPlayed, playlistTaste] = await Promise.all([
-    spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/tracks?time_range=medium_term&limit=50"),
-    spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/artists?time_range=medium_term&limit=50"),
-    spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/player/recently-played?limit=50"),
-    fetchPlaylistTaste(tokens.accessToken, tokens.scope),
-  ]);
-  const tracks = summarizeTracks(topTracks.items ?? []);
-  const artists = summarizeArtists(topArtists.items ?? []);
-  // Last N unique recently-played tracks by Spotify track id (no string-name matching).
-  const recent = summarizeTracks(recentlyPlayed.items ?? [], RECENT_UNIQUE_TRACK_LIMIT);
-  const genres = genreShares(artists);
-  const musicProfile = {
-    genres,
-    genreNames: genres.map((item) => item.name),
-    artistIds: artists.map((item) => item.id),
-    trackIds: tracks.map((item) => item.id),
-    recentTrackIds: recent.map((item) => item.id),
-    recentArtistIds: [...new Set(
-      (recentlyPlayed.items ?? [])
-        .flatMap((item) => {
-          const track = (item.track ?? {}) as DocumentData;
-          const list = Array.isArray(track.artists) ? track.artists : [];
-          return list.map((artist: DocumentData) => String(artist.id ?? "")).filter(Boolean);
-        }),
-    )].slice(0, 30),
-    playlistTrackIds: playlistTaste.playlistTrackIds,
-    playlists: playlistTaste.playlists,
-    // Compact fingerprint used by Music Compatibility (IDs only).
-    musicFingerprint: {
-      version: MUSIC_PROFILE_VERSION,
-      trackIds: tracks.map((item) => item.id),
-      artistIds: artists.map((item) => item.id),
-      recentTrackIds: recent.map((item) => item.id),
-      genreNames: genres.map((item) => item.name),
-    },
-  };
+  const normalized = await spotifyMusicProvider.fetchTaste({
+    accessToken: tokens.accessToken,
+    scope: tokens.scope,
+    providerUserId: tokens.spotifyUserId,
+  });
   const summaryRef = db.doc(`users/${uid}/music/summary`);
   const existing = await summaryRef.get();
   const summary = {
-    spotifyConnected: true,
-    spotifyUserId: me.id,
-    displayName: me.display_name ?? null,
-    topTracks: tracks,
-    topArtists: artists,
-    recentlyPlayed: recent,
-    playlists: playlistTaste.playlists,
-    musicProfile,
-    musicProfileVersion: MUSIC_PROFILE_VERSION,
+    ...normalizedToSummaryFields(normalized),
     lastSyncedAt: FieldValue.serverTimestamp(),
     ...(existing.data()?.connectedAt ? {} : {connectedAt: FieldValue.serverTimestamp()}),
   };
   await summaryRef.set(summary, {merge: true});
   await db.doc(`profiles/${uid}`).set({spotifyConnected: true}, {merge: true});
-  await db.doc(`musicSpotifyIndex/${me.id}`).set({uid, updatedAt: FieldValue.serverTimestamp()});
-  await saveSecrets(uid, {...tokens, spotifyUserId: me.id});
+  await db.doc(`musicSpotifyIndex/${normalized.providerUserId}`).set({
+    uid,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  await saveSecrets(uid, {...tokens, spotifyUserId: normalized.providerUserId});
   return {
     ...summary,
     lastSyncedAt: new Date().toISOString(),
@@ -470,19 +279,22 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
 }
 
 function toClientProfile(data: DocumentData | undefined): Record<string, unknown> {
-  if (!data || data.spotifyConnected !== true) {
-    return {spotifyConnected: false, connected: false};
+  if (!data || (data.spotifyConnected !== true && data.connected !== true)) {
+    return {spotifyConnected: false, connected: false, provider: null};
   }
+  const musicProfile = (data.musicProfile ?? {}) as DocumentData;
   return {
     spotifyConnected: true,
     connected: true,
+    provider: data.provider ?? "spotify",
     spotifyUserId: data.spotifyUserId ?? null,
     displayName: data.displayName ?? null,
     topTracks: data.topTracks ?? [],
     topArtists: data.topArtists ?? [],
     recentlyPlayed: data.recentlyPlayed ?? [],
-    playlists: data.playlists ?? data.musicProfile?.playlists ?? [],
-    musicProfile: data.musicProfile ?? {},
+    recentArtists: musicProfile.recentArtists ?? [],
+    playlists: data.playlists ?? musicProfile.playlists ?? [],
+    musicProfile,
     musicProfileVersion: data.musicProfileVersion ?? MUSIC_PROFILE_VERSION,
     lastSyncedAt: data.lastSyncedAt ?? null,
     connectedAt: data.connectedAt ?? null,

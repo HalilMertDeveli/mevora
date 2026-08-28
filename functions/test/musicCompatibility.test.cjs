@@ -84,5 +84,5 @@ test("enrich resolves display names without inventing play counts", () => {
 test("ranking bonus stays a soft signal", () => {
   assert.equal(musicRankingBonus(0), 0);
   assert.equal(musicRankingBonus(100), 15);
-  assert.equal(MUSIC_PROFILE_VERSION, 2);
+  assert.equal(MUSIC_PROFILE_VERSION, 3);
 });

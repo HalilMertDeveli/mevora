@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/music/data/datasources/music_data_source.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
+import 'package:mevora/features/music/domain/entities/normalized_music_profile.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/domain/entities/weekly_music_stats.dart';
@@ -135,21 +137,36 @@ class FunctionsMusicDataSource implements MusicDataSource {
 
   MusicProfile _parseProfile(Map<String, dynamic> data) {
     final connected = data['spotifyConnected'] == true || data['connected'] == true;
+    final musicProfileRaw = data['musicProfile'] is Map
+        ? Map<String, dynamic>.from(data['musicProfile'] as Map)
+        : <String, dynamic>{};
+    final recentArtists = _parseRecentArtists(
+      musicProfileRaw['recentArtists'] ?? data['recentArtists'],
+    );
     return MusicProfile(
       connected: connected,
+      provider: data['provider'] as String? ?? (connected ? 'spotify' : null),
       displayName: data['displayName'] as String?,
       spotifyUserId: data['spotifyUserId'] as String?,
       topTracks: _parseTracks(data['topTracks']),
       topArtists: _parseArtists(data['topArtists']),
       recentlyPlayed: _parseTracks(data['recentlyPlayed']),
-      genres: _parseGenres(data['musicProfile'] ?? data['genres']),
-      taste: _parseTaste(data['musicProfile'] is Map ? data['musicProfile'] : data),
+      recentArtists: recentArtists,
+      genres: _parseGenres(musicProfileRaw.isNotEmpty ? musicProfileRaw : data['genres']),
+      taste: _parseTaste(musicProfileRaw.isNotEmpty ? musicProfileRaw : data, recentArtists),
       lastSyncedAt: firestoreDate(data['lastSyncedAt']),
       connectedAt: firestoreDate(data['connectedAt']),
     );
   }
 
-  MusicTasteSnapshot _parseTaste(Object? raw) {
+  /// Visible for unit tests only.
+  @visibleForTesting
+  MusicProfile parseProfileForTest(Map<String, dynamic> data) => _parseProfile(data);
+
+  MusicTasteSnapshot _parseTaste(
+    Object? raw, [
+    List<RecentArtist> recentArtists = const [],
+  ]) {
     if (raw is! Map) {
       return const MusicTasteSnapshot();
     }
@@ -161,7 +178,34 @@ class FunctionsMusicDataSource implements MusicDataSource {
       recentTrackIds: firestoreStringList(map['recentTrackIds']),
       recentArtistIds: firestoreStringList(map['recentArtistIds']),
       playlistTrackIds: firestoreStringList(map['playlistTrackIds']),
+      recentArtists: recentArtists,
     );
+  }
+
+  List<RecentArtist> _parseRecentArtists(Object? raw) {
+    if (raw is! List) {
+      return const [];
+    }
+    final artists = <RecentArtist>[];
+    for (final item in raw) {
+      if (item is! Map) {
+        continue;
+      }
+      final map = Map<String, dynamic>.from(item);
+      final id = map['id'] as String?;
+      final name = map['name'] as String?;
+      if (id == null || id.isEmpty || name == null || name.isEmpty) {
+        continue;
+      }
+      artists.add(
+        RecentArtist(
+          id: id,
+          name: name,
+          image: map['image'] as String?,
+        ),
+      );
+    }
+    return artists;
   }
 
   List<GenreShare> _parseGenres(Object? raw) {

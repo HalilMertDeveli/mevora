@@ -9,7 +9,7 @@ export type RelationshipCompatibility = {
   topTopics: string[];
 };
 
-const QUESTION_TOPICS: Record<string, string> = {
+export const QUESTION_TOPICS: Record<string, string> = {
   rq_001: "friendship",
   rq_002: "exes",
   rq_003: "boundaries",

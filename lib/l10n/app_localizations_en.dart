@@ -862,10 +862,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get superLike => 'Super Like';
 
   @override
-  String get itsAMatch => 'It\'s a match';
+  String get itsAMatch => 'Strong connection';
 
   @override
-  String get youLikedEachOther => 'You liked each other!';
+  String get youLikedEachOther =>
+      'You connected with someone who aligns with you.';
 
   @override
   String get sendMessage => 'Send message';
@@ -934,17 +935,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maxDistance => 'Maximum distance';
 
   @override
-  String get matchesTitle => 'Matches';
+  String get matchesTitle => 'Your connections';
 
   @override
-  String get matchesEmptyTitle => 'No matches yet';
+  String get matchesSubtitle =>
+      'People you\'ve connected with — ranked by compatibility.';
+
+  @override
+  String get matchesEmptyTitle => 'Your strongest connections will appear here';
 
   @override
   String get matchesEmptyMessage =>
-      'When you like each other, the conversation starts here.';
+      'When you connect with someone, compatibility insights will show here.';
 
   @override
-  String get newMatch => 'New match';
+  String get newMatch => 'New connection';
+
+  @override
+  String get connectionBadgeNew => 'New connection';
+
+  @override
+  String get connectionBadgeActive => 'Active conversation';
+
+  @override
+  String matchStrongestConnectionLabel(String category) {
+    return 'Strongest in $category';
+  }
 
   @override
   String get chatHint => 'Write a message...';
@@ -1841,7 +1857,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discoveryChangePreferences => 'Change discovery preferences';
 
   @override
-  String get itsAMatchHeadline => 'IT\'S A MATCH';
+  String get itsAMatchHeadline => 'Strong connection';
+
+  @override
+  String get matchCelebrationLead => 'You found a strong connection.';
+
+  @override
+  String get matchCelebrationInsight => 'See what aligns between you.';
 
   @override
   String get demoProfileBadge => 'Sample';
@@ -2001,11 +2023,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipTestTitle => 'Relationship Test';
 
   @override
-  String get relationshipTestHeadline => 'Discover people who share your views';
+  String get relationshipTestHeadline => 'Discover aligned perspectives';
 
   @override
   String get relationshipTestMessage =>
-      'Answer 3 short questions to see people who may think similarly.';
+      'Answer a few calm questions to see who may think similarly.';
 
   @override
   String get relationshipTestStart => 'Start the Relationship Test';
@@ -2027,13 +2049,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipContinueNo => 'Not now';
 
   @override
-  String get likesYouTitle => 'Likes you';
+  String get likesYouTitle => 'People who may fit you';
 
   @override
-  String get likesYouEntrySubtitle => 'See who liked your profile';
+  String get likesYouEntrySubtitle => 'Explore who may align with you';
 
   @override
-  String get likesYouLockedTitle => 'Someone likes you';
+  String get likesYouInsightSubtitle =>
+      'Tap to explore compatibility before you connect.';
+
+  @override
+  String likesYouCompatibilityLabel(int score) {
+    return '$score% Compatibility';
+  }
+
+  @override
+  String get likesYouSeeWhy => 'See why you match';
+
+  @override
+  String get likesYouLockedTitle => 'People who may fit you';
 
   @override
   String likesYouLockedCount(int count) {
@@ -2042,26 +2076,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get likesYouLockedMessage =>
-      'Upgrade to Premium to see who liked you. Photos and names stay hidden until then.';
+      'Upgrade to Premium to see who may align with you. Photos and names stay hidden until then.';
 
   @override
   String get likesYouUnlockCta => 'Unlock with Premium';
 
   @override
-  String get likesYouBlurredHint => 'People who liked you';
+  String get likesYouBlurredHint => 'People who may fit you';
 
   @override
-  String get likesYouHiddenName => 'Someone special';
+  String get likesYouHiddenName => 'Hidden profile';
 
   @override
-  String get likesYouHiddenSubtitle => 'Unlock to see their profile';
+  String get likesYouHiddenSubtitle => 'Unlock to explore compatibility';
 
   @override
-  String get likesYouEmptyTitle => 'No new likes yet';
+  String get likesYouEmptyTitle => 'Keep exploring';
 
   @override
   String get likesYouEmptyMessage =>
-      'When someone likes you, they\'ll show up here.';
+      'We\'ll surface people who may fit you here.';
 
   @override
   String get likesYouLoadError => 'Couldn\'t load likes. Please try again.';
@@ -2070,11 +2104,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipTestDoneTitle => 'Your relationship test is complete';
 
   @override
-  String get relationshipTestFound =>
-      'We found someone whose views match yours.';
+  String get relationshipTestFound => 'Someone answered in a similar way.';
 
   @override
-  String get relationshipTestAlign => 'Your answers overlap on several topics.';
+  String get relationshipTestAlign => 'Your answers overlap on shared topics.';
 
   @override
   String get relationshipTestNearest => 'Closest to you:';

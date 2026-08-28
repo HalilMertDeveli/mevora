@@ -346,8 +346,8 @@
   "like": "Like",
   "pass": "Pass",
   "superLike": "Super Like",
-  "itsAMatch": "It's a match",
-  "youLikedEachOther": "You liked each other!",
+  "itsAMatch": "Strong connection",
+  "youLikedEachOther": "You connected with someone who aligns with you.",
   "sendMessage": "Send message",
   "startChat": "Say hello",
   "keepSwiping": "Keep exploring",
@@ -370,10 +370,21 @@
   "minAge": "Minimum age",
   "maxAge": "Maximum age",
   "maxDistance": "Maximum distance",
-  "matchesTitle": "Matches",
-  "matchesEmptyTitle": "No matches yet",
-  "matchesEmptyMessage": "When you like each other, the conversation starts here.",
-  "newMatch": "New match",
+  "matchesTitle": "Your connections",
+  "matchesSubtitle": "People you've connected with — ranked by compatibility.",
+  "matchesEmptyTitle": "Your strongest connections will appear here",
+  "matchesEmptyMessage": "When you connect with someone, compatibility insights will show here.",
+  "newMatch": "New connection",
+  "connectionBadgeNew": "New connection",
+  "connectionBadgeActive": "Active conversation",
+  "matchStrongestConnectionLabel": "Strongest in {category}",
+  "@matchStrongestConnectionLabel": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
   "chatHint": "Write a message...",
   "chatEmptyTitle": "No messages yet",
   "chatEmptyMessage": "Send the first message.",
@@ -756,7 +767,9 @@
   "discoveryLoadErrorTitle": "Couldn't load profiles",
   "discoveryLoadErrorMessage": "Something went wrong while loading profiles.",
   "discoveryChangePreferences": "Change discovery preferences",
-  "itsAMatchHeadline": "IT'S A MATCH",
+  "itsAMatchHeadline": "Strong connection",
+  "matchCelebrationLead": "You found a strong connection.",
+  "matchCelebrationInsight": "See what aligns between you.",
   "demoProfileBadge": "Sample",
   "sharedHobbiesCount": "{count} shared interests",
   "@sharedHobbiesCount": {
@@ -840,17 +853,27 @@
   "relationshipPromptTitle": "What do you think about relationships?",
   "relationshipQuestionsPreparing": "New questions are being prepared. Please try again in a bit.",
   "relationshipTestTitle": "Relationship Test",
-  "relationshipTestHeadline": "Discover people who share your views",
-  "relationshipTestMessage": "Answer 3 short questions to see people who may think similarly.",
+  "relationshipTestHeadline": "Discover aligned perspectives",
+  "relationshipTestMessage": "Answer a few calm questions to see who may think similarly.",
   "relationshipTestStart": "Start the Relationship Test",
   "relationshipTestLater": "Not now",
   "relationshipContinueTitle": "Keep matching?",
   "relationshipContinueMessage": "You've completed 5 matching rounds. Do you want to continue finding people who share your answers?",
   "relationshipContinueYes": "Continue",
   "relationshipContinueNo": "Not now",
-  "likesYouTitle": "Likes you",
-  "likesYouEntrySubtitle": "See who liked your profile",
-  "likesYouLockedTitle": "Someone likes you",
+  "likesYouTitle": "People who may fit you",
+  "likesYouEntrySubtitle": "Explore who may align with you",
+  "likesYouInsightSubtitle": "Tap to explore compatibility before you connect.",
+  "likesYouCompatibilityLabel": "{score}% Compatibility",
+  "@likesYouCompatibilityLabel": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "likesYouSeeWhy": "See why you match",
+  "likesYouLockedTitle": "People who may fit you",
   "likesYouLockedCount": "{count} people like you",
   "@likesYouLockedCount": {
     "placeholders": {
@@ -859,17 +882,17 @@
       }
     }
   },
-  "likesYouLockedMessage": "Upgrade to Premium to see who liked you. Photos and names stay hidden until then.",
+  "likesYouLockedMessage": "Upgrade to Premium to see who may align with you. Photos and names stay hidden until then.",
   "likesYouUnlockCta": "Unlock with Premium",
-  "likesYouBlurredHint": "People who liked you",
-  "likesYouHiddenName": "Someone special",
-  "likesYouHiddenSubtitle": "Unlock to see their profile",
-  "likesYouEmptyTitle": "No new likes yet",
-  "likesYouEmptyMessage": "When someone likes you, they'll show up here.",
+  "likesYouBlurredHint": "People who may fit you",
+  "likesYouHiddenName": "Hidden profile",
+  "likesYouHiddenSubtitle": "Unlock to explore compatibility",
+  "likesYouEmptyTitle": "Keep exploring",
+  "likesYouEmptyMessage": "We'll surface people who may fit you here.",
   "likesYouLoadError": "Couldn't load likes. Please try again.",
   "relationshipTestDoneTitle": "Your relationship test is complete",
-  "relationshipTestFound": "We found someone whose views match yours.",
-  "relationshipTestAlign": "Your answers overlap on several topics.",
+  "relationshipTestFound": "Someone answered in a similar way.",
+  "relationshipTestAlign": "Your answers overlap on shared topics.",
   "relationshipTestNearest": "Closest to you:",
   "relationshipTestEmpty": "There's no one nearby who thinks like you right now.",
   "relationshipTestViewProfile": "View profile",

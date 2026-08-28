@@ -3,9 +3,10 @@
 class HumorAdsSettings {
   const HumorAdsSettings({
     this.enabled = true,
-    this.contentInterval = 12,
-    this.minInterval = 8,
+    this.contentInterval = 5,
+    this.minInterval = 5,
     this.maxInterval = 20,
+    this.minContentBeforeFirstAd = 5,
     this.minWatchSeconds = 5,
     this.cooldownSeconds = 30,
     this.provider = 'mevora_sponsored_break',
@@ -17,6 +18,9 @@ class HumorAdsSettings {
   final int contentInterval;
   final int minInterval;
   final int maxInterval;
+
+  /// Minimum unique content views before the first ad in a session.
+  final int minContentBeforeFirstAd;
 
   /// Sponsored break must be visible at least this long before Continue.
   final int minWatchSeconds;
@@ -39,6 +43,7 @@ class HumorAdsSettings {
         other.contentInterval == contentInterval &&
         other.minInterval == minInterval &&
         other.maxInterval == maxInterval &&
+        other.minContentBeforeFirstAd == minContentBeforeFirstAd &&
         other.minWatchSeconds == minWatchSeconds &&
         other.cooldownSeconds == cooldownSeconds &&
         other.provider == provider;
@@ -50,6 +55,7 @@ class HumorAdsSettings {
         contentInterval,
         minInterval,
         maxInterval,
+        minContentBeforeFirstAd,
         minWatchSeconds,
         cooldownSeconds,
         provider,
@@ -79,6 +85,10 @@ class HumorAdsSettings {
       contentInterval: asInt(json['contentInterval'], defaults.contentInterval),
       minInterval: asInt(json['minInterval'], defaults.minInterval),
       maxInterval: asInt(json['maxInterval'], defaults.maxInterval),
+      minContentBeforeFirstAd: asInt(
+        json['minContentBeforeFirstAd'],
+        defaults.minContentBeforeFirstAd,
+      ),
       minWatchSeconds: asInt(json['minWatchSeconds'], defaults.minWatchSeconds),
       cooldownSeconds: asInt(json['cooldownSeconds'], defaults.cooldownSeconds),
       provider: (json['provider'] as String?)?.trim().isNotEmpty == true
@@ -91,10 +101,16 @@ class HumorAdsSettings {
   bool shouldShowAd({
     required bool isPremium,
     required int contentViewedSinceLastAd,
+    required int sessionContentViews,
+    required int adsShownInSession,
     DateTime? lastAdAt,
     DateTime? now,
   }) {
     if (isPremium || !enabled) {
+      return false;
+    }
+    if (adsShownInSession == 0 &&
+        sessionContentViews < minContentBeforeFirstAd) {
       return false;
     }
     if (contentViewedSinceLastAd < effectiveInterval) {

@@ -24,11 +24,15 @@ class HumorAdPolicyController {
 
   HumorAdsSettings _settings;
   var _contentViewedSinceLastAd = 0;
+  var _sessionContentViews = 0;
+  var _adsShownInSession = 0;
   DateTime? _lastAdAt;
   var _adInFlight = false;
 
   HumorAdsSettings get settings => _settings;
   int get contentViewedSinceLastAd => _contentViewedSinceLastAd;
+  int get sessionContentViews => _sessionContentViews;
+  int get adsShownInSession => _adsShownInSession;
 
   void updateSettings(HumorAdsSettings settings) {
     _settings = settings;
@@ -36,10 +40,13 @@ class HumorAdPolicyController {
 
   void onContentViewed() {
     _contentViewedSinceLastAd += 1;
+    _sessionContentViews += 1;
   }
 
   void resetCounters() {
     _contentViewedSinceLastAd = 0;
+    _sessionContentViews = 0;
+    _adsShownInSession = 0;
     _lastAdAt = null;
     _adInFlight = false;
   }
@@ -53,6 +60,8 @@ class HumorAdPolicyController {
     return _settings.shouldShowAd(
       isPremium: isPremium,
       contentViewedSinceLastAd: _contentViewedSinceLastAd,
+      sessionContentViews: _sessionContentViews,
+      adsShownInSession: _adsShownInSession,
       lastAdAt: _lastAdAt,
     );
   }
@@ -66,6 +75,7 @@ class HumorAdPolicyController {
     if (completed) {
       _contentViewedSinceLastAd = 0;
       _lastAdAt = DateTime.now();
+      _adsShownInSession += 1;
     }
   }
 }

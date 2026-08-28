@@ -47,6 +47,7 @@ void main() {
     contentInterval: 3,
     minInterval: 3,
     maxInterval: 3,
+    minContentBeforeFirstAd: 3,
     minWatchSeconds: 1,
     cooldownSeconds: 0,
   );

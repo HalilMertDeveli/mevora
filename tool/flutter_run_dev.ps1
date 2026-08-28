@@ -31,7 +31,7 @@ if ($FlutterArgs.Count -eq 0) {
         "--flavor", "development",
         "-t", "lib/main_development.dart",
         "--dart-define=USE_EMULATORS=false",
-        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1"
+        "--dart-define=SPOTIFY_CLIENT_ID=b0a808c4c2264b0ba179c2045a8d3445"
     )
 }
 

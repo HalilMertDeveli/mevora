@@ -12,7 +12,7 @@ Date: 2026-08-28
 
 Starting Commit: `b590709` (`docs: finalize phase 4 WYM wiring report`)
 
-Ending Commit: _(pending commit — see Git section)_
+Ending Commit: `8646085` (`test: verify why-you-matched staging e2e`)
 
 ============================================================
 
@@ -571,9 +571,9 @@ Development project received `getWhyYouMatched` deploy only.
 | Field | Value |
 |-------|-------|
 | Starting Commit | `b590709` |
-| Ending Commit | _(after commit)_ |
-| Commit | `test: verify why-you-matched staging e2e` (planned) |
-| Push | `origin/feature/humor-lab-mvp` (planned) |
+| Ending Commit | `8646085` |
+| Commit | `8646085` — `test: verify why-you-matched staging e2e` |
+| Push | `origin/feature/humor-lab-mvp` — SUCCESS |
 
 ============================================================
 

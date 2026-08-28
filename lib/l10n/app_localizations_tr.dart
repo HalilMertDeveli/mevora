@@ -1307,11 +1307,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationSuperLike => 'Birisi seni Süper Beğendi';
 
   @override
-  String get boostTitle => 'BOOST';
+  String get boostTitle => 'Smart Boost';
 
   @override
   String get boostSubtitle =>
-      'Profilini daha fazla kişiye göster ve keşfedilme şansını artır.';
+      'Daha fazla rastgele kişiye değil — sana uygun daha fazla kişiye görün.';
 
   @override
   String get boostDuration => 'Profilini öne çıkar';
@@ -2320,6 +2320,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get questionAnswersMatchedSubtitle => 'Ortak yönlerinizi keşfedin.';
+
+  @override
+  String get questionAnswersPremiumRequired =>
+      'Cevaplarını görmek için Premium\'a geç.';
+
+  @override
+  String get questionAnswersPremiumLockedAnswer =>
+      'Cevabını görmek için Premium\'a geç';
 
   @override
   String get questionAnswersPeerEmpty =>

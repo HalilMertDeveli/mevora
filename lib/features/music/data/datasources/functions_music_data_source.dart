@@ -105,6 +105,15 @@ class FunctionsMusicDataSource implements MusicDataSource {
     final data = await _backend.invoke('getMatchMusicCompatibility', {
       'matchId': matchId,
     });
+    return _parseMatchMusic(data);
+  }
+
+  /// Visible for unit tests only.
+  @visibleForTesting
+  MatchMusicCompatibility parseMatchMusicForTest(Map<String, dynamic> data) =>
+      _parseMatchMusic(data);
+
+  MatchMusicCompatibility _parseMatchMusic(Map<String, dynamic> data) {
     if (data['available'] != true) {
       return MatchMusicCompatibility(
         available: false,
@@ -118,13 +127,16 @@ class FunctionsMusicDataSource implements MusicDataSource {
         teaser: true,
       );
     }
-    final score = firestoreInt(data['score'], 0);
-    if (score <= 0) {
+    if (!data.containsKey('score')) {
       return MatchMusicCompatibility.unavailable;
     }
+    final score = firestoreInt(data['score'], 0);
     return MatchMusicCompatibility(
       available: true,
       score: score,
+      overallCompatibilityScore: data['overallCompatibilityScore'] == null
+          ? null
+          : firestoreInt(data['overallCompatibilityScore'], 0),
       sharedTrackCount: firestoreInt(data['sharedTrackCount'], 0),
       sharedArtistCount: firestoreInt(data['sharedArtistCount'], 0),
       sharedRecentTrackCount: firestoreInt(data['sharedRecentTrackCount'], 0),
@@ -132,6 +144,8 @@ class FunctionsMusicDataSource implements MusicDataSource {
       sharedArtists: _parseArtists(data['sharedArtists']),
       sharedGenres: firestoreStringList(data['sharedGenres']),
       insights: MusicInsight.parseList(data['musicInsights']),
+      viewerRecentArtists: _parseRecentArtists(data['viewerRecentArtists']),
+      peerRecentArtists: _parseRecentArtists(data['peerRecentArtists']),
     );
   }
 

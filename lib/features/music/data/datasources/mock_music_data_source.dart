@@ -239,12 +239,21 @@ class MockMusicDataSource implements MusicDataSource {
     return MatchMusicCompatibility(
       available: true,
       score: 87,
+      overallCompatibilityScore: 89,
       sharedTrackCount: 2,
       sharedArtistCount: 2,
       sharedRecentTrackCount: 1,
       sharedTracks: seedTracks.take(2).toList(),
       sharedArtists: seedArtists,
       sharedGenres: const ['indie', 'jazz'],
+      viewerRecentArtists: [
+        const RecentArtist(id: 'mock-artist-1', name: 'Ada & the Bosphorus'),
+        const RecentArtist(id: 'mock-artist-2', name: 'Nesrin Vale'),
+      ],
+      peerRecentArtists: [
+        const RecentArtist(id: 'mock-artist-1', name: 'Ada & the Bosphorus'),
+        const RecentArtist(id: 'mock-artist-3', name: 'Karaköy Quartet'),
+      ],
     );
   }
 }

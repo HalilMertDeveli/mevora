@@ -2525,13 +2525,13 @@ abstract class AppLocalizations {
   /// No description provided for @boostTitle.
   ///
   /// In en, this message translates to:
-  /// **'BOOST'**
+  /// **'Smart Boost'**
   String get boostTitle;
 
   /// No description provided for @boostSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Show your profile to more people and get discovered faster.'**
+  /// **'Not more random people — more people who actually fit you.'**
   String get boostSubtitle;
 
   /// No description provided for @boostDuration.
@@ -4327,6 +4327,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discover what you have in common.'**
   String get questionAnswersMatchedSubtitle;
+
+  /// No description provided for @questionAnswersPremiumRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to Premium to see their answers.'**
+  String get questionAnswersPremiumRequired;
+
+  /// No description provided for @questionAnswersPremiumLockedAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with Premium to see their answer'**
+  String get questionAnswersPremiumLockedAnswer;
 
   /// No description provided for @questionAnswersPeerEmpty.
   ///

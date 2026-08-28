@@ -1,4 +1,5 @@
 import 'package:mevora/features/music/domain/entities/music_track.dart';
+import 'package:mevora/features/music/domain/entities/normalized_music_profile.dart';
 import 'package:mevora/features/music/domain/services/music_compatibility.dart';
 
 /// Match-screen music compatibility payload from `getMatchMusicCompatibility`.
@@ -11,6 +12,7 @@ class MatchMusicCompatibility {
     this.premiumRequired = false,
     this.teaser = false,
     this.score,
+    this.overallCompatibilityScore,
     this.sharedTrackCount = 0,
     this.sharedArtistCount = 0,
     this.sharedRecentTrackCount = 0,
@@ -18,6 +20,8 @@ class MatchMusicCompatibility {
     this.sharedArtists = const [],
     this.sharedGenres = const [],
     this.insights = const [],
+    this.viewerRecentArtists = const [],
+    this.peerRecentArtists = const [],
     this.reason,
   });
 
@@ -27,6 +31,7 @@ class MatchMusicCompatibility {
   final bool premiumRequired;
   final bool teaser;
   final int? score;
+  final int? overallCompatibilityScore;
   final int sharedTrackCount;
   final int sharedArtistCount;
   final int sharedRecentTrackCount;
@@ -34,9 +39,10 @@ class MatchMusicCompatibility {
   final List<MusicArtist> sharedArtists;
   final List<String> sharedGenres;
   final List<MusicInsight> insights;
+  final List<RecentArtist> viewerRecentArtists;
+  final List<RecentArtist> peerRecentArtists;
   final String? reason;
 
   bool get showTeaser => available && teaser && premiumRequired;
-  bool get showDetails =>
-      available && !premiumRequired && score != null && score! > 0;
+  bool get showDetails => available && !premiumRequired && score != null;
 }

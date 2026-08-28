@@ -19,6 +19,8 @@ import {
   tasteFromSummaryDocument,
 } from "./music/normalize/normalizeMusicProfile.js";
 import {SpotifyMusicProvider} from "./music/providers/spotifyMusicProvider.js";
+import {calculateCompatibility} from "./compatibility/compatibilityEngine.js";
+import {relationshipScoreForPair} from "./relationshipMatch.js";
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
 import {isUserPremium} from "./premium.js";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
@@ -110,6 +112,59 @@ function catalogFromSummary(data: DocumentData | undefined): NamedMusicItem[] {
     out.push({id, name});
   }
   return out;
+}
+
+type RecentArtistPayload = {id: string; name: string; image: string | null};
+
+function recentArtistsFromSummary(data: DocumentData | undefined): RecentArtistPayload[] {
+  if (!data) return [];
+  const profile = (data.musicProfile ?? {}) as DocumentData;
+  const raw = profile.recentArtists;
+  if (!Array.isArray(raw)) return [];
+  const out: RecentArtistPayload[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const id = typeof (item as {id?: string}).id === "string" ? (item as {id: string}).id : "";
+    const name = typeof (item as {name?: string}).name === "string" ? (item as {name: string}).name : "";
+    if (!id || !name) continue;
+    out.push({
+      id,
+      name,
+      image: typeof (item as {image?: string}).image === "string" ? (item as {image: string}).image : null,
+    });
+  }
+  return out.slice(0, 5);
+}
+
+async function overallCompatibilityForMatch(
+  viewerUid: string,
+  otherUid: string,
+  musicScore: number,
+): Promise<number | null> {
+  const [viewerProfileSnap, otherProfileSnap, relationship] = await Promise.all([
+    db.doc(`users/${viewerUid}`).get(),
+    db.doc(`users/${otherUid}`).get(),
+    relationshipScoreForPair(viewerUid, otherUid),
+  ]);
+  const viewerProfile = viewerProfileSnap.data();
+  const otherProfile = otherProfileSnap.data();
+  if (!viewerProfile || !otherProfile) {
+    return null;
+  }
+  const compat = calculateCompatibility({
+    viewerProfile,
+    candidateProfile: otherProfile,
+    relationship: relationship
+      ? {
+          score: relationship.score,
+          alignedCount: relationship.alignedCount,
+          sharedQuestionCount: relationship.sharedQuestionCount,
+          topTopics: relationship.topTopics ?? [],
+        }
+      : null,
+    musicScore,
+  });
+  return compat.overallScore;
 }
 
 async function exchangeAuthorizationCode(input: {
@@ -551,9 +606,6 @@ export const getMatchMusicCompatibility = onCall(
     }
 
     const scored = scoreMusicCompatibility(viewerTaste, otherTaste);
-    if (scored.score <= 0) {
-      return {available: false, reason: "data_unavailable"};
-    }
     const enriched = enrichMusicCompatibility(scored, [
       ...catalogFromSummary(viewerSummary.data()),
       ...catalogFromSummary(otherSummary.data()),
@@ -567,6 +619,12 @@ export const getMatchMusicCompatibility = onCall(
         teaser: true,
       };
     }
+
+    const overallCompatibilityScore = await overallCompatibilityForMatch(
+      uid,
+      otherUid,
+      enriched.score,
+    );
 
     const mediaById = new Map<string, {name: string; artist: string; image: string | null}>();
     for (const data of [viewerSummary.data(), otherSummary.data()]) {
@@ -609,6 +667,7 @@ export const getMatchMusicCompatibility = onCall(
       premiumRequired: false,
       teaser: false,
       score: enriched.score,
+      overallCompatibilityScore: overallCompatibilityScore ?? undefined,
       sharedTrackCount: enriched.sharedTracks.length,
       sharedArtistCount: enriched.sharedArtists.length,
       sharedRecentTrackCount: enriched.sharedRecentTracks.length,
@@ -616,6 +675,8 @@ export const getMatchMusicCompatibility = onCall(
       sharedArtists: sharedArtistsDetailed,
       sharedGenres: enriched.sharedGenres.slice(0, 5),
       musicInsights: enriched.insights,
+      viewerRecentArtists: recentArtistsFromSummary(viewerSummary.data()),
+      peerRecentArtists: recentArtistsFromSummary(otherSummary.data()),
     };
   },
 );

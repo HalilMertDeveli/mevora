@@ -3572,7 +3572,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorLabDiscoverCta => 'Open Humor Lab';
 
   @override
-  String get humorLoadingFeed => 'Preparing content…';
+  String get humorLoadingFeed => 'Loading videos…';
+
+  @override
+  String get humorLoadingMore => 'Preparing next video…';
 
   @override
   String get humorRatingVeryFunny => 'Hilarious';

@@ -18,6 +18,12 @@ export const giphyApiBase = defineString("GIPHY_API_BASE", {
 
 export const youtubeDataApiKey = defineSecret("YOUTUBE_DATA_API_KEY");
 
+/**
+ * Phase flag — GIPHY Clips is a future secondary provider.
+ * When false: no live feed top-up, no API calls, no GIPHY content in active feed.
+ */
+export const GIPHY_ACTIVE = false;
+
 function readSecret(
   envName: string,
   secret: ReturnType<typeof defineSecret>,
@@ -50,6 +56,10 @@ export function isGiphyConfigured(): boolean {
   return resolveGiphyApiKey() != null;
 }
 
+export function isGiphyLiveEnabled(): boolean {
+  return GIPHY_ACTIVE && isGiphyConfigured();
+}
+
 export function resolveYoutubeDataApiKey(): string | null {
   const value = readSecret("YOUTUBE_DATA_API_KEY", youtubeDataApiKey);
   if (!value) {
@@ -66,24 +76,29 @@ export function isYoutubeConfigured(): boolean {
   return resolveYoutubeDataApiKey() != null;
 }
 
-/** Secrets to attach when a callable may hit live providers. */
+/** Secrets for YouTube-primary live feed (getHumorFeed / default sync top-up). */
+export const humorYoutubeSecrets = [youtubeDataApiKey] as const;
+
+/** All provider secrets — admin GIPHY sync when GIPHY_ACTIVE is enabled. */
 export const humorProviderSecrets = [giphyApiKey, youtubeDataApiKey] as const;
 
 export type HumorProviderStatus = {
-  youtube: {configured: boolean; freeTier: string};
-  giphy: {configured: boolean; freeTier: string};
+  youtube: {configured: boolean; active: true; freeTier: string};
+  giphy: {configured: boolean; active: boolean; freeTier: string};
   tenor: {configured: boolean; freeTier: string; active: false};
-  internal: {configured: true; freeTier: string};
+  internal: {configured: true; active: true; freeTier: string; role: "fallback"};
 };
 
 export function humorProviderStatus(): HumorProviderStatus {
   return {
     youtube: {
       configured: isYoutubeConfigured(),
+      active: true,
       freeTier: "YouTube Data API ~10k units/day; search.list=100 units (~100 searches/day)",
     },
     giphy: {
       configured: isGiphyConfigured(),
+      active: GIPHY_ACTIVE,
       freeTier: "Beta key ~100 req/hour; production key requires GIPHY review (may be paid)",
     },
     tenor: {
@@ -93,6 +108,8 @@ export function humorProviderStatus(): HumorProviderStatus {
     },
     internal: {
       configured: true,
+      active: true,
+      role: "fallback",
       freeTier: "Mevora-owned / licensed pool in Firestore (no third-party API cost)",
     },
   };

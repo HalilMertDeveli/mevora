@@ -20,7 +20,12 @@ import {classifyHumorSafety, emptySafetyFlags} from "./moderation.js";
 import {applyHumorAiTagging} from "./aiTagging.js";
 import {safeLogMeta} from "../security/logHygiene.js";
 import type {HumorContentType, HumorSafetyStatus} from "./types.js";
-import {humorProviderSecrets} from "./humorApiConfig.js";
+import {
+  GIPHY_ACTIVE,
+  humorProviderSecrets,
+  humorYoutubeSecrets,
+  isGiphyLiveEnabled,
+} from "./humorApiConfig.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -30,8 +35,15 @@ const db = getFirestore();
 const auth = getAuth();
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 const callableOptions = {enforceAppCheck, region: "europe-west1" as const};
-/** Feed/sync top-up uses YouTube Secret Manager key only for live ingest. */
+/** Live feed uses YouTube secret only — GIPHY is disabled this phase. */
 const humorLiveCallable = {
+  enforceAppCheck,
+  region: "europe-west1" as const,
+  secrets: [...humorYoutubeSecrets],
+};
+
+/** Admin sync may bind all provider secrets when GIPHY is re-enabled. */
+const humorAdminCallable = {
   enforceAppCheck,
   region: "europe-west1" as const,
   secrets: [...humorProviderSecrets],
@@ -303,7 +315,7 @@ export const seedInternalHumorContent = onCall(callableOptions, async (request) 
  * into humorContent. Requires API keys via env/Secret Manager.
  * Never downloads media bytes into Firebase Storage.
  */
-export const syncHumorFromProvider = onCall(humorLiveCallable, async (request) => {
+export const syncHumorFromProvider = onCall(humorAdminCallable, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
   const data = (request.data ?? {}) as {
@@ -321,6 +333,16 @@ export const syncHumorFromProvider = onCall(humorLiveCallable, async (request) =
   const limit = typeof data.limit === "number" ? data.limit : 24;
 
   if (data.provider === "giphy") {
+    if (!GIPHY_ACTIVE || !isGiphyLiveEnabled()) {
+      return {
+        ok: false,
+        configured: false,
+        mode: "giphy_disabled",
+        providers: status,
+        message:
+          "GIPHY is disabled for this phase. YouTube is the active Humor Lab provider.",
+      };
+    }
     if (!isGiphyConfigured()) {
       return {
         ok: false,
@@ -356,7 +378,13 @@ export const syncHumorFromProvider = onCall(humorLiveCallable, async (request) =
   };
 });
 
-export {isGiphyConfigured, isYoutubeConfigured, humorProviderStatus} from "./humorApiConfig.js";
+export {
+  GIPHY_ACTIVE,
+  isGiphyConfigured,
+  isGiphyLiveEnabled,
+  isYoutubeConfigured,
+  humorProviderStatus,
+} from "./humorApiConfig.js";
 export {GiphyHumorSource} from "./giphySource.js";
 export {YoutubeHumorSource} from "./youtubeSource.js";
 export {TENOR_API_STATUS} from "./tenorSource.js";

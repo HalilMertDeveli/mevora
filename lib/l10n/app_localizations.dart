@@ -6515,8 +6515,14 @@ abstract class AppLocalizations {
   /// No description provided for @humorLoadingFeed.
   ///
   /// In en, this message translates to:
-  /// **'Preparing content…'**
+  /// **'Loading videos…'**
   String get humorLoadingFeed;
+
+  /// No description provided for @humorLoadingMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing next video…'**
+  String get humorLoadingMore;
 
   /// No description provided for @humorRatingVeryFunny.
   ///

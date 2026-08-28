@@ -555,6 +555,19 @@ test("provider error classifier maps phase14 youtube/giphy failures", () => {
   }
 });
 
+test("GIPHY_ACTIVE is false and giphy is not in live top-up chain", () => {
+  const {GIPHY_ACTIVE} = require("../lib/humor/humorApiConfig.js");
+  assert.equal(GIPHY_ACTIVE, false);
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "../src/humor/providerOrchestrator.ts"),
+    "utf8",
+  );
+  const chainStart = src.indexOf("const chain: Array<{");
+  const chainBlock = src.slice(chainStart, chainStart + 800);
+  assert.equal(chainBlock.indexOf('provider: "giphy"'), -1);
+  assert.match(src, /giphy-disabled/);
+});
+
 test("fallback chain order is youtube then internal only", () => {
   const src = require("fs").readFileSync(
     require("path").join(__dirname, "../src/humor/providerOrchestrator.ts"),

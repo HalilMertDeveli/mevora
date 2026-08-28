@@ -10,7 +10,7 @@ import {
   validateHumorSourceItem,
 } from "./contentValidation.js";
 import {GiphyHumorSource, GIPHY_TR_QUERIES} from "./giphySource.js";
-import {isGiphyConfigured} from "./humorApiConfig.js";
+import {GIPHY_ACTIVE, isGiphyConfigured} from "./humorApiConfig.js";
 import type {HumorSourceItem} from "./sourceAdapter.js";
 
 function contentIdFor(provider: string, sourceId: string): string {
@@ -159,6 +159,15 @@ export async function syncHumorFromGiphy(input: {
   skipped: number;
   reasons: Record<string, number>;
 }> {
+  if (!GIPHY_ACTIVE) {
+    return {
+      configured: false,
+      fetched: 0,
+      upserted: 0,
+      skipped: 0,
+      reasons: {giphy_disabled: 1},
+    };
+  }
   if (!isGiphyConfigured()) {
     return {
       configured: false,

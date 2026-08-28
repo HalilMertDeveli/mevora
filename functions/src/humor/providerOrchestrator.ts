@@ -6,7 +6,7 @@ import {
   pickBucketQuery,
 } from "./categoryQueries.js";
 import {GiphyHumorSource} from "./giphySource.js";
-import {isYoutubeConfigured} from "./humorApiConfig.js";
+import {GIPHY_ACTIVE, isYoutubeConfigured} from "./humorApiConfig.js";
 import {ingestHumorSourceItem} from "./ingest.js";
 import {
   contentIdFromProvider,
@@ -181,13 +181,16 @@ async function fetchYoutubeNormalized(input: {
   return usable.slice(0, input.limit);
 }
 
-/** Admin / explicit GIPHY sync — not used in live YouTube-primary feed top-up. */
+/** Admin / explicit GIPHY sync — blocked while GIPHY_ACTIVE is false. */
 export async function fetchGiphyNormalized(input: {
   db: Firestore;
   language: string;
   bucket: HumorSearchBucket;
   limit: number;
 }): Promise<NormalizedHumorContent[]> {
+  if (!GIPHY_ACTIVE) {
+    throw new Error("giphy-disabled");
+  }
   const query = pickBucketQuery(input.bucket, input.language);
   const cacheKey = `gp_${input.language}_${input.bucket}_${query}`;
   const cached = await readProviderCache(input.db, "giphy", cacheKey);
@@ -244,6 +247,16 @@ export async function topUpHumorFromProviders(input: {
       upserted: 0,
       error: "tenor_disabled",
       detail: TENOR_API_STATUS.reason,
+    });
+  }
+  if (!GIPHY_ACTIVE) {
+    attempts.push({
+      provider: "giphy",
+      ok: false,
+      fetched: 0,
+      upserted: 0,
+      error: "provider_unavailable",
+      detail: "giphy-disabled",
     });
   }
 

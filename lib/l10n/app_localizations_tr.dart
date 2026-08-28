@@ -3564,7 +3564,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorLabDiscoverCta => 'Mizah Labı\'nı aç';
 
   @override
-  String get humorLoadingFeed => 'İçerikler hazırlanıyor…';
+  String get humorLoadingFeed => 'Videolar yükleniyor…';
+
+  @override
+  String get humorLoadingMore => 'Sonraki video hazırlanıyor…';
 
   @override
   String get humorRatingVeryFunny => 'Çok komik';

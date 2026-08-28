@@ -699,6 +699,15 @@ class _HumorFeedBody extends StatelessWidget {
                   ),
                 ),
               ),
+              if (state.isLoadingMore)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: AppSpacing.sm,
+                  child: Center(
+                    child: MevoraLoading(message: l10n.humorLoadingMore),
+                  ),
+                ),
             ],
           ),
         ),

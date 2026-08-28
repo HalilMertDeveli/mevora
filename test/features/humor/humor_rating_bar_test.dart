@@ -57,6 +57,29 @@ void main() {
     expect(find.text(_tr.humorRatingNotFunny), findsOneWidget);
   });
 
+  testWidgets('binary buttons are tappable with visible labels', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        HumorRatingBar(onRated: (_) {}),
+        locale: const Locale('tr'),
+      ),
+    );
+
+    expect(find.text(_tr.humorRatingFunny), findsOneWidget);
+    expect(find.text(_tr.humorRatingNotFunny), findsOneWidget);
+
+    final inkWells = tester.widgetList<InkWell>(find.byType(InkWell));
+    expect(inkWells.length, 2);
+    for (final ink in inkWells) {
+      expect(ink.onTap, isNotNull);
+    }
+
+    final boxes = tester.renderObjectList<RenderBox>(find.byType(InkWell));
+    for (final box in boxes) {
+      expect(box.size.height, greaterThanOrEqualTo(56));
+    }
+  });
+
   testWidgets('rating bar lays out on narrow phones', (tester) async {
     await tester.binding.setSurfaceSize(const Size(360, 640));
     await tester.pumpWidget(

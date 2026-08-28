@@ -503,6 +503,15 @@ class _HumorLabPageState extends State<HumorLabPage> {
                         if (!context.mounted) {
                           return;
                         }
+                        if (result.isSuccess) {
+                          _log(
+                            AnalyticsEvents.humorContentReported,
+                            parameters: {
+                              'content_id': item.contentId,
+                              'reason': reason,
+                            },
+                          );
+                        }
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -600,6 +609,7 @@ class _HumorFeedBody extends StatelessWidget {
             ),
             child: HumorProgressBlock(
               interactionCount: state.profile.interactionCount,
+              showHint: state.profile.profileBuilding,
             ),
           ),
         Expanded(

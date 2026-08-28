@@ -612,6 +612,14 @@ class HumorController extends ChangeNotifier {
     if (next < _state.items.length) {
       _state = _state.copyWith(currentIndex: next);
       notifyListeners();
+      _log(
+        AnalyticsEvents.humorNextContent,
+        parameters: {
+          'from_index': next - 1,
+          'to_index': next,
+          'content_id': _state.items[next].contentId,
+        },
+      );
       _markViewed(_state.items[next]);
       await _maybePrefetch();
       return;
@@ -621,6 +629,14 @@ class HumorController extends ChangeNotifier {
       final idx = _state.currentIndex + 1;
       _state = _state.copyWith(currentIndex: idx);
       notifyListeners();
+      _log(
+        AnalyticsEvents.humorNextContent,
+        parameters: {
+          'from_index': idx - 1,
+          'to_index': idx,
+          'content_id': _state.items[idx].contentId,
+        },
+      );
       _markViewed(_state.items[idx]);
     }
   }

@@ -51,11 +51,13 @@ void main() {
 
     expect(find.text('Mizahını keşfet'), findsOneWidget);
     expect(find.text('Mizahımı Keşfet'), findsOneWidget);
+    expect(find.textContaining('Bu neden önemli'), findsOneWidget);
     expect(find.textContaining('Mizah profilin oluşuyor'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Mizahımı Keşfet'));
     await tester.tap(find.text('Mizahımı Keşfet'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(await education.isIntroSeen('edu_user_1'), isTrue);
     expect(find.text('Mizahımı Keşfet'), findsNothing);

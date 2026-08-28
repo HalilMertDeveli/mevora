@@ -250,12 +250,17 @@ class HumorIntroView extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
+                    const HumorWhyMattersSection(),
+                    SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
                     MevoraButton(
                       label: l10n.humorIntroCta,
                       onPressed: onContinue,
                     ),
                     SizedBox(height: compact ? AppSpacing.lg : AppSpacing.xl),
-                    HumorProgressBlock(interactionCount: interactionCount),
+                    HumorProgressBlock(
+                      interactionCount: interactionCount,
+                      showHint: true,
+                    ),
                     SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
                     HumorPremiumCard(
                       isPremium: isPremium,
@@ -267,6 +272,54 @@ class HumorIntroView extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Explains why Humor Lab matters for Mevora — intro + profile surfaces.
+class HumorWhyMattersSection extends StatelessWidget {
+  const HumorWhyMattersSection({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '❤️ ${l10n.humorWhyMattersTitle}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.humorWhyMattersBody1,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.humorWhyMattersBody2,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+          ],
         ),
       ),
     );

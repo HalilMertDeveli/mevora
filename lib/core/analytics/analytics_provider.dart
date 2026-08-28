@@ -86,6 +86,8 @@ abstract final class AnalyticsEvents {
   static const String humorWhyMatchViewed = 'humor_why_match_viewed';
   static const String humorAdInfoShown = 'humor_ad_info_shown';
   static const String humorAdInfoDismissed = 'humor_ad_info_dismissed';
+  static const String humorNextContent = 'humor_next_content';
+  static const String humorContentReported = 'humor_content_reported';
 }
 
 abstract class AnalyticsProvider {

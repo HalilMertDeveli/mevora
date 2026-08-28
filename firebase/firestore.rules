@@ -201,6 +201,17 @@ service cloud.firestore {
         );
     }
 
+    function whyYouMatchedCacheDocId(viewerUid) {
+      return 'whyYouMatched_' + viewerUid;
+    }
+
+    function matchMetaReadValid(matchId, docId) {
+      return isMatchParticipant(matchId) && (
+        docId == 'typing'
+        || docId == whyYouMatchedCacheDocId(request.auth.uid)
+      );
+    }
+
     // lastActiveAt lives on users/{uid} (private). Discovery Functions
     // filter with a 90-day window. Clients may only write request.time
     // (FieldValue.serverTimestamp()) — never an arbitrary date.
@@ -583,7 +594,7 @@ service cloud.firestore {
 
       // Typing indicators only (uid -> timestamp | FieldValue.delete).
       match /meta/{docId} {
-        allow read: if isMatchParticipant(matchId);
+        allow read: if matchMetaReadValid(matchId, docId);
         allow create, update: if docId == 'typing' && typingMetaWriteValid(matchId);
         allow delete: if isMatchParticipant(matchId) && docId == 'typing';
       }

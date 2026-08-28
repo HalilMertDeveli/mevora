@@ -141,4 +141,16 @@ void main() {
       expect(rules.contains('match /humorModerationQueue/{contentId}'), isTrue);
     });
   });
+
+  group('why you matched access', () {
+    test('WYM viewer cache read is isolated per viewer uid', () {
+      expect(rules.contains('function whyYouMatchedCacheDocId(viewerUid)'), isTrue);
+      expect(rules.contains('function matchMetaReadValid(matchId, docId)'), isTrue);
+      expect(
+        rules.contains("docId == whyYouMatchedCacheDocId(request.auth.uid)"),
+        isTrue,
+      );
+      expect(rules.contains('allow read: if matchMetaReadValid(matchId, docId);'), isTrue);
+    });
+  });
 }

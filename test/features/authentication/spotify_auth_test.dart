@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/authentication/data/pkce.dart';
 import 'package:mevora/features/authentication/data/services/spotify_auth_service.dart';
 import 'package:mevora/features/authentication/data/services/spotify_pending_store.dart';
@@ -36,6 +37,14 @@ void main() {
     );
     expect(SpotifyAuthService.musicScopes.contains('streaming'), isFalse);
     expect(SpotifyAuthService.loginScopes.contains('streaming'), isFalse);
+  });
+
+  test('Spotify OAuth callback is not a GoRouter app page path', () {
+    final callback = Uri.parse('mevora://auth/spotify?code=abc&state=1');
+    expect(callback.path, '/spotify');
+    expect(callback.path, isNot(AppRoutes.music));
+    expect(callback.path, isNot(AppRoutes.login));
+    expect(SpotifyAuthService.isSpotifyCallback(callback), isTrue);
   });
 
   test('pending PKCE store round-trips without a client secret', () async {

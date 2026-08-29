@@ -5,6 +5,7 @@ import 'package:mevora/core/presentation/pages/design_system_page.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/routing/auth_redirector.dart';
 import 'package:mevora/core/routing/lazy_shell_navigator.dart';
+import 'package:mevora/features/authentication/data/services/spotify_auth_service.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/settings/presentation/pages/blocked_users_page.dart';
 import 'package:mevora/features/settings/presentation/pages/change_password_page.dart';
@@ -57,6 +58,14 @@ GoRouter createAppRouter({
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refresh,
+    onException: (context, state, router) {
+      // Spotify OAuth callbacks are owned by SpotifyAuthService (app_links),
+      // not by GoRouter page routes.
+      if (SpotifyAuthService.isSpotifyCallback(state.uri)) {
+        return;
+      }
+      router.go(AppRoutes.splash);
+    },
     redirect: (context, state) {
       return AuthRedirector.redirect(
         status: authController.status,

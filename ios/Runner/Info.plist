@@ -106,7 +106,7 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>$(ADMOB_APP_ID)</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Mevora uses this identifier to deliver relevant ads and measure ad performance when you allow tracking.</string>
 </dict>

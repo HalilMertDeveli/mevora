@@ -28,6 +28,10 @@ android {
         targetSdk = 37
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Google sample AdMob app ID — safe for debug/QA.
+        // Production flavor overrides via ADMOB_ANDROID_APP_ID env/property.
+        manifestPlaceholders["admobAppId"] =
+            "ca-app-pub-3940256099942544~3347511713"
     }
 
     flavorDimensions += "environment"
@@ -37,16 +41,30 @@ android {
             // Same applicationId as the Firebase Android app with OAuth SHA-1 registered.
             versionNameSuffix = "-dev"
             resValue("string", "app_name", "Mevora Dev")
+            manifestPlaceholders["admobAppId"] =
+                "ca-app-pub-3940256099942544~3347511713"
         }
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
             resValue("string", "app_name", "Mevora Staging")
+            manifestPlaceholders["admobAppId"] =
+                "ca-app-pub-3940256099942544~3347511713"
         }
         create("production") {
             dimension = "environment"
             resValue("string", "app_name", "Mevora")
+            // Prefer CI/local property or env; never hard-code production IDs.
+            // Falls back to Google sample so accidental builds stay policy-safe.
+            val fromProp = (project.findProperty("ADMOB_ANDROID_APP_ID") as String?)?.trim()
+            val fromEnv = System.getenv("ADMOB_ANDROID_APP_ID")?.trim()
+            val prodAdmob = when {
+                !fromProp.isNullOrEmpty() -> fromProp
+                !fromEnv.isNullOrEmpty() -> fromEnv
+                else -> "ca-app-pub-3940256099942544~3347511713"
+            }
+            manifestPlaceholders["admobAppId"] = prodAdmob
         }
     }
 

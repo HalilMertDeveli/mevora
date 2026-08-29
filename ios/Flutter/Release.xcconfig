@@ -1,1 +1,5 @@
 #include "Generated.xcconfig"
+
+// Google sample AdMob app ID by default (policy-safe).
+// Production CI: set ADMOB_APP_ID / ADMOB_IOS_APP_ID before archive.
+ADMOB_APP_ID=ca-app-pub-3940256099942544~1458002511

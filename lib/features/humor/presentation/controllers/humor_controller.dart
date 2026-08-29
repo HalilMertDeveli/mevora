@@ -149,6 +149,7 @@ class HumorController extends ChangeNotifier {
   var _adPresentationInFlight = false;
   var _advanceAfterAd = false;
   int? _pageTargetAfterAd;
+  var _disposed = false;
 
   HumorViewState get state => _state;
   HumorAdsSettings get adsSettings => _adPolicy.settings;
@@ -672,6 +673,9 @@ class HumorController extends ChangeNotifier {
   }
 
   Future<void> _maybePrefetch({bool force = false}) async {
+    if (_disposed) {
+      return;
+    }
     final should = force ||
         HumorFeedPolicy.shouldPrefetch(
           currentIndex: _state.currentIndex,
@@ -689,8 +693,14 @@ class HumorController extends ChangeNotifier {
       limit: HumorFeedPolicy.pageSize,
       cursor: _state.nextCursor,
     );
+    if (_disposed) {
+      return;
+    }
     feed.when(
       success: (page) {
+        if (_disposed) {
+          return;
+        }
         final merged = <HumorContent>[..._state.items];
         var added = 0;
         for (final item in page.items) {
@@ -727,6 +737,9 @@ class HumorController extends ChangeNotifier {
         );
       },
       err: (failure) {
+        if (_disposed) {
+          return;
+        }
         _state = _state.copyWith(isLoadingMore: false, failure: failure);
       },
     );
@@ -761,7 +774,16 @@ class HumorController extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_disposed) {
+      return;
+    }
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     unawaited(_premiumSub?.cancel());
     super.dispose();
   }

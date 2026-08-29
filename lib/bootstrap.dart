@@ -117,7 +117,18 @@ Future<void> bootstrap(AppEnvironment environment) async {
     uidSource: uidSource,
   );
   // AdMob SDK init is best-effort; Humor Lab soft-fails if unavailable.
-  await AdMobInterstitialHumorAdService.ensureSdkInitialized();
+  const testDeviceIdsRaw = String.fromEnvironment(
+    'ADMOB_TEST_DEVICE_IDS',
+    defaultValue: '',
+  );
+  final testDeviceIds = testDeviceIdsRaw
+      .split(',')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList(growable: false);
+  await AdMobInterstitialHumorAdService.ensureSdkInitialized(
+    testDeviceIds: environment.isProduction ? const [] : testDeviceIds,
+  );
   final humorServices = createHumorServices(
     config: config,
     subscriptionRepository: subscriptionRepository,

@@ -3,22 +3,25 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:mevora/features/humor/data/services/humor_ad_consent.dart';
 import 'package:mevora/features/humor/domain/config/humor_ad_network_config.dart';
 import 'package:mevora/features/humor/domain/services/humor_ad_service.dart';
 
 /// AdMob interstitial adapter for [HumorAdService].
 ///
-/// Soft-fails on load/show errors so Humor Lab never locks the feed.
+/// Soft-fails on load/show/consent errors so Humor Lab never locks the feed.
 /// Interstitials may become skippable after the network's own delay —
 /// we do not fake an unskippable overlay on top of AdMob.
 class AdMobInterstitialHumorAdService implements HumorAdService {
   AdMobInterstitialHumorAdService({
     HumorAdNetworkConfig? config,
+    HumorAdConsent? consent,
     this.loadTimeout = const Duration(seconds: 12),
-  }) : config = config ??
-            HumorAdNetworkConfig.resolve(isProduction: false);
+  }) : config = config ?? HumorAdNetworkConfig.resolve(isProduction: false),
+       _consent = consent ?? HumorAdConsent();
 
   final HumorAdNetworkConfig config;
+  final HumorAdConsent _consent;
   final Duration loadTimeout;
 
   static var _sdkInitialized = false;
@@ -26,10 +29,17 @@ class AdMobInterstitialHumorAdService implements HumorAdService {
   var _loading = false;
 
   /// Call once from bootstrap (non-blocking failures are OK).
-  static Future<void> ensureSdkInitialized() async {
+  static Future<void> ensureSdkInitialized({
+    List<String> testDeviceIds = const [],
+  }) async {
     if (_sdkInitialized) return;
     try {
       await MobileAds.instance.initialize();
+      if (testDeviceIds.isNotEmpty) {
+        await MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(testDeviceIds: testDeviceIds),
+        );
+      }
       _sdkInitialized = true;
     } catch (_) {
       _sdkInitialized = false;
@@ -39,10 +49,20 @@ class AdMobInterstitialHumorAdService implements HumorAdService {
   @override
   bool get isAvailable => _sdkInitialized;
 
-  String get _unitId => config.interstitialUnitId(isAndroid: Platform.isAndroid);
+  String get _unitId =>
+      config.interstitialUnitId(isAndroid: Platform.isAndroid);
+
+  Future<bool> _adsAllowed() async {
+    try {
+      return await _consent.ensureReady();
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<void> preload() async {
     if (!_sdkInitialized || _loading || _preloaded != null) return;
+    if (!await _adsAllowed()) return;
     _loading = true;
     try {
       final completer = Completer<void>();
@@ -86,6 +106,13 @@ class AdMobInterstitialHumorAdService implements HumorAdService {
         completed: false,
         failed: true,
         errorCode: 'sdk_unavailable',
+      );
+    }
+    if (!await _adsAllowed()) {
+      return const HumorAdResult(
+        completed: false,
+        failed: true,
+        errorCode: 'consent_not_ready',
       );
     }
 

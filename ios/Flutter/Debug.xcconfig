@@ -1,1 +1,5 @@
 #include "Generated.xcconfig"
+
+// Google sample AdMob app ID for debug/QA. Production CI should override
+// ADMOB_IOS_APP_ID before archive (never commit production IDs here).
+ADMOB_APP_ID=ca-app-pub-3940256099942544~1458002511

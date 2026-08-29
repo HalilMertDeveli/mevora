@@ -356,10 +356,19 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
+    // Drain late prefetch completions before dispose (parallel suite safety).
+    for (var i = 0; i < 20; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      if (!controller.state.isLoadingMore) {
+        break;
+      }
+    }
     expect(sw.elapsedMilliseconds, lessThan(15000));
     expect(controller.state.isLoading, isFalse);
     expect(controller.state.currentIndex, greaterThanOrEqualTo(40));
     expect(controller.state.items.length, greaterThan(12));
     controller.dispose();
+    // Late async must not throw after dispose.
+    await Future<void>.delayed(const Duration(milliseconds: 50));
   });
 }

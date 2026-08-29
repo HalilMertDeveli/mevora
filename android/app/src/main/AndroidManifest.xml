@@ -58,11 +58,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Google sample AdMob app ID for debug/QA. Production builds must
-             override via manifestPlaceholders / release flavor with real ID. -->
+        <!-- AdMob APPLICATION_ID: flavor-injected via manifestPlaceholders.
+             Development/staging use Google sample IDs. Production uses
+             ADMOB_ANDROID_APP_ID gradle property / env (never hard-coded). -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="${admobAppId}"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

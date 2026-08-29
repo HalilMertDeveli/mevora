@@ -47,6 +47,14 @@ void main() {
     expect(service, isA<NoopHumorAdService>());
   });
 
+  test('HumorAdNetworkConfig production without defines stays on sample IDs', () {
+    final config = HumorAdNetworkConfig.resolve(isProduction: true);
+    expect(config.useTestIds, isFalse);
+    // Without dart-defines, production falls back to sample (policy-safe).
+    expect(config.hasProductionUnitConfigured, isFalse);
+    expect(config.hasProductionAppIdConfigured, isFalse);
+  });
+
   test('PremiumPackCatalog SKUs are stable', () {
     expect(PremiumPackCatalog.productIds, contains('mevora_premium_1_month'));
     expect(PremiumPackCatalog.durationDaysFor(PremiumPackCatalog.year), 365);

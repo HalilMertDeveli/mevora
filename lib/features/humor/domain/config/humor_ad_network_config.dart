@@ -84,4 +84,10 @@ class HumorAdNetworkConfig {
     return androidInterstitialUnitId != googleTestAndroidInterstitial ||
         iosInterstitialUnitId != googleTestIosInterstitial;
   }
+
+  bool get hasProductionAppIdConfigured {
+    if (useTestIds) return false;
+    return androidAppId != googleTestAndroidAppId ||
+        iosAppId != googleTestIosAppId;
+  }
 }

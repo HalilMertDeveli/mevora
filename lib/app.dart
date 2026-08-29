@@ -13,6 +13,7 @@ import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
+import 'package:mevora/core/di/premium_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
@@ -44,6 +45,7 @@ import 'package:mevora/features/music/domain/repositories/music_repository.dart'
 import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
 import 'package:mevora/features/humor/domain/config/humor_ads_settings.dart';
 import 'package:mevora/features/humor/domain/services/humor_ad_service.dart';
+import 'package:mevora/features/subscription/domain/repositories/premium_purchase_repository.dart';
 import 'package:mevora/features/subscription/domain/repositories/subscription_repository.dart';
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
@@ -75,6 +77,7 @@ class MevoraApp extends StatefulWidget {
     this.locationController,
     this.socialServices,
     this.purchaseRepository,
+    this.premiumPurchaseRepository,
     this.verificationRepository,
     this.analytics,
     this.languageController,
@@ -103,6 +106,7 @@ class MevoraApp extends StatefulWidget {
   final LocationController? locationController;
   final SocialServices? socialServices;
   final PurchaseRepository? purchaseRepository;
+  final PremiumPurchaseRepository? premiumPurchaseRepository;
   final VerificationRepository? verificationRepository;
   final AnalyticsProvider? analytics;
   final LanguageController? languageController;
@@ -349,6 +353,14 @@ class _MevoraAppState extends State<MevoraApp> {
       child = BoostScope(
         repository: purchase,
         analytics: widget.analytics,
+        child: child,
+      );
+    }
+
+    final premiumPurchase = widget.premiumPurchaseRepository;
+    if (premiumPurchase != null) {
+      child = PremiumScope(
+        purchaseRepository: premiumPurchase,
         child: child,
       );
     }

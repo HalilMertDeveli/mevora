@@ -91,7 +91,7 @@ class HumorPremiumCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: TextButton(
-                onPressed: () => context.push(AppRoutes.boost),
+                onPressed: () => context.push(AppRoutes.premium),
                 child: Text(l10n.humorPremiumCardCta),
               ),
             ),

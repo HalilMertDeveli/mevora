@@ -23,6 +23,7 @@ import 'package:mevora/features/authentication/presentation/pages/splash_page.da
 import 'package:mevora/features/authentication/presentation/screens/otp_verification_screen.dart';
 import 'package:mevora/features/authentication/presentation/screens/phone_login_screen.dart';
 import 'package:mevora/features/boost/presentation/pages/boost_screen.dart';
+import 'package:mevora/features/subscription/presentation/pages/premium_screen.dart';
 import 'package:mevora/features/calls/presentation/pages/call_pages.dart';
 import 'package:mevora/features/chat/presentation/pages/chat_page.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_page.dart';
@@ -256,6 +257,13 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const BoostScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.premium,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const PremiumScreen(),
         ),
       ),
       GoRoute(

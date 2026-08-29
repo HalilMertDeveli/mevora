@@ -6,7 +6,7 @@ void main() {
   test('HumorAdsSettings defaults use 5-content interval', () {
     expect(HumorAdsSettings.defaults.effectiveInterval, 5);
     expect(HumorAdsSettings.defaults.minContentBeforeFirstAd, 5);
-    expect(HumorAdsSettings.defaults.provider, 'mevora_sponsored_break');
+    expect(HumorAdsSettings.defaults.provider, 'admob_interstitial');
   });
 
   test('HumorAdsSettings clamps interval', () {

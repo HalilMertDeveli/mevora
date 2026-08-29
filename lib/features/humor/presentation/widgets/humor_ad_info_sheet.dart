@@ -66,7 +66,7 @@ class HumorAdInfoSheet extends StatelessWidget {
               onPressed: () {
                 final navigator = Navigator.of(context);
                 navigator.pop(HumorAdInfoResult.openPremium);
-                unawaited(context.push(AppRoutes.boost));
+                unawaited(context.push(AppRoutes.premium));
               },
               child: Text(l10n.humorAdInfoPremiumCta),
             ),

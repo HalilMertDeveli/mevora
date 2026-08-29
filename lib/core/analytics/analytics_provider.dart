@@ -88,6 +88,10 @@ abstract final class AnalyticsEvents {
   static const String humorAdInfoDismissed = 'humor_ad_info_dismissed';
   static const String humorNextContent = 'humor_next_content';
   static const String humorContentReported = 'humor_content_reported';
+  static const String premiumPurchaseStarted = 'premium_purchase_started';
+  static const String premiumPurchaseCompleted = 'premium_purchase_completed';
+  static const String premiumPurchaseFailed = 'premium_purchase_failed';
+  static const String premiumPurchaseRestored = 'premium_purchase_restored';
 }
 
 abstract class AnalyticsProvider {

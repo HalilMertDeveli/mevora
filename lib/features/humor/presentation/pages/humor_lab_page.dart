@@ -445,7 +445,7 @@ class _HumorLabPageState extends State<HumorLabPage> {
               if (!state.isPremium)
                 IconButton(
                   tooltip: l10n.humorPremiumCardCta,
-                  onPressed: () => context.push(AppRoutes.boost),
+                  onPressed: () => context.push(AppRoutes.premium),
                   icon: const Icon(Icons.auto_awesome_outlined),
                 )
               else

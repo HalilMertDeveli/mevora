@@ -36,6 +36,7 @@ export {
   runMatchingGameRoundNow,
 } from "./hourlyMatchingGame";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {verifyPremiumPurchase} from "./premium/verifyPremiumPurchase.js";
 export {createSumsubAccessToken, sumsubWebhook} from "./sumsub/index.js";
 export {
   getHumorFeed,

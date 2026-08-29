@@ -30,6 +30,7 @@ abstract final class AppRoutes {
   static const String privacyPermissions = '/settings/privacy';
   static const String accountSettings = '/settings/account';
   static const String boost = '/boost';
+  static const String premium = '/premium';
   static const String likesYou = '/likes-you';
 
   static const String verifyProfile = '/settings/verify-profile';

@@ -6,7 +6,9 @@ import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/features/humor/data/datasources/functions_humor_data_source.dart';
 import 'package:mevora/features/humor/data/datasources/mock_humor_data_source.dart';
 import 'package:mevora/features/humor/data/repositories/humor_repository_impl.dart';
+import 'package:mevora/features/humor/data/services/admob_interstitial_humor_ad_service.dart';
 import 'package:mevora/features/humor/data/services/sponsored_break_humor_ad_service.dart';
+import 'package:mevora/features/humor/domain/config/humor_ad_network_config.dart';
 import 'package:mevora/features/humor/domain/config/humor_ads_settings.dart';
 import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
 import 'package:mevora/features/humor/domain/services/humor_ad_service.dart';
@@ -26,6 +28,21 @@ class HumorServices {
   final HumorAdsSettings adsSettings;
 }
 
+HumorAdService resolveHumorAdService({
+  required HumorAdsSettings settings,
+  required bool isProduction,
+  HumorAdService? override,
+}) {
+  if (override != null) return override;
+  if (!settings.enabled) return const NoopHumorAdService();
+  if (settings.provider == 'mevora_sponsored_break') {
+    return SponsoredBreakHumorAdService(settings: settings);
+  }
+  return AdMobInterstitialHumorAdService(
+    config: HumorAdNetworkConfig.resolve(isProduction: isProduction),
+  );
+}
+
 /// Mock only in debug development unless `--dart-define=USE_MOCK_HUMOR` overrides.
 /// Staging/production release builds use real Cloud Functions by default.
 HumorServices createHumorServices({
@@ -37,10 +54,12 @@ HumorServices createHumorServices({
   HumorAdsSettings? adsSettings,
 }) {
   final settings = adsSettings ?? HumorAdsSettings.defaults;
-  final ads = adService ??
-      (settings.enabled
-          ? SponsoredBreakHumorAdService(settings: settings)
-          : const NoopHumorAdService());
+  final environment = config?.environment ?? AppEnvironment.production;
+  final ads = resolveHumorAdService(
+    settings: settings,
+    isProduction: environment.isProduction,
+    override: adService,
+  );
 
   if (repository != null) {
     return HumorServices(
@@ -50,7 +69,6 @@ HumorServices createHumorServices({
       adsSettings: settings,
     );
   }
-  final environment = config?.environment ?? AppEnvironment.production;
   final useMock = resolveUseMockHumor(environment);
   if (useMock) {
     return HumorServices(

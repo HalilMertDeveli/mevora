@@ -9,7 +9,7 @@ class HumorAdsSettings {
     this.minContentBeforeFirstAd = 5,
     this.minWatchSeconds = 5,
     this.cooldownSeconds = 30,
-    this.provider = 'mevora_sponsored_break',
+    this.provider = 'admob_interstitial',
   });
 
   final bool enabled;

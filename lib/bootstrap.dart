@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +19,8 @@ import 'package:mevora/core/di/compatibility_services_factory.dart';
 import 'package:mevora/core/di/match_score_services_factory.dart';
 import 'package:mevora/core/di/music_services_factory.dart';
 import 'package:mevora/core/di/humor_services_factory.dart';
+import 'package:mevora/core/di/premium_services_factory.dart';
+import 'package:mevora/features/humor/data/services/admob_interstitial_humor_ad_service.dart';
 import 'package:mevora/features/subscription/data/repositories/firestore_subscription_repository.dart';
 import 'package:mevora/core/di/relationship_services_factory.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
@@ -112,10 +116,18 @@ Future<void> bootstrap(AppEnvironment environment) async {
   final subscriptionRepository = FirestoreSubscriptionRepository(
     uidSource: uidSource,
   );
+  // AdMob SDK init is best-effort; Humor Lab soft-fails if unavailable.
+  await AdMobInterstitialHumorAdService.ensureSdkInitialized();
   final humorServices = createHumorServices(
     config: config,
     subscriptionRepository: subscriptionRepository,
   );
+  if (humorServices.adService is AdMobInterstitialHumorAdService) {
+    unawaited(
+      (humorServices.adService as AdMobInterstitialHumorAdService).preload(),
+    );
+  }
+  final premiumServices = createPremiumServices(uidSource: uidSource);
   final relationshipServices = createRelationshipServices(config: config);
   final matchScoreServices = createMatchScoreServices(
     config: config,
@@ -173,6 +185,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       whyYouMatchedRepository: compatibilityServices.whyYouMatchedRepository,
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,
+      premiumPurchaseRepository: premiumServices.purchaseRepository,
       verificationRepository: verificationServices.repository,
       analytics: analytics,
       languageController: languageController,

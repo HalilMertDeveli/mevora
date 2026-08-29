@@ -12,7 +12,7 @@ Date: 2026-08-29
 
 Starting Commit: `97e918b` (`fix: quiet AdMob interstitial dispose futures`)
 
-Ending Commit: *(set after commit in §38)*
+Ending Commit: `f2619b5` (`docs: finalize phase 11 physical device WYM E2E report`)
 
 Device: SM M225FV
 
@@ -550,7 +550,7 @@ Physical-device core WYM path is now REAL-verified. Staging billing and remainin
 | Field | Value |
 |-------|-------|
 | Starting Commit | `97e918b` |
-| Ending Commit | *(set after commit)* |
+| Ending Commit | `f2619b5` |
 | Commit | Phase 11 report + device E2E harness |
 | Push | `origin/feature/humor-lab-mvp` |
 

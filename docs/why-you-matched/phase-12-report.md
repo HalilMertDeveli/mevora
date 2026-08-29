@@ -12,7 +12,7 @@ Date: 2026-08-29
 
 Starting Commit: `aa8e89f` (`docs: set phase 11 report ending commit metadata`)
 
-Ending Commit: *(set after report commit; see §39)*
+Ending Commit: `d9d6613` (`docs: finalize phase 12 WYM edge closure report`)
 
 Device: SM M225FV (detected at Phase 12 start; USB disconnect mid-phase)
 
@@ -563,7 +563,7 @@ Core physical WYM path remains validated (Phase 11). Phase 12 could not close re
 | Field | Value |
 |-------|-------|
 | Starting Commit | `aa8e89f` |
-| Ending Commit | *(after commit)* |
+| Ending Commit | `d9d6613` |
 | Commit | Phase 12 report + edge harness + Hour l10n min fix |
 | Push | `origin/feature/humor-lab-mvp` |
 

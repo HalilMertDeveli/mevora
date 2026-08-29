@@ -196,6 +196,51 @@ test("existing Spotify provider regression via registry", () => {
   assert.equal(summary.connected, true);
 });
 
+test("Spotify provider falls back to short_term tops when medium_term empty", async () => {
+  const paths = [];
+  const spotifyGet = async (_token, path) => {
+    paths.push(path);
+    if (path.includes("time_range=medium_term")) {
+      return {items: []};
+    }
+    if (path.includes("/me/top/artists?time_range=short_term")) {
+      return {
+        items: [{id: "a1", name: "Short Artist", genres: ["pop"], images: []}],
+      };
+    }
+    if (path.includes("/me/top/tracks?time_range=short_term")) {
+      return {
+        items: [{
+          id: "t1",
+          name: "Short Track",
+          artists: [{id: "a1", name: "Short Artist"}],
+          album: {images: []},
+        }],
+      };
+    }
+    if (path.includes("recently-played")) {
+      return {items: []};
+    }
+    if (path.includes("/me/playlists")) {
+      return {items: []};
+    }
+    if (path === "/me") {
+      return {id: "spotify-user", display_name: "Listener"};
+    }
+    return {items: []};
+  };
+  const provider = new SpotifyMusicProvider(spotifyGet);
+  const profile = await provider.fetchTaste({
+    accessToken: "token",
+    scope: "user-top-read user-read-recently-played playlist-read-private",
+  });
+  assert.equal(profile.topArtists[0]?.id, "a1");
+  assert.equal(profile.topTracks[0]?.id, "t1");
+  assert.equal(profile.topGenres[0]?.name, "pop");
+  assert.ok(paths.some((p) => p.includes("medium_term")));
+  assert.ok(paths.some((p) => p.includes("short_term")));
+});
+
 test("existing music compatibility regression unchanged for shared taste", () => {
   const taste = {
     trackIds: ["t1", "t2"],

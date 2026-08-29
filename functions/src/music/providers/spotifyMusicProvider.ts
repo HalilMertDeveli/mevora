@@ -93,7 +93,7 @@ export class SpotifyMusicProvider implements MusicProvider {
       throw new HttpsError("unauthenticated", "oauth");
     }
 
-    const [topTracks, topArtists, recentlyPlayed, playlistTaste] = await Promise.all([
+    const [topTracksMedium, topArtistsMedium, recentlyPlayed, playlistTaste] = await Promise.all([
       this.spotifyGet<Paging<DocumentData>>(
         input.accessToken,
         "/me/top/tracks?time_range=medium_term&limit=50",
@@ -108,6 +108,23 @@ export class SpotifyMusicProvider implements MusicProvider {
       ),
       fetchPlaylistTaste(this.spotifyGet, input.accessToken, input.scope),
     ]);
+
+    // Sparse accounts often have empty medium_term tops; fall back to short_term
+    // (still real Spotify API data — never invent taste).
+    let topTracks = topTracksMedium;
+    let topArtists = topArtistsMedium;
+    if (!(topArtists.items?.length)) {
+      topArtists = await this.spotifyGet<Paging<DocumentData>>(
+        input.accessToken,
+        "/me/top/artists?time_range=short_term&limit=50",
+      );
+    }
+    if (!(topTracks.items?.length)) {
+      topTracks = await this.spotifyGet<Paging<DocumentData>>(
+        input.accessToken,
+        "/me/top/tracks?time_range=short_term&limit=50",
+      );
+    }
 
     return buildSpotifyNormalizedProfile({
       providerUserId: me.id,

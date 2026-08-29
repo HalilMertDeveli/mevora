@@ -1867,6 +1867,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get musicProfileTitle => 'Your music profile';
 
   @override
+  String get musicProfileEmpty =>
+      'No listening data from Spotify yet. Play a few songs, then refresh.';
+
+  @override
+  String get musicTopArtistsHeading => 'Top artists';
+
+  @override
+  String get musicTopTracksHeading => 'Top tracks';
+
+  @override
   String get musicSameTasteTitle => 'People who listen to the same music';
 
   @override

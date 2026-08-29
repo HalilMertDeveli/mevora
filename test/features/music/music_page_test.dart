@@ -6,6 +6,8 @@ import 'package:mevora/features/discovery/domain/entities/discovery_candidate.da
 import 'package:mevora/features/discovery/presentation/pages/discovery_profile_details_page.dart';
 import 'package:mevora/features/music/data/datasources/mock_music_data_source.dart';
 import 'package:mevora/features/music/data/repositories/music_repository_impl.dart';
+import 'package:mevora/features/music/domain/entities/music_taste.dart';
+import 'package:mevora/features/music/domain/entities/normalized_music_profile.dart';
 import 'package:mevora/features/music/presentation/controllers/music_controller.dart';
 import 'package:mevora/features/music/presentation/pages/music_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -71,6 +73,47 @@ void main() {
 
     expect(find.text(_en.musicConnected), findsOneWidget);
     expect(find.text(_en.musicDisconnectCta), findsOneWidget);
+  });
+
+  testWidgets('connected sparse Spotify taste still shows real tracks', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final source = MockMusicDataSource(
+      connectedProfile: MusicProfile(
+        connected: true,
+        spotifyUserId: 'mock-spotify',
+        displayName: 'Mevora Listener',
+        topTracks: MockMusicDataSource.seedTracks,
+        topArtists: const [],
+        recentlyPlayed: [MockMusicDataSource.seedTracks.first],
+        recentArtists: const [
+          RecentArtist(id: 'ra1', name: 'Recent Real Artist'),
+        ],
+        genres: const [],
+        taste: const MusicTasteSnapshot(
+          trackIds: ['mock-track-1', 'mock-track-2'],
+          recentTrackIds: ['mock-track-1'],
+          recentArtistIds: ['ra1'],
+        ),
+      ),
+    );
+    await source.connectSpotify();
+    final controller = MusicController(
+      repository: MusicRepositoryImpl(dataSource: source),
+    );
+    await tester.pumpWidget(wrap(MusicPage(controller: controller)));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_en.musicConnected), findsOneWidget);
+    expect(find.text(_en.musicSameTasteEmpty), findsNothing);
+    expect(find.text(_en.musicTopTracksHeading), findsOneWidget);
+    expect(find.textContaining('Bosphorus'), findsWidgets);
+    expect(find.textContaining('Recent Real Artist'), findsOneWidget);
   });
 
   testWidgets('profile details hide music badge before match', (tester) async {

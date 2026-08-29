@@ -7,6 +7,7 @@ import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_profile_details_page.dart';
+import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/presentation/controllers/music_controller.dart';
@@ -234,24 +235,7 @@ class _ConnectedMusicView extends StatelessWidget {
         const SizedBox(height: AppSpacing.lg),
         Text(l10n.musicProfileTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AppSpacing.sm),
-        if (profile.genres.isEmpty)
-          Text(l10n.musicSameTasteEmpty, style: theme.textTheme.bodyMedium)
-        else
-          ...profile.genres.map((genre) => _GenreBar(genre: genre)),
-        if (profile.topArtists.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: profile.topArtists
-                .take(6)
-                .map(
-                  (artist) =>
-                      _TasteChip(label: artist.name, image: artist.image),
-                )
-                .toList(),
-          ),
-        ],
+        ..._musicProfileSections(l10n, theme, profile),
         const SizedBox(height: AppSpacing.xl),
         Text(l10n.musicSameTasteTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AppSpacing.sm),
@@ -297,6 +281,105 @@ class _ConnectedMusicView extends StatelessWidget {
       ],
     );
   }
+}
+
+List<Widget> _musicProfileSections(
+  AppLocalizations l10n,
+  ThemeData theme,
+  MusicProfile profile,
+) {
+  final hasGenres = profile.genres.isNotEmpty;
+  final hasTopArtists = profile.topArtists.isNotEmpty;
+  final hasRecentArtists = profile.recentArtists.isNotEmpty;
+  final hasTopTracks = profile.topTracks.isNotEmpty;
+  final hasRecentlyPlayed = profile.recentlyPlayed.isNotEmpty;
+  if (!hasGenres &&
+      !hasTopArtists &&
+      !hasRecentArtists &&
+      !hasTopTracks &&
+      !hasRecentlyPlayed) {
+    return [
+      Text(l10n.musicProfileEmpty, style: theme.textTheme.bodyMedium),
+    ];
+  }
+
+  final children = <Widget>[];
+  if (hasGenres) {
+    children.addAll(profile.genres.map((genre) => _GenreBar(genre: genre)));
+  }
+  if (hasTopArtists) {
+    children.add(const SizedBox(height: AppSpacing.md));
+    children.add(
+      Text(l10n.musicTopArtistsHeading, style: theme.textTheme.titleMedium),
+    );
+    children.add(const SizedBox(height: AppSpacing.sm));
+    children.add(
+      Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: profile.topArtists
+            .take(8)
+            .map(
+              (artist) => _TasteChip(label: artist.name, image: artist.image),
+            )
+            .toList(),
+      ),
+    );
+  }
+  if (hasRecentArtists) {
+    children.add(const SizedBox(height: AppSpacing.md));
+    children.add(
+      Text(l10n.musicRecentArtistsHeading, style: theme.textTheme.titleMedium),
+    );
+    children.add(const SizedBox(height: AppSpacing.sm));
+    children.add(
+      Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: profile.recentArtists
+            .take(5)
+            .map(
+              (artist) => _TasteChip(label: artist.name, image: artist.image),
+            )
+            .toList(),
+      ),
+    );
+  }
+  if (hasTopTracks) {
+    children.add(const SizedBox(height: AppSpacing.md));
+    children.add(
+      Text(l10n.musicTopTracksHeading, style: theme.textTheme.titleMedium),
+    );
+    children.add(const SizedBox(height: AppSpacing.sm));
+    children.addAll(
+      profile.topTracks.take(8).map(
+        (track) => ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: _Cover(url: track.albumImage),
+          title: Text(track.name),
+          subtitle: Text(track.artist),
+        ),
+      ),
+    );
+  }
+  if (hasRecentlyPlayed) {
+    children.add(const SizedBox(height: AppSpacing.md));
+    children.add(
+      Text(l10n.musicRecentlyPlayedHeading, style: theme.textTheme.titleMedium),
+    );
+    children.add(const SizedBox(height: AppSpacing.sm));
+    children.addAll(
+      profile.recentlyPlayed.take(8).map(
+        (track) => ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: _Cover(url: track.albumImage),
+          title: Text(track.name),
+          subtitle: Text(track.artist),
+        ),
+      ),
+    );
+  }
+  return children;
 }
 
 class _GenreBar extends StatelessWidget {

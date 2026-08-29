@@ -3542,6 +3542,24 @@ abstract class AppLocalizations {
   /// **'Your music profile'**
   String get musicProfileTitle;
 
+  /// No description provided for @musicProfileEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No listening data from Spotify yet. Play a few songs, then refresh.'**
+  String get musicProfileEmpty;
+
+  /// No description provided for @musicTopArtistsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Top artists'**
+  String get musicTopArtistsHeading;
+
+  /// No description provided for @musicTopTracksHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Top tracks'**
+  String get musicTopTracksHeading;
+
   /// No description provided for @musicSameTasteTitle.
   ///
   /// In en, this message translates to:

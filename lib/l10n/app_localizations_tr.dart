@@ -1864,6 +1864,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicProfileTitle => 'Müzik profilin';
 
   @override
+  String get musicProfileEmpty =>
+      'Spotify\'dan henüz dinleme verisi yok. Birkaç şarkı dinleyip yenile.';
+
+  @override
+  String get musicTopArtistsHeading => 'Öne çıkan sanatçılar';
+
+  @override
+  String get musicTopTracksHeading => 'Öne çıkan şarkılar';
+
+  @override
   String get musicSameTasteTitle => 'Seninle Aynı Müziği Dinleyenler';
 
   @override

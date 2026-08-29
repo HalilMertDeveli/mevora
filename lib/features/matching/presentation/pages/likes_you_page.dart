@@ -126,6 +126,7 @@ class _LikesYouPageState extends State<LikesYouPage> {
                     final item = controller.snapshot.items[index];
                     return LikesYouInsightCard(
                       item: item,
+                      breakdown: item.breakdown,
                       onTap: () => _openPremiumProfile(context, item),
                       onConnect: () => _openPremiumProfile(context, item),
                     );

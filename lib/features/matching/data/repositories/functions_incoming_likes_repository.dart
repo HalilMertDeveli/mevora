@@ -1,5 +1,6 @@
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_snapshot.dart';
 import 'package:mevora/features/matching/domain/models/incoming_likes.dart';
 
 class FunctionsIncomingLikesRepository implements IncomingLikesRepository {
@@ -41,6 +42,12 @@ class FunctionsIncomingLikesRepository implements IncomingLikesRepository {
             createdAt: createdMs is num
                 ? DateTime.fromMillisecondsSinceEpoch(createdMs.toInt())
                 : null,
+            compatibility: CompatibilitySnapshot.fromMap({
+              'compatibilityScore': map['compatibilityScore'],
+              'compatibilityBreakdown': map['compatibilityBreakdown'],
+              'sharedInterests': map['sharedInterests'],
+              'compatibilityReasons': map['compatibilityReasons'],
+            }),
           ),
         );
       }

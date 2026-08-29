@@ -1,3 +1,5 @@
+import 'package:mevora/features/compatibility/domain/entities/compatibility_snapshot.dart';
+
 enum MatchSource { mutualLike, relationshipTest }
 
 MatchSource matchSourceFrom(Object? raw, {Object? matchType}) {
@@ -24,6 +26,7 @@ class Match {
     this.participantPhotos = const {},
     this.participantVerified = const {},
     this.source = MatchSource.mutualLike,
+    this.compatibilitySnapshots = const {},
   });
 
   final String id;
@@ -48,7 +51,13 @@ class Match {
   final Map<String, bool> participantVerified;
   final MatchSource source;
 
+  /// Per-participant snapshots written at mutual-match time (may be empty for legacy docs).
+  final Map<String, CompatibilitySnapshot> compatibilitySnapshots;
+
   bool get isRelationshipTest => source == MatchSource.relationshipTest;
+
+  CompatibilitySnapshot? compatibilityFor(String uid) =>
+      compatibilitySnapshots[uid];
 
   String otherUserId(String uid) {
     return userIds.firstWhere(
@@ -82,6 +91,7 @@ class Match {
     Map<String, int>? unreadCounts,
     Map<String, bool>? isNewFor,
     MatchSource? source,
+    Map<String, CompatibilitySnapshot>? compatibilitySnapshots,
   }) {
     return Match(
       id: id,
@@ -99,6 +109,8 @@ class Match {
       participantPhotos: participantPhotos,
       participantVerified: participantVerified,
       source: source ?? this.source,
+      compatibilitySnapshots:
+          compatibilitySnapshots ?? this.compatibilitySnapshots,
     );
   }
 }

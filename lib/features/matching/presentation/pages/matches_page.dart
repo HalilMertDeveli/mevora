@@ -124,6 +124,7 @@ class _MatchesPageState extends State<MatchesPage> {
                       (item) => MatchConnectionTile(
                         item: item,
                         currentUid: uid,
+                        breakdown: item.breakdown,
                         showOnlineIndicator:
                             controller.presenceFor(item.otherUserId) ==
                             PresenceStatus.online,

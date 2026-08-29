@@ -6,7 +6,7 @@ import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/matching/domain/match_engine.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
-import 'package:mevora/features/matching/domain/models/presence_status.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_snapshot.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
 
 class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
@@ -118,6 +118,9 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
       unmatchedBy: data['unmatchedBy'] as String?,
       unmatchedAt: _date(data['unmatchedAt']),
       source: matchSourceFrom(data['source'], matchType: data['matchType']),
+      compatibilitySnapshots: CompatibilitySnapshot.mapFromSnapshotsField(
+        data['compatibilitySnapshots'],
+      ),
     );
   }
 
@@ -127,7 +130,7 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
       otherUserId: match.otherUserId(uid),
       name: match.otherName(uid),
       photoUrl: match.otherPhoto(uid),
-      presence: PresenceStatus.offline,
+      compatibility: match.compatibilityFor(uid),
     );
   }
 

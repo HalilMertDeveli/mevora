@@ -15,6 +15,7 @@ import 'package:mevora/features/chat/e2ee/services/e2ee_chat_service.dart';
 import 'package:mevora/features/profile/data/datasources/firebase_storage_data_source.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_snapshot.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
 import 'package:mevora/features/notifications/data/datasources/firebase_messaging_data_source.dart';
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
@@ -50,6 +51,9 @@ Match _matchFrom(DocumentSnapshot<Map<String, dynamic>> snap) {
     participantPhotos: _stringStringMap(data['participantPhotos']),
     participantVerified: _stringBoolMap(data['participantVerified']),
     source: matchSourceFrom(data['source'], matchType: data['matchType']),
+    compatibilitySnapshots: CompatibilitySnapshot.mapFromSnapshotsField(
+      data['compatibilitySnapshots'],
+    ),
   );
 }
 
@@ -96,12 +100,14 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
         .map((snap) {
           return snap.docs.map((doc) {
             final match = _matchFrom(doc);
+            final otherId = match.otherUserId(uid);
             return MatchListItem(
               match: match,
-              otherUserId: match.otherUserId(uid),
+              otherUserId: otherId,
               name: match.otherName(uid),
               photoUrl: match.otherPhoto(uid),
               isVerified: match.otherIsVerified(uid),
+              compatibility: match.compatibilityFor(uid),
             );
           }).toList(growable: false);
         });

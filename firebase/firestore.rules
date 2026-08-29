@@ -540,7 +540,15 @@ service cloud.firestore {
         && request.resource.data.get('matchType', resource.data.get('matchType', null))
           == resource.data.get('matchType', null)
         && request.resource.data.get('compatibilityKey', resource.data.get('compatibilityKey', null))
-          == resource.data.get('compatibilityKey', null);
+          == resource.data.get('compatibilityKey', null)
+        && request.resource.data.get('compatibilitySnapshots', resource.data.get('compatibilitySnapshots', null))
+          == resource.data.get('compatibilitySnapshots', null)
+        && request.resource.data.get('compatibilityCalculatedAt', resource.data.get('compatibilityCalculatedAt', null))
+          == resource.data.get('compatibilityCalculatedAt', null)
+        && request.resource.data.get('compatibilityScore', resource.data.get('compatibilityScore', null))
+          == resource.data.get('compatibilityScore', null)
+        && request.resource.data.get('compatibilityBreakdown', resource.data.get('compatibilityBreakdown', null))
+          == resource.data.get('compatibilityBreakdown', null);
 
       match /messages/{messageId} {
         allow read: if isMatchParticipant(matchId);

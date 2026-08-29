@@ -12,6 +12,18 @@ export type IncomingLikeItem = {
   city: string | null;
   action: string;
   createdAtMs: number | null;
+  compatibilityScore?: number;
+  compatibilityBreakdown?: {
+    overallScore: number;
+    relationshipScore: number;
+    interestScore: number;
+    lifestyleScore: number;
+    questionScore: number | null;
+    musicScore: number | null;
+    communicationScore: number | null;
+  };
+  sharedInterests?: string[];
+  compatibilityReasons?: string[];
 };
 
 export type IncomingLikesPayload = {

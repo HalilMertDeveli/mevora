@@ -4,6 +4,7 @@ import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/ht
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
 import {canonicalMatchId, blockId} from "./ids.js";
 import {preservedMatchScoreFields} from "./matchScore.js";
+import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
 import {userLanguage} from "./language.js";
 import {interestedInAllows} from "./musicCompatibility.js";
 import {
@@ -603,6 +604,7 @@ async function createRelationshipMatch(
   }
   const [actor, other] = await Promise.all([profilePreview(uid), profilePreview(otherUid)]);
   const previous = existing.data();
+  const compatFields = await buildMatchCompatibilityFields(uid, otherUid);
   await matchRef.set({
     userIds: [uid, otherUid].sort(),
     createdAt: previous?.createdAt ?? FieldValue.serverTimestamp(),
@@ -619,6 +621,7 @@ async function createRelationshipMatch(
       ...(other.photoUrl ? {[otherUid]: other.photoUrl} : {}),
     },
     ...preservedMatchScoreFields(previous),
+    ...compatFields,
     source: "relationship_test",
     matchType: "relationship",
     compatibilityKey,

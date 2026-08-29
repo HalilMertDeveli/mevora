@@ -13,9 +13,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:mevora/bootstrap.dart';
 import 'package:mevora/core/config/app_environment.dart';
-import 'package:mevora/core/network/firebase_callable_readiness.dart';
 import 'package:mevora/features/compatibility/presentation/why_you_matched/match_why_you_matched_entry.dart';
 import 'package:mevora/features/matching/presentation/pages/matches_page.dart';
+
+Future<void> _waitCallableReady() async {
+  await Future<void>.delayed(const Duration(seconds: 2));
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    await user.getIdToken(true);
+  }
+}
 
 Future<void> _pumpFor(
   WidgetTester tester,
@@ -143,7 +150,7 @@ Future<void> _signInRealAuth(
       email: email,
       password: password,
     );
-    await FirebaseCallableReadiness.waitUntilReady();
+    await _waitCallableReady();
   });
   await _pumpFor(tester, const Duration(seconds: 4));
   final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -322,7 +329,7 @@ void main() {
       await _signInRealAuth(tester, email: emailA, password: password);
     }
     await tester.runAsync(() async {
-      await FirebaseCallableReadiness.waitUntilReady();
+      await _waitCallableReady();
     });
 
     await _waitForShell(tester);

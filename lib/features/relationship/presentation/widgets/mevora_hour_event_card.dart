@@ -50,7 +50,8 @@ class MevoraHourEventCard extends StatelessWidget {
         title = l10n.mevoraHourUpcomingTitle(hour);
         body = remain == null
             ? l10n.mevoraHourUpcomingBody
-            : l10n.mevoraHourUpcomingCountdown(remain);
+            // Minimal fix: missing l10n key blocked debug APK (use existing countdown).
+            : l10n.mevoraHourCountdown(remain);
         primaryLabel = null;
         secondaryLabel = reminderEnabled
             ? l10n.mevoraHourReminderOn

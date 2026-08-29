@@ -107,4 +107,96 @@ test("free incoming likes never leak compatibility identities", () => {
   assert.equal(payload.locked, true);
   assert.equal(payload.items.length, 0);
   assert.equal(payload.count, 1);
+  assert.equal(payload.items.some?.((i) => i.compatibilityScore != null), false);
+});
+
+test("dual perspective snapshots use viewer as first argument", () => {
+  const profileA = {
+    interests: ["travel", "music", "food"],
+    relationshipGoal: "longTerm",
+    lifestyle: ["pets:dog", "smoke:never"],
+    lastActiveAt: {toDate: () => new Date()},
+  };
+  const profileB = {
+    interests: ["travel"],
+    relationshipGoal: "longTerm",
+    lifestyle: ["pets:dog"],
+    // Stale activity — activityScore is candidate-based, so A→B vs B→A differ.
+    lastActiveAt: {
+      toDate: () => new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+    },
+  };
+
+  const forA = buildCompatibilitySnapshotFromProfiles({
+    viewerProfile: profileA,
+    candidateProfile: profileB,
+  });
+  const forB = buildCompatibilitySnapshotFromProfiles({
+    viewerProfile: profileB,
+    candidateProfile: profileA,
+  });
+
+  assert.equal(typeof forA.compatibilityScore, "number");
+  assert.equal(typeof forB.compatibilityScore, "number");
+  assert.equal(forA.compatibilityBreakdown.overallScore, forA.compatibilityScore);
+  assert.equal(forB.compatibilityBreakdown.overallScore, forB.compatibilityScore);
+  // Asymmetric activity on candidate proves viewer-perspective wiring.
+  assert.notEqual(forA.compatibilityScore, forB.compatibilityScore);
+});
+
+test("snapshot integrity matches engine fields for the same pair", () => {
+  const viewer = {
+    interests: ["hiking", "coffee"],
+    relationshipGoal: "casual",
+    lifestyle: ["drink:sometimes"],
+  };
+  const candidate = {
+    interests: ["hiking", "art"],
+    relationshipGoal: "casual",
+    lifestyle: ["drink:sometimes"],
+  };
+  const relationship = {
+    score: 80,
+    alignedCount: 2,
+    sharedQuestionCount: 3,
+    topTopics: ["values"],
+  };
+  const snap = buildCompatibilitySnapshotFromProfiles({
+    viewerProfile: viewer,
+    candidateProfile: candidate,
+    relationship,
+    musicScore: 55,
+  });
+  assert.ok(snap.compatibilityScore > 0);
+  // relationshipScore = goal alignment; quiz score lives in questionScore.
+  assert.equal(snap.compatibilityBreakdown.questionScore, 80);
+  assert.equal(snap.compatibilityBreakdown.musicScore, 55);
+  assert.ok(snap.sharedInterests.includes("hiking"));
+  assert.ok(Array.isArray(snap.compatibilityReasons));
+});
+
+test("wrong viewer/candidate swap uses candidate activity perspective", () => {
+  const a = {
+    interests: ["a1", "a2", "a3", "shared"],
+    relationshipGoal: "longTerm",
+    lifestyle: ["pets:cat"],
+    lastActiveAt: {toDate: () => new Date()},
+  };
+  const b = {
+    interests: ["shared"],
+    relationshipGoal: "casual",
+    lifestyle: ["pets:dog"],
+    lastActiveAt: {
+      toDate: () => new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+    },
+  };
+  const ab = buildCompatibilitySnapshotFromProfiles({
+    viewerProfile: a,
+    candidateProfile: b,
+  });
+  const ba = buildCompatibilitySnapshotFromProfiles({
+    viewerProfile: b,
+    candidateProfile: a,
+  });
+  assert.notEqual(ab.compatibilityScore, ba.compatibilityScore);
 });

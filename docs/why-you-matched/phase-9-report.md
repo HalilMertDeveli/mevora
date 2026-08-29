@@ -12,7 +12,7 @@ Date: 2026-08-29
 
 Starting Commit: `f349a09` (`docs: fix phase 8 report git metadata`)
 
-Ending Commit: *(report commit; see §30)*
+Ending Commit: `24f0fcd` (`docs: finalize phase 9 WYM release gate report`)
 
 Worktree: `D:/Mevora-phase3-recovery` (active) | Primary `D:/Mevora` on `feature/spotify-music-compatibility`
 
@@ -532,9 +532,9 @@ Internal WYM build/test/security isolation gates remain green. External staging 
 | Field | Value |
 |-------|-------|
 | Starting Commit | `f349a09` |
-| Ending Commit | *(set after commit)* |
-| Commit | Phase 9 report + App Check probe script |
-| Push | `origin/feature/humor-lab-mvp` |
+| Ending Commit | `24f0fcd` |
+| Commit | `docs: finalize phase 9 WYM release gate report` (+ App Check probe) |
+| Push | **SUCCESS** → `origin/feature/humor-lab-mvp` |
 
 ============================================================
 

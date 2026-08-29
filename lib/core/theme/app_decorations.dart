@@ -42,14 +42,14 @@ abstract final class AppDecorations {
         end: Alignment.bottomLeft,
         colors: isDark
             ? [
-                AppColors.accentPrimary.withValues(alpha: 0.08),
+                AppColors.amber.withValues(alpha: 0.06),
                 surface,
-                AppColors.softPurple.withValues(alpha: 0.05),
+                AppColors.deepNavy.withValues(alpha: 0.4),
               ]
             : [
-                AppColors.rose.withValues(alpha: 0.05),
+                AppColors.amber.withValues(alpha: 0.04),
                 surface,
-                AppColors.peach.withValues(alpha: 0.04),
+                AppColors.softGreen.withValues(alpha: 0.03),
               ],
         stops: const [0.0, 0.45, 1.0],
       ),

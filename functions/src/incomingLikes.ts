@@ -2,7 +2,8 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {loadActiveMatchPartnerIds} from "./discoveryMatching.js";
-import {shapeIncomingLikesResponse} from "./incomingLikesShape.js";
+import {shapeIncomingLikesResponse, type IncomingLikeItem} from "./incomingLikesShape.js";
+import {buildCompatibilitySnapshotFromProfiles} from "./compatibility/compatibilitySnapshot.js";
 import {isUserPremium} from "./premium.js";
 import {usableDiscoveryPhotos} from "./profileSafety.js";
 
@@ -48,7 +49,8 @@ function photoUrlFromProfile(data: Record<string, unknown>): string | null {
  *
  * Free: count + locked/premiumRequired metadata only — no liker UIDs/profiles.
  * Premium: real profile previews for users who liked the viewer and are not
- * already matched.
+ * already matched, enriched with the same calculateCompatibility() engine as
+ * Discovery (profile signals only — no per-row music/relationship N+1 reads).
  *
  * Clients must never query likes by toUserId (Firestore rules forbid it).
  * Mutual matches remain on the matches collection and are not premium-gated.
@@ -103,15 +105,10 @@ export const getIncomingLikes = onCall(callableOptions, async (request) => {
   }
 
   const slice = unique.slice(0, RESULT_LIMIT);
-  const profiles = new Map<string, {
-    uid: string;
-    displayName: string;
-    age: number | null;
-    photoUrl: string | null;
-    city: string | null;
-    action: string;
-    createdAtMs: number | null;
-  }>();
+  const viewerProfileSnap = await db.doc(`profiles/${uid}`).get();
+  const viewerProfile = viewerProfileSnap.data() ?? {};
+
+  const profiles = new Map<string, IncomingLikeItem>();
   for (const row of slice) {
     const profileSnap = await db.doc(`profiles/${row.fromUserId}`).get();
     if (!profileSnap.exists) {
@@ -121,7 +118,7 @@ export const getIncomingLikes = onCall(callableOptions, async (request) => {
     if (data.isDiscoverable === false) {
       continue;
     }
-    profiles.set(row.fromUserId, {
+    const item: IncomingLikeItem = {
       uid: row.fromUserId,
       displayName: String(data.displayName ?? ""),
       age: data.age == null ? null : Number(data.age),
@@ -129,7 +126,26 @@ export const getIncomingLikes = onCall(callableOptions, async (request) => {
       city: typeof data.city === "string" ? data.city : null,
       action: row.action,
       createdAtMs: row.createdAtMs,
-    });
+    };
+    try {
+      // Viewer = likes-you recipient; candidate = liker.
+      // Same engine as Discovery; music/relationship omitted to avoid N+1.
+      const snap = buildCompatibilitySnapshotFromProfiles({
+        viewerProfile,
+        candidateProfile: data,
+        relationship: null,
+        musicScore: null,
+      });
+      if (snap.compatibilityScore > 0) {
+        item.compatibilityScore = snap.compatibilityScore;
+        item.compatibilityBreakdown = snap.compatibilityBreakdown;
+        item.sharedInterests = snap.sharedInterests;
+        item.compatibilityReasons = snap.compatibilityReasons;
+      }
+    } catch {
+      // Leave compatibility fields absent — UI stays null-safe.
+    }
+    profiles.set(row.fromUserId, item);
   }
 
   return shapeIncomingLikesResponse({

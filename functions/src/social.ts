@@ -17,6 +17,7 @@ import {
   preservedMatchScoreFields,
   queuePostMatchFeedback,
 } from "./matchScore.js";
+import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
 import {enforceMessageRateLimit} from "./messageRateLimit.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
 
@@ -176,6 +177,8 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
     const actor = await profilePreview(uid);
     const other = await profilePreview(targetUserId);
     const previousMatch = matchSnap.data();
+    // Compatibility snapshot is computed outside the transaction (below) via
+    // a follow-up merge so match creation never depends on scoring latency/failure.
     tx.set(matchRef, {
       userIds: [uid, targetUserId].sort(),
       createdAt: previousMatch?.createdAt ?? FieldValue.serverTimestamp(),
@@ -198,7 +201,22 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
       ...preservedMatchScoreFields(previousMatch),
       source: "mutual_like",
     });
-    return {matched: true, matchId};
+    return {matched: true, matchId, _needsCompatibilitySnapshot: true as const};
+  }).then(async (result) => {
+    if (result && "matched" in result && result.matched === true &&
+        "_needsCompatibilitySnapshot" in result && result._needsCompatibilitySnapshot) {
+      const fields = await buildMatchCompatibilityFields(uid, targetUserId);
+      if (Object.keys(fields).length > 0) {
+        await db.doc(`matches/${matchId}`).set(fields, {merge: true});
+      }
+      const { _needsCompatibilitySnapshot: _, ...clean } = result as {
+        matched: true;
+        matchId: string;
+        _needsCompatibilitySnapshot?: boolean;
+      };
+      return clean;
+    }
+    return result;
   });
 });
 

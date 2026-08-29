@@ -18,8 +18,26 @@ class AppLocalizationsTr extends AppLocalizations {
   String get connectTagline => 'Sana uyan insanlarla tanış.';
 
   @override
-  String get loginSlogan =>
-      'Sadece insanları değil,\nsana uygun insanları keşfet.';
+  String get loginSlogan => 'Sana uygun birini keşfet.';
+
+  @override
+  String get discoverBestMatchesTitle => 'En iyi eşleşmelerin';
+
+  @override
+  String get discoverBestMatchesSubtitle => 'Uyumluluğuna göre seçildi';
+
+  @override
+  String get onboardingUnderstandingMessage =>
+      'Cevapların uyumluluğunu anlamamıza yardımcı olur.';
+
+  @override
+  String get discoveryActionConnect => 'Bağlan';
+
+  @override
+  String get discoveryActionPriorityIntro => 'Öncelikli tanışma';
+
+  @override
+  String get compatScoreHeading => 'Uyumluluk';
 
   @override
   String get continueWithEmail => 'E-posta ile devam et';
@@ -841,10 +859,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get superLike => 'Süper Beğeni';
 
   @override
-  String get itsAMatch => 'Eşleştiniz';
+  String get itsAMatch => 'Güçlü bağlantı';
 
   @override
-  String get youLikedEachOther => 'Birbirinizi beğendiniz!';
+  String get youLikedEachOther => 'Sizinle uyumlu biriyle bağlantı kurdunuz.';
 
   @override
   String get sendMessage => 'Mesaj gönder';
@@ -913,17 +931,32 @@ class AppLocalizationsTr extends AppLocalizations {
   String get maxDistance => 'En fazla mesafe';
 
   @override
-  String get matchesTitle => 'Eşleşmeler';
+  String get matchesTitle => 'Bağlantılarınız';
 
   @override
-  String get matchesEmptyTitle => 'Henüz bir eşleşmen yok.';
+  String get matchesSubtitle =>
+      'Bağlantı kurduğunuz kişiler — uyumluluğa göre sıralı.';
+
+  @override
+  String get matchesEmptyTitle => 'En güçlü bağlantılarınız burada görünecek';
 
   @override
   String get matchesEmptyMessage =>
-      'Karşılıklı beğeniler burada sohbet olarak görünür.';
+      'Biriyle bağlantı kurduğunuzda uyumluluk içgörüleri burada görünür.';
 
   @override
-  String get newMatch => 'Yeni eşleşme';
+  String get newMatch => 'Yeni bağlantı';
+
+  @override
+  String get connectionBadgeNew => 'Yeni bağlantı';
+
+  @override
+  String get connectionBadgeActive => 'Aktif sohbet';
+
+  @override
+  String matchStrongestConnectionLabel(String category) {
+    return 'En güçlü: $category';
+  }
 
   @override
   String get chatHint => 'Mesaj yaz...';
@@ -1819,7 +1852,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get discoveryChangePreferences => 'Keşfetme tercihlerini değiştir';
 
   @override
-  String get itsAMatchHeadline => 'BİR EŞLEŞMENİZ VAR!';
+  String get itsAMatchHeadline => 'Güçlü bağlantı';
+
+  @override
+  String get matchCelebrationLead => 'Güçlü bir bağlantı buldunuz.';
+
+  @override
+  String get matchCelebrationInsight => 'Aranızda neyin uyumlu olduğunu görün.';
 
   @override
   String get demoProfileBadge => 'Örnek';
@@ -1977,11 +2016,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relationshipTestTitle => 'İlişki Testi';
 
   @override
-  String get relationshipTestHeadline => 'Görüşlerine yakın insanları keşfet';
+  String get relationshipTestHeadline => 'Uyumlu bakış açılarını keşfedin';
 
   @override
   String get relationshipTestMessage =>
-      '3 kısa soruyla benzer düşünebilen kişileri gör.';
+      'Benzer düşünen kişileri görmek için birkaç sakin soruyu yanıtlayın.';
 
   @override
   String get relationshipTestStart => 'İlişki Testine Başla';
@@ -2003,13 +2042,26 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relationshipContinueNo => 'Şimdi Değil';
 
   @override
-  String get likesYouTitle => 'Sizi Beğendi';
+  String get likesYouTitle => 'Size uyabilecek kişiler';
 
   @override
-  String get likesYouEntrySubtitle => 'Profilini beğenenleri gör';
+  String get likesYouEntrySubtitle =>
+      'Kimlerle uyumlu olabileceğinizi keşfedin';
 
   @override
-  String get likesYouLockedTitle => 'Biri seni beğendi';
+  String get likesYouInsightSubtitle =>
+      'Bağlanmadan önce uyumluluğu keşfetmek için dokunun.';
+
+  @override
+  String likesYouCompatibilityLabel(int score) {
+    return '%$score Uyumluluk';
+  }
+
+  @override
+  String get likesYouSeeWhy => 'Neden uyumlusunuz?';
+
+  @override
+  String get likesYouLockedTitle => 'Size uyabilecek kişiler';
 
   @override
   String likesYouLockedCount(int count) {
@@ -2018,25 +2070,26 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get likesYouLockedMessage =>
-      'Seni kimin beğendiğini görmek için Premium\'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.';
+      'Size uyabilecek kişileri görmek için Premium\'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.';
 
   @override
   String get likesYouUnlockCta => 'Premium ile aç';
 
   @override
-  String get likesYouBlurredHint => 'Seni beğenenler';
+  String get likesYouBlurredHint => 'Size uyabilecek kişiler';
 
   @override
-  String get likesYouHiddenName => 'Özel biri';
+  String get likesYouHiddenName => 'Gizli profil';
 
   @override
-  String get likesYouHiddenSubtitle => 'Profilini görmek için kilidi aç';
+  String get likesYouHiddenSubtitle => 'Uyumluluğu keşfetmek için kilidi aç';
 
   @override
-  String get likesYouEmptyTitle => 'Henüz yeni beğeni yok';
+  String get likesYouEmptyTitle => 'Keşfetmeye devam edin';
 
   @override
-  String get likesYouEmptyMessage => 'Biri seni beğendiğinde burada görünür.';
+  String get likesYouEmptyMessage =>
+      'Size uyabilecek kişileri burada göstereceğiz.';
 
   @override
   String get likesYouLoadError => 'Beğeniler yüklenemedi. Lütfen tekrar dene.';
@@ -2045,10 +2098,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get relationshipTestDoneTitle => 'İlişki Testin Tamamlandı';
 
   @override
-  String get relationshipTestFound => 'Görüşlerine yakın biri bulundu.';
+  String get relationshipTestFound => 'Benzer yanıt veren biri var.';
 
   @override
-  String get relationshipTestAlign => 'Birkaç konuda benzer görüşleriniz var.';
+  String get relationshipTestAlign => 'Yanıtlarınız ortak konularda örtüşüyor.';
 
   @override
   String get relationshipTestNearest => 'Size en yakın kişi:';

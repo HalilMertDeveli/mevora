@@ -13,9 +13,8 @@ import 'package:mevora/features/discovery/domain/entities/discovery_candidate.da
 import 'package:mevora/features/discovery/presentation/pages/discovery_profile_details_page.dart';
 import 'package:mevora/features/matching/domain/models/incoming_likes.dart';
 import 'package:mevora/features/matching/presentation/controllers/incoming_likes_controller.dart';
+import 'package:mevora/features/matching/presentation/widgets/likes_you_insight_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/images/mevora_network_images.dart';
-import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
@@ -76,7 +75,27 @@ class _LikesYouPageState extends State<LikesYouPage> {
       animation: controller,
       builder: (context, _) {
         return Scaffold(
-          appBar: AppBar(title: Text(l10n.likesYouTitle)),
+          appBar: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.likesYouTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  l10n.likesYouEntrySubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
           body: controller.loading
               ? MevoraLoading.page(message: l10n.likesYouTitle)
               : controller.error != null
@@ -91,7 +110,7 @@ class _LikesYouPageState extends State<LikesYouPage> {
                 )
               : controller.snapshot.items.isEmpty
               ? MevoraEmptyState(
-                  icon: Icons.favorite_outline,
+                  icon: Icons.insights_outlined,
                   title: l10n.likesYouEmptyTitle,
                   message: l10n.likesYouEmptyMessage,
                 )
@@ -102,12 +121,14 @@ class _LikesYouPageState extends State<LikesYouPage> {
                   ),
                   itemCount: controller.snapshot.items.length,
                   separatorBuilder: (_, _) =>
-                      const SizedBox(height: AppSpacing.xs),
+                      const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (context, index) {
                     final item = controller.snapshot.items[index];
-                    return _LikerTile(
+                    return LikesYouInsightCard(
                       item: item,
+                      breakdown: item.breakdown,
                       onTap: () => _openPremiumProfile(context, item),
+                      onConnect: () => _openPremiumProfile(context, item),
                     );
                   },
                 ),
@@ -160,13 +181,16 @@ class _LockedLikesBody extends StatelessWidget {
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: AppColors.premiumGradient,
+                    color: AppColors.softGreen.withValues(alpha: 0.14),
+                    border: Border.all(
+                      color: AppColors.softGreen.withValues(alpha: 0.35),
+                    ),
                   ),
                   child: const Icon(
                     Icons.lock_rounded,
-                    color: Colors.white,
+                    color: AppColors.softGreen,
                     size: 28,
                   ),
                 ),
@@ -248,73 +272,6 @@ class _BlurredLikerCard extends StatelessWidget {
         trailing: Icon(
           Icons.lock_outline,
           color: theme.colorScheme.primary,
-        ),
-      ),
-    );
-  }
-}
-
-class _LikerTile extends StatelessWidget {
-  const _LikerTile({required this.item, required this.onTap});
-
-  final IncomingLikerPreview item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final subtitle = [
-      if (item.age != null && item.age! > 0) '${item.age}',
-      if (item.city != null && item.city!.isNotEmpty) item.city!,
-    ].join(' · ');
-    return MevoraCard(
-      onTap: onTap,
-      child: ListTile(
-        leading: MevoraAvatar(
-          name: item.displayName,
-          image: MevoraNetworkImages.provider(item.photoUrl),
-          size: 52,
-        ),
-        title: Text(item.displayName, style: theme.textTheme.titleMedium),
-        subtitle: subtitle.isEmpty ? null : Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-      ),
-    );
-  }
-}
-
-/// Compact entry card shown on the Matches tab.
-class LikesYouEntryCard extends StatelessWidget {
-  const LikesYouEntryCard({super.key, required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.sm,
-        AppSpacing.md,
-        AppSpacing.xs,
-      ),
-      child: MevoraCard(
-        onTap: onTap,
-        child: ListTile(
-          leading: Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppColors.premiumGradient,
-            ),
-            child: const Icon(Icons.favorite, color: Colors.white, size: 22),
-          ),
-          title: Text(l10n.likesYouTitle, style: theme.textTheme.titleMedium),
-          subtitle: Text(l10n.likesYouEntrySubtitle),
-          trailing: const Icon(Icons.chevron_right),
         ),
       ),
     );

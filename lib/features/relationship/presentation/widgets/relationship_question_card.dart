@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_profile_details_page.dart';
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
@@ -262,7 +263,10 @@ class RelationshipQuestionCard extends StatelessWidget {
                       children: [
                         Text(
                           l10n.relationshipPromptTitle,
-                          style: theme.textTheme.titleMedium,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.secondary,
+                            letterSpacing: 0.4,
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
@@ -472,9 +476,9 @@ class RelationshipTestOfferCard extends StatelessWidget {
                       width: 48,
                       height: 48,
                       semanticsLabel: l10n.relationshipTestTitle,
-                      fallback: Icon(
-                        Icons.favorite_outline,
-                        color: theme.colorScheme.primary,
+                      fallback: const Icon(
+                        Icons.insights_outlined,
+                        color: AppColors.softGreen,
                       ),
                     ),
                   ),
@@ -546,9 +550,9 @@ class RelationshipTestResultCard extends StatelessWidget {
                       width: 48,
                       height: 48,
                       semanticsLabel: l10n.relationshipTestDoneTitle,
-                      fallback: Icon(
-                        Icons.favorite,
-                        color: theme.colorScheme.primary,
+                      fallback: const Icon(
+                        Icons.insights_outlined,
+                        color: AppColors.softGreen,
                       ),
                     ),
                   ),
@@ -569,7 +573,7 @@ class RelationshipTestResultCard extends StatelessWidget {
                     Text(
                       l10n.relationshipTestAlign,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.primary,
+                        color: AppColors.softGreen,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),

@@ -116,11 +116,47 @@ abstract class AppLocalizations {
   /// **'Connect with people who match you.'**
   String get connectTagline;
 
-  /// Welcome/login hero slogan. Keep the line break.
+  /// Welcome/login hero slogan.
   ///
   /// In en, this message translates to:
-  /// **'Don\'t just meet people.\nMeet someone compatible.'**
+  /// **'Meet someone who fits you.'**
   String get loginSlogan;
+
+  /// No description provided for @discoverBestMatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your best matches'**
+  String get discoverBestMatchesTitle;
+
+  /// No description provided for @discoverBestMatchesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected based on your compatibility'**
+  String get discoverBestMatchesSubtitle;
+
+  /// No description provided for @onboardingUnderstandingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers help us understand your compatibility.'**
+  String get onboardingUnderstandingMessage;
+
+  /// No description provided for @discoveryActionConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get discoveryActionConnect;
+
+  /// No description provided for @discoveryActionPriorityIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority intro'**
+  String get discoveryActionPriorityIntro;
+
+  /// No description provided for @compatScoreHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility'**
+  String get compatScoreHeading;
 
   /// No description provided for @continueWithEmail.
   ///
@@ -1649,13 +1685,13 @@ abstract class AppLocalizations {
   /// No description provided for @itsAMatch.
   ///
   /// In en, this message translates to:
-  /// **'It\'s a match'**
+  /// **'Strong connection'**
   String get itsAMatch;
 
   /// No description provided for @youLikedEachOther.
   ///
   /// In en, this message translates to:
-  /// **'You liked each other!'**
+  /// **'You connected with someone who aligns with you.'**
   String get youLikedEachOther;
 
   /// No description provided for @sendMessage.
@@ -1793,26 +1829,50 @@ abstract class AppLocalizations {
   /// No description provided for @matchesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Matches'**
+  /// **'Your connections'**
   String get matchesTitle;
+
+  /// No description provided for @matchesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People you\'ve connected with — ranked by compatibility.'**
+  String get matchesSubtitle;
 
   /// No description provided for @matchesEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No matches yet'**
+  /// **'Your strongest connections will appear here'**
   String get matchesEmptyTitle;
 
   /// No description provided for @matchesEmptyMessage.
   ///
   /// In en, this message translates to:
-  /// **'When you like each other, the conversation starts here.'**
+  /// **'When you connect with someone, compatibility insights will show here.'**
   String get matchesEmptyMessage;
 
   /// No description provided for @newMatch.
   ///
   /// In en, this message translates to:
-  /// **'New match'**
+  /// **'New connection'**
   String get newMatch;
+
+  /// No description provided for @connectionBadgeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New connection'**
+  String get connectionBadgeNew;
+
+  /// No description provided for @connectionBadgeActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active conversation'**
+  String get connectionBadgeActive;
+
+  /// No description provided for @matchStrongestConnectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Strongest in {category}'**
+  String matchStrongestConnectionLabel(String category);
 
   /// No description provided for @chatHint.
   ///
@@ -3461,8 +3521,20 @@ abstract class AppLocalizations {
   /// No description provided for @itsAMatchHeadline.
   ///
   /// In en, this message translates to:
-  /// **'IT\'S A MATCH'**
+  /// **'Strong connection'**
   String get itsAMatchHeadline;
+
+  /// No description provided for @matchCelebrationLead.
+  ///
+  /// In en, this message translates to:
+  /// **'You found a strong connection.'**
+  String get matchCelebrationLead;
+
+  /// No description provided for @matchCelebrationInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'See what aligns between you.'**
+  String get matchCelebrationInsight;
 
   /// No description provided for @demoProfileBadge.
   ///
@@ -3737,13 +3809,13 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipTestHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Discover people who share your views'**
+  /// **'Discover aligned perspectives'**
   String get relationshipTestHeadline;
 
   /// No description provided for @relationshipTestMessage.
   ///
   /// In en, this message translates to:
-  /// **'Answer 3 short questions to see people who may think similarly.'**
+  /// **'Answer a few calm questions to see who may think similarly.'**
   String get relationshipTestMessage;
 
   /// No description provided for @relationshipTestStart.
@@ -3785,19 +3857,37 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouTitle.
   ///
   /// In en, this message translates to:
-  /// **'Likes you'**
+  /// **'People who may fit you'**
   String get likesYouTitle;
 
   /// No description provided for @likesYouEntrySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'See who liked your profile'**
+  /// **'Explore who may align with you'**
   String get likesYouEntrySubtitle;
+
+  /// No description provided for @likesYouInsightSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to explore compatibility before you connect.'**
+  String get likesYouInsightSubtitle;
+
+  /// No description provided for @likesYouCompatibilityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}% Compatibility'**
+  String likesYouCompatibilityLabel(int score);
+
+  /// No description provided for @likesYouSeeWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'See why you match'**
+  String get likesYouSeeWhy;
 
   /// No description provided for @likesYouLockedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Someone likes you'**
+  /// **'People who may fit you'**
   String get likesYouLockedTitle;
 
   /// No description provided for @likesYouLockedCount.
@@ -3809,7 +3899,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouLockedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Upgrade to Premium to see who liked you. Photos and names stay hidden until then.'**
+  /// **'Upgrade to Premium to see who may align with you. Photos and names stay hidden until then.'**
   String get likesYouLockedMessage;
 
   /// No description provided for @likesYouUnlockCta.
@@ -3821,31 +3911,31 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouBlurredHint.
   ///
   /// In en, this message translates to:
-  /// **'People who liked you'**
+  /// **'People who may fit you'**
   String get likesYouBlurredHint;
 
   /// No description provided for @likesYouHiddenName.
   ///
   /// In en, this message translates to:
-  /// **'Someone special'**
+  /// **'Hidden profile'**
   String get likesYouHiddenName;
 
   /// No description provided for @likesYouHiddenSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Unlock to see their profile'**
+  /// **'Unlock to explore compatibility'**
   String get likesYouHiddenSubtitle;
 
   /// No description provided for @likesYouEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No new likes yet'**
+  /// **'Keep exploring'**
   String get likesYouEmptyTitle;
 
   /// No description provided for @likesYouEmptyMessage.
   ///
   /// In en, this message translates to:
-  /// **'When someone likes you, they\'ll show up here.'**
+  /// **'We\'ll surface people who may fit you here.'**
   String get likesYouEmptyMessage;
 
   /// No description provided for @likesYouLoadError.
@@ -3863,13 +3953,13 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipTestFound.
   ///
   /// In en, this message translates to:
-  /// **'We found someone whose views match yours.'**
+  /// **'Someone answered in a similar way.'**
   String get relationshipTestFound;
 
   /// No description provided for @relationshipTestAlign.
   ///
   /// In en, this message translates to:
-  /// **'Your answers overlap on several topics.'**
+  /// **'Your answers overlap on shared topics.'**
   String get relationshipTestAlign;
 
   /// No description provided for @relationshipTestNearest.

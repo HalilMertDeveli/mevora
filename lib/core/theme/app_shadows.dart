@@ -5,10 +5,9 @@ abstract final class AppShadows {
     final isDark = brightness == Brightness.dark;
     return [
       BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-        blurRadius: isDark ? 16 : 16,
-        offset: Offset(0, isDark ? 6 : 6),
-        spreadRadius: isDark ? 0 : -1,
+        color: const Color(0xFF101828).withValues(alpha: isDark ? 0.35 : 0.06),
+        blurRadius: 8,
+        offset: const Offset(0, 2),
       ),
     ];
   }
@@ -17,9 +16,9 @@ abstract final class AppShadows {
     final isDark = brightness == Brightness.dark;
     return [
       BoxShadow(
-        color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-        blurRadius: isDark ? 28 : 20,
-        offset: Offset(0, isDark ? 16 : 10),
+        color: const Color(0xFF101828).withValues(alpha: isDark ? 0.35 : 0.08),
+        blurRadius: 24,
+        offset: const Offset(0, 8),
       ),
     ];
   }

@@ -37,6 +37,7 @@ import {musicScoreForPair} from "./spotifyMusic.js";
 import {relationshipScoreForPair} from "./relationshipMatch.js";
 import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
 import {calculateCompatibility} from "./compatibility/compatibilityEngine.js";
+import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
 import {passesSmokeDiscoveryIsolation} from "./smoke/smokeTestUsers.js";
 import {
   cleanupOldCalls,
@@ -518,12 +519,15 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   }
   const matchId = [uid, candidateUid].sort().join("_");
   const matchRef = db.doc(`matches/${matchId}`);
+  let wroteMatch = false;
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(matchRef);
     if (snap.exists && snap.data()?.isActive === true) {
+      wroteMatch = false;
       return;
     }
     const existing = snap.data();
+    wroteMatch = true;
     tx.set(matchRef, {
       userIds: [uid, candidateUid].sort(),
       createdAt: existing?.createdAt ?? FieldValue.serverTimestamp(),
@@ -537,6 +541,12 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
       ...preservedMatchScoreFields(existing),
     });
   });
+  if (wroteMatch) {
+    const fields = await buildMatchCompatibilityFields(uid, candidateUid);
+    if (Object.keys(fields).length > 0) {
+      await matchRef.set(fields, {merge: true});
+    }
+  }
   return {matched: true, matchId};
 });
 

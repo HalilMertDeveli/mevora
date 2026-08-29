@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_motion_size.dart';
 import 'package:mevora/shared/animations/mevora_rive_animation.dart';
@@ -10,7 +11,7 @@ import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
-/// Match moment: portraits meet, then copy and actions stay on screen.
+/// Match moment: connection-first celebration with optional compatibility reveal.
 class MevoraMatchCelebration extends StatefulWidget {
   const MevoraMatchCelebration({
     super.key,
@@ -46,6 +47,7 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
   late final AnimationController _controller;
   late final Animation<double> _approach;
   late final Animation<double> _labelOpacity;
+  late final Animation<double> _scale;
   bool _showRive = false;
 
   @override
@@ -61,9 +63,14 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
     );
     _labelOpacity = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.5, 1, curve: Curves.easeOut),
+      curve: const Interval(0.45, 1, curve: Curves.easeOut),
     );
-    // Defer Rive decode one frame so first paint stays responsive.
+    _scale = Tween<double>(begin: 0.96, end: 1).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.45, 1, curve: Curves.easeOutCubic),
+      ),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -90,9 +97,9 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
     final riveSize = MevoraMotionSize.celebration(context);
     final avatarSize = MevoraMotionSize.accent(context) * 0.85;
     final riveFallback = Icon(
-      Icons.favorite_rounded,
+      Icons.insights_outlined,
       size: (riveSize * 0.45).clamp(28, 48),
-      color: theme.colorScheme.primary,
+      color: AppColors.softGreen,
     );
 
     return SafeArea(
@@ -110,7 +117,7 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
                     width: riveSize,
                     height: riveSize * 0.78,
                     fit: BoxFit.contain,
-                    semanticsLabel: l10n.itsAMatchHeadline,
+                    semanticsLabel: l10n.matchCelebrationLead,
                     fallback: riveFallback,
                   )
                 else
@@ -139,40 +146,47 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
                 const SizedBox(height: AppSpacing.lg),
                 Opacity(
                   opacity: _labelOpacity.value,
-                  child: Column(
-                    children: [
-                      Text(
-                        l10n.itsAMatchHeadline,
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          letterSpacing: 1.2,
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w700,
+                  child: Transform.scale(
+                    scale: _scale.value,
+                    child: Column(
+                      children: [
+                        Text(
+                          l10n.matchCelebrationLead,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        l10n.itsAMatch,
-                        style: theme.textTheme.titleLarge,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        l10n.youLikedEachOther,
-                        style: theme.textTheme.bodyLarge,
-                        textAlign: TextAlign.center,
-                      ),
-                      if (widget.compatibilitySection != null) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        widget.compatibilitySection!,
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          l10n.itsAMatchHeadline,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: AppColors.softGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          l10n.matchCelebrationInsight,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (widget.compatibilitySection != null) ...[
+                          const SizedBox(height: AppSpacing.lg),
+                          widget.compatibilitySection!,
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 if (widget.onSendMessage != null)
                   MevoraButton(
-                    label: l10n.sendMessage,
+                    label: l10n.startChat,
                     onPressed: widget.onSendMessage,
                   ),
                 if (widget.onViewAnswers != null) ...[

@@ -4,92 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/social_scope.dart';
-import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/routing/app_routes.dart';
-import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
-import 'package:mevora/features/matching/presentation/pages/likes_you_page.dart';
+import 'package:mevora/features/matching/presentation/widgets/likes_you_insight_card.dart';
+import 'package:mevora/features/matching/presentation/widgets/match_connection_tile.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
-import 'package:mevora/shared/images/mevora_network_images.dart';
-import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
-
-class MatchListTile extends StatelessWidget {
-  const MatchListTile({
-    super.key,
-    required this.item,
-    required this.currentUid,
-    this.showOnlineIndicator = false,
-    this.onTap,
-  });
-
-  final MatchListItem item;
-  final String currentUid;
-  final bool showOnlineIndicator;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final unread = item.unreadCount(currentUid);
-    final isNew = item.showNewMatchBadge;
-    final photo = item.photoUrl;
-    return ListTile(
-      onTap: onTap,
-      leading: MevoraAvatar(
-        name: item.name,
-        image: MevoraNetworkImages.provider(photo),
-        size: 56,
-        isVerified: item.isVerified,
-        showOnlineIndicator: showOnlineIndicator,
-      ),
-      title: Text(item.name, style: theme.textTheme.titleMedium),
-      subtitle: Text(
-        [
-          if (item.match.isRelationshipTest) l10n.relationshipMatchBadge,
-          isNew ? l10n.newMatch : (item.match.lastMessage ?? ''),
-        ].where((part) => part.isNotEmpty).join(' · '),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            L10nFormat.compactDate(
-              l10n,
-              item.match.occurredAt,
-            ),
-            style: theme.textTheme.labelSmall,
-          ),
-          if (unread > 0) ...[
-            const SizedBox(height: 6),
-            CircleAvatar(
-              radius: 10,
-              child: Text('$unread', style: theme.textTheme.labelSmall),
-            ),
-          ] else if (isNew) ...[
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(l10n.newMatch, style: theme.textTheme.labelSmall),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 class MatchesRoutePage extends StatelessWidget {
   const MatchesRoutePage({super.key});
@@ -145,7 +69,27 @@ class _MatchesPageState extends State<MatchesPage> {
         final uid = controller.uid;
         final l10n = AppLocalizations.of(context);
         return Scaffold(
-          appBar: AppBar(title: Text(l10n.matchesTitle)),
+          appBar: AppBar(
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.matchesTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  l10n.matchesSubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
           body: uid == null
               ? MevoraEmptyState(message: l10n.needSignIn)
               : controller.loading
@@ -163,7 +107,7 @@ class _MatchesPageState extends State<MatchesPage> {
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     MevoraEmptyState(
-                      icon: Icons.favorite_outline,
+                      icon: Icons.insights_outlined,
                       riveAsset: MevoraRiveAssets.emptyMatches,
                       title: l10n.matchesEmptyTitle,
                       message: l10n.matchesEmptyMessage,
@@ -177,9 +121,10 @@ class _MatchesPageState extends State<MatchesPage> {
                       onTap: () => context.push(AppRoutes.likesYou),
                     ),
                     ...controller.items.map(
-                      (item) => MatchListTile(
+                      (item) => MatchConnectionTile(
                         item: item,
                         currentUid: uid,
+                        breakdown: item.breakdown,
                         showOnlineIndicator:
                             controller.presenceFor(item.otherUserId) ==
                             PresenceStatus.online,
@@ -194,3 +139,6 @@ class _MatchesPageState extends State<MatchesPage> {
     );
   }
 }
+
+/// Legacy export kept for tests referencing [MatchListTile].
+typedef MatchListTile = MatchConnectionTile;

@@ -3,7 +3,13 @@
   "appName": "Mevora",
   "tagline": "Sadece yakındakileri değil, uyumlu insanları bul.",
   "connectTagline": "Sana uyan insanlarla tanış.",
-  "loginSlogan": "Sadece insanları değil,\nsana uygun insanları keşfet.",
+  "loginSlogan": "Sana uygun birini keşfet.",
+  "discoverBestMatchesTitle": "En iyi eşleşmelerin",
+  "discoverBestMatchesSubtitle": "Uyumluluğuna göre seçildi",
+  "onboardingUnderstandingMessage": "Cevapların uyumluluğunu anlamamıza yardımcı olur.",
+  "discoveryActionConnect": "Bağlan",
+  "discoveryActionPriorityIntro": "Öncelikli tanışma",
+  "compatScoreHeading": "Uyumluluk",
   "@loginSlogan": {
     "description": "Welcome/login hero slogan. Keep the line break."
   },
@@ -340,8 +346,8 @@
   "like": "Beğen",
   "pass": "Geç",
   "superLike": "Süper Beğeni",
-  "itsAMatch": "Eşleştiniz",
-  "youLikedEachOther": "Birbirinizi beğendiniz!",
+  "itsAMatch": "Güçlü bağlantı",
+  "youLikedEachOther": "Sizinle uyumlu biriyle bağlantı kurdunuz.",
   "sendMessage": "Mesaj gönder",
   "startChat": "Merhaba de",
   "keepSwiping": "Keşfetmeye devam et",
@@ -364,10 +370,21 @@
   "minAge": "En düşük yaş",
   "maxAge": "En yüksek yaş",
   "maxDistance": "En fazla mesafe",
-  "matchesTitle": "Eşleşmeler",
-  "matchesEmptyTitle": "Henüz bir eşleşmen yok.",
-  "matchesEmptyMessage": "Karşılıklı beğeniler burada sohbet olarak görünür.",
-  "newMatch": "Yeni eşleşme",
+  "matchesTitle": "Bağlantılarınız",
+  "matchesSubtitle": "Bağlantı kurduğunuz kişiler — uyumluluğa göre sıralı.",
+  "matchesEmptyTitle": "En güçlü bağlantılarınız burada görünecek",
+  "matchesEmptyMessage": "Biriyle bağlantı kurduğunuzda uyumluluk içgörüleri burada görünür.",
+  "newMatch": "Yeni bağlantı",
+  "connectionBadgeNew": "Yeni bağlantı",
+  "connectionBadgeActive": "Aktif sohbet",
+  "matchStrongestConnectionLabel": "En güçlü: {category}",
+  "@matchStrongestConnectionLabel": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
   "chatHint": "Mesaj yaz...",
   "chatEmptyTitle": "Henüz mesaj yok",
   "chatEmptyMessage": "İlk mesajı sen gönder.",
@@ -750,7 +767,9 @@
   "discoveryLoadErrorTitle": "Profilleri yüklerken bir sorun oluştu.",
   "discoveryLoadErrorMessage": "Bağlantını kontrol et ve tekrar dene.",
   "discoveryChangePreferences": "Keşfetme tercihlerini değiştir",
-  "itsAMatchHeadline": "BİR EŞLEŞMENİZ VAR!",
+  "itsAMatchHeadline": "Güçlü bağlantı",
+  "matchCelebrationLead": "Güçlü bir bağlantı buldunuz.",
+  "matchCelebrationInsight": "Aranızda neyin uyumlu olduğunu görün.",
   "demoProfileBadge": "Örnek",
   "sharedHobbiesCount": "{count} ortak hobi",
   "@sharedHobbiesCount": {
@@ -834,17 +853,27 @@
   "relationshipPromptTitle": "İlişkiler hakkında ne düşünüyorsun?",
   "relationshipQuestionsPreparing": "Yeni sorular hazırlanıyor. Lütfen biraz sonra tekrar deneyin.",
   "relationshipTestTitle": "İlişki Testi",
-  "relationshipTestHeadline": "Görüşlerine yakın insanları keşfet",
-  "relationshipTestMessage": "3 kısa soruyla benzer düşünebilen kişileri gör.",
+  "relationshipTestHeadline": "Uyumlu bakış açılarını keşfedin",
+  "relationshipTestMessage": "Benzer düşünen kişileri görmek için birkaç sakin soruyu yanıtlayın.",
   "relationshipTestStart": "İlişki Testine Başla",
   "relationshipTestLater": "Daha Sonra",
   "relationshipContinueTitle": "Eşleşmeye devam etmek ister misin?",
   "relationshipContinueMessage": "5 eşleşme turunu tamamladın. Aynı cevaplara sahip insanları bulmaya devam etmek ister misin?",
   "relationshipContinueYes": "Devam Et",
   "relationshipContinueNo": "Şimdi Değil",
-  "likesYouTitle": "Sizi Beğendi",
-  "likesYouEntrySubtitle": "Profilini beğenenleri gör",
-  "likesYouLockedTitle": "Biri seni beğendi",
+  "likesYouTitle": "Size uyabilecek kişiler",
+  "likesYouEntrySubtitle": "Kimlerle uyumlu olabileceğinizi keşfedin",
+  "likesYouInsightSubtitle": "Bağlanmadan önce uyumluluğu keşfetmek için dokunun.",
+  "likesYouCompatibilityLabel": "%{score} Uyumluluk",
+  "@likesYouCompatibilityLabel": {
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "likesYouSeeWhy": "Neden uyumlusunuz?",
+  "likesYouLockedTitle": "Size uyabilecek kişiler",
   "likesYouLockedCount": "{count} kişi seni beğendi",
   "@likesYouLockedCount": {
     "placeholders": {
@@ -853,17 +882,17 @@
       }
     }
   },
-  "likesYouLockedMessage": "Seni kimin beğendiğini görmek için Premium'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.",
+  "likesYouLockedMessage": "Size uyabilecek kişileri görmek için Premium'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.",
   "likesYouUnlockCta": "Premium ile aç",
-  "likesYouBlurredHint": "Seni beğenenler",
-  "likesYouHiddenName": "Özel biri",
-  "likesYouHiddenSubtitle": "Profilini görmek için kilidi aç",
-  "likesYouEmptyTitle": "Henüz yeni beğeni yok",
-  "likesYouEmptyMessage": "Biri seni beğendiğinde burada görünür.",
+  "likesYouBlurredHint": "Size uyabilecek kişiler",
+  "likesYouHiddenName": "Gizli profil",
+  "likesYouHiddenSubtitle": "Uyumluluğu keşfetmek için kilidi aç",
+  "likesYouEmptyTitle": "Keşfetmeye devam edin",
+  "likesYouEmptyMessage": "Size uyabilecek kişileri burada göstereceğiz.",
   "likesYouLoadError": "Beğeniler yüklenemedi. Lütfen tekrar dene.",
   "relationshipTestDoneTitle": "İlişki Testin Tamamlandı",
-  "relationshipTestFound": "Görüşlerine yakın biri bulundu.",
-  "relationshipTestAlign": "Birkaç konuda benzer görüşleriniz var.",
+  "relationshipTestFound": "Benzer yanıt veren biri var.",
+  "relationshipTestAlign": "Yanıtlarınız ortak konularda örtüşüyor.",
   "relationshipTestNearest": "Size en yakın kişi:",
   "relationshipTestEmpty": "Şu an yakınında benzer düşünen kimse yok.",
   "relationshipTestViewProfile": "Profili Gör",

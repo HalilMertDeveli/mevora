@@ -45,7 +45,8 @@ void main() {
     );
     expect(find.text('Elif, 26'), findsOneWidget);
     expect(find.text('Istanbul'), findsOneWidget);
-    expect(find.text(_en.compatDiscoverBadge(88)), findsOneWidget);
+    expect(find.text('88%'), findsOneWidget);
+    expect(find.text(_en.compatScoreHeading), findsOneWidget);
     expect(find.text('Coffee lover'), findsOneWidget);
   });
 
@@ -62,7 +63,7 @@ void main() {
     await tester.pumpWidget(wrap(DiscoveryPage(controller: controller)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.tap(find.text(_en.pass));
     await tester.pumpAndSettle();
     expect(discovery.passed, isNotEmpty);
   });

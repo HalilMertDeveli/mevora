@@ -71,7 +71,8 @@ class MevoraButton extends StatelessWidget {
             )
           : Row(
               key: const ValueKey('label'),
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: isExpanded ? MainAxisSize.max : MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: wrapLabel
                   ? CrossAxisAlignment.start
                   : CrossAxisAlignment.center,
@@ -80,17 +81,30 @@ class MevoraButton extends StatelessWidget {
                   Icon(icon, size: iconSize),
                   const SizedBox(width: 8),
                 ],
-                Flexible(
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: resolvedMaxLines,
-                    overflow: wrapLabel
-                        ? TextOverflow.visible
-                        : TextOverflow.ellipsis,
-                    softWrap: true,
+                if (isExpanded)
+                  Expanded(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: resolvedMaxLines,
+                      overflow: wrapLabel
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
+                      softWrap: true,
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: resolvedMaxLines,
+                      overflow: wrapLabel
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
+                      softWrap: true,
+                    ),
                   ),
-                ),
               ],
             ),
     );

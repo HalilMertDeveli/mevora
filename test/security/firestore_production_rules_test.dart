@@ -114,6 +114,45 @@ void main() {
     });
   });
 
+  group('match compatibility snapshot immutability', () {
+    test('clients cannot mutate compatibilitySnapshots or calculatedAt', () {
+      expect(rules.contains("compatibilitySnapshots"), isTrue);
+      expect(rules.contains("compatibilityCalculatedAt"), isTrue);
+      expect(
+        rules.contains(
+          "request.resource.data.get('compatibilitySnapshots', resource.data.get('compatibilitySnapshots', null))",
+        ),
+        isTrue,
+      );
+      expect(
+        rules.contains(
+          "request.resource.data.get('compatibilityCalculatedAt', resource.data.get('compatibilityCalculatedAt', null))",
+        ),
+        isTrue,
+      );
+    });
+
+    test('clients cannot inject legacy compatibilityScore fields', () {
+      expect(
+        rules.contains(
+          "request.resource.data.get('compatibilityScore', resource.data.get('compatibilityScore', null))",
+        ),
+        isTrue,
+      );
+      expect(
+        rules.contains(
+          "request.resource.data.get('compatibilityBreakdown', resource.data.get('compatibilityBreakdown', null))",
+        ),
+        isTrue,
+      );
+    });
+
+    test('match create remains server-only', () {
+      expect(rules.contains('match /matches/{matchId}'), isTrue);
+      expect(rules.contains('allow create, delete: if false'), isTrue);
+    });
+  });
+
   group('humor lab isolation', () {
     test('humor summary and interactions are owner-read CF-write only', () {
       expect(rules.contains('match /humor/{docId}'), isTrue);

@@ -1,3 +1,6 @@
+import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_snapshot.dart';
+
 class IncomingLikerPreview {
   const IncomingLikerPreview({
     required this.uid,
@@ -7,6 +10,7 @@ class IncomingLikerPreview {
     this.city,
     this.action = 'like',
     this.createdAt,
+    this.compatibility,
   });
 
   final String uid;
@@ -16,6 +20,9 @@ class IncomingLikerPreview {
   final String? city;
   final String action;
   final DateTime? createdAt;
+  final CompatibilitySnapshot? compatibility;
+
+  CompatibilityBreakdown? get breakdown => compatibility?.breakdown;
 }
 
 /// Server-shaped payload from [getIncomingLikes].

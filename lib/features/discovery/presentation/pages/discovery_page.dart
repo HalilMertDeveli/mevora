@@ -201,7 +201,25 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     }
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.appName),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.discoverBestMatchesTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              l10n.discoverBestMatchesSubtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: l10n.discoveryFiltersTitle,
@@ -372,7 +390,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         );
       }
       return MevoraEmptyState(
-        icon: Icons.favorite_outline_rounded,
+        icon: Icons.insights_outlined,
         riveAsset: MevoraRiveAssets.emptyProfiles,
         title: l10n.discoveryEmptyTitle,
         message: l10n.discoveryEmptyMessage,

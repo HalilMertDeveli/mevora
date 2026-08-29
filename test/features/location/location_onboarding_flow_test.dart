@@ -122,7 +122,7 @@ void main() {
     );
 
     expect(find.text(l10n.locationPermissionTitle), findsNothing);
-    expect(find.text('Mevora'), findsWidgets);
+    expect(find.text(l10n.discoverBestMatchesTitle), findsOneWidget);
   });
 
   testWidgets('existing user without location sees the flow once then skips', (

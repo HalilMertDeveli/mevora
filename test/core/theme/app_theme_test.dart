@@ -7,18 +7,18 @@ import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/core/theme/app_typography.dart';
 
 void main() {
-  test('light and dark themes use Mevora brand colors', () {
+  test('light and dark themes use Mevora 2.0 brand colors', () {
     final light = AppTheme.light();
     final dark = AppTheme.dark();
 
     expect(light.useMaterial3, isTrue);
     expect(dark.useMaterial3, isTrue);
-    expect(light.colorScheme.primary, AppColors.rose);
-    expect(light.colorScheme.surface, AppColors.canvas);
-    expect(light.scaffoldBackgroundColor, AppColors.canvas);
-    expect(dark.colorScheme.primary, AppColors.blossom);
-    expect(light.colorScheme.secondary, AppColors.peach);
-    expect(light.colorScheme.tertiary, AppColors.moss);
+    expect(light.colorScheme.primary, AppColors.amber);
+    expect(light.colorScheme.surface, AppColors.warmCream);
+    expect(light.scaffoldBackgroundColor, AppColors.warmCream);
+    expect(dark.colorScheme.primary, AppColors.amber);
+    expect(light.colorScheme.secondary, AppColors.deepNavy);
+    expect(light.colorScheme.tertiary, AppColors.softGreen);
     expect(light.appBarTheme.elevation, AppElevation.none);
     expect(light.filledButtonTheme.style?.elevation?.resolve({}), 0);
     expect(light.textTheme.titleLarge?.fontFamily, AppTypography.fontFamily);

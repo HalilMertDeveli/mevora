@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
 
 class DiscoveryActionButtons extends StatelessWidget {
   const DiscoveryActionButtons({
@@ -20,82 +20,50 @@ class DiscoveryActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _ActionCircle(
-          icon: Icons.close_rounded,
-          color: AppColors.error,
-          tooltip: l10n.pass,
-          onPressed: enabled ? onPass : null,
-          size: 56,
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        _ActionCircle(
-          icon: Icons.star_rounded,
-          color: AppColors.softPurple,
-          tooltip: l10n.superLike,
-          onPressed: enabled ? onSuperLike : null,
-          size: 64,
-        ),
-        const SizedBox(width: AppSpacing.lg),
-        _ActionCircle(
-          icon: Icons.favorite_rounded,
-          color: AppColors.accentPrimary,
-          tooltip: l10n.like,
-          onPressed: enabled ? onLike : null,
-          size: 56,
-        ),
-      ],
-    );
-  }
-}
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 400 || textScale > 1.15;
+        final size =
+            compact ? MevoraButtonSize.small : MevoraButtonSize.medium;
+        final connectFlex = compact ? 1 : 2;
+        final spacing = compact ? AppSpacing.xs : AppSpacing.sm;
 
-class _ActionCircle extends StatelessWidget {
-  const _ActionCircle({
-    required this.icon,
-    required this.color,
-    required this.tooltip,
-    required this.onPressed,
-    required this.size,
-  });
-
-  final IconData icon;
-  final Color color;
-  final String tooltip;
-  final VoidCallback? onPressed;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: theme.colorScheme.surfaceContainerLowest,
-        elevation: onPressed == null ? 0 : 1,
-        shadowColor: color.withValues(alpha: 0.18),
-        shape: CircleBorder(
-          side: BorderSide(
-            color: theme.brightness == Brightness.dark
-                ? color.withValues(alpha: 0.35)
-                : theme.colorScheme.outline,
-          ),
-        ),
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(
-              icon,
-              color: onPressed == null ? theme.disabledColor : color,
-              size: size * 0.42,
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: MevoraButton(
+                label: l10n.pass,
+                variant: MevoraButtonVariant.secondary,
+                size: size,
+                wrapLabel: compact,
+                onPressed: enabled ? onPass : null,
+              ),
             ),
-          ),
-        ),
-      ),
+            SizedBox(width: spacing),
+            Expanded(
+              child: MevoraButton(
+                label: l10n.discoveryActionPriorityIntro,
+                variant: MevoraButtonVariant.ghost,
+                size: size,
+                wrapLabel: compact,
+                onPressed: enabled ? onSuperLike : null,
+              ),
+            ),
+            SizedBox(width: spacing),
+            Expanded(
+              flex: connectFlex,
+              child: MevoraButton(
+                label: l10n.discoveryActionConnect,
+                size: size,
+                wrapLabel: compact,
+                onPressed: enabled ? onLike : null,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

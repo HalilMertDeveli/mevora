@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_motion_size.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
 class OnboardingStepScaffold extends StatelessWidget {
@@ -37,47 +34,42 @@ class OnboardingStepScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    // Selective accents only — avoid a Rive instance on every wizard step.
-    final asset =
-        riveAsset ??
-        switch (step) {
-          OnboardingStep.photos => MevoraRiveAssets.photoUpload,
-          OnboardingStep.relationshipGoal =>
-            MevoraRiveAssets.onboardingComplete,
-          OnboardingStep.complete => null,
-          _ => null,
-        };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: step.displayStep / OnboardingStep.totalSteps,
+            minHeight: 4,
+            backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.35),
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
         Text(
           l10n.onboardingStepProgress(
             step.displayStep,
             OnboardingStep.totalSteps,
           ),
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.primary,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        Text(title, style: theme.textTheme.headlineSmall),
-        if (asset != null && !MevoraRiveAnimation.isTestBinding) ...[
-          const SizedBox(height: AppSpacing.md),
-          Center(
-            child: Builder(
-              builder: (context) {
-                final size = MevoraMotionSize.loading(context);
-                return MevoraRiveAnimation(
-                  asset: asset,
-                  width: size,
-                  height: size,
-                  fallback: Icon(
-                    Icons.auto_awesome_outlined,
-                    size: 32,
-                    color: theme.colorScheme.primary,
-                  ),
-                );
-              },
+        Text(
+          title,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        if (step == OnboardingStep.basicInfo) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.onboardingUnderstandingMessage,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.45,
             ),
           ),
         ],

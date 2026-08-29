@@ -127,17 +127,17 @@ class AdMobInterstitialHumorAdService implements HumorAdService {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (_) {},
       onAdDismissedFullScreenContent: (dismissed) {
-        dismissed.dispose();
+        unawaited(dismissed.dispose());
         if (!shown.isCompleted) {
           shown.complete(HumorAdResult.completedOk);
         }
         unawaited(preload());
       },
       onAdFailedToShowFullScreenContent: (failed, error) {
-        failed.dispose();
+        unawaited(failed.dispose());
         if (!shown.isCompleted) {
           shown.complete(
-            HumorAdResult(
+            const HumorAdResult(
               completed: false,
               failed: true,
               errorCode: 'show_failed',
@@ -151,7 +151,7 @@ class AdMobInterstitialHumorAdService implements HumorAdService {
     try {
       await ad.show();
     } catch (_) {
-      ad.dispose();
+      unawaited(ad.dispose());
       return const HumorAdResult(
         completed: false,
         failed: true,
@@ -162,7 +162,10 @@ class AdMobInterstitialHumorAdService implements HumorAdService {
     return shown.future.timeout(
       const Duration(minutes: 3),
       onTimeout: () {
-        ad?.dispose();
+        final pending = ad;
+        if (pending != null) {
+          unawaited(pending.dispose());
+        }
         return const HumorAdResult(
           completed: false,
           failed: true,
@@ -173,7 +176,10 @@ class AdMobInterstitialHumorAdService implements HumorAdService {
   }
 
   void dispose() {
-    _preloaded?.dispose();
+    final pending = _preloaded;
     _preloaded = null;
+    if (pending != null) {
+      unawaited(pending.dispose());
+    }
   }
 }

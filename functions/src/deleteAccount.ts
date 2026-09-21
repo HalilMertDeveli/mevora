@@ -6,6 +6,14 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
 import {safeLogMeta} from "./security/logHygiene.js";
+import {
+  MAX_MATCHES_PER_PASS,
+  anonymizeDeletedUserMessages,
+  clearLastMessagePreviewIfAuthored,
+  deleteSupportAttachmentsForUser,
+  deleteUserScopedRemnants,
+  flagModerationRecordsForDeletedUser,
+} from "./automation/accountDataCleanup.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -49,6 +57,10 @@ async function deletePrefix(prefix: string): Promise<void> {
   } catch (error) {
     logger.warn("Storage cleanup skipped", safeLogMeta({prefix, error: String(error)}));
   }
+}
+
+function bucketForCleanup() {
+  return getStorage().bucket();
 }
 
 /// True account deletion: Auth user + Firestore + Storage. isActive=false is not enough.
@@ -97,16 +109,20 @@ export const deleteUserAccount = onCall(
     const presenceRef = db.doc(`users/${uid}/presence/current`);
     await presenceRef.delete().catch(() => undefined);
 
-    const matches = await db.collection("matches").where("userIds", "array-contains", uid).get();
+    // DL-2: the peer is a party to this conversation too. Only the departing
+    // user's own messages are erased (tombstoned in place); the peer's are left
+    // untouched, and the match resolves to an anonymized deleted-user state.
+    const matches = await db
+      .collection("matches")
+      .where("userIds", "array-contains", uid)
+      .limit(MAX_MATCHES_PER_PASS)
+      .get();
     for (const match of matches.docs) {
-      const [messages, meta] = await Promise.all([
-        match.ref.collection("messages").get(),
-        match.ref.collection("meta").get(),
-      ]);
-      await batchDelete([
-        ...messages.docs.map((d) => d.ref),
-        ...meta.docs.map((d) => d.ref),
-      ]);
+      await anonymizeDeletedUserMessages(db, uid, match.ref);
+      await clearLastMessagePreviewIfAuthored(uid, match.ref);
+      // Typing indicators only — ephemeral, owned by neither party's history.
+      const meta = await match.ref.collection("meta").get();
+      await batchDelete(meta.docs.map((d) => d.ref));
       await match.ref.set(
         {
           isActive: false,
@@ -120,8 +136,13 @@ export const deleteUserAccount = onCall(
       );
     }
 
-    await deleteQuery("reports", "reporterId", uid);
-    await deleteQuery("reports", "reportedUserId", uid);
+    // DL-3: reports are moderation evidence — retained and flagged, never deleted
+    // with the account they concern. See accountDataCleanup for the reasoning.
+    await flagModerationRecordsForDeletedUser(db, uid);
+
+    // Support attachments live outside the users/ and profiles/ prefixes, so they
+    // need ownership-resolved cleanup before the ticket documents are removed.
+    const support = await deleteSupportAttachmentsForUser(db, bucketForCleanup(), uid);
     await deleteQuery("supportTickets", "userId", uid);
     await deleteQuery("blocks", "blockerId", uid);
     await deleteQuery("blocks", "blockedUserId", uid);
@@ -141,6 +162,8 @@ export const deleteUserAccount = onCall(
       ...failedNotifs.docs.map((d) => d.ref),
       db.doc(`adminReviewQueue/${uid}`),
     ]);
+
+    await deleteUserScopedRemnants(db, uid);
 
     await deletePrefix(`users/${uid}/`);
     await deletePrefix(`profiles/${uid}/`);
@@ -170,19 +193,36 @@ export const deleteUserAccount = onCall(
       (error) => logger.warn("Sumsub applicant cleanup skipped", safeLogMeta({uid, error: String(error)})),
     );
 
-    await auth.deleteUser(uid);
-
-    // Post-delete verification job (Auth already gone). Processed by automation drain.
+    // A retried deletion reaches here with the Auth record already gone. Treating
+    // that as fatal would abort the pass before the verification job is enqueued,
+    // and hand the user a failure for an account that is in fact deleted.
     try {
-      const {enqueueJob} = await import("./automation/jobs.js");
+      await auth.deleteUser(uid);
+    } catch (error) {
+      if ((error as {code?: string}).code !== "auth/user-not-found") {
+        throw error;
+      }
+      logger.info("auth user already deleted", safeLogMeta({uid}));
+    }
+
+    // Post-delete verification job (Auth already gone). Processed by
+    // processAutomationTask, with automationJobDrain as the fallback.
+    try {
+      const {enqueueJob, rearmTerminalJob} = await import("./automation/jobs.js");
       const {JobKind} = await import("./automation/types.js");
       const {enqueueCloudTask} = await import("./automation/tasksEnqueue.js");
-      const {jobId} = await enqueueJob({
+      const payload = {uid, supportTicketIds: support.ticketIds};
+      const {jobId, created} = await enqueueJob({
         kind: JobKind.accountDeletionVerify,
         idempotencyKey: `deletion_verify_${uid}`,
-        payload: {uid},
+        payload,
         createdBy: "deleteUserAccount",
       });
+      if (!created) {
+        // A retried deletion must be re-verified: the previous run's verdict
+        // describes the state before this pass, not after it.
+        await rearmTerminalJob(jobId, payload);
+      }
       await enqueueCloudTask(jobId);
     } catch (error) {
       logger.warn("deletion verify enqueue skipped", safeLogMeta({uid, error: String(error)}));

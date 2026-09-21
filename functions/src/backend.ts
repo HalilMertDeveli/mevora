@@ -773,8 +773,12 @@ export const retentionCleanup = onSchedule(
 );
 
 export const health = onCall(callableOptions, async () => {
-  const [failedJobs, openReports, openReviews] = await Promise.all([
+  // `manual_review` is where an incomplete account deletion lands — a compliance
+  // gap retrying cannot fix. Without its own signal it would stay invisible here,
+  // which is how deletion failures went unnoticed before the runner existed.
+  const [failedJobs, reviewJobs, openReports, openReviews] = await Promise.all([
     db.collection("automationJobs").where("status", "==", "failed").limit(1).get(),
+    db.collection("automationJobs").where("status", "==", "manual_review").limit(1).get(),
     db.collection("reports").where("status", "==", "open").limit(1).get(),
     db.collection("adminReviewQueue").where("status", "==", "open").limit(1).get(),
   ]);
@@ -784,6 +788,7 @@ export const health = onCall(callableOptions, async () => {
     region: "europe-west1",
     signals: {
       hasFailedJobs: !failedJobs.empty,
+      hasJobsNeedingReview: !reviewJobs.empty,
       hasOpenReports: !openReports.empty,
       hasOpenReviews: !openReviews.empty,
     },

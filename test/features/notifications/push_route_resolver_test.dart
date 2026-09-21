@@ -48,6 +48,20 @@ void main() {
     );
   });
 
+  test('incoming like tap opens Likes You', () {
+    // The server sends no liker identity with this push — who liked you is
+    // premium-gated behind getIncomingLikes — so the type alone must route.
+    expect(
+      PushRouteResolver.fromData({'type': 'incomingLike'}),
+      AppRoutes.likesYou,
+    );
+  });
+
+  test('an unknown notification type still routes nowhere', () {
+    expect(PushRouteResolver.fromData({'type': 'somethingNew'}), isNull);
+    expect(PushRouteResolver.fromData(const {}), isNull);
+  });
+
   test('missed call tap opens the related chat', () {
     expect(
       PushRouteResolver.fromData({'type': 'missed_call', 'matchId': 'a_b'}),

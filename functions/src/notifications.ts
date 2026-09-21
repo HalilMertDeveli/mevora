@@ -142,12 +142,17 @@ export async function sendUserPush(options: {
   }
 }
 
-function routeFor(type: FcmType, data: Record<string, string>): string | null {
+export function routeFor(type: FcmType, data: Record<string, string>): string | null {
   if (type === "incomingCall" && data.callId) {
     return `/call/incoming/${data.callId}`;
   }
   if ((type === "boostActivated" || type === "boostExpired")) {
     return "/boost";
+  }
+  if (type === "incomingLike") {
+    // Deliberately carries no liker identity: who liked you is premium-gated
+    // and resolved by getIncomingLikes, never by the push payload.
+    return "/likes-you";
   }
   if (data.matchId) {
     return `/chat/${data.matchId}`;

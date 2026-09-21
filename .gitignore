@@ -99,3 +99,8 @@ mevora-support-web/.vs/
 mevora-support-web/**/appsettings.*.local.json
 mevora-support-web/**/*.user
 
+# Local-only MCP server configuration.
+# Holds absolute machine-specific paths (interpreter and project locations),
+# so it is per-developer and must not be committed. See CLAUDE.md.
+.mcp.json
+

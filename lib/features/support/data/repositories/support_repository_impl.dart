@@ -21,6 +21,23 @@ class SupportRepositoryImpl implements SupportRepository {
   }
 
   @override
+  Future<SupportTicket?> getTicket({
+    required String userId,
+    required String ticketId,
+  }) async {
+    if (userId.isEmpty || ticketId.isEmpty) {
+      return null;
+    }
+    final ticket = await _dataSource.getTicket(ticketId);
+    if (ticket == null || ticket.userId != userId) {
+      // Firestore rules already deny cross-owner reads; this keeps the
+      // client from rendering a ticket it does not own if that ever changes.
+      return null;
+    }
+    return ticket;
+  }
+
+  @override
   Future<SupportTicket> createTicket({
     required String userId,
     required SupportTicketDraft draft,

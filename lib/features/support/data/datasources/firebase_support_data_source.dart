@@ -23,6 +23,18 @@ class FirebaseSupportDataSource {
         );
   }
 
+  Future<SupportTicket?> getTicket(String ticketId) async {
+    if (ticketId.isEmpty) {
+      return null;
+    }
+    final snap = await _tickets.doc(ticketId).get();
+    final data = snap.data();
+    if (!snap.exists || data == null) {
+      return null;
+    }
+    return _fromMap(snap.id, data);
+  }
+
   Future<void> createTicket({
     required String ticketId,
     required String userId,

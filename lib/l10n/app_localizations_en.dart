@@ -2557,6 +2557,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportTicketDetailTitle => 'Support request';
 
   @override
+  String get supportTicketNotFoundTitle => 'Support request not found';
+
+  @override
+  String get supportTicketNotFoundMessage =>
+      'This support request no longer exists or does not belong to your account.';
+
+  @override
   String get supportTicketStatusLabel => 'Status';
 
   @override

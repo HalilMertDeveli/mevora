@@ -1310,6 +1310,20 @@ class AppLocalizationsTr extends AppLocalizations {
       'Verilerin dışa aktarılamadı. Lütfen sonra tekrar dene.';
 
   @override
+  String get exportMyDataShareSubject => 'Mevora veri dışa aktarımım';
+
+  @override
+  String get exportMyDataShared => 'Veri dışa aktarımın paylaşıldı.';
+
+  @override
+  String get exportMyDataReady =>
+      'Veri dışa aktarımın hazır. Kaydetmek veya göndermek için bir uygulama seç.';
+
+  @override
+  String get exportMyDataShareUnavailable =>
+      'Bu cihazda dışa aktarımı alabilecek bir uygulama yok.';
+
+  @override
   String get settingsShowAge => 'Profilde yaşı göster';
 
   @override

@@ -41,6 +41,10 @@ dependencies:
   record: ^6.2.1
   audioplayers: ^6.7.1
   path_provider: ^2.1.6
+  # Platform share/save sheet. The data export lives in the app's private
+  # cache directory, so the sheet is the only way to actually hand the file
+  # to the user without requesting broad storage permissions.
+  share_plus: ^13.3.0
   video_player: ^2.11.1
 
 dev_dependencies:

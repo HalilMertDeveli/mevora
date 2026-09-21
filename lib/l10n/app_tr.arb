@@ -545,6 +545,10 @@
     }
   },
   "exportMyDataFailed": "Verilerin dışa aktarılamadı. Lütfen sonra tekrar dene.",
+  "exportMyDataShareSubject": "Mevora veri dışa aktarımım",
+  "exportMyDataShared": "Veri dışa aktarımın paylaşıldı.",
+  "exportMyDataReady": "Veri dışa aktarımın hazır. Kaydetmek veya göndermek için bir uygulama seç.",
+  "exportMyDataShareUnavailable": "Bu cihazda dışa aktarımı alabilecek bir uygulama yok.",
   "settingsShowAge": "Profilde yaşı göster",
   "deleteConfirm": "Kalıcı olarak sil",
   "notificationsTitle": "Bildirimler ve gizlilik",

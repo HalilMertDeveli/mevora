@@ -147,9 +147,39 @@ If a Sumsub level adds document-based age checks, wire results through the same 
 
 ## Account deletion & Sumsub applicant lifecycle
 
-`deleteUserAccount` removes `users/{uid}/verification/sumsub` from Firestore.
-A backend stub (`sumsubApplicantLifecycle.ts`) reserves a hook for Sumsub-side applicant
-deletion when credentials are available (TODO — requires Sumsub delete/reset API call).
+`deleteUserAccount` removes `users/{uid}/verification/sumsub` from Firestore and then
+cleans up the Sumsub side through `sumsubApplicantLifecycle.ts`, using the two operations
+Sumsub publishes:
+
+| Step | Call | Effect |
+|---|---|---|
+| 1 | `POST /resources/applicants/{applicantId}/reset` | Clears the collected verification data; the applicant returns to its initial state. Responds `{"ok": 1}`. |
+| 2 | `PATCH /resources/applicants/{applicantId}/presence/deactivated` | The profile behaves as if it never existed: no operator can act on it and it is ignored for duplicate checks. |
+
+Behaviour contract (see `functions/test/sumsubApplicantLifecycle.test.cjs`):
+
+- No applicant id, or credentials not configured → no call is made.
+- An applicant id that is not 24 alphanumeric characters is refused before it can reach a
+  request path.
+- `400` / `404` from Sumsub means the applicant is already gone and counts as success, so
+  re-running deletion is safe.
+- Sumsub refuses deactivation while the review status is `pending`, `queued` or
+  `prechecked`. The reset has already cleared the data at that point, so the outcome is
+  logged as `reset-only` and account deletion continues.
+- Nothing here ever throws. Account deletion must not fail because an external applicant is
+  missing, mid-review, or because Sumsub is unreachable.
+- Logs carry the uid and an outcome only — never the applicant id or a response body, both
+  of which can carry KYC identifiers.
+
+`deleteUserAccount` binds `SUMSUB_APP_TOKEN` and `SUMSUB_SECRET_KEY` (not the webhook
+secret) so these calls can be signed. Without those secrets the cleanup is a logged no-op.
+
+### External blocker — permanent erasure
+
+Sumsub publishes no API for permanently erasing an applicant. Deactivation is reversible and
+the record stays in Sumsub's database. A GDPR erasure request must be raised with Sumsub
+support out of band; it cannot be automated from Cloud Functions. Decide and document the
+retention position with Sumsub before production launch.
 
 ## MEVORA SUMSUB ACTIVATION CHECKLIST
 

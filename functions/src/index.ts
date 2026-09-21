@@ -40,3 +40,9 @@ export {
   seedInternalHumorContent,
   syncHumorFromProvider,
 } from "./humor/index.js";
+
+// Automation job processors. `deleteUserAccount` enqueues an
+// `accountDeletionVerify` job (plus a Cloud Task); without these exports the
+// task queue target does not exist and nothing drains `automationJobs`, so the
+// job stays `queued` forever.
+export {processAutomationTask, automationJobDrain} from "./automation/schedules.js";

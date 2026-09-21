@@ -28,6 +28,8 @@ abstract final class PushRouteResolver {
       case 'boostActivated':
       case 'boostExpired':
         return AppRoutes.boost;
+      case 'incomingLike':
+        return AppRoutes.likesYou;
       default:
         return null;
     }

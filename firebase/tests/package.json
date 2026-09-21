@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node location.rules.test.mjs && node location.rules.emulator.test.mjs && node compatibility.rules.emulator.test.mjs && node moderation.pipeline.test.mjs"
+    "test": "node location.rules.test.mjs && node location.rules.emulator.test.mjs && node compatibility.rules.emulator.test.mjs && node moderation.pipeline.test.mjs && node thirdUser.isolation.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

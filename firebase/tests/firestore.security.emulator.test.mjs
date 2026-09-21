@@ -166,32 +166,130 @@ describe("users/{uid} — private account isolation", () => {
   });
 });
 
-describe("privileged field mutation probes", () => {
-  // These fields are not consumed for authorization today (admin is an Auth
-  // custom claim, premium comes from subscription/current). The probes exist so
-  // that stays true: the day something reads them, this suite goes red.
-  const OPEN_ON_USERS = ["isPremium", "isAdmin", "isModerator", "role", "trustScore", "entitlement", "verificationStatus"];
-  for (const field of OPEN_ON_USERS) {
-    it(
-      `users/{uid}.${field} is not client-writable`,
-      knownFinding("B-04", `users/{uid}.${field} accepts a client write (denylist rule, no hasOnly)`),
-      async () => {
-        await deny(who.userA.db().doc(`users/${UID.A}`).update({[field]: field === "role" ? "admin" : true}));
-      },
-    );
+// B-04. These documents are governed by client-write allowlists, so a
+// privileged field is unwritable because it is not on the list — not because
+// somebody remembered to name it in a denylist. Authority itself is unchanged:
+// admin/moderator remain Auth custom claims, premium remains the claim or
+// users/{uid}/subscription/current, photo moderation remains the B-02 ledger.
+describe("privileged field mutation probes — users/{uid}", () => {
+  const PRIVILEGED = {
+    isPremium: true,
+    isAdmin: true,
+    isModerator: true,
+    role: "admin",
+    trustScore: 999999,
+    entitlement: "premium",
+    verificationStatus: "approved",
+    isBoosted: true,
+    photoModerationStatus: "approved",
+    subscriptionStatus: "active",
+    premium: true,
+    moderationStatus: "approved",
+  };
+  for (const [field, value] of Object.entries(PRIVILEGED)) {
+    it(`users/{uid}.${field} is not client-writable`, async () => {
+      await deny(who.userA.db().doc(`users/${UID.A}`).update({[field]: value}));
+    });
   }
 
-  const OPEN_ON_PROFILES = ["isPremium", "isModerator", "verificationStatus", "trustScore", "isBoosted"];
-  for (const field of OPEN_ON_PROFILES) {
-    it(
-      `profiles/{uid}.${field} is not client-writable`,
-      knownFinding("B-04", `profiles/{uid}.${field} accepts a client write (denylist rule, no hasOnly)`),
-      async () => {
-        await deny(who.userA.db().doc(`profiles/${UID.A}`).update({[field]: field === "verificationStatus" ? "approved" : true}));
-      },
+  it("previously value-guarded fields remain immutable", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {isBanned: true},
+      {isSuspended: true},
+      {isVerified: true},
+      {accountStatus: "banned"},
+      {phoneVerified: true},
+      {isSmokeTestUser: true},
+      {boostBalance: 9999},
+      {boostStatus: "active"},
+      {matchScore: 9999},
+      {matchCount: 50},
+      {suspensionReason: "none"},
+    ]) {
+      await deny(db.doc(`users/${UID.A}`).update(patch));
+    }
+  });
+
+  it("a privileged field cannot be smuggled in alongside a legitimate one", async () => {
+    await deny(
+      who.userA.db().doc(`users/${UID.A}`).update({
+        displayName: "Ada",
+        isAdmin: true,
+      }),
     );
+  });
+});
+
+describe("privileged field mutation probes — profiles/{uid}", () => {
+  const PRIVILEGED = {
+    isPremium: true,
+    isAdmin: true,
+    isModerator: true,
+    role: "admin",
+    trustScore: 999,
+    entitlement: "premium",
+    verificationStatus: "approved",
+    isVerified: true,
+    isBoosted: true,
+    boostedUntil: "2030-01-01",
+    photoModerationStatus: "approved",
+    profileModerationStatus: "approved",
+    moderationStatus: "approved",
+    subscriptionStatus: "active",
+    matchCount: 99,
+    isSuspended: false,
+    isBanned: false,
+  };
+  for (const [field, value] of Object.entries(PRIVILEGED)) {
+    it(`profiles/{uid}.${field} is not client-writable`, async () => {
+      await deny(who.userA.db().doc(`profiles/${UID.A}`).update({[field]: value}));
+    });
   }
 
+  it("lifecycle flags remain server-owned", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {isDiscoverable: true},
+      {profileCompleted: true},
+      {onboardingCompleted: true},
+      {isProfileComplete: true},
+    ]) {
+      await deny(db.doc(`profiles/${UID.A}`).update(patch));
+    }
+  });
+
+  it("auth secrets and GPS stay out of the public card", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {email: "x@y.z"},
+      {phoneNumber: "+900000000000"},
+      {phoneVerified: true},
+      {authProviders: {google: true}},
+      {latitude: 41.0},
+      {longitude: 29.0},
+      {geohash: "sxk9"},
+      {location: {latitude: 41.0}},
+      {fcmToken: "t"},
+      {accessToken: "t"},
+      {refreshToken: "t"},
+    ]) {
+      await deny(db.doc(`profiles/${UID.A}`).update(patch));
+    }
+  });
+
+  it("a privileged field cannot be smuggled in alongside a legitimate one", async () => {
+    await deny(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        bio: "hello",
+        isPremium: true,
+      }),
+    );
+  });
+
+  // Still open on this branch. photos[] stays on the client allowlist by
+  // design (rules cannot validate array elements); the B-02 ledger and its
+  // reconciling trigger are what make the contents authoritative.
   it(
     "client cannot write the moderation-owned profiles.photos array",
     knownFinding("B-02", "client writes photos[] directly; the guard trusts a client-supplied moderatedBy"),
@@ -210,6 +308,186 @@ describe("privileged field mutation probes", () => {
       );
     },
   );
+});
+
+// The point of an allowlist: a field nobody has thought of yet is already
+// denied. A denylist would have let every one of these through.
+describe("unknown field injection", () => {
+  const UNKNOWN = [
+    "futurePrivilegeField",
+    "isSuperAdmin",
+    "grantedEntitlements",
+    "internalTrustTier",
+    "__proto__field",
+    "x",
+  ];
+  for (const field of UNKNOWN) {
+    it(`users/{uid}.${field} is denied without being named anywhere`, async () => {
+      await deny(who.userA.db().doc(`users/${UID.A}`).update({[field]: true}));
+    });
+    it(`profiles/{uid}.${field} is denied without being named anywhere`, async () => {
+      await deny(who.userA.db().doc(`profiles/${UID.A}`).update({[field]: true}));
+    });
+  }
+
+  it("unknown fields are denied at create time too", async () => {
+    await deny(
+      who.userC.db().doc(`users/${UID.C}`).set({
+        uid: UID.C,
+        id: UID.C,
+        isActive: true,
+        futurePrivilegeField: true,
+      }),
+    );
+    await deny(
+      who.userC.db().doc(`profiles/${UID.C}`).set({
+        uid: UID.C,
+        displayName: "C",
+        futurePrivilegeField: true,
+      }),
+    );
+  });
+});
+
+describe("legitimate client flows still work", () => {
+  it("signup creates the account document the app actually writes", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.C}`).delete();
+    });
+    await allow(
+      who.userC.db().doc(`users/${UID.C}`).set({
+        uid: UID.C,
+        id: UID.C,
+        displayName: "Cem",
+        email: "cem@example.com",
+        phoneNumber: null,
+        photoUrl: null,
+        phoneVerified: false,
+        authProviders: {email: true, google: false, apple: false, spotify: false, phone: false},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        profileCompleted: false,
+        onboardingCompleted: false,
+        isActive: true,
+        isBanned: false,
+        isVerified: false,
+        accountStatus: "active",
+      }),
+    );
+  });
+
+  it("signup creates the profile stub the app actually writes", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`profiles/${UID.C}`).delete();
+    });
+    await allow(
+      who.userC.db().doc(`profiles/${UID.C}`).set({
+        uid: UID.C,
+        displayName: "Cem",
+        photos: [],
+        interests: [],
+        languages: [],
+        profileCompleted: false,
+        onboardingCompleted: false,
+        isDiscoverable: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+  });
+
+  it("login refresh updates the account document", async () => {
+    await allow(
+      who.userA.db().doc(`users/${UID.A}`).update({
+        uid: UID.A,
+        id: UID.A,
+        lastLoginAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
+        "authProviders.google": true,
+        email: "ada@example.com",
+        displayName: "Ada",
+        photoUrl: "https://cdn/a.jpg",
+      }),
+    );
+  });
+
+  it("the location mirror on the account document still writes", async () => {
+    await allow(
+      who.userA.db().doc(`users/${UID.A}`).set(
+        {
+          location: {latitude: 41.0082, longitude: 28.9784, updatedAt: new Date()},
+          updatedAt: new Date(),
+        },
+        {merge: true},
+      ),
+    );
+  });
+
+  it("full profile edit writes every field the app sends", async () => {
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).set(
+        {
+          uid: UID.A,
+          displayName: "Ada",
+          birthDate: new Date("1996-04-01"),
+          age: 30,
+          gender: "female",
+          interestedIn: ["male"],
+          bio: "Books and long walks.",
+          photos: [{id: "p1", order: 0, isPrimary: true, moderationStatus: "pending"}],
+          interests: ["travel", "music"],
+          relationshipGoal: "long_term",
+          occupation: "Engineer",
+          education: "MSc",
+          languages: ["tr", "en"],
+          hobbies: ["climbing"],
+          heightCm: 170,
+          city: "Istanbul",
+          lifestyle: ["non_smoker"],
+          lifestyleProfile: {smoking: "never"},
+          onboardingStep: "photos",
+          updatedAt: new Date(),
+        },
+        {merge: true},
+      ),
+    );
+  });
+
+  it("a plain bio edit works", async () => {
+    await allow(who.userA.db().doc(`profiles/${UID.A}`).update({bio: "hi", updatedAt: new Date()}));
+  });
+
+  it("the displayName-only update from signup works", async () => {
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).update({displayName: "Ada", updatedAt: new Date()}),
+    );
+  });
+
+  // B-02 regression: photos must stay client-writable. Moderation authority
+  // lives in the ledger + reconciling trigger, not in these rules.
+  it("the B-02 photo array flow is unchanged", async () => {
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        photos: [
+          {id: "p1", order: 0, isPrimary: true, moderationStatus: "pending"},
+          {id: "p2", order: 1, isPrimary: false, moderationStatus: "pending"},
+        ],
+      }),
+    );
+    // Reordering and deletion rewrite the whole array — still allowed.
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        photos: [{id: "p2", order: 0, isPrimary: true, moderationStatus: "pending"}],
+      }),
+    );
+  });
+
+  it("an unrelated user still cannot touch either document", async () => {
+    await deny(who.userC.db().doc(`profiles/${UID.A}`).update({bio: "hijacked"}));
+    await deny(who.userC.db().doc(`users/${UID.A}`).update({displayName: "hijacked"}));
+  });
 });
 
 describe("likes — client writes are denied outright", () => {

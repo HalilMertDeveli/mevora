@@ -132,6 +132,131 @@ service cloud.firestore {
         ]);
     }
 
+    // -----------------------------------------------------------
+    // Client write allowlists (B-04).
+    //
+    // These documents were previously guarded by denylists, so any sensitive
+    // field nobody thought to name — isPremium, isAdmin, isModerator, role,
+    // trustScore, entitlement, verificationStatus — was client-writable by
+    // default, and every future field would be too. The lists below are
+    // derived from the only client writers that exist:
+    //
+    //   users/{uid}      _newAccount / _accountUpdates
+    //                    (firebase_user_data_source.dart) and the location
+    //                    merge in firebase_location_data_source.dart
+    //   profiles/{uid}   _newProfileStub, the displayName-only update
+    //                    (firebase_user_data_source.dart) and _profileToMap
+    //                    (firebase_profile_data_source.dart)
+    //
+    // Everything else — premium (Auth claim / subscription doc), admin and
+    // moderator (Auth custom claims), photo moderation (the B-02 ledger),
+    // verification (Sumsub), boost and match scoring — stays server-owned and
+    // is now unwritable by construction rather than by enumeration.
+    // -----------------------------------------------------------
+
+    function userCreateKeysAllowed() {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'id',
+        'displayName',
+        'email',
+        'phoneNumber',
+        'photoUrl',
+        'phoneVerified',
+        'authProviders',
+        'location',
+        'createdAt',
+        'updatedAt',
+        'lastLoginAt',
+        'lastActiveAt',
+        'profileCompleted',
+        'onboardingCompleted',
+        'isActive',
+        'isBanned',
+        'isVerified',
+        'accountStatus'
+      ]);
+    }
+
+    // Login refresh + the userLocation mirror. Lifecycle and moderation fields
+    // are absent on purpose: the client may seed them at create time (already
+    // value-checked below) but may never move them afterwards.
+    function userUpdateKeysAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'uid',
+        'id',
+        'displayName',
+        'email',
+        'phoneNumber',
+        'photoUrl',
+        'authProviders',
+        'location',
+        'updatedAt',
+        'lastLoginAt',
+        'lastActiveAt',
+        'isActive'
+      ]);
+    }
+
+    // photos stays client-writable on purpose: Firestore rules cannot validate
+    // the fields of array elements, and add/delete/reorder rewrite the whole
+    // array. Moderation authority for it lives in the B-02 ledger
+    // (users/{uid}/photoModeration) and the reconciling trigger, not here.
+    function profileCreateKeysAllowed() {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'displayName',
+        'birthDate',
+        'age',
+        'gender',
+        'interestedIn',
+        'bio',
+        'photos',
+        'interests',
+        'relationshipGoal',
+        'occupation',
+        'education',
+        'languages',
+        'hobbies',
+        'heightCm',
+        'city',
+        'lifestyle',
+        'lifestyleProfile',
+        'onboardingStep',
+        'profileCompleted',
+        'onboardingCompleted',
+        'isProfileComplete',
+        'isDiscoverable',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function profileUpdateKeysAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'uid',
+        'displayName',
+        'birthDate',
+        'age',
+        'gender',
+        'interestedIn',
+        'bio',
+        'photos',
+        'interests',
+        'relationshipGoal',
+        'occupation',
+        'education',
+        'languages',
+        'hobbies',
+        'heightCm',
+        'city',
+        'lifestyle',
+        'lifestyleProfile',
+        'onboardingStep',
+        'updatedAt'
+      ]);
+    }
+
     function unchanged(key) {
       return request.resource.data[key] == resource.data[key];
     }
@@ -222,6 +347,7 @@ service cloud.firestore {
       allow read: if isOwner(userId);
 
       allow create: if isOwner(userId)
+        && userCreateKeysAllowed()
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
         && lastActiveAtMissingOrServerNow()
         && request.resource.data.get('isBanned', false) == false
@@ -241,6 +367,7 @@ service cloud.firestore {
         ]);
 
       allow update: if isOwner(userId)
+        && userUpdateKeysAllowed()
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
         && lastActiveAtUnchangedOrServerNow()
         && request.resource.data.get('isBanned', resource.data.get('isBanned', false))
@@ -423,6 +550,7 @@ service cloud.firestore {
     match /profiles/{userId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId)
+        && profileCreateKeysAllowed()
         && (request.resource.data.get('uid', userId) == userId)
         && profileLifecycleClientSafe()
         && !request.resource.data.keys().hasAny([
@@ -441,6 +569,7 @@ service cloud.firestore {
           'refreshToken'
         ]);
       allow update: if isOwner(userId)
+        && profileUpdateKeysAllowed()
         && (request.resource.data.get('uid', userId) == userId)
         && profileLifecycleUpdateSafe()
         && !request.resource.data.keys().hasAny([

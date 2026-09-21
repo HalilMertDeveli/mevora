@@ -5,6 +5,7 @@ import {getStorage} from "firebase-admin/storage";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
+import {sumsubAppToken, sumsubSecretKey} from "./sumsub/sumsubConfig.js";
 import {safeLogMeta} from "./security/logHygiene.js";
 
 if (getApps().length === 0) {
@@ -53,7 +54,13 @@ async function deletePrefix(prefix: string): Promise<void> {
 
 /// True account deletion: Auth user + Firestore + Storage. isActive=false is not enough.
 export const deleteUserAccount = onCall(
-  {enforceAppCheck, region: "europe-west1"},
+  {
+    enforceAppCheck,
+    region: "europe-west1",
+    // Needed to reach the Sumsub applicant API during cleanup. The webhook
+    // secret is deliberately not bound — this path never verifies webhooks.
+    secrets: [sumsubAppToken, sumsubSecretKey],
+  },
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
@@ -166,8 +173,21 @@ export const deleteUserAccount = onCall(
       db.doc(`userLocation/${uid}`),
     ]);
 
-    await requestSumsubApplicantDeletion({uid, applicantId: sumsubApplicantId}).catch(
-      (error) => logger.warn("Sumsub applicant cleanup skipped", safeLogMeta({uid, error: String(error)})),
+    // Best effort by contract: this never throws, and an applicant that is
+    // already gone or mid-review must not fail the account deletion.
+    const sumsubOutcome = await requestSumsubApplicantDeletion({
+      uid,
+      applicantId: sumsubApplicantId,
+    }).catch((error) => {
+      logger.warn(
+        "Sumsub applicant cleanup skipped",
+        safeLogMeta({uid, error: String(error)}),
+      );
+      return "remote-failure" as const;
+    });
+    logger.info(
+      "Sumsub applicant cleanup",
+      safeLogMeta({uid, outcome: sumsubOutcome}),
     );
 
     await auth.deleteUser(uid);

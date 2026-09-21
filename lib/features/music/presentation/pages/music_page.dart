@@ -20,6 +20,7 @@ import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
+import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 
 class MusicPage extends StatefulWidget {
@@ -88,6 +89,17 @@ class _MusicPageState extends State<MusicPage> {
                 ? MevoraLoading.page(
                     message: l10n.loading,
                     asset: MevoraRiveAssets.musicAnalyzing,
+                  )
+                : state.loadFailed
+                // The profile read failed, so we do not know whether the
+                // account is connected. Offer a retry rather than a connect
+                // CTA, which would be wrong for a connected user.
+                ? MevoraErrorView(
+                    title: l10n.musicTitle,
+                    message:
+                        _musicError(l10n, state.failure) ??
+                        l10n.unexpectedError,
+                    onRetry: () => unawaited(controller.load()),
                   )
                 : state.connected
                 ? _ConnectedMusicView(controller: controller)

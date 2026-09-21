@@ -166,8 +166,17 @@ Where: lib/features/music/presentation/pages/music_page.dart (+ music repository
 Steps: Open app → Music tab → wait 3–15s
 Expected: Connect Spotify CTA or same-taste content / clear error
 Actual: Persistent loading in emulator smoke screenshots
-Root cause: Not fully isolated (possible CF latency, missing music doc, or hung future). No FATAL in logcat.
-Fixed: No (needs interactive Spotify + deeper log instrumentation next session)
+Root cause: Hung future. FirebaseFunctionsCallable.invoke awaited
+  User.getIdToken(true) before every callable. That refresh is a network round
+  trip with no deadline of its own, so a stalled connection or an unreachable
+  auth/App Check backend left it pending forever and MusicController.load()
+  never settled. No FATAL in logcat because nothing threw.
+Fixed: Yes — the refresh now runs under a 10s deadline and a timed-out or
+  failed refresh is swallowed (the callable already retries once on
+  unauthenticated). A failed profile load now renders a localized error with a
+  retry instead of the connect CTA.
+  See test/core/network/callable_token_refresh_test.dart and
+  test/features/music/music_loading_state_test.dart.
 ```
 
 ### H2 — Dual-user chat / match / voice not exercised

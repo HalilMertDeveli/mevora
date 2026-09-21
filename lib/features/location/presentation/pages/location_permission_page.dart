@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/location_scope.dart';
+import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/features/location/domain/entities/location_screen_state.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_motion_size.dart';
@@ -114,7 +115,12 @@ class LocationPermissionPage extends StatelessWidget {
       LocationScreenState.error => _ActionCopy(
         icon: Icons.error_outline_rounded,
         title: l10n.locationUnavailableTitle,
-        message: controller.errorMessage ?? l10n.locationTimeoutMessage,
+        // controller.errorMessage is a raw AppStrings constant from the data
+        // layer, not UI copy. Localize it here or the body renders in a
+        // different language than the title.
+        message: controller.errorMessage == null
+            ? l10n.locationTimeoutMessage
+            : L10nErrors.message(l10n, controller.errorMessage),
         primaryLabel: l10n.tryAgain,
         onPrimary: controller.isBusy
             ? null

@@ -26,6 +26,55 @@ class ImagePickerProfilePhotoPicker implements ProfilePhotoPicker {
     return _pick(ImageSource.gallery);
   }
 
+  @override
+  Future<Result<List<PickedProfilePhoto>>> pickMultipleFromGallery({
+    required int limit,
+  }) async {
+    if (limit <= 0) {
+      return const Err(
+        ValidationFailure('No room for more photos'),
+      );
+    }
+    try {
+      final files = await _picker.pickMultiImage(
+        limit: limit,
+        maxWidth: ProfileImagePipeline.maxEdgePx.toDouble(),
+        maxHeight: ProfileImagePipeline.maxEdgePx.toDouble(),
+        imageQuality: 85,
+      );
+      if (files.isEmpty) {
+        return const Err(ValidationFailure('No photo selected'));
+      }
+      final picked = <PickedProfilePhoto>[];
+      for (final file in files.take(limit)) {
+        final photo = await _readValidated(file);
+        if (photo != null) {
+          picked.add(photo);
+        }
+      }
+      if (picked.isEmpty) {
+        return const Err(
+          ValidationFailure('That image type or size is not allowed.'),
+        );
+      }
+      // Partial success is still success: keep every usable selection rather
+      // than discarding the batch because one file was rejected.
+      return Success(picked);
+    } on Object {
+      return const Err(ValidationFailure('Could not pick that photo.'));
+    }
+  }
+
+  Future<PickedProfilePhoto?> _readValidated(XFile file) async {
+    final bytes = await file.readAsBytes();
+    final contentType = _contentTypeForPath(file.path);
+    if (!_pipeline.isAllowedType(contentType) ||
+        !_pipeline.isAllowedSize(bytes.length)) {
+      return null;
+    }
+    return PickedProfilePhoto(bytes: bytes, contentType: contentType);
+  }
+
   Future<Result<PickedProfilePhoto>> _pick(ImageSource source) async {
     try {
       final file = await _picker.pickImage(
@@ -80,6 +129,17 @@ class FakeProfilePhotoPicker implements ProfilePhotoPicker {
   @override
   Future<Result<PickedProfilePhoto>> pickFromGallery() async {
     return _result();
+  }
+
+  @override
+  Future<Result<List<PickedProfilePhoto>>> pickMultipleFromGallery({
+    required int limit,
+  }) async {
+    final single = await _result();
+    return switch (single) {
+      Success(:final value) => Success([value]),
+      Err(:final failure) => Err(failure),
+    };
   }
 
   Future<Result<PickedProfilePhoto>> _result() async {

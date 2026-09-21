@@ -116,8 +116,8 @@ void main() {
 
   group('match compatibility snapshot immutability', () {
     test('clients cannot mutate compatibilitySnapshots or calculatedAt', () {
-      expect(rules.contains("compatibilitySnapshots"), isTrue);
-      expect(rules.contains("compatibilityCalculatedAt"), isTrue);
+      expect(rules.contains('compatibilitySnapshots'), isTrue);
+      expect(rules.contains('compatibilityCalculatedAt'), isTrue);
       expect(
         rules.contains(
           "request.resource.data.get('compatibilitySnapshots', resource.data.get('compatibilitySnapshots', null))",

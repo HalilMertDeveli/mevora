@@ -341,7 +341,7 @@ Details: [docs/PHOTO_MODERATION.md](docs/PHOTO_MODERATION.md)
 | Firebase Remote Config SDK | **Not wired** — local defaults via `MevoraRemoteConfig` |
 | Automated device E2E | Partial (`integration_test/`, needs device) |
 | Backend production smoke harness | Implemented (`tools/smoke/`) |
-| CI workflow | Implemented (`.github/workflows/smoke.yml`) |
+| CI workflow | Implemented (`.github/workflows/ci.yml`) |
 
 ---
 
@@ -512,7 +512,7 @@ More: [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md) · [LOCATION_ARCHITECTURE.md]
 | Integration config test | `test/integration/` | Implemented |
 | Device E2E | `integration_test/smoke/` | Partial — needs Android/iOS device |
 | Backend smoke | `tools/smoke/run_smoke_test.mjs` | Implemented |
-| CI | `.github/workflows/smoke.yml` | Implemented |
+| CI | `.github/workflows/ci.yml` | Implemented |
 
 ```bash
 # Flutter (default scope via dart_test.yaml)
@@ -560,7 +560,7 @@ flowchart TD
 | Smoke users | `smoke-a@mevora.test`, `smoke-b@mevora.test` | Implemented |
 | Isolation flag | `users.isSmokeTestUser` (server-only) | Implemented |
 | Device E2E | `integration_test/smoke/` | Partial — requires connected device |
-| CI workflow | `.github/workflows/smoke.yml` | Implemented |
+| CI workflow | `.github/workflows/ci.yml` | Implemented |
 
 Run with a **service account** (never commit credentials). See [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md).
 

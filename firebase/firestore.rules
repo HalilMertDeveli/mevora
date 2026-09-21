@@ -105,6 +105,9 @@ service cloud.firestore {
           'isSuspended',
           'isBanned',
           'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'boostStatus',
           'matchCount'
         ]);
@@ -127,6 +130,9 @@ service cloud.firestore {
           'isSuspended',
           'isBanned',
           'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'boostStatus',
           'matchCount'
         ]);
@@ -235,6 +241,10 @@ service cloud.firestore {
           'boostStatus',
           'boostExpiresAt',
           'boostActive',
+          'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'matchScore',
           'matchCount',
           'isSmokeTestUser'
@@ -260,6 +270,10 @@ service cloud.firestore {
           'boostStatus',
           'boostExpiresAt',
           'boostActive',
+          'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'matchScore',
           'matchCount',
           'suspensionReason',

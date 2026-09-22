@@ -576,12 +576,19 @@ service cloud.firestore {
     }
 
     match /matches/{matchId} {
-      // Missing match docs must be readable as empty so profile details can
-      // safely watchCanView without PERMISSION_DENIED (freeze on photo swipe).
-      allow get: if isAuthenticated() && (
-        !exists(/databases/$(database)/documents/matches/$(matchId))
-        || request.auth.uid in resource.data.userIds
-      );
+      // B-07: match IDs are the canonical sorted uid pair, so letting a
+      // non-participant read a MISSING match as empty while an EXISTING one
+      // returned permission-denied let anyone test whether two users are
+      // matched — and profiles/{uid} is enumerable, so that mapped the whole
+      // relationship graph. Both cases must deny identically: on a missing
+      // document `resource` is null, so this expression errors and the read is
+      // refused exactly like a non-participant read of a real match.
+      //
+      // The client already tolerates the denial: watchMatch() swallows it
+      // (firebase_social_data.dart) and ProfileQuestionAnswerAccess leaves
+      // _canView false, which is the correct outcome for a non-participant.
+      allow get: if isAuthenticated()
+        && request.auth.uid in resource.data.userIds;
       allow list: if isAuthenticated()
         && request.auth.uid in resource.data.userIds;
       allow create, delete: if false;

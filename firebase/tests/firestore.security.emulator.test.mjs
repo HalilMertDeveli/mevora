@@ -192,24 +192,48 @@ describe("privileged field mutation probes", () => {
     );
   }
 
-  it(
-    "client cannot write the moderation-owned profiles.photos array",
-    knownFinding("B-02", "client writes photos[] directly; the guard trusts a client-supplied moderatedBy"),
-    async () => {
-      await deny(
-        who.userA.db().doc(`profiles/${UID.A}`).update({
-          photos: [
-            {
-              id: "forged",
-              downloadUrl: "https://attacker.example/unmoderated.jpg",
-              moderationStatus: "approved",
-              moderatedBy: "system",
-            },
-          ],
-        }),
-      );
-    },
-  );
+  // B-02. profiles.photos stays client-writable on purpose: Firestore rules
+  // cannot validate the fields of array elements, and add/delete/reorder write
+  // the whole array. Authority lives in the server-owned ledger below, which
+  // enforceProfilePhotoModeration reconciles the array against — see
+  // functions/test/photoModerationAuthority.test.cjs for that half.
+  it("the client may still write photos[] — the array is a projection, not the authority", async () => {
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        photos: [{id: "p1", order: 0, isPrimary: true, moderationStatus: "pending"}],
+      }),
+    );
+  });
+
+  it("the moderation ledger is readable only by its owner and writable by nobody", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/photoModeration/p1`).set({
+        imageId: "p1",
+        status: "approved",
+        moderatedBy: "system",
+      });
+    });
+    await allow(who.userA.db().doc(`users/${UID.A}/photoModeration/p1`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}/photoModeration/p1`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/photoModeration/p1`).get());
+
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/photoModeration/p1`).set({status: "approved"}),
+    );
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/photoModeration/p1`).update({status: "approved"}),
+    );
+    await deny(who.userA.db().doc(`users/${UID.A}/photoModeration/p1`).delete());
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/photoModeration/forged`).set({
+        status: "approved",
+        moderatedBy: "system",
+      }),
+    );
+    await deny(
+      who.userC.db().doc(`users/${UID.A}/photoModeration/p1`).set({status: "approved"}),
+    );
+  });
 });
 
 describe("likes — client writes are denied outright", () => {
@@ -473,49 +497,150 @@ describe("blocks — document identity", () => {
     );
   });
 
-  it(
-    "a third party cannot create a block document naming two other users",
-    knownFinding("B-01", "blocks/{blockId} create does not bind the document ID to blockerId"),
-    async () => {
-      await deny(
-        who.userC.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).set({
-          blockerId: UID.C,
-          blockedUserId: "someone-else",
-          createdAt: new Date(),
-        }),
-      );
-    },
-  );
-
-  it(
-    "a forged third-party block cannot sever A<->B messaging",
-    knownFinding("B-01", "forged blocks/A_B makes isBlockedPair(A,B) true for both victims"),
-    async () => {
-      await who.userC.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).set({
+  // B-01 regression. isBlockedPair() keys off document existence, so the
+  // document ID is the authorization token and must be bound to the caller.
+  it("a third party cannot create a block document naming two other users", async () => {
+    await deny(
+      who.userC.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).set({
         blockerId: UID.C,
         blockedUserId: "someone-else",
         createdAt: new Date(),
-      });
-      await allow(
-        who.userA.db().doc(`matches/${MATCH_AB}/messages/afterForgery`).set(
-          encryptedMessage({senderId: UID.A, receiverId: UID.B}),
-        ),
-      );
-    },
-  );
+      }),
+    );
+  });
 
-  it(
-    "a victim can always clear a block document naming them",
-    knownFinding("B-01", "delete requires blockerId == auth.uid, so victims cannot undo a forged block"),
-    async () => {
-      await who.userC.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).set({
+  it("a caller cannot pick a document ID unrelated to the pair they are blocking", async () => {
+    // Correct blockerId, but the ID names a different pair.
+    await deny(
+      who.userC.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).set({
+        blockerId: UID.C,
+        blockedUserId: UID.A,
+        createdAt: new Date(),
+      }),
+    );
+    // Correct blockerId and blockedUserId, but an arbitrary ID.
+    await deny(
+      who.userC.db().doc("blocks/arbitrary-id").set({
+        blockerId: UID.C,
+        blockedUserId: UID.A,
+        createdAt: new Date(),
+      }),
+    );
+    // Canonical characters, wrong order (blocked_blocker).
+    await deny(
+      who.userC.db().doc(`blocks/${UID.A}_${UID.C}`).set({
+        blockerId: UID.C,
+        blockedUserId: UID.A,
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+  it("a top-level self-block is rejected", async () => {
+    await deny(
+      who.userA.db().doc(`blocks/${canonicalBlockId(UID.A, UID.A)}`).set({
+        blockerId: UID.A,
+        blockedUserId: UID.A,
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+  it("a malformed blockedUserId is rejected", async () => {
+    await deny(
+      who.userA.db().doc(`blocks/${UID.A}_`).set({
+        blockerId: UID.A,
+        blockedUserId: "",
+        createdAt: new Date(),
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`blocks/${UID.A}_123`).set({
+        blockerId: UID.A,
+        blockedUserId: 123,
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+  it("blocks are immutable once created", async () => {
+    await allow(
+      who.userA.db().doc(`blocks/${canonicalBlockId(UID.A, UID.C)}`).set({
+        blockerId: UID.A,
+        blockedUserId: UID.C,
+        createdAt: new Date(),
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`blocks/${canonicalBlockId(UID.A, UID.C)}`).update({
+        blockedUserId: UID.B,
+      }),
+    );
+  });
+
+  it("a failed forgery attempt leaves A<->B messaging intact", async () => {
+    await deny(
+      who.userC.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).set({
         blockerId: UID.C,
         blockedUserId: "someone-else",
         createdAt: new Date(),
-      });
-      await allow(who.userA.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).delete());
-    },
-  );
+      }),
+    );
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/afterForgeryAttempt`).set(
+        encryptedMessage({senderId: UID.A, receiverId: UID.B}),
+      ),
+    );
+  });
+
+  it("a legitimate block still severs messaging, and unblocking restores it", async () => {
+    const blockRef = who.userA.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`);
+
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/beforeBlock`).set(
+        encryptedMessage({senderId: UID.A, receiverId: UID.B}),
+      ),
+    );
+
+    // A blocks B at the canonical ID the blockUser callable writes.
+    await allow(blockRef.set({
+      blockerId: UID.A,
+      blockedUserId: UID.B,
+      createdAt: new Date(),
+    }));
+
+    // Enforcement holds in both directions.
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/duringBlockAtoB`).set(
+        encryptedMessage({senderId: UID.A, receiverId: UID.B}),
+      ),
+    );
+    await deny(
+      who.userB.db().doc(`matches/${MATCH_AB}/messages/duringBlockBtoA`).set(
+        encryptedMessage({senderId: UID.B, receiverId: UID.A}),
+      ),
+    );
+
+    // Unblock is the client-side delete settings_hub_repository performs.
+    await allow(blockRef.delete());
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/afterUnblock`).set(
+        encryptedMessage({senderId: UID.A, receiverId: UID.B}),
+      ),
+    );
+  });
+
+  it("the blocked side cannot delete the block that restrains them", async () => {
+    await allow(
+      who.userA.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).set({
+        blockerId: UID.A,
+        blockedUserId: UID.B,
+        createdAt: new Date(),
+      }),
+    );
+    await deny(who.userB.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).delete());
+    await deny(who.userC.db().doc(`blocks/${canonicalBlockId(UID.A, UID.B)}`).delete());
+  });
 
   it("blocked user may check that they are blocked, but cannot list", async () => {
     await seed(env, async (ctx) => {

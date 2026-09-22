@@ -7,8 +7,8 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start --only functions",
-    "test": "npm run build && node --test test/boostActivation.test.cjs test/boostRanking.test.cjs test/compatibilityEngine.test.cjs test/compatibilitySnapshot.test.cjs test/discoveryActivity.test.cjs test/discoveryFallback.test.cjs test/discoveryMatching.test.cjs test/humorLab.test.cjs test/matchScore.test.cjs test/messageRateLimit.test.cjs test/photoModeration.test.cjs test/photoModerationAuthority.test.cjs test/profileSafety.test.cjs test/relationshipMatch.test.cjs test/reportCompliance.test.cjs test/subscriptionEntitlement.test.cjs test/sumsubAuth.test.cjs test/sumsubConfig.test.cjs test/sumsubStatus.test.cjs"
+    "test": "npm run build && node --test test/boostActivation.test.cjs test/boostRanking.test.cjs test/compatibilityEngine.test.cjs test/compatibilitySnapshot.test.cjs test/discoveryActivity.test.cjs test/discoveryFallback.test.cjs test/discoveryMatching.test.cjs test/distancePrivacy.test.cjs test/humorLab.test.cjs test/matchScore.test.cjs test/messageRateLimit.test.cjs test/photoModeration.test.cjs test/photoModerationAuthority.test.cjs test/profileSafety.test.cjs test/relationshipMatch.test.cjs test/reportCompliance.test.cjs test/subscriptionEntitlement.test.cjs test/sumsubAuth.test.cjs test/sumsubConfig.test.cjs test/sumsubStatus.test.cjs",
+    "serve": "npm run build && firebase emulators:start --only functions"
   },
   "dependencies": {
     "firebase-admin": "^13.0.0",

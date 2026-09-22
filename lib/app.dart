@@ -20,6 +20,8 @@ import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/support_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_scope.dart';
+import 'package:mevora/core/di/subscription_scope.dart';
+import 'package:mevora/core/di/subscription_services_factory.dart';
 import 'package:mevora/core/localization/language_controller.dart';
 import 'package:mevora/core/localization/language_repository.dart';
 import 'package:mevora/core/localization/language_scope.dart';
@@ -66,6 +68,7 @@ class MevoraApp extends StatefulWidget {
     this.locationController,
     this.socialServices,
     this.purchaseRepository,
+    this.subscriptionServices,
     this.verificationRepository,
     this.analytics,
     this.languageController,
@@ -90,6 +93,7 @@ class MevoraApp extends StatefulWidget {
   final LocationController? locationController;
   final SocialServices? socialServices;
   final PurchaseRepository? purchaseRepository;
+  final SubscriptionServices? subscriptionServices;
   final VerificationRepository? verificationRepository;
   final AnalyticsProvider? analytics;
   final LanguageController? languageController;
@@ -329,6 +333,15 @@ class _MevoraAppState extends State<MevoraApp> {
     final verification = widget.verificationRepository;
     if (verification != null) {
       child = VerificationScope(repository: verification, child: child);
+    }
+
+    final subscription = widget.subscriptionServices;
+    if (subscription != null) {
+      child = SubscriptionScope(
+        controller: subscription.controller,
+        repository: subscription.repository,
+        child: child,
+      );
     }
 
     return AppScope(

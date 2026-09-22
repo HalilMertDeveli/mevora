@@ -10,7 +10,12 @@ import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/ht
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onObjectFinalized} from "firebase-functions/v2/storage";
 import {logger} from "firebase-functions";
-import {blockId} from "./ids.js";
+import {blockId, canonicalMatchId} from "./ids.js";
+import {
+  consumeDistanceQuota,
+  coarseDistanceLabel,
+  distanceDisclosureDecision,
+} from "./geo/coarseDistance.js";
 import {
   isAccountEligible,
   discoveryProfileProjection,
@@ -75,13 +80,9 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return 2 * 6371 * Math.asin(Math.sqrt(Math.min(1, Math.max(0, h))));
 }
 
-function distanceLabel(km: number, lang: "tr" | "en"): {label: string; labelEn: string} {
-  const labelEn =
-    km < 1 ? "Less than 1 km away" : km >= 100 ? "100+ km away" : `${Math.round(km)} km away`;
-  const labelTr =
-    km < 1 ? "1 km'den yakın" : km >= 100 ? "100+ km uzakta" : `${Math.round(km)} km uzakta`;
-  return {label: lang === "tr" ? labelTr : labelEn, labelEn};
-}
+// Distance disclosure now goes through geo/coarseDistance.ts. The old
+// 1 km-resolution formatter is gone: every emitted distance is quantised so a
+// caller who moves their own userLocation cannot trilaterate a target.
 
 async function isBlocked(a: string, b: string): Promise<boolean> {
   const [subA, subB, topA, topB] = await Promise.all([
@@ -307,8 +308,13 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
             candidateBoosted,
             maxNearbyKm,
           );
-          distanceKm = Math.round(distanceKm * 10) / 10;
-          label = distanceLabel(distanceKm, lang).label;
+          // Tier classification above used the exact value. What leaves the
+          // backend is quantised: a 0.1 km figure for a candidate the caller
+          // can pick out of the deck is a sharper trilateration oracle than
+          // getDistanceLabel ever was.
+          const disclosed = coarseDistanceLabel(distanceKm, lang);
+          distanceKm = disclosed.bucketKm;
+          label = disclosed.label;
         } else {
           tier = "no_location";
         }
@@ -550,12 +556,53 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   return {matched: true, matchId};
 });
 
+
+/**
+ * Coarse distance to a user the caller is actually connected to.
+ *
+ * Previously any authenticated caller could name any otherUid and receive a
+ * distance rounded to 1 km. Because a user controls their own userLocation,
+ * three queries from three self-chosen positions recovered the target's
+ * coordinates — a trilateration oracle over the whole user base.
+ *
+ * Two independent controls now apply: the target must be an active,
+ * non-blocked match, and the disclosed value is quantised to a 5 km band with
+ * no raw kilometre figure in the response.
+ */
 export const getDistanceLabel = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const otherUid = String(request.data?.otherUid ?? "");
   if (!otherUid || otherUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid user.");
   }
+
+  const matchSnap = await db.doc(`matches/${canonicalMatchId(uid, otherUid)}`).get();
+  const decision = distanceDisclosureDecision({
+    uid,
+    otherUid,
+    matchData: matchSnap.data(),
+    matchExists: matchSnap.exists,
+    blocked: await isBlocked(uid, otherUid),
+  });
+  if (decision === "invalid-target") {
+    throw new HttpsError("invalid-argument", "Invalid user.");
+  }
+  if (decision !== "allow") {
+    // One error for both not-matched and blocked: distinguishing them would
+    // turn the endpoint into a relationship oracle of its own.
+    throw new HttpsError("permission-denied", "not-matched");
+  }
+
+  const quota = await consumeDistanceQuota(
+    db,
+    uid,
+    Date.now(),
+    FieldValue.serverTimestamp(),
+  );
+  if (quota === "rate-limited") {
+    throw new HttpsError("resource-exhausted", "distance-rate-limit");
+  }
+
   const [mine, other] = await Promise.all([
     db.doc(`userLocation/${uid}`).get(),
     db.doc(`userLocation/${otherUid}`).get(),
@@ -563,7 +610,7 @@ export const getDistanceLabel = onCall(callableOptions, async (request) => {
   const a = mine.data();
   const b = other.data();
   if (!a || !b) {
-    return {label: null};
+    return {label: null, labelEn: null, bucketKm: null};
   }
   const km = haversineKm(
     Number(a.latitude),
@@ -572,8 +619,9 @@ export const getDistanceLabel = onCall(callableOptions, async (request) => {
     Number(b.longitude),
   );
   const lang = await userLanguage(uid);
-  const labels = distanceLabel(km, lang);
-  return {label: labels.label, labelEn: labels.labelEn, kilometers: Math.round(km)};
+  const labels = coarseDistanceLabel(km, lang);
+  // No raw kilometre value: the band IS the disclosure budget.
+  return {label: labels.label, labelEn: labels.labelEn, bucketKm: labels.bucketKm};
 });
 
 export {deleteUserAccount} from "./deleteAccount.js";

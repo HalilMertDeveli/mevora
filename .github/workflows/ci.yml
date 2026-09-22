@@ -120,11 +120,13 @@ jobs:
         if: needs.changes.outputs.rules == 'true'
         working-directory: firebase/tests
         run: npm ci
-      - name: Rules suite against the Firestore emulator
-        # No secrets and no live project: the emulator runs locally against
-        # the committed firebase/firestore.rules.
+      - name: Rules suite against the Firestore and Storage emulators
+        # No secrets and no live project: the emulators run locally against the
+        # committed firebase/firestore.rules and firebase/storage.rules.
+        # Storage is required as well — storage.security.emulator.test.mjs
+        # exercises storage.rules and resolves match membership via Firestore.
         if: needs.changes.outputs.rules == 'true'
-        run: npx --yes firebase-tools@15 emulators:exec --only firestore --project mevora-dev "npm --prefix firebase/tests test"
+        run: npx --yes firebase-tools@15 emulators:exec --only firestore,storage --project mevora-dev "npm --prefix firebase/tests test"
       - name: Skipped
         if: needs.changes.outputs.rules != 'true'
         run: echo "firebase/ unchanged — emulator suite not required for this PR."

@@ -43,7 +43,7 @@ class PermissionHandlerPermissionService implements PermissionService {
   @override
   Future<bool> openSettings() async {
     try {
-      return ph.openAppSettings();
+      return await ph.openAppSettings();
     } on Object {
       return false;
     }

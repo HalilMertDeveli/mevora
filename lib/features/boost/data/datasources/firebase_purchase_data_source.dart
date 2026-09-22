@@ -8,6 +8,7 @@ import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
+import 'package:mevora/features/boost/domain/entities/boost_results.dart';
 import 'package:mevora/features/boost/domain/entities/boost_credit_result.dart';
 import 'package:mevora/features/boost/domain/entities/boost_history_entry.dart';
 import 'package:mevora/features/boost/domain/entities/boost_pack.dart';
@@ -26,6 +27,9 @@ abstract class PurchaseRemoteDataSource {
   Future<Boost> activateBoost(String userId);
 
   Future<Boost?> loadActiveBoost(String userId);
+
+  /// Most recently finished Boost period, for showing its results.
+  Future<Boost?> loadLatestFinishedBoost(String userId);
 
   Future<BoostWallet> loadWallet(String userId);
 
@@ -132,6 +136,35 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
         ),
         stackTrace,
       );
+    }
+  }
+
+  @override
+  Future<Boost?> loadLatestFinishedBoost(String userId) async {
+    try {
+      final snap = await _firestore
+          .collection(FirestorePaths.userBoosts(userId))
+          .get();
+      final now = _clock();
+      final finished =
+          snap.docs
+              .map((doc) => _boostFromDoc(userId, doc.id, doc.data()))
+              .whereType<Boost>()
+              .where((boost) => !boost.isActiveAt(now))
+              .toList()
+            ..sort((a, b) {
+              final aEnd = a.expiresAt ?? a.createdAt;
+              final bEnd = b.expiresAt ?? b.createdAt;
+              return bEnd.compareTo(aEnd);
+            });
+      return finished.isEmpty ? null : finished.first;
+    } on FirebaseException catch (error, stackTrace) {
+      _logger?.warning(
+        'Finished boost read failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 
@@ -306,6 +339,24 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
       createdAt: createdAt,
       startedAt: _dateOf(data['startedAt']),
       expiresAt: _dateOf(data['expiresAt']),
+      results: _resultsOf(data),
+    );
+  }
+
+  /// Counters written by the backend onto the boost document. Absent fields
+  /// mean "not counted yet", which reads as zero rather than as a failure.
+  BoostResults _resultsOf(Map<String, dynamic> data) {
+    int count(Object? value) {
+      final n = value is num ? value.toInt() : int.tryParse('$value') ?? 0;
+      return n > 0 ? n : 0;
+    }
+
+    return BoostResults(
+      totalImpressions: count(data['totalImpressions']),
+      uniqueUsersReached: count(data['uniqueUsersReached']),
+      likesReceived: count(data['likesReceived']),
+      matchesCreated: count(data['matchesCreated']),
+      updatedAt: _dateOf(data['metricsUpdatedAt']),
     );
   }
 

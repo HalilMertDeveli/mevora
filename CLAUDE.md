@@ -287,6 +287,66 @@ reuse previously verified information while it is still current.
 
 ---
 
+## Tool routing
+
+**Use the least expensive reliable tool.** Never call an MCP merely because it is available.
+If an installed tool is unavailable, fall back to the safest reasonable alternative and report
+the limitation instead of blocking.
+
+### Serena
+
+Serena MCP is onboarded here. Prefer it for symbol, class and function discovery, tracing
+references, navigating unfamiliar code, and exploring architectural relationships — semantic
+navigation over repository-wide scans.
+
+- Check Serena memories before rediscovering durable project information. `core` is the entry
+  point; the others are `tech_stack`, `conventions`, `suggested_commands`, `task_completion`,
+  `functions/core`, `firebase/core`, `memory_maintenance`.
+- `get_symbols_overview` / `find_symbol` instead of reading whole Dart files;
+  `find_referencing_symbols` instead of grepping for call sites.
+- Glob and Grep stay fine for locating files; follow-up reads should be symbolic.
+- When Serena asks for its initial instructions before a coding task, respect that.
+
+Do **not** force Serena for a tiny read of a known file, a trivial edit where the file is
+already identified, or anywhere a direct local tool is clearly cheaper.
+
+### Context7
+
+Use Context7 when current external documentation matters, when API behaviour or version
+compatibility is uncertain, or when working with version-sensitive Flutter, Dart, Firebase,
+Node or TypeScript APIs. Prefer current official docs over model memory.
+
+Do not query it when repository-local information already answers the question reliably.
+**The repository itself remains authoritative for how Mevora currently behaves** — Context7
+describes the libraries, not this codebase.
+
+### Firebase / Supabase
+
+Use each integration for platform-specific inspection and supported operations.
+**Never modify production state unless the task explicitly requires it.**
+
+### Maintenance tooling
+
+CLAUDE.md management tooling is for deliberate audits of this file — not for routine coding
+turns, and never an automatic rewrite at the end of a task. Persist only durable rules.
+
+`session-report` is for token/context analysis, cache and tool-efficiency analysis, and
+occasional Claude environment health reviews — not every task.
+
+### Subagents
+
+Do not spawn agents for trivial work. When delegating repository research, tell the subagent
+to use Serena where semantic navigation helps, pass only the minimum context it needs, and ask
+for concise findings rather than file dumps. When delegating current-library or documentation
+research, point it at Context7.
+
+### General
+
+Avoid duplicating work already recorded in Serena memories. Do not install additional MCPs,
+plugins or memory systems on your own initiative.
+
+---
+
 ## Required prompt metadata
 
 Every meaningful Mevora engineering prompt defines:

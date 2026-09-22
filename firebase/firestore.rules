@@ -105,6 +105,9 @@ service cloud.firestore {
           'isSuspended',
           'isBanned',
           'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'boostStatus',
           'matchCount'
         ]);
@@ -127,6 +130,9 @@ service cloud.firestore {
           'isSuspended',
           'isBanned',
           'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'boostStatus',
           'matchCount'
         ]);
@@ -361,6 +367,10 @@ service cloud.firestore {
           'boostStatus',
           'boostExpiresAt',
           'boostActive',
+          'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'matchScore',
           'matchCount',
           'isSmokeTestUser'
@@ -387,6 +397,10 @@ service cloud.firestore {
           'boostStatus',
           'boostExpiresAt',
           'boostActive',
+          'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'matchScore',
           'matchCount',
           'suspensionReason',
@@ -460,6 +474,13 @@ service cloud.firestore {
       match /boosts/{boostId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
+      }
+
+      // Per-viewer Boost reach rows. Owner-readable would expose who looked at
+      // them, so these stay server-only; the owner reads the aggregate counters
+      // on the boost document instead.
+      match /boostReach/{viewerKey} {
+        allow read, create, update, delete: if false;
       }
 
       match /boostWallet/{docId} {
@@ -539,6 +560,17 @@ service cloud.firestore {
       }
 
       match /verification/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Authoritative photo moderation decisions. Rules cannot validate the
+      // fields of array elements, so profiles/{uid}.photos stays client-
+      // writable and is only a projection of moderation state. This ledger is
+      // the source of truth; enforceProfilePhotoModeration reconciles the
+      // array against it on every profile write. Owner may read it to display
+      // moderation progress; no client may ever write it.
+      match /photoModeration/{imageId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
@@ -775,8 +807,19 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (resource.data.blockerId == request.auth.uid
           || resource.data.blockedUserId == request.auth.uid);
+      // The document ID is the authorization token here: isBlockedPair() keys
+      // off the existence of blocks/{a}_{b}. Validating blockerId alone let a
+      // third party create blocks/{A}_{B} carrying their own blockerId and
+      // sever an unrelated pair — a block neither victim could delete.
+      // Bind the ID to the caller so a forged pair is unrepresentable.
+      // Canonical format ({blockerId}_{blockedUserId}) is shared with
+      // SafetyPolicy.blockId (Dart) and blockId() in functions/src/ids.ts.
       allow create: if isAuthenticated()
-        && request.resource.data.blockerId == request.auth.uid;
+        && request.resource.data.blockerId == request.auth.uid
+        && request.resource.data.blockedUserId is string
+        && request.resource.data.blockedUserId.size() > 0
+        && request.resource.data.blockedUserId != request.auth.uid
+        && blockId == request.auth.uid + '_' + request.resource.data.blockedUserId;
       allow delete: if isAuthenticated()
         && resource.data.blockerId == request.auth.uid;
       allow update: if false;

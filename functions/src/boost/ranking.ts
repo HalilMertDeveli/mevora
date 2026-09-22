@@ -1,48 +1,116 @@
 import {logger} from "firebase-functions";
 import type {Firestore, Timestamp} from "firebase-admin/firestore";
 
-/** Modest priority bump — compatibility stays meaningful. */
-export const BOOST_PRIORITY_BONUS = 35;
-/** Boosted profiles stay eligible up to +25% beyond viewer radius. */
-export const BOOST_DISTANCE_EXTENSION_RATIO = 0.25;
+import {BOOST_STRENGTH} from "./config.js";
+import type {BoostSession} from "./measurement.js";
+
 const DISTANCE_SCORE_MAX = 20;
 
-export async function loadActiveBoostedUserIds(
+/**
+ * Whether a boosted candidate actually earns its advantage.
+ *
+ * Buying Boost is necessary but not sufficient: the candidate must also clear
+ * the compatibility floor. Without this gate a paid profile with a
+ * compatibility of 10 outranks a genuine 95, which makes the number shown to
+ * the viewer meaningless. Below the floor a boosted candidate ranks exactly as
+ * if it had never bought anything.
+ */
+export function boostAdvantageApplies(
+  item: Record<string, unknown>,
+  boosted: Set<string>,
+): boolean {
+  if (!boosted.has(String(item.uid ?? ""))) {
+    return false;
+  }
+  const compatibility = Number(item.compatibilityScore ?? 0);
+  if (!Number.isFinite(compatibility)) {
+    return false;
+  }
+  return compatibility >= BOOST_STRENGTH.minCompatibility;
+}
+
+/**
+ * Distance as the sort stage sees it — the real distance, for everyone.
+ *
+ * Boost deliberately does not discount distance here. Distance outranks the
+ * score, so any discount would let a boosted profile jump an arbitrarily large
+ * compatibility gap, which is exactly what this change exists to stop. Boost's
+ * geographic lever is `effectiveRadiusKm`: it widens where a profile is
+ * eligible, rather than faking how near it is.
+ */
+export function boostSortDistanceKm(
+  distanceKm: number | null | undefined,
+): number {
+  if (distanceKm == null) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const value = Number(distanceKm);
+  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * Every running Boost period, keyed by the boosted user.
+ *
+ * Ranking only needs the uids, but measurement also needs each session's
+ * identity and end time, so both come from this one query rather than paying
+ * for a second collection-group scan per Discover request.
+ */
+export async function loadActiveBoostSessions(
   db: Firestore,
   now = new Date(),
-): Promise<Set<string>> {
+): Promise<Map<string, BoostSession>> {
+  const sessions = new Map<string, BoostSession>();
   try {
     const snap = await db.collectionGroup("boosts").where("status", "==", "active").get();
-    const ids = new Set<string>();
     for (const doc of snap.docs) {
       const data = doc.data();
       const expires = data.expiresAt as Timestamp | undefined;
       const expiresAt = expires && typeof expires.toDate === "function" ? expires.toDate() : null;
-      if (expiresAt && expiresAt.getTime() > now.getTime() && typeof data.userId === "string") {
-        ids.add(data.userId);
+      const started = data.startedAt as Timestamp | undefined;
+      const userId = typeof data.userId === "string" ? data.userId : "";
+      if (!userId || !expiresAt || expiresAt.getTime() <= now.getTime()) {
+        continue;
       }
+      // Stacking extends one boost rather than opening a second, so the
+      // latest-ending period is this user's live session.
+      const existing = sessions.get(userId);
+      if (existing && existing.expiresAt.getTime() >= expiresAt.getTime()) {
+        continue;
+      }
+      sessions.set(userId, {
+        boostId: doc.id,
+        userId,
+        startedAt: started && typeof started.toDate === "function" ? started.toDate() : null,
+        expiresAt,
+      });
     }
-    return ids;
+    return sessions;
   } catch (error) {
     // Missing collection-group index on boosts.status must not empty Discover.
     logger.warn("loadActiveBoostedUserIds_failed", {
       message: error instanceof Error ? error.message : String(error),
     });
-    return new Set();
+    return new Map();
   }
+}
+
+export async function loadActiveBoostedUserIds(
+  db: Firestore,
+  now = new Date(),
+): Promise<Set<string>> {
+  return new Set((await loadActiveBoostSessions(db, now)).keys());
 }
 
 export function effectiveRadiusKm(radiusKm: number, isBoosted: boolean): number {
   if (!isBoosted || radiusKm <= 0) {
     return radiusKm;
   }
-  return Math.min(100, radiusKm * (1 + BOOST_DISTANCE_EXTENSION_RATIO));
+  return Math.min(100, radiusKm * (1 + BOOST_STRENGTH.radiusExtensionRatio));
 }
 
 export function distanceRankContribution(
   distanceKm: number | null | undefined,
   radiusKm: number,
-  isBoosted: boolean,
 ): number {
   // Unknown distance ranks after any known-distance candidate (even very far).
   if (distanceKm == null || Number.isNaN(distanceKm)) {
@@ -51,9 +119,7 @@ export function distanceRankContribution(
   if (radiusKm <= 0) {
     return 0;
   }
-  const penaltyFactor = isBoosted ? 0.5 : 1;
-  const effectiveDistance = distanceKm * penaltyFactor;
-  const normalized = Math.min(1, effectiveDistance / radiusKm);
+  const normalized = Math.min(1, distanceKm / radiusKm);
   return Math.round(DISTANCE_SCORE_MAX * (1 - normalized));
 }
 
@@ -63,17 +129,16 @@ export function computeDiscoveryRankScore(
   boosted: Set<string>,
   radiusKm: number,
 ): number {
-  const uid = String(item.uid ?? "");
-  const isBoosted = boosted.has(uid);
+  const advantaged = boostAdvantageApplies(item, boosted);
   const compatibility = Number(item.compatibilityScore ?? 0);
   const musicBonus = Number(item.musicRankingBonus ?? 0);
   const distanceKm =
     item.distanceKm == null ? null : Number(item.distanceKm);
 
   let score = compatibility + musicBonus;
-  score += distanceRankContribution(distanceKm, radiusKm, isBoosted);
-  if (isBoosted) {
-    score += BOOST_PRIORITY_BONUS;
+  score += distanceRankContribution(distanceKm, radiusKm);
+  if (advantaged) {
+    score += BOOST_STRENGTH.priorityBonus;
   }
   return score;
 }
@@ -97,13 +162,17 @@ export function questionAlignmentTier(item: Record<string, unknown>): number {
 }
 
 function distanceSortKey(item: Record<string, unknown>): number {
-  if (item.distanceKm == null) {
-    return Number.POSITIVE_INFINITY;
-  }
-  const value = Number(item.distanceKm);
-  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+  return boostSortDistanceKm(item.distanceKm as number | null | undefined);
 }
 
+/**
+ * Total order, so the same inputs always produce the same page.
+ *
+ * Question alignment, then real distance for everyone, then the rank score —
+ * which is where Boost's priority bonus lands. Because the bonus is bounded,
+ * a compatibility gap wider than `priorityBonus` still wins, and a
+ * non-boosted candidate's keys are identical to what they were before.
+ */
 export function compareDiscoveryCandidates(
   a: Record<string, unknown>,
   b: Record<string, unknown>,
@@ -123,39 +192,71 @@ export function compareDiscoveryCandidates(
   if (bScore !== aScore) {
     return bScore - aScore;
   }
-  return (
+  const musicDelta =
     Number(b.musicCompatibilityScore ?? 0) -
-    Number(a.musicCompatibilityScore ?? 0)
-  );
+    Number(a.musicCompatibilityScore ?? 0);
+  if (musicDelta !== 0) {
+    return musicDelta;
+  }
+  // Final tiebreak so equal candidates never reorder between requests.
+  return String(a.uid ?? "").localeCompare(String(b.uid ?? ""));
 }
 
-export function diversifyBoostedResults<T extends Record<string, unknown>>(
+/**
+ * Spaces boosted profiles out without reordering on their behalf.
+ *
+ * This replaces the previous interleave, which rebuilt the page as
+ * boosted/normal/boosted/normal and so discarded every ranking decision the
+ * comparator had just made — a boosted profile took the top slot whatever its
+ * compatibility, and half of every page went to Boost buyers.
+ *
+ * Here the sorted order is authoritative. A boosted profile is only ever
+ * pushed *later*, never earlier, and only when it would breach the density
+ * cap. Deterministic: one pass, stable within each queue.
+ */
+export function capBoostedDensity<T extends Record<string, unknown>>(
   sorted: T[],
   boosted: Set<string>,
+  window: number = BOOST_STRENGTH.densityWindow,
+  maxPerWindow: number = BOOST_STRENGTH.maxPerWindow,
 ): T[] {
-  const boostedQueue = sorted.filter((item) => boosted.has(String(item.uid)));
-  const normalQueue = sorted.filter((item) => !boosted.has(String(item.uid)));
-  if (boostedQueue.length === 0 || normalQueue.length === 0) {
-    return sorted;
+  if (window <= 0 || maxPerWindow <= 0) {
+    return [...sorted];
   }
+  const isAdvantaged = (item: T): boolean => boostAdvantageApplies(item, boosted);
   const out: T[] = [];
-  let boostedIndex = 0;
-  let normalIndex = 0;
-  while (boostedIndex < boostedQueue.length || normalIndex < normalQueue.length) {
-    if (boostedIndex < boostedQueue.length) {
-      out.push(boostedQueue[boostedIndex++]);
+  const deferred: T[] = [];
+
+  const windowIsFull = (): boolean => {
+    const start = Math.max(0, out.length - window + 1);
+    let count = 0;
+    for (let i = start; i < out.length; i += 1) {
+      if (isAdvantaged(out[i])) {
+        count += 1;
+      }
     }
-    if (normalIndex < normalQueue.length) {
-      out.push(normalQueue[normalIndex++]);
+    return count >= maxPerWindow;
+  };
+
+  for (const item of sorted) {
+    if (isAdvantaged(item) && windowIsFull()) {
+      deferred.push(item);
+      continue;
+    }
+    out.push(item);
+    while (deferred.length > 0 && !windowIsFull()) {
+      out.push(deferred.shift() as T);
     }
   }
+  out.push(...deferred);
   return out;
 }
 
 /**
  * Primary: more shared question answers.
- * Secondary: closer distance among equal answer tiers.
- * Tertiary: existing boost/compat/music ranking (diversified within tier).
+ * Secondary: closer distance, with a boosted profile counted as nearer.
+ * Tertiary: compat/music/boost rank score.
+ * Finally: boosted profiles spaced out so they cannot fill the page.
  */
 export function sortByBoostVisibility<T extends Record<string, unknown>>(
   items: T[],
@@ -168,7 +269,7 @@ export function sortByBoostVisibility<T extends Record<string, unknown>>(
   const out: T[] = [];
   for (const tier of [3, 2, 1, 0]) {
     const group = sorted.filter((item) => questionAlignmentTier(item) === tier);
-    out.push(...diversifyBoostedResults(group, boosted));
+    out.push(...capBoostedDensity(group, boosted));
   }
   return out;
 }

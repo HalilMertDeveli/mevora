@@ -233,6 +233,15 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
   }
 
   @override
+  Future<Result<Boost?>> getLatestFinishedBoost(String userId) async {
+    try {
+      return Success(await _remote.loadLatestFinishedBoost(userId));
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  @override
   Future<Result<BoostWallet>> getWallet(String userId) async {
     try {
       return Success(await _remote.loadWallet(userId));

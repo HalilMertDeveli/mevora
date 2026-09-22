@@ -660,8 +660,19 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (resource.data.blockerId == request.auth.uid
           || resource.data.blockedUserId == request.auth.uid);
+      // The document ID is the authorization token here: isBlockedPair() keys
+      // off the existence of blocks/{a}_{b}. Validating blockerId alone let a
+      // third party create blocks/{A}_{B} carrying their own blockerId and
+      // sever an unrelated pair — a block neither victim could delete.
+      // Bind the ID to the caller so a forged pair is unrepresentable.
+      // Canonical format ({blockerId}_{blockedUserId}) is shared with
+      // SafetyPolicy.blockId (Dart) and blockId() in functions/src/ids.ts.
       allow create: if isAuthenticated()
-        && request.resource.data.blockerId == request.auth.uid;
+        && request.resource.data.blockerId == request.auth.uid
+        && request.resource.data.blockedUserId is string
+        && request.resource.data.blockedUserId.size() > 0
+        && request.resource.data.blockedUserId != request.auth.uid
+        && blockId == request.auth.uid + '_' + request.resource.data.blockedUserId;
       allow delete: if isAuthenticated()
         && resource.data.blockerId == request.auth.uid;
       allow update: if false;

@@ -28,10 +28,17 @@ export const SERVER_OWNED_PHOTO_FIELDS = [
   "processingAttempts",
   "lastProcessingAttempt",
   "processingError",
+  // B-11: thumbUrl was treated as client presentation data, but discovery
+  // renders `thumbUrl ?? downloadUrl`, so a client-supplied thumbnail URL was
+  // preferred over the moderated one — a route around B-02 needing no Storage
+  // write at all. Nothing generates profile thumbnails today, so the ledger
+  // never supplies one and this reconciles to null, leaving discovery on the
+  // approved downloadUrl.
+  "thumbUrl",
 ] as const;
 
-/** Fields the client legitimately owns: presentation only. */
-export const CLIENT_OWNED_PHOTO_FIELDS = ["id", "order", "isPrimary", "thumbUrl"] as const;
+/** Fields the client legitimately owns: ordering and identity only. */
+export const CLIENT_OWNED_PHOTO_FIELDS = ["id", "order", "isPrimary"] as const;
 
 export interface LedgerEntry {
   status: PhotoModerationStatus;
@@ -40,6 +47,8 @@ export interface LedgerEntry {
   moderatedAt?: unknown;
   storagePath?: string | null;
   downloadUrl?: string | null;
+  /** B-11: server-owned. No generator exists yet, so this stays null today. */
+  thumbUrl?: string | null;
 }
 
 export function ledgerRef(db: Firestore, uid: string, imageId: string) {
@@ -83,6 +92,7 @@ export async function readLedger(
       moderatedAt: data.moderatedAt,
       storagePath: (data.storagePath ?? null) as string | null,
       downloadUrl: (data.downloadUrl ?? null) as string | null,
+      thumbUrl: (data.thumbUrl ?? null) as string | null,
     });
   }
   return out;
@@ -150,6 +160,10 @@ export async function backfillLegacyApproval(options: {
  */
 export function reconcilePhoto(photo: PhotoRecord, entry: LedgerEntry | null): PhotoRecord {
   const next: PhotoRecord = {...photo};
+  // B-11: the thumbnail URL is server-owned. Only the ledger may supply one,
+  // so a client cannot point discovery at unmoderated imagery through the
+  // `thumbUrl ?? downloadUrl` fallback.
+  next.thumbUrl = entry?.thumbUrl ?? null;
   if (!entry) {
     next.moderationStatus = "pending";
     next.moderationReason = null;

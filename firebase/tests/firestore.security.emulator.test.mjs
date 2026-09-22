@@ -312,17 +312,173 @@ describe("matches — participant vs non-participant", () => {
     await deny(who.userC.db().doc(`matches/${MATCH_AB}`).update({lastMessage: "x"}));
   });
 
-  it(
-    "participants cannot forge the verified badge shown to the other side",
-    knownFinding("B-09", "matches update freeze-list is not hasOnly; participantVerified/Names/Photos are writable"),
-    async () => {
-      await deny(
-        who.userA.db().doc(`matches/${MATCH_AB}`).update({
-          participantVerified: {[UID.A]: true, [UID.B]: false},
-        }),
+  // B-09 regression. These identity snapshots are server-written and rendered
+  // to the *other* participant, so a forged value reaches a real user's screen.
+  it("participants cannot forge their own verified badge", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        participantVerified: {[UID.A]: true, [UID.B]: false},
+      }),
+    );
+  });
+
+  it("participants cannot forge the peer's verified badge", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        participantVerified: {[UID.A]: false, [UID.B]: true},
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        [`participantVerified.${UID.B}`]: true,
+      }),
+    );
+  });
+
+  it("participants cannot rewrite the peer's display name", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        participantNames: {[UID.A]: "Ada", [UID.B]: "SPOOFED"},
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        [`participantNames.${UID.B}`]: "SPOOFED",
+      }),
+    );
+  });
+
+  it("participants cannot rewrite the peer's profile photo", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        participantPhotos: {[UID.B]: "https://attacker.example/x.jpg"},
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        [`participantPhotos.${UID.B}`]: "https://attacker.example/x.jpg",
+      }),
+    );
+  });
+
+  it("participants cannot manipulate the peer's unread state", async () => {
+    // Seed the state the server would have written: B has unread messages.
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`matches/${MATCH_AB}`).set(
+        {unreadCounts: {[UID.A]: 0, [UID.B]: 5}, isNewFor: {[UID.A]: false, [UID.B]: true}},
+        {merge: true},
       );
-    },
-  );
+    });
+    const db = who.userA.db();
+    // Inflate the peer's badge.
+    await deny(db.doc(`matches/${MATCH_AB}`).update({[`unreadCounts.${UID.B}`]: 9999}));
+    // Clear the peer's badge so they never notice the messages.
+    await deny(db.doc(`matches/${MATCH_AB}`).update({[`unreadCounts.${UID.B}`]: 0}));
+    await deny(db.doc(`matches/${MATCH_AB}`).update({[`isNewFor.${UID.B}`]: false}));
+    // Whole-map rewrite touching the peer's entry.
+    await deny(
+      db.doc(`matches/${MATCH_AB}`).update({unreadCounts: {[UID.A]: 0, [UID.B]: 0}}),
+    );
+    // Own entry in the same write does not launder the peer's entry.
+    await deny(
+      db.doc(`matches/${MATCH_AB}`).update({
+        [`unreadCounts.${UID.A}`]: 0,
+        [`unreadCounts.${UID.B}`]: 0,
+      }),
+    );
+  });
+
+  it("a no-op write that changes nothing is harmless", async () => {
+    // unreadCounts.userB is already 0 in the fixture, so affectedKeys is empty
+    // and nothing is disclosed or altered. Documented so the allow is not
+    // mistaken for a gap in the peer-key scoping above.
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({[`unreadCounts.${UID.B}`]: 0}),
+    );
+  });
+
+  it("participants cannot rewrite server-generated scoring or lifecycle state", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {compatibilityBreakdown: {overallScore: 100}},
+      {compatibilityCalculatedAt: new Date()},
+      {compatibilityKey: "forged"},
+      {matchBonusAwarded: true},
+      {interactionBonusAwarded: true},
+      {matchedAt: new Date()},
+      {messagedUserIds: [UID.A, UID.B]},
+      {endedReason: "unmatch"},
+      {source: "forged"},
+      {matchType: "forged"},
+      {createdAt: new Date()},
+      {unmatchedAt: new Date()},
+    ]) {
+      await deny(db.doc(`matches/${MATCH_AB}`).update(patch));
+    }
+  });
+
+  // The architectural point: a field nobody has thought of yet is already
+  // denied. The old freeze list would have let every one of these through.
+  it("participants cannot inject an arbitrary future match field", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {futureTrustedField: true},
+      {isPremiumMatch: true},
+      {trustBadge: "verified"},
+      {serverScore: 100},
+      {x: 1},
+    ]) {
+      await deny(db.doc(`matches/${MATCH_AB}`).update(patch));
+    }
+  });
+
+  it("a privileged field cannot ride along with a legitimate one", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        lastMessage: "hi",
+        participantVerified: {[UID.A]: true},
+      }),
+    );
+  });
+
+  it("legitimate participant match updates still work", async () => {
+    const db = who.userA.db();
+    // Chat send side-effect.
+    await allow(
+      db.doc(`matches/${MATCH_AB}`).update({
+        lastMessage: "Merhaba",
+        lastMessageAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+    // markOpened(): own key only.
+    await allow(
+      db.doc(`matches/${MATCH_AB}`).update({
+        [`isNewFor.${UID.A}`]: false,
+        [`unreadCounts.${UID.A}`]: 0,
+      }),
+    );
+    // Merge-style write, the shape firebase_chat_data_source actually sends.
+    await allow(
+      db.doc(`matches/${MATCH_AB}`).set(
+        {lastMessage: "🔒", lastMessageAt: new Date(), updatedAt: new Date()},
+        {merge: true},
+      ),
+    );
+    // The other participant can do the same for themselves.
+    await allow(
+      who.userB.db().doc(`matches/${MATCH_AB}`).update({
+        [`isNewFor.${UID.B}`]: false,
+        [`unreadCounts.${UID.B}`]: 0,
+      }),
+    );
+  });
+
+  it("both participants still read the match and its messages", async () => {
+    await allow(who.userA.db().doc(`matches/${MATCH_AB}`).get());
+    await allow(who.userB.db().doc(`matches/${MATCH_AB}`).get());
+    await allow(who.userB.db().doc(`matches/${MATCH_AB}/messages/m1`).get());
+  });
 
   it(
     "non-participant cannot distinguish an existing match from a missing one",

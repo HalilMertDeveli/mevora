@@ -53,7 +53,7 @@ class GetLocationPermissionStatus {
       if (!gpsEnabled) {
         return LocationPermissionStatus.serviceDisabled;
       }
-      return _repository.checkPermission();
+      return await _repository.checkPermission();
     } on Object {
       return LocationPermissionStatus.error;
     }

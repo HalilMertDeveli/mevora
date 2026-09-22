@@ -120,6 +120,14 @@ jobs:
         if: needs.changes.outputs.rules == 'true'
         working-directory: firebase/tests
         run: npm ci
+      - name: Build Cloud Functions for the rules suite
+        # moderation.pipeline.test.mjs imports the compiled provider from
+        # functions/lib, so the rules job needs its own build. Without this the
+        # suite dies on ERR_MODULE_NOT_FOUND before any rule is evaluated.
+        if: needs.changes.outputs.rules == 'true'
+        run: |
+          npm --prefix functions ci
+          npm --prefix functions run build
       - name: Rules suite against the Firestore and Storage emulators
         # No secrets and no live project: the emulators run locally against the
         # committed firebase/firestore.rules and firebase/storage.rules.

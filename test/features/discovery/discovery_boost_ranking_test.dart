@@ -50,18 +50,37 @@ void main() {
       );
     });
 
-    test('reduces distance penalty for boosted profiles', () {
-      final normal = DiscoveryBoostRanking.distanceRankContribution(
-        20,
-        25,
-        boosted: false,
+    test('does not discount distance for boosted profiles', () {
+      // Distance outranks the score, so a discount would let Boost jump an
+      // unbounded compatibility gap. Boost widens eligibility instead.
+      expect(
+        DiscoveryBoostRanking.distanceRankContribution(20, 25),
+        DiscoveryBoostRanking.distanceRankContribution(20, 25),
       );
-      final boostedDistance = DiscoveryBoostRanking.distanceRankContribution(
-        20,
-        25,
-        boosted: true,
+      expect(
+        DiscoveryBoostRanking.distanceRankContribution(20, 25),
+        lessThan(DiscoveryBoostRanking.distanceRankContribution(5, 25)),
       );
-      expect(boostedDistance, greaterThan(normal));
+    });
+
+    test('withholds the advantage below the compatibility floor', () {
+      final weak = DiscoveryBoostRanking.rankScore(
+        uid: 'boost-user',
+        compatibilityScore: DiscoveryBoostRanking.minCompatibility - 1,
+        musicRankingBonus: 0,
+        distanceKm: null,
+        radiusKm: 25,
+        boostedUids: boosted,
+      );
+      final weakUnboosted = DiscoveryBoostRanking.rankScore(
+        uid: 'boost-user',
+        compatibilityScore: DiscoveryBoostRanking.minCompatibility - 1,
+        musicRankingBonus: 0,
+        distanceKm: null,
+        radiusKm: 25,
+        boostedUids: const {},
+      );
+      expect(weak, weakUnboosted);
     });
 
     test('compatibility score is not modified by ranking helper', () {
@@ -101,7 +120,7 @@ void main() {
       );
     });
 
-    test('diversifies boosted and normal profiles', () {
+    test('spaces boosted profiles out with the density cap', () {
       final ranked = DiscoveryBoostRanking.sortCandidates(
         items: [
           const _Seed('b1', 90, 5),
@@ -116,7 +135,9 @@ void main() {
         musicBonusOf: (_) => 0,
         distanceOf: (seed) => seed.distanceKm,
       );
-      expect(ranked.map((seed) => seed.uid).toList(), ['b1', 'n1', 'b2', 'n2']);
+      // b1 leads on score; b2 is deferred so that no window of three
+      // consecutive results holds more than one boosted profile.
+      expect(ranked.map((seed) => seed.uid).toList(), ['b1', 'n1', 'n2', 'b2']);
     });
   });
 

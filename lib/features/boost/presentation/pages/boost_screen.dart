@@ -17,6 +17,7 @@ import 'package:mevora/features/boost/domain/usecases/purchase_boost.dart';
 import 'package:mevora/features/boost/domain/usecases/verify_boost_purchase.dart';
 import 'package:mevora/features/boost/presentation/controllers/purchase_controller.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
+import 'package:mevora/features/boost/presentation/widgets/boost_results_panel.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_history_list.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_pack_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -203,6 +204,13 @@ class _ProductView extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               BoostActiveBadge(boost: state.activeBoost),
+              if (state.activeBoost != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                BoostResultsPanel(boost: state.activeBoost),
+              ] else if (state.finishedBoost != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                BoostResultsPanel(boost: state.finishedBoost),
+              ],
               if (state.hasActiveBoost) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(

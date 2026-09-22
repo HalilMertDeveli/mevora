@@ -176,8 +176,14 @@ class _ChatPageState extends State<ChatPage> {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(controller.otherName),
-                if (subtitle != null && subtitle.isNotEmpty)
+                Text(
+                  controller.isDeletedAccountThread
+                      ? l10n.deletedAccountName
+                      : controller.otherName,
+                ),
+                if (!controller.isDeletedAccountThread &&
+                    subtitle != null &&
+                    subtitle.isNotEmpty)
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.labelSmall,
@@ -205,10 +211,16 @@ class _ChatPageState extends State<ChatPage> {
             children: [
               if (!controller.canChat)
                 MaterialBanner(
-                  content: Text(l10n.unmatchedBanner),
+                  content: Text(
+                    controller.isDeletedAccountThread
+                        ? l10n.chatDeletedAccountReadOnly
+                        : l10n.unmatchedBanner,
+                  ),
                   actions: const [SizedBox.shrink()],
                 ),
-              if (!controller.canChat)
+              // Rating a partner who no longer exists is meaningless, so the
+              // feedback prompt stays on the unmatch path only.
+              if (!controller.canChat && !controller.isDeletedAccountThread)
                 MatchFeedbackForChat(matchId: controller.matchId),
               if (controller.canChat && controller.otherUid.isNotEmpty)
                 Material(

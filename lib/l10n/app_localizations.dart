@@ -2030,6 +2030,30 @@ abstract class AppLocalizations {
   /// **'Call declined'**
   String get callRejected;
 
+  /// No description provided for @matchesHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Past conversations'**
+  String get matchesHistoryTitle;
+
+  /// No description provided for @matchesHistorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only. These accounts were deleted.'**
+  String get matchesHistorySubtitle;
+
+  /// No description provided for @deletedAccountName.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted account'**
+  String get deletedAccountName;
+
+  /// No description provided for @chatDeletedAccountReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation is read-only because this account was deleted.'**
+  String get chatDeletedAccountReadOnly;
+
   /// No description provided for @unmatchedBanner.
   ///
   /// In en, this message translates to:

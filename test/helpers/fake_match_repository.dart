@@ -33,6 +33,10 @@ class FakeMatchRepository
   }
 
   @override
+  Stream<List<MatchListItem>> watchArchivedMatches(String userId) =>
+      const Stream<List<MatchListItem>>.empty();
+
+  @override
   Stream<List<MatchListItem>> watchMatches(String userId) => _matchController.stream;
 
   @override

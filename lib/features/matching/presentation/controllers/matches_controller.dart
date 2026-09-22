@@ -26,12 +26,18 @@ class MatchesController extends ChangeNotifier {
   final AuthUidSource _uidSource;
   SettingsHubRepository? _settingsHub;
   StreamSubscription<List<MatchListItem>>? _subscription;
+  StreamSubscription<List<MatchListItem>>? _archivedSubscription;
   final Map<String, StreamSubscription<PresenceWatch>> _presenceSubs = {};
   final Map<String, StreamSubscription<UserPrivacy>> _privacySubs = {};
   final Map<String, PresenceWatch> _presenceByUid = {};
   final Map<String, UserPrivacy> _privacyByUid = {};
 
   List<MatchListItem> items = const [];
+
+  /// Read-only conversations kept after the counterpart deleted their account.
+  /// Deliberately separate from [items]: these are not active relationships and
+  /// must not feed match counts, ranking, or engagement metrics.
+  List<MatchListItem> archivedItems = const [];
   bool loading = true;
   String? error;
 
@@ -83,9 +89,11 @@ class MatchesController extends ChangeNotifier {
   void start() {
     final current = uid;
     unawaited(_subscription?.cancel());
+    unawaited(_archivedSubscription?.cancel());
     _clearPresenceSubscriptions();
     if (current == null) {
       items = const [];
+      archivedItems = const [];
       loading = false;
       notifyListeners();
       return;
@@ -99,6 +107,17 @@ class MatchesController extends ChangeNotifier {
     }, onError: (_) {
       error = MatchingError.generic;
       loading = false;
+      notifyListeners();
+    });
+    // No presence subscriptions here: a deleted account has no presence, and the
+    // history list must never show an online state.
+    _archivedSubscription =
+        _matchRepository.watchArchivedMatches(current).listen((value) {
+      archivedItems = value;
+      notifyListeners();
+    }, onError: (_) {
+      // History is supplementary; a failure here must not break active matches.
+      archivedItems = const [];
       notifyListeners();
     });
   }
@@ -170,6 +189,7 @@ class MatchesController extends ChangeNotifier {
   void dispose() {
     _closed = true;
     unawaited(_subscription?.cancel());
+    unawaited(_archivedSubscription?.cancel());
     _clearPresenceSubscriptions();
     super.dispose();
   }

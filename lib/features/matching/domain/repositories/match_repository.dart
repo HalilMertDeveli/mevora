@@ -26,6 +26,13 @@ class PresenceWatch {
 abstract class MatchRepository {
   Stream<List<MatchListItem>> watchMatches(String uid);
 
+  /// Retained read-only conversations whose counterpart deleted their account.
+  ///
+  /// Defaults to empty so in-memory, demo and test repositories opt in only when
+  /// they model deletion; the Firebase repository overrides it.
+  Stream<List<MatchListItem>> watchArchivedMatches(String uid) =>
+      const Stream<List<MatchListItem>>.empty();
+
   Future<Match?> getMatch(String matchId);
 
   Stream<Match?> watchMatch(String matchId);

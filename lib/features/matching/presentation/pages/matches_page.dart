@@ -99,7 +99,7 @@ class _MatchesPageState extends State<MatchesPage> {
                   message: controller.error,
                   onRetry: controller.start,
                 )
-              : controller.items.isEmpty
+              : controller.items.isEmpty && controller.archivedItems.isEmpty
               ? ListView(
                   children: [
                     LikesYouEntryCard(
@@ -132,6 +132,23 @@ class _MatchesPageState extends State<MatchesPage> {
                             context.push(AppRoutes.chatPath(item.match.id)),
                       ),
                     ),
+                    // Retained read-only history sits below active matches so it
+                    // never competes with, or looks like, a live connection.
+                    if (controller.archivedItems.isNotEmpty) ...[
+                      _HistorySectionHeader(
+                        title: l10n.matchesHistoryTitle,
+                        subtitle: l10n.matchesHistorySubtitle,
+                      ),
+                      ...controller.archivedItems.map(
+                        (item) => MatchConnectionTile(
+                          item: item,
+                          currentUid: uid,
+                          isReadOnlyHistory: true,
+                          onTap: () =>
+                              context.push(AppRoutes.chatPath(item.match.id)),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
         );
@@ -142,3 +159,40 @@ class _MatchesPageState extends State<MatchesPage> {
 
 /// Legacy export kept for tests referencing [MatchListTile].
 typedef MatchListTile = MatchConnectionTile;
+
+class _HistorySectionHeader extends StatelessWidget {
+  const _HistorySectionHeader({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -61,8 +61,8 @@ void main() {
     // Open the shared conversation and prove both sides render.
     final openedChat = await openChatWith(tester, _nameA);
     expect(openedChat, isTrue,
-        reason: "could not open the shared conversation from Matches. "
-            "visible=${visibleTexts(tester)}");
+        reason: 'could not open the shared conversation from Matches. '
+            'visible=${visibleTexts(tester)}');
     final chatReady = await waitUntil(
       tester,
       () => anyTextContains(_msgB) && anyTextContains(_msgA),

@@ -2,6 +2,7 @@ import {logger} from "firebase-functions";
 import type {Firestore, Timestamp} from "firebase-admin/firestore";
 
 import {BOOST_STRENGTH} from "./config.js";
+import type {BoostSession} from "./measurement.js";
 
 const DISTANCE_SCORE_MAX = 20;
 
@@ -47,29 +48,57 @@ export function boostSortDistanceKm(
   return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
 }
 
-export async function loadActiveBoostedUserIds(
+/**
+ * Every running Boost period, keyed by the boosted user.
+ *
+ * Ranking only needs the uids, but measurement also needs each session's
+ * identity and end time, so both come from this one query rather than paying
+ * for a second collection-group scan per Discover request.
+ */
+export async function loadActiveBoostSessions(
   db: Firestore,
   now = new Date(),
-): Promise<Set<string>> {
+): Promise<Map<string, BoostSession>> {
+  const sessions = new Map<string, BoostSession>();
   try {
     const snap = await db.collectionGroup("boosts").where("status", "==", "active").get();
-    const ids = new Set<string>();
     for (const doc of snap.docs) {
       const data = doc.data();
       const expires = data.expiresAt as Timestamp | undefined;
       const expiresAt = expires && typeof expires.toDate === "function" ? expires.toDate() : null;
-      if (expiresAt && expiresAt.getTime() > now.getTime() && typeof data.userId === "string") {
-        ids.add(data.userId);
+      const started = data.startedAt as Timestamp | undefined;
+      const userId = typeof data.userId === "string" ? data.userId : "";
+      if (!userId || !expiresAt || expiresAt.getTime() <= now.getTime()) {
+        continue;
       }
+      // Stacking extends one boost rather than opening a second, so the
+      // latest-ending period is this user's live session.
+      const existing = sessions.get(userId);
+      if (existing && existing.expiresAt.getTime() >= expiresAt.getTime()) {
+        continue;
+      }
+      sessions.set(userId, {
+        boostId: doc.id,
+        userId,
+        startedAt: started && typeof started.toDate === "function" ? started.toDate() : null,
+        expiresAt,
+      });
     }
-    return ids;
+    return sessions;
   } catch (error) {
     // Missing collection-group index on boosts.status must not empty Discover.
     logger.warn("loadActiveBoostedUserIds_failed", {
       message: error instanceof Error ? error.message : String(error),
     });
-    return new Set();
+    return new Map();
   }
+}
+
+export async function loadActiveBoostedUserIds(
+  db: Firestore,
+  now = new Date(),
+): Promise<Set<string>> {
+  return new Set((await loadActiveBoostSessions(db, now)).keys());
 }
 
 export function effectiveRadiusKm(radiusKm: number, isBoosted: boolean): number {

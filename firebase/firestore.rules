@@ -349,6 +349,13 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      // Per-viewer Boost reach rows. Owner-readable would expose who looked at
+      // them, so these stay server-only; the owner reads the aggregate counters
+      // on the boost document instead.
+      match /boostReach/{viewerKey} {
+        allow read, create, update, delete: if false;
+      }
+
       match /boostWallet/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;

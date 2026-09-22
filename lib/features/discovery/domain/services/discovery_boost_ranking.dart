@@ -1,8 +1,29 @@
-/// Client-side mirror of server boost ranking rules for mocks and tests.
+/// Client-side mirror of the server Boost ranking rules, for mocks and tests.
+///
+/// Semantics follow `functions/src/boost/ranking.ts`: Boost is a bounded
+/// visibility advantage, never a front-of-queue pass. It does not discount
+/// distance, it is withheld below the compatibility floor, and boosted results
+/// are spaced by a density cap rather than mechanically interleaved.
 abstract final class DiscoveryBoostRanking {
   static const int boostPriorityBonus = 35;
   static const double distanceExtensionRatio = 0.25;
   static const int distanceScoreMax = 20;
+
+  /// Below this compatibility, Boost grants nothing — paying must never float
+  /// a poor match past a good one.
+  static const int minCompatibility = 45;
+
+  /// At most one boosted profile per this many consecutive results.
+  static const int densityWindow = 3;
+  static const int maxPerWindow = 1;
+
+  static bool boostAdvantageApplies({
+    required String uid,
+    required int compatibilityScore,
+    required Set<String> boostedUids,
+  }) {
+    return boostedUids.contains(uid) && compatibilityScore >= minCompatibility;
+  }
 
   static double effectiveRadiusKm(int radiusKm, {required bool boosted}) {
     if (!boosted || radiusKm <= 0) {
@@ -11,20 +32,14 @@ abstract final class DiscoveryBoostRanking {
     return (radiusKm * (1 + distanceExtensionRatio)).clamp(0, 100).toDouble();
   }
 
-  static int distanceRankContribution(
-    double? distanceKm,
-    int radiusKm, {
-    required bool boosted,
-  }) {
+  static int distanceRankContribution(double? distanceKm, int radiusKm) {
     if (distanceKm == null) {
       return -2;
     }
     if (radiusKm <= 0) {
       return 0;
     }
-    final penaltyFactor = boosted ? 0.5 : 1.0;
-    final effectiveDistance = distanceKm * penaltyFactor;
-    final normalized = (effectiveDistance / radiusKm).clamp(0.0, 1.0);
+    final normalized = (distanceKm / radiusKm).clamp(0.0, 1.0);
     return (distanceScoreMax * (1 - normalized)).round();
   }
 
@@ -36,14 +51,14 @@ abstract final class DiscoveryBoostRanking {
     required int radiusKm,
     required Set<String> boostedUids,
   }) {
-    final boosted = boostedUids.contains(uid);
-    var score = compatibilityScore + musicRankingBonus;
-    score += distanceRankContribution(
-      distanceKm,
-      radiusKm,
-      boosted: boosted,
+    final advantaged = boostAdvantageApplies(
+      uid: uid,
+      compatibilityScore: compatibilityScore,
+      boostedUids: boostedUids,
     );
-    if (boosted) {
+    var score = compatibilityScore + musicRankingBonus;
+    score += distanceRankContribution(distanceKm, radiusKm);
+    if (advantaged) {
       score += boostPriorityBonus;
     }
     return score;
@@ -116,35 +131,50 @@ abstract final class DiscoveryBoostRanking {
     final out = <T>[];
     for (final tier in const [3, 2, 1, 0]) {
       final group = sorted.where((item) => alignmentTier(item) == tier).toList();
-      out.addAll(_diversify(group, boostedUids, uidOf));
+      out.addAll(_capDensity(group, boostedUids, uidOf, compatibilityOf));
     }
     return out;
   }
 
-  static List<T> _diversify<T>(
+  /// Spaces boosted profiles out without reordering on their behalf: a boosted
+  /// item is only ever deferred, never promoted. Mirrors capBoostedDensity.
+  static List<T> _capDensity<T>(
     List<T> sorted,
     Set<String> boostedUids,
     String Function(T item) uidOf,
+    int Function(T item) compatibilityOf,
   ) {
-    final boosted = sorted.where((item) => boostedUids.contains(uidOf(item)));
-    final normal = sorted.where((item) => !boostedUids.contains(uidOf(item)));
-    if (boosted.isEmpty || normal.isEmpty) {
-      return sorted;
-    }
+    bool advantaged(T item) => boostAdvantageApplies(
+      uid: uidOf(item),
+      compatibilityScore: compatibilityOf(item),
+      boostedUids: boostedUids,
+    );
+
     final out = <T>[];
-    final boostedList = boosted.toList();
-    final normalList = normal.toList();
-    var boostedIndex = 0;
-    var normalIndex = 0;
-    while (boostedIndex < boostedList.length ||
-        normalIndex < normalList.length) {
-      if (boostedIndex < boostedList.length) {
-        out.add(boostedList[boostedIndex++]);
+    final deferred = <T>[];
+
+    bool windowIsFull() {
+      final start = (out.length - densityWindow + 1).clamp(0, out.length);
+      var count = 0;
+      for (var i = start; i < out.length; i++) {
+        if (advantaged(out[i])) {
+          count++;
+        }
       }
-      if (normalIndex < normalList.length) {
-        out.add(normalList[normalIndex++]);
+      return count >= maxPerWindow;
+    }
+
+    for (final item in sorted) {
+      if (advantaged(item) && windowIsFull()) {
+        deferred.add(item);
+        continue;
+      }
+      out.add(item);
+      while (deferred.isNotEmpty && !windowIsFull()) {
+        out.add(deferred.removeAt(0));
       }
     }
+    out.addAll(deferred);
     return out;
   }
 }

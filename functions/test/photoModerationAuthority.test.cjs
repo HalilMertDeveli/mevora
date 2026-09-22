@@ -176,8 +176,11 @@ describe("photo moderation authority — legitimate flows keep working", () => {
     const photo = photosAfter(db)[0];
     assert.equal(photo.order, 3);
     assert.equal(photo.isPrimary, true);
-    assert.equal(photo.thumbUrl, "https://cdn/t.jpg");
     assert.equal(photo.moderationStatus, "approved");
+    // B-11: thumbUrl moved from client-owned to server-owned. Discovery renders
+    // `thumbUrl ?? downloadUrl`, so a client value here would have been
+    // preferred over the moderated URL. Ordering and identity stay client-owned.
+    assert.equal(photo.thumbUrl, null);
   });
 
   it("reconciliation is idempotent", async () => {
@@ -282,5 +285,79 @@ describe("reconcilePhoto projection", () => {
     );
     assert.equal(out.moderationStatus, "rejected");
     assert.equal(out.storagePath, "client/path.jpg");
+  });
+});
+
+describe("B-11 — thumbnail URL authority", () => {
+  it("a client-supplied thumbUrl is stripped when there is no ledger entry", async () => {
+    const db = fakeDb();
+    const changed = await reconcilePhotoModeration(db, UID, [
+      {id: "p1", thumbUrl: "https://attacker.example/unmoderated.jpg"},
+    ]);
+    assert.equal(changed, true);
+    assert.equal(photosAfter(db)[0].thumbUrl, null);
+  });
+
+  it("a client-supplied thumbUrl cannot ride on an approved photo", async () => {
+    const storagePath = `users/${UID}/profile/photos/p1.jpg`;
+    const trusted = "https://firebasestorage.googleapis.com/v0/b/x/o/real.jpg";
+    const db = fakeDb({ledger: {p1: {status: "approved", storagePath, downloadUrl: trusted}}});
+    await reconcilePhotoModeration(db, UID, [
+      {
+        id: "p1",
+        moderationStatus: "approved",
+        downloadUrl: trusted,
+        thumbUrl: "https://attacker.example/unmoderated.jpg",
+      },
+    ]);
+    const photo = photosAfter(db)[0];
+    // Discovery renders `thumbUrl ?? downloadUrl`, so a null thumb falls back
+    // to the moderated URL rather than the attacker's.
+    assert.equal(photo.thumbUrl, null);
+    assert.equal(photo.downloadUrl, trusted);
+  });
+
+  it("a server-supplied thumbUrl from the ledger is preserved", async () => {
+    const storagePath = `users/${UID}/profile/photos/p1.jpg`;
+    const serverThumb = "https://firebasestorage.googleapis.com/v0/b/x/o/thumb.jpg";
+    const db = fakeDb({
+      ledger: {p1: {status: "approved", storagePath, downloadUrl: "https://cdn/p1.jpg", thumbUrl: serverThumb}},
+    });
+    await reconcilePhotoModeration(db, UID, [
+      {id: "p1", moderationStatus: "approved", thumbUrl: "https://attacker.example/x.jpg"},
+    ]);
+    assert.equal(photosAfter(db)[0].thumbUrl, serverThumb);
+  });
+
+  it("a pending photo gets no thumbnail at all", async () => {
+    const db = fakeDb({ledger: {p1: {status: "pending"}}});
+    await reconcilePhotoModeration(db, UID, [
+      {id: "p1", moderationStatus: "pending", thumbUrl: "https://attacker.example/x.jpg"},
+    ]);
+    const photo = photosAfter(db)[0];
+    assert.equal(photo.thumbUrl, null);
+    assert.equal(photo.moderationStatus, "pending");
+  });
+
+  it("a rejected photo keeps no trusted thumbnail", async () => {
+    const db = fakeDb({ledger: {p1: {status: "rejected", reason: "nudity"}}});
+    await reconcilePhotoModeration(db, UID, [
+      {id: "p1", moderationStatus: "approved", thumbUrl: "https://attacker.example/x.jpg"},
+    ]);
+    const photo = photosAfter(db)[0];
+    assert.equal(photo.thumbUrl, null);
+    assert.equal(photo.moderationStatus, "rejected");
+  });
+
+  it("reconciliation stays idempotent with thumbUrl owned by the server", async () => {
+    const storagePath = `users/${UID}/profile/photos/p1.jpg`;
+    const ledger = {p1: {status: "approved", storagePath, downloadUrl: "https://cdn/p1.jpg"}};
+    const db = fakeDb({ledger});
+    await reconcilePhotoModeration(db, UID, [
+      {id: "p1", moderationStatus: "pending", thumbUrl: "https://attacker.example/x.jpg"},
+    ]);
+    const first = photosAfter(db);
+    const db2 = fakeDb({ledger});
+    assert.equal(await reconcilePhotoModeration(db2, UID, first), false);
   });
 });

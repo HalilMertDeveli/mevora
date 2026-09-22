@@ -121,14 +121,32 @@ describe("published profile photos", () => {
     await deny(who.userA.bucket().ref(PHOTOS_A).delete());
   });
 
-  it(
-    "unmoderated thumbnails are not client-publishable",
-    knownFinding("B-11", "profile/thumbs/ accepts owner uploads and is readable by every authenticated user, with no moderation gate"),
-    async () => {
-      await deny(write(who.userA, `users/${UID.A}/profile/thumbs/self.jpg`, bytes(64), JPEG));
-      await deny(read(who.userC, THUMBS_A));
-    },
-  );
+  // B-11 regression. No legitimate writer exists: the client's
+  // uploadProfileImage(thumbnail: true) is never invoked and no Cloud Function
+  // generates profile thumbnails, so the prefix is server-only like photos/.
+  it("nobody can publish a thumbnail, including the owner", async () => {
+    await deny(write(who.userA, `users/${UID.A}/profile/thumbs/self.jpg`, bytes(64), JPEG));
+    await deny(write(who.userC, `users/${UID.A}/profile/thumbs/evil.jpg`, bytes(64), JPEG));
+    await deny(write(who.anon, `users/${UID.A}/profile/thumbs/anon.jpg`, bytes(64), JPEG));
+  });
+
+  it("a nested path cannot slip past the thumbnail rule", async () => {
+    // A deeper path falls through to the {allPaths=**} catch-all, which denies.
+    await deny(write(who.userA, `users/${UID.A}/profile/thumbs/sub/self.jpg`, bytes(64), JPEG));
+    await deny(write(who.userA, `users/${UID.A}/profile/thumbs/a/b/c/self.jpg`, bytes(64), JPEG));
+    await deny(write(who.userC, `users/${UID.A}/profile/thumbs/sub/evil.jpg`, bytes(64), JPEG));
+  });
+
+  it("the owner cannot delete or overwrite a server-published thumbnail", async () => {
+    await deny(who.userA.bucket().ref(THUMBS_A).delete());
+    await deny(write(who.userA, THUMBS_A, bytes(64), JPEG));
+  });
+
+  it("reads are unchanged — discovery may still resolve existing thumbnails", async () => {
+    await allow(read(who.userA, THUMBS_A));
+    await allow(read(who.userC, THUMBS_A));
+    await deny(read(who.anon, THUMBS_A));
+  });
 });
 
 describe("chat media — participants only", () => {

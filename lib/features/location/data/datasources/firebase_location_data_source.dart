@@ -133,9 +133,12 @@ class FirebaseLocationDataSource {
       final data = await backend.invoke('getDistanceLabel', {
         'otherUid': otherUid,
       });
+      // The backend discloses a quantised band (bucketKm), never a raw
+      // kilometre figure: a precise distance to a chosen user is a
+      // trilateration oracle. Treat this value as approximate.
       return DistanceLabel(
         text: (data['label'] as String?) ?? '',
-        kilometers: firestoreDouble(data['kilometers']),
+        kilometers: firestoreDouble(data['bucketKm']),
       );
     } on FirebaseException catch (error, stackTrace) {
       Error.throwWithStackTrace(_mapFirebase(error), stackTrace);

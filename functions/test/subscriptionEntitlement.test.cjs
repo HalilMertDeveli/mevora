@@ -175,9 +175,79 @@ describe("premium entitlement policy", () => {
   it("missing or unknown state fails safe to free", () => {
     assert.equal(evaluatePremiumAccess(null, NOW).isPremium, false);
     assert.equal(evaluatePremiumAccess(undefined, NOW).reason, "no_subscription");
-    const unknown = evaluatePremiumAccess(state({status: "paused"}), NOW);
+    // Deliberately a status no store will ever send. "paused" used to stand in
+    // here; it is a real canonical state now, so the guard needs a fresh one.
+    const unknown = evaluatePremiumAccess(
+      state({status: "some_future_store_state"}),
+      NOW,
+    );
     assert.equal(unknown.isPremium, false);
     assert.equal(unknown.reason, "invalid_state");
+  });
+
+  it("paused never grants premium", () => {
+    const access = evaluatePremiumAccess(state({status: "paused"}), NOW);
+    assert.equal(access.isPremium, false);
+    assert.equal(access.reason, "paused");
+    assert.equal(access.accessUntil, null);
+  });
+
+  it("paused with a future expiry still grants nothing", () => {
+    const access = evaluatePremiumAccess(
+      state({status: "paused", expiresAt: FUTURE}),
+      NOW,
+    );
+    assert.equal(access.isPremium, false);
+    assert.equal(access.reason, "paused");
+  });
+
+  it("paused with a future grace window still grants nothing", () => {
+    const access = evaluatePremiumAccess(
+      state({status: "paused", expiresAt: FUTURE, graceUntil: FUTURE}),
+      NOW,
+    );
+    assert.equal(access.isPremium, false);
+    assert.equal(access.reason, "paused");
+  });
+
+  it("pending never grants premium", () => {
+    const access = evaluatePremiumAccess(state({status: "pending"}), NOW);
+    assert.equal(access.isPremium, false);
+    assert.equal(access.reason, "pending");
+    assert.equal(access.accessUntil, null);
+  });
+
+  it("pending with a future expiry still grants nothing", () => {
+    const access = evaluatePremiumAccess(
+      state({status: "pending", expiresAt: FUTURE}),
+      NOW,
+    );
+    assert.equal(access.isPremium, false);
+    assert.equal(access.reason, "pending");
+  });
+
+  it("a legacy isPremium mirror cannot override paused or pending", () => {
+    for (const status of ["paused", "pending"]) {
+      const canonical = fromDocument("u1", {
+        status,
+        entitlement: "premium",
+        isPremium: true,
+        expiresAt: FUTURE,
+      });
+      assert.equal(canonical.status, status, `${status} must survive the mapper`);
+      const access = evaluatePremiumAccess(canonical, NOW);
+      assert.equal(access.isPremium, false, `${status} must not grant premium`);
+      assert.equal(access.reason, status);
+    }
+  });
+
+  it("paused and pending are not stored as expired", () => {
+    for (const status of ["paused", "pending"]) {
+      const canonical = fromDocument("u1", {status, entitlement: "none"});
+      assert.equal(canonical.status, status);
+      assert.notEqual(canonical.status, "expired");
+      assert.equal(canonical.source, "store", "must not be read as a legacy doc");
+    }
   });
 
   it("active grant without an expiry stays premium (manual/lifetime)", () => {
@@ -198,8 +268,23 @@ describe("entitlement merge", () => {
     assert.equal(defaultEntitlementFor("grace_period"), "premium");
     assert.equal(defaultEntitlementFor("billing_retry"), "premium");
     assert.equal(defaultEntitlementFor("expired"), "none");
+    assert.equal(defaultEntitlementFor("paused"), "none");
+    assert.equal(defaultEntitlementFor("pending"), "none");
     assert.equal(defaultEntitlementFor("revoked"), "none");
     assert.equal(defaultEntitlementFor("refunded"), "none");
+  });
+
+  it("writing a pause clears the derived premium mirror", () => {
+    const merged = mergeEntitlement(
+      state(),
+      {userId: "u1", status: "paused"},
+      NOW,
+    );
+    assert.equal(merged.status, "paused");
+    assert.equal(merged.entitlement, "none");
+    assert.equal(merged.isPremium, false);
+    // The paid-period deadline is still on record; it just grants nothing.
+    assert.deepEqual(merged.expiresAt, FUTURE);
   });
 
   it("keeps existing identifiers the caller did not supply", () => {

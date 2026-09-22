@@ -22,9 +22,18 @@ export type StoreEnvironment = "production" | "sandbox";
  *                    grace window is still open (Google account hold / Apple
  *                    billing retry without grace means no access)
  * - `cancelled`      auto-renew turned off; the paid period still runs out
+ * - `paused`         the subscriber suspended the plan; billing and access both
+ *                    stop, but the plan is expected to resume
+ * - `pending`        the purchase exists but its first payment has not settled;
+ *                    nothing has been paid for yet
  * - `expired`        the paid period ended
  * - `revoked`        entitlement withdrawn by the store or by support
  * - `refunded`       money returned; entitlement withdrawn immediately
+ *
+ * `paused` and `pending` both deny access, but neither is `expired`: an expired
+ * subscription has used up what it paid for, while these two describe a live
+ * relationship that has merely stopped granting. Keeping them distinct is what
+ * lets a store adapter report the truth instead of overloading `expired`.
  */
 export type SubscriptionStatus =
   | "active"
@@ -32,6 +41,8 @@ export type SubscriptionStatus =
   | "billing_retry"
   | "expired"
   | "cancelled"
+  | "paused"
+  | "pending"
   | "revoked"
   | "refunded";
 
@@ -122,6 +133,8 @@ export type PremiumAccessReason =
   | "revoked"
   | "refunded"
   | "expired"
+  | "paused"
+  | "pending"
   | "active"
   | "grace"
   | "paid_period_remaining"

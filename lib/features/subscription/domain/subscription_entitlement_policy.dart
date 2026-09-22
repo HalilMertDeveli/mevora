@@ -67,6 +67,11 @@ abstract final class SubscriptionEntitlementPolicy {
       case SubscriptionLifecycle.revoked:
       case SubscriptionLifecycle.refunded:
       case SubscriptionLifecycle.expired:
+      // Paused and pending deny access before any deadline is consulted: a
+      // paused plan keeps a future expiry, and a pending one may carry a
+      // legacy isPremium mirror. Neither may leak access through those.
+      case SubscriptionLifecycle.paused:
+      case SubscriptionLifecycle.pending:
         return lapsed(null);
       case SubscriptionLifecycle.cancelled:
         // Auto-renew off; honour the remaining paid period only.

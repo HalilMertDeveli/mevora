@@ -20,6 +20,14 @@ enum SubscriptionLifecycle {
   /// Auto-renew is off; the paid period still runs to its end.
   cancelled('cancelled'),
 
+  /// The subscriber suspended the plan. Billing and access both stop, but the
+  /// plan is expected to resume — which is what separates this from [expired].
+  paused('paused'),
+
+  /// The purchase exists but its first payment has not settled. Nothing has
+  /// been paid for yet, so nothing is granted.
+  pending('pending'),
+
   /// Entitlement withdrawn by the store or by support.
   revoked('revoked'),
 

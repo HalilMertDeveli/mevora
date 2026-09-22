@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/features/subscription/domain/entities/subscription_lifecycle.dart';
 import 'package:mevora/features/subscription/domain/subscription_entitlement_policy.dart';
@@ -176,6 +178,63 @@ void main() {
       expect(status.isPremium, isFalse);
     });
 
+    test('paused parses and grants nothing', () {
+      final status = SubscriptionEntitlementPolicy.evaluate(
+        doc(status: 'paused', expiresAt: future),
+        now: now,
+      );
+      expect(status.lifecycle, SubscriptionLifecycle.paused);
+      expect(status.isPremium, isFalse);
+      expect(status.accessUntil, isNull);
+    });
+
+    test('paused with a future grace window grants nothing', () {
+      final status = SubscriptionEntitlementPolicy.evaluate(
+        doc(status: 'paused', expiresAt: future, graceUntil: future),
+        now: now,
+      );
+      expect(status.lifecycle, SubscriptionLifecycle.paused);
+      expect(status.isPremium, isFalse);
+    });
+
+    test('pending parses and grants nothing', () {
+      final status = SubscriptionEntitlementPolicy.evaluate(
+        doc(status: 'pending', expiresAt: future),
+        now: now,
+      );
+      expect(status.lifecycle, SubscriptionLifecycle.pending);
+      expect(status.isPremium, isFalse);
+      expect(status.accessUntil, isNull);
+    });
+
+    test('a legacy isPremium mirror cannot override paused or pending', () {
+      for (final state in <String>['paused', 'pending']) {
+        final status = SubscriptionEntitlementPolicy.evaluate(
+          <String, dynamic>{
+            'status': state,
+            'entitlement': 'premium',
+            'isPremium': true,
+            'expiresAt': future,
+          },
+          now: now,
+        );
+        expect(status.isPremium, isFalse, reason: '$state must not grant');
+        expect(status.lifecycle.wireValue, state);
+      }
+    });
+
+    test('paused and pending are not reported as expired', () {
+      for (final state in <String>['paused', 'pending']) {
+        final status = SubscriptionEntitlementPolicy.evaluate(
+          <String, dynamic>{'status': state, 'entitlement': 'none'},
+          now: now,
+        );
+        expect(status.lifecycle.wireValue, state);
+        expect(status.lifecycle, isNot(SubscriptionLifecycle.expired));
+        expect(status.lifecycle, isNot(SubscriptionLifecycle.none));
+      }
+    });
+
     test('unknown status with a legacy premium flag stays premium', () {
       // Forward compatibility: a newer backend status we do not know yet must
       // not silently strip a paying user, so the legacy mirror still applies.
@@ -241,6 +300,72 @@ void main() {
       );
       expect(status.isPremium, isFalse);
       expect(status.lifecycle, SubscriptionLifecycle.expired);
+    });
+  });
+
+  group('server/client parity', () {
+    test('client lifecycle mirrors the canonical server status union', () {
+      final source = File(
+        'functions/src/subscription/types.ts',
+      ).readAsStringSync();
+      final int start = source.indexOf('export type SubscriptionStatus');
+      expect(start, greaterThan(-1), reason: 'canonical union not found');
+      final String union = source.substring(
+        start,
+        source.indexOf(';', start),
+      );
+      final Set<String> serverStates = RegExp('"([a-z_]+)"')
+          .allMatches(union)
+          .map((m) => m.group(1)!)
+          .toSet();
+
+      // `none` is a client-only sentinel for "no document"; the server says
+      // that by having no document at all, so it is not in the union.
+      final Set<String> clientStates = SubscriptionLifecycle.values
+          .where((l) => l != SubscriptionLifecycle.none)
+          .map((l) => l.wireValue)
+          .toSet();
+
+      expect(
+        clientStates,
+        equals(serverStates),
+        reason:
+            'client and server lifecycle vocabularies drifted — every canonical '
+            'status must exist on both sides with the same wire value',
+      );
+    });
+
+    test('no canonical state other than the granting ones can grant', () {
+      const granting = <SubscriptionLifecycle>{
+        SubscriptionLifecycle.active,
+        SubscriptionLifecycle.gracePeriod,
+        SubscriptionLifecycle.billingRetry,
+        SubscriptionLifecycle.cancelled,
+      };
+      for (final lifecycle in SubscriptionLifecycle.values) {
+        // `none` is the "no document" sentinel, not a canonical status the
+        // server ever writes; a document carrying it is handled by the legacy
+        // forward-compatibility branch and covered by its own tests.
+        if (granting.contains(lifecycle) ||
+            lifecycle == SubscriptionLifecycle.none) {
+          continue;
+        }
+        final status = SubscriptionEntitlementPolicy.evaluate(
+          <String, dynamic>{
+            'status': lifecycle.wireValue,
+            'entitlement': 'premium',
+            'isPremium': true,
+            'expiresAt': future,
+            'graceUntil': future,
+          },
+          now: now,
+        );
+        expect(
+          status.isPremium,
+          isFalse,
+          reason: '${lifecycle.wireValue} must never grant Premium',
+        );
+      }
     });
   });
 }

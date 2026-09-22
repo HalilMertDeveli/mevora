@@ -16,6 +16,8 @@ const VALID_STATUSES: ReadonlySet<string> = new Set<SubscriptionStatus>([
   "billing_retry",
   "expired",
   "cancelled",
+  "paused",
+  "pending",
   "revoked",
   "refunded",
 ]);
@@ -50,6 +52,10 @@ function latest(...dates: Array<Date | null | undefined>): Date | null {
  * - `grace_period` / `billing_retry` grant access only while a store-granted
  *   window is still open. Google account hold and Apple billing retry without
  *   a grace window therefore resolve to no access, which is correct.
+ * - `paused` / `pending` never grant access, and unlike every other denial
+ *   they are decided before any deadline is consulted. A paused plan can still
+ *   carry a future `expiresAt`, and a pending one can carry a stale
+ *   `isPremium: true` mirror; neither may leak access.
  * - Missing or unparseable state always fails safe to free.
  */
 export function evaluatePremiumAccess(
@@ -72,6 +78,15 @@ export function evaluatePremiumAccess(
   // rather than the `entitlement: "none"` that lapsing already set.
   if (state.status === "expired") {
     return {isPremium: false, reason: "expired", accessUntil: null};
+  }
+  // Ahead of every deadline and grant check: a paused plan keeps a future
+  // `expiresAt` and a pending one may carry a legacy `isPremium` mirror, so
+  // anything that consults those fields would wrongly grant access here.
+  if (state.status === "paused") {
+    return {isPremium: false, reason: "paused", accessUntil: null};
+  }
+  if (state.status === "pending") {
+    return {isPremium: false, reason: "pending", accessUntil: null};
   }
   if (state.entitlement !== "premium") {
     return {isPremium: false, reason: "entitlement_none", accessUntil: null};

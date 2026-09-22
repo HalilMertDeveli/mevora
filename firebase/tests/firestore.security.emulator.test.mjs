@@ -759,15 +759,51 @@ describe("matches — participant vs non-participant", () => {
     await allow(who.userB.db().doc(`matches/${MATCH_AB}/messages/m1`).get());
   });
 
-  it(
-    "non-participant cannot distinguish an existing match from a missing one",
-    knownFinding("B-07", "get on a missing match is allowed while an existing one denies — existence oracle"),
-    async () => {
-      // Both probes must behave identically for a non-participant.
-      await deny(who.userC.db().doc(`matches/${MATCH_AB}`).get());
-      await deny(who.userC.db().doc("matches/user-x_user-y").get());
-    },
-  );
+  // B-07 regression. Match IDs are the canonical sorted uid pair and
+  // profiles/{uid} is enumerable, so any observable difference between
+  // "exists but not yours" and "does not exist" maps the relationship graph.
+  it("non-participant cannot distinguish an existing match from a missing one", async () => {
+    const db = who.userC.db();
+    await deny(db.doc(`matches/${MATCH_AB}`).get());
+    await deny(db.doc("matches/user-x_user-y").get());
+    await deny(db.doc(`matches/${UID.C}_user-z`).get());
+    await deny(db.doc("matches/totally-made-up-id").get());
+  });
+
+  it("the outcome is identical for both probes, not merely both refused", async () => {
+    const db = who.userC.db();
+    const outcome = async (id) => {
+      try {
+        const snap = await db.doc(`matches/${id}`).get();
+        return `allow:exists=${snap.exists}`;
+      } catch (error) {
+        return `deny:${error.code}`;
+      }
+    };
+    const existing = await outcome(MATCH_AB);
+    const missing = await outcome("user-x_user-y");
+    assert.equal(
+      existing,
+      missing,
+      `existence oracle: existing=${existing} missing=${missing}`,
+    );
+    assert.equal(existing, "deny:permission-denied");
+  });
+
+  it("anonymous visitors learn nothing either", async () => {
+    const db = who.anon.db();
+    await deny(db.doc(`matches/${MATCH_AB}`).get());
+    await deny(db.doc("matches/user-x_user-y").get());
+  });
+
+  it("participants still read their own match after the oracle fix", async () => {
+    await allow(who.userA.db().doc(`matches/${MATCH_AB}`).get());
+    await allow(who.userB.db().doc(`matches/${MATCH_AB}`).get());
+  });
+
+  it("a participant probing a match they are not in is refused like anyone else", async () => {
+    await deny(who.userA.db().doc(`matches/${UID.B}_${UID.C}`).get());
+  });
 });
 
 describe("messages — participant authorization and E2EE enforcement", () => {

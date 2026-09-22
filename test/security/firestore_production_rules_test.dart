@@ -115,36 +115,51 @@ void main() {
   });
 
   group('match compatibility snapshot immutability', () {
+    // B-09 replaced the match freeze-list with a client-write allowlist. These
+    // fields are now server-owned because they are ABSENT from the allowlist,
+    // not because each one is named in a denylist — which also covers fields
+    // added to the schema later. The behavioural proof lives in
+    // firebase/tests/firestore.security.emulator.test.mjs.
+    String matchUpdateAllowlist() {
+      final int start = rules.indexOf('function matchUpdateKeysAllowed()');
+      expect(start, greaterThan(-1), reason: 'match update allowlist missing');
+      return rules.substring(start, rules.indexOf('}', start));
+    }
+
     test('clients cannot mutate compatibilitySnapshots or calculatedAt', () {
-      expect(rules.contains('compatibilitySnapshots'), isTrue);
-      expect(rules.contains('compatibilityCalculatedAt'), isTrue);
-      expect(
-        rules.contains(
-          "request.resource.data.get('compatibilitySnapshots', resource.data.get('compatibilitySnapshots', null))",
-        ),
-        isTrue,
-      );
-      expect(
-        rules.contains(
-          "request.resource.data.get('compatibilityCalculatedAt', resource.data.get('compatibilityCalculatedAt', null))",
-        ),
-        isTrue,
-      );
+      final String allowlist = matchUpdateAllowlist();
+      expect(allowlist.contains('compatibilitySnapshots'), isFalse);
+      expect(allowlist.contains('compatibilityCalculatedAt'), isFalse);
+      expect(rules.contains('matchUpdateKeysAllowed()'), isTrue);
     });
 
     test('clients cannot inject legacy compatibilityScore fields', () {
-      expect(
-        rules.contains(
-          "request.resource.data.get('compatibilityScore', resource.data.get('compatibilityScore', null))",
-        ),
-        isTrue,
-      );
-      expect(
-        rules.contains(
-          "request.resource.data.get('compatibilityBreakdown', resource.data.get('compatibilityBreakdown', null))",
-        ),
-        isTrue,
-      );
+      final String allowlist = matchUpdateAllowlist();
+      expect(allowlist.contains('compatibilityScore'), isFalse);
+      expect(allowlist.contains('compatibilityBreakdown'), isFalse);
+    });
+
+    test('identity snapshot fields are not participant-writable', () {
+      final String allowlist = matchUpdateAllowlist();
+      for (final String field in <String>[
+        'participantVerified',
+        'participantNames',
+        'participantPhotos',
+        'userIds',
+        'isActive',
+        'matchBonusAwarded',
+        'interactionBonusAwarded',
+      ]) {
+        expect(allowlist.contains(field), isFalse,
+            reason: '$field must stay server-owned');
+      }
+    });
+
+    test('per-participant maps are scoped to the calling user', () {
+      expect(rules.contains('function matchMapOwnKeyOnly(key)'), isTrue);
+      expect(rules.contains("matchMapOwnKeyOnly('isNewFor')"), isTrue);
+      expect(rules.contains("matchMapOwnKeyOnly('unreadCounts')"), isTrue);
+      expect(rules.contains('.hasOnly([request.auth.uid])'), isTrue);
     });
 
     test('match create remains server-only', () {

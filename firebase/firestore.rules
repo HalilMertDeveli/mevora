@@ -663,6 +663,47 @@ service cloud.firestore {
         && request.resource.data.geohash.size() <= 12;
     }
 
+    // -----------------------------------------------------------
+    // matches/{matchId} client write allowlist (B-09).
+    //
+    // The previous rule froze a named list of fields, so anything not on that
+    // list — participantVerified, participantNames, participantPhotos, and any
+    // field added later — was participant-writable. Those are server-written
+    // identity snapshots that the matching and chat UI renders for the *other*
+    // participant, so a forged value reached a real user's screen.
+    //
+    // Only two client writers exist:
+    //   markOpened()  isNewFor.<uid> / unreadCounts.<uid>
+    //                 (firebase_social_data.dart, firebase_match_data_source.dart)
+    //   chat send     lastMessage / lastMessageAt / updatedAt
+    //                 (firebase_chat_data_source.dart)
+    //
+    // The peer's unread increment is server-side (applyMessageSideEffects in
+    // functions/src/matchScore.ts) and runs through the Admin SDK, so a client
+    // never needs to write another participant's counter.
+    // -----------------------------------------------------------
+
+    function matchUpdateKeysAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'lastMessage',
+        'lastMessageAt',
+        'updatedAt',
+        'isNewFor',
+        'unreadCounts'
+      ]);
+    }
+
+    // isNewFor/unreadCounts are per-participant maps. A participant may only
+    // move their own entry — otherwise they could clear or inflate the other
+    // side's unread state.
+    function matchMapOwnKeyOnly(key) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([key])
+        || request.resource.data[key]
+            .diff(resource.data.get(key, {}))
+            .affectedKeys()
+            .hasOnly([request.auth.uid]);
+    }
+
     // Incoming likes (toUserId == auth) are NEVER client-readable.
     // Use getIncomingLikes callable (premium-gated) instead.
     match /likes/{likeId} {
@@ -680,36 +721,14 @@ service cloud.firestore {
       allow list: if isAuthenticated()
         && request.auth.uid in resource.data.userIds;
       allow create, delete: if false;
+      // Allowlist, not a freeze list: userIds, createdAt, isActive,
+      // unmatchedBy, participantNames/Photos/Verified, every compatibility
+      // field, scoring state and anything added to the schema later are
+      // server-owned because they are simply not on the list.
       allow update: if isMatchParticipant(matchId)
-        && unchanged('userIds')
-        && unchanged('createdAt')
-        && request.resource.data.isActive == resource.data.isActive
-        && request.resource.data.get('unmatchedBy', null)
-          == resource.data.get('unmatchedBy', null)
-        && request.resource.data.get('matchBonusAwarded', false)
-          == resource.data.get('matchBonusAwarded', false)
-        && request.resource.data.get('interactionBonusAwarded', false)
-          == resource.data.get('interactionBonusAwarded', false)
-        && request.resource.data.get('matchedAt', resource.data.get('matchedAt', null))
-          == resource.data.get('matchedAt', null)
-        && request.resource.data.get('messagedUserIds', resource.data.get('messagedUserIds', []))
-          == resource.data.get('messagedUserIds', [])
-        && request.resource.data.get('endedReason', resource.data.get('endedReason', null))
-          == resource.data.get('endedReason', null)
-        && request.resource.data.get('source', resource.data.get('source', 'mutual_like'))
-          == resource.data.get('source', 'mutual_like')
-        && request.resource.data.get('matchType', resource.data.get('matchType', null))
-          == resource.data.get('matchType', null)
-        && request.resource.data.get('compatibilityKey', resource.data.get('compatibilityKey', null))
-          == resource.data.get('compatibilityKey', null)
-        && request.resource.data.get('compatibilitySnapshots', resource.data.get('compatibilitySnapshots', null))
-          == resource.data.get('compatibilitySnapshots', null)
-        && request.resource.data.get('compatibilityCalculatedAt', resource.data.get('compatibilityCalculatedAt', null))
-          == resource.data.get('compatibilityCalculatedAt', null)
-        && request.resource.data.get('compatibilityScore', resource.data.get('compatibilityScore', null))
-          == resource.data.get('compatibilityScore', null)
-        && request.resource.data.get('compatibilityBreakdown', resource.data.get('compatibilityBreakdown', null))
-          == resource.data.get('compatibilityBreakdown', null);
+        && matchUpdateKeysAllowed()
+        && matchMapOwnKeyOnly('isNewFor')
+        && matchMapOwnKeyOnly('unreadCounts');
 
       match /messages/{messageId} {
         allow read: if isMatchParticipant(matchId);

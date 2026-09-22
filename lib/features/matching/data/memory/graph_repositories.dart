@@ -28,6 +28,12 @@ class GraphMatchRepository implements MatchRepository, LikeRepository, Discovery
   Stream<List<MatchListItem>> watchMatches(String uid) =>
       graph.watchMatches(uid);
 
+  /// Deletion history is a Firestore-backed concept; nothing to surface here.
+  @override
+  Stream<List<MatchListItem>> watchArchivedMatches(String uid) =>
+      const Stream<List<MatchListItem>>.empty();
+
+
   @override
   Future<Match?> getMatch(String matchId) async => graph.matches[matchId];
 

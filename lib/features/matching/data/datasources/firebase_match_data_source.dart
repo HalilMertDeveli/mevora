@@ -26,6 +26,14 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
       _firestore.collection(FirestorePaths.matches);
 
   @override
+  /// Historical deleted-account threads are served by FirebaseMatchRepository,
+  /// which is the repository the app wires up; this legacy data source stays
+  /// active-only.
+  @override
+  Stream<List<MatchListItem>> watchArchivedMatches(String uid) =>
+      const Stream<List<MatchListItem>>.empty();
+
+  @override
   Stream<List<MatchListItem>> watchMatches(String uid) {
     return _matches
         .where('userIds', arrayContains: uid)

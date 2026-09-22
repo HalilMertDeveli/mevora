@@ -131,7 +131,7 @@ function catalogFromSummary(data: DocumentData | undefined): NamedMusicItem[] {
   return out;
 }
 
-function hasPlaylistScope(scope: string | undefined): boolean {
+export function hasPlaylistScope(scope: string | undefined): boolean {
   if (!scope) return false;
   return scope.includes("playlist-read-private") || scope.includes("playlist-read-collaborative");
 }
@@ -279,18 +279,31 @@ async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenSet
   };
 }
 
+/**
+ * Maps a Spotify Web API status onto the error the client sees. 401 means
+ * the stored token died, 403 means the grant does not cover the call, and
+ * anything else non-2xx is an upstream outage — three different UI states.
+ */
+export function spotifyErrorForStatus(status: number): HttpsError | null {
+  if (status === 401) {
+    return new HttpsError("unauthenticated", "token-expired");
+  }
+  if (status === 403) {
+    return new HttpsError("permission-denied", "api-denied");
+  }
+  if (status < 200 || status >= 300) {
+    return new HttpsError("unavailable", "spotify-unavailable");
+  }
+  return null;
+}
+
 async function spotifyGet<T>(accessToken: string, path: string): Promise<T> {
   const response = await fetch(`https://api.spotify.com/v1${path}`, {
     headers: {Authorization: `Bearer ${accessToken}`},
   });
-  if (response.status === 401) {
-    throw new HttpsError("unauthenticated", "token-expired");
-  }
-  if (response.status === 403) {
-    throw new HttpsError("permission-denied", "api-denied");
-  }
-  if (!response.ok) {
-    throw new HttpsError("unavailable", "spotify-unavailable");
+  const failure = spotifyErrorForStatus(response.status);
+  if (failure) {
+    throw failure;
   }
   return await response.json() as T;
 }
@@ -320,27 +333,55 @@ async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> 
   });
 }
 
-async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
-  const existing = await loadSecrets(uid);
+/** Refresh a little before the real expiry so an in-flight call survives. */
+export const TOKEN_REFRESH_SKEW_MS = 15_000;
+
+export type TokenAction = "not-connected" | "use" | "refresh" | "expired";
+
+/**
+ * Decides what to do with the stored Spotify tokens. Split out from the
+ * callable so the lifecycle — live token, refreshable token, and a dead
+ * token with no refresh grant — is testable without Firestore.
+ */
+export function planTokenUse(
+  existing: {refreshToken?: string; expiresAt?: number} | null | undefined,
+  now: number = Date.now(),
+): TokenAction {
   if (!existing) {
-    throw new HttpsError("failed-precondition", "not-connected");
+    return "not-connected";
   }
-  if (existing.expiresAt > Date.now() + 15_000) {
-    return existing;
+  if ((existing.expiresAt ?? 0) > now + TOKEN_REFRESH_SKEW_MS) {
+    return "use";
   }
   if (!existing.refreshToken) {
+    return "expired";
+  }
+  return "refresh";
+}
+
+async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
+  const existing = await loadSecrets(uid);
+  const action = planTokenUse(existing);
+  if (action === "not-connected") {
+    throw new HttpsError("failed-precondition", "not-connected");
+  }
+  if (action === "expired") {
     throw new HttpsError("unauthenticated", "token-expired");
   }
-  const refreshed = await refreshAccessToken(existing.refreshToken);
+  const tokens = existing as SpotifyTokenSet;
+  if (action === "use") {
+    return tokens;
+  }
+  const refreshed = await refreshAccessToken(tokens.refreshToken as string);
   const next = {
     ...refreshed,
-    spotifyUserId: existing.spotifyUserId,
+    spotifyUserId: tokens.spotifyUserId,
   };
   await saveSecrets(uid, next);
   return next;
 }
 
-function summarizeTracks(items: Array<DocumentData>, limit = 20): NamedItem[] {
+export function summarizeTracks(items: Array<DocumentData>, limit = 20): NamedItem[] {
   const out: NamedItem[] = [];
   const seen = new Set<string>();
   for (const item of items) {
@@ -364,7 +405,7 @@ function summarizeTracks(items: Array<DocumentData>, limit = 20): NamedItem[] {
   return out;
 }
 
-function summarizeArtists(items: Array<DocumentData>, limit = 20): NamedItem[] {
+export function summarizeArtists(items: Array<DocumentData>, limit = 20): NamedItem[] {
   const out: NamedItem[] = [];
   for (const item of items) {
     const id = typeof item.id === "string" ? item.id : "";
@@ -380,7 +421,7 @@ function summarizeArtists(items: Array<DocumentData>, limit = 20): NamedItem[] {
   return out;
 }
 
-function genreShares(artists: NamedItem[]): Array<{name: string; percent: number}> {
+export function genreShares(artists: NamedItem[]): Array<{name: string; percent: number}> {
   const counts = new Map<string, number>();
   for (const artist of artists) {
     for (const genre of artist.genres ?? []) {
@@ -469,7 +510,7 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
   };
 }
 
-function toClientProfile(data: DocumentData | undefined): Record<string, unknown> {
+export function toClientProfile(data: DocumentData | undefined): Record<string, unknown> {
   if (!data || data.spotifyConnected !== true) {
     return {spotifyConnected: false, connected: false};
   }
@@ -489,6 +530,43 @@ function toClientProfile(data: DocumentData | undefined): Record<string, unknown
   };
 }
 
+/**
+ * A Spotify account belongs to one Mevora uid. Linking one that another
+ * account already holds is rejected instead of moving the ownership.
+ */
+export function assertMusicOwnership(
+  index: {exists: boolean; uid?: unknown},
+  uid: string,
+): void {
+  if (index.exists && index.uid !== uid) {
+    throw new HttpsError("failed-precondition", "account-exists");
+  }
+}
+
+/** Everything a disconnect must remove, plus the profile flag to clear. */
+export function disconnectPlan(uid: string, spotifyUserId?: string | null) {
+  const deletes = [`spotifySecrets/${uid}`, `users/${uid}/music/summary`];
+  if (spotifyUserId) {
+    deletes.push(`musicSpotifyIndex/${spotifyUserId}`);
+  }
+  return {
+    deletes,
+    profilePath: `profiles/${uid}`,
+    profileData: {spotifyConnected: false},
+  };
+}
+
+/** Spotify is rate limited and the taste barely moves — throttle re-syncs. */
+export function isSyncThrottled(
+  lastSyncedAt: Date | null,
+  now: number = Date.now(),
+): boolean {
+  if (!lastSyncedAt) {
+    return false;
+  }
+  return now - lastSyncedAt.getTime() < SYNC_MIN_INTERVAL_MS;
+}
+
 export const spotifyLinkMusic = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const code = requireString(request.data?.code, "code");
@@ -500,9 +578,7 @@ export const spotifyLinkMusic = onCall(callableOptions, async (request) => {
     throw new HttpsError("unauthenticated", "oauth");
   }
   const indexSnap = await db.doc(`musicSpotifyIndex/${me.id}`).get();
-  if (indexSnap.exists && indexSnap.data()?.uid !== uid) {
-    throw new HttpsError("failed-precondition", "account-exists");
-  }
+  assertMusicOwnership({exists: indexSnap.exists, uid: indexSnap.data()?.uid}, uid);
   const summary = await fetchAndStoreTaste(uid, {...tokens, spotifyUserId: me.id});
   return toClientProfile(summary);
 });
@@ -521,7 +597,7 @@ export const syncSpotifyTaste = onCall(callableOptions, async (request) => {
   const snap = await db.doc(`users/${uid}/music/summary`).get();
   const last = snap.data()?.lastSyncedAt as {toDate?: () => Date} | undefined;
   const lastDate = last && typeof last.toDate === "function" ? last.toDate() : null;
-  if (lastDate && Date.now() - lastDate.getTime() < SYNC_MIN_INTERVAL_MS) {
+  if (isSyncThrottled(lastDate)) {
     return {...toClientProfile(snap.data()), throttled: true};
   }
   const tokens = await validAccessToken(uid);
@@ -535,12 +611,11 @@ export const disconnectMusicAccount = onCall(
     const uid = requireUid(request);
     const snap = await db.doc(`users/${uid}/music/summary`).get();
     const spotifyUserId = snap.data()?.spotifyUserId as string | undefined;
-    await db.doc(`spotifySecrets/${uid}`).delete().catch(() => undefined);
-    await db.doc(`users/${uid}/music/summary`).delete().catch(() => undefined);
-    if (spotifyUserId) {
-      await db.doc(`musicSpotifyIndex/${spotifyUserId}`).delete().catch(() => undefined);
+    const plan = disconnectPlan(uid, spotifyUserId);
+    for (const docPath of plan.deletes) {
+      await db.doc(docPath).delete().catch(() => undefined);
     }
-    await db.doc(`profiles/${uid}`).set({spotifyConnected: false}, {merge: true});
+    await db.doc(plan.profilePath).set(plan.profileData, {merge: true});
     return {ok: true, spotifyConnected: false};
   },
 );

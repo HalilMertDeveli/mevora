@@ -1216,13 +1216,76 @@ describe("preferences and privacy", () => {
     await deny(who.userC.db().doc(`userPreferences/${UID.A}`).get());
   });
 
-  it(
-    "privacy settings are not readable by unrelated users",
-    knownFinding("B-10", "userPrivacy/{uid} allows get to any authenticated user"),
-    async () => {
-      await deny(who.userC.db().doc(`userPrivacy/${UID.A}`).get());
-    },
-  );
+  // B-10 regression. The narrow documented exception is active matches: chat
+  // and the match list render the peer's presence from these flags.
+  it("privacy settings are not readable by unrelated users", async () => {
+    await deny(who.userC.db().doc(`userPrivacy/${UID.A}`).get());
+    await deny(who.anon.db().doc(`userPrivacy/${UID.A}`).get());
+  });
+
+  it("the owner still reads and updates their own privacy document", async () => {
+    await allow(who.userA.db().doc(`userPrivacy/${UID.A}`).get());
+    await allow(
+      who.userA.db().doc(`userPrivacy/${UID.A}`).set({showOnlineStatus: false}, {merge: true}),
+    );
+  });
+
+  it("an active match partner may read the peer's flags — the documented exception", async () => {
+    await allow(who.userB.db().doc(`userPrivacy/${UID.A}`).get());
+    await allow(who.userA.db().doc(`userPrivacy/${UID.B}`).get());
+  });
+
+  it("the exception ends when the match does", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`matches/${MATCH_AB}`).set({isActive: false}, {merge: true});
+    });
+    await deny(who.userB.db().doc(`userPrivacy/${UID.A}`).get());
+  });
+
+  it("the exception does not survive a block", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/blockedUsers/${UID.B}`).set({
+        blockedUserId: UID.B,
+        createdAt: new Date(),
+      });
+    });
+    await deny(who.userB.db().doc(`userPrivacy/${UID.A}`).get());
+  });
+
+  it("nobody can enumerate the collection or write another user's document", async () => {
+    await deny(who.userC.db().collection("userPrivacy").get());
+    await deny(who.userB.db().collection("userPrivacy").get());
+    await deny(who.userC.db().doc(`userPrivacy/${UID.A}`).set({showOnlineStatus: true}));
+    await deny(who.userB.db().doc(`userPrivacy/${UID.A}`).set({showOnlineStatus: true}));
+  });
+
+  // The rules read this document through a privileged get(), which does not
+  // consult the client read rules above. Presence visibility must therefore be
+  // unchanged for a non-participant.
+  it("rule-internal privacy checks still drive presence visibility", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/presence/current`).set({
+        isOnline: true,
+        updatedAt: new Date(),
+      });
+      await ctx.firestore().doc(`userPrivacy/${UID.A}`).set({showOnlineStatus: true});
+    });
+    // C cannot read A's privacy document, but canReadPresence() still resolves
+    // it internally and grants the presence read.
+    await deny(who.userC.db().doc(`userPrivacy/${UID.A}`).get());
+    await allow(who.userC.db().doc(`users/${UID.A}/presence/current`).get());
+
+    // Flip the flags: the same internal check must now deny presence.
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`userPrivacy/${UID.A}`).set({
+        showOnlineStatus: false,
+        showLastSeen: false,
+        showActivity: false,
+      });
+    });
+    await deny(who.userC.db().doc(`users/${UID.A}/presence/current`).get());
+    await allow(who.userA.db().doc(`users/${UID.A}/presence/current`).get());
+  });
 });
 
 describe("server-owned and unknown paths", () => {

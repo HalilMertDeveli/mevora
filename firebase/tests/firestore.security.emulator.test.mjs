@@ -192,24 +192,48 @@ describe("privileged field mutation probes", () => {
     );
   }
 
-  it(
-    "client cannot write the moderation-owned profiles.photos array",
-    knownFinding("B-02", "client writes photos[] directly; the guard trusts a client-supplied moderatedBy"),
-    async () => {
-      await deny(
-        who.userA.db().doc(`profiles/${UID.A}`).update({
-          photos: [
-            {
-              id: "forged",
-              downloadUrl: "https://attacker.example/unmoderated.jpg",
-              moderationStatus: "approved",
-              moderatedBy: "system",
-            },
-          ],
-        }),
-      );
-    },
-  );
+  // B-02. profiles.photos stays client-writable on purpose: Firestore rules
+  // cannot validate the fields of array elements, and add/delete/reorder write
+  // the whole array. Authority lives in the server-owned ledger below, which
+  // enforceProfilePhotoModeration reconciles the array against — see
+  // functions/test/photoModerationAuthority.test.cjs for that half.
+  it("the client may still write photos[] — the array is a projection, not the authority", async () => {
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        photos: [{id: "p1", order: 0, isPrimary: true, moderationStatus: "pending"}],
+      }),
+    );
+  });
+
+  it("the moderation ledger is readable only by its owner and writable by nobody", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/photoModeration/p1`).set({
+        imageId: "p1",
+        status: "approved",
+        moderatedBy: "system",
+      });
+    });
+    await allow(who.userA.db().doc(`users/${UID.A}/photoModeration/p1`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}/photoModeration/p1`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/photoModeration/p1`).get());
+
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/photoModeration/p1`).set({status: "approved"}),
+    );
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/photoModeration/p1`).update({status: "approved"}),
+    );
+    await deny(who.userA.db().doc(`users/${UID.A}/photoModeration/p1`).delete());
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/photoModeration/forged`).set({
+        status: "approved",
+        moderatedBy: "system",
+      }),
+    );
+    await deny(
+      who.userC.db().doc(`users/${UID.A}/photoModeration/p1`).set({status: "approved"}),
+    );
+  });
 });
 
 describe("likes — client writes are denied outright", () => {

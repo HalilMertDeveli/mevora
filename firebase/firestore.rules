@@ -429,6 +429,17 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
+
+      // Authoritative photo moderation decisions. Rules cannot validate the
+      // fields of array elements, so profiles/{uid}.photos stays client-
+      // writable and is only a projection of moderation state. This ledger is
+      // the source of truth; enforceProfilePhotoModeration reconciles the
+      // array against it on every profile write. Owner may read it to display
+      // moderation progress; no client may ever write it.
+      match /photoModeration/{imageId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
     }
 
     // -----------------------------------------------------------

@@ -94,7 +94,6 @@ Currently open (see the Agent B security audit):
 
 | ID | Area |
 |---|---|
-| B-02 | client writes the moderation-owned `profiles.photos` array |
 | B-04 | entitlement/trust fields writable on `users/` and `profiles/` |
 | B-07 | match-existence oracle for non-participants |
 | B-09 | `matches` update freeze-list is not `hasOnly` |

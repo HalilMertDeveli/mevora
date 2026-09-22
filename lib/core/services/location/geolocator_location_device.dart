@@ -17,6 +17,9 @@ class GeolocatorLocationDevice implements LocationDevice {
 
   final PermissionService _permissions;
 
+  /// A cached OS fix older than this is treated as unusable for discovery.
+  static const Duration _lastKnownMaxAge = Duration(minutes: 10);
+
   @override
   Future<bool> isLocationServiceEnabled() {
     return Geolocator.isLocationServiceEnabled();
@@ -39,20 +42,25 @@ class GeolocatorLocationDevice implements LocationDevice {
   @override
   Future<GeoPosition> getCurrentPosition({required Duration timeout}) async {
     try {
+      // No distanceFilter here: it becomes Android's smallestDisplacement,
+      // which withholds the fix until the device physically moves that far.
+      // A stationary user never receives a position, so every one-shot request
+      // times out. Displacement filtering belongs on a position stream.
       final position = await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(
           accuracy: LocationAccuracy.medium,
           timeLimit: timeout,
-          distanceFilter: 100,
         ),
       );
-      return GeoPosition(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        capturedAt: position.timestamp,
-        accuracyMeters: position.accuracy,
-      );
+      return _toGeoPosition(position);
     } on TimeoutException {
+      // Indoors or with a weak signal a fresh fix can time out while the OS
+      // still holds a usable recent one. City-level discovery does not need a
+      // brand-new fix, so prefer that over failing onboarding.
+      final cached = await _recentLastKnownPosition();
+      if (cached != null) {
+        return cached;
+      }
       throw const LocationException(
         'Location request timed out.',
         kind: LocationErrorKind.timeout,
@@ -76,6 +84,34 @@ class GeolocatorLocationDevice implements LocationDevice {
         ),
         stackTrace,
       );
+    }
+  }
+
+  GeoPosition _toGeoPosition(Position position) {
+    return GeoPosition(
+      latitude: position.latitude,
+      longitude: position.longitude,
+      capturedAt: position.timestamp,
+      accuracyMeters: position.accuracy,
+    );
+  }
+
+  /// The OS cached fix, but only when it is recent and well-formed.
+  Future<GeoPosition?> _recentLastKnownPosition() async {
+    try {
+      final last = await Geolocator.getLastKnownPosition();
+      if (last == null) {
+        return null;
+      }
+      final age = DateTime.now().toUtc().difference(last.timestamp.toUtc());
+      if (age.isNegative || age > _lastKnownMaxAge) {
+        return null;
+      }
+      final position = _toGeoPosition(last);
+      return position.isValid ? position : null;
+    } on Object {
+      // The fallback must never mask the original timeout.
+      return null;
     }
   }
 

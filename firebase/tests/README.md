@@ -80,8 +80,8 @@ still open. They are marked with `knownFinding(id, summary)`, which maps to
 node:test's `todo`:
 
 ```js
-it("a third party cannot create a block document naming two other users",
-   knownFinding("B-01", "blocks/{blockId} create does not bind the document ID to blockerId"),
+it("client cannot write the moderation-owned profiles.photos array",
+   knownFinding("B-02", "the guard trusts a client-supplied moderatedBy"),
    async () => { await deny(/* ... */); });
 ```
 
@@ -94,7 +94,6 @@ Currently open (see the Agent B security audit):
 
 | ID | Area |
 |---|---|
-| B-01 | `blocks/{blockId}` document ID is not bound to `blockerId` |
 | B-04 | entitlement/trust fields writable on `users/` and `profiles/` |
 | B-07 | match-existence oracle for non-participants |
 | B-09 | `matches` update freeze-list is not `hasOnly` |

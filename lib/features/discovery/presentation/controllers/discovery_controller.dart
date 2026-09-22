@@ -166,7 +166,20 @@ class DiscoveryController extends ChangeNotifier {
   bool declinedLocation = false;
 
   final Set<String> _actedUserIds = <String>{};
+
+  /// Candidates proven to no longer exist server-side.
+  ///
+  /// Kept for the whole session and applied to every load, so a prefetch that
+  /// was already in flight when the account disappeared cannot put the card
+  /// back on the deck.
+  final Set<String> _evictedUserIds = <String>{};
+
   bool _isProcessingAction = false;
+
+  /// Candidates the deck must never (re)admit: already swiped, or evicted.
+  bool _isExcluded(String candidateUid) =>
+      _actedUserIds.contains(candidateUid) ||
+      _evictedUserIds.contains(candidateUid);
 
   static const int _pageLimit = 15;
   static const int _prefetchThreshold = 3;
@@ -353,6 +366,69 @@ class DiscoveryController extends ChangeNotifier {
     await loadCandidates();
   }
 
+  /// Removes candidates that no longer exist server-side.
+  ///
+  /// The deck, the queued tail and the prefetched batch are one list, so a
+  /// single filter covers all three and the visible card advances naturally
+  /// when it is the one removed. Routed through here rather than a
+  /// `removeWhere` at each call site so the compatibility cache and the
+  /// re-admission guard cannot drift out of step with the deck.
+  ///
+  /// Idempotent, and a no-op for uids that were never on the deck.
+  void evictCandidates(Iterable<String> candidateUids) {
+    final uids = candidateUids.where((uid) => uid.isNotEmpty).toSet();
+    if (uids.isEmpty) {
+      return;
+    }
+    _evictedUserIds.addAll(uids);
+    for (final candidateUid in uids) {
+      _compatibilityCache.remove(uid, candidateUid);
+    }
+
+    final remaining = state.candidates
+        .where((candidate) => !uids.contains(candidate.uid))
+        .toList(growable: false);
+    if (remaining.length == state.candidates.length) {
+      return;
+    }
+
+    state = state.copyWith(candidates: remaining);
+    notifyListeners();
+
+    if (remaining.isEmpty) {
+      unawaited(_reloadWhenDeckEmpty());
+    }
+  }
+
+  /// Re-checks the cards the viewer can actually see or act on.
+  ///
+  /// Bounded to the visible stack (at most three profile reads) and run when
+  /// Discover becomes visible again, so a candidate deleted while the deck sat
+  /// in memory cannot linger — without reloading the deck and losing the
+  /// viewer's place, and without a read per queued candidate.
+  Future<void> revalidateVisibleCandidates() async {
+    final probe = _viewerProfileLoader;
+    final visible = state.stackCandidates;
+    if (probe == null || visible.isEmpty) {
+      return;
+    }
+
+    final gone = <String>[];
+    for (final candidate in visible) {
+      try {
+        if (await probe(candidate.uid) == null) {
+          gone.add(candidate.uid);
+        }
+      } on Object {
+        // A failed probe is not proof of deletion; leave the card alone.
+      }
+    }
+    if (gone.isNotEmpty) {
+      _discoverLog('Evicting ${gone.length} deleted candidate(s)');
+      evictCandidates(gone);
+    }
+  }
+
   void dismissHiddenCompatibility() {
     state = state.copyWith(hiddenCompatibilityDismissed: true);
     notifyListeners();
@@ -446,7 +522,7 @@ class DiscoveryController extends ChangeNotifier {
         var filtered = _applyFilters(
           value.candidates,
           relaxDistance: _expandDistance,
-        ).where((candidate) => !_actedUserIds.contains(candidate.uid)).toList();
+        ).where((candidate) => !_isExcluded(candidate.uid)).toList();
         if (filtered.isEmpty && value.candidates.isNotEmpty) {
           _discoverLog(
             'Strict client filters emptied deck — relaxing distance/goal',
@@ -455,7 +531,7 @@ class DiscoveryController extends ChangeNotifier {
             value.candidates,
             relaxDistance: true,
             relaxSecondary: true,
-          ).where((candidate) => !_actedUserIds.contains(candidate.uid)).toList();
+          ).where((candidate) => !_isExcluded(candidate.uid)).toList();
         }
         final ranked =
             DiscoveryRankingEngine.applyCompatibilityTiebreak(filtered);
@@ -660,6 +736,11 @@ class DiscoveryController extends ChangeNotifier {
       return;
     }
     if (userId == uid) {
+      return;
+    }
+    // A tap already in flight when the candidate was evicted must not turn into
+    // a like or pass against an account that no longer exists.
+    if (_evictedUserIds.contains(userId)) {
       return;
     }
     if (_actedUserIds.contains(userId)) {

@@ -55,6 +55,9 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     with WidgetsBindingObserver {
   DiscoveryController? _owned;
   ProfileUpdateNotifier? _profileUpdates;
+
+  /// Tracks TickerMode so a tab return fires revalidation exactly once.
+  bool _tabVisible = false;
   Offset _drag = Offset.zero;
   DiscoverySwipeDirection _swipeDirection = DiscoverySwipeDirection.none;
   bool _animateOut = false;
@@ -87,7 +90,10 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     // Soft refresh after long idle — keep deck if already loaded.
     if (controller.state.hasDiscoveryError || controller.state.candidates.isEmpty) {
       unawaited(controller.refresh());
+      return;
     }
+    // Deck kept: the cards may have been deleted while we were backgrounded.
+    unawaited(controller.revalidateVisibleCandidates());
   }
 
   void _pulseRelationshipActivity() {
@@ -108,6 +114,19 @@ class _DiscoveryPageState extends State<DiscoveryPage>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    // The shell keeps every visited branch mounted and marks the inactive ones
+    // with TickerMode(enabled: false), so this is the signal that Discover just
+    // became the visible tab. The deck survived in memory while we were away,
+    // so re-check the cards the viewer is about to see.
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible && !_tabVisible) {
+      _tabVisible = true;
+      unawaited(_controller?.revalidateVisibleCandidates());
+    } else if (!visible) {
+      _tabVisible = false;
+    }
+
     final updates = SettingsScope.maybeOf(context)?.profileUpdates;
     if (_profileUpdates != updates) {
       _profileUpdates?.removeListener(_onProfileUpdated);

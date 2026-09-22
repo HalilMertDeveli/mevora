@@ -115,16 +115,16 @@ void main() {
         reason: 'A still listed as an active match. visible=${visibleTexts(tester)}');
     debugPrint('[QA] MATCHES_IMMEDIATE_OK visible=${visibleTexts(tester)}');
 
-    // Discover: the backend stops returning A (profiles/{A} is gone, proven by
-    // the restart test). The deck already fetched into memory before the
-    // deletion is NOT invalidated, so A's card can linger until the next fetch.
-    // That is a pre-existing Discover cache-invalidation defect, outside this
-    // lane — recorded loudly here rather than asserted, so it stays visible
-    // without masking the behaviour this task owns.
+    // Discover, same session, no restart. Returning to the tab flips TickerMode,
+    // which revalidates the visible stack and evicts the deleted candidate, so
+    // A must be gone from the deck fetched before the deletion.
     final discoverStillHasA = await discoverContains(tester, _nameA, maxPasses: 6);
-    debugPrint(discoverStillHasA
-        ? '[QA] KNOWN-ISSUE DISCOVER_STALE_DECK: A still in the pre-fetched deck'
-        : '[QA] DISCOVER_IMMEDIATE_OK');
+    expect(discoverStillHasA, isFalse,
+        reason: 'A survived in the pre-fetched Discover deck after deletion. '
+            'visible=${visibleTexts(tester)}');
+    expect(anyTextContains('QA synthetic bio'), isFalse,
+        reason: 'deleted candidate bio still rendered in Discover');
+    debugPrint('[QA] DISCOVER_IMMEDIATE_OK');
 
     // The feature under test: the retained conversation is still reachable from
     // Matches, as read-only history rather than an active connection.

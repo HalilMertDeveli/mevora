@@ -15,6 +15,12 @@ class CompatibilitySessionCache {
     _cache[_key(viewerUid, candidateUid)] = breakdown;
   }
 
+  /// Drops one viewer/candidate pair — used when a candidate is evicted, so a
+  /// stale breakdown cannot outlive the card it described.
+  void remove(String viewerUid, String candidateUid) {
+    _cache.remove(_key(viewerUid, candidateUid));
+  }
+
   void invalidateViewer(String viewerUid) {
     _cache.removeWhere((key, _) => key.startsWith('$viewerUid::'));
   }

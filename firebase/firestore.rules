@@ -506,8 +506,24 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    // B-10: this was readable by ANY authenticated user, so a throwaway
+    // account could enumerate every user's privacy preferences — nine booleans
+    // covering online status, last seen, typing, distance, age, calls,
+    // messages and notifications.
+    //
+    // There is a real cross-user requirement, but a narrow one: the chat
+    // screen and the match list read the peer's flags to render presence
+    // (chat_controller.dart, matches_controller.dart -> PresenceSubtitle).
+    // Both only ever do so for someone the viewer is actively matched with,
+    // and both already swallow a denied read (onError), so the exception is
+    // scoped to active, non-blocked matches instead of every signed-in account.
+    //
+    // The rules' own privacy checks are unaffected: userPrivacyData() reads
+    // this document through a privileged rule get(), which does not consult
+    // these client read rules, so canReadPresence() keeps working for
+    // everyone. Cloud Functions read it through the Admin SDK.
     match /userPrivacy/{userId} {
-      allow get: if isOwner(userId) || isAuthenticated();
+      allow get: if isOwner(userId) || hasActiveMatchWith(userId);
       allow list: if isOwner(userId);
       allow create, update, delete: if isOwner(userId);
     }

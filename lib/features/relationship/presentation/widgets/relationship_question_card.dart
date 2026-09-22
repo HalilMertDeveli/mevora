@@ -652,16 +652,22 @@ class _ResultTile extends StatelessWidget {
         (candidate.distanceKm == null
             ? null
             : '${candidate.distanceKm} km');
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      onTap: () => _openProfile(context, suggestion),
-      leading: MevoraAvatar(
-        name: candidate.displayName,
-        image: MevoraNetworkImages.provider(candidate.photoUrl),
-        size: 48,
+    // The surrounding result card is a DecoratedBox with its own background, so
+    // the tile needs its own Material — otherwise the tap ink splash paints
+    // beneath that decoration and is never visible.
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        onTap: () => _openProfile(context, suggestion),
+        leading: MevoraAvatar(
+          name: candidate.displayName,
+          image: MevoraNetworkImages.provider(candidate.photoUrl),
+          size: 48,
+        ),
+        title: Text(candidate.displayName),
+        subtitle: Text(distance ?? candidate.city ?? ''),
       ),
-      title: Text(candidate.displayName),
-      subtitle: Text(distance ?? candidate.city ?? ''),
     );
   }
 }

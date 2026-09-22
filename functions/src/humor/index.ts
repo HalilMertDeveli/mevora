@@ -3,6 +3,7 @@ import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
+import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
 import {isHumorCategory} from "./categories.js";
 import {humorScoreForPair} from "./compatibility.js";
 import {
@@ -210,6 +211,10 @@ export const upsertHumorContent = onCall(callableOptions, async (request) => {
     sourceType: data.sourceType === "licensed_api" ? "licensed_api" : "internal",
     provider: typeof data.provider === "string" ? data.provider : undefined,
     licenseRef: typeof data.licenseRef === "string" ? data.licenseRef : null,
+    // Calibration curation is an explicit admin act. An unrecognised slot is
+    // rejected outright rather than silently downgraded, so a typo cannot
+    // quietly drop an item out of the anchor pool it was meant to fill.
+    calibration: parseCalibrationInput(data.calibration),
   };
   const doc = await upsertHumorContentDoc(db, input);
   return {
@@ -217,8 +222,26 @@ export const upsertHumorContent = onCall(callableOptions, async (request) => {
     contentId: doc.contentId,
     safetyStatus: doc.safetyStatus,
     active: doc.active,
+    calibration: doc.calibration,
   };
 });
+
+function parseCalibrationInput(
+  raw: unknown,
+): UpsertHumorContentInput["calibration"] {
+  if (!raw || typeof raw !== "object") {
+    return undefined;
+  }
+  const value = raw as Record<string, unknown>;
+  if (value.eligible !== true) {
+    return {eligible: false};
+  }
+  const slot = value.slot == null ? null : String(value.slot);
+  if (slot !== null && !isAnchorSlotId(slot)) {
+    throw new HttpsError("invalid-argument", "calibration-slot");
+  }
+  return {eligible: true, slot, version: HUMOR_CALIBRATION_VERSION};
+}
 
 export const runHumorModeration = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
@@ -320,6 +343,32 @@ export {validateHumorSourceItem} from "./contentValidation.js";
 export {syncHumorFromGiphy} from "./ingest.js";
 
 // Re-export pure helpers for tests / future V3 wiring (not used by Discover in MVP).
+export {
+  ADJACENT_DIMENSIONS,
+  ANCHOR_INTERACTIONS,
+  ANCHOR_SLOTS,
+  ADAPTIVE_INTERACTIONS,
+  CALIBRATION_TOTAL,
+  EXPLORATION_INTERACTIONS,
+  HUMOR_CALIBRATION_VERSION,
+  advanceCalibration,
+  coverageDimensionsOf,
+  defaultCalibrationState,
+  isAnchorSlotId,
+  isCalibrationComplete,
+  parseCalibrationState,
+  rotatingIndex,
+  rotatingPick,
+  scoreCalibrationCandidate,
+  selectAdaptiveDimensions,
+  selectExplorationDimensions,
+  stableHash,
+  stageForCompletedCount,
+  stageForPosition,
+  toCalibrationView,
+} from "./calibration.js";
+export {selectCalibrationItems} from "./calibrationFeed.js";
+export {listCalibrationPool, parseCalibrationMeta} from "./contentRepository.js";
 export {humorScoreForPair} from "./compatibility.js";
 export {
   applyFeedbackToProfile,

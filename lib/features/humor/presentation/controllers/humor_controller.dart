@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/errors/failure.dart';
+import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
@@ -33,6 +34,7 @@ class HumorViewState {
     this.lastRated,
     this.replayToken = 0,
     this.canUndo = false,
+    this.calibration = HumorCalibration.empty,
   });
 
   final List<HumorContent> items;
@@ -46,8 +48,18 @@ class HumorViewState {
   final int replayToken;
   final bool canUndo;
 
+  /// Server-reported initial calibration progress. The controller never
+  /// advances this itself — it only mirrors what the backend returned.
+  final HumorCalibration calibration;
+
   bool get isEmpty => !isLoading && failure == null && items.isEmpty;
   bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
+
+  /// True while the user is still working through the structured 15.
+  bool get isCalibrating => !calibration.complete;
+
+  /// Stage of the card currently on screen, when it is a calibration item.
+  HumorCalibrationStage? get currentStage => current?.calibrationStage;
 
   HumorContent? get current {
     if (currentIndex < 0 || currentIndex >= items.length) {
@@ -70,6 +82,7 @@ class HumorViewState {
     bool clearLastRated = false,
     int? replayToken,
     bool? canUndo,
+    HumorCalibration? calibration,
   }) {
     return HumorViewState(
       items: items ?? this.items,
@@ -82,6 +95,7 @@ class HumorViewState {
       lastRated: clearLastRated ? null : (lastRated ?? this.lastRated),
       replayToken: replayToken ?? this.replayToken,
       canUndo: canUndo ?? this.canUndo,
+      calibration: calibration ?? this.calibration,
     );
   }
 }
@@ -142,12 +156,53 @@ class HumorController extends ChangeNotifier {
       profile: _state.profile.copyWith(
         interactionCount: page.interactionCount,
         profileBuilding: page.profileBuilding,
+        calibration: page.calibration,
       ),
       nextCursor: page.nextCursor,
+      calibration: page.calibration,
     );
     notifyListeners();
+    _logCalibration(previous: null, next: page.calibration);
     _markViewed(page.items.isEmpty ? null : page.items.first);
     await _refreshProfile();
+  }
+
+  /// Emit calibration analytics from *server-reported* transitions only.
+  ///
+  /// Deliberately carries stage and counts and nothing else — the humor vector
+  /// is behavioural data and never leaves the device through analytics.
+  void _logCalibration({
+    required HumorCalibration? previous,
+    required HumorCalibration next,
+  }) {
+    if (previous == next) {
+      return;
+    }
+    if (next.completedCount == 0 && (previous == null || !previous.started)) {
+      _log(
+        AnalyticsEvents.humorCalibrationStarted,
+        parameters: {'version': next.version},
+      );
+      return;
+    }
+    if (next.complete && (previous == null || !previous.complete)) {
+      _log(
+        AnalyticsEvents.humorCalibrationCompleted,
+        parameters: {'version': next.version, 'total': next.totalCount},
+      );
+      return;
+    }
+    if (previous == null || next.completedCount != previous.completedCount) {
+      _log(
+        AnalyticsEvents.humorCalibrationProgress,
+        parameters: {
+          'version': next.version,
+          'stage': HumorCalibration.stageValue(next.stage),
+          'completed': next.completedCount,
+          'total': next.totalCount,
+        },
+      );
+    }
   }
 
   Future<void> onPageChanged(int index) async {
@@ -192,6 +247,7 @@ class HumorController extends ChangeNotifier {
           contentId: contentId,
           rating: rating,
         );
+        final previousCalibration = _state.calibration;
         _state = _state.copyWith(
           lastRated: rating,
           canUndo: true,
@@ -199,8 +255,14 @@ class HumorController extends ChangeNotifier {
             interactionCount: feedback.interactionCount,
             profileBuilding: feedback.profileBuilding,
             confidence: feedback.confidence,
+            calibration: feedback.calibration,
           ),
+          calibration: feedback.calibration,
           clearFailure: true,
+        );
+        _logCalibration(
+          previous: previousCalibration,
+          next: feedback.calibration,
         );
         _log(
           skipped
@@ -293,7 +355,15 @@ class HumorController extends ChangeNotifier {
     final result = await _repository.getProfile(detailed: detailed);
     result.when(
       success: (profile) {
-        _state = _state.copyWith(profile: profile);
+        // The profile payload carries calibration *progress* but knows nothing
+        // about pool sufficiency — that is a feed-level observation, so keep
+        // the flag the last feed reported instead of clearing it here.
+        _state = _state.copyWith(
+          profile: profile,
+          calibration: profile.calibration.copyWith(
+            insufficientPool: _state.calibration.insufficientPool,
+          ),
+        );
       },
       err: (_) {},
     );
@@ -338,7 +408,13 @@ class HumorController extends ChangeNotifier {
     );
     feed.when(
       success: (page) {
-        final merged = [..._state.items, ...page.items];
+        // Calibration pages are recomputed server-side from persisted state,
+        // so a prefetch may legitimately return items already in the list.
+        final existing = _state.items.map((item) => item.contentId).toSet();
+        final merged = [
+          ..._state.items,
+          ...page.items.where((item) => !existing.contains(item.contentId)),
+        ];
         _state = _state.copyWith(
           items: merged,
           isLoadingMore: false,
@@ -347,7 +423,9 @@ class HumorController extends ChangeNotifier {
           profile: _state.profile.copyWith(
             interactionCount: page.interactionCount,
             profileBuilding: page.profileBuilding,
+            calibration: page.calibration,
           ),
+          calibration: page.calibration,
         );
       },
       err: (failure) {

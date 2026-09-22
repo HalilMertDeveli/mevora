@@ -1288,6 +1288,89 @@ describe("preferences and privacy", () => {
   });
 });
 
+describe("humor calibration state", () => {
+  beforeEach(async () => {
+    await seed(env, async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`users/${UID.A}/humor/summary`).set({
+        vector: {sarcasm: 88, dry: 71},
+        confidence: 0.4,
+        interactionCount: 9,
+        version: 1,
+      });
+      await db.doc(`users/${UID.A}/humor/calibration`).set({
+        version: 1,
+        completedCount: 9,
+        stage: "adaptive",
+        complete: false,
+        ratedContentIds: ["hc_tr_img_001"],
+        coveredSlots: ["anchor_wit"],
+        coveredDimensions: ["sarcasm"],
+        degradedCount: 0,
+      });
+      await db.doc("humorContent/hc_tr_img_001").set({
+        active: true,
+        safetyStatus: "approved",
+        category: "sarcasm",
+        calibrationEligible: true,
+        calibrationSlot: "anchor_wit",
+        calibrationVersion: 1,
+      });
+    });
+  });
+
+  it("the owner may read their own calibration state", async () => {
+    await allow(who.userA.db().doc(`users/${UID.A}/humor/calibration`).get());
+    await allow(who.userA.db().doc(`users/${UID.A}/humor/summary`).get());
+  });
+
+  it("a peer cannot read another user's calibration state or humor vector", async () => {
+    await deny(who.userB.db().doc(`users/${UID.A}/humor/calibration`).get());
+    await deny(who.userB.db().doc(`users/${UID.A}/humor/summary`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/humor/calibration`).get());
+  });
+
+  it("no client can write calibration state — not even the owner", async () => {
+    // This denial is what makes calibration server-authoritative: without it a
+    // client could simply declare itself calibrated.
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/humor/calibration`).set({
+        version: 1,
+        completedCount: 15,
+        stage: "complete",
+        complete: true,
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/humor/calibration`).update({
+        completedCount: 15,
+        complete: true,
+      }),
+    );
+    await deny(who.userA.db().doc(`users/${UID.A}/humor/calibration`).delete());
+    await deny(
+      who.userB.db().doc(`users/${UID.A}/humor/calibration`).set({complete: true}),
+    );
+  });
+
+  it("clients cannot promote content into an anchor pool", async () => {
+    await deny(
+      who.userA.db().doc("humorContent/hc_tr_img_001").set(
+        {calibrationEligible: true, calibrationSlot: "anchor_wit"},
+        {merge: true},
+      ),
+    );
+    await deny(
+      who.userA.db().doc("humorContent/hc_new").set({
+        active: true,
+        safetyStatus: "approved",
+        calibrationEligible: true,
+        calibrationSlot: "anchor_meme",
+      }),
+    );
+  });
+});
+
 describe("server-owned and unknown paths", () => {
   it("third-party token stores are unreachable from any client", async () => {
     await deny(who.userA.db().doc(`spotifySecrets/${UID.A}`).get());

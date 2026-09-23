@@ -188,7 +188,10 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       relationshipSummaryTopics: firestoreStringList(
         raw['relationshipSummaryTopics'],
       ),
-      isVerified: profile['isVerified'] == true || raw['isVerified'] == true,
+      // Both are written by the same backend transaction, so either alone
+      // is correct; the server projection is preferred because a discovery
+      // payload may not carry the full profile document.
+      isVerified: raw['isVerified'] == true || profile['isVerified'] == true,
       isBoosted: raw['isBoosted'] == true,
       categoryRelationshipScore: breakdown['relationshipScore'] == null
           ? null

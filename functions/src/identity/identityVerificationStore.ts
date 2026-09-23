@@ -148,6 +148,9 @@ export async function applyIdentityProviderEvent(
 ): Promise<ApplyEventResult> {
   const verificationRef = identityVerificationRef(db, event.uid);
   const userRef = db.doc(`users/${event.uid}`);
+  // The public card. It carries the badge and nothing else — no session id,
+  // no reason, no timestamps.
+  const profileRef = db.doc(`profiles/${event.uid}`);
 
   return db.runTransaction(async (tx) => {
     const [verificationSnap, userSnap] = await Promise.all([
@@ -192,17 +195,13 @@ export async function applyIdentityProviderEvent(
     // terminal non-verified outcome. An in-flight status leaves it alone so a
     // re-verification does not strip an existing badge mid-flow.
     if (verified) {
-      tx.set(
-        userRef,
-        {isVerified: true, updatedAt: FieldValue.serverTimestamp()},
-        {merge: true},
-      );
+      const badge = {isVerified: true, updatedAt: FieldValue.serverTimestamp()};
+      tx.set(userRef, badge, {merge: true});
+      tx.set(profileRef, badge, {merge: true});
     } else if (event.status === "declined" || event.status === "expired") {
-      tx.set(
-        userRef,
-        {isVerified: false, updatedAt: FieldValue.serverTimestamp()},
-        {merge: true},
-      );
+      const badge = {isVerified: false, updatedAt: FieldValue.serverTimestamp()};
+      tx.set(userRef, badge, {merge: true});
+      tx.set(profileRef, badge, {merge: true});
     }
 
     return {applied: true, status: event.status} as const;

@@ -56,6 +56,7 @@ export class DiditProvider implements IdentityVerificationProviderClient {
     const created = await this.client.createSession({
       vendorData: input.uid,
       language: input.language,
+      callback: this.client.callbackUrl,
     });
     return {
       providerSessionId: created.sessionId,

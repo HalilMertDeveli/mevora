@@ -19,7 +19,6 @@ dependencies:
   cloud_firestore: ^6.8.0
   firebase_storage: ^13.4.6
   cloud_functions: ^6.3.6
-  flutter_idensic_mobile_sdk_plugin: ^1.45.1
   firebase_messaging: ^16.5.0
   firebase_crashlytics: ^5.2.7
   firebase_analytics: ^12.4.6

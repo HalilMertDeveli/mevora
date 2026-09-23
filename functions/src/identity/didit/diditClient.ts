@@ -57,6 +57,11 @@ export type DiditDeletionOutcome = {
 export class DiditClient {
   constructor(private readonly config: DiditRuntimeConfig) {}
 
+  /** Deep link Didit returns the user to. Carries no verdict. */
+  get callbackUrl(): string | undefined {
+    return this.config.callbackUrl;
+  }
+
   /**
    * Creates a verification session.
    *

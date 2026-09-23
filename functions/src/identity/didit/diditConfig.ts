@@ -37,6 +37,16 @@ export const diditEnvironment = defineString("DIDIT_ENVIRONMENT", {
   default: "sandbox",
 });
 
+/**
+ * Where Didit sends the user when the hosted flow finishes.
+ *
+ * A deep link back into MEVORA. It carries no verdict and is not trusted —
+ * it only tells the app to go and re-read MEVORA's own state.
+ */
+export const diditCallbackUrl = defineString("DIDIT_CALLBACK_URL", {
+  default: "mevora://verify/identity",
+});
+
 export type DiditEnvironment = "sandbox" | "live";
 
 export type DiditRuntimeConfig = {
@@ -44,6 +54,7 @@ export type DiditRuntimeConfig = {
   workflowId: string;
   baseUrl: string;
   environment: DiditEnvironment;
+  callbackUrl?: string;
 };
 
 export const diditSecrets = [diditApiKey, diditWebhookSecret] as const;
@@ -99,10 +110,16 @@ export function resolveDiditConfig(): DiditRuntimeConfig | null {
     readStringValue("DIDIT_ENVIRONMENT", diditEnvironment, "sandbox"),
   );
 
+  const callbackUrl = readStringValue(
+    "DIDIT_CALLBACK_URL",
+    diditCallbackUrl,
+    "mevora://verify/identity",
+  );
+
   if (!apiKey || !workflowId || !baseUrl) {
     return null;
   }
-  return {apiKey, workflowId, baseUrl, environment};
+  return {apiKey, workflowId, baseUrl, environment, callbackUrl};
 }
 
 export function isDiditConfigured(): boolean {

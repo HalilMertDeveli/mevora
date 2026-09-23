@@ -4250,6 +4250,60 @@ abstract class AppLocalizations {
   /// **'You\'ve reached today\'s verification limit. Try again tomorrow.'**
   String get verificationAttemptLimit;
 
+  /// No description provided for @verificationProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'We are checking your verification. This usually takes a minute.'**
+  String get verificationProcessing;
+
+  /// No description provided for @verificationUnderReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Your verification is being reviewed. We will update this page when it is done.'**
+  String get verificationUnderReview;
+
+  /// No description provided for @verificationCheckAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get verificationCheckAgain;
+
+  /// No description provided for @verificationExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'That verification session expired before it was finished. You can start a new one.'**
+  String get verificationExpired;
+
+  /// No description provided for @verificationTemporaryError.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not read your verification status just now. Try again in a moment.'**
+  String get verificationTemporaryError;
+
+  /// No description provided for @verificationDeclinedDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not read your ID clearly. Try again in good light, with the whole document in frame.'**
+  String get verificationDeclinedDocument;
+
+  /// No description provided for @verificationDeclinedLiveness.
+  ///
+  /// In en, this message translates to:
+  /// **'The selfie step did not complete. Try again somewhere well lit, looking straight at the camera.'**
+  String get verificationDeclinedLiveness;
+
+  /// No description provided for @verificationDeclinedFaceMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The selfie did not match the photo on your ID. Try again, or use a different document.'**
+  String get verificationDeclinedFaceMatch;
+
+  /// No description provided for @verificationOpensProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be taken to our verification partner to scan your ID and take a selfie, then brought back here.'**
+  String get verificationOpensProvider;
+
   /// No description provided for @whyYouMatch.
   ///
   /// In en, this message translates to:

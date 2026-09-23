@@ -256,6 +256,71 @@ class OnboardingController extends ChangeNotifier {
     }
   }
 
+  /// Adds every photo picked in one gallery interaction, up to the remaining
+  /// slots. Each one goes through the same draft + upload path as a single
+  /// pick, so moderation and the pending-storage route are unchanged.
+  Future<Result<void>> pickGalleryPhotos() async {
+    final uid = _uid;
+    if (uid == null) {
+      return const Err(ValidationFailure(PhotoUploadMessages.needSignIn));
+    }
+    final remaining =
+        OnboardingConfig.maxPhotos -
+        photoDrafts.where((draft) => draft.hasImage).length;
+    if (remaining <= 0) {
+      return Err(
+        ValidationFailure(
+          'You can add up to ${OnboardingConfig.maxPhotos} photos',
+        ),
+      );
+    }
+
+    final picked = await _photoPicker.pickMultipleFromGallery(
+      limit: remaining,
+    );
+    switch (picked) {
+      case Success(:final value):
+        if (value.isEmpty) {
+          return const Err(ValidationFailure('No photo selected'));
+        }
+        final ids = <String>[];
+        final added = <OnboardingPhotoDraft>[];
+        final base = DateTime.now().microsecondsSinceEpoch;
+        for (var i = 0; i < value.length && i < remaining; i += 1) {
+          // Unique even within the same microsecond: a batch pick would
+          // otherwise collide and overwrite its own drafts.
+          final id = '${base + i}';
+          ids.add(id);
+          added.add(
+            OnboardingPhotoDraft(
+              id: id,
+              localBytes: value[i].bytes,
+              contentType: value[i].contentType,
+            ),
+          );
+        }
+        photoDrafts = [...photoDrafts, ...added];
+        _notify();
+
+        // Upload sequentially; one failure must not discard the others.
+        Failure? firstFailure;
+        for (final id in ids) {
+          final result = await _uploadDraft(uid, id);
+          if (result.isError) {
+            firstFailure ??= result.failureOrNull;
+          }
+        }
+        if (firstFailure != null) {
+          return Err(firstFailure);
+        }
+        return const Success(null);
+      case Err(:final failure):
+        errorMessage = failure.message;
+        _notify();
+        return Err(failure);
+    }
+  }
+
   void removePhoto(String id) {
     photoDrafts = [
       for (final draft in photoDrafts)

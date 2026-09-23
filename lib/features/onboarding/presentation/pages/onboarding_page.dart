@@ -370,8 +370,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             enabled: !_controller.isSaving,
             onAddCamera: () =>
                 unawaited(_controller.pickPhoto(fromCamera: true)),
-            onAddGallery: () =>
-                unawaited(_controller.pickPhoto(fromCamera: false)),
+            onAddGallery: () => unawaited(_controller.pickGalleryPhotos()),
             onRetry: (id) => unawaited(_controller.retryPhotoUpload(id)),
             onRemove: _controller.removePhoto,
             onReorder: _controller.reorderPhotos,

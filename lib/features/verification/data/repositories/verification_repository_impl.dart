@@ -4,7 +4,8 @@ import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/verification/data/datasources/firebase_verification_data_source.dart';
-import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification_session.dart';
 import 'package:mevora/features/verification/domain/repositories/verification_repository.dart';
 
 class VerificationRepositoryImpl implements VerificationRepository {
@@ -14,22 +15,23 @@ class VerificationRepositoryImpl implements VerificationRepository {
   final FirebaseVerificationDataSource _remote;
 
   @override
-  Stream<ProfileVerification> watchVerification(String uid) {
+  Stream<IdentityVerification> watchVerification(String uid) {
     return _remote.watchVerification(uid).transform(
-      StreamTransformer<ProfileVerification, ProfileVerification>.fromHandlers(
+      StreamTransformer<IdentityVerification, IdentityVerification>.fromHandlers(
         handleData: (data, sink) => sink.add(data),
         handleError: (error, stackTrace, sink) {
-          sink.add(ProfileVerification.notStarted);
+          // A read failure is not a verdict. Falling back to notStarted keeps
+          // the UI usable and, critically, never invents a verified state.
+          sink.add(IdentityVerification.notStarted);
         },
       ),
     );
   }
 
   @override
-  Future<Result<String>> createAccessToken() async {
+  Future<Result<IdentityVerificationSession>> startVerificationSession() async {
     try {
-      final token = await _remote.createAccessToken();
-      return Success(token);
+      return Success(await _remote.startVerificationSession());
     } on Object catch (error) {
       return Err(_mapCallableError(error));
     }

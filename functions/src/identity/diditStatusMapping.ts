@@ -24,7 +24,7 @@ export type DiditSessionStatus =
 const DIDIT_STATUS_MAP: Record<DiditSessionStatus, IdentityVerificationStatus> = {
   "Not Started": "not_started",
   "In Progress": "in_progress",
-  "Awaiting User": "in_progress",
+  "Awaiting User": "pending",
   "Resubmitted": "in_progress",
   "In Review": "in_review",
   "Approved": "verified",

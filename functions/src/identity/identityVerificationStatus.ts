@@ -13,6 +13,7 @@ export type IdentityVerificationProvider = "sumsub" | "didit";
 
 export type IdentityVerificationStatus =
   | "not_started"
+  | "pending"
   | "in_progress"
   | "in_review"
   | "verified"
@@ -22,6 +23,7 @@ export type IdentityVerificationStatus =
 
 export const IDENTITY_VERIFICATION_STATUSES: readonly IdentityVerificationStatus[] = [
   "not_started",
+  "pending",
   "in_progress",
   "in_review",
   "verified",
@@ -46,7 +48,12 @@ export function isTerminalIdentityStatus(status: IdentityVerificationStatus): bo
 
 /** The user may start a new verification session from this state. */
 export function canStartIdentityVerification(status: IdentityVerificationStatus): boolean {
-  return status !== "verified" && status !== "in_review" && status !== "in_progress";
+  return status !== "verified" && !isInFlightIdentityStatus(status);
+}
+
+/** A session is with the provider or a reviewer right now. */
+export function isInFlightIdentityStatus(status: IdentityVerificationStatus): boolean {
+  return status === "pending" || status === "in_progress" || status === "in_review";
 }
 
 /**

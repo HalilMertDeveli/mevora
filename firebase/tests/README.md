@@ -90,11 +90,62 @@ but the assertion stays honest and is never inverted to force a pass. When the
 finding is fixed the probe turns green; **delete the `knownFinding` marker at
 that point** so it becomes a hard regression test.
 
-Currently open (see the Agent B security audit):
+### Currently open
 
-| ID | Area |
-|---|---|
-| B-07 | match-existence oracle for non-participants |
-| B-09 | `matches` update freeze-list is not `hasOnly` |
-| B-10 | `userPrivacy/{uid}` readable by any authenticated user |
-| B-11 | `profile/thumbs/` is client-writable, unmoderated, world-readable |
+**None.** Every finding from the Agent B security audit is closed on `main`,
+and the suite runs with `todo = 0`. A non-zero todo count means either a new
+finding was filed or a merge silently reverted a hard assertion back to a
+probe — check the breakdown by finding ID, not just the totals.
+
+## Security programme status
+
+All findings below are closed in merged `main` source. Each row's regression
+coverage is executable, not a substring assertion.
+
+| ID | Finding | Fix | Regression coverage |
+|---|---|---|---|
+| B-01 | `blocks/{blockId}` document ID not bound to the blocker | rule binds `blockId == auth.uid + '_' + blockedUserId` | `firestore.security.emulator.test.mjs` — blocks describe |
+| B-02 | client could self-approve photos (`moderatedBy` trusted) | server-owned ledger `users/{uid}/photoModeration/{imageId}` + reconciling trigger | `photoModerationAuthority.test.cjs`, ledger rules probes |
+| B-03 | distance trilateration oracle | active-match gate + 5 km quantisation + rate limit | `distancePrivacy.test.cjs` incl. trilateration probe |
+| B-04 | privileged/entitlement fields client-writable | client-write allowlists on `users/` and `profiles/` | privileged-field + unknown-field probes |
+| B-05 | LiveKit callables missing App Check | `livekitCallable` spread from `socialCallable` | `callableAppCheck.test.cjs` with control pair |
+| B-07 | match-existence oracle for non-participants | `allow get` requires participation; missing and existing deny identically | match describe, outcome-equality assertion |
+| B-09 | match identity / verified-badge spoofing | `matchUpdateKeysAllowed()` allowlist + per-participant map scoping | match describe, peer-forgery probes |
+| B-10 | `userPrivacy/{uid}` readable by any authenticated user | owner or active non-blocked match only | privacy describe incl. rule-internal presence check |
+| B-11 | `profile/thumbs/` client-writable and unmoderated | Storage writes denied; `thumbUrl` moved to the B-02 ledger | `storage.security.emulator.test.mjs`, ledger thumb tests |
+
+### Operational follow-up — legacy forged blocks
+
+B-01 stopped **new** forged block documents. Any malformed record written
+before that rule landed would still be effective and is invisible to clients.
+
+`runForgedBlockAudit` (admin-only callable, `functions/src/automation/`) scans
+`blocks`, classifies malformed documents and files them in `adminReviewQueue`.
+It is **strictly read-only** — there is no delete or repair parameter, by
+design, because an ID heuristic is not sufficient grounds to remove a safety
+record automatically. The lifecycle is deliberately
+`DRY-RUN AUDIT -> HUMAN REVIEW -> separately authorised cleanup`.
+
+Status: **audit mechanism implemented and locally verified. Production
+execution has NOT been run and requires separate explicit authorisation.**
+
+## Commands
+
+```bash
+# Firebase behavioural security (Firestore + Storage + legacy harness)
+npx firebase emulators:exec --only firestore,storage --project mevora-rules-ci "npm --prefix firebase/tests test"
+
+# Cloud Functions (builds first)
+npm --prefix functions test
+
+# Flutter
+flutter test
+
+# Static analysis
+flutter analyze
+npm --prefix functions run build
+```
+
+If another agent already holds the default emulator ports, copy `firebase.json`
+to a scratch config with different `emulators` ports and pass `--config` —
+do not kill the other process.

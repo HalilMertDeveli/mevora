@@ -50,6 +50,7 @@ async function runHandler(
     // compliance matter, not a transient error. Route it to a human rather
     // than letting it exhaust a retry budget and disappear into `failed`.
     return {result: {...result}, needsManualReview: !result.complete};
+  }
   case JobKind.forgedBlockAudit: {
     const result = await auditForgedBlocks({
       db,

@@ -42,6 +42,7 @@ export {
   reportHumorContent,
   upsertHumorContent,
   runHumorModeration,
+  getHumorCalibrationPoolReport,
   seedInternalHumorContent,
   syncHumorFromProvider,
 } from "./humor/index.js";

@@ -3780,4 +3780,48 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorFeedNoContent => 'Şu an gösterilecek içerik yok.';
+
+  @override
+  String get humorResultTitle => 'Mizah profilin hazır';
+
+  @override
+  String get humorResultSubtitle => 'Seni biraz tanıdık. İşte öne çıkanlar.';
+
+  @override
+  String humorResultSummaryTwo(String first, String second) {
+    return '$first ve $second seni yakalıyor.';
+  }
+
+  @override
+  String humorResultSummaryOne(String first) {
+    return 'Özellikle $first sana göre.';
+  }
+
+  @override
+  String get humorResultSummaryNone =>
+      'Mizah tarzın henüz net değil; keşfettikçe netleşecek.';
+
+  @override
+  String humorResultContrast(String weakest) {
+    return '$weakest ise pek işlemiyor.';
+  }
+
+  @override
+  String get humorResultKeepGoing => 'Mizah profilini geliştirmeye devam et';
+
+  @override
+  String get humorResultDone => 'Devam et';
+
+  @override
+  String get humorResultEvolvesNote =>
+      'Yeni içeriklere tepki verdikçe profilin gelişmeye devam eder.';
+
+  @override
+  String get humorResultStrengthHigh => 'Güçlü';
+
+  @override
+  String get humorResultStrengthMedium => 'Belirgin';
+
+  @override
+  String get humorResultStrengthLow => 'Hafif';
 }

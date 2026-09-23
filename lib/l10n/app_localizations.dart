@@ -6883,6 +6883,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No content to show right now.'**
   String get humorFeedNoContent;
+
+  /// No description provided for @humorResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile is ready'**
+  String get humorResultTitle;
+
+  /// No description provided for @humorResultSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We got to know you a little. Here is what stands out.'**
+  String get humorResultSubtitle;
+
+  /// No description provided for @humorResultSummaryTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {second} are what land with you.'**
+  String humorResultSummaryTwo(String first, String second);
+
+  /// No description provided for @humorResultSummaryOne.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} in particular is your thing.'**
+  String humorResultSummaryOne(String first);
+
+  /// No description provided for @humorResultSummaryNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor style is not clear yet; it will sharpen as you explore.'**
+  String get humorResultSummaryNone;
+
+  /// No description provided for @humorResultContrast.
+  ///
+  /// In en, this message translates to:
+  /// **'{weakest} does not do much for you.'**
+  String humorResultContrast(String weakest);
+
+  /// No description provided for @humorResultKeepGoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep shaping your humor profile'**
+  String get humorResultKeepGoing;
+
+  /// No description provided for @humorResultDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get humorResultDone;
+
+  /// No description provided for @humorResultEvolvesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile keeps evolving as you react to new content.'**
+  String get humorResultEvolvesNote;
+
+  /// No description provided for @humorResultStrengthHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong'**
+  String get humorResultStrengthHigh;
+
+  /// No description provided for @humorResultStrengthMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get humorResultStrengthMedium;
+
+  /// No description provided for @humorResultStrengthLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slight'**
+  String get humorResultStrengthLow;
 }
 
 class _AppLocalizationsDelegate

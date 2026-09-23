@@ -11,6 +11,7 @@ abstract final class AppRoutes {
   static const String music = '/music';
   static const String humorLab = '/humor-lab';
   static const String humorCalibration = '/humor/calibration';
+  static const String humorResult = '/humor/result';
   static const String profile = '/profile';
   static const String chat = '/chat/:matchId';
   static const String incomingCall = '/call/incoming/:callId';

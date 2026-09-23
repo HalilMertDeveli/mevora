@@ -29,13 +29,18 @@ class VerificationRepositoryImpl implements VerificationRepository {
   }
 
   @override
-  Future<Result<IdentityVerificationSession>> startVerificationSession() async {
+  Future<Result<IdentityVerificationSession>> startVerificationSession({
+    String? language,
+  }) async {
     try {
-      return Success(await _remote.startVerificationSession());
+      return Success(await _remote.startVerificationSession(language: language));
     } on Object catch (error) {
       return Err(_mapCallableError(error));
     }
   }
+
+  @override
+  Future<void> refreshState() => _remote.refreshState();
 
   Failure _mapCallableError(Object error) {
     final message = error.toString();
@@ -50,6 +55,12 @@ class VerificationRepositoryImpl implements VerificationRepository {
     }
     if (message.contains('already-verified')) {
       return const ValidationFailure('already-verified');
+    }
+    if (message.contains('verification-in-progress')) {
+      return const ValidationFailure('verification-in-progress');
+    }
+    if (message.contains('verification-unavailable')) {
+      return const UnexpectedFailure('verification-unavailable');
     }
     if (message.contains('unauthenticated')) {
       return const AuthFailure('Sign in required.', kind: AuthErrorKind.unknown);

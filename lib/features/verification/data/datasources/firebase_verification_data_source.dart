@@ -23,12 +23,13 @@ class FirebaseVerificationDataSource {
   /// The provider-neutral verification document.
   static const identityDocId = 'identity';
 
-  /// The callable that creates a session for the signed-in user.
-  ///
-  /// Still the Sumsub-era callable: Phase 2 moves the *domain* off the
-  /// provider, and Phase 3 replaces the backend behind this one name. The
-  /// client contract does not change when it does.
-  static const createSessionCallable = 'createSumsubAccessToken';
+  /// The callable that creates (or resumes) a session for the signed-in user.
+  /// It takes no uid — the backend derives it from the auth context.
+  static const createSessionCallable = 'createIdentityVerificationSession';
+
+  /// Reads MEVORA's own authoritative state. Called when the app returns from
+  /// the provider flow, because returning proves nothing on its own.
+  static const readStateCallable = 'getIdentityVerificationState';
 
   /// Watches the neutral document, falling back to the legacy one.
   ///
@@ -51,16 +52,20 @@ class FirebaseVerificationDataSource {
         });
   }
 
-  Future<IdentityVerificationSession> startVerificationSession() async {
+  Future<IdentityVerificationSession> startVerificationSession({
+    String? language,
+  }) async {
     final backend = _backend;
     if (backend == null) {
       throw StateError('Backend callable unavailable');
     }
-    final data = await backend.invoke(createSessionCallable);
+    final data = await backend.invoke(createSessionCallable, {
+      if (language != null) 'language': language,
+    });
 
-    // A native-SDK provider returns a launch token; a hosted-flow provider
-    // returns a URL. Accept either so Phase 3 can switch the backend without
-    // touching anything above this line.
+    // A hosted-flow provider returns a URL; a native-SDK provider returns a
+    // launch token. Both are accepted so the launch mechanism can change
+    // without touching anything above this line.
     final token = (data['token'] ?? data['sessionToken']) as String?;
     final url = data['url'] as String?;
     final sessionId =
@@ -75,6 +80,21 @@ class FirebaseVerificationDataSource {
       throw const FormatException('Verification session cannot be launched');
     }
     return session;
+  }
+
+  /// Forces a read of the backend's verification state.
+  ///
+  /// The Firestore stream is the normal path; this exists for the moment the
+  /// app comes back from the provider and the snapshot listener may not have
+  /// been woken yet. It returns the status only — never a verdict the client
+  /// computed.
+  Future<IdentityVerificationStatus> refreshState() async {
+    final backend = _backend;
+    if (backend == null) {
+      throw StateError('Backend callable unavailable');
+    }
+    final data = await backend.invoke(readStateCallable);
+    return identityVerificationStatusFromFirestore(data['status']);
   }
 
   IdentityVerification _fromIdentitySnapshot(

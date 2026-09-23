@@ -2269,6 +2269,41 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bugünkü doğrulama limitine ulaştınız. Yarın tekrar deneyin.';
 
   @override
+  String get verificationProcessing =>
+      'Doğrulamanı kontrol ediyoruz. Bu genelde bir dakika sürer.';
+
+  @override
+  String get verificationUnderReview =>
+      'Doğrulaman inceleniyor. Sonuçlandığında bu sayfayı güncelleyeceğiz.';
+
+  @override
+  String get verificationCheckAgain => 'Tekrar kontrol et';
+
+  @override
+  String get verificationExpired =>
+      'Bu doğrulama oturumu tamamlanmadan süresi doldu. Yeni bir tane başlatabilirsin.';
+
+  @override
+  String get verificationTemporaryError =>
+      'Doğrulama durumunu şu anda okuyamadık. Birazdan tekrar dene.';
+
+  @override
+  String get verificationDeclinedDocument =>
+      'Kimliğini net okuyamadık. İyi ışıkta, belgenin tamamı kadrajda olacak şekilde tekrar dene.';
+
+  @override
+  String get verificationDeclinedLiveness =>
+      'Selfie adımı tamamlanmadı. Aydınlık bir yerde, doğrudan kameraya bakarak tekrar dene.';
+
+  @override
+  String get verificationDeclinedFaceMatch =>
+      'Selfie, kimliğindeki fotoğrafla eşleşmedi. Tekrar dene veya farklı bir belge kullan.';
+
+  @override
+  String get verificationOpensProvider =>
+      'Kimliğini taratıp selfie çekmen için doğrulama partnerimize yönlendirileceksin, sonra buraya döneceksin.';
+
+  @override
   String get whyYouMatch => 'Neden eşleşiyorsunuz?';
 
   @override

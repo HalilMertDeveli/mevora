@@ -3,6 +3,7 @@ import {logger} from "firebase-functions";
 import {claimJob, completeJob, failJob, markManualReview} from "./jobs.js";
 import {JobKind} from "./types.js";
 import {verifyAccountDeletion} from "./deletionVerify.js";
+import {auditForgedBlocks} from "./forgedBlockAudit.js";
 import {safeLogMeta} from "../security/logHygiene.js";
 
 export type ProcessJobOutcome =
@@ -37,6 +38,19 @@ async function runHandler(
     // An incomplete deletion is a compliance issue, not a transient error:
     // retrying cannot fix it, so route it to a human instead of `failed`.
     return {result: {...result}, needsManualReview: !result.complete};
+  }
+  case JobKind.forgedBlockAudit: {
+    const result = await auditForgedBlocks({
+      db,
+      pageSize: typeof payload.pageSize === "number" ? payload.pageSize : undefined,
+      maxPages: typeof payload.maxPages === "number" ? payload.maxPages : undefined,
+      startAfterId: typeof payload.startAfterId === "string" ? payload.startAfterId : null,
+      jobId: typeof payload.jobId === "string" ? payload.jobId : undefined,
+    });
+    // Anything flagged is a safety record a human must judge — the audit
+    // deliberately cannot repair it. An incomplete scan also needs a human to
+    // resume from nextCursor, so neither case silently reports "succeeded".
+    return {result, needsManualReview: result.flagged > 0 || !result.complete};
   }
   default:
     throw new PermanentJobError(`unknown_job_kind:${kind}`);

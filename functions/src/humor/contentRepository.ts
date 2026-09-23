@@ -1,4 +1,9 @@
-import {FieldValue, type DocumentData, type Firestore} from "firebase-admin/firestore";
+import {
+  FieldValue,
+  Timestamp,
+  type DocumentData,
+  type Firestore,
+} from "firebase-admin/firestore";
 import {
   isHumorCategory,
   normalizeHumorVector,
@@ -6,6 +11,7 @@ import {
   type HumorVector,
 } from "./categories.js";
 import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
+import {CALIBRATION_SEED} from "./calibrationSeed.js";
 import {classifyHumorSafety, emptySafetyFlags} from "./moderation.js";
 import {resolveHumorSourceAdapter} from "./sourceAdapter.js";
 import type {
@@ -122,47 +128,6 @@ export async function loadHumorContent(
   return parseHumorContent(snap.id, snap.data());
 }
 
-export async function listCandidateHumorContent(
-  db: Firestore,
-  input: {languages: string[]; limit: number},
-): Promise<HumorContentDoc[]> {
-  const languages = input.languages.map((l) => l.toLowerCase()).filter(Boolean);
-  const limit = Math.min(200, Math.max(input.limit, 40));
-  // Prefer indexed query; fall back to broader scan if composite index missing.
-  try {
-    let query = db
-      .collection(HUMOR_CONTENT_COLLECTION)
-      .where("active", "==", true)
-      .where("safetyStatus", "==", "approved")
-      .limit(limit);
-    if (languages.length === 1) {
-      query = query.where("language", "==", languages[0]);
-    }
-    const snap = await query.get();
-    const items = snap.docs
-      .map((doc) => parseHumorContent(doc.id, doc.data()))
-      .filter((item): item is HumorContentDoc => item != null);
-    if (languages.length > 1) {
-      return items.filter((item) => languages.includes(item.language));
-    }
-    return items;
-  } catch {
-    const snap = await db
-      .collection(HUMOR_CONTENT_COLLECTION)
-      .where("active", "==", true)
-      .limit(limit)
-      .get();
-    return snap.docs
-      .map((doc) => parseHumorContent(doc.id, doc.data()))
-      .filter((item): item is HumorContentDoc => {
-        if (!item) return false;
-        if (item.safetyStatus !== "approved") return false;
-        if (languages.length && !languages.includes(item.language)) return false;
-        return true;
-      });
-  }
-}
-
 /**
  * Curated calibration pool.
  *
@@ -220,6 +185,121 @@ export async function listCalibrationPool(
         .limit(limit),
     );
   }
+}
+
+/** Opaque scan position inside the humor catalog. */
+export type HumorScanPosition = {
+  /** `createdAt` of the last scanned document, as epoch millis. */
+  createdAtMs: number;
+  /** Document id, breaking ties on identical timestamps. */
+  contentId: string;
+};
+
+/**
+ * A servable item together with its own position in the catalog order.
+ *
+ * The caller needs per-item positions, not just a page boundary: the feed's
+ * cursor must stop after the last item it actually *served*, otherwise every
+ * candidate it scanned past but did not serve would be skipped forever.
+ */
+export type HumorCandidateEntry = {
+  content: HumorContentDoc;
+  position: HumorScanPosition;
+};
+
+export type HumorCandidatePage = {
+  entries: HumorCandidateEntry[];
+  /** Position after the last document *looked at*, to continue scanning. */
+  scannedTo: HumorScanPosition | null;
+  /** True when this page reached the end of the catalog. */
+  exhausted: boolean;
+};
+
+function toMillis(value: unknown): number {
+  const candidate = value as {toMillis?: () => number} | null | undefined;
+  if (candidate && typeof candidate.toMillis === "function") {
+    return candidate.toMillis();
+  }
+  return 0;
+}
+
+/**
+ * One ordered page of servable humor content.
+ *
+ * `listCandidateHumorContent` took an unordered `limit(120)`, which Firestore
+ * resolves in `__name__` order — so every call returned the *same* first 120
+ * documents however large the catalog grew, and a user who rated them all got
+ * an empty feed forever. This walks the catalog instead, newest first,
+ * resuming from an explicit position.
+ *
+ * Ordering by `createdAt` means a document missing that field is invisible to
+ * the feed. `upsertHumorContentDoc` always stamps it on create and a test pins
+ * that invariant, so the ordering key is safe to rely on.
+ */
+export async function listHumorContentPage(
+  db: Firestore,
+  input: {
+    languages: string[];
+    pageSize: number;
+    after?: HumorScanPosition | null;
+  },
+): Promise<HumorCandidatePage> {
+  const languages = input.languages.map((l) => l.toLowerCase()).filter(Boolean);
+  const pageSize = Math.min(100, Math.max(10, input.pageSize));
+
+  let query = db
+    .collection(HUMOR_CONTENT_COLLECTION)
+    .where("active", "==", true)
+    .where("safetyStatus", "==", "approved") as FirebaseFirestore.Query;
+
+  // A single preferred language is cheap to push into the query. Two or more
+  // are filtered in memory rather than fanning out into an index per pair.
+  if (languages.length === 1) {
+    query = query.where("language", "==", languages[0]);
+  }
+
+  query = query.orderBy("createdAt", "desc").orderBy("__name__", "desc");
+
+  if (input.after) {
+    query = query.startAfter(
+      Timestamp.fromMillis(input.after.createdAtMs),
+      db.collection(HUMOR_CONTENT_COLLECTION).doc(input.after.contentId),
+    );
+  }
+
+  const snap = await query.limit(pageSize).get();
+
+  // `scannedTo` advances past every document we *looked at*, not just the ones
+  // that survived filtering — otherwise a page of wrong-language content would
+  // make the scan stall on the same spot forever.
+  const lastDoc = snap.docs[snap.docs.length - 1];
+  const exhausted = snap.docs.length < pageSize || !lastDoc;
+  const scannedTo = exhausted
+    ? null
+    : {
+        createdAtMs: toMillis(lastDoc!.get("createdAt")),
+        contentId: lastDoc!.id,
+      };
+
+  const entries = snap.docs
+    .map((doc) => ({
+      content: parseHumorContent(doc.id, doc.data()),
+      position: {
+        createdAtMs: toMillis(doc.get("createdAt")),
+        contentId: doc.id,
+      },
+    }))
+    .filter((entry): entry is HumorCandidateEntry => {
+      const item = entry.content;
+      if (!item) return false;
+      // Re-checked in memory as well as in the query: a fallback path must
+      // never be able to serve unapproved content.
+      if (!item.active || item.safetyStatus !== "approved") return false;
+      if (languages.length > 1 && !languages.includes(item.language)) return false;
+      return true;
+    });
+
+  return {entries, scannedTo, exhausted};
 }
 
 export type UpsertHumorContentInput = {
@@ -301,366 +381,25 @@ export async function upsertHumorContentDoc(
   })!;
 }
 
-/** Internal seed — Turkish-first real playable media (no scraping).
- * Videos: Google sample bucket (public HTTPS MP4).
- * Images: picsum (public HTTPS). Captions are Mevora-authored Turkish humor.
- */
-const INTERNAL_HUMOR_SEED_ITEMS: Array<Omit<UpsertHumorContentInput, "safetyStatus">> = [
-  {
-    contentId: "hc_tr_vid_001",
-    type: "video",
-    language: "tr",
-    category: "absurd",
-    humorTags: ["absürt", "video"],
-    humorVector: {absurd: 0.85, silly: 0.6, meme: 0.4},
-    media: {
-      downloadUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      thumbUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg",
-      durationMs: 15000,
-      aspectRatio: 16 / 9,
-      textBody: "Alarm değil, sabah sabotajı.",
-    },
-    active: true,
-    sourceType: "internal",
-    provider: "mevora-internal",
-  },
-  {
-    contentId: "hc_tr_vid_002",
-    type: "video",
-    language: "tr",
-    category: "situational",
-    humorTags: ["günlük", "video"],
-    humorVector: {situational: 0.88, dry: 0.45, silly: 0.5},
-    media: {
-      downloadUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-      thumbUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg",
-      durationMs: 15000,
-      aspectRatio: 16 / 9,
-      textBody: "Buzdolabı yine boş fikirler sunuyor.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_vid_003",
-    type: "video",
-    language: "tr",
-    category: "silly",
-    humorTags: ["saçma", "video"],
-    humorVector: {silly: 0.9, absurd: 0.55, meme: 0.35},
-    media: {
-      downloadUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      thumbUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerFun.jpg",
-      durationMs: 60000,
-      aspectRatio: 16 / 9,
-      textBody: "Planım vardı… sonra pazartesi oldu.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_vid_004",
-    type: "video",
-    language: "tr",
-    category: "meme",
-    humorTags: ["meme", "video"],
-    humorVector: {meme: 0.9, situational: 0.6, cringe: 0.25},
-    media: {
-      downloadUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-      thumbUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg",
-      durationMs: 15000,
-      aspectRatio: 16 / 9,
-      textBody: "Wi‑Fi şifresi kadar karmaşık bir ruh hali.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_001",
-    type: "meme",
-    language: "tr",
-    category: "sarcasm",
-    humorTags: ["ironi", "meme"],
-    humorVector: {sarcasm: 0.88, dry: 0.55, teasing: 0.4},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-1/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-1/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Tabii, trafik yine benim yüzümden oluştu.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_002",
-    type: "image",
-    language: "tr",
-    category: "wordplay",
-    humorTags: ["kelime", "espri"],
-    humorVector: {wordplay: 0.85, silly: 0.55},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-2/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-2/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Kahve olmadan ben 'ben' değilim; 'be n'.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_003",
-    type: "meme",
-    language: "tr",
-    category: "teasing",
-    humorTags: ["takılma"],
-    humorVector: {teasing: 0.86, romantic: 0.35, silly: 0.45},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-3/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-3/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Poker suratın tatilde galiba.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_004",
-    type: "image",
-    language: "tr",
-    category: "cringe",
-    humorTags: ["cringe", "sosyal"],
-    humorVector: {cringe: 0.82, situational: 0.65, silly: 0.4},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-4/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-4/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Arkandaki kişiye el sallayanı sandım. Klasik.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_005",
-    type: "meme",
-    language: "tr",
-    category: "dark",
-    humorTags: ["kuru", "bitki"],
-    humorVector: {dark: 0.68, dry: 0.6, situational: 0.4},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-5/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-5/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Bitkilerimle karşılıklı ihmal anlaşmamız var.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_vid_005",
-    type: "video",
-    language: "tr",
-    category: "romantic",
-    humorTags: ["romantik", "espri"],
-    humorVector: {romantic: 0.75, teasing: 0.5, silly: 0.4},
-    media: {
-      downloadUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
-      thumbUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerMeltdowns.jpg",
-      durationMs: 15000,
-      aspectRatio: 16 / 9,
-      textBody: "Sen Wi‑Fi misin? Bağlantı hissediyorum.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_en_vid_001",
-    type: "video",
-    language: "en",
-    category: "silly",
-    humorTags: ["silly", "fallback"],
-    humorVector: {silly: 0.8, meme: 0.5},
-    media: {
-      downloadUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      thumbUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
-      durationMs: 60000,
-      aspectRatio: 16 / 9,
-      textBody: "English fallback clip for bilingual users.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_en_img_001",
-    type: "image",
-    language: "en",
-    category: "meme",
-    humorTags: ["meme", "fallback"],
-    humorVector: {meme: 0.85, situational: 0.5},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-en-1/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-en-1/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "English fallback still — TR feed stays primary.",
-    },
-    active: true,
-  },
-
-  // --- Calibration alternates -------------------------------------------
-  // A second measurement-equivalent item per anchor slot, so the rotation
-  // selector has something to rotate between and two users calibrated on the
-  // same slot need not watch the same asset. Plus one `dry`-dominant item,
-  // which the original seed had no focused candidate for.
-  {
-    contentId: "hc_tr_img_006",
-    type: "meme",
-    language: "tr",
-    category: "sarcasm",
-    humorTags: ["ironi", "gunluk"],
-    humorVector: {sarcasm: 0.86, dry: 0.5, situational: 0.35},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-6/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-6/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Harika, tam da bugün bitmesi gereken şey bitmedi.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_vid_006",
-    type: "video",
-    language: "tr",
-    category: "absurd",
-    humorTags: ["absürt", "video"],
-    humorVector: {absurd: 0.87, silly: 0.55},
-    media: {
-      downloadUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-      thumbUrl:
-        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg",
-      durationMs: 15000,
-      aspectRatio: 16 / 9,
-      textBody: "Rüyamda da sıra bekliyordum. Uyanınca da.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_007",
-    type: "image",
-    language: "tr",
-    category: "situational",
-    humorTags: ["günlük", "sosyal"],
-    humorVector: {situational: 0.85, cringe: 0.4, dry: 0.35},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-7/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-7/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Asansörde sohbet başlatan insan türü üzerine bir inceleme.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_008",
-    type: "meme",
-    language: "tr",
-    category: "meme",
-    humorTags: ["meme", "klasik"],
-    humorVector: {meme: 0.88, silly: 0.45},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-8/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-8/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Bildirimi kapattım, huzur geldi sandım. Gelmedi.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_009",
-    type: "image",
-    language: "tr",
-    category: "wordplay",
-    humorTags: ["kelime", "espri"],
-    humorVector: {wordplay: 0.87, sarcasm: 0.4},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-9/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-9/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Planım yoktu ama planım olmadığına dair bir planım vardı.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_010",
-    type: "meme",
-    language: "tr",
-    category: "cringe",
-    humorTags: ["cringe", "sosyal"],
-    humorVector: {cringe: 0.85, teasing: 0.45, situational: 0.5},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-10/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-10/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Sesli mesajı yanlış gruba attım. İyi geceler herkese.",
-    },
-    active: true,
-  },
-  {
-    contentId: "hc_tr_img_011",
-    type: "image",
-    language: "tr",
-    category: "dry",
-    humorTags: ["kuru", "sakin"],
-    humorVector: {dry: 0.86, situational: 0.4},
-    media: {
-      downloadUrl: "https://picsum.photos/seed/mevora-tr-11/1080/1920",
-      thumbUrl: "https://picsum.photos/seed/mevora-tr-11/540/960",
-      aspectRatio: 9 / 16,
-      textBody: "Evet. Güzel. Devam edelim.",
-    },
-    active: true,
-  },
-];
-
 /**
- * Calibration curation for the internal seed.
+ * Curated calibration catalog, re-exported under its historical name.
  *
- * Kept as an explicit table rather than a field on each item so that "which
- * content is trusted as an anchor" is reviewable in one place — and so the
- * default for anything absent from this table is, correctly, *not* eligible.
- *
- * Each anchor slot has two measurement-equivalent candidates; the rest of the
- * eligible pool feeds the adaptive and exploration stages, which select by
- * dimension rather than by slot.
+ * The content itself now lives in `calibrationSeed.ts`, which keeps curation
+ * — what measures what, which slot it fills, how deep each pool is — separate
+ * from persistence. `seedInternalHumorContent` is unchanged and still writes
+ * exactly this list.
  */
-const INTERNAL_SEED_CALIBRATION: Readonly<
-  Record<string, {eligible: boolean; slot?: string | null}>
-> = {
-  // Anchor slots — two equivalent candidates each.
-  hc_tr_img_001: {eligible: true, slot: "anchor_wit"},
-  hc_tr_img_006: {eligible: true, slot: "anchor_wit"},
-  hc_tr_vid_001: {eligible: true, slot: "anchor_absurd"},
-  hc_tr_vid_006: {eligible: true, slot: "anchor_absurd"},
-  hc_tr_vid_002: {eligible: true, slot: "anchor_everyday"},
-  hc_tr_img_007: {eligible: true, slot: "anchor_everyday"},
-  hc_tr_vid_004: {eligible: true, slot: "anchor_meme"},
-  hc_tr_img_008: {eligible: true, slot: "anchor_meme"},
-  hc_tr_img_002: {eligible: true, slot: "anchor_wordplay"},
-  hc_tr_img_009: {eligible: true, slot: "anchor_wordplay"},
-  hc_tr_img_004: {eligible: true, slot: "anchor_social"},
-  hc_tr_img_010: {eligible: true, slot: "anchor_social"},
-  // Adaptive / exploration pool — eligible, but never an anchor.
-  hc_tr_vid_003: {eligible: true, slot: null},
-  hc_tr_vid_005: {eligible: true, slot: null},
-  hc_tr_img_003: {eligible: true, slot: null},
-  hc_tr_img_005: {eligible: true, slot: null},
-  hc_tr_img_011: {eligible: true, slot: null},
-  hc_en_vid_001: {eligible: true, slot: null},
-  hc_en_img_001: {eligible: true, slot: null},
-};
-
 export const INTERNAL_HUMOR_SEED: Array<Omit<UpsertHumorContentInput, "safetyStatus">> =
-  INTERNAL_HUMOR_SEED_ITEMS.map((item) => ({
-    ...item,
-    calibration: INTERNAL_SEED_CALIBRATION[item.contentId] ?? {eligible: false},
+  CALIBRATION_SEED.map((item) => ({
+    contentId: item.contentId,
+    type: item.type,
+    language: item.language,
+    category: item.category,
+    humorTags: item.humorTags,
+    humorVector: item.humorVector,
+    media: item.media,
+    active: item.active,
+    sourceType: item.sourceType,
+    provider: item.provider,
+    calibration: item.calibration,
   }));

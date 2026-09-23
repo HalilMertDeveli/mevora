@@ -16,10 +16,18 @@ abstract final class AuthRedirector {
     AppRoutes.legalGuidelines,
   };
 
+  /// QA login behaves as a session route, but only while the gate is open, so
+  /// it can never widen the unauthenticated surface in a production build.
+  static bool _isSessionRoute(String location, bool qaLoginEnabled) {
+    return _sessionRoutes.contains(location) ||
+        (qaLoginEnabled && location == AppRoutes.qaLogin);
+  }
+
   static String? redirect({
     required AuthStatus status,
     required String location,
     bool allowDesignSystem = false,
+    bool qaLoginEnabled = false,
     bool phoneChallengeActive = false,
     bool needsLocationOnboarding = false,
     bool locationGateResolved = true,
@@ -28,12 +36,19 @@ abstract final class AuthRedirector {
       return null;
     }
 
+    // Route-level guard. Hiding the button is not the defence: with the gate
+    // closed this path is not navigable at all, however it is reached —
+    // deep link, restored location, or a hand-typed URL.
+    if (location == AppRoutes.qaLogin && !qaLoginEnabled) {
+      return AppRoutes.login;
+    }
+
     switch (status) {
       case AuthInitializing():
         return location == AppRoutes.splash ? null : AppRoutes.splash;
       case Authenticating():
         return location == AppRoutes.splash ||
-                _sessionRoutes.contains(location)
+                _isSessionRoute(location, qaLoginEnabled)
             ? null
             : AppRoutes.splash;
       case PhoneCodeSent() || PhoneVerificationRequired():
@@ -42,7 +57,7 @@ abstract final class AuthRedirector {
         if (location == AppRoutes.phoneOtp) {
           return phoneChallengeActive ? null : AppRoutes.phone;
         }
-        return _sessionRoutes.contains(location) ||
+        return _isSessionRoute(location, qaLoginEnabled) ||
                 _publicLegalRoutes.contains(location)
             ? null
             : AppRoutes.login;
@@ -73,7 +88,7 @@ abstract final class AuthRedirector {
         if (location == AppRoutes.splash ||
             location == AppRoutes.onboarding ||
             location == AppRoutes.locationPermission ||
-            _sessionRoutes.contains(location) ||
+            _isSessionRoute(location, qaLoginEnabled) ||
             location == AppRoutes.phoneOtp) {
           return AppRoutes.discovery;
         }

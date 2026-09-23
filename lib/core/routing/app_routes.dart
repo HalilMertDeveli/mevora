@@ -2,6 +2,11 @@ abstract final class AppRoutes {
   static const String splash = '/';
   static const String root = splash;
   static const String login = '/login';
+
+  /// Emulator-only QA sign-in. Reachable only when EmulatorQaLogin.isEnabled;
+  /// the router redirects it to [login] otherwise, so the path exists but is
+  /// not navigable in a production build.
+  static const String qaLogin = '/qa-login';
   static const String register = '/register';
   static const String passwordReset = '/password-reset';
   static const String onboarding = '/onboarding';

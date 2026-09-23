@@ -62,6 +62,43 @@ export async function enqueueJob(options: EnqueueJobOptions): Promise<{
   };
 }
 
+/**
+ * Return a job that already reached a terminal state to `queued` with a fresh
+ * payload and retry budget.
+ *
+ * Needed because job ids collapse on the idempotency key: a second deletion pass
+ * for the same uid finds the first pass's job and would otherwise inherit its
+ * verdict, which described the state *before* this pass ran. Jobs still queued,
+ * running or awaiting human review are left alone.
+ */
+export async function rearmTerminalJob(
+  jobId: string,
+  payload: DocumentData,
+  db: Firestore = getFirestore(),
+): Promise<boolean> {
+  return db.runTransaction(async (tx) => {
+    const ref = jobRef(jobId, db);
+    const snap = await tx.get(ref);
+    if (!snap.exists) {
+      return false;
+    }
+    const status = String(snap.data()?.status);
+    if (status !== JobStatus.succeeded && status !== JobStatus.failed) {
+      return false;
+    }
+    tx.update(ref, {
+      status: JobStatus.queued,
+      attempts: 0,
+      payload,
+      error: null,
+      result: null,
+      nextRetryAt: null,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return true;
+  });
+}
+
 /** Atomically claim a queued/retrying job for execution. */
 export async function claimJob(jobId: string, db: Firestore = getFirestore()) {
   return db.runTransaction(async (tx) => {

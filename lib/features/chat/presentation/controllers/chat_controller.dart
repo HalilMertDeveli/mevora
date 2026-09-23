@@ -93,6 +93,17 @@ class ChatController extends ChangeNotifier {
       !blocked &&
       uid != null;
 
+  /// Retained read-only conversation whose counterpart deleted their account.
+  /// Distinct from an unmatch or block, which keep the existing banner copy.
+  bool get isDeletedAccountThread {
+    final current = uid;
+    final value = match;
+    if (current == null || value == null) {
+      return false;
+    }
+    return value.isDeletedAccountHistoryFor(current);
+  }
+
   bool get canCall => canChat;
 
   String? headerSubtitle(AppLocalizations l10n) {

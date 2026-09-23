@@ -45,6 +45,7 @@ Match _matchFrom(DocumentSnapshot<Map<String, dynamic>> snap) {
     lastMessageAt: _time(data['lastMessageAt']),
     unmatchedBy: data['unmatchedBy'] as String?,
     unmatchedAt: _time(data['unmatchedAt']),
+    endedReason: data['endedReason'] as String?,
     unreadCounts: _stringIntMap(data['unreadCounts']),
     isNewFor: _stringBoolMap(data['isNewFor']),
     participantNames: _stringStringMap(data['participantNames']),
@@ -78,6 +79,10 @@ Map<String, String> _stringStringMap(Object? value) {
   return const {};
 }
 
+/// Retained deleted-account threads are few; cap the read so a long history
+/// cannot turn the match list into an unbounded query.
+const int _archivedLimit = 20;
+
 class FirebaseMatchRepository implements MatchRepository, LikeRepository, DiscoveryExclusionSource {
   FirebaseMatchRepository({
     required this.callable,
@@ -89,6 +94,41 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
   final AuthUidSource uidSource;
   final FirebaseFirestore _db;
 
+  MatchListItem _listItem(Match match, String uid) {
+    return MatchListItem(
+      match: match,
+      otherUserId: match.otherUserId(uid),
+      name: match.otherName(uid),
+      photoUrl: match.otherPhoto(uid),
+      isVerified: match.otherIsVerified(uid),
+      compatibility: match.compatibilityFor(uid),
+    );
+  }
+
+  /// Retained conversations whose counterpart deleted their account.
+  ///
+  /// Reuses the (userIds CONTAINS, isActive, lastMessageAt) index the active
+  /// query already needs — only the equality value differs — and stays bounded,
+  /// so no new index and no unbounded read. Unmatched and blocked threads come
+  /// back from the same query and are dropped by the classifier, never shown.
+  @override
+  Stream<List<MatchListItem>> watchArchivedMatches(String uid) {
+    return _db
+        .collection(FirestorePaths.matches)
+        .where('userIds', arrayContains: uid)
+        .where('isActive', isEqualTo: false)
+        .orderBy('lastMessageAt', descending: true)
+        .limit(_archivedLimit)
+        .snapshots()
+        .map((snap) {
+          return [
+            for (final doc in snap.docs)
+              if (_matchFrom(doc).isDeletedAccountHistoryFor(uid))
+                _listItem(_matchFrom(doc), uid),
+          ];
+        });
+  }
+
   @override
   Stream<List<MatchListItem>> watchMatches(String uid) {
     return _db
@@ -98,18 +138,9 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
         .orderBy('lastMessageAt', descending: true)
         .snapshots()
         .map((snap) {
-          return snap.docs.map((doc) {
-            final match = _matchFrom(doc);
-            final otherId = match.otherUserId(uid);
-            return MatchListItem(
-              match: match,
-              otherUserId: otherId,
-              name: match.otherName(uid),
-              photoUrl: match.otherPhoto(uid),
-              isVerified: match.otherIsVerified(uid),
-              compatibility: match.compatibilityFor(uid),
-            );
-          }).toList(growable: false);
+          return snap.docs
+              .map((doc) => _listItem(_matchFrom(doc), uid))
+              .toList(growable: false);
         });
   }
 

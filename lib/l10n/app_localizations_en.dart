@@ -1044,6 +1044,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get callRejected => 'Call declined';
 
   @override
+  String get matchesHistoryTitle => 'Past conversations';
+
+  @override
+  String get matchesHistorySubtitle =>
+      'Read-only. These accounts were deleted.';
+
+  @override
+  String get deletedAccountName => 'Deleted account';
+
+  @override
+  String get chatDeletedAccountReadOnly =>
+      'This conversation is read-only because this account was deleted.';
+
+  @override
   String get unmatchedBanner => 'You are no longer matched with this person.';
 
   @override

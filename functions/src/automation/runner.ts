@@ -2,7 +2,7 @@ import {getFirestore, type Firestore} from "firebase-admin/firestore";
 import {logger} from "firebase-functions";
 import {claimJob, completeJob, failJob, markManualReview} from "./jobs.js";
 import {JobKind} from "./types.js";
-import {verifyAccountDeletion} from "./deletionVerify.js";
+import {verifyAccountDeletion, type DeletionVerifyDeps} from "./deletionVerify.js";
 import {safeLogMeta} from "../security/logHygiene.js";
 
 export type ProcessJobOutcome =
@@ -26,6 +26,7 @@ async function runHandler(
   kind: string,
   payload: Record<string, unknown>,
   db: Firestore,
+  deps: DeletionVerifyDeps | undefined,
 ): Promise<{result: Record<string, unknown>; needsManualReview: boolean}> {
   switch (kind) {
   case JobKind.accountDeletionVerify: {
@@ -33,7 +34,10 @@ async function runHandler(
     if (!uid) {
       throw new PermanentJobError("uid_required");
     }
-    const result = await verifyAccountDeletion(uid, db);
+    const ticketIds = Array.isArray(payload.supportTicketIds)
+      ? payload.supportTicketIds.filter((id): id is string => typeof id === "string")
+      : [];
+    const result = await verifyAccountDeletion({uid, supportTicketIds: ticketIds}, db, deps);
     // An incomplete deletion is a compliance issue, not a transient error:
     // retrying cannot fix it, so route it to a human instead of `failed`.
     return {result: {...result}, needsManualReview: !result.complete};
@@ -51,6 +55,7 @@ async function runHandler(
 export async function processJobById(
   jobId: string,
   db: Firestore = getFirestore(),
+  deps?: DeletionVerifyDeps,
 ): Promise<ProcessJobOutcome> {
   const job = await claimJob(jobId, db);
   if (!job) {
@@ -58,7 +63,7 @@ export async function processJobById(
   }
 
   try {
-    const {result, needsManualReview} = await runHandler(job.kind, job.payload, db);
+    const {result, needsManualReview} = await runHandler(job.kind, job.payload, db, deps);
     if (needsManualReview) {
       await markManualReview(jobId, `incomplete:${job.kind}`, db);
       await db.doc(`automationJobs/${jobId}`).set({result}, {merge: true});

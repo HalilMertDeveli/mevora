@@ -1040,6 +1040,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get callRejected => 'Arama reddedildi';
 
   @override
+  String get matchesHistoryTitle => 'Geçmiş sohbetler';
+
+  @override
+  String get matchesHistorySubtitle => 'Salt okunur. Bu hesaplar silindi.';
+
+  @override
+  String get deletedAccountName => 'Silinmiş hesap';
+
+  @override
+  String get chatDeletedAccountReadOnly =>
+      'Bu hesap silindiği için sohbet salt okunur.';
+
+  @override
   String get unmatchedBanner => 'Bu kişiyle eşleşmeniz kaldırıldı.';
 
   @override

@@ -20,6 +20,10 @@ class OverlayMatchRepository implements MatchRepository {
   final DemoSocialHub hub;
 
   @override
+  Stream<List<MatchListItem>> watchArchivedMatches(String uid) =>
+      remote.watchArchivedMatches(uid);
+
+  @override
   Stream<List<MatchListItem>> watchMatches(String uid) {
     final controller = StreamController<List<MatchListItem>>();
     var remoteItems = <MatchListItem>[];

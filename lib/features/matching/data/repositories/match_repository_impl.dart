@@ -10,6 +10,12 @@ class MatchRepositoryImpl implements MatchRepository, LikeRepository {
   final FirebaseMatchDataSource _dataSource;
 
   @override
+/// Deletion history is a Firestore-backed concept; nothing to surface here.
+  @override
+  Stream<List<MatchListItem>> watchArchivedMatches(String uid) =>
+      const Stream<List<MatchListItem>>.empty();
+
+  @override
   Stream<List<MatchListItem>> watchMatches(String uid) {
     return _dataSource.watchMatches(uid);
   }

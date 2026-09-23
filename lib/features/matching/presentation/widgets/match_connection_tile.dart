@@ -19,6 +19,7 @@ class MatchConnectionTile extends StatelessWidget {
     required this.currentUid,
     this.breakdown,
     this.showOnlineIndicator = false,
+    this.isReadOnlyHistory = false,
     this.onTap,
     this.onWhyTap,
   });
@@ -27,6 +28,11 @@ class MatchConnectionTile extends StatelessWidget {
   final String currentUid;
   final CompatibilityBreakdown? breakdown;
   final bool showOnlineIndicator;
+
+  /// Retained conversation with a deleted account: no photo, no presence, no
+  /// compatibility, and a localized "Deleted account" label instead of whatever
+  /// name the match document still carries.
+  final bool isReadOnlyHistory;
   final VoidCallback? onTap;
   final VoidCallback? onWhyTap;
 
@@ -35,10 +41,11 @@ class MatchConnectionTile extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final unread = item.unreadCount(currentUid);
-    final isNew = item.showNewMatchBadge;
-    final photo = item.photoUrl;
+    final isNew = isReadOnlyHistory ? false : item.showNewMatchBadge;
+    final photo = isReadOnlyHistory ? null : item.photoUrl;
+    final displayName = isReadOnlyHistory ? l10n.deletedAccountName : item.name;
     final isRelationship = item.match.isRelationshipTest;
-    final bars = breakdown == null
+    final bars = (breakdown == null || isReadOnlyHistory)
         ? const <Widget>[]
         : compatibilityCategoryBarsFromBreakdown(
             context,
@@ -46,13 +53,17 @@ class MatchConnectionTile extends StatelessWidget {
             maxBars: 2,
           );
 
-    final subtitle = [
-      if (isRelationship) l10n.relationshipMatchBadge,
-      if (isNew) l10n.connectionBadgeNew else if (item.match.lastMessage != null)
-        item.match.lastMessage!
-      else
-        l10n.connectionBadgeActive,
-    ].where((part) => part.isNotEmpty).join(' · ');
+    final subtitle = isReadOnlyHistory
+        ? l10n.settingsReadOnly
+        : [
+            if (isRelationship) l10n.relationshipMatchBadge,
+            if (isNew)
+              l10n.connectionBadgeNew
+            else if (item.match.lastMessage != null)
+              item.match.lastMessage!
+            else
+              l10n.connectionBadgeActive,
+          ].where((part) => part.isNotEmpty).join(' · ');
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -67,11 +78,12 @@ class MatchConnectionTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               MevoraAvatar(
-                name: item.name,
+                name: displayName,
                 image: MevoraNetworkImages.provider(photo),
                 size: 56,
-                isVerified: item.isVerified,
-                showOnlineIndicator: showOnlineIndicator,
+                isVerified: isReadOnlyHistory ? false : item.isVerified,
+                showOnlineIndicator:
+                    isReadOnlyHistory ? false : showOnlineIndicator,
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -82,7 +94,7 @@ class MatchConnectionTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            item.name,
+                            displayName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -112,7 +124,7 @@ class MatchConnectionTile extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (breakdown != null) ...[
+                    if (breakdown != null && !isReadOnlyHistory) ...[
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         '${breakdown!.overallScore}%',

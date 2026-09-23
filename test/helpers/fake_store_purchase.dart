@@ -123,6 +123,11 @@ class FakePurchaseRemoteDataSource implements PurchaseRemoteDataSource {
   @override
   Future<Boost?> loadActiveBoost(String userId) async => active;
 
+  Boost? latestFinished;
+
+  @override
+  Future<Boost?> loadLatestFinishedBoost(String userId) async => latestFinished;
+
   @override
   Future<BoostCreditResult> verifyPurchase({
     required String userId,

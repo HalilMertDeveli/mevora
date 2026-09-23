@@ -1,3 +1,5 @@
+import "package:mevora/features/boost/domain/entities/boost_results.dart";
+
 enum BoostStatus { pending, active, expired, cancelled }
 
 /// Owner-only visibility bonus. Other users never receive this document.
@@ -11,6 +13,7 @@ class Boost {
     required this.createdAt,
     this.startedAt,
     this.expiresAt,
+    this.results = BoostResults.empty,
   });
 
   final String boostId;
@@ -21,6 +24,9 @@ class Boost {
   final DateTime createdAt;
   final DateTime? startedAt;
   final DateTime? expiresAt;
+
+  /// What this Boost period delivered. Server-written.
+  final BoostResults results;
 
   bool isActiveAt(DateTime now) {
     if (status != BoostStatus.active) {

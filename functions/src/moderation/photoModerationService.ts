@@ -9,6 +9,13 @@ import {
   type PhotoModerationStatus,
   type PhotoRecord,
 } from "./types.js";
+import {
+  backfillLegacyApproval,
+  photoChanged,
+  readLedger,
+  reconcilePhoto,
+  writeLedgerEntry,
+} from "./photoModerationLedger.js";
 
 function extensionForContentType(contentType: string | undefined): string {
   const lower = String(contentType ?? "").toLowerCase();
@@ -32,6 +39,19 @@ export async function setPhotoModerationStatus(
   imageId: string,
   patch: Partial<PhotoRecord>,
 ): Promise<void> {
+  // The ledger is the authority; profiles.photos is the client-readable
+  // projection of it. Record the decision first so a crash between the two
+  // writes leaves the server stricter than the profile, never looser.
+  if (patch.moderationStatus) {
+    await writeLedgerEntry(db, uid, imageId, {
+      status: patch.moderationStatus as PhotoModerationStatus,
+      reason: (patch.moderationReason ?? null) as string | null,
+      moderatedBy: (patch.moderatedBy ?? "system") as string,
+      moderatedAt: patch.moderatedAt,
+      storagePath: patch.storagePath,
+      downloadUrl: patch.downloadUrl,
+    });
+  }
   const profileRef = db.doc(`profiles/${uid}`);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(profileRef);
@@ -179,6 +199,21 @@ export async function markProfilePhotosForManualReview(
   reason: string,
 ): Promise<void> {
   const profileRef = db.doc(`profiles/${reportedUserId}`);
+  // Mirror the escalation into the ledger first so reconciliation agrees.
+  const currentSnap = await profileRef.get();
+  if (currentSnap.exists) {
+    for (const photo of photosFrom(currentSnap.data())) {
+      const imageId = String(photo.id ?? "");
+      if (!imageId || String(photo.moderationStatus ?? "pending") === "rejected") {
+        continue;
+      }
+      await writeLedgerEntry(db, reportedUserId, imageId, {
+        status: "manual_review",
+        reason,
+        moderatedBy: "report-pipeline",
+      });
+    }
+  }
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(profileRef);
     if (!snap.exists) {
@@ -252,39 +287,53 @@ export async function retryStaleProcessingPhotos(db: Firestore, bucket: Bucket):
   return retried;
 }
 
-export async function stripClientModerationEscalations(
+/**
+ * Forces profiles/{uid}.photos to match the server-owned moderation ledger.
+ *
+ * Replaces the previous before/after heuristic, which decided whether a status
+ * change was legitimate by reading photo.moderatedBy — a field the client
+ * writes. Setting moderatedBy: "system" was enough to keep an unmoderated photo
+ * marked approved, and a photo with no moderationStatus at all slipped past the
+ * comparison entirely while approvedPhotos() treated it as approved.
+ *
+ * Authority now comes from users/{uid}/photoModeration/{imageId}, which is
+ * denied to clients by the Firestore rules. Anything not recorded there is
+ * unmoderated by definition and is forced back to "pending".
+ *
+ * Idempotent: a second pass over reconciled photos produces no write, so the
+ * onDocumentWritten trigger does not loop.
+ */
+export async function reconcilePhotoModeration(
   db: Firestore,
   uid: string,
-  beforePhotos: PhotoRecord[],
   afterPhotos: PhotoRecord[],
+  bucket?: Bucket,
 ): Promise<boolean> {
-  const beforeById = new Map(beforePhotos.map((photo) => [String(photo.id), photo]));
+  if (!afterPhotos.length) {
+    return false;
+  }
+  const ledger = await readLedger(db, uid);
   let changed = false;
-  const sanitized = afterPhotos.map((photo) => {
-    const previous = beforeById.get(String(photo.id));
-    const nextStatus = String(photo.moderationStatus ?? "pending");
-    const prevStatus = String(previous?.moderationStatus ?? "pending");
-    const moderatedBy = photo.moderatedBy;
-    if (
-      nextStatus !== prevStatus &&
-      ["approved", "rejected", "manual_review"].includes(nextStatus) &&
-      moderatedBy !== "system" &&
-      moderatedBy !== "report-pipeline"
-    ) {
-      changed = true;
-      return {
-        ...photo,
-        moderationStatus: prevStatus === "pending" ? "pending" : prevStatus,
-        moderationReason: "client-escalation-blocked",
-        moderatedBy: null,
-        moderatedAt: null,
-      };
+  const reconciled: PhotoRecord[] = [];
+
+  for (const photo of afterPhotos) {
+    const imageId = String(photo.id ?? "");
+    let entry = ledger.get(imageId) ?? null;
+    if (!entry) {
+      // Photos published by the pipeline before the ledger existed live under
+      // the server-only photos/ prefix; adopt those rather than de-platforming.
+      entry = await backfillLegacyApproval({db, bucket, uid, photo});
     }
-    return photo;
-  });
+    const next = reconcilePhoto(photo, entry);
+    if (photoChanged(photo, next)) {
+      changed = true;
+    }
+    reconciled.push(next);
+  }
+
   if (changed) {
     await db.doc(`profiles/${uid}`).set(
-      {photos: sanitized, updatedAt: FieldValue.serverTimestamp()},
+      {photos: reconciled, updatedAt: FieldValue.serverTimestamp()},
       {merge: true},
     );
   }

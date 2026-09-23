@@ -61,6 +61,11 @@ abstract final class AnalyticsEvents {
   static const String humorContentSkipped = 'humor_content_skipped';
   static const String humorContentReplayed = 'humor_content_replayed';
   static const String humorContentSaved = 'humor_content_saved';
+  // Initial calibration milestone. Stage and counts only — a humor vector is
+  // behavioural data and must never reach analytics.
+  static const String humorCalibrationStarted = 'humor_calibration_started';
+  static const String humorCalibrationProgress = 'humor_calibration_progress';
+  static const String humorCalibrationCompleted = 'humor_calibration_completed';
   static const String humorProfileViewed = 'humor_profile_viewed';
   static const String humorCompatibilityViewed = 'humor_compatibility_viewed';
   static const String humorChatStarterShown = 'humor_chat_starter_shown';

@@ -28,6 +28,7 @@ class PurchaseViewState {
     this.wallet = const BoostWallet(),
     this.history = const [],
     this.activeBoost,
+    this.finishedBoost,
     this.message,
     this.errorKind,
   });
@@ -38,6 +39,9 @@ class PurchaseViewState {
   final BoostWallet wallet;
   final List<BoostHistoryEntry> history;
   final Boost? activeBoost;
+
+  /// Most recently finished Boost, so its results stay visible afterwards.
+  final Boost? finishedBoost;
   final String? message;
   final PurchaseErrorKind? errorKind;
 
@@ -52,6 +56,7 @@ class PurchaseViewState {
     BoostWallet? wallet,
     List<BoostHistoryEntry>? history,
     Boost? activeBoost,
+    Boost? finishedBoost,
     bool clearBoost = false,
     String? message,
     bool clearMessage = false,
@@ -65,6 +70,7 @@ class PurchaseViewState {
       wallet: wallet ?? this.wallet,
       history: history ?? this.history,
       activeBoost: clearBoost ? null : (activeBoost ?? this.activeBoost),
+      finishedBoost: finishedBoost ?? this.finishedBoost,
       message: clearMessage ? null : (message ?? this.message),
       errorKind: clearErrorKind ? null : (errorKind ?? this.errorKind),
     );
@@ -121,6 +127,7 @@ class PurchaseController extends ChangeNotifier {
     await _analytics.logEvent(AnalyticsEvents.boostPageOpened);
 
     final active = await _getActiveBoost(userId);
+    final finished = await _repository.getLatestFinishedBoost(userId);
     final packs = await _getBoostProducts();
     final wallet = await _getWallet(userId);
     final history = await _getHistory(userId);
@@ -164,6 +171,7 @@ class PurchaseController extends ChangeNotifier {
 
     state = state.copyWith(
       status: PurchaseUiStatus.productLoaded,
+      finishedBoost: finished.valueOrNull,
       product: product,
       products: products,
       wallet: loadedWallet,

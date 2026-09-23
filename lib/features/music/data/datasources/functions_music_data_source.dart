@@ -5,6 +5,7 @@ import 'package:mevora/features/music/data/datasources/music_data_source.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
+import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/domain/entities/weekly_music_stats.dart';
 import 'package:mevora/features/music/domain/services/music_compatibility.dart';
@@ -40,6 +41,20 @@ class FunctionsMusicDataSource implements MusicDataSource {
   Future<MusicProfile> syncTaste() async {
     final data = await _backend.invoke('syncSpotifyTaste');
     return _parseProfile(data);
+  }
+
+  @override
+  Future<PublicMusicProfile> updatePublicMusicProfile({
+    required bool enabled,
+    required List<String> artistIds,
+    required List<String> trackIds,
+  }) async {
+    final data = await _backend.invoke('updatePublicMusicProfile', {
+      'enabled': enabled,
+      'artistIds': artistIds,
+      'trackIds': trackIds,
+    });
+    return PublicMusicProfile.parse(data['publicMusic']);
   }
 
   @override
@@ -144,6 +159,7 @@ class FunctionsMusicDataSource implements MusicDataSource {
       recentlyPlayed: _parseTracks(data['recentlyPlayed']),
       genres: _parseGenres(data['musicProfile'] ?? data['genres']),
       taste: _parseTaste(data['musicProfile'] is Map ? data['musicProfile'] : data),
+      publicProfile: PublicMusicProfile.parse(data['publicMusic']),
       lastSyncedAt: firestoreDate(data['lastSyncedAt']),
       connectedAt: firestoreDate(data['connectedAt']),
     );

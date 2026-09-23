@@ -3643,6 +3643,87 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sayılar canlı etkinliğin biraz gerisinde kalabilir.';
 
   @override
+  String get onboardingMusicTitle => 'Müzik senin için önemli mi? 🎧';
+
+  @override
+  String get onboardingMusicBody =>
+      'Spotify\'ını bağla, Mevora seninle aynı müzikleri dinleyen kişileri bulsun ve neden uyduğunuzu anlatsın.';
+
+  @override
+  String get onboardingMusicConnect => 'Spotify\'ımı Bağla';
+
+  @override
+  String get onboardingMusicSkip => 'Şimdilik Geç';
+
+  @override
+  String get onboardingMusicSkipNote =>
+      'Spotify\'ı sonra Müzik sekmesinden bağlayabilirsin.';
+
+  @override
+  String get onboardingMusicCancelled =>
+      'Spotify bağlantısı iptal edildi. Tekrar deneyebilir veya geçebilirsin.';
+
+  @override
+  String get publicMusicTitle => 'Spotify zevkini yakaladık 🎧';
+
+  @override
+  String get publicMusicSubtitle => 'Profilinde göstermek istediklerini seç.';
+
+  @override
+  String get publicMusicArtistsHeading => 'Sanatçılar';
+
+  @override
+  String get publicMusicTracksHeading => 'Şarkılar';
+
+  @override
+  String publicMusicArtistCount(int count, int max) {
+    return '$count/$max sanatçı seçildi';
+  }
+
+  @override
+  String publicMusicTrackCount(int count, int max) {
+    return '$count/$max şarkı seçildi';
+  }
+
+  @override
+  String get publicMusicLimitReached =>
+      'Üst sınıra ulaştın. Başkasını seçmek için birini kaldır.';
+
+  @override
+  String get publicMusicSave => 'Profilime Ekle';
+
+  @override
+  String get publicMusicSaveFailed =>
+      'Seçimini kaydedemedik. Lütfen tekrar dene.';
+
+  @override
+  String get publicMusicEmpty =>
+      'Spotify henüz yeterli dinleme verisi döndürmedi. Müziğin bağlı kalmaya ve uyum hesabında kullanılmaya devam ediyor.';
+
+  @override
+  String get publicMusicVisibilityTitle => 'Müzik Zevkimi profilimde göster';
+
+  @override
+  String get publicMusicVisibilityBody =>
+      'Kapatırsan seçimin gizli kalır. Spotify bağlı kalır ve eşleşmelerini iyileştirmeye devam eder.';
+
+  @override
+  String get publicMusicHiddenNotice => 'Müzik Zevkin diğer kişilerden gizli.';
+
+  @override
+  String get publicMusicEditCta => 'Müzik Zevkimi düzenle';
+
+  @override
+  String get profileMusicTasteHeading => 'Müzik Zevki 🎧';
+
+  @override
+  String get profileMusicOpenInSpotify => 'Spotify\'da aç';
+
+  @override
+  String get musicLimitedData =>
+      'Spotify bağlı, ancak henüz fazla dinleme geçmişi yok.';
+
+  @override
   String get humorCalibrationIntroTitle => 'Mizahını keşfedelim';
 
   @override

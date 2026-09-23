@@ -131,6 +131,9 @@ abstract final class OnboardingValidators {
       OnboardingStep.lifestyle => validateLifestyle(profile),
       OnboardingStep.bio => validateBio(profile.bio),
       OnboardingStep.photos => validatePhotos(profile.photos),
+      // Spotify is optional: there is nothing to validate, and a member who
+      // skips it must still pass completion.
+      OnboardingStep.music => const Success(null),
       OnboardingStep.complete => const Success(null),
     };
   }

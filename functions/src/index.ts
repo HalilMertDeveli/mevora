@@ -11,6 +11,7 @@ export {spotifyCompleteAuth} from "./spotifyAuth";
 export {
   spotifyLinkMusic,
   getMusicAccount,
+  updatePublicMusicProfile,
   syncSpotifyTaste,
   disconnectMusicAccount,
   getSameTasteProfiles,

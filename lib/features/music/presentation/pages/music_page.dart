@@ -11,6 +11,7 @@ import 'package:mevora/features/music/domain/entities/music_track.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/presentation/controllers/music_controller.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
+import 'package:mevora/features/music/presentation/widgets/public_music_visibility_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_motion_size.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
@@ -176,6 +177,7 @@ class _ConnectedMusicView extends StatelessWidget {
     final theme = Theme.of(context);
     final state = controller.state;
     final profile = state.profile;
+    final repository = MusicScope.maybeOf(context);
     final syncing = state.phase == MusicConnectPhase.syncing;
     final error = _musicError(l10n, state.failure);
     return ListView(
@@ -232,6 +234,20 @@ class _ConnectedMusicView extends StatelessWidget {
               color: theme.colorScheme.error,
             ),
           ),
+        ],
+        // Connection and visibility are separate: this card publishes or
+        // hides the selection without touching the Spotify connection.
+        if (repository != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          PublicMusicVisibilityCard(
+            repository: repository,
+            profile: profile,
+            onChanged: () => unawaited(controller.load()),
+          ),
+        ],
+        if (profile.hasLimitedData) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(l10n.musicLimitedData, style: theme.textTheme.bodyMedium),
         ],
         const SizedBox(height: AppSpacing.lg),
         Text(l10n.musicProfileTitle, style: theme.textTheme.titleLarge),

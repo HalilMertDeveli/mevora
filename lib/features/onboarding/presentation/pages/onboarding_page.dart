@@ -12,6 +12,8 @@ import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart'
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo_grid.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
+import 'package:mevora/core/di/music_scope.dart';
+import 'package:mevora/features/music/presentation/widgets/onboarding_music_step.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_height_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_language_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
@@ -146,8 +148,35 @@ class _OnboardingPageState extends State<OnboardingPage> {
       OnboardingStep.lifestyle => _lifestyleStep(l10n),
       OnboardingStep.bio => _bioStep(l10n),
       OnboardingStep.photos => _photosStep(l10n),
+      OnboardingStep.music => _musicStep(l10n),
       OnboardingStep.complete => _completeStep(l10n),
     };
+  }
+
+  /// Optional Spotify stage. Rendered only when a music repository is in
+  /// scope; without one the step skips itself rather than dead-ending.
+  Widget _musicStep(AppLocalizations l10n) {
+    final repository = MusicScope.maybeOf(context);
+    if (repository == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_continue());
+      });
+      return const SizedBox.shrink();
+    }
+    return OnboardingStepScaffold(
+      step: OnboardingStep.music,
+      title: l10n.onboardingMusicTitle,
+      isSaving: _controller.isSaving,
+      errorMessage: _controller.errorMessage,
+      onBack: _controller.canGoBack ? _controller.goBack : null,
+      onContinue: () => unawaited(_continue()),
+      showContinue: false,
+      child: OnboardingMusicStep(
+        repository: repository,
+        onSkip: () => unawaited(_continue()),
+        onFinished: () => unawaited(_continue()),
+      ),
+    );
   }
 
   Widget _basicInfoStep(AppLocalizations l10n) {

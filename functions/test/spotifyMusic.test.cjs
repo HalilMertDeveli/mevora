@@ -305,7 +305,9 @@ describe("disconnect cleanup", () => {
   it("clears the discoverable spotifyConnected flag", () => {
     const plan = disconnectPlan("uid-a", "spotify-user-1");
     assert.equal(plan.profilePath, "profiles/uid-a");
-    assert.deepEqual(plan.profileData, {spotifyConnected: false});
+    assert.equal(plan.profileData.spotifyConnected, false);
+    // Disconnect also retires the public Music Taste card.
+    assert.equal(plan.profileData.publicMusic.enabled, false);
   });
 
   it("still clears local state when the Spotify id is unknown", () => {
@@ -315,7 +317,8 @@ describe("disconnect cleanup", () => {
         "spotifySecrets/uid-a",
         "users/uid-a/music/summary",
       ]);
-      assert.deepEqual(plan.profileData, {spotifyConnected: false});
+      assert.equal(plan.profileData.spotifyConnected, false);
+      assert.equal(plan.profileData.publicMusic.enabled, false);
     }
   });
 

@@ -3647,6 +3647,89 @@ class AppLocalizationsEn extends AppLocalizations {
       'Counts can lag a little behind live activity.';
 
   @override
+  String get onboardingMusicTitle => 'Does music matter to you? 🎧';
+
+  @override
+  String get onboardingMusicBody =>
+      'Connect Spotify and Mevora can find people who actually listen to what you listen to — and explain why you fit.';
+
+  @override
+  String get onboardingMusicConnect => 'Connect my Spotify';
+
+  @override
+  String get onboardingMusicSkip => 'Skip for now';
+
+  @override
+  String get onboardingMusicSkipNote =>
+      'You can connect Spotify later from the Music tab.';
+
+  @override
+  String get onboardingMusicCancelled =>
+      'Spotify connection was cancelled. You can try again or skip.';
+
+  @override
+  String get publicMusicTitle => 'We picked up your Spotify taste 🎧';
+
+  @override
+  String get publicMusicSubtitle =>
+      'Choose what you want to show on your profile.';
+
+  @override
+  String get publicMusicArtistsHeading => 'Artists';
+
+  @override
+  String get publicMusicTracksHeading => 'Songs';
+
+  @override
+  String publicMusicArtistCount(int count, int max) {
+    return '$count/$max artists selected';
+  }
+
+  @override
+  String publicMusicTrackCount(int count, int max) {
+    return '$count/$max songs selected';
+  }
+
+  @override
+  String get publicMusicLimitReached =>
+      'That is the maximum. Deselect one to choose another.';
+
+  @override
+  String get publicMusicSave => 'Add to my profile';
+
+  @override
+  String get publicMusicSaveFailed =>
+      'We couldn\'t save your selection. Please try again.';
+
+  @override
+  String get publicMusicEmpty =>
+      'Spotify didn\'t return enough listening data yet. Your music is still connected and used for compatibility.';
+
+  @override
+  String get publicMusicVisibilityTitle => 'Show Music Taste on my profile';
+
+  @override
+  String get publicMusicVisibilityBody =>
+      'Turn this off to keep your selection private. Spotify stays connected and still improves your matches.';
+
+  @override
+  String get publicMusicHiddenNotice =>
+      'Your Music Taste is hidden from other people.';
+
+  @override
+  String get publicMusicEditCta => 'Edit my Music Taste';
+
+  @override
+  String get profileMusicTasteHeading => 'Music Taste 🎧';
+
+  @override
+  String get profileMusicOpenInSpotify => 'Open in Spotify';
+
+  @override
+  String get musicLimitedData =>
+      'Spotify is connected, but there isn\'t much listening history yet.';
+
+  @override
   String get humorCalibrationIntroTitle => 'Let us find your humor';
 
   @override

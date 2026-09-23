@@ -166,31 +166,126 @@ describe("users/{uid} — private account isolation", () => {
   });
 });
 
-describe("privileged field mutation probes", () => {
-  // These fields are not consumed for authorization today (admin is an Auth
-  // custom claim, premium comes from subscription/current). The probes exist so
-  // that stays true: the day something reads them, this suite goes red.
-  const OPEN_ON_USERS = ["isPremium", "isAdmin", "isModerator", "role", "trustScore", "entitlement", "verificationStatus"];
-  for (const field of OPEN_ON_USERS) {
-    it(
-      `users/{uid}.${field} is not client-writable`,
-      knownFinding("B-04", `users/{uid}.${field} accepts a client write (denylist rule, no hasOnly)`),
-      async () => {
-        await deny(who.userA.db().doc(`users/${UID.A}`).update({[field]: field === "role" ? "admin" : true}));
-      },
-    );
+// B-04. These documents are governed by client-write allowlists, so a
+// privileged field is unwritable because it is not on the list — not because
+// somebody remembered to name it in a denylist. Authority itself is unchanged:
+// admin/moderator remain Auth custom claims, premium remains the claim or
+// users/{uid}/subscription/current, photo moderation remains the B-02 ledger.
+describe("privileged field mutation probes — users/{uid}", () => {
+  const PRIVILEGED = {
+    isPremium: true,
+    isAdmin: true,
+    isModerator: true,
+    role: "admin",
+    trustScore: 999999,
+    entitlement: "premium",
+    verificationStatus: "approved",
+    isBoosted: true,
+    photoModerationStatus: "approved",
+    subscriptionStatus: "active",
+    premium: true,
+    moderationStatus: "approved",
+  };
+  for (const [field, value] of Object.entries(PRIVILEGED)) {
+    it(`users/{uid}.${field} is not client-writable`, async () => {
+      await deny(who.userA.db().doc(`users/${UID.A}`).update({[field]: value}));
+    });
   }
 
-  const OPEN_ON_PROFILES = ["isPremium", "isModerator", "verificationStatus", "trustScore", "isBoosted"];
-  for (const field of OPEN_ON_PROFILES) {
-    it(
-      `profiles/{uid}.${field} is not client-writable`,
-      knownFinding("B-04", `profiles/{uid}.${field} accepts a client write (denylist rule, no hasOnly)`),
-      async () => {
-        await deny(who.userA.db().doc(`profiles/${UID.A}`).update({[field]: field === "verificationStatus" ? "approved" : true}));
-      },
+  it("previously value-guarded fields remain immutable", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {isBanned: true},
+      {isSuspended: true},
+      {isVerified: true},
+      {accountStatus: "banned"},
+      {phoneVerified: true},
+      {isSmokeTestUser: true},
+      {boostBalance: 9999},
+      {boostStatus: "active"},
+      {matchScore: 9999},
+      {matchCount: 50},
+      {suspensionReason: "none"},
+    ]) {
+      await deny(db.doc(`users/${UID.A}`).update(patch));
+    }
+  });
+
+  it("a privileged field cannot be smuggled in alongside a legitimate one", async () => {
+    await deny(
+      who.userA.db().doc(`users/${UID.A}`).update({
+        displayName: "Ada",
+        isAdmin: true,
+      }),
     );
+  });
+});
+
+describe("privileged field mutation probes — profiles/{uid}", () => {
+  const PRIVILEGED = {
+    isPremium: true,
+    isAdmin: true,
+    isModerator: true,
+    role: "admin",
+    trustScore: 999,
+    entitlement: "premium",
+    verificationStatus: "approved",
+    isVerified: true,
+    isBoosted: true,
+    boostedUntil: "2030-01-01",
+    photoModerationStatus: "approved",
+    profileModerationStatus: "approved",
+    moderationStatus: "approved",
+    subscriptionStatus: "active",
+    matchCount: 99,
+    isSuspended: false,
+    isBanned: false,
+  };
+  for (const [field, value] of Object.entries(PRIVILEGED)) {
+    it(`profiles/{uid}.${field} is not client-writable`, async () => {
+      await deny(who.userA.db().doc(`profiles/${UID.A}`).update({[field]: value}));
+    });
   }
+
+  it("lifecycle flags remain server-owned", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {isDiscoverable: true},
+      {profileCompleted: true},
+      {onboardingCompleted: true},
+      {isProfileComplete: true},
+    ]) {
+      await deny(db.doc(`profiles/${UID.A}`).update(patch));
+    }
+  });
+
+  it("auth secrets and GPS stay out of the public card", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {email: "x@y.z"},
+      {phoneNumber: "+900000000000"},
+      {phoneVerified: true},
+      {authProviders: {google: true}},
+      {latitude: 41.0},
+      {longitude: 29.0},
+      {geohash: "sxk9"},
+      {location: {latitude: 41.0}},
+      {fcmToken: "t"},
+      {accessToken: "t"},
+      {refreshToken: "t"},
+    ]) {
+      await deny(db.doc(`profiles/${UID.A}`).update(patch));
+    }
+  });
+
+  it("a privileged field cannot be smuggled in alongside a legitimate one", async () => {
+    await deny(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        bio: "hello",
+        isPremium: true,
+      }),
+    );
+  });
 
   // B-02. profiles.photos stays client-writable on purpose: Firestore rules
   // cannot validate the fields of array elements, and add/delete/reorder write
@@ -205,6 +300,10 @@ describe("privileged field mutation probes", () => {
     );
   });
 
+  // Union note: this branch predated B-02 landing on main and still carried a
+  // stale open-finding TODO for it here. B-02 is fixed on main, so the hardened
+  // ledger assertions below replace that probe — keeping the TODO would have
+  // silently reopened a closed finding.
   it("the moderation ledger is readable only by its owner and writable by nobody", async () => {
     await seed(env, async (ctx) => {
       await ctx.firestore().doc(`users/${UID.A}/photoModeration/p1`).set({
@@ -233,6 +332,186 @@ describe("privileged field mutation probes", () => {
     await deny(
       who.userC.db().doc(`users/${UID.A}/photoModeration/p1`).set({status: "approved"}),
     );
+  });
+});
+
+// The point of an allowlist: a field nobody has thought of yet is already
+// denied. A denylist would have let every one of these through.
+describe("unknown field injection", () => {
+  const UNKNOWN = [
+    "futurePrivilegeField",
+    "isSuperAdmin",
+    "grantedEntitlements",
+    "internalTrustTier",
+    "__proto__field",
+    "x",
+  ];
+  for (const field of UNKNOWN) {
+    it(`users/{uid}.${field} is denied without being named anywhere`, async () => {
+      await deny(who.userA.db().doc(`users/${UID.A}`).update({[field]: true}));
+    });
+    it(`profiles/{uid}.${field} is denied without being named anywhere`, async () => {
+      await deny(who.userA.db().doc(`profiles/${UID.A}`).update({[field]: true}));
+    });
+  }
+
+  it("unknown fields are denied at create time too", async () => {
+    await deny(
+      who.userC.db().doc(`users/${UID.C}`).set({
+        uid: UID.C,
+        id: UID.C,
+        isActive: true,
+        futurePrivilegeField: true,
+      }),
+    );
+    await deny(
+      who.userC.db().doc(`profiles/${UID.C}`).set({
+        uid: UID.C,
+        displayName: "C",
+        futurePrivilegeField: true,
+      }),
+    );
+  });
+});
+
+describe("legitimate client flows still work", () => {
+  it("signup creates the account document the app actually writes", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.C}`).delete();
+    });
+    await allow(
+      who.userC.db().doc(`users/${UID.C}`).set({
+        uid: UID.C,
+        id: UID.C,
+        displayName: "Cem",
+        email: "cem@example.com",
+        phoneNumber: null,
+        photoUrl: null,
+        phoneVerified: false,
+        authProviders: {email: true, google: false, apple: false, spotify: false, phone: false},
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        profileCompleted: false,
+        onboardingCompleted: false,
+        isActive: true,
+        isBanned: false,
+        isVerified: false,
+        accountStatus: "active",
+      }),
+    );
+  });
+
+  it("signup creates the profile stub the app actually writes", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`profiles/${UID.C}`).delete();
+    });
+    await allow(
+      who.userC.db().doc(`profiles/${UID.C}`).set({
+        uid: UID.C,
+        displayName: "Cem",
+        photos: [],
+        interests: [],
+        languages: [],
+        profileCompleted: false,
+        onboardingCompleted: false,
+        isDiscoverable: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+  });
+
+  it("login refresh updates the account document", async () => {
+    await allow(
+      who.userA.db().doc(`users/${UID.A}`).update({
+        uid: UID.A,
+        id: UID.A,
+        lastLoginAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
+        "authProviders.google": true,
+        email: "ada@example.com",
+        displayName: "Ada",
+        photoUrl: "https://cdn/a.jpg",
+      }),
+    );
+  });
+
+  it("the location mirror on the account document still writes", async () => {
+    await allow(
+      who.userA.db().doc(`users/${UID.A}`).set(
+        {
+          location: {latitude: 41.0082, longitude: 28.9784, updatedAt: new Date()},
+          updatedAt: new Date(),
+        },
+        {merge: true},
+      ),
+    );
+  });
+
+  it("full profile edit writes every field the app sends", async () => {
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).set(
+        {
+          uid: UID.A,
+          displayName: "Ada",
+          birthDate: new Date("1996-04-01"),
+          age: 30,
+          gender: "female",
+          interestedIn: ["male"],
+          bio: "Books and long walks.",
+          photos: [{id: "p1", order: 0, isPrimary: true, moderationStatus: "pending"}],
+          interests: ["travel", "music"],
+          relationshipGoal: "long_term",
+          occupation: "Engineer",
+          education: "MSc",
+          languages: ["tr", "en"],
+          hobbies: ["climbing"],
+          heightCm: 170,
+          city: "Istanbul",
+          lifestyle: ["non_smoker"],
+          lifestyleProfile: {smoking: "never"},
+          onboardingStep: "photos",
+          updatedAt: new Date(),
+        },
+        {merge: true},
+      ),
+    );
+  });
+
+  it("a plain bio edit works", async () => {
+    await allow(who.userA.db().doc(`profiles/${UID.A}`).update({bio: "hi", updatedAt: new Date()}));
+  });
+
+  it("the displayName-only update from signup works", async () => {
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).update({displayName: "Ada", updatedAt: new Date()}),
+    );
+  });
+
+  // B-02 regression: photos must stay client-writable. Moderation authority
+  // lives in the ledger + reconciling trigger, not in these rules.
+  it("the B-02 photo array flow is unchanged", async () => {
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        photos: [
+          {id: "p1", order: 0, isPrimary: true, moderationStatus: "pending"},
+          {id: "p2", order: 1, isPrimary: false, moderationStatus: "pending"},
+        ],
+      }),
+    );
+    // Reordering and deletion rewrite the whole array — still allowed.
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        photos: [{id: "p2", order: 0, isPrimary: true, moderationStatus: "pending"}],
+      }),
+    );
+  });
+
+  it("an unrelated user still cannot touch either document", async () => {
+    await deny(who.userC.db().doc(`profiles/${UID.A}`).update({bio: "hijacked"}));
+    await deny(who.userC.db().doc(`users/${UID.A}`).update({displayName: "hijacked"}));
   });
 });
 
@@ -312,27 +591,219 @@ describe("matches — participant vs non-participant", () => {
     await deny(who.userC.db().doc(`matches/${MATCH_AB}`).update({lastMessage: "x"}));
   });
 
-  it(
-    "participants cannot forge the verified badge shown to the other side",
-    knownFinding("B-09", "matches update freeze-list is not hasOnly; participantVerified/Names/Photos are writable"),
-    async () => {
-      await deny(
-        who.userA.db().doc(`matches/${MATCH_AB}`).update({
-          participantVerified: {[UID.A]: true, [UID.B]: false},
-        }),
-      );
-    },
-  );
+  // B-09 regression. These identity snapshots are server-written and rendered
+  // to the *other* participant, so a forged value reaches a real user's screen.
+  it("participants cannot forge their own verified badge", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        participantVerified: {[UID.A]: true, [UID.B]: false},
+      }),
+    );
+  });
 
-  it(
-    "non-participant cannot distinguish an existing match from a missing one",
-    knownFinding("B-07", "get on a missing match is allowed while an existing one denies — existence oracle"),
-    async () => {
-      // Both probes must behave identically for a non-participant.
-      await deny(who.userC.db().doc(`matches/${MATCH_AB}`).get());
-      await deny(who.userC.db().doc("matches/user-x_user-y").get());
-    },
-  );
+  it("participants cannot forge the peer's verified badge", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        participantVerified: {[UID.A]: false, [UID.B]: true},
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        [`participantVerified.${UID.B}`]: true,
+      }),
+    );
+  });
+
+  it("participants cannot rewrite the peer's display name", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        participantNames: {[UID.A]: "Ada", [UID.B]: "SPOOFED"},
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        [`participantNames.${UID.B}`]: "SPOOFED",
+      }),
+    );
+  });
+
+  it("participants cannot rewrite the peer's profile photo", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        participantPhotos: {[UID.B]: "https://attacker.example/x.jpg"},
+      }),
+    );
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        [`participantPhotos.${UID.B}`]: "https://attacker.example/x.jpg",
+      }),
+    );
+  });
+
+  it("participants cannot manipulate the peer's unread state", async () => {
+    // Seed the state the server would have written: B has unread messages.
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`matches/${MATCH_AB}`).set(
+        {unreadCounts: {[UID.A]: 0, [UID.B]: 5}, isNewFor: {[UID.A]: false, [UID.B]: true}},
+        {merge: true},
+      );
+    });
+    const db = who.userA.db();
+    // Inflate the peer's badge.
+    await deny(db.doc(`matches/${MATCH_AB}`).update({[`unreadCounts.${UID.B}`]: 9999}));
+    // Clear the peer's badge so they never notice the messages.
+    await deny(db.doc(`matches/${MATCH_AB}`).update({[`unreadCounts.${UID.B}`]: 0}));
+    await deny(db.doc(`matches/${MATCH_AB}`).update({[`isNewFor.${UID.B}`]: false}));
+    // Whole-map rewrite touching the peer's entry.
+    await deny(
+      db.doc(`matches/${MATCH_AB}`).update({unreadCounts: {[UID.A]: 0, [UID.B]: 0}}),
+    );
+    // Own entry in the same write does not launder the peer's entry.
+    await deny(
+      db.doc(`matches/${MATCH_AB}`).update({
+        [`unreadCounts.${UID.A}`]: 0,
+        [`unreadCounts.${UID.B}`]: 0,
+      }),
+    );
+  });
+
+  it("a no-op write that changes nothing is harmless", async () => {
+    // unreadCounts.userB is already 0 in the fixture, so affectedKeys is empty
+    // and nothing is disclosed or altered. Documented so the allow is not
+    // mistaken for a gap in the peer-key scoping above.
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({[`unreadCounts.${UID.B}`]: 0}),
+    );
+  });
+
+  it("participants cannot rewrite server-generated scoring or lifecycle state", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {compatibilityBreakdown: {overallScore: 100}},
+      {compatibilityCalculatedAt: new Date()},
+      {compatibilityKey: "forged"},
+      {matchBonusAwarded: true},
+      {interactionBonusAwarded: true},
+      {matchedAt: new Date()},
+      {messagedUserIds: [UID.A, UID.B]},
+      {endedReason: "unmatch"},
+      {source: "forged"},
+      {matchType: "forged"},
+      {createdAt: new Date()},
+      {unmatchedAt: new Date()},
+    ]) {
+      await deny(db.doc(`matches/${MATCH_AB}`).update(patch));
+    }
+  });
+
+  // The architectural point: a field nobody has thought of yet is already
+  // denied. The old freeze list would have let every one of these through.
+  it("participants cannot inject an arbitrary future match field", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {futureTrustedField: true},
+      {isPremiumMatch: true},
+      {trustBadge: "verified"},
+      {serverScore: 100},
+      {x: 1},
+    ]) {
+      await deny(db.doc(`matches/${MATCH_AB}`).update(patch));
+    }
+  });
+
+  it("a privileged field cannot ride along with a legitimate one", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        lastMessage: "hi",
+        participantVerified: {[UID.A]: true},
+      }),
+    );
+  });
+
+  it("legitimate participant match updates still work", async () => {
+    const db = who.userA.db();
+    // Chat send side-effect.
+    await allow(
+      db.doc(`matches/${MATCH_AB}`).update({
+        lastMessage: "Merhaba",
+        lastMessageAt: new Date(),
+        updatedAt: new Date(),
+      }),
+    );
+    // markOpened(): own key only.
+    await allow(
+      db.doc(`matches/${MATCH_AB}`).update({
+        [`isNewFor.${UID.A}`]: false,
+        [`unreadCounts.${UID.A}`]: 0,
+      }),
+    );
+    // Merge-style write, the shape firebase_chat_data_source actually sends.
+    await allow(
+      db.doc(`matches/${MATCH_AB}`).set(
+        {lastMessage: "🔒", lastMessageAt: new Date(), updatedAt: new Date()},
+        {merge: true},
+      ),
+    );
+    // The other participant can do the same for themselves.
+    await allow(
+      who.userB.db().doc(`matches/${MATCH_AB}`).update({
+        [`isNewFor.${UID.B}`]: false,
+        [`unreadCounts.${UID.B}`]: 0,
+      }),
+    );
+  });
+
+  it("both participants still read the match and its messages", async () => {
+    await allow(who.userA.db().doc(`matches/${MATCH_AB}`).get());
+    await allow(who.userB.db().doc(`matches/${MATCH_AB}`).get());
+    await allow(who.userB.db().doc(`matches/${MATCH_AB}/messages/m1`).get());
+  });
+
+  // B-07 regression. Match IDs are the canonical sorted uid pair and
+  // profiles/{uid} is enumerable, so any observable difference between
+  // "exists but not yours" and "does not exist" maps the relationship graph.
+  it("non-participant cannot distinguish an existing match from a missing one", async () => {
+    const db = who.userC.db();
+    await deny(db.doc(`matches/${MATCH_AB}`).get());
+    await deny(db.doc("matches/user-x_user-y").get());
+    await deny(db.doc(`matches/${UID.C}_user-z`).get());
+    await deny(db.doc("matches/totally-made-up-id").get());
+  });
+
+  it("the outcome is identical for both probes, not merely both refused", async () => {
+    const db = who.userC.db();
+    const outcome = async (id) => {
+      try {
+        const snap = await db.doc(`matches/${id}`).get();
+        return `allow:exists=${snap.exists}`;
+      } catch (error) {
+        return `deny:${error.code}`;
+      }
+    };
+    const existing = await outcome(MATCH_AB);
+    const missing = await outcome("user-x_user-y");
+    assert.equal(
+      existing,
+      missing,
+      `existence oracle: existing=${existing} missing=${missing}`,
+    );
+    assert.equal(existing, "deny:permission-denied");
+  });
+
+  it("anonymous visitors learn nothing either", async () => {
+    const db = who.anon.db();
+    await deny(db.doc(`matches/${MATCH_AB}`).get());
+    await deny(db.doc("matches/user-x_user-y").get());
+  });
+
+  it("participants still read their own match after the oracle fix", async () => {
+    await allow(who.userA.db().doc(`matches/${MATCH_AB}`).get());
+    await allow(who.userB.db().doc(`matches/${MATCH_AB}`).get());
+  });
+
+  it("a participant probing a match they are not in is refused like anyone else", async () => {
+    await deny(who.userA.db().doc(`matches/${UID.B}_${UID.C}`).get());
+  });
 });
 
 describe("messages — participant authorization and E2EE enforcement", () => {
@@ -745,13 +1216,76 @@ describe("preferences and privacy", () => {
     await deny(who.userC.db().doc(`userPreferences/${UID.A}`).get());
   });
 
-  it(
-    "privacy settings are not readable by unrelated users",
-    knownFinding("B-10", "userPrivacy/{uid} allows get to any authenticated user"),
-    async () => {
-      await deny(who.userC.db().doc(`userPrivacy/${UID.A}`).get());
-    },
-  );
+  // B-10 regression. The narrow documented exception is active matches: chat
+  // and the match list render the peer's presence from these flags.
+  it("privacy settings are not readable by unrelated users", async () => {
+    await deny(who.userC.db().doc(`userPrivacy/${UID.A}`).get());
+    await deny(who.anon.db().doc(`userPrivacy/${UID.A}`).get());
+  });
+
+  it("the owner still reads and updates their own privacy document", async () => {
+    await allow(who.userA.db().doc(`userPrivacy/${UID.A}`).get());
+    await allow(
+      who.userA.db().doc(`userPrivacy/${UID.A}`).set({showOnlineStatus: false}, {merge: true}),
+    );
+  });
+
+  it("an active match partner may read the peer's flags — the documented exception", async () => {
+    await allow(who.userB.db().doc(`userPrivacy/${UID.A}`).get());
+    await allow(who.userA.db().doc(`userPrivacy/${UID.B}`).get());
+  });
+
+  it("the exception ends when the match does", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`matches/${MATCH_AB}`).set({isActive: false}, {merge: true});
+    });
+    await deny(who.userB.db().doc(`userPrivacy/${UID.A}`).get());
+  });
+
+  it("the exception does not survive a block", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/blockedUsers/${UID.B}`).set({
+        blockedUserId: UID.B,
+        createdAt: new Date(),
+      });
+    });
+    await deny(who.userB.db().doc(`userPrivacy/${UID.A}`).get());
+  });
+
+  it("nobody can enumerate the collection or write another user's document", async () => {
+    await deny(who.userC.db().collection("userPrivacy").get());
+    await deny(who.userB.db().collection("userPrivacy").get());
+    await deny(who.userC.db().doc(`userPrivacy/${UID.A}`).set({showOnlineStatus: true}));
+    await deny(who.userB.db().doc(`userPrivacy/${UID.A}`).set({showOnlineStatus: true}));
+  });
+
+  // The rules read this document through a privileged get(), which does not
+  // consult the client read rules above. Presence visibility must therefore be
+  // unchanged for a non-participant.
+  it("rule-internal privacy checks still drive presence visibility", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/presence/current`).set({
+        isOnline: true,
+        updatedAt: new Date(),
+      });
+      await ctx.firestore().doc(`userPrivacy/${UID.A}`).set({showOnlineStatus: true});
+    });
+    // C cannot read A's privacy document, but canReadPresence() still resolves
+    // it internally and grants the presence read.
+    await deny(who.userC.db().doc(`userPrivacy/${UID.A}`).get());
+    await allow(who.userC.db().doc(`users/${UID.A}/presence/current`).get());
+
+    // Flip the flags: the same internal check must now deny presence.
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`userPrivacy/${UID.A}`).set({
+        showOnlineStatus: false,
+        showLastSeen: false,
+        showActivity: false,
+      });
+    });
+    await deny(who.userC.db().doc(`users/${UID.A}/presence/current`).get());
+    await allow(who.userA.db().doc(`users/${UID.A}/presence/current`).get());
+  });
 });
 
 describe("server-owned and unknown paths", () => {

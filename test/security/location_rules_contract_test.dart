@@ -59,8 +59,19 @@ void main() {
     final rules = File('firebase/firestore.rules').readAsStringSync();
     expect(rules.contains("'matchScore'"), isTrue);
     expect(rules.contains("'matchCount'"), isTrue);
-    expect(rules.contains("'interactionBonusAwarded'"), isTrue);
-    expect(rules.contains("'matchBonusAwarded'"), isTrue);
+    // B-09: the bonus flags are no longer named in a match freeze-list. The
+    // match update allowlist simply omits them, which also protects any field
+    // added to the schema later. Assert their absence from the allowlist.
+    final int allowlistStart = rules.indexOf(
+      'function matchUpdateKeysAllowed()',
+    );
+    expect(allowlistStart, greaterThan(-1));
+    final String matchAllowlist = rules.substring(
+      allowlistStart,
+      rules.indexOf('}', allowlistStart),
+    );
+    expect(matchAllowlist.contains('interactionBonusAwarded'), isFalse);
+    expect(matchAllowlist.contains('matchBonusAwarded'), isFalse);
     expect(rules.contains('match /matchScoreHistory/{entryId}'), isTrue);
     expect(rules.contains('match /matchFeedback/{matchId}'), isTrue);
     expect(rules.contains('match /pendingMatchFeedback/{matchId}'), isTrue);

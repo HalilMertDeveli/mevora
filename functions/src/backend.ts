@@ -28,7 +28,8 @@ import {
   passesDiscoveryProfileFilters,
   passesGenderPreferences,
 } from "./discoveryMatching.js";
-import {loadActiveBoostedUserIds, effectiveRadiusKm, isBoostedCandidate, sortByBoostVisibility} from "./boost/ranking.js";
+import {loadActiveBoostSessions, effectiveRadiusKm, isBoostedCandidate, sortByBoostVisibility} from "./boost/ranking.js";
+import {attributeBoostEvent, recordBoostImpressions} from "./boost/measurement.js";
 import {
   classifyDiscoveryDistance,
   fillFromDistanceTiers,
@@ -172,7 +173,7 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
   const cursor = String(request.data?.cursor ?? "");
   // Client may ask for soft distance expansion when a preferred radius is empty.
   const expandDistance = request.data?.expandDistance === true;
-  const [prefsSnap, viewerProfileSnap, locationSnap, blocked, likesSnap, passedSnap, boosted, activeMatches] =
+  const [prefsSnap, viewerProfileSnap, locationSnap, blocked, likesSnap, passedSnap, boostSessions, activeMatches] =
     await Promise.all([
     db.doc(`userPreferences/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -180,9 +181,11 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
     loadBlockedUserIds(uid),
     db.collection("likes").where("fromUserId", "==", uid).get(),
     db.collection(`users/${uid}/passedUsers`).get(),
-    loadActiveBoostedUserIds(db),
+    loadActiveBoostSessions(db),
     loadActiveMatchPartnerIds(db, uid),
   ]);
+  // Ranking needs only the uids; measurement needs the sessions behind them.
+  const boosted = new Set(boostSessions.keys());
   const seen = new Set(likesSnap.docs.map((doc) => String(doc.get("toUserId") ?? "")));
   for (const doc of passedSnap.docs) seen.add(doc.id);
   for (const partner of activeMatches) seen.add(partner);
@@ -418,6 +421,15 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
     rejectionReasons,
   });
 
+  // An impression is a profile that reached this response page. Being
+  // considered as a ranking candidate is not an impression.
+  await recordBoostImpressions({
+    db,
+    viewerUid: uid,
+    shownUids: filled.items.map((item) => String((item as {uid?: unknown}).uid ?? "")),
+    sessions: boostSessions,
+  });
+
   const nextCursor = scannedFullPage ? lastUid : null;
   return {
     items: filled.items,
@@ -510,6 +522,10 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
     action: action === "superLike" ? "superLike" : "like",
     createdAt: FieldValue.serverTimestamp(),
   });
+  // Counted once per (viewer, Boost session), and only when a reach row shows
+  // this viewer was actually served the boosted profile while it was running.
+  await attributeBoostEvent({db, viewerUid: uid, boostedUid: candidateUid, kind: "like"});
+
   const reverse = await db.doc(`likes/${candidateUid}_${uid}`).get();
   const reverseAction = reverse.data()?.action as string | undefined;
   const matched = reverse.exists && reverseAction !== "pass";
@@ -548,6 +564,13 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
     });
   });
   if (wroteMatch) {
+    // wroteMatch is already the idempotent transition, so a retried callable
+    // or a replayed trigger cannot count the same match twice. Either side may
+    // have been boosted: the one who was seen gets the credit.
+    await Promise.all([
+      attributeBoostEvent({db, viewerUid: uid, boostedUid: candidateUid, kind: "match"}),
+      attributeBoostEvent({db, viewerUid: candidateUid, boostedUid: uid, kind: "match"}),
+    ]);
     const fields = await buildMatchCompatibilityFields(uid, candidateUid);
     if (Object.keys(fields).length > 0) {
       await matchRef.set(fields, {merge: true});

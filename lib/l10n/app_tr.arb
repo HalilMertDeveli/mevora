@@ -567,7 +567,7 @@
   "boostPurchasing": "Satın alma işlemi başlatılıyor...",
   "boostVerifying": "Satın alma doğrulanıyor...",
   "boostSuccessTitle": "Boost aktif! 🚀",
-  "boostSuccessMessage": "Profilin daha fazla kişiye gösterilmeye başlayacak.",
+  "boostSuccessMessage": "Boost aktif. Süresi boyunca profilin uygun Discover profilleri arasında daha üst sırada çıkar.",
   "boostAlreadyActive": "Aktif bir Boost'un var. Yeni paket kalan süreye eklenir.",
   "boostPurchaseCancelled": "Satın alma iptal edildi.",
   "boostPurchaseFailed": "Satın alma tamamlanamadı. Lütfen tekrar dene.",
@@ -1516,5 +1516,35 @@
   "humorCategoryWordplay": "Kelime oyunu",
   "humorCategorySituational": "Durumsal",
   "humorCategoryCringe": "Cringe",
-  "humorCategoryTeasing": "Takılma"
+  "humorCategoryTeasing": "Takılma",
+  "boostResultsTitle": "Boost sonuçları",
+  "boostResultsPending": "Sonuçlar sayılıyor…",
+  "boostReachedPeople": "{count, plural, =0{Henüz kimseye gösterilmedi} =1{1 kişiye gösterildin} other{{count} kişiye gösterildin}}",
+  "@boostReachedPeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostLikesReceived": "{count, plural, =0{0 beğeni} =1{1 beğeni} other{{count} beğeni}}",
+  "@boostLikesReceived": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostMatchesCreated": "{count, plural, =0{0 eşleşme} =1{1 eşleşme} other{{count} eşleşme}}",
+  "@boostMatchesCreated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostCompletedTitle": "Boost tamamlandı",
+  "boostCompletedEmpty": "Bu Boost kimseye ulaşmadı.",
+  "boostResultsUnavailable": "Bu Boost için sonuç bilgisi yok.",
+  "boostResultsDelayNote": "Sayılar canlı etkinliğin biraz gerisinde kalabilir."
 }

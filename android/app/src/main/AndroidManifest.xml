@@ -36,6 +36,13 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Spotify OAuth callbacks are consumed by app_links ->
+                 SpotifyAuthService. Flutter enables its own deep-link handler
+                 by default since 3.27, which would route mevora://auth/spotify
+                 into GoRouter and fail with "no routes for location". -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

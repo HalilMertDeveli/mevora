@@ -23,6 +23,9 @@ abstract class PurchaseRepository {
 
   Future<Result<Boost?>> getActiveBoost(String userId);
 
+  /// Most recently finished Boost period, so its results can be shown.
+  Future<Result<Boost?>> getLatestFinishedBoost(String userId);
+
   Future<Result<BoostWallet>> getWallet(String userId);
 
   Future<Result<List<BoostHistoryEntry>>> getHistory(String userId);

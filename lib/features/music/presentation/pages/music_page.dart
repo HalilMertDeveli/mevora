@@ -89,6 +89,8 @@ class _MusicPageState extends State<MusicPage> {
                     message: l10n.loading,
                     asset: MevoraRiveAssets.musicAnalyzing,
                   )
+                : state.loadFailed
+                ? _MusicLoadFailedView(controller: controller)
                 : state.connected
                 ? _ConnectedMusicView(controller: controller)
                 : _UnconnectedMusicView(controller: controller),
@@ -427,6 +429,44 @@ class _Cover extends StatelessWidget {
                 image: MevoraNetworkImages.provider(url)!,
                 fit: BoxFit.cover,
               ),
+      ),
+    );
+  }
+}
+
+/// Shown when `getMusicAccount` itself failed. A connected user must not be
+/// told to connect Spotify because the request did not come back.
+class _MusicLoadFailedView extends StatelessWidget {
+  const _MusicLoadFailedView({required this.controller});
+
+  final MusicController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.screenPadding),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.cloud_off_outlined,
+            size: 48,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            _musicError(l10n, controller.state.failure) ?? l10n.musicNetwork,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          MevoraButton(
+            label: l10n.retry,
+            isLoading: controller.state.isLoading,
+            onPressed: () => unawaited(controller.load()),
+          ),
+        ],
       ),
     );
   }

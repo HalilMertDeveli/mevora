@@ -64,6 +64,4 @@ abstract class AuthRepository {
     required String newPassword,
   });
 
-  /// Completes an in-flight OAuth callback after process resume (Spotify).
-  Future<void> restorePendingOAuth();
 }

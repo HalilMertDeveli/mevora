@@ -39,10 +39,26 @@ export const CALIBRATION_TOTAL =
  * with the slot may fill it, which is what lets users receive different memes
  * while staying comparable.
  *
- * Six slots cover eight of the eleven dimensions. `romantic` and `dark` are
- * deliberately excluded from the baseline: both are polarizing enough that a
- * cold reading adds more noise than signal, so they are left to the adaptive
- * and exploration stages where there is already a profile to contrast against.
+ * Coverage, stated precisely because the two numbers differ:
+ *
+ * - The slot table *declares* nine of the eleven dimensions (six `primary`
+ *   plus `dry`, `silly`, `teasing` as contrasts). `romantic` and `dark` are
+ *   deliberately excluded from the baseline: both are polarizing enough that a
+ *   cold reading adds more noise than signal, so they are left to the adaptive
+ *   and exploration stages where there is already a profile to contrast
+ *   against.
+ * - What the six anchors actually *measure* is eight dimensions, because
+ *   coverage is computed from the curated item's vector mass
+ *   (>= {@link COVERAGE_MASS_THRESHOLD}), not from this table. No current
+ *   `anchor_social` candidate carries enough `teasing` mass to clear the
+ *   threshold, so `teasing` is declared but unmeasured and falls to the
+ *   adaptive stage — which is exactly where an uncovered dimension should go.
+ *
+ * `contrast` is a declarative design note: it records which neighbour a slot
+ * exists to separate its `primary` from. Nothing in the selector reads it, so
+ * it constrains curation review rather than runtime behaviour. The measured
+ * set is pinned by a test so it cannot drift silently.
+ *
  * `dry` appears only as a contrast dimension because in isolation it is very
  * hard to distinguish from a weak `sarcasm` response.
  */

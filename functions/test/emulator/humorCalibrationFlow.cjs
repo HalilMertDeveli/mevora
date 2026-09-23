@@ -234,6 +234,110 @@ step("a second user gets the same slots but rotated content", async () => {
   return `${ANCHOR_INTERACTIONS - overlap.length}/${ANCHOR_INTERACTIONS} anchors differ`;
 });
 
+step("rapid double tap on one card counts exactly once", async () => {
+  const uid = "qa_concurrency_same";
+  const feed = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 15});
+  const target = feed.items[0].contentId;
+
+  // Two in-flight submissions for the same card — the real double-tap shape.
+  const results = await Promise.allSettled([
+    submitHumorFeedbackTx({db, uid, contentId: target, rating: "very_funny"}),
+    submitHumorFeedbackTx({db, uid, contentId: target, rating: "very_funny"}),
+  ]);
+  const ok = results.filter((r) => r.status === "fulfilled").length;
+  assert.ok(ok >= 1, `both submissions failed: ${JSON.stringify(results)}`);
+
+  const state = await loadUserHumorCalibration(db, uid);
+  assert.equal(state.completedCount, 1, "double tap inflated calibration");
+  assert.deepEqual(state.ratedContentIds, [target]);
+  const summary = (await db.doc(`users/${uid}/humor/summary`).get()).data();
+  assert.equal(summary.interactionCount, 1, "double tap inflated interactionCount");
+  return `${ok}/2 submissions succeeded, count stayed 1`;
+});
+
+step("concurrent ratings of different cards do not lose an update", async () => {
+  const uid = "qa_concurrency_distinct";
+  const feed = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 15});
+  const targets = feed.items.slice(0, 5).map((i) => i.contentId);
+
+  const results = await Promise.allSettled(
+    targets.map((contentId) =>
+      submitHumorFeedbackTx({db, uid, contentId, rating: "funny"}),
+    ),
+  );
+  const rejected = results.filter((r) => r.status === "rejected");
+  assert.equal(
+    rejected.length,
+    0,
+    `transactions failed instead of retrying: ${rejected.map((r) => r.reason).join("; ")}`,
+  );
+
+  const state = await loadUserHumorCalibration(db, uid);
+  assert.equal(state.completedCount, targets.length, "lost calibration update");
+  assert.equal(new Set(state.ratedContentIds).size, targets.length);
+  const summary = (await db.doc(`users/${uid}/humor/summary`).get()).data();
+  assert.equal(summary.interactionCount, targets.length, "lost profile update");
+  return `${targets.length} concurrent ratings all landed`;
+});
+
+step("re-rating after completion cannot restart or extend calibration", async () => {
+  const state = await loadUserHumorCalibration(db, UID);
+  assert.equal(state.complete, true, "precondition: UID finished calibration");
+  const before = (await db.doc(`users/${UID}/humor/summary`).get()).data();
+
+  // Re-rate an item that was part of calibration, twice, concurrently.
+  const replay = state.ratedContentIds[0];
+  await Promise.allSettled([
+    submitHumorFeedbackTx({db, uid: UID, contentId: replay, rating: "not_at_all"}),
+    submitHumorFeedbackTx({db, uid: UID, contentId: replay, rating: "funny"}),
+  ]);
+
+  const after = await loadUserHumorCalibration(db, UID);
+  assert.equal(after.completedCount, CALIBRATION_TOTAL);
+  assert.equal(after.complete, true);
+  assert.equal(after.ratedContentIds.length, CALIBRATION_TOTAL);
+  const summary = (await db.doc(`users/${UID}/humor/summary`).get()).data();
+  assert.equal(
+    summary.interactionCount,
+    before.interactionCount,
+    "re-rating known content must not increment the lifetime counter",
+  );
+  return `stayed at ${after.completedCount}/${CALIBRATION_TOTAL}`;
+});
+
+step("account deletion removes calibration through the existing humor sweep", async () => {
+  const uid = "qa_deletion_user";
+  const feed = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 15});
+  for (const item of feed.items.slice(0, 3)) {
+    await submitHumorFeedbackTx({db, uid, contentId: item.contentId, rating: "funny"});
+  }
+  assert.ok((await db.doc(`users/${uid}/humor/calibration`).get()).exists);
+  assert.ok((await db.doc(`users/${uid}/humor/summary`).get()).exists);
+  const interactions = await db.collection(`users/${uid}/humorInteractions`).get();
+  assert.equal(interactions.docs.length, 3);
+
+  // Exactly what deleteAccount.ts runs for humor-owned data.
+  for (const path of [`users/${uid}/humor`, `users/${uid}/humorInteractions`]) {
+    const snap = await db.collection(path).get();
+    await Promise.all(snap.docs.map((d) => d.ref.delete()));
+  }
+
+  assert.equal((await db.doc(`users/${uid}/humor/calibration`).get()).exists, false);
+  assert.equal((await db.doc(`users/${uid}/humor/summary`).get()).exists, false);
+  assert.equal((await db.collection(`users/${uid}/humorInteractions`).get()).empty, true);
+
+  // No calibration-specific document may live outside that swept collection.
+  const orphanRoots = ["humorCalibration", "humorCalibrations", "calibration"];
+  for (const root of orphanRoots) {
+    assert.equal(
+      (await db.collection(root).get()).empty,
+      true,
+      `orphaned calibration collection: ${root}`,
+    );
+  }
+  return "summary + calibration + interactions all gone, no orphans";
+});
+
 (async () => {
   let failed = 0;
   for (const [name, fn] of steps) {

@@ -167,6 +167,18 @@ class HumorController extends ChangeNotifier {
     await _refreshProfile();
   }
 
+  /// Merge calibration progress that arrived from a non-feed response.
+  ///
+  /// Only `getHumorFeed` runs pool selection, so only it knows whether the
+  /// curated pool could fill the remaining positions. The feedback and profile
+  /// payloads carry progress but default `insufficientPool` to false — taking
+  /// them verbatim would silently erase a catalog-deficiency signal.
+  HumorCalibration _withPoolFlag(HumorCalibration next) {
+    return next.copyWith(
+      insufficientPool: _state.calibration.insufficientPool,
+    );
+  }
+
   /// Emit calibration analytics from *server-reported* transitions only.
   ///
   /// Deliberately carries stage and counts and nothing else — the humor vector
@@ -248,6 +260,7 @@ class HumorController extends ChangeNotifier {
           rating: rating,
         );
         final previousCalibration = _state.calibration;
+        final nextCalibration = _withPoolFlag(feedback.calibration);
         _state = _state.copyWith(
           lastRated: rating,
           canUndo: true,
@@ -255,14 +268,14 @@ class HumorController extends ChangeNotifier {
             interactionCount: feedback.interactionCount,
             profileBuilding: feedback.profileBuilding,
             confidence: feedback.confidence,
-            calibration: feedback.calibration,
+            calibration: nextCalibration,
           ),
-          calibration: feedback.calibration,
+          calibration: nextCalibration,
           clearFailure: true,
         );
         _logCalibration(
           previous: previousCalibration,
-          next: feedback.calibration,
+          next: nextCalibration,
         );
         _log(
           skipped
@@ -355,14 +368,9 @@ class HumorController extends ChangeNotifier {
     final result = await _repository.getProfile(detailed: detailed);
     result.when(
       success: (profile) {
-        // The profile payload carries calibration *progress* but knows nothing
-        // about pool sufficiency — that is a feed-level observation, so keep
-        // the flag the last feed reported instead of clearing it here.
         _state = _state.copyWith(
           profile: profile,
-          calibration: profile.calibration.copyWith(
-            insufficientPool: _state.calibration.insufficientPool,
-          ),
+          calibration: _withPoolFlag(profile.calibration),
         );
       },
       err: (_) {},

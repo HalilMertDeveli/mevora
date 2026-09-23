@@ -291,6 +291,33 @@ void main() {
       }
     });
 
+    test('insufficientPool survives a rating and a profile refresh', () async {
+      // Pool sufficiency is observed only by the feed. Neither the feedback
+      // response nor the profile response carries it, so every merge that
+      // takes calibration from those payloads must preserve the flag instead
+      // of resetting it to the default false.
+      final source = MockHumorDataSource(
+        seed: MockHumorDataSource.seedCatalog.take(4).toList(),
+      );
+      final controller = buildController(source);
+
+      await controller.load();
+      expect(controller.state.calibration.insufficientPool, isTrue);
+
+      await controller.rate(HumorRating.funny);
+      expect(
+        controller.state.calibration.insufficientPool,
+        isTrue,
+        reason: 'a rating must not clear a catalog-deficiency signal',
+      );
+
+      await controller.refreshProfile();
+      expect(controller.state.calibration.insufficientPool, isTrue);
+
+      // Progress itself must still advance normally.
+      expect(controller.state.calibration.completedCount, 1);
+    });
+
     test('a short curated pool is reported, not silently padded', () async {
       // Only four items available for a fifteen-item calibration.
       final source = MockHumorDataSource(

@@ -502,6 +502,97 @@ test("internal seed covers every anchor slot with a rotatable pool", () => {
   }
 });
 
+test("anchor coverage is identical whichever candidates rotate in", async () => {
+  // Comparability is the whole point of the anchor stage: two users who get
+  // different memes must still end up with the *same* dimensions measured.
+  // This pins that invariant against curation drift.
+  const bySlot = new Map();
+  for (const item of INTERNAL_HUMOR_SEED) {
+    const slot = item.calibration?.slot;
+    if (!slot) continue;
+    if (!bySlot.has(slot)) bySlot.set(slot, []);
+    bySlot.get(slot).push(item);
+  }
+
+  const coverageForPath = (pick) => {
+    const dims = new Set();
+    for (const slot of ANCHOR_SLOTS) {
+      const pool = [...(bySlot.get(slot.id) ?? [])].sort((a, b) =>
+        a.contentId < b.contentId ? -1 : 1,
+      );
+      assert.ok(pool.length > 0, `no candidate for ${slot.id}`);
+      for (const dim of coverageDimensionsOf(pool[pick % pool.length])) {
+        dims.add(dim);
+      }
+    }
+    return [...dims].sort();
+  };
+
+  const pathA = coverageForPath(0);
+  const pathB = coverageForPath(1);
+  assert.deepEqual(
+    pathA,
+    pathB,
+    "rotating to the alternate candidate changed which dimensions get measured",
+  );
+
+  // The measured set, locked. `teasing` is declared as anchor_social's
+  // contrast but no candidate carries enough mass to clear the coverage
+  // threshold, so it is deliberately left to the adaptive stage.
+  assert.deepEqual(pathA, [
+    "absurd",
+    "cringe",
+    "dry",
+    "meme",
+    "sarcasm",
+    "silly",
+    "situational",
+    "wordplay",
+  ]);
+
+  // Every slot's declared primary must actually be measured — that part is
+  // not optional.
+  for (const slot of ANCHOR_SLOTS) {
+    assert.ok(
+      pathA.includes(slot.primary),
+      `${slot.id} does not measure its declared primary ${slot.primary}`,
+    );
+  }
+
+  // romantic and dark stay out of the baseline by design.
+  assert.equal(pathA.includes("romantic"), false);
+  assert.equal(pathA.includes("dark"), false);
+});
+
+test("dimensions left uncovered by anchors are picked up by later stages", () => {
+  // The flip side of the coverage gap: teasing / romantic / dark must not be
+  // stranded. With the anchor set measured, they are the cheapest information
+  // available, so adaptive and exploration must reach for them.
+  const anchorCovered = [
+    "absurd",
+    "cringe",
+    "dry",
+    "meme",
+    "sarcasm",
+    "silly",
+    "situational",
+    "wordplay",
+  ];
+  const profile = profileWith({sarcasm: 88, meme: 80}, 6);
+  const adaptive = selectAdaptiveDimensions({
+    profile,
+    coveredDimensions: anchorCovered,
+  });
+  const exploration = selectExplorationDimensions({
+    profile,
+    coveredDimensions: [...anchorCovered, ...adaptive],
+  });
+  const reached = new Set([...adaptive, ...exploration]);
+  for (const dim of ["teasing", "romantic", "dark"]) {
+    assert.ok(reached.has(dim), `${dim} was never probed after the anchors`);
+  }
+});
+
 test("pool query excludes inactive, unapproved and uncurated content", async () => {
   const db = seededDb({
     hc_tr_img_001: {active: false},

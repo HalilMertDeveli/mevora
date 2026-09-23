@@ -341,7 +341,7 @@ Detay: [docs/PHOTO_MODERATION.md](docs/PHOTO_MODERATION.md)
 | Firebase Remote Config SDK | **Bağlı değil** — yalnızca `MevoraRemoteConfig` yerel varsayılanları |
 | Otomatik cihaz E2E | Kısmi (`integration_test/`, cihaz gerekir) |
 | Backend production smoke harness | Uygulandı (`tools/smoke/`) |
-| CI workflow | Uygulandı (`.github/workflows/smoke.yml`) |
+| CI workflow | Uygulandı (`.github/workflows/ci.yml`) |
 
 ---
 
@@ -504,7 +504,7 @@ Daha fazla: [FIREBASE_SECURITY.md](FIREBASE_SECURITY.md) · [LOCATION_ARCHITECTU
 | Integration config testi | `test/integration/` | Uygulandı |
 | Cihaz E2E | `integration_test/smoke/` | Kısmi — Android/iOS cihaz gerekir |
 | Backend smoke | `tools/smoke/run_smoke_test.mjs` | Uygulandı |
-| CI | `.github/workflows/smoke.yml` | Uygulandı |
+| CI | `.github/workflows/ci.yml` | Uygulandı |
 
 ```bash
 # Flutter (dart_test.yaml varsayılan kapsam)
@@ -552,7 +552,7 @@ flowchart TD
 | Smoke kullanıcıları | `smoke-a@mevora.test`, `smoke-b@mevora.test` | Uygulandı |
 | İzolasyon bayrağı | `users.isSmokeTestUser` (yalnızca sunucu) | Uygulandı |
 | Cihaz E2E | `integration_test/smoke/` | Kısmi — bağlı cihaz gerekir |
-| CI workflow | `.github/workflows/smoke.yml` | Uygulandı |
+| CI workflow | `.github/workflows/ci.yml` | Uygulandı |
 
 **Service account** ile çalıştırın (credential commit etmeyin). Bkz. [docs/SMOKE_TEST.md](docs/SMOKE_TEST.md).
 

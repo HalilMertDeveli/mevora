@@ -56,7 +56,8 @@
       "fields": [
         { "fieldPath": "active", "order": "ASCENDING" },
         { "fieldPath": "safetyStatus", "order": "ASCENDING" },
-        { "fieldPath": "language", "order": "ASCENDING" }
+        { "fieldPath": "language", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },
     {
@@ -66,6 +67,25 @@
         { "fieldPath": "active", "order": "ASCENDING" },
         { "fieldPath": "safetyStatus", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "humorContent",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "calibrationEligible", "order": "ASCENDING" },
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "safetyStatus", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "humorContent",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "calibrationEligible", "order": "ASCENDING" },
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "safetyStatus", "order": "ASCENDING" },
+        { "fieldPath": "calibrationSlot", "order": "ASCENDING" }
       ]
     },
     {

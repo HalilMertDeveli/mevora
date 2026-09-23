@@ -1,4 +1,5 @@
 import 'package:mevora/features/humor/data/datasources/humor_data_source.dart';
+import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
@@ -178,7 +179,118 @@ class MockHumorDataSource implements HumorDataSource {
       thumbUrl: 'https://picsum.photos/seed/mevora-en-1/540/960',
       aspectRatio: 9 / 16,
     ),
+    // Mirrors the calibration alternates added to the backend internal seed so
+    // local QA has enough content to walk a full 15-item calibration.
+    HumorContent(
+      contentId: 'hc_tr_img_006',
+      type: HumorContentType.meme,
+      language: 'tr',
+      category: HumorCategory.sarcasm,
+      humorTags: ['ironi', 'gunluk'],
+      textBody: 'Harika, tam da bugün bitmesi gereken şey bitmedi.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-6/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-6/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_vid_006',
+      type: HumorContentType.video,
+      language: 'tr',
+      category: HumorCategory.absurd,
+      humorTags: ['absürt', 'video'],
+      textBody: 'Rüyamda da sıra bekliyordum. Uyanınca da.',
+      downloadUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      thumbUrl:
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg',
+      durationMs: 15000,
+      aspectRatio: 16 / 9,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_007',
+      type: HumorContentType.image,
+      language: 'tr',
+      category: HumorCategory.situational,
+      humorTags: ['günlük', 'sosyal'],
+      textBody: 'Asansörde sohbet başlatan insan türü üzerine bir inceleme.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-7/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-7/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_008',
+      type: HumorContentType.meme,
+      language: 'tr',
+      category: HumorCategory.meme,
+      humorTags: ['meme', 'klasik'],
+      textBody: 'Bildirimi kapattım, huzur geldi sandım. Gelmedi.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-8/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-8/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_009',
+      type: HumorContentType.image,
+      language: 'tr',
+      category: HumorCategory.wordplay,
+      humorTags: ['kelime', 'espri'],
+      textBody: 'Planım yoktu ama planım olmadığına dair bir planım vardı.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-9/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-9/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_010',
+      type: HumorContentType.meme,
+      language: 'tr',
+      category: HumorCategory.cringe,
+      humorTags: ['cringe', 'sosyal'],
+      textBody: 'Sesli mesajı yanlış gruba attım. İyi geceler herkese.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-10/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-10/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_011',
+      type: HumorContentType.image,
+      language: 'tr',
+      category: HumorCategory.dry,
+      humorTags: ['kuru', 'sakin'],
+      textBody: 'Evet. Güzel. Devam edelim.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-11/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-11/540/960',
+      aspectRatio: 9 / 16,
+    ),
   ];
+
+  /// Mirror of the server stage boundaries so local QA walks the same shape.
+  static HumorCalibrationStage _stageFor(int completedCount) {
+    if (completedCount < HumorCalibration.anchorInteractions) {
+      return HumorCalibrationStage.anchor;
+    }
+    if (completedCount <
+        HumorCalibration.anchorInteractions +
+            HumorCalibration.adaptiveInteractions) {
+      return HumorCalibrationStage.adaptive;
+    }
+    if (completedCount < HumorCalibration.totalInteractions) {
+      return HumorCalibrationStage.exploration;
+    }
+    return HumorCalibrationStage.complete;
+  }
+
+  HumorCalibration get calibration {
+    final done = _completedCalibration;
+    return HumorCalibration(
+      stage: _stageFor(done),
+      completedCount: done,
+      complete: done >= HumorCalibration.totalInteractions,
+    );
+  }
+
+  int get _completedCalibration => _ratings.length > HumorCalibration.totalInteractions
+      ? HumorCalibration.totalInteractions
+      : _ratings.length;
 
   @override
   Future<HumorFeedPage> getFeed({
@@ -203,21 +315,59 @@ class MockHumorDataSource implements HumorDataSource {
         final bRank = bi < 0 ? 99 : bi;
         return aRank.compareTo(bRank);
       });
+    final state = calibration;
+    if (!state.complete) {
+      // Calibration owns the page: unrated items only, each tagged with the
+      // stage of the position it would occupy — the same contract the server
+      // returns, so controller/UI behaviour matches between mock and real.
+      final unrated = ranked
+          .where((item) => !_ratings.containsKey(item.contentId))
+          .toList();
+      final wanted = HumorCalibration.totalInteractions - state.completedCount;
+      final take = wanted < unrated.length ? wanted : unrated.length;
+      final page = <HumorContent>[
+        for (var i = 0; i < take; i += 1)
+          unrated[i].copyWithCalibrationStage(
+            _stageFor(state.completedCount + i),
+          ),
+      ];
+      return HumorFeedPage(
+        items: page,
+        nextCursor: null,
+        profileBuilding: true,
+        interactionCount: _profile.interactionCount,
+        calibration: state.copyWith(insufficientPool: page.length < wanted),
+      );
+    }
+
+    // Mirror the server contract: unrated items only, walked in catalog order,
+    // so the mock cannot hide a pagination regression behind repeats.
+    final unrated = ranked
+        .where((item) => !_ratings.containsKey(item.contentId))
+        .toList();
     final start = cursor == null || cursor.isEmpty ? 0 : int.tryParse(cursor) ?? 0;
-    final end = (start + pageSize).clamp(0, ranked.length);
-    final page = ranked.sublist(start.clamp(0, ranked.length), end);
-    final next = end < ranked.length ? '$end' : null;
+    final from = start.clamp(0, unrated.length);
+    final end = (from + pageSize).clamp(0, unrated.length);
+    final page = unrated.sublist(from, end);
+    final next = end < unrated.length ? '$end' : null;
     return HumorFeedPage(
       items: page,
       nextCursor: next,
-      profileBuilding: _profile.profileBuilding,
+      profileBuilding: false,
       interactionCount: _profile.interactionCount,
+      calibration: state,
+      catalogExhausted: page.isEmpty && _items.isNotEmpty,
+      catalogEmpty: _items.isEmpty,
     );
   }
 
   @override
   Future<UserHumorProfile> getProfile({bool detailed = false}) async {
-    return _profile;
+    final state = calibration;
+    return _profile.copyWith(
+      calibration: state,
+      profileBuilding: !state.complete,
+    );
   }
 
   @override
@@ -239,19 +389,23 @@ class MockHumorDataSource implements HumorDataSource {
     if (saved) {
       _saved.add(contentId);
     }
+    // Lifetime learning keeps counting past calibration, exactly like the
+    // server: only the calibration milestone freezes at 15.
     final nextCount = _profile.interactionCount + 1;
     final confidence = (nextCount / 40).clamp(0.0, 1.0);
-    final building = nextCount < HumorFeedPolicy.buildingThreshold;
+    final state = calibration;
     _profile = _profile.copyWith(
       confidence: confidence,
       interactionCount: nextCount,
-      profileBuilding: building,
+      profileBuilding: !state.complete,
+      calibration: state,
     );
     return HumorFeedbackResult(
       ok: true,
-      profileBuilding: building,
+      profileBuilding: !state.complete,
       interactionCount: nextCount,
       confidence: confidence,
+      calibration: state,
     );
   }
 

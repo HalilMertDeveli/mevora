@@ -33,6 +33,76 @@ Flutter vertical feed ◄── getHumorFeed ◄── Firestore
 
 Default preference: `tr` then `en`. App language TR → Turkish content first.
 
+## Initial calibration
+
+The first **15** rated interactions are a structured calibration milestone,
+served instead of the personalized feed:
+
+| Stage | Interactions | Purpose |
+|---|---|---|
+| **Anchor** | 1–6 | Comparable baseline across users, one curated *anchor slot* each |
+| **Adaptive** | 7–12 | Separate a strong signal from its nearest neighbours |
+| **Exploration** | 13–15 | Highest information gain — undercovered / weakly evidenced dims |
+
+Server-owned state lives at `users/{uid}/humor/calibration` (`calibrationVersion = 1`).
+It sits inside the existing `users/{uid}/humor` collection on purpose, so the
+owner-read/client-write-denied rule and the account-deletion sweep both cover it
+without new rules.
+
+### Not everyone sees the same memes
+
+An anchor slot is a *measurement role*, not a content id. Multiple curated items
+may fill the same slot; `calibrationFeed.ts` rotates between them with a
+deterministic FNV-1a seed of `uid + version + slot`. Same user ⇒ same item (so an
+interrupted calibration resumes onto it); different users ⇒ different items. No
+`Math.random`, so the selection stays unit-testable.
+
+### Calibration content system
+
+Curation lives in `functions/src/humor/calibrationSeed.ts`, separate from
+persistence. Each of the six anchor slots carries **four** interchangeable
+candidates, so two users calibrated on the same slot rarely see the same asset.
+
+Every anchor candidate must measure its slot's `primary` dimension; a test
+enforces it. A candidate is *not* required to measure the slot's `contrast` —
+an item scoring high on both sarcasm and dry cannot separate them. The contrast
+is what the adaptive stage probes afterwards.
+
+**Guaranteed anchor coverage is the six slot primaries**: absurd, cringe, meme,
+sarcasm, situational, wordplay. That is the intersection across every rotation,
+which is what makes two profiles comparable. Deeper pools deliberately traded
+incidental secondary overlap for content variety. The remaining five dimensions
+— dry, silly, teasing, romantic, dark — are reached by the adaptive and
+exploration stages, and a test proves they are not stranded.
+
+The seed is the **QA / development tier**, marked `provider: mevora-qa-seed`.
+Production curation is content-ops work; the architecture is what makes it
+possible without code changes.
+
+`getHumorCalibrationPoolReport` (admin callable) reports per-slot candidate
+counts, guaranteed coverage, uncovered dimensions and warnings. Calibration
+degrades quietly when a pool runs thin, so this is how a catalog gap becomes
+visible before users hit it.
+
+### Curation is opt-in
+
+`humorContent` carries three flat fields — `calibrationEligible`,
+`calibrationSlot`, `calibrationVersion`. All default closed, so bulk-ingested
+Giphy content can never drift into an anchor pool. Only an explicit admin
+`upsertHumorContent` call or the curated internal seed opts an item in; an
+unknown slot id is rejected outright.
+
+If a pool is short, calibration degrades gracefully: positions are filled from
+ordinary feed content, the gap is reported as `insufficientPool`, and the state
+records a `degradedCount`. Uncurated content **never** claims an anchor slot.
+
+### Calibration ≠ end of learning
+
+Completing the 15 does not freeze anything. `submitHumorFeedback` keeps updating
+the humor vector, `interactionCount`, `confidence` and explored categories
+indefinitely. `profileBuilding` now means "initial calibration still running",
+not "the profile stopped learning".
+
 ## Feature flag
 
 `FeatureFlags.humorLabEnabled` (product default false). Debug+dev ON via `resolveHumorLabEnabled`.

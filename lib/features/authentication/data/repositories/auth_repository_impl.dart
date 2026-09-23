@@ -342,10 +342,6 @@ class AuthRepositoryImpl implements AuthRepository {
     );
   }
 
-  @override
-  Future<void> restorePendingOAuth() {
-    return _spotifyAuthService.handleInitialUri();
-  }
 
   Future<AuthUser> _persistPhoneSession(AuthSession session) async {
     if (kDebugMode) {

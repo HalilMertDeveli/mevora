@@ -502,82 +502,70 @@ test("internal seed covers every anchor slot with a rotatable pool", () => {
   }
 });
 
-test("anchor coverage is identical whichever candidates rotate in", async () => {
-  // Comparability is the whole point of the anchor stage: two users who get
-  // different memes must still end up with the *same* dimensions measured.
-  // This pins that invariant against curation drift.
-  const bySlot = new Map();
-  for (const item of INTERNAL_HUMOR_SEED) {
-    const slot = item.calibration?.slot;
-    if (!slot) continue;
-    if (!bySlot.has(slot)) bySlot.set(slot, []);
-    bySlot.get(slot).push(item);
+test("every anchor candidate measures its slot primary, on every rotation", async () => {
+  // Comparability is the whole point of the anchor stage. Deeper pools mean
+  // candidates no longer share *incidental* secondary dimensions, so the
+  // guarantee has to be the thing each slot was designed to measure: its
+  // primary. That set is the comparable baseline two profiles share.
+  const {
+    seedAnchorPools,
+    ANCHOR_POOL_TARGET,
+  } = require("../lib/humor/calibrationSeed.js");
+  const pools = seedAnchorPools();
+
+  for (const slot of ANCHOR_SLOTS) {
+    const candidates = pools.get(slot.id) ?? [];
+    assert.ok(
+      candidates.length >= ANCHOR_POOL_TARGET,
+      `${slot.id} has ${candidates.length} candidates, target is ${ANCHOR_POOL_TARGET}`,
+    );
+    for (const candidate of candidates) {
+      assert.ok(
+        coverageDimensionsOf(candidate).includes(slot.primary),
+        `${candidate.contentId} is tagged ${slot.id} but does not measure ${slot.primary}`,
+      );
+    }
   }
 
-  const coverageForPath = (pick) => {
+  const depth = Math.max(...[...pools.values()].map((p) => p.length));
+  const paths = [];
+  for (let pick = 0; pick < depth; pick += 1) {
     const dims = new Set();
     for (const slot of ANCHOR_SLOTS) {
-      const pool = [...(bySlot.get(slot.id) ?? [])].sort((a, b) =>
+      const pool = [...(pools.get(slot.id) ?? [])].sort((a, b) =>
         a.contentId < b.contentId ? -1 : 1,
       );
-      assert.ok(pool.length > 0, `no candidate for ${slot.id}`);
       for (const dim of coverageDimensionsOf(pool[pick % pool.length])) {
         dims.add(dim);
       }
     }
-    return [...dims].sort();
-  };
+    paths.push([...dims].sort());
+  }
 
-  const pathA = coverageForPath(0);
-  const pathB = coverageForPath(1);
+  const guaranteed = paths[0].filter((dim) => paths.every((p) => p.includes(dim)));
   assert.deepEqual(
-    pathA,
-    pathB,
-    "rotating to the alternate candidate changed which dimensions get measured",
+    guaranteed,
+    [...ANCHOR_SLOTS.map((s) => s.primary)].sort(),
+    "the guaranteed comparable baseline must be exactly the slot primaries",
   );
-
-  // The measured set, locked. `teasing` is declared as anchor_social's
-  // contrast but no candidate carries enough mass to clear the coverage
-  // threshold, so it is deliberately left to the adaptive stage.
-  assert.deepEqual(pathA, [
+  assert.deepEqual(guaranteed, [
     "absurd",
     "cringe",
-    "dry",
     "meme",
     "sarcasm",
-    "silly",
     "situational",
     "wordplay",
   ]);
 
-  // Every slot's declared primary must actually be measured — that part is
-  // not optional.
-  for (const slot of ANCHOR_SLOTS) {
-    assert.ok(
-      pathA.includes(slot.primary),
-      `${slot.id} does not measure its declared primary ${slot.primary}`,
-    );
-  }
-
   // romantic and dark stay out of the baseline by design.
-  assert.equal(pathA.includes("romantic"), false);
-  assert.equal(pathA.includes("dark"), false);
+  assert.equal(guaranteed.includes("romantic"), false);
+  assert.equal(guaranteed.includes("dark"), false);
 });
 
-test("dimensions left uncovered by anchors are picked up by later stages", () => {
-  // The flip side of the coverage gap: teasing / romantic / dark must not be
-  // stranded. With the anchor set measured, they are the cheapest information
-  // available, so adaptive and exploration must reach for them.
-  const anchorCovered = [
-    "absurd",
-    "cringe",
-    "dry",
-    "meme",
-    "sarcasm",
-    "silly",
-    "situational",
-    "wordplay",
-  ];
+test("dimensions outside the anchor baseline are picked up by later stages", () => {
+  // The flip side of the anchor contract: anything the baseline does not
+  // guarantee must still be reachable, or those dimensions are stranded.
+  const anchorCovered = [...ANCHOR_SLOTS.map((s) => s.primary)].sort();
   const profile = profileWith({sarcasm: 88, meme: 80}, 6);
   const adaptive = selectAdaptiveDimensions({
     profile,
@@ -763,10 +751,16 @@ test("an empty pool fails gracefully and reports the deficiency", async () => {
 
 test("a partial anchor pool stops at the gap instead of faking an anchor", async () => {
   // Remove every candidate for one slot.
-  const db = seededDb({
-    hc_tr_img_002: {calibrationSlot: null},
-    hc_tr_img_009: {calibrationSlot: null},
-  });
+  // Strip the slot tag from *every* candidate of one slot, whatever the pool
+  // depth is — the point is an empty slot, not a specific pair of ids.
+  const {seedAnchorPools} = require("../lib/humor/calibrationSeed.js");
+  const starved = {};
+  for (const item of seedAnchorPools().get("anchor_wordplay") ?? []) {
+    starved[item.contentId] = {calibrationSlot: null};
+  }
+  assert.ok(Object.keys(starved).length > 0, "no anchor_wordplay candidates found");
+
+  const db = seededDb(starved);
   const result = await selectCalibrationItems({
     db,
     uid: "user_partial",

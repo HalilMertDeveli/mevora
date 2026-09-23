@@ -1,4 +1,10 @@
 import type {Firestore} from "firebase-admin/firestore";
+import {
+  parseCalibrationState,
+  toCalibrationView,
+  type CalibrationStateView,
+} from "./calibration.js";
+import {selectCalibrationItems} from "./calibrationFeed.js";
 import {listCandidateHumorContent, toFeedSafeContent} from "./contentRepository.js";
 import {canServeHumorContent} from "./moderation.js";
 import {defaultUserHumorProfile} from "./profile.js";
@@ -7,8 +13,20 @@ import {
   HUMOR_FEED_PAGE_SIZE,
   HUMOR_PROFILE_BUILDING_THRESHOLD,
   type HumorFeedItem,
+  type UserHumorCalibrationDoc,
   type UserHumorProfileDoc,
 } from "./types.js";
+
+export const HUMOR_CALIBRATION_DOC = (uid: string): string =>
+  `users/${uid}/humor/calibration`;
+
+export async function loadUserHumorCalibration(
+  db: Firestore,
+  uid: string,
+): Promise<UserHumorCalibrationDoc> {
+  const snap = await db.doc(HUMOR_CALIBRATION_DOC(uid)).get();
+  return parseCalibrationState(snap.data() as Record<string, unknown> | undefined);
+}
 
 export async function loadUserHumorProfile(
   db: Firestore,
@@ -72,6 +90,7 @@ export async function buildHumorFeed(input: {
   nextCursor: string | null;
   profileBuilding: boolean;
   interactionCount: number;
+  calibration: CalibrationStateView & {insufficientPool: boolean};
 }> {
   const limit = Math.min(15, Math.max(10, input.limit ?? HUMOR_FEED_PAGE_SIZE));
   const languages =
@@ -79,12 +98,49 @@ export async function buildHumorFeed(input: {
       ? (input.languages ?? []).map((l) => l.toLowerCase())
       : ["tr", "en"];
 
-  const [profile, seenFromDb] = await Promise.all([
+  const [profile, seenFromDb, calibrationState] = await Promise.all([
     loadUserHumorProfile(input.db, input.uid),
     loadSeenContentIds(input.db, input.uid),
+    loadUserHumorCalibration(input.db, input.uid),
   ]);
   const cursorSeen = decodeCursor(input.cursor);
   const seen = new Set([...seenFromDb, ...cursorSeen]);
+
+  // Initial calibration owns the page while it is running. It uses its own
+  // curated selector rather than the personalized ranker, so the structured
+  // 6/6/3 contract cannot be diluted by ranking heuristics.
+  const calibrationPicks = calibrationState.complete
+    ? {picks: [], unfilled: 0, deficiencies: [] as string[]}
+    : await selectCalibrationItems({
+        db: input.db,
+        uid: input.uid,
+        state: calibrationState,
+        profile,
+        languages,
+        limit,
+        excludeContentIds: seen,
+      });
+
+  const calibrationView = {
+    ...toCalibrationView(calibrationState),
+    insufficientPool: calibrationPicks.deficiencies.length > 0,
+  };
+
+  if (!calibrationState.complete && calibrationPicks.picks.length > 0) {
+    const items = calibrationPicks.picks.map((pick) =>
+      toFeedSafeContent(pick.content, pick.stage),
+    );
+    return {
+      items,
+      // Calibration pages are recomputed from server state on every call, so
+      // there is nothing for a cursor to carry.
+      nextCursor: null,
+      profileBuilding: true,
+      interactionCount: profile.interactionCount,
+      calibration: calibrationView,
+    };
+  }
+
   const candidates = await listCandidateHumorContent(input.db, {
     languages,
     limit: 120,
@@ -113,9 +169,15 @@ export async function buildHumorFeed(input: {
         : null;
 
   return {
-    items: page.map((c) => toFeedSafeContent(c)),
+    items: page.map((c) => toFeedSafeContent(c, null)),
     nextCursor,
-    profileBuilding: profile.interactionCount < HUMOR_PROFILE_BUILDING_THRESHOLD,
+    // Calibration state is authoritative once it exists; the interaction-count
+    // heuristic stays as the fallback for profiles that predate calibration.
+    profileBuilding: calibrationState.complete
+      ? false
+      : calibrationState.completedCount > 0 ||
+        profile.interactionCount < HUMOR_PROFILE_BUILDING_THRESHOLD,
     interactionCount: profile.interactionCount,
+    calibration: calibrationView,
   };
 }

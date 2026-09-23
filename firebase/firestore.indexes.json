@@ -69,6 +69,25 @@
       ]
     },
     {
+      "collectionGroup": "humorContent",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "calibrationEligible", "order": "ASCENDING" },
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "safetyStatus", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "humorContent",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "calibrationEligible", "order": "ASCENDING" },
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "safetyStatus", "order": "ASCENDING" },
+        { "fieldPath": "calibrationSlot", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "profiles",
       "queryScope": "COLLECTION",
       "fields": [

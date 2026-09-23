@@ -1,3 +1,4 @@
+import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 
 enum HumorContentType { image, video, text, meme }
@@ -15,6 +16,7 @@ class HumorContent {
     this.thumbUrl,
     this.durationMs,
     this.aspectRatio,
+    this.calibrationStage,
   });
 
   final String contentId;
@@ -27,6 +29,28 @@ class HumorContent {
   final String? thumbUrl;
   final int? durationMs;
   final double? aspectRatio;
+
+  /// Set only while initial calibration is running. `null` for ordinary feed
+  /// content. The server never sends the anchor slot behind it.
+  final HumorCalibrationStage? calibrationStage;
+
+  bool get isCalibrationItem => calibrationStage != null;
+
+  HumorContent copyWithCalibrationStage(HumorCalibrationStage? stage) {
+    return HumorContent(
+      contentId: contentId,
+      type: type,
+      language: language,
+      category: category,
+      humorTags: humorTags,
+      textBody: textBody,
+      downloadUrl: downloadUrl,
+      thumbUrl: thumbUrl,
+      durationMs: durationMs,
+      aspectRatio: aspectRatio,
+      calibrationStage: stage,
+    );
+  }
 
   bool get hasText => textBody != null && textBody!.trim().isNotEmpty;
   bool get hasMedia =>
@@ -54,12 +78,16 @@ class HumorFeedPage {
     this.nextCursor,
     this.profileBuilding = true,
     this.interactionCount = 0,
+    this.calibration = HumorCalibration.empty,
   });
 
   final List<HumorContent> items;
   final String? nextCursor;
   final bool profileBuilding;
   final int interactionCount;
+
+  /// Server-owned initial calibration progress. Never inferred on the client.
+  final HumorCalibration calibration;
 
   bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
 }

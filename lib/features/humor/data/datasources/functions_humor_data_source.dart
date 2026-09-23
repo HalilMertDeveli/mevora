@@ -1,6 +1,7 @@
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/humor/data/datasources/humor_data_source.dart';
+import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
@@ -31,6 +32,7 @@ class FunctionsHumorDataSource implements HumorDataSource {
       nextCursor: data['nextCursor'] as String?,
       profileBuilding: data['profileBuilding'] == true,
       interactionCount: firestoreInt(data['interactionCount'], 0),
+      calibration: _parseCalibration(data['calibration']),
     );
   }
 
@@ -66,6 +68,7 @@ class FunctionsHumorDataSource implements HumorDataSource {
       profileBuilding: data['profileBuilding'] == true,
       interactionCount: firestoreInt(data['interactionCount'], 0),
       confidence: _asDouble(data['confidence']),
+      calibration: _parseCalibration(data['calibration']),
     );
   }
 
@@ -114,6 +117,27 @@ class FunctionsHumorDataSource implements HumorDataSource {
     });
   }
 
+  /// Missing or malformed calibration data degrades to "not started" rather
+  /// than throwing: an older backend must not break the feed.
+  HumorCalibration _parseCalibration(Object? raw) {
+    if (raw is! Map) {
+      return HumorCalibration.empty;
+    }
+    final map = Map<String, dynamic>.from(raw);
+    final total = firestoreInt(
+      map['totalCount'],
+      HumorCalibration.totalInteractions,
+    );
+    return HumorCalibration(
+      version: firestoreInt(map['version'], 1),
+      stage: HumorCalibration.parseStage(map['stage'] as String?),
+      completedCount: firestoreInt(map['completedCount'], 0),
+      totalCount: total <= 0 ? HumorCalibration.totalInteractions : total,
+      complete: map['complete'] == true,
+      insufficientPool: map['insufficientPool'] == true,
+    );
+  }
+
   List<HumorContent> _parseItems(Object? raw) {
     if (raw is! List) {
       return const [];
@@ -147,6 +171,9 @@ class FunctionsHumorDataSource implements HumorDataSource {
           aspectRatio: media['aspectRatio'] == null
               ? null
               : _asDouble(media['aspectRatio']),
+          calibrationStage: map['calibrationStage'] == null
+              ? null
+              : HumorCalibration.parseStage(map['calibrationStage'] as String?),
         ),
       );
     }
@@ -184,16 +211,22 @@ class FunctionsHumorDataSource implements HumorDataSource {
       });
     }
     final interactionCount = firestoreInt(data['interactionCount'], 0);
+    final calibration = _parseCalibration(data['calibration']);
     return UserHumorProfile(
       confidence: _asDouble(data['confidence']),
       interactionCount: interactionCount,
-      profileBuilding:
-          data['profileBuilding'] == true ||
-          HumorFeedPolicy.isBuilding(interactionCount),
+      // Calibration is authoritative once the server reports it; the
+      // interaction-count heuristic only covers pre-calibration profiles.
+      profileBuilding: calibration.complete
+          ? false
+          : data['profileBuilding'] == true ||
+                calibration.started ||
+                HumorFeedPolicy.isBuilding(interactionCount),
       topVibes: top,
       vector: vector,
       exploredCategories: firestoreStringList(data['exploredCategories']),
       version: firestoreInt(data['version'], 1),
+      calibration: calibration,
     );
   }
 

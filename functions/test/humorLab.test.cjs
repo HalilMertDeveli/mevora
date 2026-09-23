@@ -254,7 +254,13 @@ test("AI tagging is metadata-only and never used for user scoring", () => {
 });
 
 test("internal seed is Turkish-first with real media URLs", () => {
-  assert.equal(INTERNAL_HUMOR_SEED.length, 12);
+  // Lower bound rather than an exact count: the seed grew when calibration
+  // added a second candidate per anchor slot, and it must stay large enough to
+  // carry a full 15-item calibration.
+  assert.ok(
+    INTERNAL_HUMOR_SEED.length >= 15,
+    `seed must cover a full calibration, got ${INTERNAL_HUMOR_SEED.length}`,
+  );
   const tr = INTERNAL_HUMOR_SEED.filter((item) => item.language === "tr");
   assert.ok(tr.length >= 8);
   for (const item of INTERNAL_HUMOR_SEED) {

@@ -1,6 +1,17 @@
 import {FieldValue, type Firestore} from "firebase-admin/firestore";
+import {
+  advanceCalibration,
+  calibrationWritePayload,
+  parseCalibrationState,
+  toCalibrationView,
+  type CalibrationStateView,
+} from "./calibration.js";
 import {loadHumorContent} from "./contentRepository.js";
-import {loadUserHumorProfile} from "./feed.js";
+import {
+  HUMOR_CALIBRATION_DOC,
+  loadUserHumorCalibration,
+  loadUserHumorProfile,
+} from "./feed.js";
 import {canServeHumorContent} from "./moderation.js";
 import {
   applyFeedbackToProfile,
@@ -35,6 +46,7 @@ export async function submitHumorFeedbackTx(input: {
   profileBuilding: boolean;
   interactionCount: number;
   confidence: number;
+  calibration: CalibrationStateView;
 }> {
   const content = await loadHumorContent(input.db, input.contentId);
   if (
@@ -51,11 +63,13 @@ export async function submitHumorFeedbackTx(input: {
     `users/${input.uid}/humorInteractions/${input.contentId}`,
   );
   const profileRef = input.db.doc(`users/${input.uid}/humor/summary`);
+  const calibrationRef = input.db.doc(HUMOR_CALIBRATION_DOC(input.uid));
 
   const result = await input.db.runTransaction(async (tx) => {
-    const [interactionSnap, profileSnap] = await Promise.all([
+    const [interactionSnap, profileSnap, calibrationSnap] = await Promise.all([
       tx.get(interactionRef),
       tx.get(profileRef),
+      tx.get(calibrationRef),
     ]);
 
     const existingRating = interactionSnap.exists
@@ -104,7 +118,32 @@ export async function submitHumorFeedbackTx(input: {
       });
     }
 
+    // Calibration advances only on a *first* rating of a content item, inside
+    // the same transaction as the profile update, so progression can never
+    // drift from the interactions that actually happened — and a retried or
+    // re-rated submission cannot inflate it.
+    const previousCalibration = parseCalibrationState(
+      calibrationSnap.data() as Record<string, unknown> | undefined,
+    );
+    const calibration = alreadyCounted
+      ? previousCalibration
+      : advanceCalibration({state: previousCalibration, content});
+
     const now = FieldValue.serverTimestamp();
+    if (calibration !== previousCalibration) {
+      tx.set(
+        calibrationRef,
+        {
+          ...calibrationWritePayload(calibration),
+          ...(previousCalibration.completedCount === 0 ? {startedAt: now} : {}),
+          ...(calibration.complete && !previousCalibration.complete
+            ? {completedAt: now}
+            : {}),
+          updatedAt: now,
+        },
+        {merge: true},
+      );
+    }
     tx.set(
       interactionRef,
       {
@@ -149,14 +188,21 @@ export async function submitHumorFeedbackTx(input: {
         {merge: true},
       );
     }
-    return profile;
+    return {profile, calibration};
   });
 
   return {
     ok: true,
-    profileBuilding: isProfileBuilding(result.interactionCount),
-    interactionCount: result.interactionCount,
-    confidence: result.confidence,
+    // Calibration is the authoritative "still building" signal once it has
+    // started; the interaction-count heuristic remains for pre-calibration
+    // profiles so existing clients keep behaving as before.
+    profileBuilding: result.calibration.complete
+      ? false
+      : result.calibration.completedCount > 0 ||
+        isProfileBuilding(result.profile.interactionCount),
+    interactionCount: result.profile.interactionCount,
+    confidence: result.profile.confidence,
+    calibration: toCalibrationView(result.calibration),
   };
 }
 
@@ -165,15 +211,25 @@ export async function getHumorProfileView(
   uid: string,
   detailed: boolean,
 ): Promise<Record<string, unknown>> {
-  const profile = await loadUserHumorProfile(db, uid);
+  const [profile, calibrationState] = await Promise.all([
+    loadUserHumorProfile(db, uid),
+    loadUserHumorCalibration(db, uid),
+  ]);
   const top = Object.entries(profile.vector)
     .sort((a, b) => Number(b[1]) - Number(a[1]))
     .slice(0, 3)
     .map(([dim, value]) => ({dim, value: Math.round(Number(value))}));
+  const calibration = toCalibrationView(calibrationState);
   const basic = {
     confidence: profile.confidence,
     interactionCount: profile.interactionCount,
-    profileBuilding: isProfileBuilding(profile.interactionCount),
+    // `profileBuilding` now means "initial calibration still running", not
+    // "the profile has stopped learning" — learning never stops.
+    profileBuilding: calibration.complete
+      ? false
+      : calibration.completedCount > 0 ||
+        isProfileBuilding(profile.interactionCount),
+    calibration,
     topVibes: top,
     version: profile.version,
   };

@@ -2,6 +2,7 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
 import {onRequest} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
+import {safeLogMeta} from "../security/logHygiene.js";
 import {DiditApiError} from "./didit/diditClient.js";
 import {diditSecrets, isDiditWebhookConfigured} from "./didit/diditConfig.js";
 import {DiditProvider} from "./didit/diditProvider.js";
@@ -70,11 +71,11 @@ export const identityVerificationWebhook = onRequest(
         // An unsubscribed event type is not an error on MEVORA's side —
         // acknowledge it so the provider stops retrying, but change nothing.
         if (error.reason === "unknown_event") {
-          logger.info("identity webhook ignored", {reason: error.reason});
+          logger.info("identity webhook ignored", safeLogMeta({reason: error.reason}));
           res.status(200).json({ok: true, ignored: true});
           return;
         }
-        logger.warn("identity webhook rejected", {reason: error.reason});
+        logger.warn("identity webhook rejected", safeLogMeta({reason: error.reason}));
         res.status(error.reason === "malformed_body" ? 400 : 401).send("Rejected");
         return;
       }
@@ -92,21 +93,21 @@ export const identityVerificationWebhook = onRequest(
       try {
         const confirmed = await provider.fetchSessionStatus(event.providerSessionId);
         if (!grantsVerifiedBadge(confirmed.status)) {
-          logger.warn("identity webhook approval not confirmed by provider", {
+          logger.warn("identity webhook approval not confirmed by provider", safeLogMeta({
             uid: event.uid,
             claimed: event.status,
             confirmed: confirmed.status,
-          });
+          }));
         }
         effective = {...event, status: confirmed.status, reason: confirmed.reason};
       } catch (error) {
         // Could not confirm — do not promote on the webhook's word alone.
         // 503 asks the provider to redeliver, which is the correct outcome:
         // the user stays unverified until MEVORA can actually check.
-        logger.warn("identity decision confirmation failed", {
+        logger.warn("identity decision confirmation failed", safeLogMeta({
           uid: event.uid,
           error: error instanceof DiditApiError ? error.code : "unknown",
-        });
+        }));
         res.status(503).send("Confirmation unavailable");
         return;
       }
@@ -115,26 +116,26 @@ export const identityVerificationWebhook = onRequest(
     try {
       const result = await applyIdentityProviderEvent(db, effective, provider.id);
       if (!result.applied) {
-        logger.info("identity webhook not applied", {
+        logger.info("identity webhook not applied", safeLogMeta({
           uid: effective.uid,
           skipped: result.skipped,
-        });
+        }));
         // Acknowledged on purpose: a duplicate, a stale delivery, a mismatched
         // session and a deleted account are all correctly handled outcomes,
         // and asking the provider to retry them would achieve nothing.
         res.status(200).json({ok: true, applied: false, skipped: result.skipped});
         return;
       }
-      logger.info("identity verification state updated", {
+      logger.info("identity verification state updated", safeLogMeta({
         uid: effective.uid,
         status: result.status,
-      });
+      }));
       res.status(200).json({ok: true, applied: true});
     } catch (error) {
-      logger.error("identity webhook processing failed", {
+      logger.error("identity webhook processing failed", safeLogMeta({
         uid: effective.uid,
         error: error instanceof Error ? error.name : "unknown",
-      });
+      }));
       res.status(500).send("Processing failed");
     }
   },

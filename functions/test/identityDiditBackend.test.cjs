@@ -377,20 +377,26 @@ describe("applying provider events", () => {
     ...over,
   });
 
-  it("verifies the user and sets the badge in one transaction", async () => {
-    const db = fakeDb({"users/uidA": {isVerified: false}, [path]: {providerSessionId: "sess_1"}});
+  it("verifies the user and sets both badges in one transaction", async () => {
+    const db = fakeDb({"users/uidA": {isVerified: false}, "profiles/uidA": {}, [path]: {providerSessionId: "sess_1"}});
     const result = await applyIdentityProviderEvent(db, event(), "didit");
     assert.equal(result.applied, true);
     assert.equal(db.store.get(path).status, "verified");
     assert.equal(db.store.get("users/uidA").isVerified, true);
+    // The public card carries the badge and nothing else.
+    assert.equal(db.store.get("profiles/uidA").isVerified, true);
+    assert.equal(db.store.get("profiles/uidA").providerSessionId, undefined);
+    assert.equal(db.store.get("profiles/uidA").status, undefined);
+    assert.equal(db.store.get("profiles/uidA").reason, undefined);
   });
 
-  it("clears the badge on a terminal non-verified outcome", async () => {
-    const db = fakeDb({"users/uidA": {isVerified: true}, [path]: {providerSessionId: "sess_1"}});
+  it("clears both badges on a terminal non-verified outcome", async () => {
+    const db = fakeDb({"users/uidA": {isVerified: true}, "profiles/uidA": {isVerified: true}, [path]: {providerSessionId: "sess_1"}});
     await applyIdentityProviderEvent(db, event({status: "declined", reason: "face_mismatch"}), "didit");
     assert.equal(db.store.get(path).status, "declined");
     assert.equal(db.store.get(path).reason, "face_mismatch");
     assert.equal(db.store.get("users/uidA").isVerified, false);
+    assert.equal(db.store.get("profiles/uidA").isVerified, false);
   });
 
   it("leaves an existing badge alone while a re-verification is in flight", async () => {

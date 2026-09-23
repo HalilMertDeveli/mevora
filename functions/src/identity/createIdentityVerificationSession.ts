@@ -2,6 +2,7 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
+import {safeLogMeta} from "../security/logHygiene.js";
 import {DiditApiError} from "./didit/diditClient.js";
 import {diditSecrets, isDiditConfigured} from "./didit/diditConfig.js";
 import {DiditProvider} from "./didit/diditProvider.js";
@@ -73,17 +74,17 @@ export const createIdentityVerificationSession = onCall(
     if (resumableSessionId) {
       try {
         const state = await provider.fetchSessionStatus(resumableSessionId);
-        logger.info("identity session resumed", {uid, status: state.status});
+        logger.info("identity session resumed", safeLogMeta({uid, status: state.status}));
         return {
           providerSessionId: resumableSessionId,
           resumed: true,
           status: state.status,
         };
       } catch (error) {
-        logger.warn("identity session resume failed", {
+        logger.warn("identity session resume failed", safeLogMeta({
           uid,
           error: describeError(error),
-        });
+        }));
         throw new HttpsError("unavailable", "verification-unavailable");
       }
     }
@@ -91,7 +92,7 @@ export const createIdentityVerificationSession = onCall(
     try {
       const session = await provider.createSession({uid, language});
       await attachProviderSession(db, uid, session.providerSessionId);
-      logger.info("identity session created", {uid, status: session.status});
+      logger.info("identity session created", safeLogMeta({uid, status: session.status}));
       return {
         providerSessionId: session.providerSessionId,
         sessionToken: session.launchToken ?? null,
@@ -100,10 +101,10 @@ export const createIdentityVerificationSession = onCall(
         resumed: false,
       };
     } catch (error) {
-      logger.warn("identity session creation failed", {
+      logger.warn("identity session creation failed", safeLogMeta({
         uid,
         error: describeError(error),
-      });
+      }));
       throw toHttpsError(error);
     }
   },

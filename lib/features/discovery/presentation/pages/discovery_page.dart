@@ -133,6 +133,12 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     }
 
     if (_owned == null) {
+      // Resolve every scope dependency eagerly, while this context is still
+      // valid. viewerProfileLoader is invoked later and asynchronously from
+      // DiscoveryController._loadViewerProfile; reading `context` in there
+      // throws "This widget has been unmounted" once the page is gone, which
+      // is what logout and account deletion do mid-load.
+      final settingsHub = SettingsScope.maybeOf(context)?.settingsHub;
       _owned = DiscoveryController(
         uid: uid,
         locationRepository:
@@ -142,7 +148,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
             DiscoveryScope.maybeOf(context) ?? InMemoryDiscoveryRepository(),
         purchaseRepository: BoostScope.maybeOf(context)?.repository,
         viewerProfileLoader: (viewerUid) async =>
-            await SettingsScope.maybeOf(context)?.settingsHub.loadProfile(viewerUid),
+            await settingsHub?.loadProfile(viewerUid),
       )..addListener(_onController);
       unawaited(_owned!.start());
     }

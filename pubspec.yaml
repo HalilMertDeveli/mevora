@@ -19,7 +19,6 @@ dependencies:
   cloud_firestore: ^6.8.0
   firebase_storage: ^13.4.6
   cloud_functions: ^6.3.6
-  flutter_idensic_mobile_sdk_plugin: ^1.45.1
   firebase_messaging: ^16.5.0
   firebase_crashlytics: ^5.2.7
   firebase_analytics: ^12.4.6
@@ -41,6 +40,10 @@ dependencies:
   record: ^6.2.1
   audioplayers: ^6.7.1
   path_provider: ^2.1.6
+  # Platform share/save sheet. The data export lives in the app's private
+  # cache directory, so the sheet is the only way to actually hand the file
+  # to the user without requesting broad storage permissions.
+  share_plus: ^13.3.0
   video_player: ^2.11.1
 
 dev_dependencies:

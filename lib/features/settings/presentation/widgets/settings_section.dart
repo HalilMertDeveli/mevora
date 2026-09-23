@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/localization/locale_casing.dart';
 
 class SettingsSection extends StatelessWidget {
   const SettingsSection({
@@ -17,7 +18,9 @@ class SettingsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title.toUpperCase(),
+          // Turkish uppercases i to İ; the default Unicode mapping would
+          // render "Bildirimler" as "BILDIRIMLER".
+          LocaleCasing.upper(title, Localizations.localeOf(context)),
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
             letterSpacing: 1.4,
             color: Theme.of(context).colorScheme.onSurfaceVariant,

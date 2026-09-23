@@ -21,6 +21,7 @@ export const JobKind = {
   callRetention: "call_retention",
   auditLogRetention: "audit_log_retention",
   accountDeletionVerify: "account_deletion_verify",
+  identityProviderErasure: "identity_provider_erasure",
   premiumExpirySync: "premium_expiry_sync",
   discoverEligibilityRefresh: "discover_eligibility_refresh",
   userDocumentRepair: "user_document_repair",

@@ -1315,6 +1315,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not export your data. Try again later.';
 
   @override
+  String get exportMyDataShareSubject => 'My Mevora data export';
+
+  @override
+  String get exportMyDataShared => 'Your data export was shared.';
+
+  @override
+  String get exportMyDataReady =>
+      'Your data export is ready. Choose an app to save or send it.';
+
+  @override
+  String get exportMyDataShareUnavailable =>
+      'No app on this device can receive the export.';
+
+  @override
   String get settingsShowAge => 'Show age on profile';
 
   @override
@@ -2270,6 +2284,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get verificationAttemptLimit =>
       'You\'ve reached today\'s verification limit. Try again tomorrow.';
+
+  @override
+  String get verificationProcessing =>
+      'We are checking your verification. This usually takes a minute.';
+
+  @override
+  String get verificationUnderReview =>
+      'Your verification is being reviewed. We will update this page when it is done.';
+
+  @override
+  String get verificationCheckAgain => 'Check again';
+
+  @override
+  String get verificationExpired =>
+      'That verification session expired before it was finished. You can start a new one.';
+
+  @override
+  String get verificationTemporaryError =>
+      'We could not read your verification status just now. Try again in a moment.';
+
+  @override
+  String get verificationDeclinedDocument =>
+      'We could not read your ID clearly. Try again in good light, with the whole document in frame.';
+
+  @override
+  String get verificationDeclinedLiveness =>
+      'The selfie step did not complete. Try again somewhere well lit, looking straight at the camera.';
+
+  @override
+  String get verificationDeclinedFaceMatch =>
+      'The selfie did not match the photo on your ID. Try again, or use a different document.';
+
+  @override
+  String get verificationOpensProvider =>
+      'You will be taken to our verification partner to scan your ID and take a selfie, then brought back here.';
 
   @override
   String get whyYouMatch => 'Why you match';

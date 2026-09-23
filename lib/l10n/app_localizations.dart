@@ -6643,6 +6643,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Counts can lag a little behind live activity.'**
   String get boostResultsDelayNote;
+
+  /// No description provided for @onboardingMusicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Does music matter to you? 🎧'**
+  String get onboardingMusicTitle;
+
+  /// No description provided for @onboardingMusicBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Spotify and Mevora can find people who actually listen to what you listen to — and explain why you fit.'**
+  String get onboardingMusicBody;
+
+  /// No description provided for @onboardingMusicConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect my Spotify'**
+  String get onboardingMusicConnect;
+
+  /// No description provided for @onboardingMusicSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get onboardingMusicSkip;
+
+  /// No description provided for @onboardingMusicSkipNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can connect Spotify later from the Music tab.'**
+  String get onboardingMusicSkipNote;
+
+  /// No description provided for @onboardingMusicCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify connection was cancelled. You can try again or skip.'**
+  String get onboardingMusicCancelled;
+
+  /// No description provided for @publicMusicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We picked up your Spotify taste 🎧'**
+  String get publicMusicTitle;
+
+  /// No description provided for @publicMusicSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what you want to show on your profile.'**
+  String get publicMusicSubtitle;
+
+  /// No description provided for @publicMusicArtistsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists'**
+  String get publicMusicArtistsHeading;
+
+  /// No description provided for @publicMusicTracksHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs'**
+  String get publicMusicTracksHeading;
+
+  /// No description provided for @publicMusicArtistCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{max} artists selected'**
+  String publicMusicArtistCount(int count, int max);
+
+  /// No description provided for @publicMusicTrackCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{max} songs selected'**
+  String publicMusicTrackCount(int count, int max);
+
+  /// No description provided for @publicMusicLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'That is the maximum. Deselect one to choose another.'**
+  String get publicMusicLimitReached;
+
+  /// No description provided for @publicMusicSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to my profile'**
+  String get publicMusicSave;
+
+  /// No description provided for @publicMusicSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t save your selection. Please try again.'**
+  String get publicMusicSaveFailed;
+
+  /// No description provided for @publicMusicEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify didn\'t return enough listening data yet. Your music is still connected and used for compatibility.'**
+  String get publicMusicEmpty;
+
+  /// No description provided for @publicMusicVisibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Music Taste on my profile'**
+  String get publicMusicVisibilityTitle;
+
+  /// No description provided for @publicMusicVisibilityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn this off to keep your selection private. Spotify stays connected and still improves your matches.'**
+  String get publicMusicVisibilityBody;
+
+  /// No description provided for @publicMusicHiddenNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Music Taste is hidden from other people.'**
+  String get publicMusicHiddenNotice;
+
+  /// No description provided for @publicMusicEditCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit my Music Taste'**
+  String get publicMusicEditCta;
+
+  /// No description provided for @profileMusicTasteHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Music Taste 🎧'**
+  String get profileMusicTasteHeading;
+
+  /// No description provided for @profileMusicOpenInSpotify.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Spotify'**
+  String get profileMusicOpenInSpotify;
+
+  /// No description provided for @musicLimitedData.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify is connected, but there isn\'t much listening history yet.'**
+  String get musicLimitedData;
 }
 
 class _AppLocalizationsDelegate

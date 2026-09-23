@@ -3,6 +3,7 @@ import 'package:mevora/features/music/data/datasources/music_data_source.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
+import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/domain/entities/weekly_music_stats.dart';
 import 'package:mevora/features/music/domain/services/music_match_rules.dart';
@@ -168,6 +169,80 @@ class MockMusicDataSource implements MusicDataSource {
   @override
   Future<void> disconnectSpotify() async {
     _profile = MusicProfile.disconnected;
+  }
+
+  /// Set to make the publish call fail, mirroring a backend rejection.
+  bool failPublicMusicUpdate = false;
+  int publicMusicUpdateCalls = 0;
+
+  @override
+  Future<PublicMusicProfile> updatePublicMusicProfile({
+    required bool enabled,
+    required List<String> artistIds,
+    required List<String> trackIds,
+  }) async {
+    publicMusicUpdateCalls += 1;
+    if (failPublicMusicUpdate) {
+      throw StateError('spotify-public-music-failed');
+    }
+    if (!_profile.connected) {
+      throw StateError('spotify-not-connected');
+    }
+    // Mirrors the backend: only imported items may be published, and the
+    // metadata comes from the import rather than the caller.
+    final artists = <PublicMusicArtist>[];
+    for (final id in artistIds.toSet()) {
+      final match = _profile.topArtists
+          .where((artist) => artist.id == id)
+          .firstOrNull;
+      if (match == null) {
+        throw StateError('artist-not-in-library');
+      }
+      artists.add(
+        PublicMusicArtist(
+          id: match.id,
+          name: match.name,
+          imageUrl: match.image,
+          spotifyUrl: 'https://open.spotify.com/artist/${match.id}',
+        ),
+      );
+    }
+    final tracks = <PublicMusicTrack>[];
+    for (final id in trackIds.toSet()) {
+      final match = _profile.topTracks
+          .where((track) => track.id == id)
+          .firstOrNull;
+      if (match == null) {
+        throw StateError('track-not-in-library');
+      }
+      tracks.add(
+        PublicMusicTrack(
+          id: match.id,
+          name: match.name,
+          artist: match.artist,
+          imageUrl: match.albumImage,
+          spotifyUrl: 'https://open.spotify.com/track/${match.id}',
+        ),
+      );
+    }
+    if (artists.length > maxPublicMusicArtists ||
+        tracks.length > maxPublicMusicTracks) {
+      throw StateError('selection-limit');
+    }
+    final hasSelection = artists.isNotEmpty || tracks.isNotEmpty;
+    final published = PublicMusicProfile(
+      enabled: enabled && hasSelection,
+      artists: artists,
+      tracks: tracks,
+      genres: enabled && hasSelection
+          ? _profile.genres
+                .take(maxPublicMusicGenres)
+                .map((share) => share.name)
+                .toList()
+          : const [],
+    );
+    _profile = _profile.copyWith(publicProfile: published);
+    return published;
   }
 
   @override

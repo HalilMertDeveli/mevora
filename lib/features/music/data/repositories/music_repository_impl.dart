@@ -3,6 +3,7 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/music/data/datasources/music_data_source.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
+import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/domain/entities/weekly_music_stats.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
@@ -45,6 +46,25 @@ class MusicRepositoryImpl implements MusicRepository {
   Future<Result<MusicProfile>> syncTaste() async {
     try {
       return Success(await _dataSource.syncTaste());
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  @override
+  Future<Result<PublicMusicProfile>> updatePublicMusicProfile({
+    required bool enabled,
+    required List<String> artistIds,
+    required List<String> trackIds,
+  }) async {
+    try {
+      return Success(
+        await _dataSource.updatePublicMusicProfile(
+          enabled: enabled,
+          artistIds: artistIds,
+          trackIds: trackIds,
+        ),
+      );
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
     }

@@ -1555,5 +1555,48 @@
   "boostCompletedTitle": "Boost tamamlandı",
   "boostCompletedEmpty": "Bu Boost kimseye ulaşmadı.",
   "boostResultsUnavailable": "Bu Boost için sonuç bilgisi yok.",
-  "boostResultsDelayNote": "Sayılar canlı etkinliğin biraz gerisinde kalabilir."
+  "boostResultsDelayNote": "Sayılar canlı etkinliğin biraz gerisinde kalabilir.",
+  "onboardingMusicTitle": "Müzik senin için önemli mi? 🎧",
+  "onboardingMusicBody": "Spotify'ını bağla, Mevora seninle aynı müzikleri dinleyen kişileri bulsun ve neden uyduğunuzu anlatsın.",
+  "onboardingMusicConnect": "Spotify'ımı Bağla",
+  "onboardingMusicSkip": "Şimdilik Geç",
+  "onboardingMusicSkipNote": "Spotify'ı sonra Müzik sekmesinden bağlayabilirsin.",
+  "onboardingMusicCancelled": "Spotify bağlantısı iptal edildi. Tekrar deneyebilir veya geçebilirsin.",
+  "publicMusicTitle": "Spotify zevkini yakaladık 🎧",
+  "publicMusicSubtitle": "Profilinde göstermek istediklerini seç.",
+  "publicMusicArtistsHeading": "Sanatçılar",
+  "publicMusicTracksHeading": "Şarkılar",
+  "publicMusicArtistCount": "{count}/{max} sanatçı seçildi",
+  "@publicMusicArtistCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "publicMusicTrackCount": "{count}/{max} şarkı seçildi",
+  "@publicMusicTrackCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "publicMusicLimitReached": "Üst sınıra ulaştın. Başkasını seçmek için birini kaldır.",
+  "publicMusicSave": "Profilime Ekle",
+  "publicMusicSaveFailed": "Seçimini kaydedemedik. Lütfen tekrar dene.",
+  "publicMusicEmpty": "Spotify henüz yeterli dinleme verisi döndürmedi. Müziğin bağlı kalmaya ve uyum hesabında kullanılmaya devam ediyor.",
+  "publicMusicVisibilityTitle": "Müzik Zevkimi profilimde göster",
+  "publicMusicVisibilityBody": "Kapatırsan seçimin gizli kalır. Spotify bağlı kalır ve eşleşmelerini iyileştirmeye devam eder.",
+  "publicMusicHiddenNotice": "Müzik Zevkin diğer kişilerden gizli.",
+  "publicMusicEditCta": "Müzik Zevkimi düzenle",
+  "profileMusicTasteHeading": "Müzik Zevki 🎧",
+  "profileMusicOpenInSpotify": "Spotify'da aç",
+  "musicLimitedData": "Spotify bağlı, ancak henüz fazla dinleme geçmişi yok."
 }

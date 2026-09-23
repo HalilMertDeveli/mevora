@@ -1462,11 +1462,66 @@ describe("humor calibration state", () => {
   });
 });
 
+describe("Spotify music — public card vs private taste", () => {
+  it("the public Music Taste card is readable by other members", async () => {
+    // publicMusic lives on profiles/{uid}, which is the public card by
+    // product design, so a viewer gets the six chosen items with the rest
+    // of the profile and no extra round trip.
+    await allow(who.userC.db().doc(`profiles/${UID.A}`).get());
+  });
+
+  it("nobody can write their own publicMusic directly", async () => {
+    // Only the callable may publish it, because only the server can check
+    // the selection against the member's imported Spotify data.
+    await deny(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        publicMusic: {
+          enabled: true,
+          artists: [{id: "a1", name: "HALIL HACKED SPOTIFY"}],
+          tracks: [],
+          genres: [],
+        },
+      }),
+    );
+  });
+
+  it("nobody can write somebody else's publicMusic", async () => {
+    await deny(
+      who.userC.db().doc(`profiles/${UID.A}`).update({
+        publicMusic: {enabled: true, artists: [], tracks: [], genres: []},
+      }),
+    );
+  });
+
+  it("an unauthenticated client cannot write publicMusic", async () => {
+    await deny(
+      who.anon.db().doc(`profiles/${UID.A}`).update({
+        publicMusic: {enabled: true, artists: [], tracks: [], genres: []},
+      }),
+    );
+  });
+
+  it("private imported taste is owner-only and never cross-user", async () => {
+    await deny(who.userC.db().doc(`users/${UID.A}/music/summary`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/music/summary`).get());
+  });
+
+  it("nobody can write the private music summary", async () => {
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/music/summary`).set({spotifyConnected: true}),
+    );
+    await deny(
+      who.userC.db().doc(`users/${UID.A}/music/summary`).set({spotifyConnected: true}),
+    );
+  });
+});
+
 describe("server-owned and unknown paths", () => {
   it("third-party token stores are unreachable from any client", async () => {
     await deny(who.userA.db().doc(`spotifySecrets/${UID.A}`).get());
     await deny(who.userA.db().doc(`spotifySecrets/${UID.A}`).set({accessToken: "x"}));
     await deny(who.userA.db().doc("musicSpotifyIndex/abc").get());
+    await deny(who.userA.db().doc("spotifyIndex/abc").get());
     await deny(who.userA.db().doc("failedNotifications/f1").get());
   });
 

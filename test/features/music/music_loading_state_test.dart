@@ -5,6 +5,7 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
+import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/domain/entities/weekly_music_stats.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
@@ -51,6 +52,13 @@ class _ScriptedMusicRepository implements MusicRepository {
   @override
   Future<Result<MusicProfile>> syncTaste() async =>
       const Success(MusicProfile(connected: true));
+
+  @override
+  Future<Result<PublicMusicProfile>> updatePublicMusicProfile({
+    required bool enabled,
+    required List<String> artistIds,
+    required List<String> trackIds,
+  }) async => const Success(PublicMusicProfile.hidden);
 
   @override
   Future<Result<WeeklyMusicStats>> getWeeklyStats() async =>

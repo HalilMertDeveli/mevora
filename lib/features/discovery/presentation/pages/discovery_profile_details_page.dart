@@ -14,6 +14,7 @@ import 'package:mevora/features/profile/presentation/widgets/profile_question_an
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/features/music/presentation/widgets/public_music_taste_section.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
 
 class DiscoveryProfileDetailsPage extends StatefulWidget {
@@ -140,6 +141,14 @@ class _DiscoveryProfileDetailsPageState
                     Text(l10n.bio, style: theme.textTheme.titleMedium),
                     const SizedBox(height: AppSpacing.xs),
                     Text(candidate.bio!, style: theme.textTheme.bodyLarge),
+                  ],
+                  // Renders nothing unless this member published a
+                  // selection and left it visible.
+                  if (candidate.publicMusic.hasContent) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    PublicMusicTasteSection(
+                      profile: candidate.publicMusic,
+                    ),
                   ],
                   if (candidate.interests.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.md),

@@ -11,6 +11,7 @@ import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart'
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/music/domain/services/music_compatibility.dart';
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
+import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 
 /// Calls privileged Cloud Functions. Never reads other users' coordinates.
 class DiscoveryRepositoryImpl implements DiscoveryRepository {
@@ -152,6 +153,7 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
       city: profile['city'] as String?,
       gender: profile['gender'] as String?,
       relationshipGoal: profile['relationshipGoal'] as String?,
+      publicMusic: PublicMusicProfile.parse(profile['publicMusic']),
       musicCompatibilityScore: raw['musicCompatibilityScore'] == null
           ? null
           : firestoreInt(raw['musicCompatibilityScore'], 0),

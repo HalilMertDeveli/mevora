@@ -4,6 +4,11 @@ import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
+import {
+  resolveIndexOwnership,
+  resolveSpotifyIdentity,
+  type IndexLookup,
+} from "./spotifyIdentity.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -14,6 +19,8 @@ const auth = getAuth();
 
 type SpotifyProfile = {
   id: string;
+  /** Immutable account identifier (Spotify Web API, May 2026). */
+  account_id?: string;
   display_name?: string;
   email?: string;
   images?: Array<{url?: string}>;
@@ -182,12 +189,26 @@ export const spotifyCompleteAuth = onCall(
       throw new HttpsError("unauthenticated", "oauth");
     }
 
-    const indexRef = db.doc(`spotifyIndex/${profile.id}`);
-    const indexSnap = await indexRef.get();
+    // Spotify's `id` is not stable for linking; `account_id` is. Existing
+    // documents are keyed by the legacy id, so both keys are consulted and
+    // whichever is missing gets backfilled below.
+    const identity = resolveSpotifyIdentity(profile);
+    if (!identity) {
+      throw new HttpsError("unauthenticated", "oauth");
+    }
+    const lookups: IndexLookup[] = await Promise.all(
+      identity.lookupKeys.map(async (key) => {
+        const snap = await db.doc(`spotifyIndex/${key}`).get();
+        return {key, exists: snap.exists, uid: snap.data()?.uid};
+      }),
+    );
+    const ownership = resolveIndexOwnership(lookups);
     const plan = resolveSpotifyLoginIdentity({
-      spotifyId: profile.id,
+      spotifyId: identity.primaryKey,
       currentUid: request.auth?.uid,
-      index: {exists: indexSnap.exists, uid: indexSnap.data()?.uid},
+      index: ownership.ownerUid === null
+        ? {exists: false}
+        : {exists: true, uid: ownership.ownerUid},
     });
     const {uid, isNewUser, alreadyLinked} = plan;
 
@@ -206,8 +227,22 @@ export const spotifyCompleteAuth = onCall(
         }
       }
     }
-    if (plan.writeIndex) {
-      await indexRef.set({uid, createdAt: FieldValue.serverTimestamp()});
+    // Backfill every key that has no document yet, so a legacy-linked
+    // account gains its account_id document on the next sign-in and a new
+    // account is reachable under both.
+    const keysToWrite = plan.writeIndex
+      ? identity.lookupKeys
+      : ownership.missingKeys;
+    for (const key of keysToWrite) {
+      await db.doc(`spotifyIndex/${key}`).set(
+        {
+          uid,
+          spotifyAccountId: identity.accountId,
+          spotifyUserId: identity.userId,
+          createdAt: FieldValue.serverTimestamp(),
+        },
+        {merge: true},
+      );
     }
 
     const userRef = db.doc(`users/${uid}`);
@@ -220,6 +255,8 @@ export const spotifyCompleteAuth = onCall(
         displayName: profile.display_name ?? null,
         email: profile.email ?? null,
         photoUrl: profile.images?.[0]?.url ?? null,
+        spotifyId: identity.primaryKey,
+        spotifyIndexKeys: identity.lookupKeys,
         authProviders: {google: false, apple: false, spotify: true, phone: false, email: false},
         createdAt: now,
         lastLoginAt: now,
@@ -238,6 +275,10 @@ export const spotifyCompleteAuth = onCall(
         lastLoginAt: now,
         lastActiveAt: now,
         "authProviders.spotify": true,
+        // Recorded so account deletion can remove every index document,
+        // including the account_id key added after the original link.
+        spotifyId: identity.primaryKey,
+        spotifyIndexKeys: identity.lookupKeys,
         ...(profile.display_name ? {displayName: profile.display_name} : {}),
         ...(profile.email ? {email: profile.email} : {}),
         ...(profile.images?.[0]?.url ? {photoUrl: profile.images[0].url} : {}),

@@ -7,14 +7,18 @@ enum OnboardingStep {
   lifestyle(5),
   bio(6),
   photos(7),
-  complete(8);
+
+  /// Optional Spotify stage. Sits after photos so the required profile
+  /// information is already captured before anything optional is offered.
+  music(8),
+  complete(9);
 
   const OnboardingStep(this.order);
 
   /// Display order after location (location = 1, basicInfo = 2, …).
   final int order;
 
-  static const int totalSteps = 9;
+  static const int totalSteps = 10;
 
   int get displayStep => order + 1;
 

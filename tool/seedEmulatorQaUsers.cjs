@@ -15,13 +15,29 @@
  *     "approved" straight onto profiles/{uid}.photos is reverted by design.
  *   - real preferences, location, age and account status.
  *
- * Usage (emulators must already be running):
- *   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
- *   FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
- *   node tool/seedEmulatorQaUsers.cjs
+ * Usage:
+ *   1. firebase emulators:start --config firebase.qa.json \
+ *        --only auth,firestore,functions --project mevora-d6ed0
  *
- * Then launch the app with:
- *   flutter run --dart-define=USE_EMULATORS=true --dart-define=USE_AUTH_EMULATOR=true
+ *      Use firebase.qa.json, not the default config. It binds the emulators to
+ *      0.0.0.0 so an Android emulator can reach them on 10.0.2.2. FlutterFire
+ *      rewrites 127.0.0.1 to 10.0.2.2 on Android automatically, so pointing the
+ *      app at the host loopback cannot work — not via FIREBASE_EMULATOR_HOST and
+ *      not via `adb reverse`, because the SDK overrides the host either way.
+ *      Sign-in then fails with a bare "Check your internet connection".
+ *
+ *   2. FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
+ *      FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
+ *      node tool/seedEmulatorQaUsers.cjs
+ *
+ *   3. flutter run --dart-define=USE_EMULATORS=true \
+ *        --dart-define=USE_AUTH_EMULATOR=true \
+ *        --dart-define=QA_EMAIL_A=qa_user_a@mevora.test \
+ *        --dart-define=QA_EMAIL_B=qa_user_b@mevora.test \
+ *        --dart-define=QA_PASSWORD=<the password printed below>
+ *
+ *      Both emulator defines are required: USE_EMULATORS alone leaves Auth
+ *      pointed at production. Do NOT pass FIREBASE_EMULATOR_HOST on Android.
  */
 const admin = require("firebase-admin");
 

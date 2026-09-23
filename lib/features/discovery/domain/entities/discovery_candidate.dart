@@ -1,5 +1,6 @@
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/music/domain/services/music_compatibility.dart';
+import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 
 /// Public discovery card. Exact GPS is never included.
@@ -34,6 +35,7 @@ class DiscoveryCandidate {
     this.sharedMusicPlaylistTrackCount,
     this.sharedMusicRecentTrackCount,
     this.musicInsights = const [],
+    this.publicMusic = PublicMusicProfile.hidden,
     this.relationshipCompatibilityScore,
     this.relationshipSharedViewCount,
     this.relationshipAlignedCount,
@@ -50,6 +52,11 @@ class DiscoveryCandidate {
   });
 
   final String uid;
+
+  /// The Music Taste this member chose to publish. Their imported taste
+  /// stays in their own documents and never reaches a candidate card.
+  final PublicMusicProfile publicMusic;
+
   final String displayName;
   final int age;
   final List<String> photos;

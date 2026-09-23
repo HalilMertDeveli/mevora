@@ -16,6 +16,7 @@ class OnboardingStepScaffold extends StatelessWidget {
     this.isSaving = false,
     this.errorMessage,
     this.canContinue = true,
+    this.showContinue = true,
     this.riveAsset,
   });
 
@@ -28,6 +29,11 @@ class OnboardingStepScaffold extends StatelessWidget {
   final bool isSaving;
   final String? errorMessage;
   final bool canContinue;
+
+  /// A step that supplies its own primary actions - the optional Spotify
+  /// stage offers Connect and Skip - hides the shared Continue button.
+  final bool showContinue;
+
   final String? riveAsset;
 
   @override
@@ -92,11 +98,12 @@ class OnboardingStepScaffold extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
         ],
-        MevoraButton(
-          label: continueLabel ?? l10n.onboardingContinue,
-          onPressed: isSaving || !canContinue ? null : onContinue,
-          isLoading: isSaving,
-        ),
+        if (showContinue)
+          MevoraButton(
+            label: continueLabel ?? l10n.onboardingContinue,
+            onPressed: isSaving || !canContinue ? null : onContinue,
+            isLoading: isSaving,
+          ),
       ],
     );
   }

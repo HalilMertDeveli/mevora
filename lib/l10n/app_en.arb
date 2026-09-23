@@ -1542,5 +1542,48 @@
   "boostCompletedTitle": "Boost finished",
   "boostCompletedEmpty": "This Boost did not reach anyone.",
   "boostResultsUnavailable": "Results are not available for this Boost.",
-  "boostResultsDelayNote": "Counts can lag a little behind live activity."
+  "boostResultsDelayNote": "Counts can lag a little behind live activity.",
+  "onboardingMusicTitle": "Does music matter to you? 🎧",
+  "onboardingMusicBody": "Connect Spotify and Mevora can find people who actually listen to what you listen to — and explain why you fit.",
+  "onboardingMusicConnect": "Connect my Spotify",
+  "onboardingMusicSkip": "Skip for now",
+  "onboardingMusicSkipNote": "You can connect Spotify later from the Music tab.",
+  "onboardingMusicCancelled": "Spotify connection was cancelled. You can try again or skip.",
+  "publicMusicTitle": "We picked up your Spotify taste 🎧",
+  "publicMusicSubtitle": "Choose what you want to show on your profile.",
+  "publicMusicArtistsHeading": "Artists",
+  "publicMusicTracksHeading": "Songs",
+  "publicMusicArtistCount": "{count}/{max} artists selected",
+  "@publicMusicArtistCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "publicMusicTrackCount": "{count}/{max} songs selected",
+  "@publicMusicTrackCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "publicMusicLimitReached": "That is the maximum. Deselect one to choose another.",
+  "publicMusicSave": "Add to my profile",
+  "publicMusicSaveFailed": "We couldn't save your selection. Please try again.",
+  "publicMusicEmpty": "Spotify didn't return enough listening data yet. Your music is still connected and used for compatibility.",
+  "publicMusicVisibilityTitle": "Show Music Taste on my profile",
+  "publicMusicVisibilityBody": "Turn this off to keep your selection private. Spotify stays connected and still improves your matches.",
+  "publicMusicHiddenNotice": "Your Music Taste is hidden from other people.",
+  "publicMusicEditCta": "Edit my Music Taste",
+  "profileMusicTasteHeading": "Music Taste 🎧",
+  "profileMusicOpenInSpotify": "Open in Spotify",
+  "musicLimitedData": "Spotify is connected, but there isn't much listening history yet."
 }

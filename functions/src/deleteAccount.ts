@@ -62,10 +62,17 @@ export const deleteUserAccount = onCall(
 
     const userSnap = await db.doc(`users/${uid}`).get();
     const spotifyId = userSnap.data()?.spotifyId as string | undefined;
+    // A Spotify account is reachable under its legacy user id and its
+    // immutable account_id. Both index documents have to go, or the
+    // account stays 'owned' by a uid that no longer exists.
+    const spotifyIndexKeys =
+      (userSnap.data()?.spotifyIndexKeys as string[] | undefined) ?? [];
     const verificationSnap = await db.doc(`users/${uid}/verification/sumsub`).get();
     const sumsubApplicantId = verificationSnap.data()?.sumsubApplicantId as string | undefined;
     const musicSnap = await db.doc(`users/${uid}/music/summary`).get();
     const musicSpotifyId = musicSnap.data()?.spotifyUserId as string | undefined;
+    const musicSpotifyAccountId =
+      musicSnap.data()?.spotifyAccountId as string | undefined;
 
     await Promise.all([
       deleteCollectionDocs(`users/${uid}/devices`),
@@ -146,11 +153,15 @@ export const deleteUserAccount = onCall(
     await deletePrefix(`users/${uid}/`);
     await deletePrefix(`profiles/${uid}/`);
 
-    if (spotifyId) {
-      await db.doc(`spotifyIndex/${spotifyId}`).delete().catch(() => undefined);
+    for (const key of new Set(
+      [spotifyId, ...spotifyIndexKeys].filter(Boolean) as string[],
+    )) {
+      await db.doc(`spotifyIndex/${key}`).delete().catch(() => undefined);
     }
-    if (musicSpotifyId) {
-      await db.doc(`musicSpotifyIndex/${musicSpotifyId}`).delete().catch(() => undefined);
+    for (const key of new Set(
+      [musicSpotifyId, musicSpotifyAccountId].filter(Boolean) as string[],
+    )) {
+      await db.doc(`musicSpotifyIndex/${key}`).delete().catch(() => undefined);
     }
 
     await batchDelete([

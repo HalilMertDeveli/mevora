@@ -18,6 +18,21 @@ import {
 import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
 import {isUserPremium} from "./premium.js";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
+import {
+  resolveIndexOwnership,
+  resolveSpotifyIdentity,
+  type IndexLookup,
+} from "./spotifyIdentity.js";
+import {
+  buildPublicMusicProfile,
+  emptyPublicMusicProfile,
+  MAX_PUBLIC_ARTISTS,
+  MAX_PUBLIC_TRACKS,
+  normalizeSelectionIds,
+  PublicMusicValidationError,
+  reconcilePublicMusicProfile,
+  toPublicMusicCard,
+} from "./spotifyMusicProfile.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -32,6 +47,10 @@ const callableOptions = {
 };
 
 type SpotifyTokenSet = {
+  /** Immutable Spotify account id when the API supplied one. */
+  spotifyAccountId?: string | null;
+  /** Every index key this account is reachable under. */
+  indexKeys?: string[];
   accessToken: string;
   refreshToken?: string;
   expiresAt: number;
@@ -329,6 +348,8 @@ async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> 
     expiresAt: tokens.expiresAt,
     scope: tokens.scope ?? null,
     spotifyUserId: tokens.spotifyUserId ?? null,
+    spotifyAccountId: tokens.spotifyAccountId ?? null,
+    indexKeys: tokens.indexKeys ?? null,
     updatedAt: FieldValue.serverTimestamp(),
   });
 }
@@ -486,9 +507,12 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
   };
   const summaryRef = db.doc(`users/${uid}/music/summary`);
   const existing = await summaryRef.get();
+  const accountId = tokens.spotifyAccountId ??
+    (existing.data()?.spotifyAccountId as string | undefined) ?? null;
   const summary = {
     spotifyConnected: true,
     spotifyUserId: me.id,
+    spotifyAccountId: accountId,
     displayName: me.display_name ?? null,
     topTracks: tracks,
     topArtists: artists,
@@ -500,8 +524,36 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
     ...(existing.data()?.connectedAt ? {} : {connectedAt: FieldValue.serverTimestamp()}),
   };
   await summaryRef.set(summary, {merge: true});
-  await db.doc(`profiles/${uid}`).set({spotifyConnected: true}, {merge: true});
-  await db.doc(`musicSpotifyIndex/${me.id}`).set({uid, updatedAt: FieldValue.serverTimestamp()});
+
+  // A re-sync must not rewrite what the member chose to publish. Their
+  // selections are re-resolved against the new import: still-present items
+  // keep their place with refreshed metadata, and anything Spotify no
+  // longer returns drops out because nothing can vouch for it.
+  const profileRef = db.doc(`profiles/${uid}`);
+  const profileSnap = await profileRef.get();
+  const publicMusic = reconcilePublicMusicProfile(
+    profileSnap.data()?.publicMusic,
+    {topArtists: artists, topTracks: tracks, musicProfile},
+  );
+  await profileRef.set(
+    {
+      spotifyConnected: true,
+      publicMusic: {...publicMusic, updatedAt: FieldValue.serverTimestamp()},
+    },
+    {merge: true},
+  );
+
+  for (const key of tokens.indexKeys ?? [me.id]) {
+    await db.doc(`musicSpotifyIndex/${key}`).set(
+      {
+        uid,
+        spotifyAccountId: accountId,
+        spotifyUserId: me.id,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      {merge: true},
+    );
+  }
   await saveSecrets(uid, {...tokens, spotifyUserId: me.id});
   return {
     ...summary,
@@ -530,6 +582,9 @@ export function toClientProfile(data: DocumentData | undefined): Record<string, 
   };
 }
 
+/** Re-export so callers have one import site for the public card shape. */
+export {toPublicMusicCard};
+
 /**
  * A Spotify account belongs to one Mevora uid. Linking one that another
  * account already holds is rejected instead of moving the ownership.
@@ -543,16 +598,34 @@ export function assertMusicOwnership(
   }
 }
 
-/** Everything a disconnect must remove, plus the profile flag to clear. */
-export function disconnectPlan(uid: string, spotifyUserId?: string | null) {
+/**
+ * Everything a disconnect must remove, plus the profile state to reset.
+ *
+ * `extraIndexKeys` covers accounts reachable under both the legacy Spotify
+ * user id and the newer immutable account id: leaving either document behind
+ * would keep the account looking owned and block a future re-link.
+ */
+export function disconnectPlan(
+  uid: string,
+  spotifyUserId?: string | null,
+  extraIndexKeys: Array<string | null | undefined> = [],
+) {
   const deletes = [`spotifySecrets/${uid}`, `users/${uid}/music/summary`];
-  if (spotifyUserId) {
-    deletes.push(`musicSpotifyIndex/${spotifyUserId}`);
+  const seen = new Set<string>();
+  for (const key of [spotifyUserId, ...extraIndexKeys]) {
+    if (!key || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    deletes.push(`musicSpotifyIndex/${key}`);
   }
   return {
     deletes,
     profilePath: `profiles/${uid}`,
-    profileData: {spotifyConnected: false},
+    profileData: {
+      spotifyConnected: false,
+      publicMusic: emptyPublicMusicProfile(),
+    },
   };
 }
 
@@ -573,13 +646,35 @@ export const spotifyLinkMusic = onCall(callableOptions, async (request) => {
   const codeVerifier = requireString(request.data?.codeVerifier, "codeVerifier");
   const redirectUri = requireString(request.data?.redirectUri, "redirectUri");
   const tokens = await exchangeAuthorizationCode({code, codeVerifier, redirectUri});
-  const me = await spotifyGet<{id?: string}>(tokens.accessToken, "/me");
-  if (!me.id) {
+  const me = await spotifyGet<{id?: string; account_id?: string}>(
+    tokens.accessToken,
+    "/me",
+  );
+  const identity = resolveSpotifyIdentity(me);
+  if (!identity) {
     throw new HttpsError("unauthenticated", "oauth");
   }
-  const indexSnap = await db.doc(`musicSpotifyIndex/${me.id}`).get();
-  assertMusicOwnership({exists: indexSnap.exists, uid: indexSnap.data()?.uid}, uid);
-  const summary = await fetchAndStoreTaste(uid, {...tokens, spotifyUserId: me.id});
+  // Both the legacy and the account_id key are checked so an account linked
+  // before Spotify shipped account_id is still recognised as owned.
+  const lookups: IndexLookup[] = await Promise.all(
+    identity.lookupKeys.map(async (key) => {
+      const snap = await db.doc(`musicSpotifyIndex/${key}`).get();
+      return {key, exists: snap.exists, uid: snap.data()?.uid};
+    }),
+  );
+  const ownership = resolveIndexOwnership(lookups);
+  assertMusicOwnership(
+    ownership.ownerUid === null
+      ? {exists: false}
+      : {exists: true, uid: ownership.ownerUid},
+    uid,
+  );
+  const summary = await fetchAndStoreTaste(uid, {
+    ...tokens,
+    spotifyUserId: identity.userId,
+    spotifyAccountId: identity.accountId,
+    indexKeys: identity.lookupKeys,
+  });
   return toClientProfile(summary);
 });
 
@@ -587,8 +682,24 @@ export const getMusicAccount = onCall(
   {enforceAppCheck, region: "europe-west1"},
   async (request) => {
     const uid = requireUid(request);
-    const snap = await db.doc(`users/${uid}/music/summary`).get();
-    return toClientProfile(snap.data());
+    const [snap, profileSnap] = await Promise.all([
+      db.doc(`users/${uid}/music/summary`).get(),
+      db.doc(`profiles/${uid}`).get(),
+    ]);
+    const account = toClientProfile(snap.data());
+    // Owners see their own selection so the Music tab can pre-tick it.
+    const stored = profileSnap.data()?.publicMusic;
+    return {
+      ...account,
+      publicMusic: stored
+        ? {
+          enabled: stored.enabled === true,
+          artists: Array.isArray(stored.artists) ? stored.artists : [],
+          tracks: Array.isArray(stored.tracks) ? stored.tracks : [],
+          genres: Array.isArray(stored.genres) ? stored.genres : [],
+        }
+        : emptyPublicMusicProfile(),
+    };
   },
 );
 
@@ -609,14 +720,76 @@ export const disconnectMusicAccount = onCall(
   {enforceAppCheck, region: "europe-west1"},
   async (request) => {
     const uid = requireUid(request);
-    const snap = await db.doc(`users/${uid}/music/summary`).get();
+    const [snap, secretSnap] = await Promise.all([
+      db.doc(`users/${uid}/music/summary`).get(),
+      db.doc(`spotifySecrets/${uid}`).get(),
+    ]);
     const spotifyUserId = snap.data()?.spotifyUserId as string | undefined;
-    const plan = disconnectPlan(uid, spotifyUserId);
+    const accountId = snap.data()?.spotifyAccountId as string | undefined;
+    const storedKeys = secretSnap.data()?.indexKeys as string[] | undefined;
+    const plan = disconnectPlan(uid, spotifyUserId, [
+      ...(storedKeys ?? []),
+      ...(accountId ? [accountId] : []),
+    ]);
     for (const docPath of plan.deletes) {
       await db.doc(docPath).delete().catch(() => undefined);
     }
+    // The public card goes with the connection: leaving it would keep a
+    // Music Taste section on the dating profile of somebody who just
+    // disconnected Spotify.
     await db.doc(plan.profilePath).set(plan.profileData, {merge: true});
     return {ok: true, spotifyConnected: false};
+  },
+);
+
+/**
+ * Publishes the member's chosen artists and tracks to their dating profile.
+ *
+ * The client sends identifiers and a visibility flag — never names, artwork
+ * or links. Everything rendered to other members is resolved here from the
+ * caller's own imported Spotify data, so a selection cannot be fabricated and
+ * cannot reference music the caller never listened to. The target uid comes
+ * from the auth context, so there is no cross-user write path at all.
+ */
+export const updatePublicMusicProfile = onCall(
+  {enforceAppCheck, region: "europe-west1"},
+  async (request) => {
+    const uid = requireUid(request);
+    const summarySnap = await db.doc(`users/${uid}/music/summary`).get();
+    if (summarySnap.data()?.spotifyConnected !== true) {
+      throw new HttpsError("failed-precondition", "not-connected");
+    }
+
+    let profile;
+    try {
+      profile = buildPublicMusicProfile({
+        enabled: request.data?.enabled !== false,
+        artistIds: normalizeSelectionIds(
+          request.data?.artistIds,
+          MAX_PUBLIC_ARTISTS,
+          "artists",
+        ),
+        trackIds: normalizeSelectionIds(
+          request.data?.trackIds,
+          MAX_PUBLIC_TRACKS,
+          "tracks",
+        ),
+        summary: summarySnap.data(),
+      });
+    } catch (error) {
+      if (error instanceof PublicMusicValidationError) {
+        throw new HttpsError("invalid-argument", error.reason, {
+          mevoraCode: error.reason,
+        });
+      }
+      throw error;
+    }
+
+    await db.doc(`profiles/${uid}`).set(
+      {publicMusic: {...profile, updatedAt: FieldValue.serverTimestamp()}},
+      {merge: true},
+    );
+    return {publicMusic: profile};
   },
 );
 

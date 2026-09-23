@@ -545,6 +545,10 @@
     }
   },
   "exportMyDataFailed": "Could not export your data. Try again later.",
+  "exportMyDataShareSubject": "My Mevora data export",
+  "exportMyDataShared": "Your data export was shared.",
+  "exportMyDataReady": "Your data export is ready. Choose an app to save or send it.",
+  "exportMyDataShareUnavailable": "No app on this device can receive the export.",
   "settingsShowAge": "Show age on profile",
   "deleteConfirm": "Delete forever",
   "notificationsTitle": "Notifications and privacy",

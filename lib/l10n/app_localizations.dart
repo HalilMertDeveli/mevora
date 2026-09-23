@@ -2522,6 +2522,30 @@ abstract class AppLocalizations {
   /// **'Could not export your data. Try again later.'**
   String get exportMyDataFailed;
 
+  /// No description provided for @exportMyDataShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'My Mevora data export'**
+  String get exportMyDataShareSubject;
+
+  /// No description provided for @exportMyDataShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data export was shared.'**
+  String get exportMyDataShared;
+
+  /// No description provided for @exportMyDataReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data export is ready. Choose an app to save or send it.'**
+  String get exportMyDataReady;
+
+  /// No description provided for @exportMyDataShareUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No app on this device can receive the export.'**
+  String get exportMyDataShareUnavailable;
+
   /// No description provided for @settingsShowAge.
   ///
   /// In en, this message translates to:

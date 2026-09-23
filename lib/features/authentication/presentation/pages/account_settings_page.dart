@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
@@ -12,6 +11,8 @@ import 'package:mevora/features/authentication/presentation/auth_error_text.dart
 import 'package:mevora/features/authentication/presentation/widgets/auth_error_banner.dart';
 import 'package:mevora/features/authentication/presentation/widgets/link_email_dialog.dart';
 import 'package:mevora/features/settings/data/services/data_export_service.dart';
+import 'package:mevora/features/settings/data/services/share_plus_file_share.dart';
+import 'package:mevora/features/settings/domain/services/file_share_port.dart';
 import 'package:mevora/features/settings/presentation/widgets/language_settings_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
@@ -177,14 +178,20 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     }
     setState(() => _exportInFlight = true);
     try {
-      final path =
-          await DataExportService(FirebaseFunctionsCallable()).exportToFile();
-      await Clipboard.setData(ClipboardData(text: path));
+      final result = await DataExportService(
+        FirebaseFunctionsCallable(),
+        share: const SharePlusFileShare(),
+      ).exportAndShare(subject: l10n.exportMyDataShareSubject);
       if (!context.mounted) {
         return;
       }
+      final message = switch (result.outcome) {
+        FileShareOutcome.shared => l10n.exportMyDataShared,
+        FileShareOutcome.dismissed => l10n.exportMyDataReady,
+        FileShareOutcome.unavailable => l10n.exportMyDataShareUnavailable,
+      };
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.exportMyDataSuccess(path))),
+        SnackBar(content: Text(message)),
       );
     } on Object {
       if (!context.mounted) {

@@ -1315,6 +1315,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not export your data. Try again later.';
 
   @override
+  String get exportMyDataShareSubject => 'My Mevora data export';
+
+  @override
+  String get exportMyDataShared => 'Your data export was shared.';
+
+  @override
+  String get exportMyDataReady =>
+      'Your data export is ready. Choose an app to save or send it.';
+
+  @override
+  String get exportMyDataShareUnavailable =>
+      'No app on this device can receive the export.';
+
+  @override
   String get settingsShowAge => 'Show age on profile';
 
   @override

@@ -33,6 +33,8 @@ class FunctionsHumorDataSource implements HumorDataSource {
       profileBuilding: data['profileBuilding'] == true,
       interactionCount: firestoreInt(data['interactionCount'], 0),
       calibration: _parseCalibration(data['calibration']),
+      catalogExhausted: data['catalogExhausted'] == true,
+      catalogEmpty: data['catalogEmpty'] == true,
     );
   }
 

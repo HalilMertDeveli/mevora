@@ -243,6 +243,14 @@ function parseCalibrationInput(
   return {eligible: true, slot, version: HUMOR_CALIBRATION_VERSION};
 }
 
+/** Admin-only: is the calibration catalog healthy enough to ship? */
+export const getHumorCalibrationPoolReport = onCall(callableOptions, async (request) => {
+  const uid = requireUid(request);
+  await requireAdmin(uid);
+  const {buildCalibrationPoolReport} = await import("./calibrationPoolReport.js");
+  return buildCalibrationPoolReport(db);
+});
+
 export const runHumorModeration = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);

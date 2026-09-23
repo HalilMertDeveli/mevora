@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mevora/core/config/app_config.dart';
 
 /// One seeded Firebase Emulator account offered as a sign-in shortcut.
@@ -11,6 +14,10 @@ class EmulatorQaAccount {
   final String label;
   final String email;
   final String password;
+
+  /// Seeded uid. tool/seedEmulatorQaUsers.cjs keys accounts by the local part
+  /// of the address, so qa_user_a@mevora.test is uid qa_user_a.
+  String get uid => email.split('@').first;
 }
 
 /// Emulator-only sign-in shortcuts for two-user runtime QA.
@@ -50,6 +57,44 @@ abstract final class EmulatorQaLogin {
   /// any shortcut may act, so hiding the button is not the only defence.
   static bool isEnabled(AppConfig config) {
     return config.useAuthEmulator && accounts.isNotEmpty;
+  }
+
+  /// Signs in with an unsigned custom token, which the Auth emulator accepts.
+  ///
+  /// Why this exists: password sign-in runs a reCAPTCHA Enterprise pre-flight
+  /// through Google Play Services even when the Auth emulator is configured.
+  /// On emulator images with broken Play Services that pre-flight times out and
+  /// the app reports "Check your internet connection", so no seeded account can
+  /// sign in at all.
+  ///
+  /// This is still real Firebase Auth: signInWithCustomToken produces a genuine
+  /// emulator session with the seeded uid, and reCAPTCHA plays no part in custom
+  /// token exchange. It is not a bypass — no state is injected, and the whole
+  /// path is behind the same [isEnabled] gate. The emulator ignores the
+  /// signature, which is exactly why this can never work against production.
+  static Future<UserCredential?> signInWithEmulatorToken(
+    AppConfig config,
+    String email,
+  ) async {
+    final account = resolve(config, email);
+    if (account == null) {
+      return null;
+    }
+    String segment(Map<String, dynamic> value) => base64Url
+        .encode(utf8.encode(jsonEncode(value)))
+        .replaceAll('=', '');
+    final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final header = segment(<String, dynamic>{'alg': 'none', 'typ': 'JWT'});
+    final payload = segment(<String, dynamic>{
+      'iss': 'firebase-auth-emulator@example.com',
+      'sub': 'firebase-auth-emulator@example.com',
+      'aud':
+          'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
+      'iat': issuedAt,
+      'exp': issuedAt + 3600,
+      'uid': account.uid,
+    });
+    return FirebaseAuth.instance.signInWithCustomToken('$header.$payload.');
   }
 
   /// Resolves a shortcut, refusing outright when QA login is not enabled.

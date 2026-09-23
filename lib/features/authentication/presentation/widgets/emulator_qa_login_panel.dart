@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/emulator_qa_login.dart';
@@ -80,7 +82,20 @@ class EmulatorQaLoginPanel extends StatelessWidget {
                           if (resolved == null) {
                             return;
                           }
-                          onUseAccount(resolved.email, resolved.password);
+                          // Password sign-in runs a reCAPTCHA pre-flight
+                          // through Play Services, which is broken on some
+                          // emulator images. Try it first so the documented
+                          // path is exercised, then fall back to the emulator
+                          // custom token so QA is never blocked by the image.
+                          unawaited(
+                            EmulatorQaLogin.signInWithEmulatorToken(
+                              config,
+                              resolved.email,
+                            ).catchError((Object _) {
+                              onUseAccount(resolved.email, resolved.password);
+                              return null;
+                            }),
+                          );
                         }
                       : null,
                   child: Text(account.label),

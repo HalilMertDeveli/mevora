@@ -19,7 +19,6 @@ import 'package:mevora/features/music/data/datasources/mock_music_data_source.da
 import 'package:mevora/features/music/data/repositories/music_repository_impl.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
-import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 import 'package:mevora/features/music/presentation/controllers/public_music_controller.dart';
 import 'package:mevora/features/music/presentation/pages/public_music_selection_page.dart';
 import 'package:mevora/features/music/presentation/widgets/onboarding_music_step.dart';
@@ -29,24 +28,24 @@ import 'package:mevora/l10n/app_localizations.dart';
 final _en = lookupAppLocalizations(const Locale('en'));
 
 MusicProfile _imported() {
-  return MusicProfile(
+  return const MusicProfile(
     connected: true,
     spotifyUserId: 'spotify-user-1',
     displayName: 'Listener',
-    topArtists: const [
+    topArtists: [
       MusicArtist(id: 'a1', name: 'Arctic Monkeys', genres: ['indie']),
       MusicArtist(id: 'a2', name: 'The Weeknd', genres: ['r&b']),
       MusicArtist(id: 'a3', name: 'Lana Del Rey', genres: ['indie']),
       MusicArtist(id: 'a4', name: 'Radiohead', genres: ['alternative']),
     ],
-    topTracks: const [
+    topTracks: [
       MusicTrack(id: 't1', name: '505', artist: 'AM'),
       MusicTrack(id: 't2', name: 'After Hours', artist: 'TW'),
       MusicTrack(id: 't3', name: 'Do I Wanna Know?', artist: 'AM'),
       MusicTrack(id: 't4', name: 'Creep', artist: 'RH'),
     ],
-    genres: const [GenreShare(name: 'indie', percent: 50)],
-    taste: const MusicTasteSnapshot(artistIds: ['a1'], trackIds: ['t1']),
+    genres: [GenreShare(name: 'indie', percent: 50)],
+    taste: MusicTasteSnapshot(artistIds: ['a1'], trackIds: ['t1']),
   );
 }
 

@@ -1635,5 +1635,41 @@
   },
   "humorProfileEntryComplete": "Mizah profilin hazır",
   "humorFeedAllCaughtUp": "Şimdilik hepsi bu. Yeni içerikler eklendikçe burada olacak.",
-  "humorFeedNoContent": "Şu an gösterilecek içerik yok."
+  "humorFeedNoContent": "Şu an gösterilecek içerik yok.",
+  "humorResultTitle": "Mizah profilin hazır",
+  "humorResultSubtitle": "Seni biraz tanıdık. İşte öne çıkanlar.",
+  "humorResultSummaryTwo": "{first} ve {second} seni yakalıyor.",
+  "@humorResultSummaryTwo": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "humorResultSummaryOne": "Özellikle {first} sana göre.",
+  "@humorResultSummaryOne": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      }
+    }
+  },
+  "humorResultSummaryNone": "Mizah tarzın henüz net değil; keşfettikçe netleşecek.",
+  "humorResultContrast": "{weakest} ise pek işlemiyor.",
+  "@humorResultContrast": {
+    "placeholders": {
+      "weakest": {
+        "type": "String"
+      }
+    }
+  },
+  "humorResultKeepGoing": "Mizah profilini geliştirmeye devam et",
+  "humorResultDone": "Devam et",
+  "humorResultEvolvesNote": "Yeni içeriklere tepki verdikçe profilin gelişmeye devam eder.",
+  "humorResultStrengthHigh": "Güçlü",
+  "humorResultStrengthMedium": "Belirgin",
+  "humorResultStrengthLow": "Hafif"
 }

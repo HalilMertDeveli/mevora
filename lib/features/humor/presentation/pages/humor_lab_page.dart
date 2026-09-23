@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
+import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/presentation/controllers/humor_controller.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_content_player.dart';
@@ -33,6 +35,12 @@ class _HumorLabPageState extends State<HumorLabPage> {
   PageController? _pageController;
   var _syncingPage = false;
   int _lastSyncedIndex = 0;
+
+  /// Guards the one-time hand-off to the result screen. Only a calibration
+  /// that *completes during this session* earns the result screen; a user who
+  /// was already calibrated is simply browsing.
+  var _sawIncompleteCalibration = false;
+  var _calibrationHandoffDone = false;
 
   @override
   void didChangeDependencies() {
@@ -72,6 +80,23 @@ class _HumorLabPageState extends State<HumorLabPage> {
     if (controller == null || page == null || !mounted) {
       return;
     }
+    if (!controller.state.calibration.complete) {
+      _sawIncompleteCalibration = true;
+    } else if (!_calibrationHandoffDone && _sawIncompleteCalibration) {
+      // Finishing the fifteenth item is the moment the user has been working
+      // toward, so hand them to the result rather than dropping them back
+      // into an undifferentiated feed.
+      _calibrationHandoffDone = true;
+      unawaited(
+        Future<void>.microtask(() {
+          if (mounted) {
+            context.go(AppRoutes.humorResult);
+          }
+        }),
+      );
+      return;
+    }
+
     final index = controller.state.currentIndex;
     if (index == _lastSyncedIndex) {
       return;

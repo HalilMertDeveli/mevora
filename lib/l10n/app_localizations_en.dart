@@ -3786,4 +3786,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorFeedNoContent => 'No content to show right now.';
+
+  @override
+  String get humorResultTitle => 'Your humor profile is ready';
+
+  @override
+  String get humorResultSubtitle =>
+      'We got to know you a little. Here is what stands out.';
+
+  @override
+  String humorResultSummaryTwo(String first, String second) {
+    return '$first and $second are what land with you.';
+  }
+
+  @override
+  String humorResultSummaryOne(String first) {
+    return '$first in particular is your thing.';
+  }
+
+  @override
+  String get humorResultSummaryNone =>
+      'Your humor style is not clear yet; it will sharpen as you explore.';
+
+  @override
+  String humorResultContrast(String weakest) {
+    return '$weakest does not do much for you.';
+  }
+
+  @override
+  String get humorResultKeepGoing => 'Keep shaping your humor profile';
+
+  @override
+  String get humorResultDone => 'Continue';
+
+  @override
+  String get humorResultEvolvesNote =>
+      'Your profile keeps evolving as you react to new content.';
+
+  @override
+  String get humorResultStrengthHigh => 'Strong';
+
+  @override
+  String get humorResultStrengthMedium => 'Clear';
+
+  @override
+  String get humorResultStrengthLow => 'Slight';
 }

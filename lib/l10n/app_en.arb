@@ -1635,5 +1635,41 @@
   },
   "humorProfileEntryComplete": "Your humor profile is ready",
   "humorFeedAllCaughtUp": "That is all for now. New content will show up here.",
-  "humorFeedNoContent": "No content to show right now."
+  "humorFeedNoContent": "No content to show right now.",
+  "humorResultTitle": "Your humor profile is ready",
+  "humorResultSubtitle": "We got to know you a little. Here is what stands out.",
+  "humorResultSummaryTwo": "{first} and {second} are what land with you.",
+  "@humorResultSummaryTwo": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "humorResultSummaryOne": "{first} in particular is your thing.",
+  "@humorResultSummaryOne": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      }
+    }
+  },
+  "humorResultSummaryNone": "Your humor style is not clear yet; it will sharpen as you explore.",
+  "humorResultContrast": "{weakest} does not do much for you.",
+  "@humorResultContrast": {
+    "placeholders": {
+      "weakest": {
+        "type": "String"
+      }
+    }
+  },
+  "humorResultKeepGoing": "Keep shaping your humor profile",
+  "humorResultDone": "Continue",
+  "humorResultEvolvesNote": "Your profile keeps evolving as you react to new content.",
+  "humorResultStrengthHigh": "Strong",
+  "humorResultStrengthMedium": "Clear",
+  "humorResultStrengthLow": "Slight"
 }

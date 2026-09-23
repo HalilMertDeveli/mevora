@@ -72,8 +72,10 @@ jobs:
         run: flutter pub get
       - name: flutter analyze
         run: flutter analyze
+      # Explicit "test" argument: it pins the gate to the whole test/ tree so a
+      # future dart_test.yaml (or a runner change) cannot silently narrow it.
       - name: flutter test (full suite)
-        run: flutter test --reporter expanded
+        run: flutter test test --reporter expanded
 
   functions:
     name: Cloud Functions build + tests

@@ -57,6 +57,33 @@ deterministic FNV-1a seed of `uid + version + slot`. Same user ⇒ same item (so
 interrupted calibration resumes onto it); different users ⇒ different items. No
 `Math.random`, so the selection stays unit-testable.
 
+### Calibration content system
+
+Curation lives in `functions/src/humor/calibrationSeed.ts`, separate from
+persistence. Each of the six anchor slots carries **four** interchangeable
+candidates, so two users calibrated on the same slot rarely see the same asset.
+
+Every anchor candidate must measure its slot's `primary` dimension; a test
+enforces it. A candidate is *not* required to measure the slot's `contrast` —
+an item scoring high on both sarcasm and dry cannot separate them. The contrast
+is what the adaptive stage probes afterwards.
+
+**Guaranteed anchor coverage is the six slot primaries**: absurd, cringe, meme,
+sarcasm, situational, wordplay. That is the intersection across every rotation,
+which is what makes two profiles comparable. Deeper pools deliberately traded
+incidental secondary overlap for content variety. The remaining five dimensions
+— dry, silly, teasing, romantic, dark — are reached by the adaptive and
+exploration stages, and a test proves they are not stranded.
+
+The seed is the **QA / development tier**, marked `provider: mevora-qa-seed`.
+Production curation is content-ops work; the architecture is what makes it
+possible without code changes.
+
+`getHumorCalibrationPoolReport` (admin callable) reports per-slot candidate
+counts, guaranteed coverage, uncovered dimensions and warnings. Calibration
+degrades quietly when a pool runs thin, so this is how a catalog gap becomes
+visible before users hit it.
+
 ### Curation is opt-in
 
 `humorContent` carries three flat fields — `calibrationEligible`,

@@ -42,3 +42,36 @@ export {
   type ProviderWebhookEvent,
   type WebhookInput,
 } from "./identityVerificationProvider.js";
+export {
+  DEFAULT_DIDIT_BASE_URL,
+  diditSecrets,
+  isDiditConfigured,
+  isDiditWebhookConfigured,
+  parseDiditEnvironment,
+  resolveDiditConfig,
+  resolveDiditWebhookSecret,
+  type DiditEnvironment,
+  type DiditRuntimeConfig,
+} from "./didit/diditConfig.js";
+export {
+  DIDIT_TIMESTAMP_TOLERANCE_SECONDS,
+  canonicalizeDiditPayload,
+  isTimestampFresh,
+  readDiditSignatureHeaders,
+  verifyDiditSignature,
+} from "./didit/diditSignature.js";
+export {
+  DiditApiError,
+  DiditClient,
+  summarizeDecision,
+  type DiditDecisionSummary,
+} from "./didit/diditClient.js";
+export {DiditProvider, reasonForDecision} from "./didit/diditProvider.js";
+export {
+  IdentityStartBlockedError,
+  applyIdentityProviderEvent,
+  attachProviderSession,
+  identityVerificationRef,
+  readIdentityVerification,
+  reserveIdentitySessionAttempt,
+} from "./identityVerificationStore.js";

@@ -30,6 +30,11 @@ export {
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
 export {createSumsubAccessToken, sumsubWebhook} from "./sumsub/index.js";
 export {
+  createIdentityVerificationSession,
+  getIdentityVerificationState,
+} from "./identity/createIdentityVerificationSession.js";
+export {identityVerificationWebhook} from "./identity/identityVerificationWebhook.js";
+export {
   getHumorFeed,
   submitHumorFeedback,
   getHumorProfile,

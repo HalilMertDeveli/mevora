@@ -75,3 +75,10 @@ export {
   readIdentityVerification,
   reserveIdentitySessionAttempt,
 } from "./identityVerificationStore.js";
+export {
+  IDENTITY_ERASURE_PENDING,
+  erasurePendingRef,
+  requestIdentityProviderErasure,
+  runIdentityErasureJob,
+  type ErasureAttemptResult,
+} from "./identityErasure.js";

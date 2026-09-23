@@ -3,6 +3,7 @@ import {logger} from "firebase-functions";
 import {claimJob, completeJob, failJob, markManualReview} from "./jobs.js";
 import {JobKind} from "./types.js";
 import {verifyAccountDeletion} from "./deletionVerify.js";
+import {runIdentityErasureJob} from "../identity/identityErasure.js";
 import {auditForgedBlocks} from "./forgedBlockAudit.js";
 import {safeLogMeta} from "../security/logHygiene.js";
 
@@ -37,6 +38,17 @@ async function runHandler(
     const result = await verifyAccountDeletion(uid, db);
     // An incomplete deletion is a compliance issue, not a transient error:
     // retrying cannot fix it, so route it to a human instead of `failed`.
+    return {result: {...result}, needsManualReview: !result.complete};
+  }
+  case JobKind.identityProviderErasure: {
+    const uid = String(payload.uid ?? "");
+    if (!uid) {
+      throw new PermanentJobError("uid_required");
+    }
+    const result = await runIdentityErasureJob(uid, db);
+    // Identity documents the provider still holds for a deleted user is a
+    // compliance matter, not a transient error. Route it to a human rather
+    // than letting it exhaust a retry budget and disappear into `failed`.
     return {result: {...result}, needsManualReview: !result.complete};
   }
   case JobKind.forgedBlockAudit: {

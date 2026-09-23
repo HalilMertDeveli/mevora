@@ -689,7 +689,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     db.doc(`users/${uid}/settings/notifications`).get(),
     db.doc(`users/${uid}/subscription/current`).get(),
     db.doc(`users/${uid}/music/summary`).get(),
-    db.doc(`users/${uid}/verification/sumsub`).get(),
+    db.doc(`users/${uid}/verification/identity`).get(),
     db.collection(`users/${uid}/questionAnswers`).limit(100).get(),
   ]);
 
@@ -735,8 +735,14 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     verification: verificationData
       ? {
         status: verificationData.status ?? null,
-        reviewedAt: verificationData.reviewedAt ?? null,
-        // No Sumsub applicant secrets.
+        provider: verificationData.provider ?? null,
+        reason: verificationData.reason ?? null,
+        verifiedAt: verificationData.verifiedAt ?? null,
+        updatedAt: verificationData.updatedAt ?? null,
+        // Everything MEVORA holds about identity verification is above.
+        // The provider session id is backend-only correlation, not user
+        // data, and the document images, selfie, liveness video and
+        // extracted identity fields were never stored here to export.
       }
       : null,
     questionAnswers: questionAnswers.docs.map((d) => ({id: d.id, ...d.data()})),

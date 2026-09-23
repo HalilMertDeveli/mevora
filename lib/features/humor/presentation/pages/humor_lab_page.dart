@@ -59,7 +59,9 @@ class _HumorLabPageState extends State<HumorLabPage> {
 
   void _attach(HumorController controller) {
     _controller = controller;
-    _pageController = PageController(initialPage: controller.state.currentIndex);
+    _pageController = PageController(
+      initialPage: controller.state.currentIndex,
+    );
     _lastSyncedIndex = controller.state.currentIndex;
     controller.addListener(_onControllerChanged);
   }
@@ -120,10 +122,32 @@ class _HumorLabPageState extends State<HumorLabPage> {
       animation: controller,
       builder: (context, _) {
         final state = controller.state;
+        final calibration = state.calibration;
+        final calibrating = !calibration.complete && calibration.totalCount > 0;
+        final progressLabel = l10n.humorCalibrationProgress(
+          calibration.completedCount,
+          calibration.totalCount,
+        );
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(l10n.humorLabTitle),
+            // While calibrating, the title *is* the progress: the user is
+            // doing a finite thing and should be able to see the end of it.
+            // Stage names stay internal — "anchor" means nothing to a person.
+            title: Text(calibrating ? progressLabel : l10n.humorLabTitle),
+            bottom: calibrating
+                ? PreferredSize(
+                    preferredSize: const Size.fromHeight(4),
+                    child: Semantics(
+                      label: progressLabel,
+                      value: '${(calibration.progress * 100).round()}%',
+                      child: LinearProgressIndicator(
+                        value: calibration.progress,
+                        minHeight: 4,
+                      ),
+                    ),
+                  )
+                : null,
             actions: [
               if (state.canUndo)
                 IconButton(

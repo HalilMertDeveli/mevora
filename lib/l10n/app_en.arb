@@ -1598,5 +1598,42 @@
   "publicMusicEditCta": "Edit my Music Taste",
   "profileMusicTasteHeading": "Music Taste 🎧",
   "profileMusicOpenInSpotify": "Open in Spotify",
-  "musicLimitedData": "Spotify is connected, but there isn't much listening history yet."
+  "musicLimitedData": "Spotify is connected, but there isn't much listening history yet.",
+  "humorCalibrationIntroTitle": "Let us find your humor",
+  "humorCalibrationIntroBody": "React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.",
+  "humorCalibrationIntroMeta": "15 short pieces · about a minute",
+  "humorCalibrationStart": "Start",
+  "humorCalibrationSkip": "Skip for now",
+  "humorCalibrationResume": "Continue",
+  "humorCalibrationProgress": "{completed} / {total}",
+  "@humorCalibrationProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorCalibrationHintEarly": "Getting to know you…",
+  "humorCalibrationHintMiddle": "Your humor style is taking shape.",
+  "humorCalibrationHintFinal": "Just a few more.",
+  "humorCalibrationResumeNote": "Picking up where you left off.",
+  "humorCalibrationCatalogGap": "Not enough content right now. Please try again later.",
+  "humorProfileEntryNotStarted": "Discover your humor",
+  "humorProfileEntryInProgress": "{completed} / {total} completed",
+  "@humorProfileEntryInProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorProfileEntryComplete": "Your humor profile is ready",
+  "humorFeedAllCaughtUp": "That is all for now. New content will show up here.",
+  "humorFeedNoContent": "No content to show right now."
 }

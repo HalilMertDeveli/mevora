@@ -6781,6 +6781,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Spotify is connected, but there isn\'t much listening history yet.'**
   String get musicLimitedData;
+
+  /// No description provided for @humorCalibrationIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let us find your humor'**
+  String get humorCalibrationIntroTitle;
+
+  /// No description provided for @humorCalibrationIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.'**
+  String get humorCalibrationIntroBody;
+
+  /// No description provided for @humorCalibrationIntroMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'15 short pieces · about a minute'**
+  String get humorCalibrationIntroMeta;
+
+  /// No description provided for @humorCalibrationStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get humorCalibrationStart;
+
+  /// No description provided for @humorCalibrationSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get humorCalibrationSkip;
+
+  /// No description provided for @humorCalibrationResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get humorCalibrationResume;
+
+  /// No description provided for @humorCalibrationProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} / {total}'**
+  String humorCalibrationProgress(int completed, int total);
+
+  /// No description provided for @humorCalibrationHintEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting to know you…'**
+  String get humorCalibrationHintEarly;
+
+  /// No description provided for @humorCalibrationHintMiddle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor style is taking shape.'**
+  String get humorCalibrationHintMiddle;
+
+  /// No description provided for @humorCalibrationHintFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Just a few more.'**
+  String get humorCalibrationHintFinal;
+
+  /// No description provided for @humorCalibrationResumeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Picking up where you left off.'**
+  String get humorCalibrationResumeNote;
+
+  /// No description provided for @humorCalibrationCatalogGap.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough content right now. Please try again later.'**
+  String get humorCalibrationCatalogGap;
+
+  /// No description provided for @humorProfileEntryNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover your humor'**
+  String get humorProfileEntryNotStarted;
+
+  /// No description provided for @humorProfileEntryInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} / {total} completed'**
+  String humorProfileEntryInProgress(int completed, int total);
+
+  /// No description provided for @humorProfileEntryComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile is ready'**
+  String get humorProfileEntryComplete;
+
+  /// No description provided for @humorFeedAllCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'That is all for now. New content will show up here.'**
+  String get humorFeedAllCaughtUp;
+
+  /// No description provided for @humorFeedNoContent.
+  ///
+  /// In en, this message translates to:
+  /// **'No content to show right now.'**
+  String get humorFeedNoContent;
 }
 
 class _AppLocalizationsDelegate

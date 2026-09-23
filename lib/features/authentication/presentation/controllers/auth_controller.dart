@@ -88,7 +88,6 @@ class AuthController extends ChangeNotifier {
         notifyListeners();
       },
     );
-    unawaited(_authRepository.restorePendingOAuth());
   }
 
   Future<void> _onSnapshot(AuthSnapshot snapshot) async {

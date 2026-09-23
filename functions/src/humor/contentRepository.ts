@@ -5,9 +5,12 @@ import {
   type HumorCategory,
   type HumorVector,
 } from "./categories.js";
+import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
 import {classifyHumorSafety, emptySafetyFlags} from "./moderation.js";
 import {resolveHumorSourceAdapter} from "./sourceAdapter.js";
 import type {
+  HumorCalibrationMeta,
+  HumorCalibrationStage,
   HumorContentDoc,
   HumorContentType,
   HumorFeedItem,
@@ -18,13 +21,26 @@ import type {
 
 export const HUMOR_CONTENT_COLLECTION = "humorContent";
 
-export function toFeedSafeContent(doc: HumorContentDoc): HumorFeedItem {
+/**
+ * Calibration curation is stored as three flat fields rather than a nested map
+ * so the pools stay directly queryable without a map-field index per slot.
+ */
+export const CALIBRATION_ELIGIBLE_FIELD = "calibrationEligible";
+export const CALIBRATION_SLOT_FIELD = "calibrationSlot";
+export const CALIBRATION_VERSION_FIELD = "calibrationVersion";
+
+export function toFeedSafeContent(
+  doc: HumorContentDoc,
+  calibrationStage: HumorCalibrationStage | null = null,
+): HumorFeedItem {
   return {
     contentId: doc.contentId,
     type: doc.type,
     language: doc.language,
     category: doc.category,
     humorTags: doc.humorTags,
+    // Stage only. The anchor slot id and the curation flags stay server-side.
+    calibrationStage,
     media: {
       downloadUrl: doc.media?.downloadUrl ?? null,
       thumbUrl: doc.media?.thumbUrl ?? null,
@@ -33,6 +49,22 @@ export function toFeedSafeContent(doc: HumorContentDoc): HumorFeedItem {
       textBody: doc.media?.textBody ?? null,
     },
   };
+}
+
+/**
+ * Closed by default: an item is calibration-eligible only if it explicitly says
+ * so, and a slot is honoured only on an eligible item. Bulk provider ingest
+ * writes neither field, so it can never present itself as a curated anchor.
+ */
+export function parseCalibrationMeta(data: DocumentData): HumorCalibrationMeta {
+  const eligible = data[CALIBRATION_ELIGIBLE_FIELD] === true;
+  const slotRaw = data[CALIBRATION_SLOT_FIELD];
+  const slot =
+    eligible && typeof slotRaw === "string" && slotRaw.trim().length > 0
+      ? slotRaw.trim()
+      : null;
+  const version = Number(data[CALIBRATION_VERSION_FIELD] ?? 0);
+  return {eligible, slot, version: Number.isFinite(version) ? version : 0};
 }
 
 export function parseHumorContent(
@@ -67,6 +99,7 @@ export function parseHumorContent(
       provider: data.source?.provider ?? "mevora-internal",
       licenseRef: data.source?.licenseRef ?? null,
     },
+    calibration: parseCalibrationMeta(data),
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     active: data.active === true,
@@ -130,6 +163,65 @@ export async function listCandidateHumorContent(
   }
 }
 
+/**
+ * Curated calibration pool.
+ *
+ * `slot` selects an anchor pool; omitting it returns the whole eligible pool,
+ * which is what the adaptive and exploration stages draw from. Serving rules
+ * (active + approved) are re-checked in memory as well as in the query, so a
+ * missing index falling back to the broad scan cannot serve unapproved content.
+ *
+ * Results are sorted by content id to give the deterministic rotation selector
+ * a stable pool ordering regardless of query plan.
+ */
+export async function listCalibrationPool(
+  db: Firestore,
+  input: {slot?: string | null; limit?: number; calibrationVersion: number},
+): Promise<HumorContentDoc[]> {
+  const limit = Math.min(200, Math.max(input.limit ?? 60, 10));
+  const slot = input.slot ?? null;
+
+  const keep = (item: HumorContentDoc | null): item is HumorContentDoc => {
+    if (!item) return false;
+    if (!item.active || item.safetyStatus !== "approved") return false;
+    if (!item.calibration.eligible) return false;
+    if (item.calibration.version !== input.calibrationVersion) return false;
+    if (slot !== null && item.calibration.slot !== slot) return false;
+    return true;
+  };
+
+  const run = async (build: () => FirebaseFirestore.Query): Promise<HumorContentDoc[]> => {
+    const snap = await build().get();
+    return snap.docs
+      .map((doc) => parseHumorContent(doc.id, doc.data()))
+      .filter(keep)
+      .sort((a, b) => (a.contentId < b.contentId ? -1 : a.contentId > b.contentId ? 1 : 0));
+  };
+
+  try {
+    return await run(() => {
+      let query = db
+        .collection(HUMOR_CONTENT_COLLECTION)
+        .where(CALIBRATION_ELIGIBLE_FIELD, "==", true)
+        .where("active", "==", true)
+        .where("safetyStatus", "==", "approved");
+      if (slot !== null) {
+        query = query.where(CALIBRATION_SLOT_FIELD, "==", slot);
+      }
+      return query.limit(limit);
+    });
+  } catch {
+    // Composite index missing: fall back to the eligibility filter alone and
+    // let `keep` enforce the rest.
+    return run(() =>
+      db
+        .collection(HUMOR_CONTENT_COLLECTION)
+        .where(CALIBRATION_ELIGIBLE_FIELD, "==", true)
+        .limit(limit),
+    );
+  }
+}
+
 export type UpsertHumorContentInput = {
   contentId: string;
   type: HumorContentType;
@@ -144,6 +236,8 @@ export type UpsertHumorContentInput = {
   sourceType?: "internal" | "licensed_api";
   provider?: string;
   licenseRef?: string | null;
+  /** Explicit calibration curation. Absent means "not calibration content". */
+  calibration?: {eligible: boolean; slot?: string | null; version?: number};
 };
 
 export async function upsertHumorContentDoc(
@@ -157,6 +251,14 @@ export async function upsertHumorContentDoc(
   const classified = classifyHumorSafety(input.safetyFlags);
   const safetyStatus = input.safetyStatus ?? classified.status;
   const active = input.active === true && safetyStatus === "approved";
+  // Curation is opt-in and only meaningful on approved content: an item that is
+  // not servable must not sit in a calibration pool waiting to be served.
+  const calibrationEligible =
+    input.calibration?.eligible === true && safetyStatus === "approved";
+  const calibrationSlot =
+    calibrationEligible && isAnchorSlotId(input.calibration?.slot)
+      ? String(input.calibration?.slot)
+      : null;
   const doc = {
     contentId: input.contentId,
     type: input.type,
@@ -172,6 +274,11 @@ export async function upsertHumorContentDoc(
       provider: adapter.provider,
       licenseRef: input.licenseRef ?? null,
     },
+    [CALIBRATION_ELIGIBLE_FIELD]: calibrationEligible,
+    [CALIBRATION_SLOT_FIELD]: calibrationSlot,
+    [CALIBRATION_VERSION_FIELD]: calibrationEligible
+      ? (input.calibration?.version ?? HUMOR_CALIBRATION_VERSION)
+      : 0,
     active,
     stats: {
       viewCount: 0,
@@ -198,7 +305,7 @@ export async function upsertHumorContentDoc(
  * Videos: Google sample bucket (public HTTPS MP4).
  * Images: picsum (public HTTPS). Captions are Mevora-authored Turkish humor.
  */
-export const INTERNAL_HUMOR_SEED: Array<Omit<UpsertHumorContentInput, "safetyStatus">> = [
+const INTERNAL_HUMOR_SEED_ITEMS: Array<Omit<UpsertHumorContentInput, "safetyStatus">> = [
   {
     contentId: "hc_tr_vid_001",
     type: "video",
@@ -399,4 +506,161 @@ export const INTERNAL_HUMOR_SEED: Array<Omit<UpsertHumorContentInput, "safetySta
     },
     active: true,
   },
+
+  // --- Calibration alternates -------------------------------------------
+  // A second measurement-equivalent item per anchor slot, so the rotation
+  // selector has something to rotate between and two users calibrated on the
+  // same slot need not watch the same asset. Plus one `dry`-dominant item,
+  // which the original seed had no focused candidate for.
+  {
+    contentId: "hc_tr_img_006",
+    type: "meme",
+    language: "tr",
+    category: "sarcasm",
+    humorTags: ["ironi", "gunluk"],
+    humorVector: {sarcasm: 0.86, dry: 0.5, situational: 0.35},
+    media: {
+      downloadUrl: "https://picsum.photos/seed/mevora-tr-6/1080/1920",
+      thumbUrl: "https://picsum.photos/seed/mevora-tr-6/540/960",
+      aspectRatio: 9 / 16,
+      textBody: "Harika, tam da bugün bitmesi gereken şey bitmedi.",
+    },
+    active: true,
+  },
+  {
+    contentId: "hc_tr_vid_006",
+    type: "video",
+    language: "tr",
+    category: "absurd",
+    humorTags: ["absürt", "video"],
+    humorVector: {absurd: 0.87, silly: 0.55},
+    media: {
+      downloadUrl:
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      thumbUrl:
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg",
+      durationMs: 15000,
+      aspectRatio: 16 / 9,
+      textBody: "Rüyamda da sıra bekliyordum. Uyanınca da.",
+    },
+    active: true,
+  },
+  {
+    contentId: "hc_tr_img_007",
+    type: "image",
+    language: "tr",
+    category: "situational",
+    humorTags: ["günlük", "sosyal"],
+    humorVector: {situational: 0.85, cringe: 0.4, dry: 0.35},
+    media: {
+      downloadUrl: "https://picsum.photos/seed/mevora-tr-7/1080/1920",
+      thumbUrl: "https://picsum.photos/seed/mevora-tr-7/540/960",
+      aspectRatio: 9 / 16,
+      textBody: "Asansörde sohbet başlatan insan türü üzerine bir inceleme.",
+    },
+    active: true,
+  },
+  {
+    contentId: "hc_tr_img_008",
+    type: "meme",
+    language: "tr",
+    category: "meme",
+    humorTags: ["meme", "klasik"],
+    humorVector: {meme: 0.88, silly: 0.45},
+    media: {
+      downloadUrl: "https://picsum.photos/seed/mevora-tr-8/1080/1920",
+      thumbUrl: "https://picsum.photos/seed/mevora-tr-8/540/960",
+      aspectRatio: 9 / 16,
+      textBody: "Bildirimi kapattım, huzur geldi sandım. Gelmedi.",
+    },
+    active: true,
+  },
+  {
+    contentId: "hc_tr_img_009",
+    type: "image",
+    language: "tr",
+    category: "wordplay",
+    humorTags: ["kelime", "espri"],
+    humorVector: {wordplay: 0.87, sarcasm: 0.4},
+    media: {
+      downloadUrl: "https://picsum.photos/seed/mevora-tr-9/1080/1920",
+      thumbUrl: "https://picsum.photos/seed/mevora-tr-9/540/960",
+      aspectRatio: 9 / 16,
+      textBody: "Planım yoktu ama planım olmadığına dair bir planım vardı.",
+    },
+    active: true,
+  },
+  {
+    contentId: "hc_tr_img_010",
+    type: "meme",
+    language: "tr",
+    category: "cringe",
+    humorTags: ["cringe", "sosyal"],
+    humorVector: {cringe: 0.85, teasing: 0.45, situational: 0.5},
+    media: {
+      downloadUrl: "https://picsum.photos/seed/mevora-tr-10/1080/1920",
+      thumbUrl: "https://picsum.photos/seed/mevora-tr-10/540/960",
+      aspectRatio: 9 / 16,
+      textBody: "Sesli mesajı yanlış gruba attım. İyi geceler herkese.",
+    },
+    active: true,
+  },
+  {
+    contentId: "hc_tr_img_011",
+    type: "image",
+    language: "tr",
+    category: "dry",
+    humorTags: ["kuru", "sakin"],
+    humorVector: {dry: 0.86, situational: 0.4},
+    media: {
+      downloadUrl: "https://picsum.photos/seed/mevora-tr-11/1080/1920",
+      thumbUrl: "https://picsum.photos/seed/mevora-tr-11/540/960",
+      aspectRatio: 9 / 16,
+      textBody: "Evet. Güzel. Devam edelim.",
+    },
+    active: true,
+  },
 ];
+
+/**
+ * Calibration curation for the internal seed.
+ *
+ * Kept as an explicit table rather than a field on each item so that "which
+ * content is trusted as an anchor" is reviewable in one place — and so the
+ * default for anything absent from this table is, correctly, *not* eligible.
+ *
+ * Each anchor slot has two measurement-equivalent candidates; the rest of the
+ * eligible pool feeds the adaptive and exploration stages, which select by
+ * dimension rather than by slot.
+ */
+const INTERNAL_SEED_CALIBRATION: Readonly<
+  Record<string, {eligible: boolean; slot?: string | null}>
+> = {
+  // Anchor slots — two equivalent candidates each.
+  hc_tr_img_001: {eligible: true, slot: "anchor_wit"},
+  hc_tr_img_006: {eligible: true, slot: "anchor_wit"},
+  hc_tr_vid_001: {eligible: true, slot: "anchor_absurd"},
+  hc_tr_vid_006: {eligible: true, slot: "anchor_absurd"},
+  hc_tr_vid_002: {eligible: true, slot: "anchor_everyday"},
+  hc_tr_img_007: {eligible: true, slot: "anchor_everyday"},
+  hc_tr_vid_004: {eligible: true, slot: "anchor_meme"},
+  hc_tr_img_008: {eligible: true, slot: "anchor_meme"},
+  hc_tr_img_002: {eligible: true, slot: "anchor_wordplay"},
+  hc_tr_img_009: {eligible: true, slot: "anchor_wordplay"},
+  hc_tr_img_004: {eligible: true, slot: "anchor_social"},
+  hc_tr_img_010: {eligible: true, slot: "anchor_social"},
+  // Adaptive / exploration pool — eligible, but never an anchor.
+  hc_tr_vid_003: {eligible: true, slot: null},
+  hc_tr_vid_005: {eligible: true, slot: null},
+  hc_tr_img_003: {eligible: true, slot: null},
+  hc_tr_img_005: {eligible: true, slot: null},
+  hc_tr_img_011: {eligible: true, slot: null},
+  hc_en_vid_001: {eligible: true, slot: null},
+  hc_en_img_001: {eligible: true, slot: null},
+};
+
+export const INTERNAL_HUMOR_SEED: Array<Omit<UpsertHumorContentInput, "safetyStatus">> =
+  INTERNAL_HUMOR_SEED_ITEMS.map((item) => ({
+    ...item,
+    calibration: INTERNAL_SEED_CALIBRATION[item.contentId] ?? {eligible: false},
+  }));

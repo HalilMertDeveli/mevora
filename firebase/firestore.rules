@@ -543,8 +543,11 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
-      // Owner may read own humor summary. Peers never read raw humor vectors.
-      // Clients never write — Cloud Functions only.
+      // Owner may read own humor summary and `calibration` state. Peers never
+      // read raw humor vectors or another user's calibration progress.
+      // Clients never write — Cloud Functions only. That write denial is what
+      // keeps calibration server-authoritative: a client cannot declare itself
+      // calibrated, forge a stage, or fake anchor coverage by writing here.
       match /humor/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;

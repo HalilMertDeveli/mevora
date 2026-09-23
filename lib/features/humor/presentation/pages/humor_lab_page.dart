@@ -249,11 +249,26 @@ class _HumorLabPageState extends State<HumorLabPage> {
                   )
                 : state.isEmpty
                 ? MevoraEmptyState(
-                    icon: Icons.theater_comedy_outlined,
+                    icon: state.catalogExhausted
+                        ? Icons.check_circle_outline
+                        : Icons.theater_comedy_outlined,
                     title: l10n.humorLabTitle,
-                    message: l10n.humorEmptyFeed,
-                    actionLabel: l10n.humorTryAgain,
-                    onAction: () => unawaited(controller.load()),
+                    // Three different situations that used to share one
+                    // message. "You have seen everything" is an achievement,
+                    // "there is nothing here" is our problem, and a plain
+                    // empty feed is worth retrying. Saying the same thing to
+                    // all three either blames the user or hides an outage.
+                    message: state.catalogExhausted
+                        ? l10n.humorFeedAllCaughtUp
+                        : state.catalogEmpty
+                        ? l10n.humorFeedNoContent
+                        : l10n.humorEmptyFeed,
+                    actionLabel: state.catalogExhausted
+                        ? null
+                        : l10n.humorTryAgain,
+                    onAction: state.catalogExhausted
+                        ? null
+                        : () => unawaited(controller.load()),
                   )
                 : _HumorFeedBody(
                     controller: controller,

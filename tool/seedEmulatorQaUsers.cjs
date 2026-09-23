@@ -91,6 +91,27 @@ const QA_USERS = [
     lat: 41.01,
     lng: 28.98,
   },
+  // C exists so pass, block and account-switch can be exercised without
+  // destroying the A/B match that the Boost and chat checks depend on.
+  {
+    uid: "qa_user_c",
+    email: "qa_user_c@mevora.test",
+    displayName: "QA User C",
+    gender: "male",
+    seeksGender: "female",
+    lat: 41.012,
+    lng: 28.982,
+  },
+  // D is the uninvolved third party for cross-user isolation checks.
+  {
+    uid: "qa_user_d",
+    email: "qa_user_d@mevora.test",
+    displayName: "QA User D",
+    gender: "male",
+    seeksGender: "female",
+    lat: 41.014,
+    lng: 28.984,
+  },
 ];
 
 const birthDateFor = (age) => {

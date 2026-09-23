@@ -32,6 +32,19 @@ const livekitUrl = defineSecret("LIVEKIT_URL");
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 const socialCallable = {enforceAppCheck, region: "europe-west1" as const};
 
+// B-05: the LiveKit callables need `secrets`, which socialCallable does not
+// carry, so they were declared with inline options and silently lost
+// enforceAppCheck — the only two callables in the codebase without it, and the
+// two that mint room credentials. Spread the shared config instead of
+// re-declaring it, the same way syncHumorFromProvider does, so App Check
+// cannot be dropped again just by needing one extra field. Emulator behaviour
+// is inherited: enforceAppCheck is already false when FUNCTIONS_EMULATOR is
+// set, so no debug bypass is introduced here.
+const livekitCallable = {
+  ...socialCallable,
+  secrets: [livekitApiKey, livekitApiSecret, livekitUrl],
+};
+
 const REPORT_REASONS = new Set([
   "spam",
   "harassment",
@@ -329,7 +342,7 @@ async function mintLivekitToken(identity: string, roomName: string): Promise<{to
 }
 
 export const createVideoCall = onCall(
-  {region: "europe-west1", secrets: [livekitApiKey, livekitApiSecret, livekitUrl]},
+  livekitCallable,
   async (request) => {
     const uid = requireUid(request.auth?.uid);
     const matchId = String(request.data?.matchId ?? "");
@@ -372,7 +385,7 @@ export const createVideoCall = onCall(
 );
 
 export const respondToVideoCall = onCall(
-  {region: "europe-west1", secrets: [livekitApiKey, livekitApiSecret, livekitUrl]},
+  livekitCallable,
   async (request) => {
     const uid = requireUid(request.auth?.uid);
     const callId = String(request.data?.callId ?? "");

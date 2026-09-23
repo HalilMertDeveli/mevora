@@ -50,3 +50,5 @@ export {
 // task queue target does not exist and nothing drains `automationJobs`, so the
 // job stays `queued` forever.
 export {processAutomationTask, automationJobDrain} from "./automation/schedules.js";
+// Admin-only, read-only B-01 follow-up audit (never mutates blocks).
+export {runForgedBlockAudit} from "./automation/forgedBlockAuditCallable.js";

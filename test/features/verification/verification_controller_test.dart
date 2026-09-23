@@ -12,8 +12,6 @@ import 'package:mevora/features/verification/presentation/controllers/verificati
 import 'package:url_launcher/url_launcher.dart';
 
 class _FakeRepository implements VerificationRepository {
-  _FakeRepository({this.sessionResult});
-
   final _states = StreamController<IdentityVerification>.broadcast();
   Result<IdentityVerificationSession>? sessionResult;
   int sessionCalls = 0;
@@ -53,7 +51,7 @@ class _FakeRepository implements VerificationRepository {
 }
 
 class _FakeLauncher extends IdentityVerificationLauncher {
-  _FakeLauncher({required this.links, this.opens = true})
+  _FakeLauncher({required this.links})
     : super(
         returnLinks: links.stream,
         launch: (Uri uri, {LaunchMode mode = LaunchMode.platformDefault}) async {
@@ -63,7 +61,6 @@ class _FakeLauncher extends IdentityVerificationLauncher {
       );
 
   final StreamController<Uri> links;
-  final bool opens;
 
   static final List<Uri> _opened = <Uri>[];
   static bool _openResult = true;

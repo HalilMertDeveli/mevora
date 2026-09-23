@@ -340,16 +340,24 @@ class MockHumorDataSource implements HumorDataSource {
       );
     }
 
+    // Mirror the server contract: unrated items only, walked in catalog order,
+    // so the mock cannot hide a pagination regression behind repeats.
+    final unrated = ranked
+        .where((item) => !_ratings.containsKey(item.contentId))
+        .toList();
     final start = cursor == null || cursor.isEmpty ? 0 : int.tryParse(cursor) ?? 0;
-    final end = (start + pageSize).clamp(0, ranked.length);
-    final page = ranked.sublist(start.clamp(0, ranked.length), end);
-    final next = end < ranked.length ? '$end' : null;
+    final from = start.clamp(0, unrated.length);
+    final end = (from + pageSize).clamp(0, unrated.length);
+    final page = unrated.sublist(from, end);
+    final next = end < unrated.length ? '$end' : null;
     return HumorFeedPage(
       items: page,
       nextCursor: next,
       profileBuilding: false,
       interactionCount: _profile.interactionCount,
       calibration: state,
+      catalogExhausted: page.isEmpty && _items.isNotEmpty,
+      catalogEmpty: _items.isEmpty,
     );
   }
 

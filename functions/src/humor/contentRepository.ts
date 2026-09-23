@@ -1,4 +1,9 @@
-import {FieldValue, type DocumentData, type Firestore} from "firebase-admin/firestore";
+import {
+  FieldValue,
+  Timestamp,
+  type DocumentData,
+  type Firestore,
+} from "firebase-admin/firestore";
 import {
   isHumorCategory,
   normalizeHumorVector,
@@ -122,47 +127,6 @@ export async function loadHumorContent(
   return parseHumorContent(snap.id, snap.data());
 }
 
-export async function listCandidateHumorContent(
-  db: Firestore,
-  input: {languages: string[]; limit: number},
-): Promise<HumorContentDoc[]> {
-  const languages = input.languages.map((l) => l.toLowerCase()).filter(Boolean);
-  const limit = Math.min(200, Math.max(input.limit, 40));
-  // Prefer indexed query; fall back to broader scan if composite index missing.
-  try {
-    let query = db
-      .collection(HUMOR_CONTENT_COLLECTION)
-      .where("active", "==", true)
-      .where("safetyStatus", "==", "approved")
-      .limit(limit);
-    if (languages.length === 1) {
-      query = query.where("language", "==", languages[0]);
-    }
-    const snap = await query.get();
-    const items = snap.docs
-      .map((doc) => parseHumorContent(doc.id, doc.data()))
-      .filter((item): item is HumorContentDoc => item != null);
-    if (languages.length > 1) {
-      return items.filter((item) => languages.includes(item.language));
-    }
-    return items;
-  } catch {
-    const snap = await db
-      .collection(HUMOR_CONTENT_COLLECTION)
-      .where("active", "==", true)
-      .limit(limit)
-      .get();
-    return snap.docs
-      .map((doc) => parseHumorContent(doc.id, doc.data()))
-      .filter((item): item is HumorContentDoc => {
-        if (!item) return false;
-        if (item.safetyStatus !== "approved") return false;
-        if (languages.length && !languages.includes(item.language)) return false;
-        return true;
-      });
-  }
-}
-
 /**
  * Curated calibration pool.
  *
@@ -220,6 +184,121 @@ export async function listCalibrationPool(
         .limit(limit),
     );
   }
+}
+
+/** Opaque scan position inside the humor catalog. */
+export type HumorScanPosition = {
+  /** `createdAt` of the last scanned document, as epoch millis. */
+  createdAtMs: number;
+  /** Document id, breaking ties on identical timestamps. */
+  contentId: string;
+};
+
+/**
+ * A servable item together with its own position in the catalog order.
+ *
+ * The caller needs per-item positions, not just a page boundary: the feed's
+ * cursor must stop after the last item it actually *served*, otherwise every
+ * candidate it scanned past but did not serve would be skipped forever.
+ */
+export type HumorCandidateEntry = {
+  content: HumorContentDoc;
+  position: HumorScanPosition;
+};
+
+export type HumorCandidatePage = {
+  entries: HumorCandidateEntry[];
+  /** Position after the last document *looked at*, to continue scanning. */
+  scannedTo: HumorScanPosition | null;
+  /** True when this page reached the end of the catalog. */
+  exhausted: boolean;
+};
+
+function toMillis(value: unknown): number {
+  const candidate = value as {toMillis?: () => number} | null | undefined;
+  if (candidate && typeof candidate.toMillis === "function") {
+    return candidate.toMillis();
+  }
+  return 0;
+}
+
+/**
+ * One ordered page of servable humor content.
+ *
+ * `listCandidateHumorContent` took an unordered `limit(120)`, which Firestore
+ * resolves in `__name__` order — so every call returned the *same* first 120
+ * documents however large the catalog grew, and a user who rated them all got
+ * an empty feed forever. This walks the catalog instead, newest first,
+ * resuming from an explicit position.
+ *
+ * Ordering by `createdAt` means a document missing that field is invisible to
+ * the feed. `upsertHumorContentDoc` always stamps it on create and a test pins
+ * that invariant, so the ordering key is safe to rely on.
+ */
+export async function listHumorContentPage(
+  db: Firestore,
+  input: {
+    languages: string[];
+    pageSize: number;
+    after?: HumorScanPosition | null;
+  },
+): Promise<HumorCandidatePage> {
+  const languages = input.languages.map((l) => l.toLowerCase()).filter(Boolean);
+  const pageSize = Math.min(100, Math.max(10, input.pageSize));
+
+  let query = db
+    .collection(HUMOR_CONTENT_COLLECTION)
+    .where("active", "==", true)
+    .where("safetyStatus", "==", "approved") as FirebaseFirestore.Query;
+
+  // A single preferred language is cheap to push into the query. Two or more
+  // are filtered in memory rather than fanning out into an index per pair.
+  if (languages.length === 1) {
+    query = query.where("language", "==", languages[0]);
+  }
+
+  query = query.orderBy("createdAt", "desc").orderBy("__name__", "desc");
+
+  if (input.after) {
+    query = query.startAfter(
+      Timestamp.fromMillis(input.after.createdAtMs),
+      db.collection(HUMOR_CONTENT_COLLECTION).doc(input.after.contentId),
+    );
+  }
+
+  const snap = await query.limit(pageSize).get();
+
+  // `scannedTo` advances past every document we *looked at*, not just the ones
+  // that survived filtering — otherwise a page of wrong-language content would
+  // make the scan stall on the same spot forever.
+  const lastDoc = snap.docs[snap.docs.length - 1];
+  const exhausted = snap.docs.length < pageSize || !lastDoc;
+  const scannedTo = exhausted
+    ? null
+    : {
+        createdAtMs: toMillis(lastDoc!.get("createdAt")),
+        contentId: lastDoc!.id,
+      };
+
+  const entries = snap.docs
+    .map((doc) => ({
+      content: parseHumorContent(doc.id, doc.data()),
+      position: {
+        createdAtMs: toMillis(doc.get("createdAt")),
+        contentId: doc.id,
+      },
+    }))
+    .filter((entry): entry is HumorCandidateEntry => {
+      const item = entry.content;
+      if (!item) return false;
+      // Re-checked in memory as well as in the query: a fallback path must
+      // never be able to serve unapproved content.
+      if (!item.active || item.safetyStatus !== "approved") return false;
+      if (languages.length > 1 && !languages.includes(item.language)) return false;
+      return true;
+    });
+
+  return {entries, scannedTo, exhausted};
 }
 
 export type UpsertHumorContentInput = {

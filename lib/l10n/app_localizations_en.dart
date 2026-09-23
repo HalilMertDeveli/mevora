@@ -1371,7 +1371,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get boostSuccessMessage =>
-      'Your profile will start appearing to more people.';
+      'Boost is on. While it lasts, your profile ranks higher among eligible Discover profiles.';
 
   @override
   String get boostAlreadyActive =>
@@ -3540,4 +3540,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorCategoryTeasing => 'Teasing';
+
+  @override
+  String get boostResultsTitle => 'Boost results';
+
+  @override
+  String get boostResultsPending => 'Counting results…';
+
+  @override
+  String boostReachedPeople(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Reached $count people',
+      one: 'Reached 1 person',
+      zero: 'Reached no one yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String boostLikesReceived(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count likes',
+      one: '1 like',
+      zero: '0 likes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String boostMatchesCreated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count matches',
+      one: '1 match',
+      zero: '0 matches',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get boostCompletedTitle => 'Boost finished';
+
+  @override
+  String get boostCompletedEmpty => 'This Boost did not reach anyone.';
+
+  @override
+  String get boostResultsUnavailable =>
+      'Results are not available for this Boost.';
+
+  @override
+  String get boostResultsDelayNote =>
+      'Counts can lag a little behind live activity.';
 }

@@ -14,6 +14,7 @@ class MusicViewState {
     this.sameTaste = const [],
     this.weekly = WeeklyMusicStats.empty,
     this.isLoading = false,
+    this.loadFailed = false,
     this.phase = MusicConnectPhase.idle,
     this.failure,
   });
@@ -22,6 +23,11 @@ class MusicViewState {
   final List<SameTasteMatch> sameTaste;
   final WeeklyMusicStats weekly;
   final bool isLoading;
+
+  /// The profile request itself failed. Distinct from a genuinely
+  /// disconnected Spotify account, which is a successful empty result.
+  final bool loadFailed;
+
   final MusicConnectPhase phase;
   final Failure? failure;
 
@@ -36,6 +42,7 @@ class MusicViewState {
     List<SameTasteMatch>? sameTaste,
     WeeklyMusicStats? weekly,
     bool? isLoading,
+    bool? loadFailed,
     MusicConnectPhase? phase,
     Failure? failure,
     bool clearFailure = false,
@@ -45,6 +52,7 @@ class MusicViewState {
       sameTaste: sameTaste ?? this.sameTaste,
       weekly: weekly ?? this.weekly,
       isLoading: isLoading ?? this.isLoading,
+      loadFailed: loadFailed ?? this.loadFailed,
       phase: phase ?? this.phase,
       failure: clearFailure ? null : (failure ?? this.failure),
     );
@@ -61,19 +69,31 @@ class MusicController extends ChangeNotifier {
   MusicViewState get state => _state;
 
   Future<void> load() async {
-    _state = _state.copyWith(isLoading: true, clearFailure: true);
+    _state = _state.copyWith(
+      isLoading: true,
+      loadFailed: false,
+      clearFailure: true,
+    );
     notifyListeners();
     final profile = await _repository.getProfile();
     if (profile.isError) {
+      // A failed request is not a disconnected account: keep the last
+      // known profile and let the page offer a retry instead of the
+      // "Connect Spotify" call to action.
       _state = _state.copyWith(
         isLoading: false,
+        loadFailed: true,
         failure: profile.failureOrNull,
       );
       notifyListeners();
       return;
     }
     final loaded = profile.valueOrNull ?? MusicProfile.disconnected;
-    _state = _state.copyWith(profile: loaded, isLoading: false);
+    _state = _state.copyWith(
+      profile: loaded,
+      isLoading: false,
+      loadFailed: false,
+    );
     notifyListeners();
     if (loaded.connected) {
       await _loadExtras();
@@ -95,6 +115,7 @@ class MusicController extends ChangeNotifier {
         _state = _state.copyWith(
           profile: profile,
           phase: MusicConnectPhase.idle,
+          loadFailed: false,
         );
       },
       err: (failure) {

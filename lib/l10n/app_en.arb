@@ -563,7 +563,7 @@
   "boostPurchasing": "Starting purchase...",
   "boostVerifying": "Confirming your purchase...",
   "boostSuccessTitle": "Boost is on! 🚀",
-  "boostSuccessMessage": "Your profile will start appearing to more people.",
+  "boostSuccessMessage": "Boost is on. While it lasts, your profile ranks higher among eligible Discover profiles.",
   "boostAlreadyActive": "You already have an active Boost. Buying another pack adds time to the remaining period.",
   "boostPurchaseCancelled": "Purchase cancelled.",
   "boostPurchaseFailed": "Purchase could not be completed. Please try again.",
@@ -1512,5 +1512,35 @@
   "humorCategoryWordplay": "Wordplay",
   "humorCategorySituational": "Situational",
   "humorCategoryCringe": "Cringe",
-  "humorCategoryTeasing": "Teasing"
+  "humorCategoryTeasing": "Teasing",
+  "boostResultsTitle": "Boost results",
+  "boostResultsPending": "Counting results…",
+  "boostReachedPeople": "{count, plural, =0{Reached no one yet} =1{Reached 1 person} other{Reached {count} people}}",
+  "@boostReachedPeople": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostLikesReceived": "{count, plural, =0{0 likes} =1{1 like} other{{count} likes}}",
+  "@boostLikesReceived": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostMatchesCreated": "{count, plural, =0{0 matches} =1{1 match} other{{count} matches}}",
+  "@boostMatchesCreated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostCompletedTitle": "Boost finished",
+  "boostCompletedEmpty": "This Boost did not reach anyone.",
+  "boostResultsUnavailable": "Results are not available for this Boost.",
+  "boostResultsDelayNote": "Counts can lag a little behind live activity."
 }

@@ -249,6 +249,13 @@ class FakePurchaseRepository implements PurchaseRepository {
     return Success(activeBoost);
   }
 
+  Boost? latestFinishedBoost;
+
+  @override
+  Future<Result<Boost?>> getLatestFinishedBoost(String userId) async {
+    return Success(latestFinishedBoost);
+  }
+
   @override
   Future<Result<BoostWallet>> getWallet(String userId) async {
     return Success(wallet);

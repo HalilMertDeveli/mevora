@@ -135,14 +135,26 @@ async function main() {
       }),
     );
 
-    // Allowed participant chat-side update still works (lastMessage / unread).
+    // Allowed participant chat-side update still works (lastMessage + the
+    // caller's own unread/new state). B-09 scoped the per-participant maps to
+    // the caller's own key, so the peer's counter is no longer part of this
+    // write — the receiver's increment is server-side (applyMessageSideEffects
+    // in functions/src/matchScore.ts, which runs through the Admin SDK).
     await assertSucceeds(
       a.doc(`matches/${matchId}`).update({
         lastMessage: "Merhaba",
         lastMessageAt: new Date("2026-08-01T00:05:00Z"),
-        "unreadCounts.user-b": 1,
+        "unreadCounts.user-a": 0,
         "isNewFor.user-a": false,
       }),
+    );
+
+    // B-09: a participant may not move the other side's unread state.
+    await assertFails(
+      a.doc(`matches/${matchId}`).update({"unreadCounts.user-b": 1}),
+    );
+    await assertFails(
+      a.doc(`matches/${matchId}`).update({"isNewFor.user-b": false}),
     );
 
     console.log("compatibility.rules.emulator.ok");

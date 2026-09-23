@@ -2633,7 +2633,7 @@ abstract class AppLocalizations {
   /// No description provided for @boostSuccessMessage.
   ///
   /// In en, this message translates to:
-  /// **'Your profile will start appearing to more people.'**
+  /// **'Boost is on. While it lasts, your profile ranks higher among eligible Discover profiles.'**
   String get boostSuccessMessage;
 
   /// No description provided for @boostAlreadyActive.
@@ -6511,6 +6511,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Teasing'**
   String get humorCategoryTeasing;
+
+  /// No description provided for @boostResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost results'**
+  String get boostResultsTitle;
+
+  /// No description provided for @boostResultsPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Counting results…'**
+  String get boostResultsPending;
+
+  /// No description provided for @boostReachedPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Reached no one yet} =1{Reached 1 person} other{Reached {count} people}}'**
+  String boostReachedPeople(int count);
+
+  /// No description provided for @boostLikesReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{0 likes} =1{1 like} other{{count} likes}}'**
+  String boostLikesReceived(int count);
+
+  /// No description provided for @boostMatchesCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{0 matches} =1{1 match} other{{count} matches}}'**
+  String boostMatchesCreated(int count);
+
+  /// No description provided for @boostCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost finished'**
+  String get boostCompletedTitle;
+
+  /// No description provided for @boostCompletedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This Boost did not reach anyone.'**
+  String get boostCompletedEmpty;
+
+  /// No description provided for @boostResultsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Results are not available for this Boost.'**
+  String get boostResultsUnavailable;
+
+  /// No description provided for @boostResultsDelayNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Counts can lag a little behind live activity.'**
+  String get boostResultsDelayNote;
 }
 
 class _AppLocalizationsDelegate

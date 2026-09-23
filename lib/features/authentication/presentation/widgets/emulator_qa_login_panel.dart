@@ -63,6 +63,15 @@ class EmulatorQaLoginPanel extends StatelessWidget {
             'Development builds against the Auth emulator only.',
             style: theme.textTheme.bodySmall,
           ),
+          // Surfaced on purpose: when sign-in fails, the first question is
+          // always whether the app is actually pointed at the emulator, and
+          // guessing at that from logs wasted real time.
+          Text(
+            'emulators='
+            '''${config.useEmulators} auth=${config.useAuthEmulator} '''
+            '''${config.emulatorConfig.host}:${config.emulatorConfig.authPort}''',
+            style: theme.textTheme.bodySmall,
+          ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.sm,
@@ -91,7 +100,10 @@ class EmulatorQaLoginPanel extends StatelessWidget {
                             EmulatorQaLogin.signInWithEmulatorToken(
                               config,
                               resolved.email,
-                            ).catchError((Object _) {
+                            ).catchError((Object error) {
+                              // Surfaced rather than swallowed: a silent
+                              // fallback hid why the token path failed.
+                              debugPrint('QA_TOKEN_SIGNIN_FAILED: $error');
                               onUseAccount(resolved.email, resolved.password);
                               return null;
                             }),

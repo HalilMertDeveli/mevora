@@ -23,6 +23,8 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   `userPrivacy/${uid}`,
   `userLocation/${uid}`,
   `spotifySecrets/${uid}`,
+  `users/${uid}/verification/identity`,
+  `users/${uid}/verification/sumsub`,
 ];
 
 /** Storage prefixes `deleteUserAccount` clears. */

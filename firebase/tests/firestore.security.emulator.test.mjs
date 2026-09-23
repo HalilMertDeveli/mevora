@@ -185,6 +185,50 @@ describe("users/{uid} — private account isolation", () => {
     await deny(who.anon.db().doc(`users/${UID.A}/verification/identity`).get());
   });
 
+  /**
+   * `identityErasurePending` records that a departed user's data is still
+   * held by the provider. It outlives the account by design, so it must be
+   * unreachable from every client — including the one it names, whose
+   * credentials can stay valid for a moment after deletion.
+   */
+  it("pending provider-erasure records are unreachable from any client", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`identityErasurePending/${UID.A}`).set({
+        uid: UID.A,
+        provider: "didit",
+        providerSessionId: "sess-a",
+        attempts: 1,
+      });
+    });
+    for (const actor of [who.userA, who.userB, who.anon]) {
+      await deny(actor.db().doc(`identityErasurePending/${UID.A}`).get());
+      await deny(actor.db().doc(`identityErasurePending/${UID.A}`).set({attempts: 0}));
+      await deny(actor.db().doc(`identityErasurePending/${UID.A}`).delete());
+    }
+  });
+
+  it("a stale verification document cannot be read or rebuilt once the account is gone", async () => {
+    await seed(env, async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`users/${UID.A}/verification/identity`).set({
+        schemaVersion: 1,
+        provider: "didit",
+        status: "verified",
+      });
+      // The account document is what deletion removes; the former owner's
+      // token can outlive it by seconds.
+      await db.doc(`users/${UID.A}`).delete();
+      await db.doc(`profiles/${UID.A}`).delete();
+    });
+    await deny(who.userB.db().doc(`users/${UID.A}/verification/identity`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/verification/identity`).get());
+    // And nobody can write the account back into existence as verified.
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/verification/identity`).set({status: "verified"}),
+    );
+    await deny(who.userA.db().doc(`users/${UID.A}`).set({isVerified: true}));
+  });
+
   it("private key material is rejected from the published identity doc", async () => {
     await deny(
       who.userA.db().doc(`users/${UID.A}/crypto/identity`).set({

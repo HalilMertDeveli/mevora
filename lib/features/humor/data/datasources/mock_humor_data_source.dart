@@ -325,19 +325,24 @@ class MockHumorDataSource implements HumorDataSource {
           .toList();
       final wanted = HumorCalibration.totalInteractions - state.completedCount;
       final take = wanted < unrated.length ? wanted : unrated.length;
-      final page = <HumorContent>[
-        for (var i = 0; i < take; i += 1)
-          unrated[i].copyWithCalibrationStage(
-            _stageFor(state.completedCount + i),
-          ),
-      ];
-      return HumorFeedPage(
-        items: page,
-        nextCursor: null,
-        profileBuilding: true,
-        interactionCount: _profile.interactionCount,
-        calibration: state.copyWith(insufficientPool: page.length < wanted),
-      );
+      if (take > 0) {
+        final page = <HumorContent>[
+          for (var i = 0; i < take; i += 1)
+            unrated[i].copyWithCalibrationStage(
+              _stageFor(state.completedCount + i),
+            ),
+        ];
+        return HumorFeedPage(
+          items: page,
+          nextCursor: null,
+          profileBuilding: true,
+          interactionCount: _profile.interactionCount,
+          calibration: state.copyWith(insufficientPool: page.length < wanted),
+        );
+      }
+      // Nothing left to serve for calibration: fall through to the ordinary
+      // path exactly as the server does, so the catalog state is reported
+      // rather than hidden behind an empty calibration page.
     }
 
     // Mirror the server contract: unrated items only, walked in catalog order,
@@ -353,7 +358,9 @@ class MockHumorDataSource implements HumorDataSource {
     return HumorFeedPage(
       items: page,
       nextCursor: next,
-      profileBuilding: false,
+      // Reached through the fall-through above as well, where calibration is
+      // still running — so this tracks the real state rather than assuming.
+      profileBuilding: !state.complete,
       interactionCount: _profile.interactionCount,
       calibration: state,
       catalogExhausted: page.isEmpty && _items.isNotEmpty,

@@ -280,8 +280,6 @@ class FakeAuthRepository implements AuthRepository {
     return _unsupported();
   }
 
-  @override
-  Future<void> restorePendingOAuth() async {}
 
   @override
   Future<Result<void>> signOut() async {

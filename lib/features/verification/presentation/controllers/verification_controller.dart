@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_idensic_mobile_sdk_plugin/flutter_idensic_mobile_sdk_plugin.dart';
-import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/features/verification/domain/repositories/verification_repository.dart';
 
 enum VerificationUiPhase { idle, loadingToken, launchingSdk, error }
@@ -18,8 +18,8 @@ class VerificationController extends ChangeNotifier {
   final VerificationRepository _repository;
   final String _uid;
 
-  StreamSubscription<ProfileVerification>? _subscription;
-  ProfileVerification verification = ProfileVerification.notStarted;
+  StreamSubscription<IdentityVerification>? _subscription;
+  IdentityVerification verification = IdentityVerification.notStarted;
   VerificationUiPhase phase = VerificationUiPhase.idle;
   String? errorKey;
 
@@ -30,7 +30,7 @@ class VerificationController extends ChangeNotifier {
         notifyListeners();
       },
       onError: (_, _) {
-        verification = ProfileVerification.notStarted;
+        verification = IdentityVerification.notStarted;
         notifyListeners();
       },
     );
@@ -44,10 +44,21 @@ class VerificationController extends ChangeNotifier {
     errorKey = null;
     notifyListeners();
 
-    final tokenResult = await _repository.createAccessToken();
-    if (tokenResult.isError) {
+    final sessionResult = await _repository.startVerificationSession();
+    final session = sessionResult.valueOrNull;
+    if (sessionResult.isError || session == null) {
       phase = VerificationUiPhase.error;
-      errorKey = _errorKeyFromFailure(tokenResult.failureOrNull?.message);
+      errorKey = _errorKeyFromFailure(sessionResult.failureOrNull?.message);
+      notifyListeners();
+      return;
+    }
+
+    final launchToken = session.launchToken;
+    if (launchToken == null || launchToken.isEmpty) {
+      // A hosted-flow session (launchUrl) is Phase 4's job. Until then this
+      // controller only drives the native SDK path.
+      phase = VerificationUiPhase.error;
+      errorKey = 'verification-generic-error';
       notifyListeners();
       return;
     }
@@ -57,13 +68,14 @@ class VerificationController extends ChangeNotifier {
 
     try {
       final sdk = SNSMobileSDK.init(
-        tokenResult.valueOrNull!,
+        launchToken,
         () async {
-          final refresh = await _repository.createAccessToken();
-          if (refresh.isError || refresh.valueOrNull == null) {
+          final refresh = await _repository.startVerificationSession();
+          final token = refresh.valueOrNull?.launchToken;
+          if (refresh.isError || token == null || token.isEmpty) {
             throw StateError('token-refresh-failed');
           }
-          return refresh.valueOrNull!;
+          return token;
         },
       )
           .withLocale(locale)

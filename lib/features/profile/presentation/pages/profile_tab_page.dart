@@ -9,7 +9,7 @@ import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/verification_scope.dart';
-import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
@@ -132,8 +132,8 @@ class _ProfileVerificationTile extends StatefulWidget {
 }
 
 class _ProfileVerificationTileState extends State<_ProfileVerificationTile> {
-  StreamSubscription<ProfileVerification>? _subscription;
-  ProfileVerificationStatus _status = ProfileVerificationStatus.notStarted;
+  StreamSubscription<IdentityVerification>? _subscription;
+  IdentityVerificationStatus _status = IdentityVerificationStatus.notStarted;
   String? _subscribedUid;
 
   @override
@@ -157,7 +157,7 @@ class _ProfileVerificationTileState extends State<_ProfileVerificationTile> {
         if (!mounted) {
           return;
         }
-        setState(() => _status = ProfileVerificationStatus.notStarted);
+        setState(() => _status = IdentityVerificationStatus.notStarted);
       },
     );
   }

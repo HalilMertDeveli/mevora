@@ -6,7 +6,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/di/verification_scope.dart';
-import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/features/settings/presentation/widgets/language_settings_section.dart';
 import 'package:mevora/features/settings/presentation/widgets/settings_section.dart';
@@ -23,9 +23,9 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _logoutInFlight = false;
-  ProfileVerificationStatus _verificationStatus =
-      ProfileVerificationStatus.notStarted;
-  StreamSubscription<ProfileVerification>? _verificationSub;
+  IdentityVerificationStatus _verificationStatus =
+      IdentityVerificationStatus.notStarted;
+  StreamSubscription<IdentityVerification>? _verificationSub;
   String? _verificationUid;
 
   @override
@@ -133,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   trailing: user?.isVerified == true ||
                           _verificationStatus ==
-                              ProfileVerificationStatus.approved
+                              IdentityVerificationStatus.verified
                       ? const VerifiedProfileBadge(compact: true)
                       : null,
                   onTap: user?.isVerified == true

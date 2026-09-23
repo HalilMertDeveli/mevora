@@ -16,6 +16,7 @@ describe("provider-neutral identity verification status", () => {
   it("covers every status the migration design names", () => {
     assert.deepEqual([...IDENTITY_VERIFICATION_STATUSES], [
       "not_started",
+      "pending",
       "in_progress",
       "in_review",
       "verified",
@@ -40,6 +41,7 @@ describe("provider-neutral identity verification status", () => {
     assert.equal(canStartIdentityVerification("declined"), true);
     assert.equal(canStartIdentityVerification("expired"), true);
     assert.equal(canStartIdentityVerification("error"), true);
+    assert.equal(canStartIdentityVerification("pending"), false);
     assert.equal(canStartIdentityVerification("in_progress"), false);
     assert.equal(canStartIdentityVerification("in_review"), false);
     assert.equal(canStartIdentityVerification("verified"), false);
@@ -65,7 +67,7 @@ describe("Didit status mapping", () => {
   it("maps every documented Didit status", () => {
     assert.equal(mapDiditStatus("Not Started"), "not_started");
     assert.equal(mapDiditStatus("In Progress"), "in_progress");
-    assert.equal(mapDiditStatus("Awaiting User"), "in_progress");
+    assert.equal(mapDiditStatus("Awaiting User"), "pending");
     assert.equal(mapDiditStatus("Resubmitted"), "in_progress");
     assert.equal(mapDiditStatus("In Review"), "in_review");
     assert.equal(mapDiditStatus("Approved"), "verified");

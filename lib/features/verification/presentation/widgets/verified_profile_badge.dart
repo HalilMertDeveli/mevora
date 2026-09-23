@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_radii.dart';
-import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 class VerifiedProfileBadge extends StatelessWidget {
@@ -49,56 +49,65 @@ class VerifiedProfileBadge extends StatelessWidget {
 
 String verificationEntryTitle(
   AppLocalizations l10n,
-  ProfileVerificationStatus status, {
+  IdentityVerificationStatus status, {
   required bool accountVerified,
 }) {
-  if (accountVerified || status == ProfileVerificationStatus.approved) {
+  if (accountVerified || status == IdentityVerificationStatus.verified) {
     return l10n.profileVerified;
   }
   return switch (status) {
-    ProfileVerificationStatus.started => l10n.verificationStarted,
-    ProfileVerificationStatus.pending => l10n.verificationInProgress,
-    ProfileVerificationStatus.rejected ||
-    ProfileVerificationStatus.retryRequired =>
+    IdentityVerificationStatus.pending ||
+    IdentityVerificationStatus.inProgress =>
+      l10n.verificationStarted,
+    IdentityVerificationStatus.inReview => l10n.verificationInProgress,
+    IdentityVerificationStatus.declined ||
+    IdentityVerificationStatus.expired =>
       l10n.verificationCouldNotComplete,
-    ProfileVerificationStatus.notStarted ||
-    ProfileVerificationStatus.approved =>
+    // `error` is a transient read/mapping problem, not a verdict. It offers
+    // the same "verify your profile" affordance as a fresh start rather than
+    // telling the user something failed that may not have.
+    IdentityVerificationStatus.notStarted ||
+    IdentityVerificationStatus.error ||
+    IdentityVerificationStatus.verified =>
       l10n.verifyYourProfile,
   };
 }
 
 String? verificationEntrySubtitle(
   AppLocalizations l10n,
-  ProfileVerificationStatus status, {
+  IdentityVerificationStatus status, {
   required bool accountVerified,
 }) {
-  if (accountVerified || status == ProfileVerificationStatus.approved) {
+  if (accountVerified || status == IdentityVerificationStatus.verified) {
     return null;
   }
   return switch (status) {
-    ProfileVerificationStatus.notStarted => l10n.verificationDescription,
-    ProfileVerificationStatus.started ||
-    ProfileVerificationStatus.pending =>
+    IdentityVerificationStatus.notStarted ||
+    IdentityVerificationStatus.error =>
+      l10n.verificationDescription,
+    IdentityVerificationStatus.pending ||
+    IdentityVerificationStatus.inProgress ||
+    IdentityVerificationStatus.inReview =>
       l10n.followVerificationInstructions,
-    ProfileVerificationStatus.rejected ||
-    ProfileVerificationStatus.retryRequired =>
+    IdentityVerificationStatus.declined ||
+    IdentityVerificationStatus.expired =>
       l10n.tryVerificationAgain,
-    ProfileVerificationStatus.approved => null,
+    IdentityVerificationStatus.verified => null,
   };
 }
 
 IconData verificationEntryIcon(
-  ProfileVerificationStatus status, {
+  IdentityVerificationStatus status, {
   required bool accountVerified,
 }) {
-  if (accountVerified || status == ProfileVerificationStatus.approved) {
+  if (accountVerified || status == IdentityVerificationStatus.verified) {
     return Icons.verified_outlined;
   }
-  if (status.isInProgress) {
+  if (status.isInFlight) {
     return Icons.hourglass_top_outlined;
   }
-  if (status == ProfileVerificationStatus.rejected ||
-      status == ProfileVerificationStatus.retryRequired) {
+  if (status == IdentityVerificationStatus.declined ||
+      status == IdentityVerificationStatus.expired) {
     return Icons.error_outline;
   }
   return Icons.verified_user_outlined;

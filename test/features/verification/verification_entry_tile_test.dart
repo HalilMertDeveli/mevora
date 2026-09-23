@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 
 import '../../helpers/pump_app.dart';
@@ -12,7 +12,7 @@ void main() {
     await tester.pumpWidget(
       wrapWithApp(
         const VerificationEntryTile(
-          status: ProfileVerificationStatus.notStarted,
+          status: IdentityVerificationStatus.notStarted,
           accountVerified: false,
         ),
       ),
@@ -26,7 +26,7 @@ void main() {
     await tester.pumpWidget(
       wrapWithApp(
         const VerificationEntryTile(
-          status: ProfileVerificationStatus.approved,
+          status: IdentityVerificationStatus.verified,
           accountVerified: true,
         ),
       ),

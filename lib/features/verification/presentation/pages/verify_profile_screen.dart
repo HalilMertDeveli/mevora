@@ -6,7 +6,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
-import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/features/verification/presentation/controllers/verification_controller.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -69,7 +69,7 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
     }
 
     final status = controller.verification.status;
-    final accountVerified = user?.isVerified == true || status.isApproved;
+    final accountVerified = user?.isVerified == true || status.grantsVerifiedBadge;
     final busy = controller.phase != VerificationUiPhase.idle;
     final canStart = status.canStart && !accountVerified && !busy;
 
@@ -113,7 +113,7 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              if (status.isInProgress)
+              if (status.isInFlight)
                 MevoraCard(
                   emphasis: MevoraCardEmphasis.quiet,
                   child: Text(
@@ -121,8 +121,8 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-              if (status == ProfileVerificationStatus.rejected ||
-                  status == ProfileVerificationStatus.retryRequired) ...[
+              if (status == IdentityVerificationStatus.declined ||
+                  status == IdentityVerificationStatus.expired) ...[
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   l10n.verificationCouldNotComplete,
@@ -186,9 +186,9 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
     );
   }
 
-  String _primaryLabel(AppLocalizations l10n, ProfileVerificationStatus status) {
-    if (status == ProfileVerificationStatus.rejected ||
-        status == ProfileVerificationStatus.retryRequired) {
+  String _primaryLabel(AppLocalizations l10n, IdentityVerificationStatus status) {
+    if (status == IdentityVerificationStatus.declined ||
+        status == IdentityVerificationStatus.expired) {
       return l10n.tryVerificationAgain;
     }
     return l10n.startVerification;

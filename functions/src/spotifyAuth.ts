@@ -19,7 +19,83 @@ type SpotifyProfile = {
   images?: Array<{url?: string}>;
 };
 
-function requireString(value: unknown, field: string): string {
+/** Shape of the Spotify index document that maps a Spotify id to a uid. */
+export type SpotifyIndexRef = {exists: boolean; uid?: unknown};
+
+/** What a Spotify sign-in resolves to, before any write happens. */
+export type SpotifyIdentityPlan = {
+  uid: string;
+  isNewUser: boolean;
+  alreadyLinked: boolean;
+  writeIndex: boolean;
+  createAuthUser: boolean;
+};
+
+/**
+ * Decides which Mevora uid a Spotify identity belongs to.
+ *
+ * A Spotify account is owned by exactly one uid: linking one that another
+ * account already claimed is rejected rather than silently re-pointed.
+ */
+export function resolveSpotifyLoginIdentity(input: {
+  spotifyId: string;
+  currentUid?: string;
+  index: SpotifyIndexRef;
+}): SpotifyIdentityPlan {
+  const {spotifyId, currentUid, index} = input;
+  if (currentUid) {
+    if (index.exists && index.uid !== currentUid) {
+      throw new HttpsError("failed-precondition", "account-exists", {
+        mevoraCode: "account-exists",
+      });
+    }
+    return {
+      uid: currentUid,
+      isNewUser: false,
+      alreadyLinked: true,
+      writeIndex: !index.exists,
+      createAuthUser: false,
+    };
+  }
+  if (index.exists) {
+    return {
+      uid: String(index.uid),
+      isNewUser: false,
+      alreadyLinked: false,
+      writeIndex: false,
+      createAuthUser: false,
+    };
+  }
+  return {
+    uid: `sp_${spotifyId}`,
+    isNewUser: true,
+    alreadyLinked: false,
+    writeIndex: true,
+    createAuthUser: true,
+  };
+}
+
+/**
+ * The exact client payload. Spotify access tokens, refresh tokens and the
+ * client secret are server-only and never appear here.
+ */
+export function buildSpotifyAuthResponse(input: {
+  customToken: string | null;
+  alreadyLinked: boolean;
+  isNewUser: boolean;
+  profile: SpotifyProfile;
+}): Record<string, unknown> {
+  return {
+    customToken: input.customToken,
+    alreadyLinked: input.alreadyLinked,
+    isNewUser: input.isNewUser,
+    email: input.profile.email ?? null,
+    displayName: input.profile.display_name ?? null,
+    photoUrl: input.profile.images?.[0]?.url ?? null,
+  };
+}
+
+export function requireString(value: unknown, field: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new HttpsError("invalid-argument", field);
   }
@@ -108,27 +184,14 @@ export const spotifyCompleteAuth = onCall(
 
     const indexRef = db.doc(`spotifyIndex/${profile.id}`);
     const indexSnap = await indexRef.get();
-    const currentUid = request.auth?.uid;
-    let uid: string;
-    let isNewUser = false;
-    let alreadyLinked = false;
+    const plan = resolveSpotifyLoginIdentity({
+      spotifyId: profile.id,
+      currentUid: request.auth?.uid,
+      index: {exists: indexSnap.exists, uid: indexSnap.data()?.uid},
+    });
+    const {uid, isNewUser, alreadyLinked} = plan;
 
-    if (currentUid) {
-      if (indexSnap.exists && indexSnap.data()?.uid !== currentUid) {
-        throw new HttpsError("failed-precondition", "account-exists", {
-          mevoraCode: "account-exists",
-        });
-      }
-      uid = currentUid;
-      alreadyLinked = true;
-      if (!indexSnap.exists) {
-        await indexRef.set({uid, createdAt: FieldValue.serverTimestamp()});
-      }
-    } else if (indexSnap.exists) {
-      uid = String(indexSnap.data()?.uid);
-    } else {
-      uid = `sp_${profile.id}`;
-      isNewUser = true;
+    if (plan.createAuthUser) {
       try {
         await auth.createUser({
           uid,
@@ -142,6 +205,8 @@ export const spotifyCompleteAuth = onCall(
           throw new HttpsError("internal", "oauth");
         }
       }
+    }
+    if (plan.writeIndex) {
       await indexRef.set({uid, createdAt: FieldValue.serverTimestamp()});
     }
 
@@ -183,13 +248,11 @@ export const spotifyCompleteAuth = onCall(
       provider: "spotify",
       spotifyId: profile.id,
     });
-    return {
+    return buildSpotifyAuthResponse({
       customToken,
       alreadyLinked,
       isNewUser,
-      email: profile.email ?? null,
-      displayName: profile.display_name ?? null,
-      photoUrl: profile.images?.[0]?.url ?? null,
-    };
+      profile,
+    });
   },
 );

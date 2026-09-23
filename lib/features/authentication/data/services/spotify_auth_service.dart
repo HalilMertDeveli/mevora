@@ -14,6 +14,14 @@ import 'package:mevora/features/authentication/domain/entities/auth_provider_id.
 import 'package:mevora/features/authentication/domain/entities/auth_session.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Backend exchange seam. The PKCE verifier leaves the device only through
+/// this call, straight to the Mevora callable that holds the client secret.
+typedef SpotifyExchange =
+    Future<Map<String, dynamic>> Function(
+      String name,
+      Map<String, dynamic> data,
+    );
+
 class _PendingSpotifyAuth {
   const _PendingSpotifyAuth({
     required this.pkce,
@@ -49,28 +57,46 @@ class SpotifyAuthService {
     required this.config,
     FirebaseAuth? firebaseAuth,
     FirebaseFunctions? functions,
-    AppLinks? appLinks,
+    Stream<Uri>? callbackLinks,
+    SpotifyExchange? exchange,
     Future<bool> Function(Uri uri, {LaunchMode mode})? launch,
     SpotifyPendingStore? pendingStore,
-  }) : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-       _functions =
-           functions ??
-           FirebaseFunctions.instanceFor(region: config.functionsRegion),
-       _appLinks = appLinks ?? AppLinks(),
+  }) : _injectedAuth = firebaseAuth,
+       _injectedFunctions = functions,
+       _injectedExchange = exchange,
        _launch = launch ?? launchUrl,
        _pendingStore = pendingStore ?? StaticSpotifyPendingStore() {
-    _linkSubscription = _appLinks.uriLinkStream.listen(_onUri);
+    // app_links is the single owner of the OAuth callback. uriLinkStream
+    // already delivers the cold-start link, so there is no second
+    // getInitialLink() path that could exchange the code a second time.
+    // Flutter's own deep-link handler is opted out of in the platform
+    // manifests so it never routes mevora://auth/spotify into GoRouter.
+    _linkSubscription = (callbackLinks ?? AppLinks().uriLinkStream).listen(
+      _onUri,
+    );
   }
 
   final AppConfig config;
-  final FirebaseAuth _firebaseAuth;
-  final FirebaseFunctions _functions;
-  final AppLinks _appLinks;
+  final FirebaseAuth? _injectedAuth;
+  final FirebaseFunctions? _injectedFunctions;
+  final SpotifyExchange? _injectedExchange;
   final Future<bool> Function(Uri uri, {LaunchMode mode}) _launch;
   final SpotifyPendingStore _pendingStore;
 
+  // Resolved lazily so a test that never reaches Firebase does not have to
+  // stand up a Firebase app just to construct the service.
+  FirebaseAuth get _firebaseAuth => _injectedAuth ?? FirebaseAuth.instance;
+  FirebaseFunctions get _functions =>
+      _injectedFunctions ??
+      FirebaseFunctions.instanceFor(region: config.functionsRegion);
+  SpotifyExchange get _exchange => _injectedExchange ?? _callFunction;
+
   StreamSubscription<Uri>? _linkSubscription;
   _PendingSpotifyAuth? _pending;
+
+  /// Authorization codes already claimed by this service. Spotify codes are
+  /// single-use, so a redelivered callback must not reach the backend again.
+  final _consumedCodes = <String>{};
 
   /// Identity-only scopes. Playback and library scopes stay off the login path.
   static const loginScopes = 'user-read-private';
@@ -154,6 +180,7 @@ class SpotifyAuthService {
 
     final pkce = PkcePair.generate();
     final state = _randomState();
+    _consumedCodes.clear();
     _pending = _PendingSpotifyAuth(
       pkce: pkce,
       state: state,
@@ -195,20 +222,22 @@ class SpotifyAuthService {
     }
   }
 
-  Future<void> handleInitialUri() async {
-    try {
-      final uri = await _appLinks.getInitialLink();
-      if (uri != null) {
-        await _onUri(uri);
-      }
-    } on Object {
-      // Cold-start without a pending PKCE session is ignored.
-    }
-  }
-
   Future<void> _onUri(Uri uri) async {
     if (!SpotifyAuthService.isSpotifyCallback(uri)) {
       return;
+    }
+
+    final error = uri.queryParameters['error'];
+    final state = uri.queryParameters['state'];
+    final code = uri.queryParameters['code'];
+
+    // Claim the code synchronously, before the first await: two deliveries of
+    // the same callback would otherwise both resolve the still-open pending
+    // session and exchange a one-time authorization code twice.
+    if (error == null && code != null && code.isNotEmpty) {
+      if (!_consumedCodes.add(code)) {
+        return;
+      }
     }
 
     final pending = await _resolvePending();
@@ -216,7 +245,6 @@ class SpotifyAuthService {
       return;
     }
 
-    final error = uri.queryParameters['error'];
     if (error != null) {
       await _failPending(
         pending,
@@ -229,8 +257,6 @@ class SpotifyAuthService {
       return;
     }
 
-    final state = uri.queryParameters['state'];
-    final code = uri.queryParameters['code'];
     if (state != pending.state || code == null || code.isEmpty) {
       await _failPending(
         pending,
@@ -307,8 +333,7 @@ class SpotifyAuthService {
     required String verifier,
   }) async {
     try {
-      final callable = _functions.httpsCallable('spotifyLinkMusic');
-      await callable.call<Map<String, dynamic>>({
+      await _exchange('spotifyLinkMusic', {
         'code': code,
         'codeVerifier': verifier,
         'redirectUri': config.spotifyRedirectUri,
@@ -329,13 +354,11 @@ class SpotifyAuthService {
     required String verifier,
   }) async {
     try {
-      final callable = _functions.httpsCallable('spotifyCompleteAuth');
-      final response = await callable.call<Map<String, dynamic>>({
+      final data = await _exchange('spotifyCompleteAuth', {
         'code': code,
         'codeVerifier': verifier,
         'redirectUri': config.spotifyRedirectUri,
       });
-      final data = response.data;
       final customToken = data['customToken'] as String?;
       if (customToken == null || customToken.isEmpty) {
         final alreadyLinked = data['alreadyLinked'] == true;
@@ -388,6 +411,16 @@ class SpotifyAuthService {
     } on Object catch (error) {
       throw AuthErrorMapper.map(error);
     }
+  }
+
+  Future<Map<String, dynamic>> _callFunction(
+    String name,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _functions
+        .httpsCallable(name)
+        .call<Map<String, dynamic>>(data);
+    return response.data;
   }
 
   static bool isSpotifyCallback(Uri uri) {

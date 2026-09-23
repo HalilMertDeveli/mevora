@@ -105,6 +105,9 @@ service cloud.firestore {
           'isSuspended',
           'isBanned',
           'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'boostStatus',
           'matchCount'
         ]);
@@ -127,9 +130,137 @@ service cloud.firestore {
           'isSuspended',
           'isBanned',
           'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'boostStatus',
           'matchCount'
         ]);
+    }
+
+    // -----------------------------------------------------------
+    // Client write allowlists (B-04).
+    //
+    // These documents were previously guarded by denylists, so any sensitive
+    // field nobody thought to name — isPremium, isAdmin, isModerator, role,
+    // trustScore, entitlement, verificationStatus — was client-writable by
+    // default, and every future field would be too. The lists below are
+    // derived from the only client writers that exist:
+    //
+    //   users/{uid}      _newAccount / _accountUpdates
+    //                    (firebase_user_data_source.dart) and the location
+    //                    merge in firebase_location_data_source.dart
+    //   profiles/{uid}   _newProfileStub, the displayName-only update
+    //                    (firebase_user_data_source.dart) and _profileToMap
+    //                    (firebase_profile_data_source.dart)
+    //
+    // Everything else — premium (Auth claim / subscription doc), admin and
+    // moderator (Auth custom claims), photo moderation (the B-02 ledger),
+    // verification (Sumsub), boost and match scoring — stays server-owned and
+    // is now unwritable by construction rather than by enumeration.
+    // -----------------------------------------------------------
+
+    function userCreateKeysAllowed() {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'id',
+        'displayName',
+        'email',
+        'phoneNumber',
+        'photoUrl',
+        'phoneVerified',
+        'authProviders',
+        'location',
+        'createdAt',
+        'updatedAt',
+        'lastLoginAt',
+        'lastActiveAt',
+        'profileCompleted',
+        'onboardingCompleted',
+        'isActive',
+        'isBanned',
+        'isVerified',
+        'accountStatus'
+      ]);
+    }
+
+    // Login refresh + the userLocation mirror. Lifecycle and moderation fields
+    // are absent on purpose: the client may seed them at create time (already
+    // value-checked below) but may never move them afterwards.
+    function userUpdateKeysAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'uid',
+        'id',
+        'displayName',
+        'email',
+        'phoneNumber',
+        'photoUrl',
+        'authProviders',
+        'location',
+        'updatedAt',
+        'lastLoginAt',
+        'lastActiveAt',
+        'isActive'
+      ]);
+    }
+
+    // photos stays client-writable on purpose: Firestore rules cannot validate
+    // the fields of array elements, and add/delete/reorder rewrite the whole
+    // array. Moderation authority for it lives in the B-02 ledger
+    // (users/{uid}/photoModeration) and the reconciling trigger, not here.
+    function profileCreateKeysAllowed() {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'displayName',
+        'birthDate',
+        'age',
+        'gender',
+        'interestedIn',
+        'bio',
+        'photos',
+        'interests',
+        'relationshipGoal',
+        'occupation',
+        'education',
+        'languages',
+        'hobbies',
+        'heightCm',
+        'city',
+        'lifestyle',
+        'lifestyleProfile',
+        'onboardingStep',
+        'profileCompleted',
+        'onboardingCompleted',
+        'isProfileComplete',
+        'isDiscoverable',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function profileUpdateKeysAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'uid',
+        'displayName',
+        'birthDate',
+        'age',
+        'gender',
+        'interestedIn',
+        'bio',
+        'photos',
+        'interests',
+        'relationshipGoal',
+        'occupation',
+        'education',
+        'languages',
+        'hobbies',
+        'heightCm',
+        'city',
+        'lifestyle',
+        'lifestyleProfile',
+        'onboardingStep',
+        'updatedAt'
+      ]);
     }
 
     function unchanged(key) {
@@ -222,6 +353,7 @@ service cloud.firestore {
       allow read: if isOwner(userId);
 
       allow create: if isOwner(userId)
+        && userCreateKeysAllowed()
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
         && lastActiveAtMissingOrServerNow()
         && request.resource.data.get('isBanned', false) == false
@@ -235,12 +367,17 @@ service cloud.firestore {
           'boostStatus',
           'boostExpiresAt',
           'boostActive',
+          'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'matchScore',
           'matchCount',
           'isSmokeTestUser'
         ]);
 
       allow update: if isOwner(userId)
+        && userUpdateKeysAllowed()
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
         && lastActiveAtUnchangedOrServerNow()
         && request.resource.data.get('isBanned', resource.data.get('isBanned', false))
@@ -260,6 +397,10 @@ service cloud.firestore {
           'boostStatus',
           'boostExpiresAt',
           'boostActive',
+          'subscriptionStatus',
+          'isPremium',
+          'premium',
+          'entitlement',
           'matchScore',
           'matchCount',
           'suspensionReason',
@@ -335,6 +476,13 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      // Per-viewer Boost reach rows. Owner-readable would expose who looked at
+      // them, so these stay server-only; the owner reads the aggregate counters
+      // on the boost document instead.
+      match /boostReach/{viewerKey} {
+        allow read, create, update, delete: if false;
+      }
+
       match /boostWallet/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
@@ -395,8 +543,11 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
-      // Owner may read own humor summary. Peers never read raw humor vectors.
-      // Clients never write — Cloud Functions only.
+      // Owner may read own humor summary and `calibration` state. Peers never
+      // read raw humor vectors or another user's calibration progress.
+      // Clients never write — Cloud Functions only. That write denial is what
+      // keeps calibration server-authoritative: a client cannot declare itself
+      // calibrated, forge a stage, or fake anchor coverage by writing here.
       match /humor/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
@@ -415,6 +566,17 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
+
+      // Authoritative photo moderation decisions. Rules cannot validate the
+      // fields of array elements, so profiles/{uid}.photos stays client-
+      // writable and is only a projection of moderation state. This ledger is
+      // the source of truth; enforceProfilePhotoModeration reconciles the
+      // array against it on every profile write. Owner may read it to display
+      // moderation progress; no client may ever write it.
+      match /photoModeration/{imageId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
     }
 
     // -----------------------------------------------------------
@@ -423,6 +585,7 @@ service cloud.firestore {
     match /profiles/{userId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(userId)
+        && profileCreateKeysAllowed()
         && (request.resource.data.get('uid', userId) == userId)
         && profileLifecycleClientSafe()
         && !request.resource.data.keys().hasAny([
@@ -441,6 +604,7 @@ service cloud.firestore {
           'refreshToken'
         ]);
       allow update: if isOwner(userId)
+        && profileUpdateKeysAllowed()
         && (request.resource.data.get('uid', userId) == userId)
         && profileLifecycleUpdateSafe()
         && !request.resource.data.keys().hasAny([
@@ -481,8 +645,24 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    // B-10: this was readable by ANY authenticated user, so a throwaway
+    // account could enumerate every user's privacy preferences — nine booleans
+    // covering online status, last seen, typing, distance, age, calls,
+    // messages and notifications.
+    //
+    // There is a real cross-user requirement, but a narrow one: the chat
+    // screen and the match list read the peer's flags to render presence
+    // (chat_controller.dart, matches_controller.dart -> PresenceSubtitle).
+    // Both only ever do so for someone the viewer is actively matched with,
+    // and both already swallow a denied read (onError), so the exception is
+    // scoped to active, non-blocked matches instead of every signed-in account.
+    //
+    // The rules' own privacy checks are unaffected: userPrivacyData() reads
+    // this document through a privileged rule get(), which does not consult
+    // these client read rules, so canReadPresence() keeps working for
+    // everyone. Cloud Functions read it through the Admin SDK.
     match /userPrivacy/{userId} {
-      allow get: if isOwner(userId) || isAuthenticated();
+      allow get: if isOwner(userId) || hasActiveMatchWith(userId);
       allow list: if isOwner(userId);
       allow create, update, delete: if isOwner(userId);
     }
@@ -502,6 +682,47 @@ service cloud.firestore {
         && request.resource.data.geohash.size() <= 12;
     }
 
+    // -----------------------------------------------------------
+    // matches/{matchId} client write allowlist (B-09).
+    //
+    // The previous rule froze a named list of fields, so anything not on that
+    // list — participantVerified, participantNames, participantPhotos, and any
+    // field added later — was participant-writable. Those are server-written
+    // identity snapshots that the matching and chat UI renders for the *other*
+    // participant, so a forged value reached a real user's screen.
+    //
+    // Only two client writers exist:
+    //   markOpened()  isNewFor.<uid> / unreadCounts.<uid>
+    //                 (firebase_social_data.dart, firebase_match_data_source.dart)
+    //   chat send     lastMessage / lastMessageAt / updatedAt
+    //                 (firebase_chat_data_source.dart)
+    //
+    // The peer's unread increment is server-side (applyMessageSideEffects in
+    // functions/src/matchScore.ts) and runs through the Admin SDK, so a client
+    // never needs to write another participant's counter.
+    // -----------------------------------------------------------
+
+    function matchUpdateKeysAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'lastMessage',
+        'lastMessageAt',
+        'updatedAt',
+        'isNewFor',
+        'unreadCounts'
+      ]);
+    }
+
+    // isNewFor/unreadCounts are per-participant maps. A participant may only
+    // move their own entry — otherwise they could clear or inflate the other
+    // side's unread state.
+    function matchMapOwnKeyOnly(key) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([key])
+        || request.resource.data[key]
+            .diff(resource.data.get(key, {}))
+            .affectedKeys()
+            .hasOnly([request.auth.uid]);
+    }
+
     // Incoming likes (toUserId == auth) are NEVER client-readable.
     // Use getIncomingLikes callable (premium-gated) instead.
     match /likes/{likeId} {
@@ -510,45 +731,30 @@ service cloud.firestore {
     }
 
     match /matches/{matchId} {
-      // Missing match docs must be readable as empty so profile details can
-      // safely watchCanView without PERMISSION_DENIED (freeze on photo swipe).
-      allow get: if isAuthenticated() && (
-        !exists(/databases/$(database)/documents/matches/$(matchId))
-        || request.auth.uid in resource.data.userIds
-      );
+      // B-07: match IDs are the canonical sorted uid pair, so letting a
+      // non-participant read a MISSING match as empty while an EXISTING one
+      // returned permission-denied let anyone test whether two users are
+      // matched — and profiles/{uid} is enumerable, so that mapped the whole
+      // relationship graph. Both cases must deny identically: on a missing
+      // document `resource` is null, so this expression errors and the read is
+      // refused exactly like a non-participant read of a real match.
+      //
+      // The client already tolerates the denial: watchMatch() swallows it
+      // (firebase_social_data.dart) and ProfileQuestionAnswerAccess leaves
+      // _canView false, which is the correct outcome for a non-participant.
+      allow get: if isAuthenticated()
+        && request.auth.uid in resource.data.userIds;
       allow list: if isAuthenticated()
         && request.auth.uid in resource.data.userIds;
       allow create, delete: if false;
+      // Allowlist, not a freeze list: userIds, createdAt, isActive,
+      // unmatchedBy, participantNames/Photos/Verified, every compatibility
+      // field, scoring state and anything added to the schema later are
+      // server-owned because they are simply not on the list.
       allow update: if isMatchParticipant(matchId)
-        && unchanged('userIds')
-        && unchanged('createdAt')
-        && request.resource.data.isActive == resource.data.isActive
-        && request.resource.data.get('unmatchedBy', null)
-          == resource.data.get('unmatchedBy', null)
-        && request.resource.data.get('matchBonusAwarded', false)
-          == resource.data.get('matchBonusAwarded', false)
-        && request.resource.data.get('interactionBonusAwarded', false)
-          == resource.data.get('interactionBonusAwarded', false)
-        && request.resource.data.get('matchedAt', resource.data.get('matchedAt', null))
-          == resource.data.get('matchedAt', null)
-        && request.resource.data.get('messagedUserIds', resource.data.get('messagedUserIds', []))
-          == resource.data.get('messagedUserIds', [])
-        && request.resource.data.get('endedReason', resource.data.get('endedReason', null))
-          == resource.data.get('endedReason', null)
-        && request.resource.data.get('source', resource.data.get('source', 'mutual_like'))
-          == resource.data.get('source', 'mutual_like')
-        && request.resource.data.get('matchType', resource.data.get('matchType', null))
-          == resource.data.get('matchType', null)
-        && request.resource.data.get('compatibilityKey', resource.data.get('compatibilityKey', null))
-          == resource.data.get('compatibilityKey', null)
-        && request.resource.data.get('compatibilitySnapshots', resource.data.get('compatibilitySnapshots', null))
-          == resource.data.get('compatibilitySnapshots', null)
-        && request.resource.data.get('compatibilityCalculatedAt', resource.data.get('compatibilityCalculatedAt', null))
-          == resource.data.get('compatibilityCalculatedAt', null)
-        && request.resource.data.get('compatibilityScore', resource.data.get('compatibilityScore', null))
-          == resource.data.get('compatibilityScore', null)
-        && request.resource.data.get('compatibilityBreakdown', resource.data.get('compatibilityBreakdown', null))
-          == resource.data.get('compatibilityBreakdown', null);
+        && matchUpdateKeysAllowed()
+        && matchMapOwnKeyOnly('isNewFor')
+        && matchMapOwnKeyOnly('unreadCounts');
 
       match /messages/{messageId} {
         allow read: if isMatchParticipant(matchId);
@@ -646,8 +852,19 @@ service cloud.firestore {
       allow read: if isAuthenticated()
         && (resource.data.blockerId == request.auth.uid
           || resource.data.blockedUserId == request.auth.uid);
+      // The document ID is the authorization token here: isBlockedPair() keys
+      // off the existence of blocks/{a}_{b}. Validating blockerId alone let a
+      // third party create blocks/{A}_{B} carrying their own blockerId and
+      // sever an unrelated pair — a block neither victim could delete.
+      // Bind the ID to the caller so a forged pair is unrepresentable.
+      // Canonical format ({blockerId}_{blockedUserId}) is shared with
+      // SafetyPolicy.blockId (Dart) and blockId() in functions/src/ids.ts.
       allow create: if isAuthenticated()
-        && request.resource.data.blockerId == request.auth.uid;
+        && request.resource.data.blockerId == request.auth.uid
+        && request.resource.data.blockedUserId is string
+        && request.resource.data.blockedUserId.size() > 0
+        && request.resource.data.blockedUserId != request.auth.uid
+        && blockId == request.auth.uid + '_' + request.resource.data.blockedUserId;
       allow delete: if isAuthenticated()
         && resource.data.blockerId == request.auth.uid;
       allow update: if false;

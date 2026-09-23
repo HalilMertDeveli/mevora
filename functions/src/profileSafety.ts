@@ -56,9 +56,15 @@ export function isProfileDiscoverable(data: DocumentData | undefined): boolean {
   return isAdultProfile(data);
 }
 
+/**
+ * Approved means explicitly approved. A missing moderationStatus used to
+ * default to "approved", so a client could publish an unmoderated photo just by
+ * omitting the field — and the moderation guard's before/after status
+ * comparison saw no change and let it stand. Unmoderated now means pending.
+ */
 export function approvedPhotos(photos: unknown): Array<Record<string, unknown>> {
   return ((photos as Array<Record<string, unknown>>) ?? []).filter(
-    (photo) => String(photo.moderationStatus ?? "approved") === "approved",
+    (photo) => String(photo.moderationStatus ?? "pending") === "approved",
   );
 }
 

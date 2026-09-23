@@ -27,8 +27,6 @@ const _devices = <_Size>[
 
 const _textScales = [0.8, 1.0, 1.15, 1.3];
 
-final _en = lookupAppLocalizations(const Locale('en'));
-
 Future<void> _configureViewport(WidgetTester tester, _Size size) async {
   tester.view.physicalSize = Size(size.w, size.h);
   tester.view.devicePixelRatio = 1.0;
@@ -145,13 +143,13 @@ void main() {
         await _configureViewport(tester, _devices.first);
         await tester.pumpWidget(
           _withScale(
-          Scaffold(
+          const Scaffold(
             body: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 child: CompatibilityRevealSection(
                   breakdown: _sampleBreakdown,
-                  reasons: const [],
+                  reasons: [],
                 ),
               ),
             ),

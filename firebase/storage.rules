@@ -66,9 +66,18 @@ service firebase.storage {
       allow create, update, delete: if false;
     }
 
+    // B-11: this accepted owner uploads and was readable by every
+    // authenticated user, with none of the moderation the photos/ prefix has —
+    // a route for unmoderated, client-controlled imagery to become visible
+    // profile media. A lifecycle audit found no legitimate writer: the client's
+    // uploadProfileImage(thumbnail: true) is never invoked anywhere, and no
+    // Cloud Function generates profile thumbnails. Writes are therefore denied
+    // outright, exactly like photos/. Reads are unchanged — the finding is
+    // about write/moderation authority, and discovery may still reference
+    // objects that already exist.
     match /users/{userId}/profile/thumbs/{imageId} {
       allow read: if isAuthenticated();
-      allow create, update, delete: if isOwner(userId) && isImage() && isSmallEnough();
+      allow create, update, delete: if false;
     }
 
     // Legacy path: read for existing objects; no new client writes (use pending/).

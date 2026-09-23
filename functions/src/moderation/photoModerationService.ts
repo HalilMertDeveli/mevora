@@ -1,5 +1,5 @@
 import {randomUUID} from "node:crypto";
-import {FieldValue, type Firestore} from "firebase-admin/firestore";
+import {FieldValue, Timestamp, type Firestore} from "firebase-admin/firestore";
 import type {Bucket} from "@google-cloud/storage";
 import {logger} from "firebase-functions";
 import {moderatePhotoBuffer} from "./manualModerationProvider.js";
@@ -26,6 +26,60 @@ function extensionForContentType(contentType: string | undefined): string {
 
 function photosFrom(data: Record<string, unknown> | undefined): PhotoRecord[] {
   return ((data?.photos as PhotoRecord[] | undefined) ?? []).map((photo) => ({...photo}));
+}
+
+/**
+ * profiles/{uid}.photos is an array of maps, and Firestore rejects a FieldValue
+ * sentinel anywhere inside an array element. Resolve moderation timestamps to a
+ * concrete server-clock Timestamp before they go into the array. The
+ * document-level updatedAt is not inside an array and keeps its sentinel.
+ */
+function arraySafeModeratedAt(value: unknown): unknown {
+  return value instanceof FieldValue ? Timestamp.now() : value;
+}
+
+/**
+ * The photos array a moderation decision produces. Exported so a test can run
+ * the real shape through Firestore's own write validator.
+ */
+export function buildModeratedPhotos(
+  existing: PhotoRecord[],
+  imageId: string,
+  patch: Partial<PhotoRecord>,
+): PhotoRecord[] {
+  const index = existing.findIndex((photo) => String(photo.id ?? "") === imageId);
+  const base: PhotoRecord = index >= 0
+    ? existing[index]
+    : {id: imageId, order: existing.length, isPrimary: existing.length === 0};
+  const nextPhoto: PhotoRecord = {...base, ...patch};
+  if (patch.moderatedAt !== undefined) {
+    nextPhoto.moderatedAt = arraySafeModeratedAt(patch.moderatedAt);
+  }
+  return index >= 0
+    ? existing.map((photo, photoIndex) => (photoIndex === index ? nextPhoto : photo))
+    : [...existing, nextPhoto];
+}
+
+/**
+ * The photos array a user report produces: every photo that is not already
+ * rejected escalates to manual_review. Exported for the same reason.
+ */
+export function buildReportFlaggedPhotos(
+  existing: PhotoRecord[],
+  reason: string,
+): PhotoRecord[] {
+  return existing.map((photo) => {
+    if (String(photo.moderationStatus ?? "pending") === "rejected") {
+      return photo;
+    }
+    return {
+      ...photo,
+      moderationStatus: "manual_review",
+      moderationReason: reason,
+      moderatedAt: Timestamp.now(),
+      moderatedBy: "report-pipeline",
+    };
+  });
 }
 
 export async function isSmokeTestAccount(db: Firestore, uid: string): Promise<boolean> {
@@ -55,15 +109,7 @@ export async function setPhotoModerationStatus(
   const profileRef = db.doc(`profiles/${uid}`);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(profileRef);
-    const existing = photosFrom(snap.data());
-    const index = existing.findIndex((photo) => String(photo.id ?? "") === imageId);
-    const base: PhotoRecord = index >= 0
-      ? existing[index]
-      : {id: imageId, order: existing.length, isPrimary: existing.length === 0};
-    const nextPhoto: PhotoRecord = {...base, ...patch};
-    const photos = index >= 0
-      ? existing.map((photo, photoIndex) => (photoIndex === index ? nextPhoto : photo))
-      : [...existing, nextPhoto];
+    const photos = buildModeratedPhotos(photosFrom(snap.data()), imageId, patch);
     tx.set(profileRef, {photos, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
   });
 }
@@ -219,18 +265,7 @@ export async function markProfilePhotosForManualReview(
     if (!snap.exists) {
       return;
     }
-    const photos = photosFrom(snap.data()).map((photo) => {
-      if (String(photo.moderationStatus ?? "pending") === "rejected") {
-        return photo;
-      }
-      return {
-        ...photo,
-        moderationStatus: "manual_review",
-        moderationReason: reason,
-        moderatedAt: FieldValue.serverTimestamp(),
-        moderatedBy: "report-pipeline",
-      };
-    });
+    const photos = buildReportFlaggedPhotos(photosFrom(snap.data()), reason);
     tx.set(
       profileRef,
       {

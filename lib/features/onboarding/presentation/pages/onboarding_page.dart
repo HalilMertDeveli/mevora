@@ -1,10 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
+import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo_grid.dart';
@@ -458,6 +461,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (result.isError) {
       return;
     }
+    final humorEnabled =
+        AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
     AuthScope.of(context).applyOnboardingComplete();
+
+    // Personalization comes *after* the core profile is viable, and is never a
+    // gate: onboarding is already complete at this point, so a user who skips
+    // — or who never sees this because the flag is off — lands on discovery
+    // exactly as before.
+    if (humorEnabled && mounted) {
+      context.go(AppRoutes.humorCalibration);
+    }
   }
 }

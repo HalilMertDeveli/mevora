@@ -3596,4 +3596,62 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get boostResultsDelayNote =>
       'Counts can lag a little behind live activity.';
+
+  @override
+  String get humorCalibrationIntroTitle => 'Let us find your humor';
+
+  @override
+  String get humorCalibrationIntroBody =>
+      'React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.';
+
+  @override
+  String get humorCalibrationIntroMeta => '15 short pieces · about a minute';
+
+  @override
+  String get humorCalibrationStart => 'Start';
+
+  @override
+  String get humorCalibrationSkip => 'Skip for now';
+
+  @override
+  String get humorCalibrationResume => 'Continue';
+
+  @override
+  String humorCalibrationProgress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get humorCalibrationHintEarly => 'Getting to know you…';
+
+  @override
+  String get humorCalibrationHintMiddle => 'Your humor style is taking shape.';
+
+  @override
+  String get humorCalibrationHintFinal => 'Just a few more.';
+
+  @override
+  String get humorCalibrationResumeNote => 'Picking up where you left off.';
+
+  @override
+  String get humorCalibrationCatalogGap =>
+      'Not enough content right now. Please try again later.';
+
+  @override
+  String get humorProfileEntryNotStarted => 'Discover your humor';
+
+  @override
+  String humorProfileEntryInProgress(int completed, int total) {
+    return '$completed / $total completed';
+  }
+
+  @override
+  String get humorProfileEntryComplete => 'Your humor profile is ready';
+
+  @override
+  String get humorFeedAllCaughtUp =>
+      'That is all for now. New content will show up here.';
+
+  @override
+  String get humorFeedNoContent => 'No content to show right now.';
 }

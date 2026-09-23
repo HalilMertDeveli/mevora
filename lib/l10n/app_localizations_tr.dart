@@ -3592,4 +3592,62 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get boostResultsDelayNote =>
       'Sayılar canlı etkinliğin biraz gerisinde kalabilir.';
+
+  @override
+  String get humorCalibrationIntroTitle => 'Mizahını keşfedelim';
+
+  @override
+  String get humorCalibrationIntroBody =>
+      'Birkaç kısa içeriğe tepki ver. Neye güldüğünü öğrenelim ve bunu sana daha anlamlı kişiler göstermek için kullanalım.';
+
+  @override
+  String get humorCalibrationIntroMeta => '15 kısa içerik · yaklaşık 1 dakika';
+
+  @override
+  String get humorCalibrationStart => 'Başla';
+
+  @override
+  String get humorCalibrationSkip => 'Şimdilik geç';
+
+  @override
+  String get humorCalibrationResume => 'Devam et';
+
+  @override
+  String humorCalibrationProgress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get humorCalibrationHintEarly => 'Seni biraz tanıyoruz…';
+
+  @override
+  String get humorCalibrationHintMiddle => 'Mizah tarzın şekillenmeye başladı.';
+
+  @override
+  String get humorCalibrationHintFinal => 'Son birkaç tane.';
+
+  @override
+  String get humorCalibrationResumeNote => 'Kaldığın yerden devam ediyorsun.';
+
+  @override
+  String get humorCalibrationCatalogGap =>
+      'Şu an yeterli içerik yok. Daha sonra tekrar dene.';
+
+  @override
+  String get humorProfileEntryNotStarted => 'Mizahını keşfet';
+
+  @override
+  String humorProfileEntryInProgress(int completed, int total) {
+    return '$completed / $total tamamlandı';
+  }
+
+  @override
+  String get humorProfileEntryComplete => 'Mizah profilin hazır';
+
+  @override
+  String get humorFeedAllCaughtUp =>
+      'Şimdilik hepsi bu. Yeni içerikler eklendikçe burada olacak.';
+
+  @override
+  String get humorFeedNoContent => 'Şu an gösterilecek içerik yok.';
 }

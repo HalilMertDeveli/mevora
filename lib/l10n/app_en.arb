@@ -1542,5 +1542,42 @@
   "boostCompletedTitle": "Boost finished",
   "boostCompletedEmpty": "This Boost did not reach anyone.",
   "boostResultsUnavailable": "Results are not available for this Boost.",
-  "boostResultsDelayNote": "Counts can lag a little behind live activity."
+  "boostResultsDelayNote": "Counts can lag a little behind live activity.",
+  "humorCalibrationIntroTitle": "Let us find your humor",
+  "humorCalibrationIntroBody": "React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.",
+  "humorCalibrationIntroMeta": "15 short pieces · about a minute",
+  "humorCalibrationStart": "Start",
+  "humorCalibrationSkip": "Skip for now",
+  "humorCalibrationResume": "Continue",
+  "humorCalibrationProgress": "{completed} / {total}",
+  "@humorCalibrationProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorCalibrationHintEarly": "Getting to know you…",
+  "humorCalibrationHintMiddle": "Your humor style is taking shape.",
+  "humorCalibrationHintFinal": "Just a few more.",
+  "humorCalibrationResumeNote": "Picking up where you left off.",
+  "humorCalibrationCatalogGap": "Not enough content right now. Please try again later.",
+  "humorProfileEntryNotStarted": "Discover your humor",
+  "humorProfileEntryInProgress": "{completed} / {total} completed",
+  "@humorProfileEntryInProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorProfileEntryComplete": "Your humor profile is ready",
+  "humorFeedAllCaughtUp": "That is all for now. New content will show up here.",
+  "humorFeedNoContent": "No content to show right now."
 }

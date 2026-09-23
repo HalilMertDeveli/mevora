@@ -6,6 +6,7 @@ import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
+import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/verification_scope.dart';
@@ -13,6 +14,7 @@ import 'package:mevora/features/verification/domain/entities/profile_verificatio
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
+import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
 import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
@@ -92,11 +94,10 @@ class ProfileTabPage extends StatelessWidget {
           ),
           if (AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled ==
               true)
-            _ProfileTile(
-              icon: Icons.theater_comedy_outlined,
-              title: l10n.humorLabTitle,
-              onTap: () => context.push(AppRoutes.humorLab),
-            ),
+            // Entry point for anyone who skipped calibration, or who predates
+            // it entirely. Existing users are never pushed back through
+            // onboarding — they start from here, voluntarily.
+            const _HumorProfileTile(),
           _ProfileTile(
             icon: Icons.tune_rounded,
             title: l10n.discoveryPreferences,
@@ -285,11 +286,15 @@ class _ProfileTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.onTap,
+    this.subtitle,
   });
 
   final IconData icon;
   final String title;
   final VoidCallback onTap;
+
+  /// Optional second line, for tiles that carry a state the user cares about.
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -301,9 +306,81 @@ class _ProfileTile extends StatelessWidget {
         child: ListTile(
           leading: Icon(icon),
           title: Text(title),
+          subtitle: subtitle == null ? null : Text(subtitle!),
           trailing: const Icon(Icons.chevron_right),
           onTap: onTap,
         ),
+      ),
+    );
+  }
+}
+
+/// Humor entry that reflects where the user actually is.
+///
+/// Reads calibration state from the server rather than assuming: a user who
+/// calibrated on another device should see "ready", not an invitation to
+/// start over. Failure degrades to the plain invitation rather than hiding
+/// the feature.
+class _HumorProfileTile extends StatefulWidget {
+  const _HumorProfileTile();
+
+  @override
+  State<_HumorProfileTile> createState() => _HumorProfileTileState();
+}
+
+class _HumorProfileTileState extends State<_HumorProfileTile> {
+  HumorCalibration? _calibration;
+  var _requested = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_requested) {
+      return;
+    }
+    _requested = true;
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    final repository = HumorScope.maybeOf(context);
+    if (repository == null) {
+      return;
+    }
+    final result = await repository.getProfile();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _calibration = result.valueOrNull?.calibration);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final calibration = _calibration;
+
+    final String subtitle;
+    if (calibration == null || !calibration.started) {
+      subtitle = l10n.humorProfileEntryNotStarted;
+    } else if (calibration.complete) {
+      subtitle = l10n.humorProfileEntryComplete;
+    } else {
+      subtitle = l10n.humorProfileEntryInProgress(
+        calibration.completedCount,
+        calibration.totalCount,
+      );
+    }
+
+    return _ProfileTile(
+      icon: Icons.theater_comedy_outlined,
+      title: l10n.humorLabTitle,
+      subtitle: subtitle,
+      // An unfinished calibration resumes through the invitation screen so the
+      // user sees where they are before being dropped back into content.
+      onTap: () => context.push(
+        calibration?.complete == true
+            ? AppRoutes.humorLab
+            : AppRoutes.humorCalibration,
       ),
     );
   }

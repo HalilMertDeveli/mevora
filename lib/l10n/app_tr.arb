@@ -1542,5 +1542,42 @@
   "boostCompletedTitle": "Boost tamamlandı",
   "boostCompletedEmpty": "Bu Boost kimseye ulaşmadı.",
   "boostResultsUnavailable": "Bu Boost için sonuç bilgisi yok.",
-  "boostResultsDelayNote": "Sayılar canlı etkinliğin biraz gerisinde kalabilir."
+  "boostResultsDelayNote": "Sayılar canlı etkinliğin biraz gerisinde kalabilir.",
+  "humorCalibrationIntroTitle": "Mizahını keşfedelim",
+  "humorCalibrationIntroBody": "Birkaç kısa içeriğe tepki ver. Neye güldüğünü öğrenelim ve bunu sana daha anlamlı kişiler göstermek için kullanalım.",
+  "humorCalibrationIntroMeta": "15 kısa içerik · yaklaşık 1 dakika",
+  "humorCalibrationStart": "Başla",
+  "humorCalibrationSkip": "Şimdilik geç",
+  "humorCalibrationResume": "Devam et",
+  "humorCalibrationProgress": "{completed} / {total}",
+  "@humorCalibrationProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorCalibrationHintEarly": "Seni biraz tanıyoruz…",
+  "humorCalibrationHintMiddle": "Mizah tarzın şekillenmeye başladı.",
+  "humorCalibrationHintFinal": "Son birkaç tane.",
+  "humorCalibrationResumeNote": "Kaldığın yerden devam ediyorsun.",
+  "humorCalibrationCatalogGap": "Şu an yeterli içerik yok. Daha sonra tekrar dene.",
+  "humorProfileEntryNotStarted": "Mizahını keşfet",
+  "humorProfileEntryInProgress": "{completed} / {total} tamamlandı",
+  "@humorProfileEntryInProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorProfileEntryComplete": "Mizah profilin hazır",
+  "humorFeedAllCaughtUp": "Şimdilik hepsi bu. Yeni içerikler eklendikçe burada olacak.",
+  "humorFeedNoContent": "Şu an gösterilecek içerik yok."
 }

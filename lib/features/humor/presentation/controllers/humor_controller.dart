@@ -35,6 +35,8 @@ class HumorViewState {
     this.replayToken = 0,
     this.canUndo = false,
     this.calibration = HumorCalibration.empty,
+    this.catalogExhausted = false,
+    this.catalogEmpty = false,
   });
 
   final List<HumorContent> items;
@@ -51,6 +53,14 @@ class HumorViewState {
   /// Server-reported initial calibration progress. The controller never
   /// advances this itself — it only mirrors what the backend returned.
   final HumorCalibration calibration;
+
+  /// The user has rated everything currently in the catalog. A finished state,
+  /// not a failure — the difference decides what we say to them.
+  final bool catalogExhausted;
+
+  /// Nothing servable exists at all: an operational problem, not the user
+  /// running out of content, and it must not be phrased as their doing.
+  final bool catalogEmpty;
 
   bool get isEmpty => !isLoading && failure == null && items.isEmpty;
   bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
@@ -83,6 +93,8 @@ class HumorViewState {
     int? replayToken,
     bool? canUndo,
     HumorCalibration? calibration,
+    bool? catalogExhausted,
+    bool? catalogEmpty,
   }) {
     return HumorViewState(
       items: items ?? this.items,
@@ -96,6 +108,8 @@ class HumorViewState {
       replayToken: replayToken ?? this.replayToken,
       canUndo: canUndo ?? this.canUndo,
       calibration: calibration ?? this.calibration,
+      catalogExhausted: catalogExhausted ?? this.catalogExhausted,
+      catalogEmpty: catalogEmpty ?? this.catalogEmpty,
     );
   }
 }
@@ -160,6 +174,8 @@ class HumorController extends ChangeNotifier {
       ),
       nextCursor: page.nextCursor,
       calibration: page.calibration,
+      catalogExhausted: page.catalogExhausted,
+      catalogEmpty: page.catalogEmpty,
     );
     notifyListeners();
     _logCalibration(previous: null, next: page.calibration);
@@ -434,6 +450,8 @@ class HumorController extends ChangeNotifier {
             calibration: page.calibration,
           ),
           calibration: page.calibration,
+          catalogExhausted: page.catalogExhausted,
+          catalogEmpty: page.catalogEmpty,
         );
       },
       err: (failure) {

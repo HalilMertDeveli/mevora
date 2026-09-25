@@ -34,6 +34,8 @@ import 'package:mevora/features/matching/presentation/pages/app_shell.dart';
 import 'package:mevora/features/matching/presentation/pages/likes_you_page.dart';
 import 'package:mevora/features/matching/presentation/pages/matches_page.dart';
 import 'package:mevora/features/music/presentation/pages/music_page.dart';
+import 'package:mevora/features/humor/presentation/pages/humor_calibration_intro_page.dart';
+import 'package:mevora/features/humor/presentation/pages/humor_calibration_result_page.dart';
 import 'package:mevora/features/humor/presentation/pages/humor_lab_page.dart';
 import 'package:mevora/features/notifications/presentation/pages/notification_settings_page.dart';
 import 'package:mevora/features/permissions/presentation/pages/privacy_permissions_page.dart';
@@ -266,6 +268,34 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const BoostScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.humorCalibration,
+        redirect: (context, state) {
+          // Same gate as the lab itself: with the flag off there is no
+          // personalization step, so there is no way to strand a user on one.
+          if (!config.featureFlags.humorLabEnabled) {
+            return AppRoutes.discovery;
+          }
+          return null;
+        },
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const HumorCalibrationIntroPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.humorResult,
+        redirect: (context, state) {
+          if (!config.featureFlags.humorLabEnabled) {
+            return AppRoutes.discovery;
+          }
+          return null;
+        },
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const HumorCalibrationResultPage(),
         ),
       ),
       GoRoute(

@@ -1315,6 +1315,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not export your data. Try again later.';
 
   @override
+  String get exportMyDataShareSubject => 'My Mevora data export';
+
+  @override
+  String get exportMyDataShared => 'Your data export was shared.';
+
+  @override
+  String get exportMyDataReady =>
+      'Your data export is ready. Choose an app to save or send it.';
+
+  @override
+  String get exportMyDataShareUnavailable =>
+      'No app on this device can receive the export.';
+
+  @override
   String get settingsShowAge => 'Show age on profile';
 
   @override
@@ -2270,6 +2284,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get verificationAttemptLimit =>
       'You\'ve reached today\'s verification limit. Try again tomorrow.';
+
+  @override
+  String get verificationProcessing =>
+      'We are checking your verification. This usually takes a minute.';
+
+  @override
+  String get verificationUnderReview =>
+      'Your verification is being reviewed. We will update this page when it is done.';
+
+  @override
+  String get verificationCheckAgain => 'Check again';
+
+  @override
+  String get verificationExpired =>
+      'That verification session expired before it was finished. You can start a new one.';
+
+  @override
+  String get verificationTemporaryError =>
+      'We could not read your verification status just now. Try again in a moment.';
+
+  @override
+  String get verificationDeclinedDocument =>
+      'We could not read your ID clearly. Try again in good light, with the whole document in frame.';
+
+  @override
+  String get verificationDeclinedLiveness =>
+      'The selfie step did not complete. Try again somewhere well lit, looking straight at the camera.';
+
+  @override
+  String get verificationDeclinedFaceMatch =>
+      'The selfie did not match the photo on your ID. Try again, or use a different document.';
+
+  @override
+  String get verificationOpensProvider =>
+      'You will be taken to our verification partner to scan your ID and take a selfie, then brought back here.';
 
   @override
   String get whyYouMatch => 'Why you match';
@@ -3596,4 +3645,190 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get boostResultsDelayNote =>
       'Counts can lag a little behind live activity.';
+
+  @override
+  String get onboardingMusicTitle => 'Does music matter to you? 🎧';
+
+  @override
+  String get onboardingMusicBody =>
+      'Connect Spotify and Mevora can find people who actually listen to what you listen to — and explain why you fit.';
+
+  @override
+  String get onboardingMusicConnect => 'Connect my Spotify';
+
+  @override
+  String get onboardingMusicSkip => 'Skip for now';
+
+  @override
+  String get onboardingMusicSkipNote =>
+      'You can connect Spotify later from the Music tab.';
+
+  @override
+  String get onboardingMusicCancelled =>
+      'Spotify connection was cancelled. You can try again or skip.';
+
+  @override
+  String get publicMusicTitle => 'We picked up your Spotify taste 🎧';
+
+  @override
+  String get publicMusicSubtitle =>
+      'Choose what you want to show on your profile.';
+
+  @override
+  String get publicMusicArtistsHeading => 'Artists';
+
+  @override
+  String get publicMusicTracksHeading => 'Songs';
+
+  @override
+  String publicMusicArtistCount(int count, int max) {
+    return '$count/$max artists selected';
+  }
+
+  @override
+  String publicMusicTrackCount(int count, int max) {
+    return '$count/$max songs selected';
+  }
+
+  @override
+  String get publicMusicLimitReached =>
+      'That is the maximum. Deselect one to choose another.';
+
+  @override
+  String get publicMusicSave => 'Add to my profile';
+
+  @override
+  String get publicMusicSaveFailed =>
+      'We couldn\'t save your selection. Please try again.';
+
+  @override
+  String get publicMusicEmpty =>
+      'Spotify didn\'t return enough listening data yet. Your music is still connected and used for compatibility.';
+
+  @override
+  String get publicMusicVisibilityTitle => 'Show Music Taste on my profile';
+
+  @override
+  String get publicMusicVisibilityBody =>
+      'Turn this off to keep your selection private. Spotify stays connected and still improves your matches.';
+
+  @override
+  String get publicMusicHiddenNotice =>
+      'Your Music Taste is hidden from other people.';
+
+  @override
+  String get publicMusicEditCta => 'Edit my Music Taste';
+
+  @override
+  String get profileMusicTasteHeading => 'Music Taste 🎧';
+
+  @override
+  String get profileMusicOpenInSpotify => 'Open in Spotify';
+
+  @override
+  String get musicLimitedData =>
+      'Spotify is connected, but there isn\'t much listening history yet.';
+
+  @override
+  String get humorCalibrationIntroTitle => 'Let us find your humor';
+
+  @override
+  String get humorCalibrationIntroBody =>
+      'React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.';
+
+  @override
+  String get humorCalibrationIntroMeta => '15 short pieces · about a minute';
+
+  @override
+  String get humorCalibrationStart => 'Start';
+
+  @override
+  String get humorCalibrationSkip => 'Skip for now';
+
+  @override
+  String get humorCalibrationResume => 'Continue';
+
+  @override
+  String humorCalibrationProgress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get humorCalibrationHintEarly => 'Getting to know you…';
+
+  @override
+  String get humorCalibrationHintMiddle => 'Your humor style is taking shape.';
+
+  @override
+  String get humorCalibrationHintFinal => 'Just a few more.';
+
+  @override
+  String get humorCalibrationResumeNote => 'Picking up where you left off.';
+
+  @override
+  String get humorCalibrationCatalogGap =>
+      'Not enough content right now. Please try again later.';
+
+  @override
+  String get humorProfileEntryNotStarted => 'Discover your humor';
+
+  @override
+  String humorProfileEntryInProgress(int completed, int total) {
+    return '$completed / $total completed';
+  }
+
+  @override
+  String get humorProfileEntryComplete => 'Your humor profile is ready';
+
+  @override
+  String get humorFeedAllCaughtUp =>
+      'That is all for now. New content will show up here.';
+
+  @override
+  String get humorFeedNoContent => 'No content to show right now.';
+
+  @override
+  String get humorResultTitle => 'Your humor profile is ready';
+
+  @override
+  String get humorResultSubtitle =>
+      'We got to know you a little. Here is what stands out.';
+
+  @override
+  String humorResultSummaryTwo(String first, String second) {
+    return '$first and $second are what land with you.';
+  }
+
+  @override
+  String humorResultSummaryOne(String first) {
+    return '$first in particular is your thing.';
+  }
+
+  @override
+  String get humorResultSummaryNone =>
+      'Your humor style is not clear yet; it will sharpen as you explore.';
+
+  @override
+  String humorResultContrast(String weakest) {
+    return '$weakest does not do much for you.';
+  }
+
+  @override
+  String get humorResultKeepGoing => 'Keep shaping your humor profile';
+
+  @override
+  String get humorResultDone => 'Continue';
+
+  @override
+  String get humorResultEvolvesNote =>
+      'Your profile keeps evolving as you react to new content.';
+
+  @override
+  String get humorResultStrengthHigh => 'Strong';
+
+  @override
+  String get humorResultStrengthMedium => 'Clear';
+
+  @override
+  String get humorResultStrengthLow => 'Slight';
 }

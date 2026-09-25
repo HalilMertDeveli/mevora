@@ -1310,6 +1310,20 @@ class AppLocalizationsTr extends AppLocalizations {
       'Verilerin dışa aktarılamadı. Lütfen sonra tekrar dene.';
 
   @override
+  String get exportMyDataShareSubject => 'Mevora veri dışa aktarımım';
+
+  @override
+  String get exportMyDataShared => 'Veri dışa aktarımın paylaşıldı.';
+
+  @override
+  String get exportMyDataReady =>
+      'Veri dışa aktarımın hazır. Kaydetmek veya göndermek için bir uygulama seç.';
+
+  @override
+  String get exportMyDataShareUnavailable =>
+      'Bu cihazda dışa aktarımı alabilecek bir uygulama yok.';
+
+  @override
   String get settingsShowAge => 'Profilde yaşı göster';
 
   @override
@@ -2267,6 +2281,41 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get verificationAttemptLimit =>
       'Bugünkü doğrulama limitine ulaştınız. Yarın tekrar deneyin.';
+
+  @override
+  String get verificationProcessing =>
+      'Doğrulamanı kontrol ediyoruz. Bu genelde bir dakika sürer.';
+
+  @override
+  String get verificationUnderReview =>
+      'Doğrulaman inceleniyor. Sonuçlandığında bu sayfayı güncelleyeceğiz.';
+
+  @override
+  String get verificationCheckAgain => 'Tekrar kontrol et';
+
+  @override
+  String get verificationExpired =>
+      'Bu doğrulama oturumu tamamlanmadan süresi doldu. Yeni bir tane başlatabilirsin.';
+
+  @override
+  String get verificationTemporaryError =>
+      'Doğrulama durumunu şu anda okuyamadık. Birazdan tekrar dene.';
+
+  @override
+  String get verificationDeclinedDocument =>
+      'Kimliğini net okuyamadık. İyi ışıkta, belgenin tamamı kadrajda olacak şekilde tekrar dene.';
+
+  @override
+  String get verificationDeclinedLiveness =>
+      'Selfie adımı tamamlanmadı. Aydınlık bir yerde, doğrudan kameraya bakarak tekrar dene.';
+
+  @override
+  String get verificationDeclinedFaceMatch =>
+      'Selfie, kimliğindeki fotoğrafla eşleşmedi. Tekrar dene veya farklı bir belge kullan.';
+
+  @override
+  String get verificationOpensProvider =>
+      'Kimliğini taratıp selfie çekmen için doğrulama partnerimize yönlendirileceksin, sonra buraya döneceksin.';
 
   @override
   String get whyYouMatch => 'Neden eşleşiyorsunuz?';
@@ -3592,4 +3641,187 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get boostResultsDelayNote =>
       'Sayılar canlı etkinliğin biraz gerisinde kalabilir.';
+
+  @override
+  String get onboardingMusicTitle => 'Müzik senin için önemli mi? 🎧';
+
+  @override
+  String get onboardingMusicBody =>
+      'Spotify\'ını bağla, Mevora seninle aynı müzikleri dinleyen kişileri bulsun ve neden uyduğunuzu anlatsın.';
+
+  @override
+  String get onboardingMusicConnect => 'Spotify\'ımı Bağla';
+
+  @override
+  String get onboardingMusicSkip => 'Şimdilik Geç';
+
+  @override
+  String get onboardingMusicSkipNote =>
+      'Spotify\'ı sonra Müzik sekmesinden bağlayabilirsin.';
+
+  @override
+  String get onboardingMusicCancelled =>
+      'Spotify bağlantısı iptal edildi. Tekrar deneyebilir veya geçebilirsin.';
+
+  @override
+  String get publicMusicTitle => 'Spotify zevkini yakaladık 🎧';
+
+  @override
+  String get publicMusicSubtitle => 'Profilinde göstermek istediklerini seç.';
+
+  @override
+  String get publicMusicArtistsHeading => 'Sanatçılar';
+
+  @override
+  String get publicMusicTracksHeading => 'Şarkılar';
+
+  @override
+  String publicMusicArtistCount(int count, int max) {
+    return '$count/$max sanatçı seçildi';
+  }
+
+  @override
+  String publicMusicTrackCount(int count, int max) {
+    return '$count/$max şarkı seçildi';
+  }
+
+  @override
+  String get publicMusicLimitReached =>
+      'Üst sınıra ulaştın. Başkasını seçmek için birini kaldır.';
+
+  @override
+  String get publicMusicSave => 'Profilime Ekle';
+
+  @override
+  String get publicMusicSaveFailed =>
+      'Seçimini kaydedemedik. Lütfen tekrar dene.';
+
+  @override
+  String get publicMusicEmpty =>
+      'Spotify henüz yeterli dinleme verisi döndürmedi. Müziğin bağlı kalmaya ve uyum hesabında kullanılmaya devam ediyor.';
+
+  @override
+  String get publicMusicVisibilityTitle => 'Müzik Zevkimi profilimde göster';
+
+  @override
+  String get publicMusicVisibilityBody =>
+      'Kapatırsan seçimin gizli kalır. Spotify bağlı kalır ve eşleşmelerini iyileştirmeye devam eder.';
+
+  @override
+  String get publicMusicHiddenNotice => 'Müzik Zevkin diğer kişilerden gizli.';
+
+  @override
+  String get publicMusicEditCta => 'Müzik Zevkimi düzenle';
+
+  @override
+  String get profileMusicTasteHeading => 'Müzik Zevki 🎧';
+
+  @override
+  String get profileMusicOpenInSpotify => 'Spotify\'da aç';
+
+  @override
+  String get musicLimitedData =>
+      'Spotify bağlı, ancak henüz fazla dinleme geçmişi yok.';
+
+  @override
+  String get humorCalibrationIntroTitle => 'Mizahını keşfedelim';
+
+  @override
+  String get humorCalibrationIntroBody =>
+      'Birkaç kısa içeriğe tepki ver. Neye güldüğünü öğrenelim ve bunu sana daha anlamlı kişiler göstermek için kullanalım.';
+
+  @override
+  String get humorCalibrationIntroMeta => '15 kısa içerik · yaklaşık 1 dakika';
+
+  @override
+  String get humorCalibrationStart => 'Başla';
+
+  @override
+  String get humorCalibrationSkip => 'Şimdilik geç';
+
+  @override
+  String get humorCalibrationResume => 'Devam et';
+
+  @override
+  String humorCalibrationProgress(int completed, int total) {
+    return '$completed / $total';
+  }
+
+  @override
+  String get humorCalibrationHintEarly => 'Seni biraz tanıyoruz…';
+
+  @override
+  String get humorCalibrationHintMiddle => 'Mizah tarzın şekillenmeye başladı.';
+
+  @override
+  String get humorCalibrationHintFinal => 'Son birkaç tane.';
+
+  @override
+  String get humorCalibrationResumeNote => 'Kaldığın yerden devam ediyorsun.';
+
+  @override
+  String get humorCalibrationCatalogGap =>
+      'Şu an yeterli içerik yok. Daha sonra tekrar dene.';
+
+  @override
+  String get humorProfileEntryNotStarted => 'Mizahını keşfet';
+
+  @override
+  String humorProfileEntryInProgress(int completed, int total) {
+    return '$completed / $total tamamlandı';
+  }
+
+  @override
+  String get humorProfileEntryComplete => 'Mizah profilin hazır';
+
+  @override
+  String get humorFeedAllCaughtUp =>
+      'Şimdilik hepsi bu. Yeni içerikler eklendikçe burada olacak.';
+
+  @override
+  String get humorFeedNoContent => 'Şu an gösterilecek içerik yok.';
+
+  @override
+  String get humorResultTitle => 'Mizah profilin hazır';
+
+  @override
+  String get humorResultSubtitle => 'Seni biraz tanıdık. İşte öne çıkanlar.';
+
+  @override
+  String humorResultSummaryTwo(String first, String second) {
+    return '$first ve $second seni yakalıyor.';
+  }
+
+  @override
+  String humorResultSummaryOne(String first) {
+    return 'Özellikle $first sana göre.';
+  }
+
+  @override
+  String get humorResultSummaryNone =>
+      'Mizah tarzın henüz net değil; keşfettikçe netleşecek.';
+
+  @override
+  String humorResultContrast(String weakest) {
+    return '$weakest ise pek işlemiyor.';
+  }
+
+  @override
+  String get humorResultKeepGoing => 'Mizah profilini geliştirmeye devam et';
+
+  @override
+  String get humorResultDone => 'Devam et';
+
+  @override
+  String get humorResultEvolvesNote =>
+      'Yeni içeriklere tepki verdikçe profilin gelişmeye devam eder.';
+
+  @override
+  String get humorResultStrengthHigh => 'Güçlü';
+
+  @override
+  String get humorResultStrengthMedium => 'Belirgin';
+
+  @override
+  String get humorResultStrengthLow => 'Hafif';
 }

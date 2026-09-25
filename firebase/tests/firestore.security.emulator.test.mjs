@@ -138,6 +138,97 @@ describe("users/{uid} — private account isolation", () => {
     await deny(db.doc(`users/${UID.A}/rateLimits/messages`).set({count: 0}));
   });
 
+  /**
+   * The load-bearing invariant of the whole identity-verification feature: a
+   * normal, fully authenticated user cannot write themselves into a verified
+   * state by any route. Every path a client can reach is exercised here, on
+   * the provider-neutral document as well as the legacy one, because the
+   * migration introduces a new document id and a rule that only covered
+   * `sumsub` would be a silent hole.
+   */
+  it("an authenticated client cannot make itself identity-verified", async () => {
+    const db = who.userA.db();
+    const identity = db.doc(`users/${UID.A}/verification/identity`);
+
+    // Direct writes to the neutral verification document.
+    await deny(identity.set({status: "verified"}));
+    await deny(identity.set({status: "verified", provider: "didit"}));
+    await deny(identity.update({status: "verified"}));
+    await deny(identity.delete());
+
+    // A document id nobody has thought of yet must be refused too — the rule
+    // is a wildcard deny, not an enumeration of known ids.
+    await deny(db.doc(`users/${UID.A}/verification/didit`).set({status: "verified"}));
+    await deny(db.doc(`users/${UID.A}/verification/anything`).set({status: "verified"}));
+
+    // The badge flag itself, on both the private account and the public card.
+    await deny(db.doc(`users/${UID.A}`).update({isVerified: true}));
+    await deny(db.doc(`profiles/${UID.A}`).update({isVerified: true}));
+
+    // And not on someone else's behalf either.
+    await deny(db.doc(`users/${UID.B}/verification/identity`).set({status: "verified"}));
+    await deny(db.doc(`users/${UID.B}`).update({isVerified: true}));
+  });
+
+  it("verification metadata is private to its owner", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/verification/identity`).set({
+        schemaVersion: 1,
+        provider: "didit",
+        providerSessionId: "sess-a",
+        status: "verified",
+      });
+    });
+    await allow(who.userA.db().doc(`users/${UID.A}/verification/identity`).get());
+    await deny(who.userB.db().doc(`users/${UID.A}/verification/identity`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}/verification/identity`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/verification/identity`).get());
+  });
+
+  /**
+   * `identityErasurePending` records that a departed user's data is still
+   * held by the provider. It outlives the account by design, so it must be
+   * unreachable from every client — including the one it names, whose
+   * credentials can stay valid for a moment after deletion.
+   */
+  it("pending provider-erasure records are unreachable from any client", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`identityErasurePending/${UID.A}`).set({
+        uid: UID.A,
+        provider: "didit",
+        providerSessionId: "sess-a",
+        attempts: 1,
+      });
+    });
+    for (const actor of [who.userA, who.userB, who.anon]) {
+      await deny(actor.db().doc(`identityErasurePending/${UID.A}`).get());
+      await deny(actor.db().doc(`identityErasurePending/${UID.A}`).set({attempts: 0}));
+      await deny(actor.db().doc(`identityErasurePending/${UID.A}`).delete());
+    }
+  });
+
+  it("a stale verification document cannot be read or rebuilt once the account is gone", async () => {
+    await seed(env, async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`users/${UID.A}/verification/identity`).set({
+        schemaVersion: 1,
+        provider: "didit",
+        status: "verified",
+      });
+      // The account document is what deletion removes; the former owner's
+      // token can outlive it by seconds.
+      await db.doc(`users/${UID.A}`).delete();
+      await db.doc(`profiles/${UID.A}`).delete();
+    });
+    await deny(who.userB.db().doc(`users/${UID.A}/verification/identity`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/verification/identity`).get());
+    // And nobody can write the account back into existence as verified.
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/verification/identity`).set({status: "verified"}),
+    );
+    await deny(who.userA.db().doc(`users/${UID.A}`).set({isVerified: true}));
+  });
+
   it("private key material is rejected from the published identity doc", async () => {
     await deny(
       who.userA.db().doc(`users/${UID.A}/crypto/identity`).set({
@@ -1371,11 +1462,66 @@ describe("humor calibration state", () => {
   });
 });
 
+describe("Spotify music — public card vs private taste", () => {
+  it("the public Music Taste card is readable by other members", async () => {
+    // publicMusic lives on profiles/{uid}, which is the public card by
+    // product design, so a viewer gets the six chosen items with the rest
+    // of the profile and no extra round trip.
+    await allow(who.userC.db().doc(`profiles/${UID.A}`).get());
+  });
+
+  it("nobody can write their own publicMusic directly", async () => {
+    // Only the callable may publish it, because only the server can check
+    // the selection against the member's imported Spotify data.
+    await deny(
+      who.userA.db().doc(`profiles/${UID.A}`).update({
+        publicMusic: {
+          enabled: true,
+          artists: [{id: "a1", name: "HALIL HACKED SPOTIFY"}],
+          tracks: [],
+          genres: [],
+        },
+      }),
+    );
+  });
+
+  it("nobody can write somebody else's publicMusic", async () => {
+    await deny(
+      who.userC.db().doc(`profiles/${UID.A}`).update({
+        publicMusic: {enabled: true, artists: [], tracks: [], genres: []},
+      }),
+    );
+  });
+
+  it("an unauthenticated client cannot write publicMusic", async () => {
+    await deny(
+      who.anon.db().doc(`profiles/${UID.A}`).update({
+        publicMusic: {enabled: true, artists: [], tracks: [], genres: []},
+      }),
+    );
+  });
+
+  it("private imported taste is owner-only and never cross-user", async () => {
+    await deny(who.userC.db().doc(`users/${UID.A}/music/summary`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/music/summary`).get());
+  });
+
+  it("nobody can write the private music summary", async () => {
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/music/summary`).set({spotifyConnected: true}),
+    );
+    await deny(
+      who.userC.db().doc(`users/${UID.A}/music/summary`).set({spotifyConnected: true}),
+    );
+  });
+});
+
 describe("server-owned and unknown paths", () => {
   it("third-party token stores are unreachable from any client", async () => {
     await deny(who.userA.db().doc(`spotifySecrets/${UID.A}`).get());
     await deny(who.userA.db().doc(`spotifySecrets/${UID.A}`).set({accessToken: "x"}));
     await deny(who.userA.db().doc("musicSpotifyIndex/abc").get());
+    await deny(who.userA.db().doc("spotifyIndex/abc").get());
     await deny(who.userA.db().doc("failedNotifications/f1").get());
   });
 

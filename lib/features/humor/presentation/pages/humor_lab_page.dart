@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
+import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/presentation/controllers/humor_controller.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_content_player.dart';
@@ -34,6 +36,12 @@ class _HumorLabPageState extends State<HumorLabPage> {
   var _syncingPage = false;
   int _lastSyncedIndex = 0;
 
+  /// Guards the one-time hand-off to the result screen. Only a calibration
+  /// that *completes during this session* earns the result screen; a user who
+  /// was already calibrated is simply browsing.
+  var _sawIncompleteCalibration = false;
+  var _calibrationHandoffDone = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -59,7 +67,9 @@ class _HumorLabPageState extends State<HumorLabPage> {
 
   void _attach(HumorController controller) {
     _controller = controller;
-    _pageController = PageController(initialPage: controller.state.currentIndex);
+    _pageController = PageController(
+      initialPage: controller.state.currentIndex,
+    );
     _lastSyncedIndex = controller.state.currentIndex;
     controller.addListener(_onControllerChanged);
   }
@@ -70,6 +80,23 @@ class _HumorLabPageState extends State<HumorLabPage> {
     if (controller == null || page == null || !mounted) {
       return;
     }
+    if (!controller.state.calibration.complete) {
+      _sawIncompleteCalibration = true;
+    } else if (!_calibrationHandoffDone && _sawIncompleteCalibration) {
+      // Finishing the fifteenth item is the moment the user has been working
+      // toward, so hand them to the result rather than dropping them back
+      // into an undifferentiated feed.
+      _calibrationHandoffDone = true;
+      unawaited(
+        Future<void>.microtask(() {
+          if (mounted) {
+            context.go(AppRoutes.humorResult);
+          }
+        }),
+      );
+      return;
+    }
+
     final index = controller.state.currentIndex;
     if (index == _lastSyncedIndex) {
       return;
@@ -120,10 +147,32 @@ class _HumorLabPageState extends State<HumorLabPage> {
       animation: controller,
       builder: (context, _) {
         final state = controller.state;
+        final calibration = state.calibration;
+        final calibrating = !calibration.complete && calibration.totalCount > 0;
+        final progressLabel = l10n.humorCalibrationProgress(
+          calibration.completedCount,
+          calibration.totalCount,
+        );
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(l10n.humorLabTitle),
+            // While calibrating, the title *is* the progress: the user is
+            // doing a finite thing and should be able to see the end of it.
+            // Stage names stay internal — "anchor" means nothing to a person.
+            title: Text(calibrating ? progressLabel : l10n.humorLabTitle),
+            bottom: calibrating
+                ? PreferredSize(
+                    preferredSize: const Size.fromHeight(4),
+                    child: Semantics(
+                      label: progressLabel,
+                      value: '${(calibration.progress * 100).round()}%',
+                      child: LinearProgressIndicator(
+                        value: calibration.progress,
+                        minHeight: 4,
+                      ),
+                    ),
+                  )
+                : null,
             actions: [
               if (state.canUndo)
                 IconButton(
@@ -200,11 +249,26 @@ class _HumorLabPageState extends State<HumorLabPage> {
                   )
                 : state.isEmpty
                 ? MevoraEmptyState(
-                    icon: Icons.theater_comedy_outlined,
+                    icon: state.catalogExhausted
+                        ? Icons.check_circle_outline
+                        : Icons.theater_comedy_outlined,
                     title: l10n.humorLabTitle,
-                    message: l10n.humorEmptyFeed,
-                    actionLabel: l10n.humorTryAgain,
-                    onAction: () => unawaited(controller.load()),
+                    // Three different situations that used to share one
+                    // message. "You have seen everything" is an achievement,
+                    // "there is nothing here" is our problem, and a plain
+                    // empty feed is worth retrying. Saying the same thing to
+                    // all three either blames the user or hides an outage.
+                    message: state.catalogExhausted
+                        ? l10n.humorFeedAllCaughtUp
+                        : state.catalogEmpty
+                        ? l10n.humorFeedNoContent
+                        : l10n.humorEmptyFeed,
+                    actionLabel: state.catalogExhausted
+                        ? null
+                        : l10n.humorTryAgain,
+                    onAction: state.catalogExhausted
+                        ? null
+                        : () => unawaited(controller.load()),
                   )
                 : _HumorFeedBody(
                     controller: controller,

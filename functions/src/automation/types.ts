@@ -21,11 +21,15 @@ export const JobKind = {
   callRetention: "call_retention",
   auditLogRetention: "audit_log_retention",
   accountDeletionVerify: "account_deletion_verify",
+  identityProviderErasure: "identity_provider_erasure",
   premiumExpirySync: "premium_expiry_sync",
   discoverEligibilityRefresh: "discover_eligibility_refresh",
   userDocumentRepair: "user_document_repair",
   reportEnqueueReview: "report_enqueue_review",
   adminManualAction: "admin_manual_action",
+  // Read-only B-01 follow-up: find legacy malformed block documents. Never
+  // repairs or deletes — findings go to adminReviewQueue for a human.
+  forgedBlockAudit: "forged_block_audit",
 } as const;
 
 export type JobKindValue = (typeof JobKind)[keyof typeof JobKind];

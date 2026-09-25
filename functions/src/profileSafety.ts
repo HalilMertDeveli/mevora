@@ -1,4 +1,5 @@
 import {Timestamp, type DocumentData} from "firebase-admin/firestore";
+import {toPublicMusicCard} from "./spotifyMusicProfile.js";
 
 export const MIN_ONBOARDING_AGE = 18;
 export const MIN_PROFILE_PHOTOS = 3;
@@ -97,6 +98,11 @@ function projectPhotos(photos: Array<Record<string, unknown>>): Array<Record<str
 
 /** Strict public card: only fully approved photos. */
 export function publicProfileProjection(data: DocumentData): Record<string, unknown> {
+  // `publicMusic` is the only Spotify data that reaches another member, and
+  // toPublicMusicCard rebuilds it field by field. The private taste in
+  // users/{uid}/music/summary — recently played, playlist tracks, the
+  // fingerprint — is never part of a profile projection.
+  const publicMusic = toPublicMusicCard(data.publicMusic);
   return {
     uid: data.uid,
     displayName: data.displayName ?? "",
@@ -108,6 +114,7 @@ export function publicProfileProjection(data: DocumentData): Record<string, unkn
     relationshipGoal: data.relationshipGoal ?? null,
     city: data.city ?? null,
     isVerified: data.isVerified === true,
+    ...(publicMusic ? {publicMusic} : {}),
   };
 }
 

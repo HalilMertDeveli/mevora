@@ -53,6 +53,14 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="mevora" android:host="auth" android:pathPrefix="/spotify"/>
             </intent-filter>
+            <!-- Identity verification return link. Carries no verdict: it only
+                 tells the app to re-read the backend's verification state. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="mevora" android:host="verify" android:pathPrefix="/identity"/>
+            </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>

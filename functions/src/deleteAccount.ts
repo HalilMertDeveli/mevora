@@ -5,6 +5,7 @@ import {getStorage} from "firebase-admin/storage";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
+import {requestIdentityProviderErasure} from "./identity/identityErasure.js";
 import {safeLogMeta} from "./security/logHygiene.js";
 
 if (getApps().length === 0) {
@@ -62,10 +63,21 @@ export const deleteUserAccount = onCall(
 
     const userSnap = await db.doc(`users/${uid}`).get();
     const spotifyId = userSnap.data()?.spotifyId as string | undefined;
+    // A Spotify account is reachable under its legacy user id and its
+    // immutable account_id. Both index documents have to go, or the
+    // account stays 'owned' by a uid that no longer exists.
+    const spotifyIndexKeys =
+      (userSnap.data()?.spotifyIndexKeys as string[] | undefined) ?? [];
     const verificationSnap = await db.doc(`users/${uid}/verification/sumsub`).get();
     const sumsubApplicantId = verificationSnap.data()?.sumsubApplicantId as string | undefined;
+    // Read the provider session id before the document is deleted — it is the
+    // only handle that lets MEVORA ask the provider to erase its copy.
+    const identitySnap = await db.doc(`users/${uid}/verification/identity`).get();
+    const identitySessionId = identitySnap.data()?.providerSessionId as string | undefined;
     const musicSnap = await db.doc(`users/${uid}/music/summary`).get();
     const musicSpotifyId = musicSnap.data()?.spotifyUserId as string | undefined;
+    const musicSpotifyAccountId =
+      musicSnap.data()?.spotifyAccountId as string | undefined;
 
     await Promise.all([
       deleteCollectionDocs(`users/${uid}/devices`),
@@ -146,11 +158,15 @@ export const deleteUserAccount = onCall(
     await deletePrefix(`users/${uid}/`);
     await deletePrefix(`profiles/${uid}/`);
 
-    if (spotifyId) {
-      await db.doc(`spotifyIndex/${spotifyId}`).delete().catch(() => undefined);
+    for (const key of new Set(
+      [spotifyId, ...spotifyIndexKeys].filter(Boolean) as string[],
+    )) {
+      await db.doc(`spotifyIndex/${key}`).delete().catch(() => undefined);
     }
-    if (musicSpotifyId) {
-      await db.doc(`musicSpotifyIndex/${musicSpotifyId}`).delete().catch(() => undefined);
+    for (const key of new Set(
+      [musicSpotifyId, musicSpotifyAccountId].filter(Boolean) as string[],
+    )) {
+      await db.doc(`musicSpotifyIndex/${key}`).delete().catch(() => undefined);
     }
 
     await batchDelete([
@@ -159,6 +175,7 @@ export const deleteUserAccount = onCall(
       db.doc(`users/${uid}/humor/summary`),
       db.doc(`users/${uid}/relationshipMatch/summary`),
       db.doc(`users/${uid}/verification/sumsub`),
+      db.doc(`users/${uid}/verification/identity`),
       db.doc(`spotifySecrets/${uid}`),
       db.doc(`profiles/${uid}`),
       db.doc(`userPreferences/${uid}`),
@@ -170,6 +187,16 @@ export const deleteUserAccount = onCall(
     await requestSumsubApplicantDeletion({uid, applicantId: sumsubApplicantId}).catch(
       (error) => logger.warn("Sumsub applicant cleanup skipped", safeLogMeta({uid, error: String(error)})),
     );
+
+    // Provider-side erasure. MEVORA deleting its own document is not erasure:
+    // the document images, liveness video and face template live with the
+    // provider. This never throws and never blocks the deletion — an
+    // unconfirmed request becomes a pending record the automation drain
+    // retries, so the account still goes and the obligation is not lost.
+    const identityErasure = await requestIdentityProviderErasure(
+      {uid, providerSessionId: identitySessionId},
+      db,
+    ).catch(() => ({confirmed: false, outcome: "error" as const}));
 
     await auth.deleteUser(uid);
 
@@ -189,6 +216,33 @@ export const deleteUserAccount = onCall(
       logger.warn("deletion verify enqueue skipped", safeLogMeta({uid, error: String(error)}));
     }
 
-    return {ok: true, deleted: true};
+    if (!identityErasure.confirmed && identitySessionId) {
+      try {
+        const {enqueueJob} = await import("./automation/jobs.js");
+        const {JobKind} = await import("./automation/types.js");
+        const {enqueueCloudTask} = await import("./automation/tasksEnqueue.js");
+        const {jobId} = await enqueueJob({
+          kind: JobKind.identityProviderErasure,
+          idempotencyKey: `identity_erasure_${uid}`,
+          payload: {uid},
+          createdBy: "deleteUserAccount",
+        });
+        await enqueueCloudTask(jobId);
+      } catch (error) {
+        logger.warn(
+          "identity erasure enqueue skipped",
+          safeLogMeta({uid, error: String(error)}),
+        );
+      }
+    }
+
+    // Reported truthfully: the caller learns whether the provider actually
+    // confirmed erasure, rather than being told deletion was total when part
+    // of it is still outstanding.
+    return {
+      ok: true,
+      deleted: true,
+      identityProviderErased: identityErasure.confirmed,
+    };
   },
 );

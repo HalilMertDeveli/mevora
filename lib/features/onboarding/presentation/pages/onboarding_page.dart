@@ -1,14 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
+import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo_grid.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
+import 'package:mevora/core/di/music_scope.dart';
+import 'package:mevora/features/music/presentation/widgets/onboarding_music_step.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_height_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_language_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
@@ -143,8 +148,35 @@ class _OnboardingPageState extends State<OnboardingPage> {
       OnboardingStep.lifestyle => _lifestyleStep(l10n),
       OnboardingStep.bio => _bioStep(l10n),
       OnboardingStep.photos => _photosStep(l10n),
+      OnboardingStep.music => _musicStep(l10n),
       OnboardingStep.complete => _completeStep(l10n),
     };
+  }
+
+  /// Optional Spotify stage. Rendered only when a music repository is in
+  /// scope; without one the step skips itself rather than dead-ending.
+  Widget _musicStep(AppLocalizations l10n) {
+    final repository = MusicScope.maybeOf(context);
+    if (repository == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_continue());
+      });
+      return const SizedBox.shrink();
+    }
+    return OnboardingStepScaffold(
+      step: OnboardingStep.music,
+      title: l10n.onboardingMusicTitle,
+      isSaving: _controller.isSaving,
+      errorMessage: _controller.errorMessage,
+      onBack: _controller.canGoBack ? _controller.goBack : null,
+      onContinue: () => unawaited(_continue()),
+      showContinue: false,
+      child: OnboardingMusicStep(
+        repository: repository,
+        onSkip: () => unawaited(_continue()),
+        onFinished: () => unawaited(_continue()),
+      ),
+    );
   }
 
   Widget _basicInfoStep(AppLocalizations l10n) {
@@ -367,8 +399,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             enabled: !_controller.isSaving,
             onAddCamera: () =>
                 unawaited(_controller.pickPhoto(fromCamera: true)),
-            onAddGallery: () =>
-                unawaited(_controller.pickPhoto(fromCamera: false)),
+            onAddGallery: () => unawaited(_controller.pickGalleryPhotos()),
             onRetry: (id) => unawaited(_controller.retryPhotoUpload(id)),
             onRemove: _controller.removePhoto,
             onReorder: _controller.reorderPhotos,
@@ -458,6 +489,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (result.isError) {
       return;
     }
+    final humorEnabled =
+        AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
     AuthScope.of(context).applyOnboardingComplete();
+
+    // Personalization comes *after* the core profile is viable, and is never a
+    // gate: onboarding is already complete at this point, so a user who skips
+    // — or who never sees this because the flag is off — lands on discovery
+    // exactly as before.
+    if (humorEnabled && mounted) {
+      context.go(AppRoutes.humorCalibration);
+    }
   }
 }

@@ -79,6 +79,8 @@ class HumorFeedPage {
     this.profileBuilding = true,
     this.interactionCount = 0,
     this.calibration = HumorCalibration.empty,
+    this.catalogExhausted = false,
+    this.catalogEmpty = false,
   });
 
   final List<HumorContent> items;
@@ -88,6 +90,14 @@ class HumorFeedPage {
 
   /// Server-owned initial calibration progress. Never inferred on the client.
   final HumorCalibration calibration;
+
+  /// The user has worked through everything currently in the catalog — a
+  /// normal, explainable end state rather than an error.
+  final bool catalogExhausted;
+
+  /// No servable content exists at all. An operational problem, not progress,
+  /// and worth distinguishing so the empty state does not blame the user.
+  final bool catalogEmpty;
 
   bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
 }

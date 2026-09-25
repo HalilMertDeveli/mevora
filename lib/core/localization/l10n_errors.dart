@@ -108,6 +108,14 @@ abstract final class L10nErrors {
     if (raw == AppStrings.networkError) return l10n.networkError;
     if (raw == AppStrings.locationTimeoutMessage) return l10n.locationTimeoutMessage;
     if (raw == AppStrings.locationNetworkMessage) return l10n.locationNetworkMessage;
+    if (raw == AppStrings.gpsDisabledMessage) return l10n.gpsDisabledMessage;
+    if (raw == AppStrings.locationDeniedMessage) return l10n.locationDeniedMessage;
+    if (raw == AppStrings.locationSettingsMessage) {
+      return l10n.locationSettingsMessage;
+    }
+    if (raw == AppStrings.locationUnavailableTitle) {
+      return l10n.locationUnavailableTitle;
+    }
     if (raw == AppStrings.boostStoreUnavailable) return l10n.boostStoreUnavailable;
     return raw;
   }

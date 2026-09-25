@@ -11,6 +11,7 @@ export {spotifyCompleteAuth} from "./spotifyAuth";
 export {
   spotifyLinkMusic,
   getMusicAccount,
+  updatePublicMusicProfile,
   syncSpotifyTaste,
   disconnectMusicAccount,
   getSameTasteProfiles,
@@ -28,7 +29,11 @@ export {
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
-export {createSumsubAccessToken, sumsubWebhook} from "./sumsub/index.js";
+export {
+  createIdentityVerificationSession,
+  getIdentityVerificationState,
+} from "./identity/createIdentityVerificationSession.js";
+export {identityVerificationWebhook} from "./identity/identityVerificationWebhook.js";
 export {
   getHumorFeed,
   submitHumorFeedback,
@@ -37,6 +42,7 @@ export {
   reportHumorContent,
   upsertHumorContent,
   runHumorModeration,
+  getHumorCalibrationPoolReport,
   seedInternalHumorContent,
   syncHumorFromProvider,
 } from "./humor/index.js";
@@ -46,3 +52,5 @@ export {
 // task queue target does not exist and nothing drains `automationJobs`, so the
 // job stays `queued` forever.
 export {processAutomationTask, automationJobDrain} from "./automation/schedules.js";
+// Admin-only, read-only B-01 follow-up audit (never mutates blocks).
+export {runForgedBlockAudit} from "./automation/forgedBlockAuditCallable.js";

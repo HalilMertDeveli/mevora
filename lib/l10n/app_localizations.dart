@@ -2522,6 +2522,30 @@ abstract class AppLocalizations {
   /// **'Could not export your data. Try again later.'**
   String get exportMyDataFailed;
 
+  /// No description provided for @exportMyDataShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'My Mevora data export'**
+  String get exportMyDataShareSubject;
+
+  /// No description provided for @exportMyDataShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data export was shared.'**
+  String get exportMyDataShared;
+
+  /// No description provided for @exportMyDataReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data export is ready. Choose an app to save or send it.'**
+  String get exportMyDataReady;
+
+  /// No description provided for @exportMyDataShareUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No app on this device can receive the export.'**
+  String get exportMyDataShareUnavailable;
+
   /// No description provided for @settingsShowAge.
   ///
   /// In en, this message translates to:
@@ -4225,6 +4249,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve reached today\'s verification limit. Try again tomorrow.'**
   String get verificationAttemptLimit;
+
+  /// No description provided for @verificationProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'We are checking your verification. This usually takes a minute.'**
+  String get verificationProcessing;
+
+  /// No description provided for @verificationUnderReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Your verification is being reviewed. We will update this page when it is done.'**
+  String get verificationUnderReview;
+
+  /// No description provided for @verificationCheckAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get verificationCheckAgain;
+
+  /// No description provided for @verificationExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'That verification session expired before it was finished. You can start a new one.'**
+  String get verificationExpired;
+
+  /// No description provided for @verificationTemporaryError.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not read your verification status just now. Try again in a moment.'**
+  String get verificationTemporaryError;
+
+  /// No description provided for @verificationDeclinedDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not read your ID clearly. Try again in good light, with the whole document in frame.'**
+  String get verificationDeclinedDocument;
+
+  /// No description provided for @verificationDeclinedLiveness.
+  ///
+  /// In en, this message translates to:
+  /// **'The selfie step did not complete. Try again somewhere well lit, looking straight at the camera.'**
+  String get verificationDeclinedLiveness;
+
+  /// No description provided for @verificationDeclinedFaceMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The selfie did not match the photo on your ID. Try again, or use a different document.'**
+  String get verificationDeclinedFaceMatch;
+
+  /// No description provided for @verificationOpensProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'You will be taken to our verification partner to scan your ID and take a selfie, then brought back here.'**
+  String get verificationOpensProvider;
 
   /// No description provided for @whyYouMatch.
   ///
@@ -6565,6 +6643,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Counts can lag a little behind live activity.'**
   String get boostResultsDelayNote;
+
+  /// No description provided for @onboardingMusicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Does music matter to you? 🎧'**
+  String get onboardingMusicTitle;
+
+  /// No description provided for @onboardingMusicBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Spotify and Mevora can find people who actually listen to what you listen to — and explain why you fit.'**
+  String get onboardingMusicBody;
+
+  /// No description provided for @onboardingMusicConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect my Spotify'**
+  String get onboardingMusicConnect;
+
+  /// No description provided for @onboardingMusicSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get onboardingMusicSkip;
+
+  /// No description provided for @onboardingMusicSkipNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can connect Spotify later from the Music tab.'**
+  String get onboardingMusicSkipNote;
+
+  /// No description provided for @onboardingMusicCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify connection was cancelled. You can try again or skip.'**
+  String get onboardingMusicCancelled;
+
+  /// No description provided for @publicMusicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We picked up your Spotify taste 🎧'**
+  String get publicMusicTitle;
+
+  /// No description provided for @publicMusicSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what you want to show on your profile.'**
+  String get publicMusicSubtitle;
+
+  /// No description provided for @publicMusicArtistsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists'**
+  String get publicMusicArtistsHeading;
+
+  /// No description provided for @publicMusicTracksHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs'**
+  String get publicMusicTracksHeading;
+
+  /// No description provided for @publicMusicArtistCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{max} artists selected'**
+  String publicMusicArtistCount(int count, int max);
+
+  /// No description provided for @publicMusicTrackCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/{max} songs selected'**
+  String publicMusicTrackCount(int count, int max);
+
+  /// No description provided for @publicMusicLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'That is the maximum. Deselect one to choose another.'**
+  String get publicMusicLimitReached;
+
+  /// No description provided for @publicMusicSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to my profile'**
+  String get publicMusicSave;
+
+  /// No description provided for @publicMusicSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t save your selection. Please try again.'**
+  String get publicMusicSaveFailed;
+
+  /// No description provided for @publicMusicEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify didn\'t return enough listening data yet. Your music is still connected and used for compatibility.'**
+  String get publicMusicEmpty;
+
+  /// No description provided for @publicMusicVisibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Music Taste on my profile'**
+  String get publicMusicVisibilityTitle;
+
+  /// No description provided for @publicMusicVisibilityBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn this off to keep your selection private. Spotify stays connected and still improves your matches.'**
+  String get publicMusicVisibilityBody;
+
+  /// No description provided for @publicMusicHiddenNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Music Taste is hidden from other people.'**
+  String get publicMusicHiddenNotice;
+
+  /// No description provided for @publicMusicEditCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit my Music Taste'**
+  String get publicMusicEditCta;
+
+  /// No description provided for @profileMusicTasteHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Music Taste 🎧'**
+  String get profileMusicTasteHeading;
+
+  /// No description provided for @profileMusicOpenInSpotify.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Spotify'**
+  String get profileMusicOpenInSpotify;
+
+  /// No description provided for @musicLimitedData.
+  ///
+  /// In en, this message translates to:
+  /// **'Spotify is connected, but there isn\'t much listening history yet.'**
+  String get musicLimitedData;
+
+  /// No description provided for @humorCalibrationIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let us find your humor'**
+  String get humorCalibrationIntroTitle;
+
+  /// No description provided for @humorCalibrationIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.'**
+  String get humorCalibrationIntroBody;
+
+  /// No description provided for @humorCalibrationIntroMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'15 short pieces · about a minute'**
+  String get humorCalibrationIntroMeta;
+
+  /// No description provided for @humorCalibrationStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get humorCalibrationStart;
+
+  /// No description provided for @humorCalibrationSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get humorCalibrationSkip;
+
+  /// No description provided for @humorCalibrationResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get humorCalibrationResume;
+
+  /// No description provided for @humorCalibrationProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} / {total}'**
+  String humorCalibrationProgress(int completed, int total);
+
+  /// No description provided for @humorCalibrationHintEarly.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting to know you…'**
+  String get humorCalibrationHintEarly;
+
+  /// No description provided for @humorCalibrationHintMiddle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor style is taking shape.'**
+  String get humorCalibrationHintMiddle;
+
+  /// No description provided for @humorCalibrationHintFinal.
+  ///
+  /// In en, this message translates to:
+  /// **'Just a few more.'**
+  String get humorCalibrationHintFinal;
+
+  /// No description provided for @humorCalibrationResumeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Picking up where you left off.'**
+  String get humorCalibrationResumeNote;
+
+  /// No description provided for @humorCalibrationCatalogGap.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough content right now. Please try again later.'**
+  String get humorCalibrationCatalogGap;
+
+  /// No description provided for @humorProfileEntryNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover your humor'**
+  String get humorProfileEntryNotStarted;
+
+  /// No description provided for @humorProfileEntryInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} / {total} completed'**
+  String humorProfileEntryInProgress(int completed, int total);
+
+  /// No description provided for @humorProfileEntryComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile is ready'**
+  String get humorProfileEntryComplete;
+
+  /// No description provided for @humorFeedAllCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'That is all for now. New content will show up here.'**
+  String get humorFeedAllCaughtUp;
+
+  /// No description provided for @humorFeedNoContent.
+  ///
+  /// In en, this message translates to:
+  /// **'No content to show right now.'**
+  String get humorFeedNoContent;
+
+  /// No description provided for @humorResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile is ready'**
+  String get humorResultTitle;
+
+  /// No description provided for @humorResultSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We got to know you a little. Here is what stands out.'**
+  String get humorResultSubtitle;
+
+  /// No description provided for @humorResultSummaryTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {second} are what land with you.'**
+  String humorResultSummaryTwo(String first, String second);
+
+  /// No description provided for @humorResultSummaryOne.
+  ///
+  /// In en, this message translates to:
+  /// **'{first} in particular is your thing.'**
+  String humorResultSummaryOne(String first);
+
+  /// No description provided for @humorResultSummaryNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor style is not clear yet; it will sharpen as you explore.'**
+  String get humorResultSummaryNone;
+
+  /// No description provided for @humorResultContrast.
+  ///
+  /// In en, this message translates to:
+  /// **'{weakest} does not do much for you.'**
+  String humorResultContrast(String weakest);
+
+  /// No description provided for @humorResultKeepGoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep shaping your humor profile'**
+  String get humorResultKeepGoing;
+
+  /// No description provided for @humorResultDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get humorResultDone;
+
+  /// No description provided for @humorResultEvolvesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile keeps evolving as you react to new content.'**
+  String get humorResultEvolvesNote;
+
+  /// No description provided for @humorResultStrengthHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong'**
+  String get humorResultStrengthHigh;
+
+  /// No description provided for @humorResultStrengthMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get humorResultStrengthMedium;
+
+  /// No description provided for @humorResultStrengthLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slight'**
+  String get humorResultStrengthLow;
 }
 
 class _AppLocalizationsDelegate

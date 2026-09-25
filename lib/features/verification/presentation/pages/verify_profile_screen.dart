@@ -6,7 +6,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
-import 'package:mevora/features/verification/domain/entities/profile_verification.dart';
+import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/features/verification/presentation/controllers/verification_controller.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -21,9 +21,26 @@ class VerifyProfileScreen extends StatefulWidget {
   State<VerifyProfileScreen> createState() => _VerifyProfileScreenState();
 }
 
-class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
+class _VerifyProfileScreenState extends State<VerifyProfileScreen>
+    with WidgetsBindingObserver {
   VerificationController? _controller;
   bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The user may have finished, cancelled, or been killed mid-flow. Whatever
+    // happened, the backend is the only place that knows — so ask it rather
+    // than inferring anything from the lifecycle event.
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_controller?.refresh() ?? Future<void>.value());
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -50,6 +67,7 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.removeListener(_onChanged);
     _controller?.dispose();
     super.dispose();
@@ -69,9 +87,10 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
     }
 
     final status = controller.verification.status;
-    final accountVerified = user?.isVerified == true || status.isApproved;
-    final busy = controller.phase != VerificationUiPhase.idle;
-    final canStart = status.canStart && !accountVerified && !busy;
+    final accountVerified = user?.isVerified == true || status.grantsVerifiedBadge;
+    final busy = controller.isBusy;
+    final retry = controller.verification.retryEligibility();
+    final canStart = controller.canStart && !accountVerified;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.verifyYourProfile)),
@@ -113,21 +132,55 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              if (status.isInProgress)
+              if (status.isInFlight || controller.awaitingReturn)
                 MevoraCard(
                   emphasis: MevoraCardEmphasis.quiet,
-                  child: Text(
-                    l10n.verificationInProgress,
-                    style: theme.textTheme.bodyMedium,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        status == IdentityVerificationStatus.inReview
+                            ? l10n.verificationUnderReview
+                            : l10n.verificationProcessing,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      TextButton(
+                        onPressed: busy
+                            ? null
+                            : () => unawaited(controller.refresh()),
+                        child: Text(l10n.verificationCheckAgain),
+                      ),
+                    ],
                   ),
                 ),
-              if (status == ProfileVerificationStatus.rejected ||
-                  status == ProfileVerificationStatus.retryRequired) ...[
+              if (status == IdentityVerificationStatus.declined ||
+                  status == IdentityVerificationStatus.expired) ...[
                 const SizedBox(height: AppSpacing.md),
                 Text(
-                  l10n.verificationCouldNotComplete,
+                  status == IdentityVerificationStatus.expired
+                      ? l10n.verificationExpired
+                      : _declineMessage(l10n, controller.verification.reason),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+              if (status == IdentityVerificationStatus.error) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  l10n.verificationTemporaryError,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (!retry.allowed && retry.blockedBy != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  _retryMessage(l10n, retry.blockedBy!),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -143,9 +196,12 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
               const SizedBox(height: AppSpacing.xl),
               if (busy)
                 MevoraLoading(
-                  message: controller.phase == VerificationUiPhase.loadingToken
-                      ? l10n.loading
-                      : l10n.followVerificationInstructions,
+                  message: switch (controller.phase) {
+                    VerificationUiPhase.creatingSession ||
+                    VerificationUiPhase.refreshing =>
+                      l10n.loading,
+                    _ => l10n.followVerificationInstructions,
+                  },
                 )
               else
                 MevoraButton(
@@ -186,21 +242,61 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen> {
     );
   }
 
-  String _primaryLabel(AppLocalizations l10n, ProfileVerificationStatus status) {
-    if (status == ProfileVerificationStatus.rejected ||
-        status == ProfileVerificationStatus.retryRequired) {
+  String _primaryLabel(AppLocalizations l10n, IdentityVerificationStatus status) {
+    if (status == IdentityVerificationStatus.declined ||
+        status == IdentityVerificationStatus.expired) {
       return l10n.tryVerificationAgain;
     }
     return l10n.startVerification;
   }
 
+  /// Maps a backend code to user-facing copy.
+  ///
+  /// Every unmapped key falls through to a generic message on purpose: a
+  /// provider error string, a session id or a webhook state must never reach
+  /// the screen.
   String _errorMessage(AppLocalizations l10n, String key) {
     return switch (key) {
       'verification-not-configured' => l10n.verificationNotConfigured,
       'verification-cooldown' => l10n.verificationCooldown,
       'verification-attempt-limit' => l10n.verificationAttemptLimit,
+      'verification-in-progress' => l10n.verificationProcessing,
+      'verification-unavailable' => l10n.verificationTemporaryError,
       'already-verified' => l10n.profileVerified,
       _ => l10n.verificationCouldNotComplete,
+    };
+  }
+
+  /// What the user can do differently, by failed module. The provider's own
+  /// wording about their document is never shown.
+  String _declineMessage(
+    AppLocalizations l10n,
+    IdentityVerificationReason? reason,
+  ) {
+    return switch (reason) {
+      IdentityVerificationReason.documentUnreadable ||
+      IdentityVerificationReason.documentUnsupported =>
+        l10n.verificationDeclinedDocument,
+      IdentityVerificationReason.livenessFailed =>
+        l10n.verificationDeclinedLiveness,
+      IdentityVerificationReason.faceMismatch =>
+        l10n.verificationDeclinedFaceMatch,
+      IdentityVerificationReason.manualReview => l10n.verificationUnderReview,
+      IdentityVerificationReason.providerError ||
+      null =>
+        l10n.verificationCouldNotComplete,
+    };
+  }
+
+  String _retryMessage(
+    AppLocalizations l10n,
+    IdentityVerificationRetryBlock block,
+  ) {
+    return switch (block) {
+      IdentityVerificationRetryBlock.alreadyVerified => l10n.profileVerified,
+      IdentityVerificationRetryBlock.inFlight => l10n.verificationProcessing,
+      IdentityVerificationRetryBlock.cooldown => l10n.verificationCooldown,
+      IdentityVerificationRetryBlock.dailyLimit => l10n.verificationAttemptLimit,
     };
   }
 }

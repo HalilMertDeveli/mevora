@@ -1138,6 +1138,8 @@
   "supportTicketFailed": "Talep gönderilemedi. Tekrar deneyin.",
   "supportTicketValidation": "Konu ve mesaj zorunludur.",
   "supportTicketDetailTitle": "Destek talebi",
+  "supportTicketNotFoundTitle": "Destek talebi bulunamadı",
+  "supportTicketNotFoundMessage": "Bu destek talebi artık mevcut değil veya hesabınıza ait değil.",
   "supportTicketStatusLabel": "Durum",
   "supportTicketAttachments": "Ekler",
   "supportTicketStatusOpen": "Açık",

@@ -1138,6 +1138,8 @@
   "supportTicketFailed": "We could not send your request. Try again.",
   "supportTicketValidation": "Subject and message are required.",
   "supportTicketDetailTitle": "Support request",
+  "supportTicketNotFoundTitle": "Support request not found",
+  "supportTicketNotFoundMessage": "This support request no longer exists or does not belong to your account.",
   "supportTicketStatusLabel": "Status",
   "supportTicketAttachments": "Attachments",
   "supportTicketStatusOpen": "Open",

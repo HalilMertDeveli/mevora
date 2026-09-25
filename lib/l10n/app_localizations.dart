@@ -4808,6 +4808,18 @@ abstract class AppLocalizations {
   /// **'Support request'**
   String get supportTicketDetailTitle;
 
+  /// No description provided for @supportTicketNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support request not found'**
+  String get supportTicketNotFoundTitle;
+
+  /// No description provided for @supportTicketNotFoundMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This support request no longer exists or does not belong to your account.'**
+  String get supportTicketNotFoundMessage;
+
   /// No description provided for @supportTicketStatusLabel.
   ///
   /// In en, this message translates to:

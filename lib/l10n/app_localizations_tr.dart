@@ -2601,6 +2601,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get supportTicketDetailTitle => 'Destek talebi';
 
   @override
+  String get supportTicketNotFoundTitle => 'Destek talebi bulunamadı';
+
+  @override
+  String get supportTicketNotFoundMessage =>
+      'Bu destek talebi artık mevcut değil veya hesabınıza ait değil.';
+
+  @override
   String get supportTicketStatusLabel => 'Durum';
 
   @override

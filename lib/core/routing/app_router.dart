@@ -421,22 +421,16 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: ':ticketId',
                     pageBuilder: (context, state) {
+                      // Deep links arrive without `extra`; the page resolves
+                      // the ticket by id instead of fabricating a blank one.
+                      final ticketId =
+                          state.pathParameters['ticketId'] ?? '';
                       final ticket = state.extra as SupportTicket?;
                       return MevoraPageTransitions.fadeSlide(
                         key: state.pageKey,
                         child: SupportTicketDetailPage(
-                          ticket: ticket ??
-                              SupportTicket(
-                                id: state.pathParameters['ticketId'] ?? '',
-                                userId: '',
-                                category: 'other',
-                                subject: '',
-                                message: '',
-                                attachments: const [],
-                                status: SupportTicketStatus.open,
-                                createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-                                updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
-                              ),
+                          ticketId: ticket?.id ?? ticketId,
+                          ticket: ticket,
                         ),
                       );
                     },

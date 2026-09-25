@@ -1,5 +1,5 @@
 import {getApps, initializeApp} from "firebase-admin/app";
-import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {FieldValue, getFirestore, type DocumentReference, type DocumentSnapshot} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {defineSecret} from "firebase-functions/params";
@@ -73,6 +73,9 @@ async function isBlocked(a: string, b: string): Promise<boolean> {
   return first.exists || second.exists || subA.exists || subB.exists;
 }
 
+/** The participant fields a match document stores. */
+export type ProfilePreview = {name: string; photoUrl?: string; isVerified: boolean};
+
 async function profilePreview(uid: string): Promise<{name: string; photoUrl?: string; isVerified: boolean}> {
   const [profileSnap, userSnap] = await Promise.all([
     db.doc(`profiles/${uid}`).get(),
@@ -99,6 +102,95 @@ async function endActiveCallsForMatch(matchId: string): Promise<void> {
   const batch = db.batch();
   ringing.docs.forEach((doc) => batch.update(doc.ref, {status: "ended", endedAt: FieldValue.serverTimestamp()}));
   await batch.commit();
+}
+
+/** What `swipeTransaction` needs; refs are injected so it is testable. */
+export type SwipeTransactionInput = {
+  uid: string;
+  targetUserId: string;
+  action: string;
+  matchId: string;
+  forwardRef: DocumentReference;
+  reverseRef: DocumentReference;
+  matchRef: DocumentReference;
+  loadPreviews: () => Promise<[ProfilePreview, ProfilePreview]>;
+};
+
+/**
+ * The body of the `recordSwipe` transaction.
+ *
+ * Extracted so the read/write ordering can be asserted without a live
+ * Firestore: this path once read after it wrote, which Firestore rejects, and
+ * every like failed with INTERNAL while the in-memory suites stayed green.
+ *
+ * Firestore requires all reads before all writes, so every read happens up
+ * front. A pass only needs its own like document; a like also needs the
+ * reverse like and any existing match.
+ */
+export async function swipeTransaction(
+  tx: {
+    get: (ref: DocumentReference) => Promise<DocumentSnapshot>;
+    set: (ref: DocumentReference, data: Record<string, unknown>) => unknown;
+  },
+  input: SwipeTransactionInput,
+): Promise<
+  | {matched: false}
+  | {matched: true; matchId: string}
+  | {matched: true; matchId: string; _needsCompatibilitySnapshot: true}
+> {
+  const {uid, targetUserId, action, matchId, forwardRef, reverseRef, matchRef} = input;
+  const [existing, reverse, matchSnap] = await Promise.all([
+    tx.get(forwardRef),
+    action === "pass" ? Promise.resolve(null) : tx.get(reverseRef),
+    action === "pass" ? Promise.resolve(null) : tx.get(matchRef),
+  ]);
+  if (existing.exists) {
+    throw new HttpsError("already-exists", "already-swiped");
+  }
+  tx.set(forwardRef, {
+    fromUserId: uid,
+    toUserId: targetUserId,
+    action,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  if (action === "pass" || !reverse || !matchSnap) {
+    return {matched: false};
+  }
+  const reverseAction = reverse.data()?.action as string | undefined;
+  const positive = reverse.exists && reverseAction !== "pass";
+  if (!positive) {
+    return {matched: false};
+  }
+  if (matchSnap.exists && matchSnap.data()?.isActive === true) {
+    return {matched: true, matchId};
+  }
+  const [actor, other] = await input.loadPreviews();
+  const previousMatch = matchSnap.data();
+  // Compatibility snapshot is computed outside the transaction (below) via
+  // a follow-up merge so match creation never depends on scoring latency/failure.
+  tx.set(matchRef, {
+    userIds: [uid, targetUserId].sort(),
+    createdAt: previousMatch?.createdAt ?? FieldValue.serverTimestamp(),
+    lastMessage: null,
+    lastMessageAt: FieldValue.serverTimestamp(),
+    isActive: true,
+    unmatchedBy: null,
+    unmatchedAt: null,
+    unreadCounts: {[uid]: 0, [targetUserId]: 0},
+    isNewFor: {[uid]: true, [targetUserId]: true},
+    participantNames: {[uid]: actor.name, [targetUserId]: other.name},
+    participantPhotos: {
+      ...(actor.photoUrl ? {[uid]: actor.photoUrl} : {}),
+      ...(other.photoUrl ? {[targetUserId]: other.photoUrl} : {}),
+    },
+    participantVerified: {
+      [uid]: actor.isVerified,
+      [targetUserId]: other.isVerified,
+    },
+    ...preservedMatchScoreFields(previousMatch),
+    source: "mutual_like",
+  });
+  return {matched: true, matchId, _needsCompatibilitySnapshot: true as const};
 }
 
 export const recordSwipe = onCall(socialCallable, async (request) => {
@@ -161,61 +253,19 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
   const forwardId = likeId(uid, targetUserId);
   const reverseId = likeId(targetUserId, uid);
   const matchId = canonicalMatchId(uid, targetUserId);
-  return db.runTransaction(async (tx) => {
-    const forwardRef = db.doc(`likes/${forwardId}`);
-    const existing = await tx.get(forwardRef);
-    if (existing.exists) {
-      throw new HttpsError("already-exists", "already-swiped");
-    }
-    tx.set(forwardRef, {
-      fromUserId: uid,
-      toUserId: targetUserId,
+  return db.runTransaction((tx) =>
+    swipeTransaction(tx, {
+      uid,
+      targetUserId,
       action,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-    if (action === "pass") {
-      return {matched: false};
-    }
-    const reverse = await tx.get(db.doc(`likes/${reverseId}`));
-    const reverseAction = reverse.data()?.action as string | undefined;
-    const positive = reverse.exists && reverseAction !== "pass";
-    if (!positive) {
-      return {matched: false};
-    }
-    const matchRef = db.doc(`matches/${matchId}`);
-    const matchSnap = await tx.get(matchRef);
-    if (matchSnap.exists && matchSnap.data()?.isActive === true) {
-      return {matched: true, matchId};
-    }
-    const actor = await profilePreview(uid);
-    const other = await profilePreview(targetUserId);
-    const previousMatch = matchSnap.data();
-    // Compatibility snapshot is computed outside the transaction (below) via
-    // a follow-up merge so match creation never depends on scoring latency/failure.
-    tx.set(matchRef, {
-      userIds: [uid, targetUserId].sort(),
-      createdAt: previousMatch?.createdAt ?? FieldValue.serverTimestamp(),
-      lastMessage: null,
-      lastMessageAt: FieldValue.serverTimestamp(),
-      isActive: true,
-      unmatchedBy: null,
-      unmatchedAt: null,
-      unreadCounts: {[uid]: 0, [targetUserId]: 0},
-      isNewFor: {[uid]: true, [targetUserId]: true},
-      participantNames: {[uid]: actor.name, [targetUserId]: other.name},
-      participantPhotos: {
-        ...(actor.photoUrl ? {[uid]: actor.photoUrl} : {}),
-        ...(other.photoUrl ? {[targetUserId]: other.photoUrl} : {}),
-      },
-      participantVerified: {
-        [uid]: actor.isVerified,
-        [targetUserId]: other.isVerified,
-      },
-      ...preservedMatchScoreFields(previousMatch),
-      source: "mutual_like",
-    });
-    return {matched: true, matchId, _needsCompatibilitySnapshot: true as const};
-  }).then(async (result) => {
+      matchId,
+      forwardRef: db.doc(`likes/${forwardId}`),
+      reverseRef: db.doc(`likes/${reverseId}`),
+      matchRef: db.doc(`matches/${matchId}`),
+      loadPreviews: () =>
+        Promise.all([profilePreview(uid), profilePreview(targetUserId)]),
+    }),
+  ).then(async (result) => {
     if (result && "matched" in result && result.matched === true &&
         "_needsCompatibilitySnapshot" in result && result._needsCompatibilitySnapshot) {
       const fields = await buildMatchCompatibilityFields(uid, targetUserId);

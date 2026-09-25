@@ -170,7 +170,13 @@ void main() {
     test('deleteAccount cloud function cleans auth, profile docs, and storage prefixes', () {
       final source = File('functions/src/deleteAccount.ts').readAsStringSync();
       expect(source.contains('deleteUserAccount'), isTrue);
-      expect(source.contains('auth.deleteUser'), isTrue);
+      // The Auth record is removed through deleteAuthUserIfPresent, which
+      // tolerates an already-deleted user so a retried deletion returns 200
+      // instead of 500. Both the wiring and the underlying call are pinned;
+      // the behaviour is covered by
+      // functions/test/deleteAccountIdempotency.test.cjs.
+      expect(source.contains('deleteAuthUserIfPresent(auth, uid)'), isTrue);
+      expect(source.contains('client.deleteUser(uid)'), isTrue);
       expect(source.contains('deletePrefix'), isTrue);
       expect(source.contains(r'db.doc(`profiles/${uid}`)'), isTrue);
       expect(source.contains(r'deletePrefix(`profiles/${uid}/`)'), isTrue);

@@ -1,0 +1,61 @@
+---
+description: Multi-agent Git isolation — branch, worktree, and main protection for parallel Cursor agents
+alwaysApply: true
+---
+
+# Multi-Agent Git Isolation (Mevora)
+
+Read `docs/multi-agent-git-workflow.md` for full detail. These rules are mandatory before any edit.
+
+## Identity
+
+At session start, declare:
+
+- **Agent role** (task name)
+- **Expected branch**: `agent/<task-name>` (or assigned feature/qa branch)
+- **Repository path** (must be your dedicated worktree when parallel agents are active)
+
+## Pre-flight (required)
+
+```powershell
+git status
+git branch --show-current
+git worktree list
+```
+
+| Check | If failed |
+|-------|-----------|
+| Current branch matches expected | **STOP** — switch worktree/branch first |
+| Working in `D:\Mevora` while another agent owns it | **STOP** — use `D:\Mevora-agents\<task>` |
+| Dirty tree you did not create | **STOP** — report; do not stash/reset |
+
+## Forbidden without explicit user request
+
+- `git reset --hard`, `git clean -fd`, `git checkout -- .`
+- Editing another agent's branch or worktree
+- Merging or force-pushing to `main`
+- Auto-stashing uncommitted changes
+- Committing from **detached HEAD**
+
+## Worktree preference
+
+Parallel agents → **separate worktrees** under `D:\Mevora-agents\`, not shared `D:\Mevora`.
+
+Create:
+
+```powershell
+git fetch origin main
+git worktree add -b agent/<task> D:\Mevora-agents\<task> origin/main
+```
+
+## Shared files (coordinate)
+
+Avoid concurrent edits: `pubspec.yaml`, `lib/bootstrap.dart`, `lib/core/routing/`, `firebase/`, `functions/src/index.ts`, native Android/iOS configs.
+
+## Conflicts
+
+If another branch already changed the same file → **STOP AND REPORT**. Do not revert peer work.
+
+## Handoff
+
+Report branch, worktree path, commits, test results, and `READY FOR REVIEW` status.

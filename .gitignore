@@ -1,6 +1,8 @@
 # Miscellaneous
 nul
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 *.class
 *.log
 *.pyc
@@ -36,6 +38,7 @@ migrate_working_dir/
 /coverage/
 .tmp/
 tool/app_check_debug_token.local
+integration_test/fixtures/matching_runtime_qa.local.json
 
 # Symbolication related
 app.*.symbols

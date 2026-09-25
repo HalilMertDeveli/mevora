@@ -106,3 +106,12 @@ mevora-support-web/**/*.user
 # so it is per-developer and must not be committed. See CLAUDE.md.
 .mcp.json
 
+
+# Serena MCP local state: symbol caches and per-developer project config.
+# Machine-specific, regenerated on demand, never useful in review.
+.serena/
+
+# Local-only QA fixtures. The `.local` suffix marks files that hold
+# machine- or account-specific data — seeded test accounts carry real uids,
+# emails and passwords, so these must not reach the repository.
+*.local.json

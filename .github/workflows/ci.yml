@@ -50,7 +50,7 @@ jobs:
           }
           {
             echo "functions=$(match '^functions/|^\.github/workflows/')"
-            echo "rules=$(match '^firebase/|^\.github/workflows/')"
+            echo "rules=$(match '^firebase/|^functions/|^\.github/workflows/')"
           } >> "$GITHUB_OUTPUT"
           cat "$GITHUB_OUTPUT"
 

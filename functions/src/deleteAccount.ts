@@ -53,6 +53,28 @@ async function deletePrefix(prefix: string): Promise<void> {
 }
 
 /// True account deletion: Auth user + Firestore + Storage. isActive=false is not enough.
+/**
+ * Removes the Auth record, tolerating one that is already gone.
+ *
+ * A client that retries deletion — a double tap, a network retry, an app
+ * resume — used to get 500 INTERNAL from an unhandled
+ * , after the deletion had actually succeeded. Every
+ * Firestore step in this function is idempotent, so the Auth step must be
+ * too. Any other Auth failure still propagates.
+ */
+export async function deleteAuthUserIfPresent(
+  client: {deleteUser: (uid: string) => Promise<void>},
+  uid: string,
+): Promise<void> {
+  try {
+    await client.deleteUser(uid);
+  } catch (error) {
+    if ((error as {code?: string}).code !== "auth/user-not-found") {
+      throw error;
+    }
+  }
+}
+
 export const deleteUserAccount = onCall(
   {enforceAppCheck, region: "europe-west1"},
   async (request) => {
@@ -198,7 +220,7 @@ export const deleteUserAccount = onCall(
       db,
     ).catch(() => ({confirmed: false, outcome: "error" as const}));
 
-    await auth.deleteUser(uid);
+    await deleteAuthUserIfPresent(auth, uid);
 
     // Post-delete verification job (Auth already gone). Processed by automation drain.
     try {

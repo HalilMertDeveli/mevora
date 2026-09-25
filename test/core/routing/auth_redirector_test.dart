@@ -238,4 +238,63 @@ void main() {
       AppRoutes.splash,
     );
   });
+group('emulator QA login route guard', () {
+    // The guard lives in the router, not in the widget, so a deep link, a
+    // restored location or a hand-typed path is refused the same way a hidden
+    // button is.
+    test('3. direct navigation is refused when QA login is disabled', () {
+      for (final status in <AuthStatus>[
+        const Unauthenticated(),
+        const AuthenticationError('boom'),
+      ]) {
+        expect(
+          AuthRedirector.redirect(
+            status: status,
+            location: AppRoutes.qaLogin,
+          ),
+          AppRoutes.login,
+          reason: '$status must not reach the QA route',
+        );
+      }
+    });
+
+    test('the guard applies regardless of auth state', () {
+      expect(
+        AuthRedirector.redirect(
+          status: const AuthInitializing(),
+          location: AppRoutes.qaLogin,
+        ),
+        AppRoutes.login,
+      );
+      expect(
+        AuthRedirector.redirect(
+          status: const Authenticating(),
+          location: AppRoutes.qaLogin,
+        ),
+        AppRoutes.login,
+      );
+    });
+
+    test('1. an unauthenticated user may reach it when enabled', () {
+      expect(
+        AuthRedirector.redirect(
+          status: const Unauthenticated(),
+          location: AppRoutes.qaLogin,
+          qaLoginEnabled: true,
+        ),
+        isNull,
+      );
+    });
+
+    test('enabling it does not widen any other route', () {
+      expect(
+        AuthRedirector.redirect(
+          status: const Unauthenticated(),
+          location: AppRoutes.discovery,
+          qaLoginEnabled: true,
+        ),
+        AppRoutes.login,
+      );
+    });
+  });
 }

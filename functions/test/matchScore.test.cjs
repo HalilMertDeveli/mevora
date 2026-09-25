@@ -153,3 +153,45 @@ describe("match score policy", () => {
     assert.equal(cleaned.includes("***"), true);
   });
 });
+
+describe("message side effects payload", () => {
+  // A nested-array arrayUnion once made the whole applyMessageSideEffects
+  // transaction throw. lastMessage is written by the client, so the chat
+  // looked fine while every server-side effect was silently lost: no unread
+  // count, no isNewFor clear, no messagedUserIds entry, and the push that
+  // runs after it never fired. Validate the real payload the way Firestore
+  // validates a write, so the shape cannot regress.
+  const {buildMessageSideEffectUpdates} = require("../lib/matchScore.js");
+  const {Firestore} = require("@google-cloud/firestore");
+
+  const payload = () =>
+    buildMessageSideEffectUpdates({
+      senderId: "aya",
+      receiverId: "can",
+      lastMessage: "\u{1F512}",
+    });
+
+  it("passes Firestore write validation", () => {
+    // update() validates synchronously, before any RPC, so no emulator is
+    // needed to prove the write would be accepted.
+    const db = new Firestore({projectId: "validation-only"});
+    const batch = db.batch();
+    assert.doesNotThrow(() => {
+      batch.update(db.doc("matches/aya_can"), payload());
+    });
+  });
+
+  it("unions the sender id itself, never an array", () => {
+    const union = payload().messagedUserIds;
+    const elements = union._elements ?? union.elements;
+    assert.ok(Array.isArray(elements), "arrayUnion should carry its elements");
+    assert.deepEqual(elements, ["aya"]);
+  });
+
+  it("targets the receiver for unread and isNewFor", () => {
+    const updates = payload();
+    assert.ok("unreadCounts.can" in updates);
+    assert.equal(updates["isNewFor.can"], false);
+    assert.equal(updates.lastMessage, "\u{1F512}");
+  });
+});

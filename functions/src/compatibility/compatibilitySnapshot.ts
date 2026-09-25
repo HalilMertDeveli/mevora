@@ -2,6 +2,7 @@ import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firest
 import {calculateCompatibility} from "./compatibilityEngine.js";
 import {musicScoreForPair} from "../spotifyMusic.js";
 import {relationshipScoreForPair} from "../relationshipMatch.js";
+import {approvedPhotos} from "../profileSafety.js";
 
 const db = getFirestore();
 
@@ -24,7 +25,21 @@ export type CompatibilitySnapshotPayload = {
 export type MatchCompatibilityFields = {
   compatibilitySnapshots: Record<string, CompatibilitySnapshotPayload>;
   compatibilityCalculatedAt: ReturnType<typeof FieldValue.serverTimestamp>;
+  participantNames: Record<string, string>;
+  participantPhotos: Record<string, string>;
+  participantVerified: Record<string, boolean>;
 };
+
+/** First approved photo, or null. Pending photos are owner-private. */
+function primaryApprovedPhoto(data: DocumentData): string | null {
+  const photos = approvedPhotos(data.photos);
+  if (photos.length === 0) {
+    return null;
+  }
+  const primary = photos.find((photo) => photo.isPrimary === true) ?? photos[0];
+  const url = primary.downloadUrl ?? primary.thumbUrl;
+  return typeof url === "string" && url.length > 0 ? url : null;
+}
 
 function payloadFromBreakdown(
   compat: ReturnType<typeof calculateCompatibility>,
@@ -120,12 +135,31 @@ export async function buildMatchCompatibilityFields(
       musicScore,
     });
 
+    // Match.otherName() reads participantNames and falls back to the app name
+    // when it is absent, so every Discover-created match rendered as "Mevora"
+    // instead of the person you matched with. The rules allowlist already
+    // expects these fields; nothing was writing them.
+    const photoA = primaryApprovedPhoto(dataA);
+    const photoB = primaryApprovedPhoto(dataB);
+
     return {
       compatibilitySnapshots: {
         [uidA]: forA,
         [uidB]: forB,
       },
       compatibilityCalculatedAt: FieldValue.serverTimestamp(),
+      participantNames: {
+        [uidA]: String(dataA.displayName ?? ""),
+        [uidB]: String(dataB.displayName ?? ""),
+      },
+      participantPhotos: {
+        ...(photoA === null ? {} : {[uidA]: photoA}),
+        ...(photoB === null ? {} : {[uidB]: photoB}),
+      },
+      participantVerified: {
+        [uidA]: dataA.isVerified === true,
+        [uidB]: dataB.isVerified === true,
+      },
     };
   } catch (error) {
     console.error("buildMatchCompatibilityFields failed", {uidA, uidB, error});

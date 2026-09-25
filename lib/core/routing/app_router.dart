@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/presentation/pages/design_system_page.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/core/config/emulator_qa_login.dart';
 import 'package:mevora/core/routing/auth_redirector.dart';
 import 'package:mevora/core/routing/lazy_shell_navigator.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
@@ -16,6 +17,7 @@ import 'package:mevora/features/settings/presentation/pages/privacy_settings_pag
 import 'package:mevora/features/settings/presentation/pages/settings_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/account_settings_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/login_page.dart';
+import 'package:mevora/features/authentication/presentation/pages/qa_login_page.dart';
 import 'package:mevora/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/password_reset_page.dart';
 import 'package:mevora/features/authentication/presentation/pages/register_page.dart';
@@ -65,6 +67,7 @@ GoRouter createAppRouter({
         status: authController.status,
         location: state.matchedLocation,
         allowDesignSystem: config.showDebugBanner,
+        qaLoginEnabled: EmulatorQaLogin.isEnabled(config),
         phoneChallengeActive:
             authController.phoneAuth.hasActiveChallenge ||
             authController.phoneChallenge != null,
@@ -85,6 +88,13 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const LoginPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.qaLogin,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const QaLoginPage(),
         ),
       ),
       GoRoute(

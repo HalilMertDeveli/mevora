@@ -92,6 +92,14 @@ class FirebaseBootstrap {
       emulators.host,
       emulators.functionsPort,
     );
+    // Every callable in the app goes through instanceFor(region:), which is a
+    // different instance from FirebaseFunctions.instance. Wiring only the
+    // default one left all callables pointing at production while the app
+    // looked like it was on emulators — and in development the hybrid Discover
+    // repository silently served demo data, so nothing surfaced the mistake.
+    FirebaseFunctions.instanceFor(
+      region: config.functionsRegion,
+    ).useFunctionsEmulator(emulators.host, emulators.functionsPort);
     logger.info(
       'Connected Firestore/Functions/Storage emulators at ${emulators.host}',
     );

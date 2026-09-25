@@ -206,6 +206,30 @@ export async function awardUniqueMatchBonus(matchId: string): Promise<void> {
   });
 }
 
+/**
+ * The match-document update a new chat message produces.
+ *
+ * Extracted so it can be validated against Firestore's own write validator in
+ * a test. It used to be inline, and a nested-array arrayUnion made the whole
+ * transaction throw, so every message silently lost its unread count, its
+ * isNewFor flag, its messagedUserIds entry and the push that follows.
+ */
+export function buildMessageSideEffectUpdates(input: {
+  senderId: string;
+  receiverId: string;
+  lastMessage: string;
+}): Record<string, unknown> {
+  return {
+    lastMessage: input.lastMessage,
+    lastMessageAt: FieldValue.serverTimestamp(),
+    [`unreadCounts.${input.receiverId}`]: FieldValue.increment(1),
+    [`isNewFor.${input.receiverId}`]: false,
+    // arrayUnion takes the elements themselves. Passing an array builds a
+    // nested array, which Firestore rejects when the write is validated.
+    messagedUserIds: FieldValue.arrayUnion(input.senderId),
+  };
+}
+
 export async function applyMessageSideEffects(input: {
   matchId: string;
   senderId: string;
@@ -233,13 +257,7 @@ export async function applyMessageSideEffects(input: {
     const userSnaps = willAward
       ? await Promise.all(userIds.map((uid) => tx.get(db.doc(`users/${uid}`))))
       : [];
-    const updates: Record<string, unknown> = {
-      lastMessage: input.lastMessage,
-      lastMessageAt: FieldValue.serverTimestamp(),
-      [`unreadCounts.${input.receiverId}`]: FieldValue.increment(1),
-      [`isNewFor.${input.receiverId}`]: false,
-      messagedUserIds: FieldValue.arrayUnion([input.senderId]),
-    };
+    const updates = buildMessageSideEffectUpdates(input);
     if (willAward) {
       updates.interactionBonusAwarded = true;
     }

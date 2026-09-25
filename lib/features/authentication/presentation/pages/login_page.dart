@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/authentication/presentation/widgets/emulator_qa_login_panel.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_decorations.dart';
 import 'package:mevora/core/theme/app_typography.dart';
@@ -203,6 +204,20 @@ class _LoginPageState extends State<LoginPage>
                         ],
                       ),
                     ),
+                  ),
+                  EmulatorQaLoginPanel(
+                    enabled: !auth.isBusy,
+                    onUseAccount: (email, password) {
+                      setState(() {
+                        _showEmailForm = true;
+                        _emailController.text = email;
+                        _passwordController.text = password;
+                        _emailError = null;
+                        _passwordError = null;
+                      });
+                      // Goes through the ordinary email sign-in path.
+                      unawaited(_submit());
+                    },
                   ),
                   if (_showEmailForm) ...[
                     const SizedBox(height: AppSpacing.xl),

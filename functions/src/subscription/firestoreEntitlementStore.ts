@@ -21,6 +21,8 @@ const STATUSES: ReadonlySet<string> = new Set<SubscriptionStatus>([
   "billing_retry",
   "expired",
   "cancelled",
+  "paused",
+  "pending",
   "revoked",
   "refunded",
 ]);

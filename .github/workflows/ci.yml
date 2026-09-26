@@ -137,6 +137,12 @@ jobs:
         # exercises storage.rules and resolves match membership via Firestore.
         if: needs.changes.outputs.rules == 'true'
         run: npx --yes firebase-tools@15 emulators:exec --only firestore,storage --project mevora-dev "npm --prefix firebase/tests test"
+      - name: Mutual match acceptance (recordDiscoveryDecision)
+        # Its own emulator session on purpose. It needs Functions, and the
+        # rules suite above must not run with triggers live: sendMessageNotification
+        # writes unread state and breaks the peer-unread security assertion.
+        if: needs.changes.outputs.rules == 'true'
+        run: npx --yes firebase-tools@15 emulators:exec --only auth,firestore,functions --project mevora-dev "npm --prefix firebase/tests run test:match"
       - name: Skipped
         if: needs.changes.outputs.rules != 'true'
         run: echo "firebase/ unchanged — emulator suite not required for this PR."

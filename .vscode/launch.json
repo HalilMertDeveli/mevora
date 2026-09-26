@@ -14,6 +14,7 @@
       "args": [
         "--flavor",
         "development",
+        "--dart-define=USE_MOCK_HUMOR=false",
         "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1",
         "--dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=${env:FIREBASE_APP_CHECK_DEBUG_TOKEN}"
       ]
@@ -32,6 +33,7 @@
         "--flavor",
         "development",
         "--dart-define=USE_EMULATORS=false",
+        "--dart-define=USE_MOCK_HUMOR=false",
         "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1",
         "--dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=${env:FIREBASE_APP_CHECK_DEBUG_TOKEN}"
       ]
@@ -50,6 +52,7 @@
         "--flavor",
         "development",
         "--dart-define=USE_AUTH_EMULATOR=true",
+        "--dart-define=USE_MOCK_HUMOR=false",
         "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1",
         "--dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=${env:FIREBASE_APP_CHECK_DEBUG_TOKEN}"
       ]

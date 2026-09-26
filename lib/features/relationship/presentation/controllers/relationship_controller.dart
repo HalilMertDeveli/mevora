@@ -18,6 +18,7 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
     Duration idleTimeout = RelationshipQuestionConfig.idleTimeout,
     DateTime Function()? clock,
     bool? enforceOfferGates,
+    this.autoOfferEnabled = true,
   }) : _repository = repository,
        _interval = interval ?? RelationshipQuestionConfig.interval,
        _clock = clock ?? DateTime.now,
@@ -28,6 +29,9 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   final Duration _interval;
   final DateTime Function() _clock;
   final bool _enforceOfferGates;
+
+  /// When false, Discovery dwell time never opens the test offer.
+  final bool autoOfferEnabled;
 
   Timer? _timer;
   Timer? _heartbeat;
@@ -131,7 +135,10 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
       if (opened) {
         _log('Discovery visible');
         unawaited(refreshAnswered());
-        if (_matchingPaused && _enforceOfferGates && !_sessionLocked) {
+        if (autoOfferEnabled &&
+            _matchingPaused &&
+            _enforceOfferGates &&
+            !_sessionLocked) {
           _sessionLocked = true;
           _continuePromptVisible = true;
           notifyListeners();
@@ -453,6 +460,9 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   }
 
   void _armTimer() {
+    if (!autoOfferEnabled) {
+      return;
+    }
     if (!_discoveryVisible || _sessionLocked || _appPaused) {
       _log(
         'Dwell timer idle (visible=$_discoveryVisible locked=$_sessionLocked paused=$_appPaused)',
@@ -546,7 +556,7 @@ class RelationshipController extends ChangeNotifier with WidgetsBindingObserver 
   }
 
   void _triggerOffer() {
-    if (_sessionLocked) {
+    if (!autoOfferEnabled || _sessionLocked) {
       _log('Relationship trigger condition: FALSE');
       return;
     }

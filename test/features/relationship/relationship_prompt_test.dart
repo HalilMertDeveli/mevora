@@ -25,6 +25,7 @@ RelationshipController _controller({
   RelationshipRepository? repository,
   Duration interval = AppDurations.relationshipPrompt,
   bool enforceOfferGates = true,
+  bool autoOfferEnabled = true,
 }) {
   final controller = RelationshipController(
     repository:
@@ -32,6 +33,7 @@ RelationshipController _controller({
         RelationshipRepositoryImpl(dataSource: MockRelationshipDataSource()),
     interval: interval,
     enforceOfferGates: enforceOfferGates,
+    autoOfferEnabled: autoOfferEnabled,
   );
   addTearDown(() {
     controller.pause();
@@ -66,6 +68,23 @@ void main() {
     expect(controller.isOfferVisible, isTrue);
     expect(controller.currentQuestion, isNull);
     controller.pause();
+  });
+
+  testWidgets('disabled auto offer never opens the test offer', (
+    tester,
+  ) async {
+    final controller = _controller(autoOfferEnabled: false);
+    await controller.refreshAnswered();
+    controller.setDiscoveryVisible(true);
+    controller.setNormalMatchCount(0);
+    controller.debugElapse(AppDurations.relationshipPrompt);
+    expect(controller.isOfferVisible, isFalse);
+    expect(controller.isContinuePromptVisible, isFalse);
+    controller.pause();
+  });
+
+  test('auto offer is off by default in the app config', () {
+    expect(RelationshipQuestionConfig.autoOfferEnabled, isFalse);
   });
 
   testWidgets('hidden discovery does not open the test offer', (

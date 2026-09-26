@@ -5,6 +5,7 @@ import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/ht
 import {logger} from "firebase-functions";
 import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
 import {isHumorCategory} from "./categories.js";
+import {giphyApiKey} from "./humorApiConfig.js";
 import {humorScoreForPair} from "./compatibility.js";
 import {
   INTERNAL_HUMOR_SEED,
@@ -319,8 +320,13 @@ export const seedInternalHumorContent = onCall(callableOptions, async (request) 
 export const syncHumorFromProvider = onCall(
   {
     ...callableOptions,
-    // Secret optional at deploy; runtime checks configuration.
-    secrets: [],
+    // Declaring the secret is what mounts it into the runtime. Without this
+    // the key is never present, `resolveGiphyApiKey()` returns null, and the
+    // callable reports "not configured" however many times an admin runs
+    // `functions:secrets:set GIPHY_API_KEY` — the exact command its own error
+    // message tells them to run. Every other secret in this codebase is bound
+    // the same way.
+    secrets: [giphyApiKey],
   },
   async (request) => {
     const uid = requireUid(request);

@@ -143,6 +143,13 @@ jobs:
         # writes unread state and breaks the peer-unread security assertion.
         if: needs.changes.outputs.rules == 'true'
         run: npx --yes firebase-tools@15 emulators:exec --only auth,firestore,functions --project mevora-dev "npm --prefix firebase/tests run test:match"
+      - name: Discovery distance gate acceptance (getDiscoveryCandidates)
+        # Its own emulator session, same reason as the match step above.
+        # This is the only gate that proves distance actually EXCLUDES: the
+        # unit tests pin the predicate, but a regression that stops calling it
+        # from the callable would leave them all green.
+        if: needs.changes.outputs.rules == 'true'
+        run: npx --yes firebase-tools@15 emulators:exec --only auth,firestore,functions --project mevora-dev "npm --prefix firebase/tests run test:radius"
       - name: Skipped
         if: needs.changes.outputs.rules != 'true'
         run: echo "firebase/ unchanged — emulator suite not required for this PR."

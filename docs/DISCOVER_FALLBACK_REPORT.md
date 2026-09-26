@@ -6,11 +6,13 @@
 ## Behavior
 
 ```text
+HARD GATE: exact haversine > min(radiusKm, 100 km)  →  candidate dropped
+        ↓ (everyone below is already inside the gate)
 Nearby (within preferred radius / boost-extended)
         ↓ fill if needed
-Extended (up to 100 km)
+Extended
         ↓
-Far (up to 500 km)
+Far
         ↓
 No location (viewer or candidate)
         ↓
@@ -19,7 +21,45 @@ Client radius ladder 5→10→25→50→100 with soft expand
 Empty state only if still nothing
 ```
 
-**Never relaxed:** self, blocked, liked, passed, matches, banned/ineligible, under-18, inactive (>90d), smoke isolation.
+**Never relaxed:** self, blocked, liked, passed, matches, banned/ineligible,
+under-18, inactive (>90d), smoke isolation, **and distance beyond the
+resolved radius**.
+
+### Update 2026-09-27 — distance became a hard gate
+
+Until this change distance never excluded anyone. The tiers above were the
+whole story: `classifyDiscoveryDistance` had no rejecting branch, so a
+candidate 12,300 km away was tagged `far` and `fillFromDistanceTiers`
+served them as soon as the nearby bucket was short of `limit`. A runtime
+probe confirmed it — Istanbul viewer, Buenos Aires candidate, returned as
+`distanceKm: 100` / "100+ km away", and a mutual like created a real match.
+
+`getDiscoveryCandidates` now drops a candidate whose **exact** haversine
+distance exceeds `min(radiusKm, DISCOVERY_MAX_RADIUS_KM)`, counted as
+`distance_over_radius` in `rejectionReasons` and echoed as `gateKm` in the
+`discovery_fallback` log and the `includeDebug` payload.
+
+Three things to know before touching this:
+
+- The gate reads the exact haversine, deliberately **before** the disclosure
+  step quantises it. `coarseDistanceKm` floors into 5 km bands and flattens
+  everything at or beyond 100 km to exactly 100, so a gate fed the disclosed
+  figure would admit the far side of the planet while every log line looked
+  correct.
+- The gate is **not** disabled under the Functions emulator.
+  `relationshipMatch.ts` disables its own 100 km rule whenever
+  `FUNCTIONS_EMULATOR` is set, which hides that gate from the only QA that
+  would catch a regression. Discovery does not copy that.
+- The gate is boost-independent. `effectiveRadiusKm` still widens the
+  *nearby tier boundary* for a boosted candidate, so Boost keeps its
+  ordering advantage, but it can no longer pull someone past the radius the
+  viewer asked for.
+
+Still true after this change, and worth fixing separately: the candidate
+pool is selected by `updatedAt desc` over at most 3-4 pages of 40 profiles,
+not by proximity, so a genuinely nearby user outside that recency window is
+never considered. `userPreferences.maxDistance` remains write-only dead
+state, and the disclosed distance is still banded at 5 km.
 
 ## Files touched
 

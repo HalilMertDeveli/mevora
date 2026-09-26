@@ -70,8 +70,22 @@ class AppConfig {
   }
 
   /// Public Spotify OAuth client ID. The client secret never ships in the app.
-  String get spotifyClientId =>
-      const String.fromEnvironment('SPOTIFY_CLIENT_ID');
+  ///
+  /// Defaulted rather than left empty. Under PKCE the client ID is public by
+  /// design — it ships inside the binary either way — and this same value is
+  /// already committed as the default in functions/src/spotifyConfig.ts.
+  ///
+  /// With no default here only a .vscode launch configuration supplied it, so
+  /// a terminal 'flutter run', a 'flutter build apk', and every CI or release
+  /// build had an empty client ID. _beginOAuth then throws notConfigured and
+  /// the Music tab reports that Spotify is not configured in this build — the
+  /// whole feature dead, and indistinguishable from a real outage.
+  ///
+  /// A --dart-define still overrides this.
+  String get spotifyClientId => const String.fromEnvironment(
+    'SPOTIFY_CLIENT_ID',
+    defaultValue: 'a937aa81f01645f78c5ba8c174c800d1',
+  );
 
   String get spotifyRedirectUri => const String.fromEnvironment(
     'SPOTIFY_REDIRECT_URI',

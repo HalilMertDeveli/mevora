@@ -1,6 +1,17 @@
 /**
- * Soft distance tiers for discovery fallback.
- * Hard security exclusions stay outside this module.
+ * Distance handling for discovery.
+ *
+ * Two different jobs live here, and confusing them is how the gate went
+ * missing for so long:
+ *
+ *  - isWithinDiscoveryRadius / resolveDiscoveryRadiusKm are the HARD gate.
+ *    They decide who is in the deck at all.
+ *  - classifyDiscoveryDistance / fillFromDistanceTiers are SOFT tiers. They
+ *    only order the people the gate already admitted, and by design they
+ *    never reject anyone.
+ *
+ * Hard security exclusions (blocks, bans, moderation) stay outside this
+ * module.
  */
 
 export type DiscoveryDistanceTier = "nearby" | "extended" | "far" | "no_location";
@@ -16,6 +27,55 @@ export type DiscoveryFallbackLevel =
 export const DISCOVERY_EXTENDED_CAP_KM = 100;
 /** Soft include beyond extended until this (km). */
 export const DISCOVERY_FAR_CAP_KM = 500;
+/**
+ * Hard ceiling for discovery. A candidate further than this is EXCLUDED from
+ * the response — not ranked last, excluded. The soft tiers above only decide
+ * the order of the people who already passed this gate.
+ *
+ * 100 km deliberately matches MAX_RELATIONSHIP_MATCH_KM
+ * (relationshipCompatibility.ts) and DISTANCE_MAX_DISCLOSED_KM
+ * (geo/coarseDistance.ts): one number for "too far to date", one number the
+ * product already discloses, and the value the radius ladder already tops out
+ * at.
+ */
+export const DISCOVERY_MAX_RADIUS_KM = 100;
+
+/**
+ * Resolve the hard gate for one request. The caller-supplied radius is the
+ * progressive step — the client walks it up the ladder (5/10/25/50/100) when a
+ * deck comes back empty — and this clamps it to the absolute ceiling so no
+ * request can widen the gate past what the product allows.
+ */
+export function resolveDiscoveryRadiusKm(requestedKm: unknown): number {
+  const value = Number(requestedKm);
+  if (!Number.isFinite(value) || value <= 0) {
+    return DISCOVERY_MAX_RADIUS_KM;
+  }
+  return Math.min(value, DISCOVERY_MAX_RADIUS_KM);
+}
+
+/**
+ * The hard gate itself.
+ *
+ * Takes the EXACT haversine distance, never the disclosed bucket: the bucket
+ * is floored to 5 km bands and flattened at 100, so gating on it would admit
+ * anyone at all beyond 100 km (100 <= 100) — precisely the hole this function
+ * exists to close.
+ *
+ * A null distance means the viewer or the candidate has no stored location, so
+ * proximity cannot be asserted either way. What to do with those candidates is
+ * a policy decision left to the caller; this predicate only reports that they
+ * are not verifiably within range.
+ */
+export function isWithinDiscoveryRadius(
+  exactDistanceKm: number | null,
+  radiusKm: number,
+): boolean {
+  if (exactDistanceKm == null || !Number.isFinite(exactDistanceKm)) {
+    return false;
+  }
+  return exactDistanceKm <= radiusKm;
+}
 
 /**
  * Classify a candidate relative to the viewer's preferred radius.
@@ -40,7 +100,11 @@ export function classifyDiscoveryDistance(
   if (distanceKm <= DISCOVERY_FAR_CAP_KM) {
     return "far";
   }
-  // Extremely far — still usable as last-resort far tier.
+  // No rejecting branch on purpose: by the time a candidate reaches this
+  // function the hard gate in getDiscoveryCandidates has already dropped
+  // anyone out of range, so everything left is includable and this only
+  // picks an ordering bucket. Do not turn this into an exclusion — the gate
+  // needs the exact haversine, which is no longer in scope here.
   return "far";
 }
 

@@ -265,7 +265,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text(_tr.discoveryActionConnect), findsOneWidget);
+      expect(find.byTooltip(_tr.discoveryActionConnect), findsOneWidget);
     });
   });
 

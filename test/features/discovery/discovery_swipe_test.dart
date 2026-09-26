@@ -63,7 +63,7 @@ void main() {
     await tester.pumpWidget(wrap(DiscoveryPage(controller: controller)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text(_en.pass));
+    await tester.tap(find.byTooltip(_en.pass));
     await tester.pumpAndSettle();
     expect(discovery.passed, isNotEmpty);
   });

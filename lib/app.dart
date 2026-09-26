@@ -45,6 +45,7 @@ import 'package:mevora/features/humor/domain/repositories/humor_repository.dart'
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
+import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/core/di/verification_scope.dart';
@@ -182,6 +183,7 @@ class _MevoraAppState extends State<MevoraApp> {
     if (relationship != null) {
       _relationshipController = RelationshipController(
         repository: relationship,
+        autoOfferEnabled: RelationshipQuestionConfig.autoOfferEnabled,
       );
     }
     _router =

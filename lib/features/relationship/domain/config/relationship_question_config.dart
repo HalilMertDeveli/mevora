@@ -6,6 +6,13 @@ import 'package:flutter/foundation.dart';
 /// (alias of [productionInterval]). Change this single constant to retune
 /// event length (3 → 5 → 10 → 15 minutes) without hunting magic numbers.
 abstract final class RelationshipQuestionConfig {
+  /// Spontaneous relationship-test offer on Discovery. Off until the feature
+  /// is reworked; re-enable locally with
+  /// `--dart-define=RELATIONSHIP_AUTO_OFFER=true`.
+  static const bool autoOfferEnabled = bool.fromEnvironment(
+    'RELATIONSHIP_AUTO_OFFER',
+  );
+
   /// Configurable matching-event length (default: 3 minutes).
   static const Duration matchingEventDuration = Duration(minutes: 3);
 

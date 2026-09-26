@@ -84,6 +84,64 @@ to staging first", no splitting a change into pieces small enough to feel unrema
 
 ---
 
+## Branch model — `main`, `preview`, and task branches
+
+Three roles. Nothing else is long-lived.
+
+| Branch | Role | Who writes to it |
+|---|---|---|
+| `main` | The stable, always-working version. What gets deployed. | Only the owner's approved merge from `preview` |
+| `preview` | The combined running version the owner reviews and tests | Any agent merges its finished task branch here |
+| `fix/*` `feat/*` … | One task each, per the core rule | The agent that owns it |
+
+### The flow
+
+```
+task branch  ──PR──▶  preview  ──owner approves──▶  main  ──owner runs──▶  deploy
+   (from main)        (combined, testable)          (stable)
+```
+
+1. **Branch from `origin/main`**, never from `preview` and never from another task branch.
+   `main` stays the reference point, so a task never inherits unreviewed work.
+2. **Finish the task**: implement, test, push, open a PR **targeting `preview`**.
+3. **Merge into `preview`** once the PR's checks pass. This does **not** need approval —
+   `preview` exists precisely so the owner can see work before deciding. It is a review
+   surface, not a shared production environment.
+4. **The owner reviews `preview`** as a combined running version — several changes at once,
+   in one build, the way a user would meet them.
+5. **`preview` → `main` needs explicit approval.** This is the gate. See **Approval gate**.
+6. **Deploy happens from `main`, and only the owner runs it.** See **Deploying**.
+
+After `preview` merges into `main` the two are identical, so `preview` does not drift.
+If they ever diverge, reset `preview` to `main` rather than reconciling — the task branches,
+not `preview`, are the source of truth.
+
+### What `preview` is not
+
+- Not a place to develop. No commits are authored directly on `preview`.
+- Not a dumping ground. A task branch reaches it only when the task is actually finished.
+- Not permission to skip review. Work on `preview` has been *seen*, not *approved*.
+- Not a substitute for the disposable `qa/integration-<date>` branch, which is still the
+  right tool for trying a specific combination without putting it in front of the owner.
+
+### Deploying
+
+Deploy is manual and stays that way — no workflow deploys on merge. After the owner merges
+`preview` into `main`, the agent **prepares** the exact command and the owner **runs** it.
+
+A prepared deploy command must: run from a `main` worktree (never a task worktree), name the
+project explicitly, and scope with `--only` to exactly what changed — never a bare
+`firebase deploy`.
+
+```bash
+# shape, not a command to copy blindly — the agent fills in the real targets
+firebase deploy --project mevora-d6ed0 --only functions:<names>,firestore:rules
+```
+
+State in the report what will change, what will not, and how to roll back.
+
+---
+
 ## Canonical conventions
 
 ### Branch naming — semantic prefixes

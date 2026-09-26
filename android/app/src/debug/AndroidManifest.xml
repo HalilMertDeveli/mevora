@@ -4,5 +4,13 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 16 gated local network access behind a runtime permission.
+         Without it the app sandbox cannot reach the Firebase Emulator Suite
+         at 10.0.2.2 (or the host LAN address) at all, while adb shell still
+         can — so it surfaces as firebase_auth/network-request-failed and
+         "check your internet connection", never as a permission problem.
+
+         Debug source set only: release builds neither request nor need it. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK"/>
     <application android:usesCleartextTraffic="true" />
 </manifest>

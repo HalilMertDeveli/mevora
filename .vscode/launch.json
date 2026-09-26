@@ -19,6 +19,29 @@
       ]
     },
     {
+      "name": "Mevora (development · full emulator suite)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_development.dart",
+      "preLaunchTask": "Flutter: Prepare Run",
+      "toolEnv": {
+        "TMP": "${workspaceFolder}/.tmp",
+        "TEMP": "${workspaceFolder}/.tmp"
+      },
+      "args": [
+        "--flavor",
+        "development",
+        "--dart-define=USE_EMULATORS=true",
+        "--dart-define=USE_AUTH_EMULATOR=true",
+        "--dart-define=USE_MOCK_HUMOR=false",
+        "--dart-define=SPOTIFY_CLIENT_ID=a937aa81f01645f78c5ba8c174c800d1",
+        "--dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=${env:FIREBASE_APP_CHECK_DEBUG_TOKEN}",
+        "--dart-define=QA_EMAIL_A=qa_user_a@mevora.test",
+        "--dart-define=QA_EMAIL_B=qa_user_b@mevora.test",
+        "--dart-define=QA_PASSWORD=MevoraQa!2026"
+      ]
+    },
+    {
       "name": "Mevora (development · physical SMS)",
       "request": "launch",
       "type": "dart",

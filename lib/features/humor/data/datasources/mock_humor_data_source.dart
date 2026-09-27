@@ -37,10 +37,8 @@ class MockHumorDataSource implements HumorDataSource {
       humorTags: ['absürt', 'video'],
       textBody: 'Alarm değil, sabah sabotajı.',
       downloadUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      thumbUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg',
-      durationMs: 15000,
+          'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4',
+      durationMs: 10000,
       aspectRatio: 16 / 9,
     ),
     HumorContent(
@@ -51,10 +49,8 @@ class MockHumorDataSource implements HumorDataSource {
       humorTags: ['günlük', 'video'],
       textBody: 'Buzdolabı yine boş fikirler sunuyor.',
       downloadUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      thumbUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg',
-      durationMs: 15000,
+          'https://test-videos.co.uk/vids/sintel/mp4/h264/360/Sintel_360_10s_1MB.mp4',
+      durationMs: 10000,
       aspectRatio: 16 / 9,
     ),
     HumorContent(
@@ -65,10 +61,8 @@ class MockHumorDataSource implements HumorDataSource {
       humorTags: ['saçma', 'video'],
       textBody: 'Planım vardı… sonra pazartesi oldu.',
       downloadUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      thumbUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerFun.jpg',
-      durationMs: 60000,
+          'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4',
+      durationMs: 10000,
       aspectRatio: 16 / 9,
     ),
     HumorContent(
@@ -79,10 +73,8 @@ class MockHumorDataSource implements HumorDataSource {
       humorTags: ['meme', 'video'],
       textBody: 'Wi‑Fi şifresi kadar karmaşık bir ruh hali.',
       downloadUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-      thumbUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg',
-      durationMs: 15000,
+          'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+      durationMs: 5055,
       aspectRatio: 16 / 9,
     ),
     HumorContent(
@@ -148,10 +140,8 @@ class MockHumorDataSource implements HumorDataSource {
       humorTags: ['romantik', 'espri'],
       textBody: 'Sen Wi‑Fi misin? Bağlantı hissediyorum.',
       downloadUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-      thumbUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerMeltdowns.jpg',
-      durationMs: 15000,
+          'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+      durationMs: 5055,
       aspectRatio: 16 / 9,
     ),
     HumorContent(
@@ -162,10 +152,8 @@ class MockHumorDataSource implements HumorDataSource {
       humorTags: ['silly', 'fallback'],
       textBody: 'English fallback clip for bilingual users.',
       downloadUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-      thumbUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg',
-      durationMs: 60000,
+          'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4',
+      durationMs: 10000,
       aspectRatio: 16 / 9,
     ),
     HumorContent(
@@ -200,10 +188,8 @@ class MockHumorDataSource implements HumorDataSource {
       humorTags: ['absürt', 'video'],
       textBody: 'Rüyamda da sıra bekliyordum. Uyanınca da.',
       downloadUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-      thumbUrl:
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg',
-      durationMs: 15000,
+          'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4',
+      durationMs: 10000,
       aspectRatio: 16 / 9,
     ),
     HumorContent(

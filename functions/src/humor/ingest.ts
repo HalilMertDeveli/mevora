@@ -49,17 +49,25 @@ export async function ingestHumorSourceItem(
     return {upserted: false, contentId: "", reason: validation.reason};
   }
 
+  // An item already in the catalog is never rewritten by a provider sync. The
+  // upsert below would classify it afresh (provider items carry no safety
+  // flags, so always 'approved') and set active=true, silently undoing an
+  // admin's rejection or deactivation every time an admin refreshed the feed.
+  const contentId = contentIdFor(provider, item.sourceId);
+  const existing = await db.collection("humorContent").doc(contentId).get();
+  if (existing.exists) {
+    return {
+      upserted: false,
+      contentId,
+      reason: existing.data()?.safetyStatus === "rejected" ? "rejected" : "duplicate",
+    };
+  }
+
   if (options?.probe !== false) {
     const ok = await probeMediaUrl(item.media.downloadUrl);
     if (!ok) {
       return {upserted: false, contentId: "", reason: "media-unreachable"};
     }
-  }
-
-  const contentId = contentIdFor(provider, item.sourceId);
-  const existing = await db.collection("humorContent").doc(contentId).get();
-  if (existing.exists && existing.data()?.active === true) {
-    return {upserted: false, contentId, reason: "duplicate"};
   }
 
   const categoryGuess = guessCategory(item);

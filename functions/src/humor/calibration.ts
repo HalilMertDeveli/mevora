@@ -1,7 +1,7 @@
 import {
   HUMOR_CATEGORIES,
+  exactProfileVector,
   normalizeHumorVector,
-  normalizeProfileVector,
   type HumorCategory,
 } from "./categories.js";
 import type {
@@ -109,14 +109,29 @@ export const ADJACENT_DIMENSIONS: Readonly<
 
 /**
  * A profile dimension counts as "meaningful signal" once it has moved this far
- * from the neutral 50 midpoint. One `very_funny` rating at the early learning
- * rate moves a dimension by roughly 7 points, so this is about one confident
- * response rather than accumulated drift.
+ * from the neutral 50 midpoint.
+ *
+ * Tuned against the young learning rate (0.45 × mass): one confident response
+ * on content that is *about* the dimension (mass ≥ 0.8) clears it — `funny`
+ * moves such a dimension ≈ 11 points, `not_funny` ≈ 9, the extremes ≈ 18+ —
+ * while a mild response on a secondary tag (mass ≈ 0.4: ≈ 5 points) does not.
  */
-export const ADAPTIVE_SIGNAL_THRESHOLD = 6;
+export const ADAPTIVE_SIGNAL_THRESHOLD = 9;
 
 /** Content counts as evidence for a dimension at this vector mass or above. */
 export const COVERAGE_MASS_THRESHOLD = 0.5;
+
+/**
+ * The "validation" half of the 3 Exploration/Validation stage. Before the
+ * profile is shown, the first exploration position re-tests the trait the
+ * user leans toward most, and the second the one they lean away from most,
+ * each with a different curated item — those are the two things the result
+ * screen leads with, and each typically rests on a single anchor otherwise.
+ * A position with nothing clear to validate explores instead. The client still
+ * sees the stage as `exploration`; the role is a server-side detail.
+ */
+export const VALIDATION_POSITION = ANCHOR_INTERACTIONS + ADAPTIVE_INTERACTIONS;
+export const DISLIKE_VALIDATION_POSITION = VALIDATION_POSITION + 1;
 
 export function stageForCompletedCount(
   completedCount: number,
@@ -143,6 +158,60 @@ export function stageForPosition(position: number): HumorCalibrationStage {
   return stageForCompletedCount(position);
 }
 
+/**
+ * Positions left in the *current* stage — the most a calibration page may
+ * carry.
+ *
+ * Pages never span a stage boundary: the adaptive stage must be chosen from
+ * the profile *after* the anchors were rated, and the exploration stage from
+ * the profile after the adaptive ratings. A page that ran ahead would pick the
+ * next stage from a profile that has not seen the answers yet.
+ */
+export function positionsLeftInStage(completedCount: number): number {
+  const done = Math.max(0, Math.floor(completedCount));
+  if (done < ANCHOR_INTERACTIONS) {
+    return ANCHOR_INTERACTIONS - done;
+  }
+  if (done < ANCHOR_INTERACTIONS + ADAPTIVE_INTERACTIONS) {
+    return ANCHOR_INTERACTIONS + ADAPTIVE_INTERACTIONS - done;
+  }
+  return Math.max(0, CALIBRATION_TOTAL - done);
+}
+
+/**
+ * Curated for *this* calibration version. Only such content may occupy an
+ * anchor position or add measurement coverage; provider and legacy content
+ * can at most fill a later position as a recorded degradation.
+ */
+export function isCalibrationCurated(
+  content: Pick<HumorContentDoc, "calibration">,
+): boolean {
+  return (
+    content.calibration?.eligible === true &&
+    content.calibration.version === HUMOR_CALIBRATION_VERSION
+  );
+}
+
+/**
+ * The dimension an item is mostly about: its heaviest vector mass, ties on the
+ * fixed category order, the declared category for vector-less content.
+ */
+export function primaryDimensionOf(
+  content: Pick<HumorContentDoc, "humorVector" | "category">,
+): HumorCategory | null {
+  const vector = normalizeHumorVector(content.humorVector, 0);
+  let best: HumorCategory | null = null;
+  for (const dim of HUMOR_CATEGORIES) {
+    if (vector[dim] > 0 && (best === null || vector[dim] > vector[best])) {
+      best = dim;
+    }
+  }
+  if (best) {
+    return best;
+  }
+  return HUMOR_CATEGORIES.includes(content.category) ? content.category : null;
+}
+
 /** Dimensions a content item provides real evidence for. */
 export function coverageDimensionsOf(
   content: Pick<HumorContentDoc, "humorVector" | "category">,
@@ -166,7 +235,7 @@ function signalStrength(
   profile: UserHumorProfileDoc,
   dim: HumorCategory,
 ): number {
-  const vector = normalizeProfileVector(profile.vector, 50);
+  const vector = exactProfileVector(profile.vector, 50);
   return Math.abs(vector[dim] - 50);
 }
 
@@ -174,11 +243,18 @@ function signalStrength(
  * Adaptive dimensions for interactions 7–12.
  *
  * Priority order, and why:
- *  1. Neighbours of dimensions the user reacted strongly to — a strong anchor
- *     response is ambiguous until it is separated from its nearest neighbour.
+ *  1. Uncovered neighbours of dimensions the user reacted strongly to — a
+ *     strong anchor response is ambiguous until it is separated from its
+ *     nearest neighbour.
  *  2. Dimensions with no coverage yet — cheap information we simply do not have.
- *  3. Everything else by signal strength, so the run stays deterministic even
+ *  3. Neighbours of strong signals that were only measured in passing (as a
+ *     secondary tag of some other item) — a focused probe separates them.
+ *  4. Everything else by signal strength, so the run stays deterministic even
  *     on an empty profile.
+ *
+ * `exclude` holds dimensions this calibration run has already probed in the
+ * adaptive/exploration stages, so a resumed or multi-position page never
+ * spends two positions on the same dimension.
  *
  * Ties break on the fixed {@link HUMOR_CATEGORIES} order, never on Math.random,
  * so the policy is reproducible in tests and across a resumed session.
@@ -187,13 +263,19 @@ export function selectAdaptiveDimensions(input: {
   profile: UserHumorProfileDoc;
   coveredDimensions: readonly string[];
   limit?: number;
+  exclude?: readonly string[];
 }): HumorCategory[] {
   const limit = input.limit ?? ADAPTIVE_INTERACTIONS;
   const covered = new Set(input.coveredDimensions.map((d) => String(d)));
+  const excluded = new Set((input.exclude ?? []).map((d) => String(d)));
   const chosen: HumorCategory[] = [];
 
-  const push = (dim: HumorCategory): void => {
-    if (chosen.length < limit && !chosen.includes(dim)) {
+  const push = (dim: HumorCategory, allowExcluded = false): void => {
+    if (
+      chosen.length < limit &&
+      !chosen.includes(dim) &&
+      (allowExcluded || !excluded.has(dim))
+    ) {
       chosen.push(dim);
     }
   };
@@ -202,12 +284,12 @@ export function selectAdaptiveDimensions(input: {
     const diff = signalStrength(input.profile, b) - signalStrength(input.profile, a);
     return diff !== 0 ? diff : orderIndex(a) - orderIndex(b);
   });
+  const strong = bySignal.filter(
+    (dim) => signalStrength(input.profile, dim) >= ADAPTIVE_SIGNAL_THRESHOLD,
+  );
 
-  // 1. Differentiate strong signals against their neighbours.
-  for (const dim of bySignal) {
-    if (signalStrength(input.profile, dim) < ADAPTIVE_SIGNAL_THRESHOLD) {
-      break;
-    }
+  // 1. Differentiate strong signals against their unmeasured neighbours.
+  for (const dim of strong) {
     for (const neighbour of ADJACENT_DIMENSIONS[dim]) {
       if (!covered.has(neighbour)) {
         push(neighbour);
@@ -222,9 +304,20 @@ export function selectAdaptiveDimensions(input: {
     }
   }
 
-  // 3. Deterministic backfill so the stage always resolves to `limit` targets.
+  // 3. Neighbours of strong signals that were only measured in passing.
+  for (const dim of strong) {
+    for (const neighbour of ADJACENT_DIMENSIONS[dim]) {
+      push(neighbour);
+    }
+  }
+
+  // 4. Deterministic backfill so the stage always resolves to `limit` targets.
   for (const dim of bySignal) {
     push(dim);
+  }
+  // Only reachable when nearly every dimension is already probed.
+  for (const dim of bySignal) {
+    push(dim, true);
   }
 
   return chosen.slice(0, limit);
@@ -242,22 +335,55 @@ export function selectExplorationDimensions(input: {
   profile: UserHumorProfileDoc;
   coveredDimensions: readonly string[];
   limit?: number;
+  /** Dimensions already probed after the anchors; see selectAdaptiveDimensions. */
+  exclude?: readonly string[];
 }): HumorCategory[] {
   const limit = input.limit ?? EXPLORATION_INTERACTIONS;
   const covered = new Set(input.coveredDimensions.map((d) => String(d)));
+  const excluded = new Set((input.exclude ?? []).map((d) => String(d)));
 
-  return [...HUMOR_CATEGORIES]
-    .sort((a, b) => {
-      const coverA = covered.has(a) ? 1 : 0;
-      const coverB = covered.has(b) ? 1 : 0;
-      if (coverA !== coverB) {
-        return coverA - coverB;
-      }
-      const evidence =
-        signalStrength(input.profile, a) - signalStrength(input.profile, b);
-      return evidence !== 0 ? evidence : orderIndex(a) - orderIndex(b);
-    })
-    .slice(0, limit);
+  const ordered = [...HUMOR_CATEGORIES].sort((a, b) => {
+    const coverA = covered.has(a) ? 1 : 0;
+    const coverB = covered.has(b) ? 1 : 0;
+    if (coverA !== coverB) {
+      return coverA - coverB;
+    }
+    const evidence =
+      signalStrength(input.profile, a) - signalStrength(input.profile, b);
+    return evidence !== 0 ? evidence : orderIndex(a) - orderIndex(b);
+  });
+  // Fresh dimensions first; already-probed ones only if nothing else is left.
+  return [
+    ...ordered.filter((dim) => !excluded.has(dim)),
+    ...ordered.filter((dim) => excluded.has(dim)),
+  ].slice(0, limit);
+}
+
+/**
+ * The trait the result screen will lead with — the dimension the profile
+ * leans *toward* most (`like`, the default) or *away* from most (`dislike`) —
+ * if it is clear enough to be worth re-testing and has not already been
+ * re-tested after the anchors (`exclude`). `null` means the position explores
+ * instead.
+ */
+export function selectValidationDimension(input: {
+  profile: UserHumorProfileDoc;
+  exclude?: readonly string[];
+  direction?: "like" | "dislike";
+}): HumorCategory | null {
+  const vector = exactProfileVector(input.profile.vector, 50);
+  const sign = input.direction === "dislike" ? -1 : 1;
+  let best: HumorCategory | null = null;
+  for (const dim of HUMOR_CATEGORIES) {
+    if (best === null || sign * (vector[dim] - vector[best]) > 0) {
+      best = dim;
+    }
+  }
+  if (!best || sign * (vector[best] - 50) < ADAPTIVE_SIGNAL_THRESHOLD) {
+    return null;
+  }
+  const excluded = new Set((input.exclude ?? []).map((d) => String(d)));
+  return excluded.has(best) ? null : best;
 }
 
 /**
@@ -372,10 +498,18 @@ export function parseCalibrationState(
 /**
  * Fold one newly rated item into calibration state.
  *
- * Deliberately advances on *any* first-time rating while calibration is
- * incomplete, not only on the item the selector happened to serve. A client
- * holding a stale page would otherwise be able to stall calibration forever,
- * and stage progression stays server-derived either way.
+ * Advances on any first-time rating of *curated* content while calibration is
+ * incomplete, not only on the item the selector happened to serve: a client
+ * holding a stale page must not be able to stall calibration, and stage
+ * progression stays server-derived either way.
+ *
+ * Uncurated (provider / legacy) content never adds coverage and never claims
+ * an anchor position — the six anchors are the comparable baseline. It may
+ * fill an adaptive/exploration position, and an anchor position only when the
+ * caller established that no curated candidate is left for this user
+ * (`allowUncuratedAnchor`), so an exhausted pool degrades instead of
+ * dead-ending. Every such position — and an anchor position that did not
+ * measure a new slot — is counted in `degradedCount`.
  *
  * Idempotent once complete, and for content already counted — so a retried
  * callable or a re-rating never inflates the count.
@@ -383,6 +517,7 @@ export function parseCalibrationState(
 export function advanceCalibration(input: {
   state: UserHumorCalibrationDoc;
   content: Pick<HumorContentDoc, "contentId" | "humorVector" | "category" | "calibration">;
+  allowUncuratedAnchor?: boolean;
 }): UserHumorCalibrationDoc {
   const state = input.state;
   if (state.complete || state.completedCount >= CALIBRATION_TOTAL) {
@@ -392,15 +527,25 @@ export function advanceCalibration(input: {
     return state;
   }
 
+  const curated = isCalibrationCurated(input.content);
+  const stage = stageForCompletedCount(state.completedCount);
+  if (!curated && stage === "anchor" && input.allowUncuratedAnchor !== true) {
+    return state;
+  }
+
   const completedCount = Math.min(CALIBRATION_TOTAL, state.completedCount + 1);
-  const slot = input.content.calibration?.slot ?? null;
-  const coveredSlots =
-    input.content.calibration?.eligible === true && isAnchorSlotId(slot)
-      ? [...new Set([...state.coveredSlots, String(slot)])].sort()
-      : state.coveredSlots;
-  const coveredDimensions = [
-    ...new Set([...state.coveredDimensions, ...coverageDimensionsOf(input.content)]),
-  ].sort();
+  const slot = curated ? input.content.calibration.slot : null;
+  const fillsNewSlot =
+    isAnchorSlotId(slot) && !state.coveredSlots.includes(String(slot));
+  const coveredSlots = fillsNewSlot
+    ? [...new Set([...state.coveredSlots, String(slot)])].sort()
+    : state.coveredSlots;
+  const coveredDimensions = curated
+    ? [
+        ...new Set([...state.coveredDimensions, ...coverageDimensionsOf(input.content)]),
+      ].sort()
+    : state.coveredDimensions;
+  const degraded = !curated || (stage === "anchor" && !fillsNewSlot);
 
   return {
     ...state,
@@ -410,10 +555,7 @@ export function advanceCalibration(input: {
     ratedContentIds: [...state.ratedContentIds, input.content.contentId],
     coveredSlots,
     coveredDimensions,
-    degradedCount:
-      input.content.calibration?.eligible === true
-        ? state.degradedCount
-        : state.degradedCount + 1,
+    degradedCount: degraded ? state.degradedCount + 1 : state.degradedCount,
   };
 }
 
@@ -447,12 +589,19 @@ export type CalibrationStateView = {
   completedCount: number;
   totalCount: number;
   complete: boolean;
+  /**
+   * Some position was filled below the designed measurement quality (thin
+   * curated pool, uncurated content). For QA / ops visibility only: the client
+   * parser ignores it and it must never reach user-facing copy.
+   */
+  degraded: boolean;
 };
 
 /** Client-safe projection. Never carries coverage internals or content ids. */
 export function toCalibrationView(input: {
   version: number;
   completedCount: number;
+  degradedCount?: number;
 }): CalibrationStateView {
   const completedCount = Math.min(
     CALIBRATION_TOTAL,
@@ -464,5 +613,6 @@ export function toCalibrationView(input: {
     completedCount,
     totalCount: CALIBRATION_TOTAL,
     complete: isCalibrationComplete(completedCount),
+    degraded: (Math.floor(Number(input.degradedCount ?? 0)) || 0) > 0,
   };
 }

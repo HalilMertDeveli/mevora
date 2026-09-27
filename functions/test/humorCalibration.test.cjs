@@ -31,7 +31,10 @@ const {
 } = require("../lib/humor/contentRepository.js");
 const {submitHumorFeedbackTx} = require("../lib/humor/feedback.js");
 const {humorScoreForPair} = require("../lib/humor/compatibility.js");
-const {defaultUserHumorProfile} = require("../lib/humor/profile.js");
+const {
+  applyFeedbackToProfile,
+  defaultUserHumorProfile,
+} = require("../lib/humor/profile.js");
 const {emptyHumorVector} = require("../lib/humor/categories.js");
 
 // --------------------------------------------------------------------------
@@ -49,7 +52,17 @@ function isPlainObject(value) {
   );
 }
 
-/** FieldValue sentinels are opaque here; they are replaced by a marker. */
+/** A resolved `FieldValue.increment(operand)`. */
+class Increment {
+  constructor(operand) {
+    this.operand = operand;
+  }
+}
+
+/**
+ * FieldValue sentinels are opaque here and replaced by a marker, except
+ * `FieldValue.increment`, which the stats update relies on for exactness.
+ */
 function sanitize(value) {
   if (Array.isArray(value)) {
     return value.map(sanitize);
@@ -62,6 +75,9 @@ function sanitize(value) {
     return out;
   }
   if (value !== null && typeof value === "object") {
+    if (value.constructor && value.constructor.name === "NumericIncrementTransform") {
+      return new Increment(value.operand);
+    }
     return "<sentinel>";
   }
   return value;
@@ -70,16 +86,37 @@ function sanitize(value) {
 function mergeInto(target, patch) {
   const out = {...target};
   for (const [key, value] of Object.entries(patch)) {
-    out[key] =
-      isPlainObject(value) && isPlainObject(out[key])
-        ? mergeInto(out[key], value)
-        : value;
+    if (value instanceof Increment) {
+      out[key] = (typeof out[key] === "number" ? out[key] : 0) + value.operand;
+    } else if (isPlainObject(value)) {
+      out[key] = mergeInto(isPlainObject(out[key]) ? out[key] : {}, value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+/** `update()` semantics: dotted field paths, and the document must exist. */
+function applyUpdate(target, patch) {
+  let out = target;
+  for (const [fieldPath, value] of Object.entries(patch)) {
+    const segments = fieldPath.split(".");
+    const nested = {};
+    let cursor = nested;
+    segments.slice(0, -1).forEach((segment) => {
+      cursor[segment] = {};
+      cursor = cursor[segment];
+    });
+    cursor[segments[segments.length - 1]] = value;
+    out = mergeInto(out, nested);
   }
   return out;
 }
 
 function makeDb(initial = {}) {
   const store = new Map(Object.entries(initial).map(([k, v]) => [k, sanitize(v)]));
+  const writes = [];
 
   const snapshotOf = (path) => ({
     id: path.split("/").pop(),
@@ -88,12 +125,11 @@ function makeDb(initial = {}) {
   });
 
   const write = (path, data, options) => {
+    writes.push(path);
     const clean = sanitize(data);
     store.set(
       path,
-      options && options.merge && store.has(path)
-        ? mergeInto(store.get(path), clean)
-        : clean,
+      mergeInto(options && options.merge && store.has(path) ? store.get(path) : {}, clean),
     );
   };
 
@@ -102,6 +138,13 @@ function makeDb(initial = {}) {
     id: path.split("/").pop(),
     get: async () => snapshotOf(path),
     set: async (data, options) => write(path, data, options),
+    update: async (data) => {
+      if (!store.has(path)) {
+        throw new Error(`NOT_FOUND: ${path}`);
+      }
+      writes.push(path);
+      store.set(path, applyUpdate(store.get(path), sanitize(data)));
+    },
     delete: async () => store.delete(path),
   });
 
@@ -133,8 +176,10 @@ function makeDb(initial = {}) {
 
   return {
     _store: store,
+    _writes: writes,
     doc: docRef,
     collection: collectionRef,
+    getAll: async (...refs) => refs.map((ref) => snapshotOf(ref.path)),
     runTransaction: async (fn) =>
       fn({
         get: async (ref) => snapshotOf(ref.path),
@@ -218,6 +263,7 @@ test("client-facing view exposes progress but no internals", () => {
   assert.deepEqual(Object.keys(view).sort(), [
     "complete",
     "completedCount",
+    "degraded",
     "stage",
     "totalCount",
     "version",
@@ -225,6 +271,12 @@ test("client-facing view exposes progress but no internals", () => {
   assert.equal(view.stage, "adaptive");
   assert.equal(view.totalCount, 15);
   assert.equal(view.complete, false);
+  // QA-only quality flag: a boolean, never the count or what degraded.
+  assert.equal(view.degraded, false);
+  assert.equal(
+    toCalibrationView({version: 1, completedCount: 7, degradedCount: 2}).degraded,
+    true,
+  );
   // Over-count is clamped rather than leaking a bogus number to the client.
   assert.equal(toCalibrationView({version: 1, completedCount: 99}).completedCount, 15);
 });
@@ -298,21 +350,41 @@ test("advance records coverage, stops at 15 and is idempotent", () => {
   });
   assert.equal(repeated.completedCount, 1);
 
-  // Uncurated content advances the counter but never claims a slot.
-  state = advanceCalibration({
-    state,
-    content: contentFor("c2", {meme: 0.8}, {
-      eligible: false,
-      slot: "anchor_meme",
-      version: 0,
-    }),
+  // Uncurated content never claims an anchor position while curated
+  // candidates remain…
+  const uncurated = contentFor("c2", {meme: 0.8}, {
+    eligible: false,
+    slot: "anchor_meme",
+    version: 0,
   });
+  assert.equal(advanceCalibration({state, content: uncurated}), state);
+
+  // …and when the pool is exhausted it fills the position as a recorded
+  // degradation, without a slot and without coverage.
+  state = advanceCalibration({state, content: uncurated, allowUncuratedAnchor: true});
   assert.equal(state.completedCount, 2);
   assert.deepEqual(state.coveredSlots, ["anchor_wit"]);
+  assert.deepEqual(state.coveredDimensions, ["sarcasm"]);
   assert.equal(state.degradedCount, 1);
 
+  // A curated item that measures no new slot is a degraded *anchor* position.
+  state = advanceCalibration({
+    state,
+    content: contentFor("c2b", {sarcasm: 0.85}, {
+      eligible: true,
+      slot: "anchor_wit",
+      version: HUMOR_CALIBRATION_VERSION,
+    }),
+  });
+  assert.equal(state.completedCount, 3);
+  assert.equal(state.degradedCount, 2);
+
+  const curatedPool = {eligible: true, slot: null, version: HUMOR_CALIBRATION_VERSION};
   for (let i = 3; i <= 20; i += 1) {
-    state = advanceCalibration({state, content: contentFor(`c${i}`, {silly: 0.7})});
+    state = advanceCalibration({
+      state,
+      content: contentFor(`c${i}`, {silly: 0.7}, curatedPool),
+    });
   }
   assert.equal(state.completedCount, CALIBRATION_TOTAL);
   assert.equal(state.complete, true);
@@ -604,6 +676,7 @@ test("pool query excludes inactive, unapproved and uncurated content", async () 
 // Selection
 // --------------------------------------------------------------------------
 
+/** The first calibration page for a brand-new user: the anchor stage only. */
 async function runFullSelection(uid, db) {
   return selectCalibrationItems({
     db,
@@ -615,11 +688,78 @@ async function runFullSelection(uid, db) {
   });
 }
 
-test("a full calibration run is 6/6/3 with no duplicate content", async () => {
+/**
+ * A whole calibration run driven page by page, the way the client does it:
+ * select a page from server state, rate every card (updating state and
+ * profile), select again. `rateFor(content)` plays the user.
+ */
+async function runPagedSelection(uid, db, rateFor = () => "neutral") {
+  let state = defaultCalibrationState();
+  let profile = defaultUserHumorProfile();
+  const picks = [];
+  const pages = [];
+  const deficiencies = [];
+  for (let guard = 0; guard < 10 && !state.complete; guard += 1) {
+    const page = await selectCalibrationItems({
+      db,
+      uid,
+      state,
+      profile,
+      languages: ["tr", "en"],
+      limit: CALIBRATION_TOTAL,
+    });
+    deficiencies.push(...page.deficiencies);
+    if (page.picks.length === 0) {
+      break;
+    }
+    pages.push(page.picks.map((p) => p.stage));
+    for (const pick of page.picks) {
+      picks.push(pick);
+      profile = applyFeedbackToProfile({
+        profile,
+        contentVector: pick.content.humorVector,
+        category: pick.content.category,
+        rating: rateFor(pick.content),
+      });
+      state = advanceCalibration({state, content: pick.content});
+    }
+  }
+  return {
+    picks,
+    pages,
+    deficiencies,
+    state,
+    profile,
+    unfilled: CALIBRATION_TOTAL - picks.length,
+  };
+}
+
+test("the first calibration page carries only the anchor stage", async () => {
   const {picks, unfilled, deficiencies} = await runFullSelection("user_a", seededDb());
   assert.deepEqual(deficiencies, []);
   assert.equal(unfilled, 0);
+  // Asked for 15, served 6: adaptive picks must wait for the anchor answers.
+  assert.equal(picks.length, ANCHOR_INTERACTIONS);
+  assert.ok(picks.every((p) => p.stage === "anchor"));
+});
+
+test("a full calibration run is 6/6/3 with no duplicate content", async () => {
+  const {picks, pages, unfilled, deficiencies} = await runPagedSelection(
+    "user_a",
+    seededDb(),
+  );
+  assert.deepEqual(deficiencies, []);
+  assert.equal(unfilled, 0);
   assert.equal(picks.length, CALIBRATION_TOTAL);
+  // One page per stage, never crossing a boundary.
+  assert.deepEqual(pages.map((p) => p.length), [
+    ANCHOR_INTERACTIONS,
+    ADAPTIVE_INTERACTIONS,
+    EXPLORATION_INTERACTIONS,
+  ]);
+  for (const page of pages) {
+    assert.equal(new Set(page).size, 1, `page spans stages: ${page.join(",")}`);
+  }
 
   const stages = picks.map((p) => p.stage);
   assert.equal(stages.filter((s) => s === "anchor").length, ANCHOR_INTERACTIONS);
@@ -692,8 +832,9 @@ test("selection resumes mid-calibration from server state alone", async () => {
     languages: ["tr", "en"],
     limit: CALIBRATION_TOTAL,
   });
-  assert.equal(resumed.picks.length, CALIBRATION_TOTAL - 4);
-  assert.equal(resumed.picks[0].stage, "anchor");
+  // Stage-bounded: only the two anchor positions left, nothing beyond.
+  assert.equal(resumed.picks.length, ANCHOR_INTERACTIONS - 4);
+  assert.ok(resumed.picks.every((p) => p.stage === "anchor"));
   // Nothing already rated is offered again.
   const ratedIds = new Set(state.ratedContentIds);
   for (const pick of resumed.picks) {
@@ -744,12 +885,13 @@ test("an empty pool fails gracefully and reports the deficiency", async () => {
     limit: CALIBRATION_TOTAL,
   });
   assert.deepEqual(result.picks, []);
-  assert.equal(result.unfilled, CALIBRATION_TOTAL);
+  assert.equal(result.unfilled, ANCHOR_INTERACTIONS);
   assert.ok(result.deficiencies.length > 0);
   assert.ok(result.deficiencies[0].startsWith("anchor:"));
+  assert.ok(result.deficiencies.includes("anchor:pool_exhausted"));
 });
 
-test("a partial anchor pool stops at the gap instead of faking an anchor", async () => {
+test("an exhausted anchor slot does not stop the other slots", async () => {
   // Remove every candidate for one slot.
   // Strip the slot tag from *every* candidate of one slot, whatever the pool
   // depth is — the point is an empty slot, not a specific pair of ids.
@@ -769,13 +911,34 @@ test("a partial anchor pool stops at the gap instead of faking an anchor", async
     languages: ["tr", "en"],
     limit: CALIBRATION_TOTAL,
   });
-  assert.ok(result.unfilled > 0);
+  assert.equal(result.unfilled, 0);
   assert.deepEqual(result.deficiencies, ["anchor:anchor_wordplay"]);
-  // Everything served before the gap is still a genuine curated anchor.
+  assert.ok(result.picks.every((pick) => pick.stage === "anchor"));
+
+  // The five other slots are still measured by genuine curated anchors…
+  const slots = result.picks
+    .map((pick) => pick.content.calibration.slot)
+    .filter((slot) => isAnchorSlotId(slot));
+  assert.deepEqual(
+    [...slots].sort(),
+    ANCHOR_SLOTS.map((s) => s.id).filter((id) => id !== "anchor_wordplay").sort(),
+  );
+  // …and the gap is filled by the curated item that best measures the
+  // missing slot's primary, which calibration records as a degradation.
+  const standIn = result.picks.find(
+    (pick) => !isAnchorSlotId(pick.content.calibration.slot),
+  );
+  assert.ok(standIn, "the wordplay gap must still be measured");
+  assert.ok(standIn.content.humorVector.wordplay > 0);
+
+  let state = defaultCalibrationState();
   for (const pick of result.picks) {
-    assert.equal(pick.stage, "anchor");
-    assert.ok(isAnchorSlotId(pick.content.calibration.slot));
+    state = advanceCalibration({state, content: pick.content});
   }
+  assert.equal(state.completedCount, ANCHOR_INTERACTIONS);
+  assert.equal(state.coveredSlots.length, ANCHOR_INTERACTIONS - 1);
+  assert.equal(state.degradedCount, 1);
+  assert.equal(toCalibrationView(state).degraded, true);
 });
 
 test("language preference is honoured but never empties a slot", async () => {
@@ -975,4 +1138,855 @@ test("feed-safe content carries the stage but never the slot or safety data", ()
   assert.equal("safetyFlags" in safe, false);
   assert.equal("safetyStatus" in safe, false);
   assert.equal(toFeedSafeContent(doc).calibrationStage, null);
+});
+
+// --------------------------------------------------------------------------
+// Engine behaviour end to end: personas through the real selector and the
+// real feedback transaction
+// --------------------------------------------------------------------------
+
+const {
+  loadUserHumorCalibration,
+  loadUserHumorProfile,
+} = require("../lib/humor/feed.js");
+const {
+  parseSubmitHumorFeedbackInput,
+} = require("../lib/humor/feedback.js");
+const {learningRate, YOUNG_LEARNING_RATE} = require("../lib/humor/profile.js");
+const {primaryDimensionOf} = require("../lib/humor/calibration.js");
+const {HUMOR_CATEGORIES} = require("../lib/humor/categories.js");
+
+const seedById = new Map(INTERNAL_HUMOR_SEED.map((item) => [item.contentId, item]));
+
+/**
+ * A user with fixed taste: `taste[dim]` in -1..1, everything else 0. They
+ * judge an item by its mass-weighted taste, so an item that is only partly
+ * their style gets a milder answer — the way people actually rate.
+ */
+function persona(taste) {
+  return (content) => {
+    let num = 0;
+    let den = 0;
+    for (const dim of HUMOR_CATEGORIES) {
+      const mass = content.humorVector[dim] ?? 0;
+      if (mass > 0) {
+        num += mass * (taste[dim] ?? 0);
+        den += mass;
+      }
+    }
+    const score = den > 0 ? num / den : 0;
+    if (score >= 0.45) return "very_funny";
+    if (score >= 0.15) return "funny";
+    if (score > -0.15) return "neutral";
+    if (score > -0.45) return "not_funny";
+    return "not_at_all";
+  };
+}
+
+/** Deterministic PRNG for the noise personas. */
+function lcg(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+async function interactedIds(db, uid) {
+  const snap = await db.collection(`users/${uid}/humorInteractions`).get();
+  return new Set(snap.docs.map((d) => d.id));
+}
+
+/**
+ * The client loop against server state: fetch a page, rate every card
+ * through submitHumorFeedbackTx, fetch again — until calibration completes.
+ */
+async function calibrateThroughServer(db, uid, rateFor) {
+  const picks = [];
+  const pages = [];
+  const progress = [];
+  for (let guard = 0; guard < 10; guard += 1) {
+    const state = await loadUserHumorCalibration(db, uid);
+    if (state.complete) {
+      break;
+    }
+    const page = await selectCalibrationItems({
+      db,
+      uid,
+      state,
+      profile: await loadUserHumorProfile(db, uid),
+      languages: ["tr", "en"],
+      limit: 12,
+      excludeContentIds: await interactedIds(db, uid),
+    });
+    assert.ok(page.picks.length > 0, `calibration stalled at ${state.completedCount}`);
+    pages.push(page.picks.map((pick) => pick.stage));
+    for (const pick of page.picks) {
+      const result = await submitHumorFeedbackTx({
+        db,
+        uid,
+        contentId: pick.content.contentId,
+        rating: rateFor(pick.content),
+      });
+      picks.push(pick);
+      progress.push(result.calibration.completedCount);
+    }
+  }
+  const summary = db._store.get(`users/${uid}/humor/summary`);
+  const calibration = db._store.get(`users/${uid}/humor/calibration`);
+  return {picks, pages, progress, summary, calibration, vector: summary.vector};
+}
+
+function strongest(vector) {
+  return HUMOR_CATEGORIES.reduce((a, b) => (vector[b] > vector[a] ? b : a));
+}
+
+function weakest(vector) {
+  return HUMOR_CATEGORIES.reduce((a, b) => (vector[b] < vector[a] ? b : a));
+}
+
+const PERSONAS = [
+  {uid: "persona_sarcasm", loves: "sarcasm", dislikes: "silly"},
+  {uid: "persona_absurd", loves: "absurd", dislikes: "cringe"},
+  {uid: "persona_meme", loves: "meme", dislikes: "dark"},
+  {uid: "persona_wordplay", loves: "wordplay", dislikes: "sarcasm"},
+];
+
+test("a consistent persona gets a visible profile from the 15 calibration ratings", async () => {
+  for (const p of PERSONAS) {
+    const db = seededDb();
+    const run = await calibrateThroughServer(
+      db,
+      p.uid,
+      persona({[p.loves]: 1, [p.dislikes]: -1}),
+    );
+    const v = run.vector;
+    const label = `${p.uid}: ${JSON.stringify(v)}`;
+
+    // The client buckets ≥75 high, ≥60 medium, ≤35 dislike.
+    assert.ok(v[p.loves] >= 60, `loved ${p.loves} below the medium bucket — ${label}`);
+    assert.ok(v[p.dislikes] <= 35, `disliked ${p.dislikes} not visible — ${label}`);
+    assert.equal(strongest(v), p.loves, `headline trait is not the loved style — ${label}`);
+    assert.equal(weakest(v), p.dislikes, label);
+
+    // Exactly 15 counted ratings, one per position, no content twice.
+    assert.deepEqual(run.progress, Array.from({length: CALIBRATION_TOTAL}, (_, i) => i + 1));
+    assert.equal(run.summary.interactionCount, CALIBRATION_TOTAL);
+    assert.equal(run.calibration.complete, true);
+    const ids = run.picks.map((pick) => pick.content.contentId);
+    assert.equal(new Set(ids).size, CALIBRATION_TOTAL, "duplicate content in calibration");
+    assert.deepEqual(run.pages.map((page) => page.length), [6, 6, 3]);
+    assert.equal(run.calibration.degradedCount, 0);
+  }
+
+  // Most personas are clear enough for the "high" bucket outright.
+  const db = seededDb();
+  const sarcasm = await calibrateThroughServer(
+    db,
+    "persona_high",
+    persona({sarcasm: 1, silly: -1}),
+  );
+  assert.ok(sarcasm.vector.sarcasm >= 75, JSON.stringify(sarcasm.vector));
+});
+
+test("a uniformly neutral user stays at the midpoint", async () => {
+  const run = await calibrateThroughServer(seededDb(), "persona_neutral", () => "neutral");
+  for (const dim of HUMOR_CATEGORIES) {
+    assert.ok(Math.abs(run.vector[dim] - 50) < 1e-9, `${dim} = ${run.vector[dim]}`);
+  }
+  assert.equal(run.calibration.complete, true);
+});
+
+test("random ratings stay bounded instead of producing extreme profiles", async () => {
+  const ratings = ["very_funny", "funny", "neutral", "not_funny", "not_at_all"];
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    const random = lcg(seed);
+    const run = await calibrateThroughServer(
+      seededDb(),
+      `noise_${seed}`,
+      () => ratings[Math.floor(random() * ratings.length)],
+    );
+    const values = HUMOR_CATEGORIES.map((dim) => run.vector[dim]);
+    for (const value of values) {
+      assert.ok(Number.isFinite(value) && value > 10 && value < 90, `seed ${seed}: ${value}`);
+    }
+    const meanDeviation =
+      values.reduce((sum, value) => sum + Math.abs(value - 50), 0) / values.length;
+    assert.ok(meanDeviation < 20, `seed ${seed}: mean deviation ${meanDeviation}`);
+  }
+
+  // A user flip-flopping on the same style converges, it does not oscillate.
+  const {applyFeedbackToProfile: apply} = require("../lib/humor/profile.js");
+  let profile = defaultUserHumorProfile();
+  for (let i = 0; i < 60; i += 1) {
+    profile = apply({
+      profile,
+      contentVector: {sarcasm: 1},
+      rating: i % 2 === 0 ? "very_funny" : "not_at_all",
+    });
+  }
+  assert.ok(Math.abs(profile.vector.sarcasm - 50) < 10, String(profile.vector.sarcasm));
+});
+
+test("the adaptive stage reacts to the anchor answers", async () => {
+  // Same user id — so identical anchor content — answered two ways.
+  const uid = "persona_same_anchors";
+  const adaptiveFor = async (taste) => {
+    const run = await calibrateThroughServer(seededDb(), uid, persona(taste));
+    return {
+      anchors: run.picks.slice(0, 6).map((pick) => pick.content.contentId),
+      adaptive: run.picks.slice(6, 12).map((pick) => pick.content.contentId),
+    };
+  };
+  const a = await adaptiveFor({sarcasm: 1, silly: -1});
+  const b = await adaptiveFor({absurd: 1, cringe: -1});
+  assert.deepEqual(a.anchors, b.anchors, "precondition: the same anchors were shown");
+  assert.notDeepEqual(
+    [...a.adaptive].sort(),
+    [...b.adaptive].sort(),
+    "adaptive picks must depend on how the anchors were rated",
+  );
+});
+
+test("after the anchors, no dimension is probed twice", async () => {
+  for (const taste of [{sarcasm: 1, silly: -1}, {absurd: 1, cringe: -1}, {}]) {
+    const run = await calibrateThroughServer(seededDb(), "persona_probe", persona(taste));
+    const probes = run.picks.slice(6).map((pick) => primaryDimensionOf(pick.content));
+    assert.equal(
+      new Set(probes).size,
+      probes.length,
+      `repeated probe for ${JSON.stringify(taste)}: ${probes.join(",")}`,
+    );
+  }
+});
+
+test("a fallback probe excludes what the item measured, not only its target", async () => {
+  // A thin pool: `teasing` has no focused item, only one that is mostly sarcasm.
+  const curated = (contentId, humorVector) =>
+    seedDocFrom({
+      contentId,
+      type: "text",
+      language: "tr",
+      category: Object.keys(humorVector)[0],
+      humorVector,
+      calibration: {eligible: true, slot: null},
+    });
+  const docs = {};
+  for (const [id, vector] of [
+    ["thin_sarcasm_teasing", {sarcasm: 0.9, teasing: 0.6}],
+    ["thin_sarcasm", {sarcasm: 0.9}],
+    ["thin_absurd", {absurd: 0.9}],
+    ["thin_silly", {silly: 0.9}],
+  ]) {
+    docs[`humorContent/${id}`] = curated(id, vector);
+  }
+  const db = makeDb(docs);
+  const uid = "user_thin";
+  const state = {
+    ...defaultCalibrationState(),
+    completedCount: 12,
+    stage: "exploration",
+    ratedContentIds: Array.from({length: 12}, (_, i) => `retired_${i}`),
+    coveredDimensions: HUMOR_CATEGORIES.filter((dim) => dim !== "teasing"),
+  };
+  const select = (from) =>
+    selectCalibrationItems({
+      db,
+      uid,
+      state: from,
+      profile: defaultUserHumorProfile(),
+      languages: ["tr"],
+      limit: 3,
+    });
+
+  const page = await select(state);
+  const ids = page.picks.map((pick) => pick.content.contentId);
+  // teasing can only be probed through the sarcasm-heavy item — which also
+  // measured sarcasm, so sarcasm must not get a second probe on this page.
+  assert.deepEqual(ids, ["thin_sarcasm_teasing", "thin_absurd", "thin_silly"]);
+
+  // A resumed page reaches the same choice from server state alone.
+  const resumed = await select(advanceCalibration({state, content: page.picks[0].content}));
+  assert.deepEqual(
+    resumed.picks.map((pick) => pick.content.contentId),
+    ["thin_absurd", "thin_silly"],
+  );
+});
+
+test("validation re-tests the headline like and dislike with different items", async () => {
+  const run = await calibrateThroughServer(
+    seededDb(),
+    "persona_validation",
+    persona({sarcasm: 1, silly: -1}),
+  );
+  const anchorSarcasm = run.picks
+    .slice(0, 6)
+    .find((pick) => primaryDimensionOf(pick.content) === "sarcasm");
+  const final = run.picks.slice(12);
+  assert.deepEqual(
+    final.map((pick) => pick.stage),
+    ["exploration", "exploration", "exploration"],
+    "validation stays an exploration-stage card for the client",
+  );
+  const like = final[0];
+  assert.equal(primaryDimensionOf(like.content), "sarcasm");
+  assert.notEqual(like.content.contentId, anchorSarcasm.content.contentId);
+  assert.equal(primaryDimensionOf(final[1].content), "silly");
+
+  // Nobody to validate for a neutral user: all three positions explore.
+  const neutral = await calibrateThroughServer(seededDb(), "persona_flat", () => "neutral");
+  const dims = neutral.picks.slice(12).map((pick) => primaryDimensionOf(pick.content));
+  assert.equal(new Set(dims).size, 3);
+});
+
+test("stage pages are bounded for resumed users too", async () => {
+  const db = seededDb();
+  const ids = [];
+  const run = await runPagedSelection("user_bounds", db);
+  for (const pick of run.picks) {
+    ids.push(pick.content);
+  }
+  const at = async (count) => {
+    let state = defaultCalibrationState();
+    for (const content of ids.slice(0, count)) {
+      state = advanceCalibration({state, content});
+    }
+    const page = await selectCalibrationItems({
+      db,
+      uid: "user_bounds",
+      state,
+      profile: defaultUserHumorProfile(),
+      languages: ["tr", "en"],
+      limit: 15,
+    });
+    return page.picks.map((pick) => pick.stage);
+  };
+  assert.deepEqual(await at(0), Array(6).fill("anchor"));
+  assert.deepEqual(await at(5), ["anchor"]);
+  assert.deepEqual(await at(6), Array(6).fill("adaptive"));
+  assert.deepEqual(await at(8), Array(4).fill("adaptive"));
+  assert.deepEqual(await at(12), Array(3).fill("exploration"));
+  assert.deepEqual(await at(13), Array(2).fill("exploration"));
+  assert.deepEqual(await at(15), []);
+});
+
+test("learning continues after calibration, with smaller steps", async () => {
+  const db = seededDb();
+  const uid = "persona_lifetime";
+  const run = await calibrateThroughServer(db, uid, persona({sarcasm: 1, silly: -1}));
+  const rated = await interactedIds(db, uid);
+  const next = INTERNAL_HUMOR_SEED.find(
+    (item) => !rated.has(item.contentId) && (item.humorVector.silly ?? 0) >= 0.8,
+  );
+  assert.ok(next, "seed needs an unrated silly item");
+  const before = run.vector.silly;
+  const result = await submitHumorFeedbackTx({
+    db,
+    uid,
+    contentId: next.contentId,
+    rating: "very_funny",
+  });
+  assert.equal(result.interactionCount, CALIBRATION_TOTAL + 1);
+  assert.equal(result.calibration.completedCount, CALIBRATION_TOTAL, "milestone frozen");
+  const after = db._store.get(`users/${uid}/humor/summary`).vector.silly;
+  const mass = next.humorVector.silly;
+  const youngStep = YOUNG_LEARNING_RATE * mass * (100 - before);
+  assert.ok(after > before, "interaction 16 must still move the profile");
+  assert.ok(after - before < youngStep, "…but by less than a calibration-stage step");
+  assert.ok(
+    Math.abs(after - before - learningRate(CALIBRATION_TOTAL + 1) * mass * (100 - before)) <
+      1e-9,
+  );
+});
+
+test("a user with earlier Humor Lab ratings still gets a visible profile from calibration", async () => {
+  // Rated before calibration existed: a lifetime count, no calibration
+  // document — so the full 15-item calibration still runs for them, and it
+  // must learn at the calibration step, not the decayed mature one.
+  const PRIOR = 40;
+  for (const p of PERSONAS) {
+    const db = seededDb();
+    db._store.set(`users/${p.uid}/humor/summary`, {
+      ...defaultUserHumorProfile(),
+      interactionCount: PRIOR,
+    });
+    const run = await calibrateThroughServer(
+      db,
+      p.uid,
+      persona({[p.loves]: 1, [p.dislikes]: -1}),
+    );
+    const v = run.vector;
+    const label = `${p.uid}: ${JSON.stringify(v)}`;
+    assert.ok(v[p.loves] >= 60, `loved ${p.loves} below the medium bucket — ${label}`);
+    assert.ok(v[p.dislikes] <= 35, `disliked ${p.dislikes} not visible — ${label}`);
+    assert.equal(strongest(v), p.loves, label);
+    assert.equal(run.summary.interactionCount, PRIOR + CALIBRATION_TOTAL);
+    assert.equal(run.calibration.complete, true);
+
+    // Once calibration is done, the lifetime count decides the step again.
+    const rated = await interactedIds(db, p.uid);
+    const next = INTERNAL_HUMOR_SEED.find(
+      (item) => !rated.has(item.contentId) && (item.humorVector[p.loves] ?? 0) >= 0.8,
+    );
+    assert.ok(next, `seed needs an unrated ${p.loves} item`);
+    const before = v[p.loves];
+    await submitHumorFeedbackTx({db, uid: p.uid, contentId: next.contentId, rating: "very_funny"});
+    const after = db._store.get(`users/${p.uid}/humor/summary`).vector[p.loves];
+    const step = learningRate(PRIOR + CALIBRATION_TOTAL + 1);
+    assert.ok(step < YOUNG_LEARNING_RATE);
+    assert.ok(
+      Math.abs(after - before - step * next.humorVector[p.loves] * (100 - before)) < 1e-9,
+      `${p.uid}: ${before} → ${after}`,
+    );
+  }
+});
+
+// --------------------------------------------------------------------------
+// Feedback semantics: skip, markers, re-rate, same rating, saved, gestures
+// --------------------------------------------------------------------------
+
+const ANCHOR_ID = "hc_tr_img_001";
+const OTHER_ID = "hc_tr_img_006";
+
+test("a skip writes a marker and changes nothing else", async () => {
+  const db = seededDb();
+  const uid = "user_skip";
+  const statsBefore = JSON.stringify(db._store.get(`humorContent/${ANCHOR_ID}`).stats);
+
+  const result = await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, skipped: true});
+  assert.equal(result.ok, true);
+  assert.equal(result.interactionCount, 0);
+  assert.equal(result.calibration.completedCount, 0);
+  assert.deepEqual(Object.keys(result).sort(), [
+    "calibration",
+    "confidence",
+    "interactionCount",
+    "ok",
+    "profileBuilding",
+  ]);
+
+  const marker = db._store.get(`users/${uid}/humorInteractions/${ANCHOR_ID}`);
+  assert.deepEqual(Object.keys(marker).sort(), [
+    "contentId",
+    "createdAt",
+    "rating",
+    "skipped",
+    "updatedAt",
+  ]);
+  assert.equal(marker.skipped, true);
+  assert.equal(marker.rating, null);
+  assert.equal(db._store.has(`users/${uid}/humor/summary`), false, "profile untouched");
+  assert.equal(db._store.has(`users/${uid}/humor/calibration`), false, "progress untouched");
+  assert.equal(
+    JSON.stringify(db._store.get(`humorContent/${ANCHOR_ID}`).stats),
+    statsBefore,
+    "content stats untouched",
+  );
+
+  // The skipped item is excluded from the next calibration page, and its
+  // slot rotates to another candidate.
+  const page = await selectCalibrationItems({
+    db,
+    uid,
+    state: await loadUserHumorCalibration(db, uid),
+    profile: await loadUserHumorProfile(db, uid),
+    languages: ["tr", "en"],
+    limit: 12,
+    excludeContentIds: await interactedIds(db, uid),
+  });
+  const served = page.picks.map((pick) => pick.content);
+  assert.equal(served.some((c) => c.contentId === ANCHOR_ID), false);
+  assert.ok(served.some((c) => c.calibration.slot === "anchor_wit"), "slot still measured");
+});
+
+test("a skip of already-rated content is a no-op", async () => {
+  const db = seededDb();
+  const uid = "user_skip_rated";
+  await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "funny"});
+  const before = JSON.stringify(db._store.get(`users/${uid}/humorInteractions/${ANCHOR_ID}`));
+  const writes = db._writes.length;
+  const result = await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, skipped: true});
+  assert.equal(db._writes.length, writes, "nothing may be written");
+  assert.equal(
+    JSON.stringify(db._store.get(`users/${uid}/humorInteractions/${ANCHOR_ID}`)),
+    before,
+  );
+  assert.equal(result.interactionCount, 1);
+  assert.equal(result.calibration.completedCount, 1);
+});
+
+test("a rating after a skip or report marker counts as the first rating", async () => {
+  for (const marker of [
+    {contentId: ANCHOR_ID, skipped: true, rating: null},
+    {contentId: ANCHOR_ID, reported: true, skipped: true},
+  ]) {
+    const db = seededDb();
+    const uid = "user_marker";
+    db._store.set(`users/${uid}/humorInteractions/${ANCHOR_ID}`, {
+      ...marker,
+      createdAt: "<sentinel>",
+    });
+    const result = await submitHumorFeedbackTx({
+      db,
+      uid,
+      contentId: ANCHOR_ID,
+      rating: "very_funny",
+    });
+    assert.equal(result.interactionCount, 1);
+    assert.equal(result.calibration.completedCount, 1);
+    const doc = db._store.get(`users/${uid}/humorInteractions/${ANCHOR_ID}`);
+    assert.equal(doc.rating, "very_funny");
+    assert.equal(doc.skipped, false);
+    assert.ok(doc.appliedDelta.sarcasm > 0);
+    if (marker.reported) {
+      assert.equal(doc.reported, true, "the report flag survives the rating");
+    }
+    const summary = db._store.get(`users/${uid}/humor/summary`);
+    assert.ok(summary.vector.sarcasm > 50, "the profile learned from it");
+    assert.equal(db._store.get(`humorContent/${ANCHOR_ID}`).stats.ratingCount, 1);
+  }
+});
+
+test("resubmitting the same rating is a no-op", async () => {
+  const db = seededDb();
+  const uid = "user_same";
+  await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "funny"});
+  const summary = JSON.stringify(db._store.get(`users/${uid}/humor/summary`));
+  const writes = db._writes.length;
+  const again = await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "funny"});
+  assert.equal(db._writes.length, writes, "same rating must not write anything");
+  assert.equal(JSON.stringify(db._store.get(`users/${uid}/humor/summary`)), summary);
+  assert.equal(again.interactionCount, 1);
+  assert.equal(again.calibration.completedCount, 1);
+});
+
+test("changing a rating replaces its contribution end to end", async () => {
+  const db = seededDb();
+  await submitHumorFeedbackTx({db, uid: "u_changed", contentId: OTHER_ID, rating: "funny"});
+  await submitHumorFeedbackTx({db, uid: "u_changed", contentId: ANCHOR_ID, rating: "very_funny"});
+  const changed = await submitHumorFeedbackTx({
+    db,
+    uid: "u_changed",
+    contentId: ANCHOR_ID,
+    rating: "not_at_all",
+  });
+  await submitHumorFeedbackTx({db, uid: "u_single", contentId: OTHER_ID, rating: "funny"});
+  await submitHumorFeedbackTx({db, uid: "u_single", contentId: ANCHOR_ID, rating: "not_at_all"});
+
+  const a = db._store.get("users/u_changed/humor/summary");
+  const b = db._store.get("users/u_single/humor/summary");
+  for (const dim of HUMOR_CATEGORIES) {
+    assert.ok(Math.abs(a.vector[dim] - b.vector[dim]) < 1e-9, `${dim}`);
+  }
+  assert.equal(changed.interactionCount, 2, "a re-rate is not a new interaction");
+  assert.equal(a.interactionCount, b.interactionCount);
+  assert.equal(changed.calibration.completedCount, 2, "nor a new calibration position");
+
+  // Content stats follow the replacement: one rating, the new weight.
+  const stats = db._store.get(`humorContent/${ANCHOR_ID}`).stats;
+  assert.equal(stats.ratingCount, 2, "u_changed and u_single rated it once each");
+  assert.equal(stats.ratingSum, -2);
+  assert.equal(stats.avgRating, -1);
+});
+
+test("a late change of a calibration rating is replaced at the step it was learned with", async () => {
+  const db = seededDb();
+  const uid = "u_late";
+  await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "very_funny"});
+  const path = `users/${uid}/humorInteractions/${ANCHOR_ID}`;
+  assert.equal(db._store.get(path).appliedStep, YOUNG_LEARNING_RATE);
+
+  // The profile matures meanwhile: calibration done, a hundred ratings in.
+  db._store.set(`users/${uid}/humor/calibration`, {
+    version: HUMOR_CALIBRATION_VERSION,
+    completedCount: CALIBRATION_TOTAL,
+  });
+  db._store.set(`users/${uid}/humor/summary`, {
+    ...db._store.get(`users/${uid}/humor/summary`),
+    interactionCount: 100,
+  });
+  const changed = await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "funny"});
+  assert.equal(changed.interactionCount, 100);
+  assert.equal(db._store.get(path).appliedStep, YOUNG_LEARNING_RATE);
+
+  // Exactly as if the user had answered `funny` in the first place — not the
+  // young contribution removed and a mature-step one put back.
+  await submitHumorFeedbackTx({db, uid: "u_once", contentId: ANCHOR_ID, rating: "funny"});
+  const late = db._store.get(`users/${uid}/humor/summary`).vector;
+  const once = db._store.get("users/u_once/humor/summary").vector;
+  for (const dim of HUMOR_CATEGORIES) {
+    assert.ok(Math.abs(late[dim] - once[dim]) < 1e-9, `${dim}: ${late[dim]} vs ${once[dim]}`);
+  }
+});
+
+test("changing a rating stored before contributions were recorded never stacks", async () => {
+  const db = seededDb({
+    // Aggregates written before ratingSum existed, including this user's rating.
+    [ANCHOR_ID]: {stats: {viewCount: 1, ratingCount: 1, avgRating: 1}},
+  });
+  const uid = "u_legacy";
+  const summaryPath = `users/${uid}/humor/summary`;
+  const interactionPath = `users/${uid}/humorInteractions/${ANCHOR_ID}`;
+  db._store.set(interactionPath, {contentId: ANCHOR_ID, rating: "very_funny", saved: false});
+  db._store.set(summaryPath, {
+    ...defaultUserHumorProfile(),
+    vector: {...emptyHumorVector(50), sarcasm: 71.5, dry: 58},
+    interactionCount: 20,
+  });
+  const summaryBefore = JSON.stringify(db._store.get(summaryPath));
+
+  const result = await submitHumorFeedbackTx({
+    db,
+    uid,
+    contentId: ANCHOR_ID,
+    rating: "not_at_all",
+  });
+  assert.equal(result.interactionCount, 20, "not a new interaction");
+  assert.equal(JSON.stringify(db._store.get(summaryPath)), summaryBefore, "profile untouched");
+  const doc = db._store.get(interactionPath);
+  assert.equal(doc.rating, "not_at_all", "the change itself is recorded");
+  assert.equal("appliedDelta" in doc, false, "no fabricated contribution");
+
+  const stats = db._store.get(`humorContent/${ANCHOR_ID}`).stats;
+  assert.equal(stats.ratingCount, 1);
+  assert.equal(stats.ratingSum, -1);
+  assert.equal(stats.avgRating, -1);
+});
+
+test("content stats are exact and derive the average from the sum", async () => {
+  const db = seededDb({
+    // A document written before ratingSum existed.
+    [ANCHOR_ID]: {stats: {viewCount: 4, ratingCount: 4, avgRating: 0.5}},
+  });
+  await submitHumorFeedbackTx({db, uid: "s1", contentId: ANCHOR_ID, rating: "not_at_all"});
+  let stats = db._store.get(`humorContent/${ANCHOR_ID}`).stats;
+  assert.equal(stats.ratingCount, 5);
+  assert.equal(stats.viewCount, 5);
+  assert.equal(stats.ratingSum, 1);
+  assert.equal(stats.avgRating, 0.2);
+
+  await submitHumorFeedbackTx({db, uid: "s1", contentId: ANCHOR_ID, rating: "very_funny"});
+  stats = db._store.get(`humorContent/${ANCHOR_ID}`).stats;
+  assert.equal(stats.ratingCount, 5, "a changed rating is not a new rating");
+  assert.equal(stats.ratingSum, 3);
+  assert.equal(stats.avgRating, 0.6);
+});
+
+test("content stats are plain increments outside any transaction", async () => {
+  const db = seededDb();
+  const runTransaction = db.runTransaction;
+  let transactions = 0;
+  db.runTransaction = (fn) => {
+    transactions += 1;
+    return runTransaction(fn);
+  };
+  const users = ["c1", "c2", "c3", "c4"];
+  const ratings = ["very_funny", "funny", "not_funny", "not_at_all"];
+  await Promise.all(
+    users.map((uid, i) =>
+      submitHumorFeedbackTx({db, uid, contentId: OTHER_ID, rating: ratings[i]}),
+    ),
+  );
+  assert.equal(transactions, users.length, "one transaction per rating: the feedback itself");
+  const stats = db._store.get(`humorContent/${OTHER_ID}`).stats;
+  assert.equal(stats.ratingCount, 4);
+  assert.equal(stats.viewCount, 4);
+  assert.ok(Math.abs(stats.ratingSum - (1 + 0.6 - 0.5 - 1)) < 1e-9);
+
+  // Content deleted between the rating and its stats write: the rating still
+  // succeeds and the stats update does not resurrect the document.
+  const gone = seededDb();
+  const commit = gone.runTransaction;
+  gone.runTransaction = async (fn) => {
+    const out = await commit(fn);
+    gone._store.delete(`humorContent/${OTHER_ID}`);
+    return out;
+  };
+  const result = await submitHumorFeedbackTx({
+    db: gone,
+    uid: "c5",
+    contentId: OTHER_ID,
+    rating: "funny",
+  });
+  assert.equal(result.interactionCount, 1);
+  assert.equal(gone._store.has(`humorContent/${OTHER_ID}`), false);
+});
+
+test("saved is stored only when explicitly sent", async () => {
+  const db = seededDb();
+  const uid = "user_saved";
+  const path = `users/${uid}/humorInteractions/${ANCHOR_ID}`;
+  await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "funny"});
+  assert.equal("saved" in db._store.get(path), false);
+
+  await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "funny", saved: true});
+  assert.equal(db._store.get(path).saved, true);
+  const count = db._store.get(`users/${uid}/humor/summary`).interactionCount;
+  assert.equal(count, 1, "saving does not count as another interaction");
+
+  await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "not_funny"});
+  assert.equal(db._store.get(path).saved, true, "a later rating keeps the bookmark");
+});
+
+test("the callable payload is validated and normalized", () => {
+  const ok = (data) => {
+    const parsed = parseSubmitHumorFeedbackInput(data);
+    assert.equal(parsed.ok, true, JSON.stringify(parsed));
+    return parsed.value;
+  };
+  const field = (data) => {
+    const parsed = parseSubmitHumorFeedbackInput(data);
+    assert.equal(parsed.ok, false);
+    return parsed.field;
+  };
+
+  assert.equal(field({contentId: ANCHOR_ID}), "rating", "rating required unless skipped");
+  assert.equal(field({contentId: ANCHOR_ID, rating: "hilarious"}), "rating");
+  assert.equal(field({contentId: ANCHOR_ID, skipped: true, rating: "bogus"}), "rating");
+  assert.equal(field({contentId: "a/b", rating: "funny"}), "contentId");
+  assert.equal(field({contentId: "", rating: "funny"}), "contentId");
+  assert.equal(field({contentId: "x".repeat(129), rating: "funny"}), "contentId");
+  assert.equal(field(null), "contentId");
+
+  const skip = ok({contentId: ANCHOR_ID, skipped: true});
+  assert.equal(skip.skipped, true);
+  assert.equal(skip.rating, null);
+  // A legacy client's skip carried a rating; the skip wins.
+  assert.equal(ok({contentId: ANCHOR_ID, skipped: true, rating: "neutral"}).rating, null);
+
+  const rated = ok({
+    contentId: ` ${ANCHOR_ID} `,
+    rating: "funny",
+    saved: "true",
+    dwellMs: 1e12,
+    replayCount: -3,
+    gestureHints: {swipeUp: "yes", swipeDown: true, payload: {deep: "x".repeat(1000)}},
+  });
+  assert.equal(rated.contentId, ANCHOR_ID);
+  assert.equal("saved" in rated, false, "only an explicit boolean is carried");
+  assert.equal(rated.replayCount, 0);
+  assert.ok(rated.dwellMs <= 24 * 60 * 60 * 1000);
+  assert.deepEqual(rated.gestureHints, {swipeUp: false, swipeDown: true});
+  assert.equal(ok({contentId: ANCHOR_ID, rating: "funny", gestureHints: [1]}).gestureHints, null);
+  assert.equal(ok({contentId: ANCHOR_ID, rating: "funny", saved: false}).saved, false);
+});
+
+test("gesture hints are stored as two booleans", async () => {
+  const db = seededDb();
+  const parsed = parseSubmitHumorFeedbackInput({
+    contentId: ANCHOR_ID,
+    rating: "funny",
+    gestureHints: {swipeUp: true, junk: {nested: [1, 2, 3]}},
+  });
+  await submitHumorFeedbackTx({db, uid: "user_gesture", ...parsed.value});
+  const doc = db._store.get(`users/user_gesture/humorInteractions/${ANCHOR_ID}`);
+  assert.deepEqual(doc.gestureHints, {swipeUp: true, swipeDown: false});
+});
+
+test("taken-down content can be skipped but not rated", async () => {
+  const db = seededDb({[ANCHOR_ID]: {active: false}});
+  await assert.rejects(
+    submitHumorFeedbackTx({db, uid: "user_down", contentId: ANCHOR_ID, rating: "funny"}),
+    /content-unavailable/,
+  );
+  const skipped = await submitHumorFeedbackTx({
+    db,
+    uid: "user_down",
+    contentId: ANCHOR_ID,
+    skipped: true,
+  });
+  assert.equal(skipped.ok, true);
+  await assert.rejects(
+    submitHumorFeedbackTx({db, uid: "user_down", contentId: "missing_item", skipped: true}),
+    /content-unavailable/,
+  );
+});
+
+// --------------------------------------------------------------------------
+// Uncurated content and calibration quality
+// --------------------------------------------------------------------------
+
+const UNCURATED = {
+  contentId: "ext_giphy_abc",
+  type: "video",
+  language: "tr",
+  category: "meme",
+  humorTags: ["meme"],
+  humorVector: {meme: 0.75, silly: 0.55},
+  media: {},
+  safetyStatus: "approved",
+  safetyFlags: {},
+  source: {type: "licensed_api", provider: "giphy", licenseRef: null},
+  calibrationSlot: "anchor_meme",
+  active: true,
+  stats: {viewCount: 0, ratingCount: 0, avgRating: 0},
+};
+
+function dbWithUncurated() {
+  const db = seededDb();
+  db._store.set(`humorContent/${UNCURATED.contentId}`, UNCURATED);
+  return db;
+}
+
+test("uncurated content cannot take an anchor position while curated content remains", async () => {
+  const db = dbWithUncurated();
+  const result = await submitHumorFeedbackTx({
+    db,
+    uid: "user_uncurated",
+    contentId: UNCURATED.contentId,
+    rating: "very_funny",
+  });
+  assert.equal(result.interactionCount, 1, "the lifetime profile still learns");
+  assert.equal(result.calibration.completedCount, 0, "but no anchor position is used");
+  assert.equal(db._store.has("users/user_uncurated/humor/calibration"), false);
+});
+
+test("an exhausted curated pool degrades calibration instead of freezing it", async () => {
+  const db = dbWithUncurated();
+  const uid = "user_exhausted";
+  // This user interacted with every curated item before calibration existed.
+  for (const item of INTERNAL_HUMOR_SEED) {
+    db._store.set(`users/${uid}/humorInteractions/${item.contentId}`, {
+      contentId: item.contentId,
+      rating: "neutral",
+    });
+  }
+  const result = await submitHumorFeedbackTx({
+    db,
+    uid,
+    contentId: UNCURATED.contentId,
+    rating: "funny",
+  });
+  assert.equal(result.calibration.completedCount, 1);
+  assert.equal(result.calibration.degraded, true);
+  const state = db._store.get(`users/${uid}/humor/calibration`);
+  assert.equal(state.degradedCount, 1);
+  assert.deepEqual(state.coveredSlots, [], "uncurated content never covers a slot");
+  assert.deepEqual(state.coveredDimensions, [], "nor adds measurement coverage");
+});
+
+test("uncurated content fills a later position only as a recorded degradation", async () => {
+  const db = dbWithUncurated();
+  const uid = "user_adaptive_uncurated";
+  const anchors = ANCHOR_SLOTS.map(
+    (slot) => INTERNAL_HUMOR_SEED.find((item) => item.calibration?.slot === slot.id),
+  );
+  let state = defaultCalibrationState();
+  for (const item of anchors) {
+    state = advanceCalibration({state, content: parseHumorContent(item.contentId, seedDocFrom(item))});
+  }
+  db._store.set(`users/${uid}/humor/calibration`, {...state});
+  const coveredBefore = [...state.coveredDimensions];
+
+  const result = await submitHumorFeedbackTx({
+    db,
+    uid,
+    contentId: UNCURATED.contentId,
+    rating: "funny",
+  });
+  assert.equal(result.calibration.completedCount, ANCHOR_INTERACTIONS + 1);
+  assert.equal(result.calibration.degraded, true);
+  const persisted = db._store.get(`users/${uid}/humor/calibration`);
+  assert.equal(persisted.degradedCount, 1);
+  assert.deepEqual(persisted.coveredDimensions, coveredBefore);
 });

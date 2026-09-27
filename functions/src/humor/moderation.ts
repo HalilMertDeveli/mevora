@@ -1,5 +1,19 @@
 import type {HumorSafetyFlags, HumorSafetyStatus} from "./types.js";
 
+export const HUMOR_SAFETY_STATUSES: readonly HumorSafetyStatus[] = [
+  "pending",
+  "approved",
+  "rejected",
+  "needs_review",
+] as const;
+
+export function isHumorSafetyStatus(value: unknown): value is HumorSafetyStatus {
+  return (
+    typeof value === "string" &&
+    (HUMOR_SAFETY_STATUSES as readonly string[]).includes(value)
+  );
+}
+
 export function emptySafetyFlags(
   overrides: Partial<HumorSafetyFlags> = {},
 ): HumorSafetyFlags {

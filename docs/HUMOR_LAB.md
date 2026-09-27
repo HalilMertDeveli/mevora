@@ -126,8 +126,12 @@ firebase functions:secrets:set GIPHY_API_KEY
 # syncHumorFromProvider { language: "tr", limit: 24 }
 ```
 
-Client mock (default `USE_MOCK_HUMOR=true`) uses the same Turkish media URLs for local QA.
-Pass `--dart-define=USE_MOCK_HUMOR=false` to hit Cloud Functions.
+Humor always uses the real backend (`FunctionsHumorDataSource` → Cloud Functions,
+or the Functions emulator with `USE_EMULATORS=true`) unless a **debug/profile
+development** build passes `--dart-define=USE_MOCK_HUMOR=true`. Only that exact
+opt-in selects the in-memory client mock (same Turkish media URLs, no server
+state, nothing persists); staging, production and release builds ignore it
+(`resolveUseMockHumor` in `lib/core/di/humor_services_factory.dart`).
 
 ## Compatibility
 

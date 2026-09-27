@@ -132,3 +132,57 @@ Pass `--dart-define=USE_MOCK_HUMOR=false` to hit Cloud Functions.
 ## Compatibility
 
 MVP does **not** change `calculateCompatibility` / Discover ranking.
+
+## Local emulator QA (F5)
+
+Cloud Billing is disabled on `mevora-d6ed0`, so every deployed callable fails.
+The Firebase Emulator Suite is the working backend for Humor Lab QA.
+
+**One click.** In VS Code, press F5 on **Mevora (development · full emulator
+suite)**, the first (default) configuration. Its preLaunchTask runs
+`tool/ensure_emulators.ps1`, then the usual `Flutter: Prepare Run`:
+
+1. Rebuilds `functions/lib` when any `functions/src` file is newer, running
+   `npm ci` first when `functions/node_modules` is missing.
+2. Reuses a running suite, or starts
+   `firebase emulators:start --config firebase.qa.json --project mevora-d6ed0 --only auth,firestore,functions,storage`
+   in a minimized **Mevora Firebase Emulator Suite** window that keeps running
+   after the launch (Ctrl+C there stops it). It waits up to 180 s for the hub
+   to report all four emulators and for the functions to load.
+3. Seeds the QA users `qa_user_a…d@mevora.test` (only missing ones, so
+   existing matches and chats survive) and the curated humor catalogue (36
+   items, four candidates per anchor slot). Re-seeding is idempotent and never
+   resets anyone's calibration progress.
+4. Prints `ensure_emulators: READY | …`, or fails with the reason and VS Code
+   does not launch the app.
+
+Nothing targets the cloud: nothing is deployed, and the seed scripts refuse to
+run unless `FIRESTORE_EMULATOR_HOST` is a loopback address. A suite already
+running from another worktree is reused, with a warning that its callables run
+that worktree's functions code.
+
+**Fresh AVD.** Android 16+ needs `ACCESS_LOCAL_NETWORK` to reach `10.0.2.2`,
+and `Flutter: Prepare Run` can only grant it to an app that is already
+installed, so the very first launch cannot reach the emulators. After that
+install, run
+`adb shell pm grant com.mevora.app android.permission.ACCESS_LOCAL_NETWORK`
+and restart the app; every later F5 grants it automatically.
+
+**Manual fallback** (PowerShell, repo root):
+
+```powershell
+npm --prefix functions run build
+firebase emulators:start --config firebase.qa.json --project mevora-d6ed0 --only auth,firestore,functions,storage
+
+# in a second terminal
+$env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
+$env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"
+node tool/seedEmulatorQaUsers.cjs --if-missing  # without the flag: resets every QA user
+node tool/seedEmulatorHumorCatalog.cjs          # catalogue + anchor-slot pool report
+node tool/humorCalibrationQa.cjs --emulator     # optional end-to-end calibration check
+```
+
+Or run the whole sequence without the app:
+`powershell -NoProfile -ExecutionPolicy Bypass -File tool/ensure_emulators.ps1`.
+The calibration check creates and removes scratch users, but its ratings stay
+in the catalogue's `stats`.

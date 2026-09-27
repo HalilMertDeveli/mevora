@@ -3595,6 +3595,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorCategoryTeasing => 'Takılma';
 
   @override
+  String get humorMediaUnavailable => 'Bu içerik şu anda gösterilemiyor.';
+
+  @override
   String get boostResultsTitle => 'Boost sonuçları';
 
   @override

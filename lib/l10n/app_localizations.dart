@@ -6602,6 +6602,12 @@ abstract class AppLocalizations {
   /// **'Teasing'**
   String get humorCategoryTeasing;
 
+  /// No description provided for @humorMediaUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This content can\'t be shown right now.'**
+  String get humorMediaUnavailable;
+
   /// No description provided for @boostResultsTitle.
   ///
   /// In en, this message translates to:

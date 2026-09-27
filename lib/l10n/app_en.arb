@@ -1528,6 +1528,7 @@
   "humorCategorySituational": "Situational",
   "humorCategoryCringe": "Cringe",
   "humorCategoryTeasing": "Teasing",
+  "humorMediaUnavailable": "This content can't be shown right now.",
   "boostResultsTitle": "Boost results",
   "boostResultsPending": "Counting results…",
   "boostReachedPeople": "{count, plural, =0{Reached no one yet} =1{Reached 1 person} other{Reached {count} people}}",

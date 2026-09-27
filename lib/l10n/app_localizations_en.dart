@@ -3598,6 +3598,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorCategoryTeasing => 'Teasing';
 
   @override
+  String get humorMediaUnavailable => 'This content can\'t be shown right now.';
+
+  @override
   String get boostResultsTitle => 'Boost results';
 
   @override

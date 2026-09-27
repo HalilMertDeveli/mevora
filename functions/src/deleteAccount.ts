@@ -75,6 +75,40 @@ export async function deleteAuthUserIfPresent(
   }
 }
 
+/**
+ * Every Spotify ownership-index document one member can be reached through.
+ *
+ * A member is reachable under more than one key: the current login id, any
+ * legacy login ids kept in `spotifyIndexKeys`, and — separately — the music
+ * account's user id and account id. A key missed here leaves a deleted member
+ * discoverable through an index and lets the next sign-in collide with them,
+ * so the computation is kept pure and tested rather than inline in a callable
+ * that needs live Firestore to run at all.
+ *
+ * Empty and duplicate keys collapse: the same id may legitimately appear as
+ * both the current and a legacy key.
+ */
+export function spotifyIndexDeletionPaths(input: {
+  spotifyId?: string;
+  spotifyIndexKeys?: string[];
+  musicSpotifyId?: string;
+  musicSpotifyAccountId?: string;
+}): string[] {
+  const login = new Set(
+    [input.spotifyId, ...(input.spotifyIndexKeys ?? [])]
+      .map((key) => (typeof key === "string" ? key.trim() : ""))
+      .filter((key) => key.length > 0),
+  );
+  const music = new Set(
+    [input.musicSpotifyId, input.musicSpotifyAccountId]
+      .map((key) => (typeof key === "string" ? key.trim() : ""))
+      .filter((key) => key.length > 0),
+  );
+  return [
+    ...[...login].map((key) => `spotifyIndex/${key}`),
+    ...[...music].map((key) => `musicSpotifyIndex/${key}`),
+  ];
+}
 export const deleteUserAccount = onCall(
   {enforceAppCheck, region: "europe-west1"},
   async (request) => {
@@ -180,15 +214,13 @@ export const deleteUserAccount = onCall(
     await deletePrefix(`users/${uid}/`);
     await deletePrefix(`profiles/${uid}/`);
 
-    for (const key of new Set(
-      [spotifyId, ...spotifyIndexKeys].filter(Boolean) as string[],
-    )) {
-      await db.doc(`spotifyIndex/${key}`).delete().catch(() => undefined);
-    }
-    for (const key of new Set(
-      [musicSpotifyId, musicSpotifyAccountId].filter(Boolean) as string[],
-    )) {
-      await db.doc(`musicSpotifyIndex/${key}`).delete().catch(() => undefined);
+    for (const path of spotifyIndexDeletionPaths({
+      spotifyId,
+      spotifyIndexKeys,
+      musicSpotifyId,
+      musicSpotifyAccountId,
+    })) {
+      await db.doc(path).delete().catch(() => undefined);
     }
 
     await batchDelete([

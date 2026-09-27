@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/app_config.dart';
@@ -103,6 +104,20 @@ Finder _ratingChip(String label) => find.descendant(
   of: find.byType(HumorRatingBar),
   matching: find.text(label),
 );
+
+/// The rating controls stay laid out at the end of the feed (so the card
+/// area never resizes) but must not be visible or usable there.
+bool _ratingControlsVisible(WidgetTester tester) {
+  final visibility = tester.widget<Visibility>(
+    find
+        .ancestor(
+          of: find.byType(HumorRatingBar),
+          matching: find.byType(Visibility),
+        )
+        .first,
+  );
+  return visibility.visible;
+}
 
 void main() {
   final l10n = l10nTr();
@@ -350,8 +365,40 @@ void main() {
 
         expect(controller.state.reachedEnd, isTrue);
         expect(find.text(l10n.humorFeedAllCaughtUp), findsOneWidget);
-        expect(find.byType(HumorRatingBar), findsNothing);
+        expect(_ratingControlsVisible(tester), isFalse);
         expect(find.text(l10n.humorTryAgain), findsOneWidget);
+      });
+    });
+
+    testWidgets('rating through a longer feed lands on the end page', (
+      tester,
+    ) async {
+      // Regression: hiding the rating controls used to grow the pager while
+      // it was still animating to the end slot, so it stopped short and left
+      // an already-rated card on screen with no controls and no explanation.
+      await withFakeNetworkImages(() async {
+        final source = MockHumorDataSource();
+        await _preRate(source, HumorCalibration.totalInteractions);
+        final remaining =
+            MockHumorDataSource.seedCatalog.length -
+            HumorCalibration.totalInteractions;
+        final controller = HumorController(
+          repository: HumorRepositoryImpl(dataSource: source),
+        );
+        await tester.pumpWidget(
+          _plainApp(HumorLabPage(controller: controller), source: source),
+        );
+        await _settle(tester);
+        expect(controller.state.items, hasLength(remaining));
+
+        for (var i = 0; i < remaining; i += 1) {
+          await tester.tap(_ratingChip(l10n.humorRatingFunny));
+          await _settle(tester);
+        }
+
+        expect(controller.state.reachedEnd, isTrue);
+        expect(find.text(l10n.humorFeedAllCaughtUp), findsOneWidget);
+        expect(_ratingControlsVisible(tester), isFalse);
       });
     });
   });
@@ -397,6 +444,40 @@ void main() {
       await tester.tap(find.text(l10n.humorResultDone));
       await tester.pump();
       expect(done, isTrue);
+    });
+
+    testWidgets('trait bars announce strength words, never raw values', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final source = MockHumorDataSource(
+        profile: const UserHumorProfile(
+          vector: {HumorCategory.sarcasm: 86, HumorCategory.dry: 71},
+          interactionCount: 15,
+          profileBuilding: false,
+        ),
+      );
+      await tester.pumpWidget(
+        _plainApp(const HumorCalibrationResultPage(), source: source),
+      );
+      await _settle(tester);
+      expect(find.text(l10n.humorCategorySarcasm), findsOneWidget);
+
+      final announced = <String>[];
+      void visit(SemanticsNode node) {
+        announced
+          ..add(node.label)
+          ..add(node.value);
+        node.visitChildren((child) {
+          visit(child);
+          return true;
+        });
+      }
+
+      visit(tester.getSemantics(find.byType(HumorCalibrationResultPage)));
+      expect(announced, contains(l10n.humorResultStrengthHigh));
+      expect(announced.where((text) => RegExp(r'\d').hasMatch(text)), isEmpty);
+      semantics.dispose();
     });
   });
 

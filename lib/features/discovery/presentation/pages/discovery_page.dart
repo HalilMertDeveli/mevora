@@ -365,7 +365,28 @@ class _DiscoveryPageState extends State<DiscoveryPage>
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.sm),
-      child: _deck(controller, state),
+      // An empty or seen-everyone deck is exactly when there is time for Humor
+      // Lab, so its entry stays reachable there too.
+      child: state.current == null && !state.isLoading
+          ? _withHumorEntry(_deck(controller, state))
+          : _deck(controller, state),
+    );
+  }
+
+  Widget _withHumorEntry(Widget empty) {
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            0,
+          ),
+          child: HumorLabDiscoverEntry(),
+        ),
+        Expanded(child: empty),
+      ],
     );
   }
 

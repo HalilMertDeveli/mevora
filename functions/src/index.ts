@@ -29,6 +29,7 @@ export {
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {verifyPremiumPurchase} from "./subscription/verifyPremiumPurchase.js";
 export {
   createIdentityVerificationSession,
   getIdentityVerificationState,

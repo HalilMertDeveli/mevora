@@ -478,15 +478,76 @@ describe("server-only entitlement surface", () => {
   const src = (name) =>
     fs.readFileSync(path.join(__dirname, "..", "src", name), "utf8");
 
-  it("exposes no callable or HTTP endpoint that writes entitlement", () => {
+  // P0 asserted this module exposed no callable at all, because nothing but
+  // server code wrote entitlement. P1 has to expose exactly one: a client
+  // cannot present store purchase evidence without an entry point. Removing
+  // the guard would drop real protection, so it is narrowed instead — the
+  // surface is allowlisted, and the one entry that exists must verify with the
+  // store before it writes, and must never read entitlement from the request.
+  const SUBSCRIPTION_ENTRY_POINTS = {
+    "verifyPremiumPurchase.ts": ["onCall("],
+  };
+
+  it("exposes only the allowlisted entitlement entry points", () => {
     const dir = path.join(__dirname, "..", "src", "subscription");
     for (const file of fs.readdirSync(dir)) {
       const code = fs.readFileSync(path.join(dir, file), "utf8");
-      assert.equal(code.includes("onCall("), false, file + " exposes a callable");
-      assert.equal(code.includes("onRequest("), false, file + " exposes an endpoint");
-      assert.equal(code.includes("onMessagePublished("), false, file + " exposes a trigger");
+      const allowed = SUBSCRIPTION_ENTRY_POINTS[file] ?? [];
+      for (const surface of ["onCall(", "onRequest(", "onMessagePublished("]) {
+        if (allowed.includes(surface)) {
+          continue;
+        }
+        assert.equal(
+          code.includes(surface),
+          false,
+          file + " exposes an unreviewed " + surface + " surface",
+        );
+      }
     }
-    assert.equal(src("index.ts").includes("subscription/"), false);
+  });
+
+  it("the purchase entry point verifies with the store before it writes", () => {
+    const code = src("subscription/verifyPremiumPurchase.ts");
+    const verifyAt = code.indexOf("fetchSubscription");
+    const writeAt = code.indexOf("writer.apply");
+    assert.ok(verifyAt > 0, "must call the store verifier");
+    assert.ok(writeAt > 0, "must reach the entitlement writer");
+    assert.ok(
+      verifyAt < writeAt,
+      "store verification must happen before the entitlement write",
+    );
+  });
+
+  it("the purchase entry point takes no entitlement claim from the client", () => {
+    const code = src("subscription/verifyPremiumPurchase.ts");
+    // The request may name a token and a platform. Anything that would let the
+    // caller assert what it bought, how long for, or that it is premium must
+    // never be read off the request.
+    for (const claimed of [
+      "data.isPremium",
+      "data.premium",
+      "data.entitlement",
+      "data.status",
+      "data.expiresAt",
+      "data.productId",
+    ]) {
+      assert.equal(
+        code.includes(claimed),
+        false,
+        "must not read " + claimed + " from the client",
+      );
+    }
+  });
+
+  it("index.ts exports the purchase entry point and nothing else from the module", () => {
+    const index = src("index.ts");
+    const marker = "./subscription/";
+    const exported = index
+      .split(/\r?\n/)
+      .filter((line) => line.includes(marker))
+      .map((line) => line.slice(line.indexOf(marker) + marker.length))
+      .map((rest) => rest.slice(0, rest.indexOf('"')));
+    assert.deepEqual(exported, ["verifyPremiumPurchase.js"]);
   });
 
   it("resolves premium through the canonical model only", () => {

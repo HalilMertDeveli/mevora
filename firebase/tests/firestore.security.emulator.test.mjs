@@ -1009,6 +1009,64 @@ describe("messages — participant authorization and E2EE enforcement", () => {
       ),
     );
   });
+
+  it("a message cannot carry match-shaped or unknown fields", async () => {
+    // matches/{m}/messages/{x} with userIds + isActive looks like a match to
+    // any server code that resolves a client-supplied "{m}/messages/{x}" id.
+    const forged = [
+      {userIds: [UID.A, UID.C], isActive: true},
+      {userIds: [UID.A, UID.C]},
+      {isActive: true},
+      {unexpected: "field"},
+    ];
+    for (const [index, overrides] of forged.entries()) {
+      await deny(
+        who.userA.db().doc(`matches/${MATCH_AB}/messages/forged${index}`).set(
+          encryptedMessage({senderId: UID.A, receiverId: UID.B, overrides}),
+        ),
+      );
+    }
+  });
+
+  it("the client's full text and media payloads still pass the allowlist", async () => {
+    // Every key sendMediaMessage (firebase_chat_data_source.dart) can write.
+    const envelope = {
+      id: "full",
+      isRead: false,
+      readAt: null,
+      status: "sent",
+      encryptionVersion: 1,
+      senderKeyVersion: 1,
+    };
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/fullText`).set(
+        encryptedMessage({senderId: UID.A, receiverId: UID.B, overrides: envelope}),
+      ),
+    );
+    const mediaPrefix = `users/${UID.A}/chat/${MATCH_AB}`;
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/fullMedia`).set(
+        encryptedMessage({
+          senderId: UID.A,
+          receiverId: UID.B,
+          overrides: {
+            ...envelope,
+            type: "voice",
+            mediaNonce: "bm9uY2U=",
+            mediaMac: "bWFj",
+            mediaKeyCiphertext: "a2V5",
+            mediaKeyNonce: "bm9uY2U=",
+            mediaKeyMac: "bWFj",
+            originalContentType: "audio/aac",
+            imageStoragePath: `${mediaPrefix}/image.enc`,
+            voiceStoragePath: `${mediaPrefix}/voice.enc`,
+            mediaUrl: "https://example.test/media.enc",
+            durationMs: 4200,
+          },
+        }),
+      ),
+    );
+  });
 });
 
 describe("typing indicators", () => {

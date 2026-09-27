@@ -3,7 +3,13 @@ const assert = require("node:assert/strict");
 
 const {buildHumorFeed} = require("../lib/humor/feed.js");
 const {listHumorContentPage} = require("../lib/humor/contentRepository.js");
-const {CALIBRATION_TOTAL} = require("../lib/humor/calibration.js");
+const {
+  ADAPTIVE_INTERACTIONS,
+  ANCHOR_INTERACTIONS,
+  ANCHOR_SLOTS,
+  CALIBRATION_TOTAL,
+  HUMOR_CALIBRATION_VERSION,
+} = require("../lib/humor/calibration.js");
 
 const isTimestampLike = (value) =>
   value !== null &&
@@ -762,23 +768,51 @@ test("calibration owns the page and carries no catalog cursor", async () => {
   assert.equal(result.catalogExhausted, false);
 });
 
-/** Two curated candidates per anchor slot, carved out of a plain catalog. */
-function curatedCatalog() {
-  const {ANCHOR_SLOTS, HUMOR_CALIBRATION_VERSION} = require("../lib/humor/calibration.js");
-  const docs = catalogOf(40);
+/** Tag a catalog document as a curated candidate for `slot`. */
+function curate(docs, id, slot) {
+  Object.assign(docs[`humorContent/${id}`], {
+    calibrationEligible: true,
+    calibrationSlot: slot.id,
+    calibrationVersion: HUMOR_CALIBRATION_VERSION,
+    humorVector: {[slot.primary]: 0.9},
+    category: slot.primary,
+  });
+}
+
+/** `perSlot` curated candidates per anchor slot, carved out of a plain catalog. */
+function curatedCatalog(perSlot = 2, size = 40) {
+  const docs = catalogOf(size);
   ANCHOR_SLOTS.forEach((slot, index) => {
-    for (const offset of [0, 1]) {
-      const id = `hc_${String(index * 2 + offset).padStart(4, "0")}`;
-      Object.assign(docs[`humorContent/${id}`], {
-        calibrationEligible: true,
-        calibrationSlot: slot.id,
-        calibrationVersion: HUMOR_CALIBRATION_VERSION,
-        humorVector: {[slot.primary]: 0.9},
-        category: slot.primary,
-      });
+    for (let offset = 0; offset < perSlot; offset += 1) {
+      curate(docs, `hc_${String(index * perSlot + offset).padStart(4, "0")}`, slot);
     }
   });
   return docs;
+}
+
+/**
+ * Contract C6 bounds a calibration page to the current stage. Tests that
+ * depend on it ask the selector for exactly the positions left in the stage,
+ * which is a no-op for a selector that already bounds itself.
+ */
+async function withStageBoundedSelector(run) {
+  const calibrationFeed = require("../lib/humor/calibrationFeed.js");
+  const original = calibrationFeed.selectCalibrationItems;
+  calibrationFeed.selectCalibrationItems = (input) => {
+    const done = input.state.completedCount;
+    const stageEnd =
+      done < ANCHOR_INTERACTIONS
+        ? ANCHOR_INTERACTIONS
+        : done < ANCHOR_INTERACTIONS + ADAPTIVE_INTERACTIONS
+          ? ANCHOR_INTERACTIONS + ADAPTIVE_INTERACTIONS
+          : CALIBRATION_TOTAL;
+    return original({...input, limit: Math.min(input.limit, stageEnd - done)});
+  };
+  try {
+    return await run();
+  } finally {
+    calibrationFeed.selectCalibrationItems = original;
+  }
 }
 
 test("calibration never re-serves a pick the user already rated, skipped or reported", async () => {
@@ -833,4 +867,99 @@ test("calibration falls back to the generic feed when nothing is curated", async
       "fallback content must not be labelled a calibration item",
     );
   }
+});
+
+test("calibration reaches an unseen curated item behind any chain of seen ones", async () => {
+  // A slot whose rotation meets several seen items in a row (skips, reports)
+  // used to run out of re-selection rounds and drop the slot's pick — falling
+  // through to the generic feed although curated content was left. Making
+  // each candidate in turn the only unseen one covers every chain length the
+  // rotation can produce, up to five seen items in a row.
+  const uid = "u_calib_chain";
+  const [open, ...covered] = ANCHOR_SLOTS;
+  const docs = catalogOf(40);
+  const chain = [...Array(6)].map((_, i) => `hc_${String(i).padStart(4, "0")}`);
+  chain.forEach((id) => curate(docs, id, open));
+  const coveredIds = covered.map((slot, i) => {
+    const id = `hc_${String(chain.length + i).padStart(4, "0")}`;
+    curate(docs, id, slot);
+    return id;
+  });
+  docs[`users/${uid}/humor/calibration`] = {
+    version: HUMOR_CALIBRATION_VERSION,
+    completedCount: coveredIds.length,
+    ratedContentIds: coveredIds,
+    coveredSlots: covered.map((slot) => slot.id),
+    coveredDimensions: [],
+    degradedCount: 0,
+  };
+
+  await withStageBoundedSelector(async () => {
+    for (const unseenId of chain) {
+      const db = makeDb(docs);
+      markRated(db, uid, coveredIds);
+      markRated(db, uid, chain.filter((id) => id !== unseenId), {skipped: true, rating: null});
+
+      const result = await feed(db, uid);
+      assert.deepEqual(
+        result.items.map((item) => [item.contentId, item.calibrationStage]),
+        [[unseenId, "anchor"]],
+        `the unseen ${unseenId} was not reached`,
+      );
+      assert.equal(result.calibration.insufficientPool, false);
+    }
+  });
+});
+
+test("a calibration reset over a mostly seen pool serves only unseen anchors", async () => {
+  // A calibration version bump restarts the state (no rated ids) while every
+  // interaction doc from the earlier run remains: most of the pool is seen but
+  // the selector cannot know it. The exclusion must be exact and bounded.
+  const uid = "u_calib_reset";
+  const perSlot = 4;
+  const docs = curatedCatalog(perSlot, 60);
+  const unseen = new Set();
+  const seen = [];
+  ANCHOR_SLOTS.forEach((_, s) => {
+    for (let k = 0; k < perSlot; k += 1) {
+      const id = `hc_${String(s * perSlot + k).padStart(4, "0")}`;
+      // A different survivor per slot, so no rotation start is favoured.
+      if (k === s % perSlot) {
+        unseen.add(id);
+      } else {
+        seen.push(id);
+      }
+    }
+  });
+  docs[`users/${uid}/humor/calibration`] = {
+    version: HUMOR_CALIBRATION_VERSION - 1,
+    completedCount: CALIBRATION_TOTAL,
+    complete: true,
+    ratedContentIds: seen,
+  };
+  const db = makeDb(docs);
+  markRated(db, uid, seen);
+
+  await withStageBoundedSelector(async () => {
+    const readsBefore = db._stats.reads;
+    const result = await feed(db, uid);
+    const reads = db._stats.reads - readsBefore;
+
+    assert.equal(result.calibration.complete, false, "the old version must restart");
+    assert.equal(result.items.length, ANCHOR_INTERACTIONS);
+    for (const item of result.items) {
+      assert.equal(item.calibrationStage, "anchor");
+      assert.ok(unseen.has(item.contentId), `served seen ${item.contentId}`);
+    }
+    assert.equal(result.calibration.insufficientPool, false);
+    // Summary + calibration, then at most: three pool reads, one getAll of the
+    // pool, and one of a page of picks. Never a scan of the history.
+    const poolSize = ANCHOR_SLOTS.length * perSlot;
+    assert.ok(reads <= 2 + 4 * poolSize + ANCHOR_INTERACTIONS, `read ${reads} documents`);
+    assert.equal(
+      db._stats.queried.some((path) => path.includes("humorInteractions")),
+      false,
+      "calibration must not scan the interaction history",
+    );
+  });
 });

@@ -2,17 +2,22 @@
  * Feed pagination against the real Firestore emulator.
  *
  * The in-memory suite proves the algorithm. This proves the parts only a real
- * Firestore can: the composite index, `orderBy` + `startAfter` cursor
- * semantics, and that a document missing `createdAt` really does drop out of
- * an ordered query.
+ * Firestore can: `orderBy` + `startAfter`/`endBefore` cursor semantics at full
+ * timestamp precision, real commit timestamps shared by a whole batch, what a
+ * forged cursor does to a real query, and that a document missing `createdAt`
+ * really does drop out of an ordered query.
  *
- * Run from the repo root:
- *   npx firebase emulators:exec --only firestore --project mevora-feed-qa \
+ * Run both humor emulator flows (starts a throwaway Firestore emulator; see
+ * runHumorEmulatorFlows.cjs for choosing ports):
+ *   npm --prefix functions run test:emulator:humor
+ *
+ * Or this flow alone inside an emulator you started yourself:
+ *   npx firebase emulators:exec --only firestore --project demo-humor-feed-qa \
  *     "node functions/test/emulator/humorFeedPaginationFlow.cjs"
  */
 const assert = require("node:assert/strict");
 const {initializeApp} = require("firebase-admin/app");
-const {getFirestore, Timestamp} = require("firebase-admin/firestore");
+const {FieldValue, getFirestore, Timestamp} = require("firebase-admin/firestore");
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) {
   console.error("FIRESTORE_EMULATOR_HOST is not set — refusing to run.");
@@ -24,13 +29,43 @@ const {listHumorContentPage} = require("../../lib/humor/contentRepository.js");
 const {buildHumorFeed} = require("../../lib/humor/feed.js");
 const {submitHumorFeedbackTx} = require("../../lib/humor/feedback.js");
 
-initializeApp({projectId: process.env.GCLOUD_PROJECT || "mevora-feed-qa"});
+initializeApp({projectId: process.env.GCLOUD_PROJECT || "demo-humor-feed-qa"});
 const db = getFirestore();
 
 const CATALOG_SIZE = 400;
 const UID = "qa_feed_user";
+const LANGS = ["tr", "en"];
 const steps = [];
 const step = (name, fn) => steps.push([name, fn]);
+
+const cursorFor = (body) => Buffer.from(JSON.stringify(body), "utf8").toString("base64url");
+
+/** Write interaction docs in batches (rating, skip marker or report marker). */
+async function markInteractions(uid, contentIds, marker = {rating: "funny"}) {
+  let batch = db.batch();
+  let pending = 0;
+  for (const contentId of contentIds) {
+    batch.set(db.doc(`users/${uid}/humorInteractions/${contentId}`), {contentId, ...marker});
+    pending += 1;
+    if (pending === 400) {
+      await batch.commit();
+      batch = db.batch();
+      pending = 0;
+    }
+  }
+  await batch.commit();
+}
+
+async function servableIds(languages) {
+  const snap = await db
+    .collection("humorContent")
+    .where("active", "==", true)
+    .where("safetyStatus", "==", "approved")
+    .get();
+  return snap.docs
+    .filter((doc) => doc.get("createdAt") && languages.includes(doc.get("language")))
+    .map((doc) => doc.id);
+}
 
 /** Skip calibration: this script is about the generic post-calibration feed. */
 async function completeCalibration(uid) {
@@ -100,7 +135,7 @@ step("ordered pagination walks the whole catalog without repeats", async () => {
   return `${seen.size} documents in ${pages} query pages`;
 });
 
-step("the feed serves far past 120 items and never repeats", async () => {
+step("the feed walks the whole catalog: exactly 400 of 400, no repeats", async () => {
   const served = [];
   let cursor = null;
   let calls = 0;
@@ -108,29 +143,101 @@ step("the feed serves far past 120 items and never repeats", async () => {
     const result = await buildHumorFeed({
       db,
       uid: UID,
-      languages: ["tr", "en"],
+      languages: LANGS,
       limit: 12,
       cursor,
     });
-    if (result.items.length === 0) {
-      assert.equal(result.nextCursor, null, "empty page still invited another");
-      break;
-    }
     served.push(...result.items.map((i) => i.contentId));
     cursor = result.nextCursor;
     calls += 1;
     if (!cursor) break;
   }
   assert.equal(new Set(served).size, served.length, "the feed repeated content");
-  assert.ok(
-    served.length > 120,
-    `stalled at ${served.length} — the 120-document window is back`,
-  );
-  assert.ok(
-    served.length >= CATALOG_SIZE - 12,
-    `only reached ${served.length}/${CATALOG_SIZE}`,
-  );
+  assert.equal(served.length, CATALOG_SIZE, `reached ${served.length}/${CATALOG_SIZE}`);
   return `${served.length} items across ${calls} calls`;
+});
+
+step("a cold start re-offers fetched-but-unrated items from the stored position", async () => {
+  const uid = "qa_feed_resume";
+  await completeCalibration(uid);
+  const pageA = await buildHumorFeed({db, uid, languages: LANGS, limit: 12});
+  const pageB = await buildHumorFeed({
+    db,
+    uid,
+    languages: LANGS,
+    limit: 12,
+    cursor: pageA.nextCursor,
+  });
+  const idsA = pageA.items.map((i) => i.contentId);
+  const idsB = pageB.items.map((i) => i.contentId);
+  for (const contentId of [...idsA, ...idsB.slice(0, 4)]) {
+    await submitHumorFeedbackTx({db, uid, contentId, rating: "funny"});
+  }
+
+  // No cursor: only the server-held position can bring page B back.
+  const resumed = await buildHumorFeed({db, uid, languages: LANGS, limit: 12});
+  const resumedIds = resumed.items.map((i) => i.contentId);
+  for (const id of idsB.slice(4)) {
+    assert.ok(resumedIds.includes(id), `fetched-but-unrated ${id} was skipped`);
+  }
+  for (const id of [...idsA, ...idsB.slice(0, 4)]) {
+    assert.equal(resumedIds.includes(id), false, `re-served rated ${id}`);
+  }
+  const stored = (await db.doc(`users/${uid}/humor/summary`).get()).data();
+  assert.equal(stored.feedPosition.v, 2, "walk state must be the full-precision format");
+  assert.ok(stored.vector, "writing the walk state must not clobber the profile");
+  return `${idsB.length - 4} carried over, ${resumed.items.length} served`;
+});
+
+step("a legacy millisecond position still resumes", async () => {
+  const uid = "qa_feed_legacy";
+  await completeCalibration(uid);
+  const boundary = await db.doc("humorContent/hc_0200").get();
+  await db.doc(`users/${uid}/humor/summary`).set({
+    feedPosition: {createdAtMs: boundary.get("createdAt").toMillis(), contentId: "hc_0200"},
+  });
+  const result = await buildHumorFeed({db, uid, languages: LANGS, limit: 12});
+  const indexes = result.items.map((i) => Number(i.contentId.slice(3)));
+  assert.equal(result.items.length, 12);
+  assert.ok(Math.max(...indexes) <= 200, "a legacy position jumped back up the catalog");
+  assert.ok(indexes.includes(199), "the item after a legacy position was skipped");
+  return `resumed at ${Math.max(...indexes)}`;
+});
+
+step("forged cursors fall back instead of failing the query", async () => {
+  const uid = "qa_feed_forged";
+  await completeCalibration(uid);
+  const forged = [
+    cursorFor({createdAtMs: 1e20, contentId: "hc_0010"}),
+    cursorFor({s: 1e15, n: 0, id: "hc_0010"}),
+    cursorFor({createdAtMs: Date.now(), contentId: "a/b"}),
+    cursorFor({s: 1_700_000_000, n: 0, id: "x".repeat(200)}),
+    cursorFor({s: 1_700_000_000, n: 0, id: "hc_0010", pad: "p".repeat(600)}),
+  ];
+  for (const cursor of forged) {
+    const result = await buildHumorFeed({db, uid, languages: LANGS, limit: 12, cursor});
+    assert.equal(result.items.length, 12, `cursor ${cursor.slice(0, 24)}… broke the feed`);
+  }
+  return `${forged.length} forged cursors degraded cleanly`;
+});
+
+step("skip and report markers keep content out", async () => {
+  const uid = "qa_feed_markers";
+  await completeCalibration(uid);
+  const skipped = ["hc_0399", "hc_0398", "hc_0396"];
+  const reported = ["hc_0395"];
+  await markInteractions(uid, skipped, {skipped: true, rating: null});
+  await markInteractions(uid, reported, {reported: true, skipped: true});
+  const result = await buildHumorFeed({db, uid, languages: LANGS, limit: 12});
+  for (const id of [...skipped, ...reported]) {
+    assert.equal(
+      result.items.some((i) => i.contentId === id),
+      false,
+      `served marked ${id}`,
+    );
+  }
+  assert.equal(result.items.length, 12);
+  return "4 marked items excluded";
 });
 
 step("rated content is never served again", async () => {
@@ -265,12 +372,44 @@ step("an exhausted catalog reports exhaustion and stops paginating", async () =>
     if (result.items.length === 0 && result.nextCursor === null) {
       assert.equal(result.catalogExhausted, true, "should report exhaustion");
       assert.equal(result.catalogEmpty, false, "the catalog is not empty");
-      assert.ok(rated > 300, `only rated ${rated} before exhaustion`);
-      return `exhausted after ${guard} pages, ${rated} rated`;
+      const servable = await servableIds(LANGS);
+      assert.equal(rated, servable.length, `rated ${rated} of ${servable.length} servable`);
+      // The catalog is larger than one call's scan budget: the old code reset
+      // to the top here and alternated "empty, try again" / "caught up".
+      for (const label of ["first", "second"]) {
+        const again = await buildHumorFeed({db, uid, languages: LANGS, limit: 15});
+        assert.equal(again.catalogExhausted, true, `${label} cold call after exhaustion`);
+        assert.deepEqual(again.items, []);
+        assert.equal(again.nextCursor, null);
+      }
+      return `exhausted after ${guard} pages, ${rated} rated, stable on 2 more cold calls`;
     }
     guard += 1;
   }
   throw new Error(`never reached exhaustion (rated ${rated})`);
+});
+
+step("a pre-rated catalog larger than the scan budget: no false or flapping exhaustion", async () => {
+  const uid = "qa_feed_prerated";
+  await completeCalibration(uid);
+  const servable = await servableIds(LANGS);
+  assert.ok(servable.length > 240, `catalog of ${servable.length} fits one call`);
+  await markInteractions(uid, servable);
+
+  const first = await buildHumorFeed({db, uid, languages: LANGS, limit: 12});
+  assert.deepEqual(first.items, []);
+  assert.equal(first.catalogExhausted, false, "claimed exhaustion from a partial walk");
+  assert.ok(first.nextCursor, "a partial walk must invite the next page");
+
+  const results = [];
+  for (let i = 0; i < 3; i += 1) {
+    results.push(await buildHumorFeed({db, uid, languages: LANGS, limit: 12}));
+  }
+  for (const [index, result] of results.entries()) {
+    assert.equal(result.catalogExhausted, true, `cold call ${index + 2} not exhausted`);
+    assert.deepEqual(result.items, []);
+  }
+  return `${servable.length} rated; partial first call, then exhausted ×3`;
 });
 
 step("an empty catalog is distinguishable from an exhausted one", async () => {
@@ -283,8 +422,61 @@ step("an empty catalog is distinguishable from an exhausted one", async () => {
   assert.deepEqual(result.items, []);
   assert.equal(result.nextCursor, null);
   assert.equal(result.catalogEmpty, true, "no servable content for this language");
+  assert.equal(result.catalogExhausted, false, "empty is not caught up");
   assert.ok(empty);
   return "empty state reported";
+});
+
+step("a batch sharing one commit timestamp is walked without skips", async () => {
+  // A single batch commit stamps every document with the same server
+  // timestamp, so page boundaries fall inside one timestamp group and only the
+  // id tie-break keeps the walk moving. Production stamps at microsecond
+  // precision, where millisecond positions skipped the rest of such a group;
+  // the emulator stamps whole milliseconds, so the sub-millisecond case itself
+  // is pinned by the unit suite.
+  const uid = "qa_feed_precision";
+  await completeCalibration(uid);
+  const batch = db.batch();
+  const ids = [];
+  for (let i = 0; i < 30; i += 1) {
+    const id = `hp_${String(i).padStart(2, "0")}`;
+    ids.push(id);
+    batch.set(db.doc(`humorContent/${id}`), {
+      contentId: id,
+      type: "meme",
+      language: "pt",
+      category: "meme",
+      humorTags: [],
+      humorVector: {meme: 0.7},
+      media: {downloadUrl: `https://example.test/${id}.png`},
+      safetyStatus: "approved",
+      safetyFlags: {},
+      source: {type: "internal", provider: "mevora-internal", licenseRef: null},
+      active: true,
+      createdAt: FieldValue.serverTimestamp(),
+      stats: {viewCount: 0, ratingCount: 0, avgRating: 0},
+    });
+  }
+  await batch.commit();
+  const stamps = new Set(
+    (await db.getAll(...ids.map((id) => db.doc(`humorContent/${id}`)))).map((snap) => {
+      const createdAt = snap.get("createdAt");
+      return `${createdAt.seconds}.${createdAt.nanoseconds}`;
+    }),
+  );
+  assert.equal(stamps.size, 1, "the batch should share one commit timestamp");
+
+  const served = [];
+  let cursor = null;
+  for (let calls = 0; calls < 10; calls += 1) {
+    const result = await buildHumorFeed({db, uid, languages: ["pt"], limit: 10, cursor});
+    served.push(...result.items.map((i) => i.contentId));
+    cursor = result.nextCursor;
+    if (!cursor) break;
+  }
+  assert.equal(new Set(served).size, served.length, "repeated content");
+  assert.equal(served.length, 30, `cursor walk reached ${served.length} of 30`);
+  return `30/30 at ${[...stamps][0]}`;
 });
 
 (async () => {

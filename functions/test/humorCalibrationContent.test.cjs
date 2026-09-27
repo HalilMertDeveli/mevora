@@ -11,8 +11,10 @@ const {
   ANCHOR_POOL_TARGET,
   CALIBRATION_SEED,
   QA_SEED_PROVIDER,
+  SEED_VIDEO_CLIPS,
   seedAnchorPools,
 } = require("../lib/humor/calibrationSeed.js");
+const {validateHumorSourceItem} = require("../lib/humor/contentValidation.js");
 const {buildCalibrationPoolReport} = require("../lib/humor/calibrationPoolReport.js");
 const {
   INTERNAL_HUMOR_SEED,
@@ -139,17 +141,61 @@ test("curated content ids are unique and provenance is explicit", () => {
 });
 
 test("curated media is https and comes from permitted hosts only", () => {
-  const allowed = ["commondatastorage.googleapis.com", "picsum.photos"];
+  const allowed = [
+    "test-videos.co.uk",
+    "interactive-examples.mdn.mozilla.net",
+    "picsum.photos",
+  ];
   for (const item of CALIBRATION_SEED) {
-    for (const url of [item.media.downloadUrl, item.media.thumbUrl]) {
-      assert.ok(url.startsWith("https://"), `${item.contentId}: ${url}`);
-      const host = new URL(url).hostname;
+    const urls = [item.media.downloadUrl, item.media.thumbUrl].filter(
+      (url) => url !== null,
+    );
+    for (const url of urls) {
+      const parsed = new URL(url);
+      assert.equal(parsed.protocol, "https:", `${item.contentId}: ${url}`);
       assert.ok(
-        allowed.includes(host),
-        `${item.contentId} uses an unapproved host: ${host}`,
+        allowed.includes(parsed.hostname),
+        `${item.contentId} uses an unapproved host: ${parsed.hostname}`,
       );
+      // The server's own ingest allowlist must accept it too, so the seed can
+      // never drift onto a host the backend would refuse.
+      const verdict = validateHumorSourceItem({
+        sourceId: item.contentId,
+        type: item.type,
+        language: item.language,
+        media: {downloadUrl: url},
+      });
+      assert.equal(verdict.ok, true, `${item.contentId} ${url}: ${verdict.reason}`);
     }
     assert.ok(item.media.textBody.trim().length > 0, `${item.contentId} has no caption`);
+  }
+});
+
+test("curated videos are short, licensed clips with an honest thumbnail", () => {
+  const clips = Object.values(SEED_VIDEO_CLIPS);
+  const used = new Set();
+  const videos = CALIBRATION_SEED.filter((item) => item.type === "video");
+  assert.ok(videos.length > 0);
+  for (const item of videos) {
+    const clip = clips.find((c) => c.url === item.media.downloadUrl);
+    assert.ok(clip, `${item.contentId} plays media outside SEED_VIDEO_CLIPS`);
+    used.add(clip.url);
+    assert.equal(item.media.durationMs, clip.durationMs, item.contentId);
+    assert.equal(item.media.aspectRatio, clip.aspectRatio, item.contentId);
+    // Present and null, not absent: the seed is written with a merge, so only
+    // an explicit null replaces a dead thumbnail left by an older seed.
+    assert.ok(Object.hasOwn(item.media, "thumbUrl"), item.contentId);
+    assert.equal(item.media.thumbUrl, null, item.contentId);
+  }
+  for (const clip of clips) {
+    assert.ok(used.has(clip.url), `${clip.url} is declared but unused`);
+    assert.ok(clip.url.endsWith(".mp4"), clip.url);
+    assert.ok(
+      clip.durationMs > 0 && clip.durationMs <= 30000,
+      `${clip.url} runs ${clip.durationMs} ms`,
+    );
+    assert.ok(["CC0-1.0", "CC-BY-3.0"].includes(clip.license), clip.url);
+    assert.ok(clip.credit.trim().length > 0, `${clip.url} has no credit`);
   }
 });
 

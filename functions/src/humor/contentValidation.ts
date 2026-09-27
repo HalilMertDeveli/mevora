@@ -14,13 +14,20 @@ export interface ContentValidationResult {
  * was doing the opposite of its job. Suffix matching covers every
  * `media0..4.giphy.com` and `i.giphy.com` CDN shard, so those no longer need
  * listing one by one.
+ *
+ * `test-videos.co.uk` and `interactive-examples.mdn.mozilla.net` serve the
+ * openly licensed clips of the curated seed (`SEED_VIDEO_CLIPS`).
+ * `commondatastorage.googleapis.com` is gone: its sample bucket now answers
+ * 403, and that host fronts every public Cloud Storage bucket, so allowing
+ * it allowed anyone's bucket.
  */
 const ALLOWED_MEDIA_HOSTS = [
   "giphy.com",
-  "commondatastorage.googleapis.com",
   "picsum.photos",
   "images.unsplash.com",
   "firebasestorage.googleapis.com",
+  "test-videos.co.uk",
+  "interactive-examples.mdn.mozilla.net",
 ];
 
 function isAllowedMediaHost(host: string): boolean {

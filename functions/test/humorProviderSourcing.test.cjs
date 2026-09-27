@@ -166,9 +166,35 @@ test("the internal seed hosts still validate", () => {
   // Whatever the allowlist does, it must not lock out our own curated media.
   const {CALIBRATION_SEED} = require("../lib/humor/calibrationSeed.js");
   for (const seed of CALIBRATION_SEED) {
-    for (const url of [seed.media.downloadUrl, seed.media.thumbUrl]) {
+    // A clip without a poster carries thumbUrl: null; there is nothing to vet.
+    const urls = [seed.media.downloadUrl, seed.media.thumbUrl].filter(
+      (url) => url !== null,
+    );
+    for (const url of urls) {
       const result = validateHumorSourceItem(item(url));
       assert.equal(result.ok, true, `${seed.contentId} ${url}: ${result.reason}`);
     }
+  }
+});
+
+test("the seed clip hosts match exactly, and the retired bucket host is gone", () => {
+  for (const url of [
+    "https://test-videos.co.uk/vids/sintel/mp4/h264/360/Sintel_360_10s_1MB.mp4",
+    "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  ]) {
+    const result = validateHumorSourceItem(item(url));
+    assert.equal(result.ok, true, `${url}: ${result.reason}`);
+  }
+  for (const host of [
+    "test-videos.co.uk.attacker.tld",
+    "evil-test-videos.co.uk",
+    "mdn.mozilla.net",
+    "interactive-examples.mdn.mozilla.net.evil.tld",
+    // Fronts every public Cloud Storage bucket, not just the dead samples.
+    "commondatastorage.googleapis.com",
+  ]) {
+    const result = validateHumorSourceItem(item(`https://${host}/x.mp4`));
+    assert.equal(result.ok, false, `${host} was accepted`);
+    assert.equal(result.reason, "host-not-allowed");
   }
 });

@@ -15,8 +15,9 @@ import type {HumorContentType} from "./types.js";
  * {@link QA_SEED_PROVIDER}, so a production catalog audit can tell curated
  * dev content apart from anything else at a glance.
  *
- * Licensing: Mevora-authored Turkish captions over public sample media
- * (Google's public video bucket, picsum). No scraping of TikTok, Instagram,
+ * Licensing: Mevora-authored Turkish captions over openly licensed sample
+ * media — the CC0 / CC BY clips in {@link SEED_VIDEO_CLIPS} (credits in
+ * docs/HUMOR_LAB.md) and picsum stills. No scraping of TikTok, Instagram,
  * YouTube or any copyrighted source.
  */
 
@@ -27,7 +28,8 @@ export const ANCHOR_POOL_TARGET = 4;
 
 type SeedMedia = {
   downloadUrl: string;
-  thumbUrl: string;
+  /** Explicit `null` when the clip has no poster on an allowed host. */
+  thumbUrl: string | null;
   durationMs?: number;
   aspectRatio: number;
   textBody: string;
@@ -45,15 +47,66 @@ type SeedItem = {
   slot?: string;
 };
 
-const VIDEO_BUCKET =
-  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample";
+export type SeedVideoClip = {
+  url: string;
+  /** Measured from the file itself, not a guess. */
+  durationMs: number;
+  aspectRatio: number;
+  license: "CC0-1.0" | "CC-BY-3.0";
+  credit: string;
+};
 
-function clip(name: string, textBody: string, durationMs = 15000): SeedMedia {
-  return {
-    downloadUrl: `${VIDEO_BUCKET}/${name}.mp4`,
-    thumbUrl: `${VIDEO_BUCKET}/images/${name}.jpg`,
-    durationMs,
+/**
+ * The openly licensed clips behind every curated video item.
+ *
+ * Short (at most ~10 s, about 1 MB), HTTPS, H.264 MP4 with a permissive
+ * licence. The previous Google sample bucket started answering 403 for every
+ * clip and thumbnail, so these are re-verified with a live GET before any
+ * change to this list. Credits are mirrored in docs/HUMOR_LAB.md.
+ *
+ * There are only four distinct clips, so items share them. The humour lives in
+ * each item's own caption; the clip is the moving backdrop.
+ */
+export const SEED_VIDEO_CLIPS = {
+  bigBuckBunny: {
+    url: "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4",
+    durationMs: 10000,
     aspectRatio: 16 / 9,
+    license: "CC-BY-3.0",
+    credit: "Big Buck Bunny, (c) 2008 Blender Foundation, peach.blender.org",
+  },
+  sintel: {
+    url: "https://test-videos.co.uk/vids/sintel/mp4/h264/360/Sintel_360_10s_1MB.mp4",
+    durationMs: 10000,
+    aspectRatio: 16 / 9,
+    license: "CC-BY-3.0",
+    credit: "Sintel, (c) Blender Foundation, durian.blender.org",
+  },
+  flower: {
+    url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    durationMs: 5055,
+    aspectRatio: 16 / 9,
+    license: "CC0-1.0",
+    credit: "MDN Web Docs interactive examples, cc0-videos/flower.mp4",
+  },
+  friday: {
+    url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/friday.mp4",
+    durationMs: 6166,
+    aspectRatio: 4 / 3,
+    license: "CC0-1.0",
+    credit: "MDN Web Docs interactive examples, cc0-videos/friday.mp4",
+  },
+} as const satisfies Record<string, SeedVideoClip>;
+
+function clip(source: SeedVideoClip, textBody: string): SeedMedia {
+  return {
+    downloadUrl: source.url,
+    // No poster for these cuts exists on an allowed host, and an unrelated
+    // photo would be a lie. `null`, not absent: the seed writes with a merge,
+    // so only an explicit null clears the dead thumbnail an older seed left.
+    thumbUrl: null,
+    durationMs: source.durationMs,
+    aspectRatio: source.aspectRatio,
     textBody,
   };
 }
@@ -118,7 +171,7 @@ const ANCHOR_SEED: readonly SeedItem[] = [
     category: "sarcasm",
     humorTags: ["ironi", "video"],
     humorVector: {sarcasm: 0.85, dry: 0.45},
-    media: clip("TearsOfSteel", "Tabii ki ilk denemede oldu. Sadece on yedinciydi."),
+    media: clip(SEED_VIDEO_CLIPS.friday, "Tabii ki ilk denemede oldu. Sadece on yedinciydi."),
     slot: "anchor_wit",
   },
 
@@ -130,7 +183,7 @@ const ANCHOR_SEED: readonly SeedItem[] = [
     category: "absurd",
     humorTags: ["absürt", "video"],
     humorVector: {absurd: 0.85, silly: 0.6, meme: 0.4},
-    media: clip("ForBiggerBlazes", "Alarm değil, sabah sabotajı."),
+    media: clip(SEED_VIDEO_CLIPS.bigBuckBunny, "Alarm değil, sabah sabotajı."),
     slot: "anchor_absurd",
   },
   {
@@ -140,7 +193,7 @@ const ANCHOR_SEED: readonly SeedItem[] = [
     category: "absurd",
     humorTags: ["absürt", "video"],
     humorVector: {absurd: 0.87, silly: 0.55},
-    media: clip("ElephantsDream", "Rüyamda da sıra bekliyordum. Uyanınca da."),
+    media: clip(SEED_VIDEO_CLIPS.bigBuckBunny, "Rüyamda da sıra bekliyordum. Uyanınca da."),
     slot: "anchor_absurd",
   },
   {
@@ -172,7 +225,7 @@ const ANCHOR_SEED: readonly SeedItem[] = [
     category: "situational",
     humorTags: ["günlük", "video"],
     humorVector: {situational: 0.88, dry: 0.45, silly: 0.5},
-    media: clip("ForBiggerEscapes", "Buzdolabı yine boş fikirler sunuyor."),
+    media: clip(SEED_VIDEO_CLIPS.sintel, "Buzdolabı yine boş fikirler sunuyor."),
     slot: "anchor_everyday",
   },
   {
@@ -202,7 +255,7 @@ const ANCHOR_SEED: readonly SeedItem[] = [
     category: "situational",
     humorTags: ["günlük", "video"],
     humorVector: {situational: 0.83, silly: 0.4},
-    media: clip("Sintel", "Beş dakika daha dedim. Öğlen oldu."),
+    media: clip(SEED_VIDEO_CLIPS.sintel, "Beş dakika daha dedim. Öğlen oldu."),
     slot: "anchor_everyday",
   },
 
@@ -214,7 +267,7 @@ const ANCHOR_SEED: readonly SeedItem[] = [
     category: "meme",
     humorTags: ["meme", "video"],
     humorVector: {meme: 0.9, situational: 0.6, cringe: 0.25},
-    media: clip("ForBiggerJoyrides", "Wi‑Fi şifresi kadar karmaşık bir ruh hali."),
+    media: clip(SEED_VIDEO_CLIPS.flower, "Wi‑Fi şifresi kadar karmaşık bir ruh hali."),
     slot: "anchor_meme",
   },
   {
@@ -348,7 +401,7 @@ const POOL_SEED: readonly SeedItem[] = [
     category: "silly",
     humorTags: ["saçma", "video"],
     humorVector: {silly: 0.9, absurd: 0.55, meme: 0.35},
-    media: clip("ForBiggerFun", "Planım vardı… sonra pazartesi oldu.", 60000),
+    media: clip(SEED_VIDEO_CLIPS.bigBuckBunny, "Planım vardı… sonra pazartesi oldu."),
   },
   {
     contentId: "hc_tr_img_003",
@@ -393,7 +446,7 @@ const POOL_SEED: readonly SeedItem[] = [
     category: "romantic",
     humorTags: ["romantik", "espri"],
     humorVector: {romantic: 0.75, teasing: 0.5, silly: 0.4},
-    media: clip("ForBiggerMeltdowns", "Sen Wi‑Fi misin? Bağlantı hissediyorum."),
+    media: clip(SEED_VIDEO_CLIPS.flower, "Sen Wi‑Fi misin? Bağlantı hissediyorum."),
   },
   {
     contentId: "hc_tr_img_024",
@@ -438,7 +491,7 @@ const POOL_SEED: readonly SeedItem[] = [
     category: "silly",
     humorTags: ["silly", "fallback"],
     humorVector: {silly: 0.8, meme: 0.5},
-    media: clip("BigBuckBunny", "English fallback clip for bilingual users.", 60000),
+    media: clip(SEED_VIDEO_CLIPS.bigBuckBunny, "English fallback clip for bilingual users."),
   },
   {
     contentId: "hc_en_img_001",

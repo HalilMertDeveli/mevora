@@ -300,6 +300,22 @@ service cloud.firestore {
             && request.resource.data.mediaUrl.size() <= 2048));
     }
 
+    // Every field the chat client writes on send: sendMediaMessage
+    // (firebase_chat_data_source.dart) plus E2eeEncryptedPayload and
+    // E2eeMediaEnvelopeFields.toFirestore(). Anything else, e.g. match-shaped
+    // userIds / isActive, must never land on a message a participant controls.
+    function messageCreateKeysAllowed() {
+      return request.resource.data.keys().hasOnly([
+        'id', 'senderId', 'receiverId', 'type', 'text', 'createdAt',
+        'isRead', 'readAt', 'deleted', 'status',
+        'encrypted', 'ciphertext', 'nonce', 'mac',
+        'encryptionVersion', 'senderKeyVersion',
+        'mediaNonce', 'mediaMac', 'mediaKeyCiphertext', 'mediaKeyNonce',
+        'mediaKeyMac', 'originalContentType',
+        'imageStoragePath', 'voiceStoragePath', 'mediaUrl', 'durationMs'
+      ]);
+    }
+
     function messageCreatePayloadValid(matchId) {
       return messageEncryptedFieldsValid()
         && messageMediaPathsValid(matchId)
@@ -766,6 +782,7 @@ service cloud.firestore {
           && !isBlockedPair(request.auth.uid, request.resource.data.receiverId)
           && request.resource.data.type in ['text', 'image', 'gif', 'voice']
           && request.resource.data.get('deleted', false) == false
+          && messageCreateKeysAllowed()
           && messageCreatePayloadValid(matchId);
         allow update: if isMatchParticipant(matchId)
           && unchanged('senderId')

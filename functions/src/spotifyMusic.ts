@@ -82,6 +82,19 @@ function requireString(value: unknown, field: string): string {
   return value.trim();
 }
 
+/** Firestore document id shape accepted for a match id. No `/`, ever. */
+const MATCH_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+
+function requireMatchId(value: unknown): string {
+  const matchId = typeof value === "string" ? value.trim() : "";
+  // A `/` would let the lookup resolve to a nested document a participant can
+  // write (e.g. matches/{m}/messages/{x}) and forge `userIds` on.
+  if (!MATCH_ID_PATTERN.test(matchId)) {
+    throw new HttpsError("invalid-argument", "matchId");
+  }
+  return matchId;
+}
+
 function credentials(): {clientId: string; clientSecret: string} {
   const clientId = process.env.SPOTIFY_CLIENT_ID || spotifyClientId.value();
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET || spotifyClientSecret.value();
@@ -957,8 +970,8 @@ export const getMatchMusicCompatibility = onCall(
   {enforceAppCheck, region: "europe-west1"},
   async (request) => {
     const uid = requireUid(request);
-    const matchId = requireString(request.data?.matchId, "matchId");
-    const matchSnap = await db.doc(`matches/${matchId}`).get();
+    const matchId = requireMatchId(request.data?.matchId);
+    const matchSnap = await db.collection("matches").doc(matchId).get();
     if (!matchSnap.exists || matchSnap.data()?.isActive !== true) {
       return {available: false, reason: "no_match"};
     }

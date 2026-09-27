@@ -394,8 +394,9 @@ async function loadSecrets(uid: string): Promise<SpotifyTokenSet | null> {
   return readTokenSet(snap.data());
 }
 
-async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> {
-  await db.doc(`spotifySecrets/${uid}`).set({
+/** The stored shape, shared by the plain write and the transactional one. */
+function secretsDocument(tokens: SpotifyTokenSet): DocumentData {
+  return {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken ?? null,
     expiresAt: tokens.expiresAt,
@@ -404,7 +405,11 @@ async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> 
     spotifyAccountId: tokens.spotifyAccountId ?? null,
     indexKeys: tokens.indexKeys ?? null,
     updatedAt: FieldValue.serverTimestamp(),
-  });
+  };
+}
+
+async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> {
+  await db.doc(`spotifySecrets/${uid}`).set(secretsDocument(tokens));
 }
 
 /** Refresh a little before the real expiry so an in-flight call survives. */
@@ -433,6 +438,37 @@ export function planTokenUse(
   return "refresh";
 }
 
+export type RefreshWrite =
+  | {action: "store"; tokens: SpotifyTokenSet}
+  | {action: "keep-stored"; tokens: SpotifyTokenSet}
+  | {action: "abandon"};
+
+/**
+ * Decides what to persist after a refresh, given what the document holds now.
+ *
+ * Concurrency this resolves, all for the same member:
+ *
+ *   - two syncs refresh the same token. Spotify rotates it, so only one of
+ *     them holds a live pair. The one whose token is no longer on file lost
+ *     the race and must use the stored pair instead of overwriting it with a
+ *     superseded one.
+ *   - a disconnect lands mid-refresh and deletes the document. Writing then
+ *     would resurrect tokens for an account the member just unlinked, so the
+ *     refresh is abandoned.
+ */
+export function resolveRefreshWrite(
+  sentRefreshToken: string,
+  current: SpotifyTokenSet | null,
+  merged: SpotifyTokenSet,
+): RefreshWrite {
+  if (!current) {
+    return {action: "abandon"};
+  }
+  if (current.refreshToken && current.refreshToken !== sentRefreshToken) {
+    return {action: "keep-stored", tokens: current};
+  }
+  return {action: "store", tokens: merged};
+}
 async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
   const existing = await loadSecrets(uid);
   const action = planTokenUse(existing);
@@ -446,10 +482,30 @@ async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
   if (action === "use") {
     return tokens;
   }
-  const refreshed = await refreshAccessToken(tokens.refreshToken as string);
-  const next = mergeRefreshedTokens(tokens, refreshed);
-  await saveSecrets(uid, next);
-  return next;
+  const sent = tokens.refreshToken as string;
+  const refreshed = await refreshAccessToken(sent);
+  const merged = mergeRefreshedTokens(tokens, refreshed);
+
+  // The Spotify call stays outside the transaction: a retried transaction
+  // body would spend another one-time refresh grant.
+  const ref = db.doc(`spotifySecrets/${uid}`);
+  const resolved = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const outcome = resolveRefreshWrite(
+      sent,
+      snap.exists ? readTokenSet(snap.data()) : null,
+      merged,
+    );
+    if (outcome.action === "store") {
+      tx.set(ref, secretsDocument(outcome.tokens));
+    }
+    return outcome;
+  });
+
+  if (resolved.action === "abandon") {
+    throw new HttpsError("failed-precondition", "not-connected");
+  }
+  return resolved.tokens;
 }
 
 export function summarizeTracks(items: Array<DocumentData>, limit = 20): NamedItem[] {

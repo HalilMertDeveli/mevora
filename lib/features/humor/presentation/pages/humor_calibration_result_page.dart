@@ -241,11 +241,15 @@ class _VibeBar extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-            child: LinearProgressIndicator(
-              value: (vibe.value / 100).clamp(0.0, 1.0),
-              minHeight: 8,
+          // The bar is decoration; its own semantics would read the raw
+          // 0-100 value aloud. The strength word above is the announcement.
+          ExcludeSemantics(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              child: LinearProgressIndicator(
+                value: (vibe.value / 100).clamp(0.0, 1.0),
+                minHeight: 8,
+              ),
             ),
           ),
         ],

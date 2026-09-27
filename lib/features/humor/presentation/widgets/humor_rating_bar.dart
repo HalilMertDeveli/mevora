@@ -120,14 +120,17 @@ class _RatingChip extends StatelessWidget {
             children: [
               Icon(icon, size: 22, color: fg),
               const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: fg,
-                  fontSize: 9,
+              // Scale a long label ("Hiç komik değil") down to fit rather
+              // than cutting it off — a truncated option is hard to choose.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: fg),
                 ),
               ),
             ],

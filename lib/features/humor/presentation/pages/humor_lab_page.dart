@@ -319,6 +319,11 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
   var _syncScheduled = false;
   var _syncingPage = false;
 
+  /// Bumped per animation, so only the latest one clears [_syncingPage] and
+  /// settles the page — an older one completing early must not re-enable
+  /// [PageView.onPageChanged] while a newer one is still moving.
+  var _syncGeneration = 0;
+
   @override
   void initState() {
     super.initState();
@@ -367,6 +372,7 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
     if (shown == null || shown == target) {
       return;
     }
+    final generation = ++_syncGeneration;
     _syncingPage = true;
     unawaited(
       _pageController
@@ -375,8 +381,24 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
           )
-          .whenComplete(() => _syncingPage = false),
+          .whenComplete(() => _settlePage(generation)),
     );
+  }
+
+  /// An animation aims at pixels computed from the viewport it started with.
+  /// If the viewport changes size meanwhile, it stops short of the page — so
+  /// land exactly on the controller's index once it is done.
+  void _settlePage(int generation) {
+    if (generation != _syncGeneration) {
+      return;
+    }
+    if (mounted && _pageController.hasClients) {
+      final target = widget.controller.state.currentIndex;
+      if (_pageController.page?.round() != target) {
+        _pageController.jumpToPage(target);
+      }
+    }
+    _syncingPage = false;
   }
 
   @override
@@ -462,28 +484,42 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
             ),
           ),
         ),
-        if (!state.reachedEnd) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenPadding,
-              AppSpacing.md,
-              AppSpacing.screenPadding,
-              0,
-            ),
-            child: HumorRatingBar(
-              selected: state.lastRated,
-              enabled: canAct,
-              onRated: (HumorRating rating) {
-                unawaited(controller.rate(rating));
-              },
-            ),
+        // Hidden at the end of the feed but still laid out: removing the
+        // controls would grow the card area mid-animation and strand the
+        // pager on an already-rated card instead of the end page.
+        Visibility(
+          visible: !state.reachedEnd,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenPadding,
+                  AppSpacing.md,
+                  AppSpacing.screenPadding,
+                  0,
+                ),
+                child: HumorRatingBar(
+                  selected: state.lastRated,
+                  enabled: canAct && !state.reachedEnd,
+                  onRated: (HumorRating rating) {
+                    unawaited(controller.rate(rating));
+                  },
+                ),
+              ),
+              TextButton.icon(
+                onPressed: canAct && !state.reachedEnd
+                    ? () => unawaited(controller.skip())
+                    : null,
+                icon: const Icon(Icons.skip_next_rounded),
+                label: Text(l10n.humorSkipContent),
+              ),
+            ],
           ),
-          TextButton.icon(
-            onPressed: canAct ? () => unawaited(controller.skip()) : null,
-            icon: const Icon(Icons.skip_next_rounded),
-            label: Text(l10n.humorSkipContent),
-          ),
-        ],
+        ),
         if (state.profile.profileBuilding)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),

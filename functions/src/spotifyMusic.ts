@@ -340,18 +340,58 @@ async function spotifyGet<T>(accessToken: string, path: string): Promise<T> {
   return await response.json() as T;
 }
 
+/**
+ * Maps a stored spotifySecrets document to a token set.
+ *
+ * spotifyAccountId and indexKeys are part of the account's identity, not of
+ * the token grant, and they are read here so a read-modify-write of this
+ * document cannot silently drop them. disconnectMusicAccount builds its
+ * delete plan from indexKeys, so losing it strands ownership records.
+ */
+export function readTokenSet(
+  data: DocumentData | undefined,
+): SpotifyTokenSet | null {
+  const raw = data ?? {};
+  if (typeof raw.accessToken !== "string") return null;
+  return {
+    accessToken: raw.accessToken,
+    refreshToken: typeof raw.refreshToken === "string" ? raw.refreshToken : undefined,
+    expiresAt: typeof raw.expiresAt === "number" ? raw.expiresAt : 0,
+    scope: typeof raw.scope === "string" ? raw.scope : undefined,
+    spotifyUserId: typeof raw.spotifyUserId === "string" ? raw.spotifyUserId : undefined,
+    spotifyAccountId:
+      typeof raw.spotifyAccountId === "string" ? raw.spotifyAccountId : undefined,
+    indexKeys: Array.isArray(raw.indexKeys)
+      ? raw.indexKeys.filter((key: unknown): key is string => typeof key === "string")
+      : undefined,
+  };
+}
+
+/**
+ * Applies a refresh response to the tokens already on file.
+ *
+ * Spotify's refresh grant returns a token pair and nothing about the account,
+ * so the identity fields have to be carried over from the previous set. The
+ * refresh token itself only moves when Spotify rotates it.
+ */
+export function mergeRefreshedTokens(
+  previous: SpotifyTokenSet,
+  refreshed: SpotifyTokenSet,
+): SpotifyTokenSet {
+  return {
+    ...refreshed,
+    refreshToken: refreshed.refreshToken ?? previous.refreshToken,
+    scope: refreshed.scope ?? previous.scope,
+    spotifyUserId: previous.spotifyUserId,
+    spotifyAccountId: previous.spotifyAccountId,
+    indexKeys: previous.indexKeys,
+  };
+}
+
 async function loadSecrets(uid: string): Promise<SpotifyTokenSet | null> {
   const snap = await db.doc(`spotifySecrets/${uid}`).get();
   if (!snap.exists) return null;
-  const data = snap.data() ?? {};
-  if (typeof data.accessToken !== "string") return null;
-  return {
-    accessToken: data.accessToken,
-    refreshToken: typeof data.refreshToken === "string" ? data.refreshToken : undefined,
-    expiresAt: typeof data.expiresAt === "number" ? data.expiresAt : 0,
-    scope: typeof data.scope === "string" ? data.scope : undefined,
-    spotifyUserId: typeof data.spotifyUserId === "string" ? data.spotifyUserId : undefined,
-  };
+  return readTokenSet(snap.data());
 }
 
 async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> {
@@ -407,10 +447,7 @@ async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
     return tokens;
   }
   const refreshed = await refreshAccessToken(tokens.refreshToken as string);
-  const next = {
-    ...refreshed,
-    spotifyUserId: tokens.spotifyUserId,
-  };
+  const next = mergeRefreshedTokens(tokens, refreshed);
   await saveSecrets(uid, next);
   return next;
 }

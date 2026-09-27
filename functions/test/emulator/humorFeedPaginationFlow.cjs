@@ -24,7 +24,11 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
   process.exit(2);
 }
 
-const {CALIBRATION_TOTAL} = require("../../lib/humor/calibration.js");
+const {
+  ANCHOR_SLOTS,
+  CALIBRATION_TOTAL,
+  HUMOR_CALIBRATION_VERSION,
+} = require("../../lib/humor/calibration.js");
 const {listHumorContentPage} = require("../../lib/humor/contentRepository.js");
 const {buildHumorFeed} = require("../../lib/humor/feed.js");
 const {submitHumorFeedbackTx} = require("../../lib/humor/feedback.js");
@@ -477,6 +481,117 @@ step("a batch sharing one commit timestamp is walked without skips", async () =>
   assert.equal(new Set(served).size, served.length, "repeated content");
   assert.equal(served.length, 30, `cursor walk reached ${served.length} of 30`);
   return `30/30 at ${[...stamps][0]}`;
+});
+
+/** A small catalog in a language of its own, so no other step sees it. */
+async function seedSmallCatalog(prefix, language, count) {
+  const base = Date.now() - count * 1000;
+  const batch = db.batch();
+  const ids = [];
+  for (let i = 0; i < count; i += 1) {
+    const id = `${prefix}_${String(i).padStart(2, "0")}`;
+    ids.push(id);
+    batch.set(db.doc(`humorContent/${id}`), {
+      contentId: id,
+      type: "meme",
+      language,
+      category: "meme",
+      humorTags: [],
+      humorVector: {meme: 0.7},
+      media: {downloadUrl: `https://example.test/${id}.png`},
+      safetyStatus: "approved",
+      safetyFlags: {},
+      source: {type: "internal", provider: "mevora-internal", licenseRef: null},
+      active: true,
+      createdAt: Timestamp.fromMillis(base + i * 1000),
+      stats: {viewCount: 0, ratingCount: 0, avgRating: 0},
+    });
+  }
+  await batch.commit();
+  return ids;
+}
+
+step("a cursor prefetch never re-serves what a cold start just re-offered", async () => {
+  const uid = "qa_feed_held";
+  await completeCalibration(uid);
+  await seedSmallCatalog("hd", "de", 20);
+  const languages = ["de"];
+  const first = await buildHumorFeed({db, uid, languages, limit: 12});
+  const rest = await buildHumorFeed({db, uid, languages, limit: 12, cursor: first.nextCursor});
+  assert.equal(rest.nextCursor, null, "the pass should have ended");
+  const servedIds = [...first.items, ...rest.items].map((i) => i.contentId);
+  assert.equal(new Set(servedIds).size, 20);
+
+  // Five rated, fifteen fetched but unrated: the cold start is filled by
+  // re-offered items alone and hands back a top cursor.
+  await markInteractions(uid, servedIds.slice(0, 5));
+  const cold = await buildHumorFeed({db, uid, languages, limit: 12});
+  const coldIds = cold.items.map((i) => i.contentId);
+  assert.equal(coldIds.length, 12);
+  assert.ok(cold.nextCursor, "three unrated items are still due");
+
+  const prefetch = await buildHumorFeed({db, uid, languages, limit: 12, cursor: cold.nextCursor});
+  const prefetchIds = prefetch.items.map((i) => i.contentId);
+  for (const id of prefetchIds) {
+    assert.equal(coldIds.includes(id), false, `prefetch re-served held ${id}`);
+  }
+  assert.deepEqual([...coldIds, ...prefetchIds].sort(), servedIds.slice(5).sort());
+  return `12 re-offered cold, ${prefetchIds.length} more by cursor, 0 duplicates`;
+});
+
+// Last: the curated docs below join the catalog every later step would walk.
+step("calibration reaches an unseen curated item behind a chain of seen ones", async () => {
+  const uid = "qa_feed_calib_chain";
+  const [open, ...covered] = ANCHOR_SLOTS;
+  const chain = await seedSmallCatalog("cc", "tr", 6);
+  const coveredIds = await seedSmallCatalog("cv", "tr", covered.length);
+  const curate = (id, slot) =>
+    db.doc(`humorContent/${id}`).set(
+      {
+        calibrationEligible: true,
+        calibrationSlot: slot.id,
+        calibrationVersion: HUMOR_CALIBRATION_VERSION,
+        humorVector: {[slot.primary]: 0.9},
+        category: slot.primary,
+      },
+      {merge: true},
+    );
+  await Promise.all([
+    ...chain.map((id) => curate(id, open)),
+    ...coveredIds.map((id, i) => curate(id, covered[i])),
+  ]);
+  await db.doc(`users/${uid}/humor/calibration`).set({
+    version: HUMOR_CALIBRATION_VERSION,
+    completedCount: coveredIds.length,
+    ratedContentIds: coveredIds,
+    coveredSlots: covered.map((slot) => slot.id),
+    coveredDimensions: [],
+    degradedCount: 0,
+  });
+  await markInteractions(uid, coveredIds);
+
+  // Each candidate in turn is the only unseen one, which covers every chain
+  // of skipped items the slot's rotation can meet, up to five in a row.
+  for (const unseenId of chain) {
+    const batch = db.batch();
+    for (const id of chain) {
+      const ref = db.doc(`users/${uid}/humorInteractions/${id}`);
+      if (id === unseenId) {
+        batch.delete(ref);
+      } else {
+        batch.set(ref, {contentId: id, skipped: true, rating: null});
+      }
+    }
+    await batch.commit();
+    const result = await buildHumorFeed({db, uid, languages: ["tr"], limit: 12});
+    assert.equal(result.items[0]?.contentId, unseenId, `the unseen ${unseenId} was not reached`);
+    assert.equal(result.items[0].calibrationStage, "anchor");
+    const served = await db.getAll(
+      ...result.items.map((i) => db.doc(`users/${uid}/humorInteractions/${i.contentId}`)),
+    );
+    assert.equal(served.some((snap) => snap.exists), false, "served a seen item");
+  }
+  return `${chain.length}/${chain.length} rotations reached the unseen anchor`;
 });
 
 (async () => {

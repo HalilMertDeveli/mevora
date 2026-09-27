@@ -1462,6 +1462,170 @@ describe("humor calibration state", () => {
   });
 });
 
+describe("humor lab — client access boundaries", () => {
+  // Admin is an Auth custom claim; no other suite needs this actor.
+  const adminDb = () => env.authenticatedContext("admin-1", {admin: true}).firestore();
+
+  beforeEach(async () => {
+    await seed(env, async (ctx) => {
+      const db = ctx.firestore();
+      for (const uid of [UID.A, UID.B]) {
+        await db.doc(`users/${uid}/humor/summary`).set({
+          vector: {sarcasm: 80, dry: 70},
+          confidence: 0.3,
+          interactionCount: 15,
+          version: 1,
+        });
+        await db.doc(`users/${uid}/humor/calibration`).set({
+          version: 1,
+          completedCount: 15,
+          stage: "complete",
+          complete: true,
+        });
+        await db.doc(`users/${uid}/humorInteractions/hc_ok`).set({
+          contentId: "hc_ok",
+          rating: "funny",
+          skipped: false,
+        });
+      }
+      await db.doc("humorContent/hc_ok").set({
+        contentId: "hc_ok",
+        active: true,
+        safetyStatus: "approved",
+        category: "sarcasm",
+        humorVector: {sarcasm: 0.9},
+        safetyFlags: {},
+        calibrationEligible: true,
+        calibrationSlot: "anchor_wit",
+        calibrationVersion: 1,
+      });
+      await db.doc("humorContent/hc_bad").set({
+        contentId: "hc_bad",
+        active: false,
+        safetyStatus: "rejected",
+        category: "dark",
+        humorVector: {dark: 0.9},
+        safetyFlags: {hate: true},
+      });
+      await db.doc(`humorReports/${UID.A}_hc_bad`).set({
+        reportId: `${UID.A}_hc_bad`,
+        reporterId: UID.A,
+        contentId: "hc_bad",
+        reason: "offensive",
+        details: "private note",
+        status: "open",
+      });
+      await db.doc("humorModerationQueue/hc_bad").set({
+        contentId: "hc_bad",
+        status: "needs_review",
+        reportCount: 1,
+        lastReporterId: UID.A,
+      });
+    });
+  });
+
+  it("the owner cannot create, update or delete their own humor summary", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}/humor/summary`);
+    await deny(own.set({vector: {sarcasm: 100}, interactionCount: 99, version: 1}));
+    await deny(own.update({interactionCount: 99}));
+    await deny(own.delete());
+    await deny(
+      who.userC.db().doc(`users/${UID.C}/humor/summary`).set({vector: {}, interactionCount: 15}),
+    );
+    await deny(
+      who.userC.db().doc(`users/${UID.C}/humor/calibration`).set({version: 1, complete: true}),
+    );
+  });
+
+  it("the owner cannot write humor interactions, not even their own", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}/humorInteractions/hc_ok`);
+    await allow(own.get());
+    await deny(own.set({contentId: "hc_ok", rating: "very_funny"}));
+    await deny(own.update({rating: "very_funny"}));
+    await deny(own.delete());
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/humorInteractions/hc_new`).set({
+        contentId: "hc_new",
+        rating: "funny",
+      }),
+    );
+  });
+
+  it("nobody reads another user's humor summary, calibration or interactions", async () => {
+    for (const actor of [who.userB, who.userC, who.anon]) {
+      await deny(actor.db().doc(`users/${UID.A}/humor/summary`).get());
+      await deny(actor.db().doc(`users/${UID.A}/humor/calibration`).get());
+      await deny(actor.db().doc(`users/${UID.A}/humorInteractions/hc_ok`).get());
+      await deny(actor.db().collection(`users/${UID.A}/humorInteractions`).get());
+    }
+  });
+
+  it("clients cannot read humorContent directly, approved or rejected", async () => {
+    for (const actor of [who.userA, who.userC, who.anon]) {
+      await deny(actor.db().doc("humorContent/hc_ok").get());
+      await deny(actor.db().doc("humorContent/hc_bad").get());
+      await deny(
+        actor
+          .db()
+          .collection("humorContent")
+          .where("active", "==", true)
+          .where("safetyStatus", "==", "approved")
+          .get(),
+      );
+      await deny(
+        actor.db().collection("humorContent").where("calibrationSlot", "==", "anchor_wit").get(),
+      );
+    }
+  });
+
+  it("an admin can read humorContent", async () => {
+    await allow(adminDb().doc("humorContent/hc_ok").get());
+    await allow(adminDb().doc("humorContent/hc_bad").get());
+    await allow(adminDb().collection("humorContent").get());
+  });
+
+  it("clients cannot write humorContent in any way", async () => {
+    await deny(who.userA.db().doc("humorContent/hc_ok").update({active: false}));
+    await deny(who.userA.db().doc("humorContent/hc_bad").update({safetyStatus: "approved", active: true}));
+    await deny(who.userA.db().doc("humorContent/hc_ok").delete());
+    await deny(adminDb().doc("humorContent/hc_ok").update({calibrationSlot: "anchor_meme"}));
+  });
+
+  it("a humor report is readable by its reporter and admins only", async () => {
+    const path = `humorReports/${UID.A}_hc_bad`;
+    await allow(who.userA.db().doc(path).get());
+    await allow(adminDb().doc(path).get());
+    await deny(who.userB.db().doc(path).get());
+    await deny(who.anon.db().doc(path).get());
+    await deny(who.userB.db().collection("humorReports").get());
+  });
+
+  it("no client writes humor reports, not even the reporter", async () => {
+    await deny(
+      who.userB.db().doc(`humorReports/${UID.B}_hc_ok`).set({
+        reporterId: UID.B,
+        contentId: "hc_ok",
+        reason: "spam",
+        status: "open",
+      }),
+    );
+    await deny(who.userA.db().doc(`humorReports/${UID.A}_hc_bad`).update({status: "resolved"}));
+    await deny(who.userA.db().doc(`humorReports/${UID.A}_hc_bad`).delete());
+    await deny(adminDb().doc(`humorReports/${UID.A}_hc_bad`).update({status: "resolved"}));
+  });
+
+  it("the moderation queue is admin-read and never client-written", async () => {
+    await deny(who.userA.db().doc("humorModerationQueue/hc_bad").get());
+    await deny(who.userB.db().collection("humorModerationQueue").get());
+    await allow(adminDb().doc("humorModerationQueue/hc_bad").get());
+    await deny(
+      who.userA.db().doc("humorModerationQueue/hc_ok").set({contentId: "hc_ok", status: "needs_review"}),
+    );
+    await deny(who.userA.db().doc("humorModerationQueue/hc_bad").update({status: "approved"}));
+    await deny(adminDb().doc("humorModerationQueue/hc_bad").update({status: "approved"}));
+  });
+});
+
 describe("Spotify music — public card vs private taste", () => {
   it("the public Music Taste card is readable by other members", async () => {
     // publicMusic lives on profiles/{uid}, which is the public card by

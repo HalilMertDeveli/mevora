@@ -54,9 +54,18 @@ export const getHumorFeed = onCall(callableOptions, async (request) => {
     const feed = await buildHumorFeed({
       db,
       uid,
-      languages: Array.isArray(data.languages) ? data.languages.map(String) : undefined,
+      // Bounded before any work: ≤ 5 language codes of ≤ 8 characters, and a
+      // cursor no longer than a real one can be. Oversized input degrades to
+      // the defaults instead of costing CPU.
+      languages: Array.isArray(data.languages)
+        ? data.languages
+            .slice(0, 5)
+            .map(String)
+            .filter((l) => l.length > 0 && l.length <= 8)
+        : undefined,
       limit: typeof data.limit === "number" ? data.limit : undefined,
-      cursor: typeof data.cursor === "string" ? data.cursor : null,
+      cursor:
+        typeof data.cursor === "string" && data.cursor.length <= 512 ? data.cursor : null,
     });
     return feed;
   } catch (error) {

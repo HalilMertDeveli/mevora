@@ -484,6 +484,16 @@ class MockHumorDataSource implements HumorDataSource {
 
   @override
   Future<HumorCompatibility> getMatchCompatibility(String matchId) async {
+    // The mock only knows this user's side. It reports "building" while that
+    // side is unfinished — true whatever the peer did — and otherwise stays
+    // silent: inventing a peer or a score would put a fake reading in a real
+    // chat.
+    if (!calibration.complete) {
+      return const HumorCompatibility(
+        available: false,
+        reason: HumorCompatibility.reasonBuilding,
+      );
+    }
     return HumorCompatibility.unavailable;
   }
 

@@ -6479,8 +6479,110 @@ abstract class AppLocalizations {
   /// No description provided for @humorChatStarter.
   ///
   /// In en, this message translates to:
-  /// **'Something that made me laugh…'**
+  /// **'Seems our humor lines up — what made you laugh today?'**
   String get humorChatStarter;
+
+  /// No description provided for @humorChatStarterSarcasm.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we both enjoy a bit of irony — what made you laugh today?'**
+  String get humorChatStarterSarcasm;
+
+  /// No description provided for @humorChatStarterAbsurd.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems we both love absurd humor — what\'s the most absurd thing you\'ve seen lately?'**
+  String get humorChatStarterAbsurd;
+
+  /// No description provided for @humorChatStarterSilly.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we both laugh at silly stuff — what cracked you up last?'**
+  String get humorChatStarterSilly;
+
+  /// No description provided for @humorChatStarterRomantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems romantic humor works on both of us — what\'s your favorite rom-com?'**
+  String get humorChatStarterRomantic;
+
+  /// No description provided for @humorChatStarterDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we\'re both into dark humor — what\'s the last joke that got you?'**
+  String get humorChatStarterDark;
+
+  /// No description provided for @humorChatStarterMeme.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we\'re both meme people — what\'s your favorite meme right now?'**
+  String get humorChatStarterMeme;
+
+  /// No description provided for @humorChatStarterDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems we both like dry humor — what\'s the best deadpan line you know?'**
+  String get humorChatStarterDry;
+
+  /// No description provided for @humorChatStarterWordplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we both love wordplay — got a favorite pun?'**
+  String get humorChatStarterWordplay;
+
+  /// No description provided for @humorChatStarterSituational.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems everyday mishaps make us both laugh — what\'s the funniest thing that happened to you lately?'**
+  String get humorChatStarterSituational;
+
+  /// No description provided for @humorChatStarterCringe.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like cringe content gets us both — what\'s the most cringe thing you\'ve seen lately?'**
+  String get humorChatStarterCringe;
+
+  /// No description provided for @humorChatStarterTeasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems we both enjoy a bit of playful teasing — should I start, or will you?'**
+  String get humorChatStarterTeasing;
+
+  /// No description provided for @humorCompatibilityLevelHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor match is high'**
+  String get humorCompatibilityLevelHigh;
+
+  /// No description provided for @humorCompatibilityLevelMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor match is moderate'**
+  String get humorCompatibilityLevelMedium;
+
+  /// No description provided for @humorCompatibilityLevelLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor match is low'**
+  String get humorCompatibilityLevelLow;
+
+  /// No description provided for @humorCompatibilityBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll both need to finish your humor profiles to see your humor match.'**
+  String get humorCompatibilityBuilding;
+
+  /// No description provided for @humorCompatibilitySharedStyles.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor styles you share'**
+  String get humorCompatibilitySharedStyles;
+
+  /// No description provided for @humorCompatibilityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A light signal from how you each reacted to humor content — not a verdict on the two of you.'**
+  String get humorCompatibilityNote;
 
   /// No description provided for @humorTopVibes.
   ///

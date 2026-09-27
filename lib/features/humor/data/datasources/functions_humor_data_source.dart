@@ -100,22 +100,23 @@ class FunctionsHumorDataSource implements HumorDataSource {
     final data = await _backend.invoke('getMatchHumorCompatibility', {
       'matchId': matchId,
     });
-    if (data['available'] != true) {
-      return HumorCompatibility(
-        available: false,
-        reason: data['reason'] as String?,
-        confidence: _asDouble(data['confidence']),
-      );
-    }
+    // Only {available, score, strongestShared, reason} is read. Anything else
+    // an older backend still sends (the peer's `differences` values, its
+    // `confidence`) is ignored on purpose: it must never reach the UI.
+    final reasonRaw = data['reason'];
+    final reason = reasonRaw is String && reasonRaw.isNotEmpty
+        ? reasonRaw
+        : null;
     final scoreRaw = data['score'];
-    final score = scoreRaw == null ? null : firestoreInt(scoreRaw, 0);
+    final score = scoreRaw is num ? scoreRaw.round().clamp(0, 100) : null;
+    if (data['available'] != true || score == null) {
+      return HumorCompatibility(available: false, reason: reason);
+    }
     return HumorCompatibility(
       available: true,
       score: score,
       strongestShared: _parseCategories(data['strongestShared']),
-      differences: _parseDifferences(data['differences']),
-      confidence: _asDouble(data['confidence']),
-      reason: data['reason'] as String?,
+      reason: reason,
     );
   }
 
@@ -245,41 +246,18 @@ class FunctionsHumorDataSource implements HumorDataSource {
     );
   }
 
+  /// Known humor category keys, in server order. Unknown keys (a category a
+  /// newer backend added) are dropped rather than shown raw; duplicates too.
   List<HumorCategory> _parseCategories(Object? raw) {
     if (raw is! List) {
       return const [];
     }
     final out = <HumorCategory>[];
     for (final item in raw) {
-      final parsed = HumorCategory.tryParse(item?.toString());
-      if (parsed != null) {
+      final parsed = item is String ? HumorCategory.tryParse(item) : null;
+      if (parsed != null && !out.contains(parsed)) {
         out.add(parsed);
       }
-    }
-    return out;
-  }
-
-  List<HumorDifference> _parseDifferences(Object? raw) {
-    if (raw is! List) {
-      return const [];
-    }
-    final out = <HumorDifference>[];
-    for (final item in raw) {
-      if (item is! Map) {
-        continue;
-      }
-      final map = Map<String, dynamic>.from(item);
-      final dim = HumorCategory.tryParse(map['dim'] as String?);
-      if (dim == null) {
-        continue;
-      }
-      out.add(
-        HumorDifference(
-          dim: dim,
-          a: _asDouble(map['a']),
-          b: _asDouble(map['b']),
-        ),
-      );
     }
     return out;
   }

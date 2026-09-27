@@ -25,6 +25,10 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   `spotifySecrets/${uid}`,
   `users/${uid}/verification/identity`,
   `users/${uid}/verification/sumsub`,
+  // Humor state is an inferred personality profile. An in-flight humor call
+  // can re-create these after the sweep, so they are checked, not assumed.
+  `users/${uid}/humor/summary`,
+  `users/${uid}/humor/calibration`,
 ];
 
 /** Storage prefixes `deleteUserAccount` clears. */
@@ -66,6 +70,21 @@ export async function verifyAccountDeletion(
   }
   if (!likesTo.empty) {
     issues.push("likes_to_remnant");
+  }
+
+  const [humorInteractions, humorReports, humorQueuePointer] = await Promise.all([
+    db.collection(`users/${uid}/humorInteractions`).limit(1).get(),
+    db.collection("humorReports").where("reporterId", "==", uid).limit(1).get(),
+    db.collection("humorModerationQueue").where("lastReporterId", "==", uid).limit(1).get(),
+  ]);
+  if (!humorInteractions.empty) {
+    issues.push("humor_interactions_remnant");
+  }
+  if (!humorReports.empty) {
+    issues.push("humor_reports_remnant");
+  }
+  if (!humorQueuePointer.empty) {
+    issues.push("humor_queue_reporter_remnant");
   }
 
   for (const prefix of REMNANT_STORAGE_PREFIXES(uid)) {

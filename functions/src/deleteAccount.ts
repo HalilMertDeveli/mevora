@@ -44,6 +44,26 @@ async function deleteCollectionDocs(path: string): Promise<void> {
   await batchDelete(snap.docs.map((d) => d.ref));
 }
 
+/**
+ * A humor report names its reporter twice: on the report itself (purged with
+ * deleteQuery) and as `lastReporterId` on the shared moderation-queue entry.
+ * The queue entry belongs to the content, not the user, so only the pointer
+ * to the deleted account is removed.
+ */
+async function clearHumorQueueReporter(uid: string): Promise<void> {
+  const snap = await db
+    .collection("humorModerationQueue")
+    .where("lastReporterId", "==", uid)
+    .get();
+  for (let i = 0; i < snap.docs.length; i += BATCH_LIMIT) {
+    const chunk = db.batch();
+    for (const doc of snap.docs.slice(i, i + BATCH_LIMIT)) {
+      chunk.update(doc.ref, {lastReporterId: FieldValue.delete()});
+    }
+    await chunk.commit();
+  }
+}
+
 async function deletePrefix(prefix: string): Promise<void> {
   try {
     await getStorage().bucket().deleteFiles({prefix});
@@ -157,6 +177,8 @@ export const deleteUserAccount = onCall(
 
     await deleteQuery("reports", "reporterId", uid);
     await deleteQuery("reports", "reportedUserId", uid);
+    await deleteQuery("humorReports", "reporterId", uid);
+    await clearHumorQueueReporter(uid);
     await deleteQuery("supportTickets", "userId", uid);
     await deleteQuery("blocks", "blockerId", uid);
     await deleteQuery("blocks", "blockedUserId", uid);
@@ -195,6 +217,7 @@ export const deleteUserAccount = onCall(
       db.doc(`users/${uid}`),
       db.doc(`users/${uid}/music/summary`),
       db.doc(`users/${uid}/humor/summary`),
+      db.doc(`users/${uid}/humor/calibration`),
       db.doc(`users/${uid}/relationshipMatch/summary`),
       db.doc(`users/${uid}/verification/sumsub`),
       db.doc(`users/${uid}/verification/identity`),

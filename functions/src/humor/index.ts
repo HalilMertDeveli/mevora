@@ -1,12 +1,17 @@
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
-import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
 import {isHumorCategory} from "./categories.js";
 import {giphyApiKey} from "./humorApiConfig.js";
-import {humorScoreForPair} from "./compatibility.js";
+import {
+  humorScoreForPair,
+  isHumorCalibrationReady,
+  isValidMatchId,
+  unavailableHumorCompatibility,
+} from "./compatibility.js";
 import {
   INTERNAL_HUMOR_SEED,
   upsertHumorContentDoc,
@@ -18,10 +23,15 @@ import {
   isValidHumorRating,
   submitHumorFeedbackTx,
 } from "./feedback.js";
-import {classifyHumorSafety, emptySafetyFlags} from "./moderation.js";
+import {isHumorSafetyStatus} from "./moderation.js";
 import {applyHumorAiTagging} from "./aiTagging.js";
+import {
+  applyHumorModerationDecision,
+  parseHumorContentId,
+  submitHumorReport,
+} from "./reports.js";
 import {safeLogMeta} from "../security/logHygiene.js";
-import type {HumorContentType, HumorSafetyStatus} from "./types.js";
+import type {HumorContentType} from "./types.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -110,75 +120,63 @@ export const getHumorProfile = onCall(callableOptions, async (request) => {
 /**
  * Match humor compatibility. MVP: available as standalone callable.
  * Does NOT feed Discover / calculateCompatibility.
+ *
+ * Payload is exactly {available, score, strongestShared, reason}. Available
+ * only when both members finished their initial calibration and both profiles
+ * carry signal.
  */
 export const getMatchHumorCompatibility = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
-  const matchId = String(request.data?.matchId ?? "").trim();
-  if (!matchId) {
+  const rawMatchId = request.data?.matchId;
+  const matchId = typeof rawMatchId === "string" ? rawMatchId.trim() : "";
+  // A `/` would let the lookup resolve to a nested document a participant can
+  // write (e.g. matches/{m}/messages/{x}) and forge `userIds` on.
+  if (!isValidMatchId(matchId)) {
     throw new HttpsError("invalid-argument", "matchId");
   }
-  const matchSnap = await db.doc(`matches/${matchId}`).get();
+  const matchSnap = await db.collection("matches").doc(matchId).get();
   if (!matchSnap.exists) {
     throw new HttpsError("not-found", "match");
   }
-  const userIds = (matchSnap.data()?.userIds ?? []) as string[];
-  if (!userIds.includes(uid) || matchSnap.data()?.isActive === false) {
+  const match = matchSnap.data() ?? {};
+  const userIds: unknown[] = Array.isArray(match.userIds) ? match.userIds : [];
+  if (!userIds.includes(uid) || match.isActive !== true) {
     throw new HttpsError("permission-denied", "match");
   }
   const otherUid = userIds.find((id) => id !== uid);
-  if (!otherUid) {
-    return {available: false, score: null, reason: "invalid-match"};
+  if (
+    userIds.length !== 2 ||
+    typeof otherUid !== "string" ||
+    !otherUid ||
+    otherUid.includes("/")
+  ) {
+    return unavailableHumorCompatibility("invalid-match");
   }
-  const [a, b] = await Promise.all([
+  const [profileA, profileB, calibrationA, calibrationB] = await Promise.all([
     loadUserHumorProfile(db, uid),
     loadUserHumorProfile(db, otherUid),
+    db.doc(`users/${uid}/humor/calibration`).get(),
+    db.doc(`users/${otherUid}/humor/calibration`).get(),
   ]);
-  return humorScoreForPair(a, b);
+  return humorScoreForPair(profileA, profileB, {
+    readyA: isHumorCalibrationReady(calibrationA.data(), profileA),
+    readyB: isHumorCalibrationReady(calibrationB.data(), profileB),
+  });
 });
 
 export const reportHumorContent = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const data = (request.data ?? {}) as Record<string, unknown>;
-  const contentId = String(data.contentId ?? "").trim();
-  if (!contentId) {
-    throw new HttpsError("invalid-argument", "contentId");
-  }
-  const reason = String(data.reason ?? "other").slice(0, 64);
-  const details = String(data.details ?? "").slice(0, 500);
-  const reportId = `${uid}_${contentId}`;
-  await db.doc(`humorReports/${reportId}`).set(
-    {
-      reportId,
-      reporterId: uid,
-      contentId,
-      reason,
-      details,
-      status: "open",
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    {merge: true},
-  );
-  await db.doc(`humorModerationQueue/${contentId}`).set(
-    {
-      contentId,
-      status: "needs_review",
-      source: "user_report",
-      lastReporterId: uid,
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    {merge: true},
-  );
-  return {ok: true};
+  return submitHumorReport(db, uid, data);
 });
 
 export const upsertHumorContent = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
   const data = (request.data ?? {}) as Record<string, unknown>;
-  const contentId = String(data.contentId ?? "").trim();
-  if (!contentId) {
-    throw new HttpsError("invalid-argument", "contentId");
+  const contentId = parseHumorContentId(data.contentId);
+  if (data.safetyStatus != null && !isHumorSafetyStatus(data.safetyStatus)) {
+    throw new HttpsError("invalid-argument", "safetyStatus");
   }
   const category = String(data.category ?? "");
   if (!isHumorCategory(category)) {
@@ -204,10 +202,9 @@ export const upsertHumorContent = onCall(callableOptions, async (request) => {
     humorVector: tagged.humorVector,
     media: (data.media as UpsertHumorContentInput["media"]) ?? {},
     safetyFlags: tagged.safetyFlags,
-    safetyStatus:
-      typeof data.safetyStatus === "string"
-        ? (data.safetyStatus as HumorSafetyStatus)
-        : tagged.safetyStatus,
+    safetyStatus: isHumorSafetyStatus(data.safetyStatus)
+      ? data.safetyStatus
+      : tagged.safetyStatus,
     active: data.active === true,
     sourceType: data.sourceType === "licensed_api" ? "licensed_api" : "internal",
     provider: typeof data.provider === "string" ? data.provider : undefined,
@@ -256,45 +253,7 @@ export const runHumorModeration = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
   const data = (request.data ?? {}) as Record<string, unknown>;
-  const contentId = String(data.contentId ?? "").trim();
-  if (!contentId) {
-    throw new HttpsError("invalid-argument", "contentId");
-  }
-  const ref = db.doc(`humorContent/${contentId}`);
-  const snap = await ref.get();
-  if (!snap.exists) {
-    throw new HttpsError("not-found", "content");
-  }
-  const classified = classifyHumorSafety(
-    emptySafetyFlags(
-      (data.safetyFlags as Parameters<typeof emptySafetyFlags>[0]) ??
-        snap.data()?.safetyFlags,
-    ),
-  );
-  const safetyStatus = (data.forceStatus as HumorSafetyStatus | undefined) ?? classified.status;
-  const active =
-    safetyStatus === "approved" && snap.data()?.active !== false
-      ? safetyStatus === "approved"
-      : safetyStatus === "approved";
-  await ref.set(
-    {
-      safetyFlags: classified.flags,
-      safetyStatus,
-      active: safetyStatus === "approved" ? active : false,
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    {merge: true},
-  );
-  await db.doc(`humorModerationQueue/${contentId}`).set(
-    {
-      contentId,
-      status: safetyStatus,
-      updatedAt: FieldValue.serverTimestamp(),
-      moderatedBy: uid,
-    },
-    {merge: true},
-  );
-  return {ok: true, contentId, safetyStatus, active: safetyStatus === "approved"};
+  return applyHumorModerationDecision(db, uid, data);
 });
 
 /** Admin-only: seed internal repository (no scraping). */

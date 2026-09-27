@@ -166,13 +166,20 @@ export type UserHumorCalibrationDoc = {
   updatedAt?: unknown;
 };
 
+export type HumorCompatibilityUnavailableReason =
+  | "building"
+  | "no-signal"
+  | "invalid-match";
+
+/**
+ * `getMatchHumorCompatibility` payload — exactly these four keys. It never
+ * carries the peer's vector values, confidence or interaction count.
+ */
 export type HumorCompatibilityResult = {
   available: boolean;
   score: number | null;
   strongestShared: HumorCategory[];
-  differences: Array<{dim: HumorCategory; a: number; b: number}>;
-  confidence: number;
-  reason?: string;
+  reason: HumorCompatibilityUnavailableReason | null;
 };
 
 export const HUMOR_PROFILE_VERSION = 1;

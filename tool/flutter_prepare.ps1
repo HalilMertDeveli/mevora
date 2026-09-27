@@ -34,4 +34,25 @@ if (Test-Path $tokenFile) {
     }
 }
 
+# Android 16 put local network access behind a runtime permission, and runtime
+# permissions start denied. Without it the app sandbox cannot reach the
+# Firebase Emulator Suite on 10.0.2.2 at all -- adb shell still can, so it
+# looks like firebase_auth/network-request-failed or "check your internet
+# connection" rather than a missing permission. Granting it here keeps the
+# emulator launch configuration working straight from F5.
+#
+# Debug builds only: the permission is declared in the debug source set.
+$adb = Join-Path $env:LOCALAPPDATA "Android\sdk\platform-tools\adb.exe"
+if (Test-Path $adb) {
+    $serials = & $adb devices |
+        Select-String -Pattern "^(emulator-\d+)\s+device$" |
+        ForEach-Object { $_.Matches[0].Groups[1].Value }
+    foreach ($serial in $serials) {
+        $installed = & $adb -s $serial shell pm list packages com.mevora.app
+        if ($installed) {
+            & $adb -s $serial shell pm grant com.mevora.app android.permission.ACCESS_LOCAL_NETWORK 2>&1 | Out-Null
+        }
+    }
+}
+
 exit 0

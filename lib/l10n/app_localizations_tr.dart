@@ -3532,7 +3532,72 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorCompatibilityTitle => 'Mizah uyumu';
 
   @override
-  String get humorChatStarter => 'Beni güldüren bir şey…';
+  String get humorChatStarter =>
+      'Mizah anlayışlarımız benziyor gibi — bugün seni ne güldürdü?';
+
+  @override
+  String get humorChatStarterSarcasm =>
+      'İkimiz de ironiyi seviyoruz galiba — bugün seni ne güldürdü?';
+
+  @override
+  String get humorChatStarterAbsurd =>
+      'Absürt mizah ikimize de hitap ediyor gibi — son gördüğün en absürt şey neydi?';
+
+  @override
+  String get humorChatStarterSilly =>
+      'Saçma sapan şeylere ikimiz de gülüyoruz galiba — en son neye kahkaha attın?';
+
+  @override
+  String get humorChatStarterRomantic =>
+      'Romantik mizah ikimize de hitap ediyor gibi — en sevdiğin romantik komedi hangisi?';
+
+  @override
+  String get humorChatStarterDark =>
+      'Kara mizahta anlaşıyoruz galiba — seni en son hangi espri yakaladı?';
+
+  @override
+  String get humorChatStarterMeme =>
+      'İkimiz de meme insanıyız galiba — şu an en sevdiğin meme hangisi?';
+
+  @override
+  String get humorChatStarterDry =>
+      'Kuru mizah ikimizin de tarzı gibi — bildiğin en iyi tek satırlık espri ne?';
+
+  @override
+  String get humorChatStarterWordplay =>
+      'Kelime oyunlarına ikimiz de bayılıyoruz galiba — en sevdiğin kelime oyunu hangisi?';
+
+  @override
+  String get humorChatStarterSituational =>
+      'Gündelik hayatın komik anları ikimizi de güldürüyor gibi — son zamanlarda başına gelen en komik şey neydi?';
+
+  @override
+  String get humorChatStarterCringe =>
+      'Cringe içerikler ikimizi de güldürüyor galiba — son gördüğün en cringe şey neydi?';
+
+  @override
+  String get humorChatStarterTeasing =>
+      'Tatlı tatlı takılmayı ikimiz de seviyoruz galiba — ilk laf benden mi, senden mi?';
+
+  @override
+  String get humorCompatibilityLevelHigh => 'Mizah uyumunuz yüksek';
+
+  @override
+  String get humorCompatibilityLevelMedium => 'Mizah uyumunuz orta';
+
+  @override
+  String get humorCompatibilityLevelLow => 'Mizah uyumunuz düşük';
+
+  @override
+  String get humorCompatibilityBuilding =>
+      'Mizah uyumunuzu görmek için ikinizin de mizah profilini tamamlaması gerekiyor.';
+
+  @override
+  String get humorCompatibilitySharedStyles => 'Ortak mizah tarzlarınız';
+
+  @override
+  String get humorCompatibilityNote =>
+      'Bu, ikinizin mizah içeriklerine verdiği tepkilerden çıkan hafif bir işaret; ilişkiniz hakkında kesin bir şey söylemez.';
 
   @override
   String get humorTopVibes => 'Öne çıkan vibes';

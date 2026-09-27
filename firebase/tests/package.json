@@ -7,7 +7,8 @@
     "test:security": "node --test --test-concurrency=1 firestore.security.emulator.test.mjs storage.security.emulator.test.mjs",
     "test:contract": "node location.rules.test.mjs",
     "test:pipeline": "node --test moderation.pipeline.test.mjs",
-    "test:match": "node --test mutualMatch.callable.test.mjs"
+    "test:match": "node --test mutualMatch.callable.test.mjs",
+    "test:radius": "node --test discoveryRadiusGate.callable.test.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",

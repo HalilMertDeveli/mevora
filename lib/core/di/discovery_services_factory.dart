@@ -31,7 +31,8 @@ DiscoveryServices createDiscoveryServices({
   final remote = DiscoveryRepositoryImpl(
     backend: backend ?? FirebaseFunctionsCallable(),
   );
-  final allowDemo = config?.environment.isDevelopment ?? true;
+  final allowDemo =
+      (config?.environment.isDevelopment ?? true) && !_demoDiscoveryDisabled();
   if (!allowDemo) {
     return DiscoveryServices(discoveryRepository: remote);
   }
@@ -49,3 +50,16 @@ bool _forceMockOnly(AppConfig? config) {
   const fromEnv = bool.fromEnvironment('USE_MOCK_DISCOVERY');
   return fromEnv;
 }
+
+/// Lets a QA run see the server's real empty deck.
+///
+/// HybridDiscoveryRepository pads with demo profiles when the live feed comes
+/// back **successfully** but empty. That is exactly the state a distance-gate
+/// test needs to observe, so without this switch a development build cannot
+/// tell a correctly-gated empty result from a broken gate — the demo seeds sit
+/// 1.8-28 km away and reappear as though nothing had been excluded.
+///
+/// Off by default, so ordinary development keeps its demo deck:
+///   flutter run --dart-define=DISCOVERY_NO_DEMO=true
+bool _demoDiscoveryDisabled() =>
+    const bool.fromEnvironment('DISCOVERY_NO_DEMO');

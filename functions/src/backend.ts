@@ -33,6 +33,8 @@ import {attributeBoostEvent, recordBoostImpressions} from "./boost/measurement.j
 import {
   classifyDiscoveryDistance,
   fillFromDistanceTiers,
+  isWithinDiscoveryRadius,
+  resolveDiscoveryRadiusKm,
   type DiscoveryDistanceTier,
 } from "./discoveryFallback.js";
 import {userLanguage} from "./language.js";
@@ -169,6 +171,11 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
   const allowedRadii = new Set([5, 10, 25, 50, 100]);
   const requested = Number(request.data?.radiusKm ?? 25);
   const radiusKm = allowedRadii.has(requested) ? requested : 25;
+  // The hard distance gate for this request. radiusKm is the progressive
+  // step — the client walks it up the ladder when a deck comes back empty —
+  // and this is the one place the absolute product ceiling is asserted, so
+  // widening allowedRadii later cannot silently widen the gate past it.
+  const gateKm = resolveDiscoveryRadiusKm(radiusKm);
   const limit = Math.min(Math.max(Number(request.data?.limit ?? 10), 1), 20);
   const cursor = String(request.data?.cursor ?? "");
   // Client may ask for soft distance expansion when a preferred radius is empty.
@@ -298,15 +305,31 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
       if (hasViewerLocation) {
         const other = locationsByUid.get(doc.id);
         if (other) {
-          distanceKm = haversineKm(
+          const exactKm = haversineKm(
             Number(origin.latitude),
             Number(origin.longitude),
             other.latitude,
             other.longitude,
           );
+          // HARD GATE. Beyond the resolved radius the candidate is dropped,
+          // not demoted to a lower tier: the tiers below only order the
+          // people who got through here.
+          //
+          // Deliberately the exact haversine, and deliberately ahead of the
+          // disclosure step further down — that step floors the value into
+          // 5 km bands and flattens everything at or beyond 100 km to
+          // exactly 100, so gating on the disclosed figure would wave
+          // through a candidate on the far side of the planet.
+          //
+          // Ahead of the music/relationship scoring below as well, so a
+          // rejected candidate costs no extra reads.
+          if (!isWithinDiscoveryRadius(exactKm, gateKm)) {
+            bumpReject("distance_over_radius");
+            continue;
+          }
           const maxNearbyKm = effectiveRadiusKm(radiusKm, candidateBoosted);
           tier = classifyDiscoveryDistance(
-            distanceKm,
+            exactKm,
             radiusKm,
             candidateBoosted,
             maxNearbyKm,
@@ -315,7 +338,7 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
           // backend is quantised: a 0.1 km figure for a candidate the caller
           // can pick out of the deck is a sharper trilateration oracle than
           // getDistanceLabel ever was.
-          const disclosed = coarseDistanceLabel(distanceKm, lang);
+          const disclosed = coarseDistanceLabel(exactKm, lang);
           distanceKm = disclosed.bucketKm;
           label = disclosed.label;
         } else {
@@ -411,6 +434,7 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
   logger.info("discovery_fallback", {
     viewerHasLocation: hasViewerLocation,
     radiusKm,
+    gateKm,
     expandDistance,
     nearby: buckets.nearby.length,
     extended: buckets.extended.length,
@@ -441,6 +465,7 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
             rejectionReasons,
             viewerHasLocation: hasViewerLocation,
             radiusKm,
+            gateKm,
             nearby: buckets.nearby.length,
             extended: buckets.extended.length,
             far: buckets.far.length,

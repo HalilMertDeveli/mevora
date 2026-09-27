@@ -29,6 +29,26 @@ Flutter vertical feed ◄── getHumorFeed ◄── Firestore
 - Admin sync: `syncHumorFromProvider` (requires admin claim + key)
 - Without key: Turkish-first **internal seed** with real HTTPS MP4/images still works
 
+### Seed media credits
+
+The curated seed's video items reuse four short, openly licensed H.264 MP4
+clips (`SEED_VIDEO_CLIPS` in `calibrationSeed.ts`). Each clip is 5–10 s long
+and about 1 MB. The humour is in each item's Mevora-written caption. The clips
+have no poster on an allowed host, so their `thumbUrl` is `null` and the
+player shows a black frame while the clip loads.
+
+| Clip | Source | Licence / credit |
+|---|---|---|
+| Big Buck Bunny, 10 s, 360p | test-videos.co.uk | CC BY 3.0, © 2008 Blender Foundation, peach.blender.org |
+| Sintel, 10 s, 360p | test-videos.co.uk | CC BY 3.0, © Blender Foundation, durian.blender.org |
+| `flower.mp4`, 5 s | MDN interactive examples, `media/cc0-videos/` | CC0 1.0 |
+| `friday.mp4`, 6 s (*His Girl Friday*, 1940) | MDN interactive examples, `media/cc0-videos/` | CC0 1.0 |
+
+Stills come from `picsum.photos`. The Google `gtv-videos-bucket` samples used
+before now return 403, and their host was removed from the media allowlist.
+Before you change a clip, check it with a live GET: it must return 200/206 with
+`video/mp4`.
+
 ### Feed language
 
 Default preference: `tr` then `en`. App language TR → Turkish content first.

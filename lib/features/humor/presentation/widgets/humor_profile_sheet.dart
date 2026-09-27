@@ -27,7 +27,15 @@ class HumorProfileSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final vibes = HumorProfileDisplay.visibleTopVibes(profile);
+    // Only traits with real signal, named with a strength word. A dimension
+    // near the neutral midpoint is "no evidence", not a trait, and a number
+    // would claim a precision a few ratings cannot give.
+    final vibes = HumorProfileDisplay.visibleTopVibes(profile)
+        .where(
+          (vibe) =>
+              HumorProfileDisplay.strengthOf(vibe.value) != HumorStrength.low,
+        )
+        .toList();
     final progress = HumorFeedPolicy.buildingProgress(profile);
 
     return SafeArea(
@@ -60,18 +68,25 @@ class HumorProfileSheet extends StatelessWidget {
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: AppSpacing.sm),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  for (final vibe in vibes)
-                    MevoraChip(
-                      label:
-                          '${HumorProfileDisplay.categoryLabel(l10n, vibe.category)} · ${vibe.value}',
-                      selected: true,
-                    ),
-                ],
-              ),
+              if (vibes.isEmpty)
+                Text(
+                  l10n.humorResultSummaryNone,
+                  style: theme.textTheme.bodyMedium,
+                )
+              else
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    for (final vibe in vibes)
+                      MevoraChip(
+                        label:
+                            '${HumorProfileDisplay.categoryLabel(l10n, vibe.category)} · '
+                            '${HumorProfileDisplay.strengthLabel(l10n, HumorProfileDisplay.strengthOf(vibe.value))}',
+                        selected: true,
+                      ),
+                  ],
+                ),
             ],
           ],
         ),

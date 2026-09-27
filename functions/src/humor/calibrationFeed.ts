@@ -129,7 +129,9 @@ function bestFor(
  * state alone. `ratedContentIds` is positional (the n-th counted rating is
  * entry n), so everything past the anchors is an adaptive/exploration probe,
  * and a probe measures its item's primary dimension — the selector only picks
- * focused items when they exist.
+ * focused items when they exist. (When a thin pool forced a fallback item, the
+ * original target is not recoverable from state; within one page the loop
+ * excludes both.)
  */
 function probedAfterAnchors(
   state: UserHumorCalibrationDoc,
@@ -319,7 +321,14 @@ export async function selectCalibrationItems(input: {
       note(`${stage}:${dimension}`);
       break;
     }
+    // Record the target *and* what the item actually measures. They differ
+    // only when a thin pool forced a fallback, and a resumed page can only
+    // rebuild the latter (probedAfterAnchors), so both must be excluded here.
     probed.add(dimension);
+    const measured = primaryDimensionOf(chosen);
+    if (measured) {
+      probed.add(measured);
+    }
     take(chosen, stage);
   }
 

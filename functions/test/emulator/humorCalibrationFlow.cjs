@@ -358,6 +358,21 @@ step("uncurated content cannot take an anchor position", async () => {
   return "lifetime profile learned, calibration did not advance";
 });
 
+step("a user with earlier ratings calibrates at the calibration step", async () => {
+  const uid = "qa_returning_user";
+  // Humor Lab ratings from before calibration existed: a count, no calibration doc.
+  await db.doc(`users/${uid}/humor/summary`).set({interactionCount: 40, confidence: 0.6});
+  const feed = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 12});
+  assert.equal(feed.calibration.stage, "anchor", "calibration still runs for them");
+  const contentId = feed.items[0].contentId;
+  const result = await submitHumorFeedbackTx({db, uid, contentId, rating: "very_funny"});
+  assert.equal(result.interactionCount, 41);
+  assert.equal(result.calibration.completedCount, 1);
+  const doc = (await db.doc(`users/${uid}/humorInteractions/${contentId}`).get()).data();
+  assert.equal(doc.appliedStep, 0.45, "calibration ratings learn at the young step");
+  return `step ${doc.appliedStep} at lifetime rating 41`;
+});
+
 step("changing a rating replaces it instead of stacking", async () => {
   const feed = await buildHumorFeed({db, uid: "qa_rerate_a", languages: ["tr"], limit: 12});
   const contentId = feed.items[0].contentId;
@@ -391,10 +406,18 @@ step("concurrent ratings keep content stats exact", async () => {
     ),
   );
   assert.equal(results.filter((r) => r.status === "rejected").length, 0);
-  const stats = (await db.doc(`humorContent/${contentId}`).get()).data().stats;
+  let stats = (await db.doc(`humorContent/${contentId}`).get()).data().stats;
   const sum = 1 + 0.6 - 0.5 - 1;
+  // The counters are increments: exact under concurrency.
   assert.equal(stats.ratingCount, Number(before.ratingCount ?? 0) + users.length);
+  assert.equal(stats.viewCount, Number(before.viewCount ?? 0) + users.length);
   assert.ok(Math.abs(stats.ratingSum - (Number(before.ratingSum ?? 0) + sum)) < 1e-9);
+  // The average may trail concurrent ratings, but never drifts: the next
+  // rating re-derives it from the exact counters.
+  assert.ok(stats.avgRating >= -1 && stats.avgRating <= 1, String(stats.avgRating));
+  await submitHumorFeedbackTx({db, uid: "qa_stats_5", contentId, rating: "funny"});
+  stats = (await db.doc(`humorContent/${contentId}`).get()).data().stats;
+  assert.equal(stats.ratingCount, Number(before.ratingCount ?? 0) + users.length + 1);
   assert.ok(Math.abs(stats.avgRating - stats.ratingSum / stats.ratingCount) < 1e-9);
   return `count ${stats.ratingCount}, avg ${stats.avgRating.toFixed(3)}`;
 });

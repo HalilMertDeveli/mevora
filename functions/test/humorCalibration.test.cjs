@@ -52,7 +52,17 @@ function isPlainObject(value) {
   );
 }
 
-/** FieldValue sentinels are opaque here; they are replaced by a marker. */
+/** A resolved `FieldValue.increment(operand)`. */
+class Increment {
+  constructor(operand) {
+    this.operand = operand;
+  }
+}
+
+/**
+ * FieldValue sentinels are opaque here and replaced by a marker, except
+ * `FieldValue.increment`, which the stats update relies on for exactness.
+ */
 function sanitize(value) {
   if (Array.isArray(value)) {
     return value.map(sanitize);
@@ -65,6 +75,9 @@ function sanitize(value) {
     return out;
   }
   if (value !== null && typeof value === "object") {
+    if (value.constructor && value.constructor.name === "NumericIncrementTransform") {
+      return new Increment(value.operand);
+    }
     return "<sentinel>";
   }
   return value;
@@ -73,10 +86,30 @@ function sanitize(value) {
 function mergeInto(target, patch) {
   const out = {...target};
   for (const [key, value] of Object.entries(patch)) {
-    out[key] =
-      isPlainObject(value) && isPlainObject(out[key])
-        ? mergeInto(out[key], value)
-        : value;
+    if (value instanceof Increment) {
+      out[key] = (typeof out[key] === "number" ? out[key] : 0) + value.operand;
+    } else if (isPlainObject(value)) {
+      out[key] = mergeInto(isPlainObject(out[key]) ? out[key] : {}, value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+/** `update()` semantics: dotted field paths, and the document must exist. */
+function applyUpdate(target, patch) {
+  let out = target;
+  for (const [fieldPath, value] of Object.entries(patch)) {
+    const segments = fieldPath.split(".");
+    const nested = {};
+    let cursor = nested;
+    segments.slice(0, -1).forEach((segment) => {
+      cursor[segment] = {};
+      cursor = cursor[segment];
+    });
+    cursor[segments[segments.length - 1]] = value;
+    out = mergeInto(out, nested);
   }
   return out;
 }
@@ -96,9 +129,7 @@ function makeDb(initial = {}) {
     const clean = sanitize(data);
     store.set(
       path,
-      options && options.merge && store.has(path)
-        ? mergeInto(store.get(path), clean)
-        : clean,
+      mergeInto(options && options.merge && store.has(path) ? store.get(path) : {}, clean),
     );
   };
 
@@ -107,6 +138,13 @@ function makeDb(initial = {}) {
     id: path.split("/").pop(),
     get: async () => snapshotOf(path),
     set: async (data, options) => write(path, data, options),
+    update: async (data) => {
+      if (!store.has(path)) {
+        throw new Error(`NOT_FOUND: ${path}`);
+      }
+      writes.push(path);
+      store.set(path, applyUpdate(store.get(path), sanitize(data)));
+    },
     delete: async () => store.delete(path),
   });
 
@@ -1322,6 +1360,59 @@ test("after the anchors, no dimension is probed twice", async () => {
   }
 });
 
+test("a fallback probe excludes what the item measured, not only its target", async () => {
+  // A thin pool: `teasing` has no focused item, only one that is mostly sarcasm.
+  const curated = (contentId, humorVector) =>
+    seedDocFrom({
+      contentId,
+      type: "text",
+      language: "tr",
+      category: Object.keys(humorVector)[0],
+      humorVector,
+      calibration: {eligible: true, slot: null},
+    });
+  const docs = {};
+  for (const [id, vector] of [
+    ["thin_sarcasm_teasing", {sarcasm: 0.9, teasing: 0.6}],
+    ["thin_sarcasm", {sarcasm: 0.9}],
+    ["thin_absurd", {absurd: 0.9}],
+    ["thin_silly", {silly: 0.9}],
+  ]) {
+    docs[`humorContent/${id}`] = curated(id, vector);
+  }
+  const db = makeDb(docs);
+  const uid = "user_thin";
+  const state = {
+    ...defaultCalibrationState(),
+    completedCount: 12,
+    stage: "exploration",
+    ratedContentIds: Array.from({length: 12}, (_, i) => `retired_${i}`),
+    coveredDimensions: HUMOR_CATEGORIES.filter((dim) => dim !== "teasing"),
+  };
+  const select = (from) =>
+    selectCalibrationItems({
+      db,
+      uid,
+      state: from,
+      profile: defaultUserHumorProfile(),
+      languages: ["tr"],
+      limit: 3,
+    });
+
+  const page = await select(state);
+  const ids = page.picks.map((pick) => pick.content.contentId);
+  // teasing can only be probed through the sarcasm-heavy item — which also
+  // measured sarcasm, so sarcasm must not get a second probe on this page.
+  assert.deepEqual(ids, ["thin_sarcasm_teasing", "thin_absurd", "thin_silly"]);
+
+  // A resumed page reaches the same choice from server state alone.
+  const resumed = await select(advanceCalibration({state, content: page.picks[0].content}));
+  assert.deepEqual(
+    resumed.picks.map((pick) => pick.content.contentId),
+    ["thin_absurd", "thin_silly"],
+  );
+});
+
 test("validation re-tests the headline like and dislike with different items", async () => {
   const run = await calibrateThroughServer(
     seededDb(),
@@ -1406,6 +1497,48 @@ test("learning continues after calibration, with smaller steps", async () => {
     Math.abs(after - before - learningRate(CALIBRATION_TOTAL + 1) * mass * (100 - before)) <
       1e-9,
   );
+});
+
+test("a user with earlier Humor Lab ratings still gets a visible profile from calibration", async () => {
+  // Rated before calibration existed: a lifetime count, no calibration
+  // document — so the full 15-item calibration still runs for them, and it
+  // must learn at the calibration step, not the decayed mature one.
+  const PRIOR = 40;
+  for (const p of PERSONAS) {
+    const db = seededDb();
+    db._store.set(`users/${p.uid}/humor/summary`, {
+      ...defaultUserHumorProfile(),
+      interactionCount: PRIOR,
+    });
+    const run = await calibrateThroughServer(
+      db,
+      p.uid,
+      persona({[p.loves]: 1, [p.dislikes]: -1}),
+    );
+    const v = run.vector;
+    const label = `${p.uid}: ${JSON.stringify(v)}`;
+    assert.ok(v[p.loves] >= 60, `loved ${p.loves} below the medium bucket — ${label}`);
+    assert.ok(v[p.dislikes] <= 35, `disliked ${p.dislikes} not visible — ${label}`);
+    assert.equal(strongest(v), p.loves, label);
+    assert.equal(run.summary.interactionCount, PRIOR + CALIBRATION_TOTAL);
+    assert.equal(run.calibration.complete, true);
+
+    // Once calibration is done, the lifetime count decides the step again.
+    const rated = await interactedIds(db, p.uid);
+    const next = INTERNAL_HUMOR_SEED.find(
+      (item) => !rated.has(item.contentId) && (item.humorVector[p.loves] ?? 0) >= 0.8,
+    );
+    assert.ok(next, `seed needs an unrated ${p.loves} item`);
+    const before = v[p.loves];
+    await submitHumorFeedbackTx({db, uid: p.uid, contentId: next.contentId, rating: "very_funny"});
+    const after = db._store.get(`users/${p.uid}/humor/summary`).vector[p.loves];
+    const step = learningRate(PRIOR + CALIBRATION_TOTAL + 1);
+    assert.ok(step < YOUNG_LEARNING_RATE);
+    assert.ok(
+      Math.abs(after - before - step * next.humorVector[p.loves] * (100 - before)) < 1e-9,
+      `${p.uid}: ${before} → ${after}`,
+    );
+  }
 });
 
 // --------------------------------------------------------------------------
@@ -1556,6 +1689,70 @@ test("changing a rating replaces its contribution end to end", async () => {
   assert.equal(stats.avgRating, -1);
 });
 
+test("a late change of a calibration rating is replaced at the step it was learned with", async () => {
+  const db = seededDb();
+  const uid = "u_late";
+  await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "very_funny"});
+  const path = `users/${uid}/humorInteractions/${ANCHOR_ID}`;
+  assert.equal(db._store.get(path).appliedStep, YOUNG_LEARNING_RATE);
+
+  // The profile matures meanwhile: calibration done, a hundred ratings in.
+  db._store.set(`users/${uid}/humor/calibration`, {
+    version: HUMOR_CALIBRATION_VERSION,
+    completedCount: CALIBRATION_TOTAL,
+  });
+  db._store.set(`users/${uid}/humor/summary`, {
+    ...db._store.get(`users/${uid}/humor/summary`),
+    interactionCount: 100,
+  });
+  const changed = await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "funny"});
+  assert.equal(changed.interactionCount, 100);
+  assert.equal(db._store.get(path).appliedStep, YOUNG_LEARNING_RATE);
+
+  // Exactly as if the user had answered `funny` in the first place — not the
+  // young contribution removed and a mature-step one put back.
+  await submitHumorFeedbackTx({db, uid: "u_once", contentId: ANCHOR_ID, rating: "funny"});
+  const late = db._store.get(`users/${uid}/humor/summary`).vector;
+  const once = db._store.get("users/u_once/humor/summary").vector;
+  for (const dim of HUMOR_CATEGORIES) {
+    assert.ok(Math.abs(late[dim] - once[dim]) < 1e-9, `${dim}: ${late[dim]} vs ${once[dim]}`);
+  }
+});
+
+test("changing a rating stored before contributions were recorded never stacks", async () => {
+  const db = seededDb({
+    // Aggregates written before ratingSum existed, including this user's rating.
+    [ANCHOR_ID]: {stats: {viewCount: 1, ratingCount: 1, avgRating: 1}},
+  });
+  const uid = "u_legacy";
+  const summaryPath = `users/${uid}/humor/summary`;
+  const interactionPath = `users/${uid}/humorInteractions/${ANCHOR_ID}`;
+  db._store.set(interactionPath, {contentId: ANCHOR_ID, rating: "very_funny", saved: false});
+  db._store.set(summaryPath, {
+    ...defaultUserHumorProfile(),
+    vector: {...emptyHumorVector(50), sarcasm: 71.5, dry: 58},
+    interactionCount: 20,
+  });
+  const summaryBefore = JSON.stringify(db._store.get(summaryPath));
+
+  const result = await submitHumorFeedbackTx({
+    db,
+    uid,
+    contentId: ANCHOR_ID,
+    rating: "not_at_all",
+  });
+  assert.equal(result.interactionCount, 20, "not a new interaction");
+  assert.equal(JSON.stringify(db._store.get(summaryPath)), summaryBefore, "profile untouched");
+  const doc = db._store.get(interactionPath);
+  assert.equal(doc.rating, "not_at_all", "the change itself is recorded");
+  assert.equal("appliedDelta" in doc, false, "no fabricated contribution");
+
+  const stats = db._store.get(`humorContent/${ANCHOR_ID}`).stats;
+  assert.equal(stats.ratingCount, 1);
+  assert.equal(stats.ratingSum, -1);
+  assert.equal(stats.avgRating, -1);
+});
+
 test("content stats are exact and derive the average from the sum", async () => {
   const db = seededDb({
     // A document written before ratingSum existed.
@@ -1573,6 +1770,46 @@ test("content stats are exact and derive the average from the sum", async () => 
   assert.equal(stats.ratingCount, 5, "a changed rating is not a new rating");
   assert.equal(stats.ratingSum, 3);
   assert.equal(stats.avgRating, 0.6);
+});
+
+test("content stats are plain increments outside any transaction", async () => {
+  const db = seededDb();
+  const runTransaction = db.runTransaction;
+  let transactions = 0;
+  db.runTransaction = (fn) => {
+    transactions += 1;
+    return runTransaction(fn);
+  };
+  const users = ["c1", "c2", "c3", "c4"];
+  const ratings = ["very_funny", "funny", "not_funny", "not_at_all"];
+  await Promise.all(
+    users.map((uid, i) =>
+      submitHumorFeedbackTx({db, uid, contentId: OTHER_ID, rating: ratings[i]}),
+    ),
+  );
+  assert.equal(transactions, users.length, "one transaction per rating: the feedback itself");
+  const stats = db._store.get(`humorContent/${OTHER_ID}`).stats;
+  assert.equal(stats.ratingCount, 4);
+  assert.equal(stats.viewCount, 4);
+  assert.ok(Math.abs(stats.ratingSum - (1 + 0.6 - 0.5 - 1)) < 1e-9);
+
+  // Content deleted between the rating and its stats write: the rating still
+  // succeeds and the stats update does not resurrect the document.
+  const gone = seededDb();
+  const commit = gone.runTransaction;
+  gone.runTransaction = async (fn) => {
+    const out = await commit(fn);
+    gone._store.delete(`humorContent/${OTHER_ID}`);
+    return out;
+  };
+  const result = await submitHumorFeedbackTx({
+    db: gone,
+    uid: "c5",
+    contentId: OTHER_ID,
+    rating: "funny",
+  });
+  assert.equal(result.interactionCount, 1);
+  assert.equal(gone._store.has(`humorContent/${OTHER_ID}`), false);
 });
 
 test("saved is stored only when explicitly sent", async () => {

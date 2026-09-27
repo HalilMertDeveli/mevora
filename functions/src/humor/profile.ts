@@ -37,8 +37,9 @@ export function confidenceFromInteractions(interactionCount: number): number {
 
 /**
  * Step size while the profile is young: the first {@link YOUNG_PROFILE_RATINGS}
- * counted ratings — the initial calibration — each move a fully-weighted
- * dimension this far toward its target.
+ * counted ratings — and every rating made while the initial calibration is
+ * still running — each move a fully-weighted dimension this far toward its
+ * target.
  *
  * It has to be large. Calibration is 15 ratings spread over 11 dimensions, so
  * a dimension is typically measured by only one to three focused items. With
@@ -71,6 +72,16 @@ export function learningRate(countedIndex: number): number {
   return Math.max(
     MATURE_LEARNING_RATE,
     (YOUNG_LEARNING_RATE * YOUNG_PROFILE_RATINGS) / k,
+  );
+}
+
+/** A persisted step is reusable only if it is one this module could produce. */
+function isUsableStep(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= MATURE_LEARNING_RATE &&
+    value <= YOUNG_LEARNING_RATE
   );
 }
 
@@ -144,15 +155,22 @@ export function defaultUserHumorProfile(): UserHumorProfileDoc {
  * - The target depends on the rating alone (very_funny → 100, not_at_all → 0,
  *   neutral → 50); the content's mass scales how far this one item may move
  *   the dimension, so a secondary tag moves it less than the item's focus.
- * - α comes from {@link learningRate}: large during calibration, decaying for
- *   mature profiles.
+ * - α is {@link YOUNG_LEARNING_RATE} while the initial calibration is running
+ *   (`calibrating`), whatever the lifetime count — a user with earlier Humor
+ *   Lab ratings still gets a visible profile from their 15 calibration
+ *   ratings. Otherwise {@link learningRate} of the counted index: large for a
+ *   young profile, decaying for a mature one.
  * - Stored values keep full precision; views round.
  *
  * `mode: "replace"` is a *changed* rating on already-counted content: the
  * previous rating's `previousDelta` is subtracted first and the new rating is
- * applied at the same step, without counting a second interaction. Rating A
+ * applied with the step the replaced rating used (`previousStep`, persisted
+ * next to the delta), without counting a second interaction. Rating A
  * very_funny and then changing it to not_at_all therefore ends where a single
- * not_at_all would have.
+ * not_at_all would have — even when the change comes long after the profile
+ * matured. Without a usable `previousStep` the current step applies.
+ *
+ * Returns the `step` it applied so the caller can persist it.
  */
 export function applyRatingToProfile(input: {
   profile: UserHumorProfileDoc;
@@ -161,7 +179,11 @@ export function applyRatingToProfile(input: {
   rating: HumorRating;
   mode?: "first" | "replace";
   previousDelta?: HumorProfileDelta | null;
-}): {profile: UserHumorProfileDoc; appliedDelta: HumorProfileDelta} {
+  /** Replace mode: the step the replaced rating was applied with. */
+  previousStep?: number | null;
+  /** The initial calibration is still incomplete. */
+  calibrating?: boolean;
+}): {profile: UserHumorProfileDoc; appliedDelta: HumorProfileDelta; step: number} {
   const prev = input.profile;
   const replacing = input.mode === "replace";
   const prevCount = Math.max(0, Math.floor(Number(prev.interactionCount ?? 0)) || 0);
@@ -177,7 +199,12 @@ export function applyRatingToProfile(input: {
     }
   }
 
-  const alpha = learningRate(nextCount);
+  const alpha =
+    replacing && isUsableStep(input.previousStep)
+      ? input.previousStep
+      : input.calibrating === true
+        ? YOUNG_LEARNING_RATE
+        : learningRate(nextCount);
   const target = 50 + 50 * ratingWeight(input.rating);
   const mass = contentMass(input.contentVector, input.category);
   const appliedDelta: HumorProfileDelta = {};
@@ -207,6 +234,7 @@ export function applyRatingToProfile(input: {
       version: HUMOR_PROFILE_VERSION,
     },
     appliedDelta,
+    step: alpha,
   };
 }
 

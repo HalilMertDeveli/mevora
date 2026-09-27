@@ -18,7 +18,7 @@ import {
 } from "./calibration.js";
 import {hasUnseenCuratedCandidate} from "./calibrationFeed.js";
 import {normalizeProfileVector} from "./categories.js";
-import {loadHumorContent} from "./contentRepository.js";
+import {parseHumorContent} from "./contentRepository.js";
 import {
   HUMOR_CALIBRATION_DOC,
   loadUserHumorCalibration,
@@ -133,6 +133,24 @@ type HumorFeedbackResult = {
 /** Change to a content item's aggregate rating stats. */
 type StatsChange = {countDelta: number; sumDelta: number};
 
+/** A content item's rating aggregates as this request read them. */
+type ContentStatsSnapshot = {
+  ratingCount: number;
+  /** `null` on documents written before `ratingSum` existed. */
+  ratingSum: number | null;
+  avgRating: number;
+};
+
+function statsSnapshotOf(data: Record<string, unknown> | undefined): ContentStatsSnapshot {
+  const stats = (data?.stats ?? {}) as Record<string, unknown>;
+  const sum = stats.ratingSum;
+  return {
+    ratingCount: Math.max(0, Number(stats.ratingCount ?? 0) || 0),
+    ratingSum: typeof sum === "number" && Number.isFinite(sum) ? sum : null,
+    avgRating: Number(stats.avgRating ?? 0) || 0,
+  };
+}
+
 function profileFromSnapshot(data: Record<string, unknown> | undefined): UserHumorProfileDoc {
   const base = defaultUserHumorProfile();
   if (!data) {
@@ -174,54 +192,55 @@ function writeCalibration(
 
 /**
  * Rating aggregates on the content document, written *after* the feedback
- * transaction commits.
+ * transaction commits, as one plain update — no read, no transaction.
  *
- * They used to be computed from a content snapshot read outside the
- * transaction and written inside it, so concurrent ratings overwrote each
- * other's average — and every calibration-critical transaction contended on
- * the same hot curated documents. Now a small transaction of its own keeps
- * `ratingSum` exact and derives `avgRating` from it (the field ranking reads).
- * Best effort: a stats failure never fails the user's rating.
+ * They used to be a running average computed from a snapshot read outside the
+ * feedback transaction and written inside it, so concurrent ratings lost each
+ * other's contribution for good, and every calibration-critical transaction
+ * contended on the same hot curated documents.
+ *
+ * - `ratingCount`, `viewCount` and `ratingSum` are `FieldValue.increment`
+ *   transforms: exact under any concurrency and contention-free.
+ * - `avgRating` (the field ranking reads) is re-derived from the exact
+ *   counters as this request read them plus its own change. Concurrent
+ *   ratings can leave it a rating behind until the next one lands, but it
+ *   never accumulates drift the way the running average did.
+ * - Documents written before `ratingSum` existed are backfilled once from
+ *   `avgRating × ratingCount`.
+ *
+ * Best effort: a stats failure never fails the user's rating, and `update`
+ * never resurrects content that was deleted meanwhile.
  */
 async function recordContentStats(
   db: Firestore,
   contentId: string,
+  before: ContentStatsSnapshot,
   change: StatsChange,
 ): Promise<void> {
   if (change.countDelta === 0 && change.sumDelta === 0) {
     return;
   }
-  const ref = db.doc(`humorContent/${contentId}`);
+  const sumBefore = before.ratingSum ?? before.avgRating * before.ratingCount;
+  const count = Math.max(0, before.ratingCount + change.countDelta);
+  const sum = sumBefore + change.sumDelta;
+  const update: Record<string, unknown> = {
+    // An increment on a missing field starts from zero, which is exact
+    // whenever there is no legacy average to carry over.
+    "stats.ratingSum":
+      before.ratingSum !== null || sumBefore === 0
+        ? FieldValue.increment(change.sumDelta)
+        : sum,
+    "stats.avgRating": count > 0 ? sum / count : 0,
+    "updatedAt": FieldValue.serverTimestamp(),
+  };
+  if (change.countDelta !== 0) {
+    update["stats.ratingCount"] = FieldValue.increment(change.countDelta);
+  }
+  if (change.countDelta > 0) {
+    update["stats.viewCount"] = FieldValue.increment(change.countDelta);
+  }
   try {
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(ref);
-      if (!snap.exists) {
-        return;
-      }
-      const stats = (snap.data()?.stats ?? {}) as Record<string, unknown>;
-      const count = Math.max(0, Number(stats.ratingCount ?? 0) || 0);
-      const views = Math.max(0, Number(stats.viewCount ?? 0) || 0);
-      const storedSum = Number(stats.ratingSum);
-      // Documents written before `ratingSum` existed carry only the average.
-      const sum = Number.isFinite(storedSum)
-        ? storedSum
-        : (Number(stats.avgRating ?? 0) || 0) * count;
-      const nextCount = Math.max(0, count + change.countDelta);
-      const nextSum = sum + change.sumDelta;
-      tx.set(
-        ref,
-        {
-          stats: {
-            ratingCount: nextCount,
-            viewCount: views + Math.max(0, change.countDelta),
-            ratingSum: nextSum,
-            avgRating: nextCount > 0 ? nextSum / nextCount : 0,
-          },
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        {merge: true},
-      );
-    });
+    await db.doc(`humorContent/${contentId}`).update(update);
   } catch (error) {
     logger.warn(
       "humor content stats update failed",
@@ -289,9 +308,12 @@ async function countUncuratedAnchorIfPoolExhausted(input: {
  *   and calibration may advance.
  * - **Same rating again**: a no-op (an explicit `saved` flag is still stored).
  * - **Changed rating**: *replaces* the earlier rating's contribution — the
- *   per-dimension delta it applied is stored on the interaction document
- *   (`appliedDelta`) and subtracted before the new rating is applied. Nothing
- *   is counted a second time.
+ *   per-dimension delta it applied and the step it used are stored on the
+ *   interaction document (`appliedDelta`, `appliedStep`); the delta is
+ *   subtracted and the new rating applied at that same step. Nothing is
+ *   counted a second time. A rating stored before `appliedDelta` existed
+ *   cannot be taken back, so changing it updates the rating and content
+ *   stats but leaves the profile as it is.
  */
 export async function submitHumorFeedbackTx(input: {
   db: Firestore;
@@ -310,7 +332,14 @@ export async function submitHumorFeedbackTx(input: {
     throw new Error("invalid-rating");
   }
 
-  const content = await loadHumorContent(input.db, input.contentId);
+  // Read raw (rather than through loadHumorContent) so the stats update after
+  // commit can see `ratingSum`, which the parsed document does not carry.
+  const contentSnap = await input.db.doc(`humorContent/${input.contentId}`).get();
+  const contentData = contentSnap.exists
+    ? (contentSnap.data() as Record<string, unknown> | undefined)
+    : undefined;
+  const content = contentData ? parseHumorContent(contentSnap.id, contentData) : null;
+  const statsBefore = statsSnapshotOf(contentData);
   // A skip only needs the item to exist — skipping something that was taken
   // down meanwhile is legitimate. A rating needs it to be servable.
   if (
@@ -387,19 +416,39 @@ export async function submitHumorFeedbackTx(input: {
     }
 
     if (existingRating) {
+      const stats = {
+        countDelta: 0,
+        sumDelta: ratingWeight(rating) - ratingWeight(existingRating),
+      };
+      const recorded = existing?.appliedDelta;
+      if (!recorded || typeof recorded !== "object" || Array.isArray(recorded)) {
+        // Rated before contributions were recorded: the old contribution
+        // cannot be taken back, and stacking the new rating on top of it is
+        // exactly what replacement exists to prevent. Record the change, keep
+        // the profile as it is.
+        tx.set(
+          interactionRef,
+          {rating, skipped: false, ...details, ...explicitSaved, updatedAt: now},
+          {merge: true},
+        );
+        return {...unchanged, stats};
+      }
       const replaced = applyRatingToProfile({
         profile,
         contentVector: content.humorVector,
         category: content.category,
         rating,
         mode: "replace",
-        previousDelta: parseProfileDelta(existing?.appliedDelta),
+        previousDelta: parseProfileDelta(recorded),
+        previousStep: typeof existing?.appliedStep === "number" ? existing.appliedStep : null,
+        calibrating: !previousCalibration.complete,
       });
       tx.set(
         interactionRef,
         {
           rating,
           appliedDelta: replaced.appliedDelta,
+          appliedStep: replaced.step,
           skipped: false,
           ...details,
           ...explicitSaved,
@@ -408,20 +457,18 @@ export async function submitHumorFeedbackTx(input: {
         {merge: true},
       );
       tx.set(profileRef, {...replaced.profile, lastUpdatedAt: now}, {merge: true});
-      return {
-        ...unchanged,
-        profile: replaced.profile,
-        stats: {countDelta: 0, sumDelta: ratingWeight(rating) - ratingWeight(existingRating)},
-      };
+      return {...unchanged, profile: replaced.profile, stats};
     }
 
-    // First real rating of this item.
+    // First real rating of this item. While the initial calibration runs it
+    // learns at the young step even for a profile with earlier ratings.
     const learned = applyRatingToProfile({
       profile,
       contentVector: content.humorVector,
       category: content.category,
       rating,
       mode: "first",
+      calibrating: !previousCalibration.complete,
     });
     // Calibration advances only on a *first* rating, inside the same
     // transaction as the profile update, so progression can never drift from
@@ -434,6 +481,7 @@ export async function submitHumorFeedbackTx(input: {
         contentId: input.contentId,
         rating,
         appliedDelta: learned.appliedDelta,
+        appliedStep: learned.step,
         skipped: false,
         ...details,
         ...explicitSaved,
@@ -456,17 +504,19 @@ export async function submitHumorFeedbackTx(input: {
     };
   });
 
-  const calibration = result.anchorDeferred
-    ? await countUncuratedAnchorIfPoolExhausted({
-        db: input.db,
-        uid: input.uid,
-        content,
-        state: result.calibration,
-      })
-    : result.calibration;
-  if (result.stats) {
-    await recordContentStats(input.db, input.contentId, result.stats);
-  }
+  const [calibration] = await Promise.all([
+    result.anchorDeferred
+      ? countUncuratedAnchorIfPoolExhausted({
+          db: input.db,
+          uid: input.uid,
+          content,
+          state: result.calibration,
+        })
+      : result.calibration,
+    result.stats
+      ? recordContentStats(input.db, input.contentId, statsBefore, result.stats)
+      : null,
+  ]);
 
   return {
     ok: true,

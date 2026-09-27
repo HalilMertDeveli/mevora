@@ -1528,6 +1528,7 @@
   "humorCategorySituational": "Durumsal",
   "humorCategoryCringe": "Cringe",
   "humorCategoryTeasing": "Takılma",
+  "humorMediaUnavailable": "Bu içerik şu anda gösterilemiyor.",
   "boostResultsTitle": "Boost sonuçları",
   "boostResultsPending": "Sonuçlar sayılıyor…",
   "boostReachedPeople": "{count, plural, =0{Henüz kimseye gösterilmedi} =1{1 kişiye gösterildin} other{{count} kişiye gösterildin}}",

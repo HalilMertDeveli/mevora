@@ -106,14 +106,28 @@ export type UserHumorProfileDoc = {
   version: number;
 };
 
+/**
+ * `users/{uid}/humorInteractions/{contentId}`. Any document here — rated,
+ * skipped or reported — keeps the item out of the user's feed. Only a valid
+ * `rating` makes it count as rated; a skip or report marker carries none, so a
+ * later real rating is still that item's first.
+ */
 export type HumorInteractionDoc = {
   contentId: string;
-  rating: HumorRating;
-  dwellMs: number;
-  replayCount: number;
+  rating: HumorRating | null;
+  /**
+   * Per-dimension change this rating applied to the profile vector, so a
+   * changed rating can replace its contribution instead of stacking on it.
+   */
+  appliedDelta?: Partial<Record<HumorCategory, number>>;
+  dwellMs?: number;
+  replayCount?: number;
   skipped: boolean;
-  saved: boolean;
-  gestureHints?: {swipeUp?: boolean; swipeDown?: boolean} | null;
+  /** Written only when the client explicitly sends it. */
+  saved?: boolean;
+  /** Set by `reportHumorContent`. */
+  reported?: boolean;
+  gestureHints?: {swipeUp: boolean; swipeDown: boolean} | null;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -156,9 +170,12 @@ export type UserHumorCalibrationDoc = {
   /** Humor dimensions measured so far; drives adaptive + exploration picks. */
   coveredDimensions: string[];
   /**
-   * Positions that had to be filled with ordinary feed content because the
-   * curated pool was short. Calibration still completes — a dead calibration
-   * state would be worse — but the degradation is recorded rather than hidden.
+   * Positions filled below the designed measurement quality: uncurated
+   * content (adaptive/exploration, or an anchor position once the curated
+   * pool is exhausted for this user), or an anchor position that measured no
+   * new slot. Calibration still completes — a dead calibration state would be
+   * worse — but the degradation is recorded, and surfaced as the view's
+   * `degraded` flag, rather than hidden.
    */
   degradedCount: number;
   startedAt?: unknown;

@@ -15,7 +15,7 @@ import {
 import {buildHumorFeed, loadUserHumorProfile} from "./feed.js";
 import {
   getHumorProfileView,
-  isValidHumorRating,
+  parseSubmitHumorFeedbackInput,
   submitHumorFeedbackTx,
 } from "./feedback.js";
 import {classifyHumorSafety, emptySafetyFlags} from "./moderation.js";
@@ -67,29 +67,14 @@ export const getHumorFeed = onCall(callableOptions, async (request) => {
 
 export const submitHumorFeedback = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
-  const data = (request.data ?? {}) as Record<string, unknown>;
-  const contentId = String(data.contentId ?? "").trim();
-  if (!contentId || contentId.length > 128) {
-    throw new HttpsError("invalid-argument", "contentId");
-  }
-  if (!isValidHumorRating(data.rating)) {
-    throw new HttpsError("invalid-argument", "rating");
+  // `rating` may be omitted only for a skip; `saved` is forwarded only when it
+  // is an explicit boolean; `gestureHints` is reduced to two booleans.
+  const parsed = parseSubmitHumorFeedbackInput(request.data);
+  if (!parsed.ok) {
+    throw new HttpsError("invalid-argument", parsed.field);
   }
   try {
-    return await submitHumorFeedbackTx({
-      db,
-      uid,
-      contentId,
-      rating: data.rating,
-      dwellMs: typeof data.dwellMs === "number" ? data.dwellMs : 0,
-      replayCount: typeof data.replayCount === "number" ? data.replayCount : 0,
-      skipped: data.skipped === true,
-      saved: data.saved === true,
-      gestureHints:
-        data.gestureHints && typeof data.gestureHints === "object"
-          ? (data.gestureHints as {swipeUp?: boolean; swipeDown?: boolean})
-          : null,
-    });
+    return await submitHumorFeedbackTx({db, uid, ...parsed.value});
   } catch (error) {
     const message = String(error);
     if (message.includes("content-unavailable")) {

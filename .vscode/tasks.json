@@ -24,6 +24,34 @@
         "close": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Firebase: Ensure Emulators (build + start + seed)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/tool/ensure_emulators.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "close": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Flutter: Prepare Run (full emulator suite)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Firebase: Ensure Emulators (build + start + seed)",
+        "Flutter: Prepare Run"
+      ],
+      "problemMatcher": []
     }
   ]
 }

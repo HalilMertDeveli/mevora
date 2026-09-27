@@ -254,6 +254,10 @@ function encodeCursor(after: HumorScanPosition | null): string {
  *                unrated, so a prefetched page, a page the user left early, or
  *                the page fetched just as calibration completed is not skipped
  *                until the walk comes all the way round again.
+ *  * `held`    — how many of the newest `pending` ids were served since the
+ *                last cold start, i.e. what the client is holding right now. A
+ *                cursor walk skips those and re-offers only the older unrated
+ *                ones, so paging ahead never hands the client a duplicate.
  *  * `run`     — a clean sweep in progress: it began at the top of the catalog
  *                (whose first document was `top`) and found nothing unseen down
  *                to `at`. Only a sweep that reaches the end this way proves the
@@ -273,10 +277,15 @@ type FeedWalkState = {
   run: {top: HumorScanPosition} | null;
   floor: {top: HumorScanPosition; at: number} | null;
   pending: string[];
+  held: number;
 };
 
-function emptyWalkState(lang: string, pending: string[] = []): FeedWalkState {
-  return {lang, at: null, run: null, floor: null, pending};
+function emptyWalkState(
+  lang: string,
+  pending: string[] = [],
+  held: number = pending.length,
+): FeedWalkState {
+  return {lang, at: null, run: null, floor: null, pending, held};
 }
 
 function parseWalkState(raw: unknown, lang: string): FeedWalkState {
@@ -293,8 +302,14 @@ function parseWalkState(raw: unknown, lang: string): FeedWalkState {
         .filter((id): id is string => typeof id === "string" && isStoredContentId(id))
         .slice(-MAX_PENDING)
     : [];
+  // Unknown means "assume the client holds all of it": a cursor walk then
+  // re-offers nothing, which can only defer an item to the next cold start.
+  const held =
+    typeof value.held === "number" && Number.isInteger(value.held) && value.held >= 0
+      ? Math.min(value.held, pending.length)
+      : pending.length;
   if (value.lang !== lang) {
-    return emptyWalkState(lang, pending);
+    return emptyWalkState(lang, pending, held);
   }
   const runTop =
     value.run && typeof value.run === "object"
@@ -315,6 +330,7 @@ function parseWalkState(raw: unknown, lang: string): FeedWalkState {
     run: runTop ? {top: runTop} : null,
     floor: floorTop && floorAt !== null ? {top: floorTop, at: floorAt} : null,
     pending,
+    held,
   };
 }
 
@@ -326,6 +342,7 @@ function serializeWalkState(state: FeedWalkState): Record<string, unknown> {
     run: state.run ? {top: toWire(state.run.top)} : null,
     floor: state.floor ? {top: toWire(state.floor.top), at: state.floor.at} : null,
     pending: state.pending,
+    held: state.held,
   };
 }
 
@@ -454,8 +471,10 @@ type WalkResult = {
  *    item scanned, so nothing scanned-but-not-served is skipped.
  *  * A cold start that reaches the end wraps to the top once, so a user left
  *    near the bottom still gets a full page. A cursor walk never wraps: it is
- *    one pass, ending with a null cursor, so a client paging ahead is never
- *    handed items it already holds; its next cold start begins the next pass.
+ *    one pass, ending with a null cursor; its next cold start begins the next
+ *    pass.
+ *  * A client paging ahead is never handed items it already holds: a cursor
+ *    walk skips the `held` ids and re-offers only older unrated ones.
  *  * `catalogExhausted` is reported only when a clean sweep from the top has
  *    reached the end, never from a partial walk.
  */
@@ -480,18 +499,21 @@ async function walkCatalog(input: {
     takenIds.add(content.contentId);
   };
 
-  let stillPending = state.pending;
-  if (cursor === null) {
-    const carried = await carryOverPending({
-      db,
-      uid,
-      pending: state.pending,
-      languages,
-      limit,
-    });
-    carried.items.forEach(take);
-    stillPending = carried.stillPending;
-  }
+  // A cold start re-offers every recent unrated item. A cursor walk comes from
+  // a client still holding the newest `held` of them, so it skips those and
+  // re-offers only the rest.
+  const heldCount = cursor === null ? 0 : Math.min(state.held, state.pending.length);
+  const heldIds = state.pending.slice(state.pending.length - heldCount);
+  const held = new Set(heldIds);
+  const carried = await carryOverPending({
+    db,
+    uid,
+    pending: state.pending.slice(0, state.pending.length - heldCount),
+    languages,
+    limit,
+  });
+  carried.items.forEach(take);
+  const stillPending = [...carried.stillPending, ...heldIds];
 
   let start: HumorScanPosition | null = cursor ? cursor.after : state.at;
   if (start !== null && bound !== null && compareWalkOrder(start, bound) >= 0) {
@@ -549,6 +571,12 @@ async function walkCatalog(input: {
           break;
         }
         if (seen.has(entry.content.contentId)) {
+          continue;
+        }
+        if (held.has(entry.content.contentId)) {
+          // Unrated but already with the client: not served twice, and not a
+          // clean stretch either.
+          runActive = false;
           continue;
         }
         take(entry.content);
@@ -613,6 +641,10 @@ async function walkCatalog(input: {
     } else if (runActive && !ended && runTop) {
       run = {top: runTop};
     }
+    const pending = [
+      ...stillPending.filter((id) => !takenIds.has(id)),
+      ...taken.map((content) => content.contentId),
+    ].slice(-MAX_PENDING);
     nextState = {
       lang: state.lang,
       at: nextAt,
@@ -623,10 +655,9 @@ async function walkCatalog(input: {
         floorFresh || (floorStale && taken.length === 0 && !catalogEmpty)
           ? state.floor
           : null,
-      pending: [
-        ...stillPending.filter((id) => !takenIds.has(id)),
-        ...taken.map((content) => content.contentId),
-      ].slice(-MAX_PENDING),
+      pending,
+      // The held ids and this page sit at the tail of `pending`.
+      held: Math.min(heldCount + taken.length, pending.length),
     };
   }
 

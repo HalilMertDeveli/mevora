@@ -472,6 +472,39 @@ test("a cold start re-offers items that were fetched but never rated", async () 
   );
 });
 
+test("a cursor prefetch never re-serves what a cold start just re-offered", async () => {
+  // A small catalog, walked to the end: the next cold start is filled by
+  // re-offered items alone and hands back a top cursor. Following it must
+  // bring only what the client does not hold yet.
+  const uid = "u_held";
+  const db = makeDb(withCompletedCalibration(catalogOf(20), uid));
+  const first = await feed(db, uid);
+  const rest = await feed(db, uid, first.nextCursor);
+  assert.equal(rest.nextCursor, null, "the pass should have ended");
+  const servedIds = [...first.items, ...rest.items].map((item) => item.contentId);
+  assert.equal(new Set(servedIds).size, 20);
+
+  // Five rated, fifteen fetched but unrated when the user left.
+  markRated(db, uid, servedIds.slice(0, 5));
+  const cold = await feed(db, uid);
+  const coldIds = cold.items.map((item) => item.contentId);
+  assert.equal(coldIds.length, 12);
+  assert.ok(cold.nextCursor, "three unrated items are still due");
+
+  const prefetch = await feed(db, uid, cold.nextCursor);
+  const prefetchIds = prefetch.items.map((item) => item.contentId);
+  for (const id of prefetchIds) {
+    assert.equal(coldIds.includes(id), false, `prefetch re-served held ${id}`);
+  }
+  assert.deepEqual(
+    [...coldIds, ...prefetchIds].sort(),
+    servedIds.slice(5).sort(),
+    "every unrated item is offered exactly once",
+  );
+  assert.equal(prefetch.nextCursor, null);
+  assert.equal(prefetch.catalogExhausted, false, "unrated items are still out there");
+});
+
 test("a re-offered item the user still has not rated blocks the exhaustion proof", async () => {
   const uid = "u_carried_unrated";
   const docs = withCompletedCalibration(catalogOf(300), uid);

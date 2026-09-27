@@ -11,16 +11,20 @@ abstract class HumorRepository {
     String? cursor,
   });
 
+  /// Rate a piece of content. Changing an earlier rating replaces it on the
+  /// server; it never counts as a second interaction.
   Future<Result<HumorFeedbackResult>> submitFeedback({
     required String contentId,
     required HumorRating rating,
     int dwellMs = 0,
     int replayCount = 0,
-    bool skipped = false,
-    bool saved = false,
     bool? swipeUp,
     bool? swipeDown,
   });
+
+  /// Move past a piece of content without rating it. Never trains the profile
+  /// or advances calibration.
+  Future<Result<HumorFeedbackResult>> skipContent({required String contentId});
 
   Future<Result<UserHumorProfile>> getProfile({bool detailed = false});
 

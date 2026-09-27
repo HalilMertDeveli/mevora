@@ -6467,7 +6467,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorUndoRating.
   ///
   /// In en, this message translates to:
-  /// **'Undo rating'**
+  /// **'Previous item'**
   String get humorUndoRating;
 
   /// No description provided for @humorCompatibilityTitle.
@@ -6488,11 +6488,11 @@ abstract class AppLocalizations {
   /// **'Top vibes'**
   String get humorTopVibes;
 
-  /// No description provided for @humorSaved.
+  /// No description provided for @humorSkipContent.
   ///
   /// In en, this message translates to:
-  /// **'Saved'**
-  String get humorSaved;
+  /// **'Skip'**
+  String get humorSkipContent;
 
   /// No description provided for @humorReport.
   ///
@@ -6803,7 +6803,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorCalibrationIntroBody.
   ///
   /// In en, this message translates to:
-  /// **'React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.'**
+  /// **'React to a few short pieces. We will learn what makes you laugh, shape Humor Lab around you and show you the humor you share with your matches.'**
   String get humorCalibrationIntroBody;
 
   /// No description provided for @humorCalibrationIntroMeta.

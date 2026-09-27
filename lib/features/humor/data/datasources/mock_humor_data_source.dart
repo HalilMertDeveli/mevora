@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mevora/features/humor/data/datasources/humor_data_source.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
@@ -14,19 +16,43 @@ class MockHumorDataSource implements HumorDataSource {
     UserHumorProfile? profile,
     this.failFeed = false,
     this.failFeedback = false,
+    this.failProfile = false,
+    this.failReport = false,
   }) : _items = List<HumorContent>.from(seed ?? seedCatalog),
        _profile = profile ?? UserHumorProfile.empty;
 
   final List<HumorContent> _items;
   UserHumorProfile _profile;
+
+  /// Real ratings, one per content id — a re-rate replaces, never adds.
   final Map<String, HumorRating> _ratings = {};
-  final Set<String> _saved = {};
+
+  /// Content passed without a rating (skip or report marker). Excluded from
+  /// the feed like a rating, but never counted.
+  final Set<String> _passed = {};
   var failFeed = false;
   var failFeedback = false;
+  var failProfile = false;
+  var failReport = false;
+
+  /// When set, feedback and skip calls wait for it — lets tests hold a
+  /// submission in flight.
+  Completer<void>? feedbackGate;
   var feedCalls = 0;
   var feedbackCalls = 0;
+  var skipCalls = 0;
+  var reportCalls = 0;
 
   UserHumorProfile get profile => _profile;
+
+  /// The rating currently stored for [contentId], if any.
+  HumorRating? ratingOf(String contentId) => _ratings[contentId];
+
+  /// Content ids passed without a rating.
+  Set<String> get passedContentIds => Set.unmodifiable(_passed);
+
+  bool _interacted(String contentId) =>
+      _ratings.containsKey(contentId) || _passed.contains(contentId);
 
   static const seedCatalog = <HumorContent>[
     HumorContent(
@@ -292,6 +318,21 @@ class MockHumorDataSource implements HumorDataSource {
       ? HumorCalibration.totalInteractions
       : _ratings.length;
 
+  /// Last position (exclusive) of the stage [completedCount] is in. A
+  /// calibration page never crosses it, so the next stage is chosen only after
+  /// the current one has been rated — the server contract.
+  static int _stageEnd(int completedCount) {
+    const anchorEnd = HumorCalibration.anchorInteractions;
+    const adaptiveEnd = anchorEnd + HumorCalibration.adaptiveInteractions;
+    if (completedCount < anchorEnd) {
+      return anchorEnd;
+    }
+    if (completedCount < adaptiveEnd) {
+      return adaptiveEnd;
+    }
+    return HumorCalibration.totalInteractions;
+  }
+
   @override
   Future<HumorFeedPage> getFeed({
     List<String>? languages,
@@ -307,28 +348,31 @@ class MockHumorDataSource implements HumorDataSource {
     final preferred = (languages ?? const ['tr', 'en'])
         .map((l) => l.toLowerCase())
         .toList();
-    final ranked = [..._items]
+    int rank(HumorContent item) {
+      final index = preferred.indexOf(item.language);
+      return index < 0 ? 99 : index;
+    }
+
+    // Stable: equal ranks keep catalog order, so an id cursor stays valid.
+    final ranked = [for (var i = 0; i < _items.length; i += 1) (i, _items[i])]
       ..sort((a, b) {
-        final ai = preferred.indexOf(a.language);
-        final bi = preferred.indexOf(b.language);
-        final aRank = ai < 0 ? 99 : ai;
-        final bRank = bi < 0 ? 99 : bi;
-        return aRank.compareTo(bRank);
+        final byRank = rank(a.$2).compareTo(rank(b.$2));
+        return byRank != 0 ? byRank : a.$1.compareTo(b.$1);
       });
+    final ordered = [for (final entry in ranked) entry.$2];
+    final open = ordered.where((item) => !_interacted(item.contentId)).toList();
     final state = calibration;
     if (!state.complete) {
-      // Calibration owns the page: unrated items only, each tagged with the
-      // stage of the position it would occupy — the same contract the server
-      // returns, so controller/UI behaviour matches between mock and real.
-      final unrated = ranked
-          .where((item) => !_ratings.containsKey(item.contentId))
-          .toList();
-      final wanted = HumorCalibration.totalInteractions - state.completedCount;
-      final take = wanted < unrated.length ? wanted : unrated.length;
+      // Calibration owns the page: content the user has not interacted with,
+      // each tagged with the stage of the position it would occupy, and never
+      // more than what is left of the current stage — the same contract the
+      // server returns, so controller/UI behaviour matches mock and real.
+      final wanted = _stageEnd(state.completedCount) - state.completedCount;
+      final take = wanted < open.length ? wanted : open.length;
       if (take > 0) {
         final page = <HumorContent>[
           for (var i = 0; i < take; i += 1)
-            unrated[i].copyWithCalibrationStage(
+            open[i].copyWithCalibrationStage(
               _stageFor(state.completedCount + i),
             ),
         ];
@@ -337,7 +381,9 @@ class MockHumorDataSource implements HumorDataSource {
           nextCursor: null,
           profileBuilding: true,
           interactionCount: _profile.interactionCount,
-          calibration: state.copyWith(insufficientPool: page.length < wanted),
+          calibration: state.copyWith(
+            insufficientPool: open.length < state.remaining,
+          ),
         );
       }
       // Nothing left to serve for calibration: fall through to the ordinary
@@ -345,31 +391,43 @@ class MockHumorDataSource implements HumorDataSource {
       // rather than hidden behind an empty calibration page.
     }
 
-    // Mirror the server contract: unrated items only, walked in catalog order,
-    // so the mock cannot hide a pagination regression behind repeats.
-    final unrated = ranked
-        .where((item) => !_ratings.containsKey(item.contentId))
-        .toList();
-    final start = cursor == null || cursor.isEmpty ? 0 : int.tryParse(cursor) ?? 0;
-    final from = start.clamp(0, unrated.length);
-    final end = (from + pageSize).clamp(0, unrated.length);
-    final page = unrated.sublist(from, end);
-    final next = end < unrated.length ? '$end' : null;
+    // Mirror the server contract: content the user has not interacted with,
+    // walked in catalog order from an item-id cursor. An index cursor would
+    // skip items, because the unrated list shrinks as the user rates.
+    var start = 0;
+    if (cursor != null && cursor.isNotEmpty) {
+      final at = ordered.indexWhere((item) => item.contentId == cursor);
+      start = at < 0 ? 0 : at + 1;
+    }
+    final page = <HumorContent>[];
+    var last = start - 1;
+    for (var i = start; i < ordered.length && page.length < pageSize; i += 1) {
+      last = i;
+      if (!_interacted(ordered[i].contentId)) {
+        page.add(ordered[i]);
+      }
+    }
+    final moreAfter = ordered
+        .skip(last + 1)
+        .any((item) => !_interacted(item.contentId));
     return HumorFeedPage(
       items: page,
-      nextCursor: next,
+      nextCursor: page.isNotEmpty && moreAfter ? page.last.contentId : null,
       // Reached through the fall-through above as well, where calibration is
       // still running — so this tracks the real state rather than assuming.
       profileBuilding: !state.complete,
       interactionCount: _profile.interactionCount,
       calibration: state,
-      catalogExhausted: page.isEmpty && _items.isNotEmpty,
+      catalogExhausted: open.isEmpty && _items.isNotEmpty,
       catalogEmpty: _items.isEmpty,
     );
   }
 
   @override
   Future<UserHumorProfile> getProfile({bool detailed = false}) async {
+    if (failProfile) {
+      throw StateError('mock-profile-failed');
+    }
     final state = calibration;
     return _profile.copyWith(
       calibration: state,
@@ -383,22 +441,23 @@ class MockHumorDataSource implements HumorDataSource {
     required HumorRating rating,
     int dwellMs = 0,
     int replayCount = 0,
-    bool skipped = false,
-    bool saved = false,
     bool? swipeUp,
     bool? swipeDown,
   }) async {
     feedbackCalls += 1;
+    await feedbackGate?.future;
     if (failFeedback) {
       throw StateError('mock-feedback-failed');
     }
+    // Only a real rating counts, once per content. A skip or report marker is
+    // not a rating, so rating that content later is its first rating; rating
+    // it again replaces the earlier rating without counting twice.
+    final firstRating = !_ratings.containsKey(contentId);
     _ratings[contentId] = rating;
-    if (saved) {
-      _saved.add(contentId);
-    }
+    _passed.remove(contentId);
     // Lifetime learning keeps counting past calibration, exactly like the
     // server: only the calibration milestone freezes at 15.
-    final nextCount = _profile.interactionCount + 1;
+    final nextCount = _profile.interactionCount + (firstRating ? 1 : 0);
     final confidence = (nextCount / 40).clamp(0.0, 1.0);
     final state = calibration;
     _profile = _profile.copyWith(
@@ -407,11 +466,32 @@ class MockHumorDataSource implements HumorDataSource {
       profileBuilding: !state.complete,
       calibration: state,
     );
+    return _feedbackResult();
+  }
+
+  @override
+  Future<HumorFeedbackResult> skipContent({required String contentId}) async {
+    feedbackCalls += 1;
+    skipCalls += 1;
+    await feedbackGate?.future;
+    if (failFeedback) {
+      throw StateError('mock-skip-failed');
+    }
+    // Never touches the profile, the count or calibration. An existing
+    // rating wins: skipping rated content is a no-op.
+    if (!_ratings.containsKey(contentId)) {
+      _passed.add(contentId);
+    }
+    return _feedbackResult();
+  }
+
+  HumorFeedbackResult _feedbackResult() {
+    final state = calibration;
     return HumorFeedbackResult(
       ok: true,
       profileBuilding: !state.complete,
-      interactionCount: nextCount,
-      confidence: confidence,
+      interactionCount: _profile.interactionCount,
+      confidence: _profile.confidence,
       calibration: state,
     );
   }
@@ -426,5 +506,15 @@ class MockHumorDataSource implements HumorDataSource {
     required String contentId,
     String reason = 'other',
     String details = '',
-  }) async {}
+  }) async {
+    reportCalls += 1;
+    if (failReport) {
+      throw StateError('mock-report-failed');
+    }
+    // The report marker keeps the content out of the reporter's feed but
+    // never overwrites a rating they already gave.
+    if (!_ratings.containsKey(contentId)) {
+      _passed.add(contentId);
+    }
+  }
 }

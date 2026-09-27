@@ -3511,7 +3511,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorRatingNotAtAll => 'Hiç komik değil';
 
   @override
-  String get humorProfileBuilding => 'Mizah vibesın hâlâ öğreniliyor…';
+  String get humorProfileBuilding => 'Mizah tarzın hâlâ öğreniliyor…';
 
   @override
   String get humorProfileTitle => 'Mizah profilin';
@@ -3526,7 +3526,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorTryAgain => 'Tekrar dene';
 
   @override
-  String get humorUndoRating => 'Puanı geri al';
+  String get humorUndoRating => 'Önceki içeriğe dön';
 
   @override
   String get humorCompatibilityTitle => 'Mizah uyumu';
@@ -3535,10 +3535,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorChatStarter => 'Beni güldüren bir şey…';
 
   @override
-  String get humorTopVibes => 'Öne çıkan vibes';
+  String get humorTopVibes => 'Öne çıkan tarzların';
 
   @override
-  String get humorSaved => 'Kaydedildi';
+  String get humorSkipContent => 'Geç';
 
   @override
   String get humorReport => 'Şikayet et';
@@ -3735,7 +3735,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorCalibrationIntroBody =>
-      'Birkaç kısa içeriğe tepki ver. Neye güldüğünü öğrenelim ve bunu sana daha anlamlı kişiler göstermek için kullanalım.';
+      'Birkaç kısa içeriğe tepki ver. Neye güldüğünü öğrenelim; Mizah Labı\'nı sana göre şekillendirelim ve eşleşmelerinle ortak mizahınızı gösterelim.';
 
   @override
   String get humorCalibrationIntroMeta => '15 kısa içerik · yaklaşık 1 dakika';

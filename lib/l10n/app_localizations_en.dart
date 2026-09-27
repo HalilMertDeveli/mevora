@@ -3529,7 +3529,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorTryAgain => 'Try again';
 
   @override
-  String get humorUndoRating => 'Undo rating';
+  String get humorUndoRating => 'Previous item';
 
   @override
   String get humorCompatibilityTitle => 'Humor match';
@@ -3541,7 +3541,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorTopVibes => 'Top vibes';
 
   @override
-  String get humorSaved => 'Saved';
+  String get humorSkipContent => 'Skip';
 
   @override
   String get humorReport => 'Report';
@@ -3741,7 +3741,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorCalibrationIntroBody =>
-      'React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.';
+      'React to a few short pieces. We will learn what makes you laugh, shape Humor Lab around you and show you the humor you share with your matches.';
 
   @override
   String get humorCalibrationIntroMeta => '15 short pieces · about a minute';

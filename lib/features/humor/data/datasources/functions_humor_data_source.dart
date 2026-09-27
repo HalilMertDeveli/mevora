@@ -44,8 +44,6 @@ class FunctionsHumorDataSource implements HumorDataSource {
     required HumorRating rating,
     int dwellMs = 0,
     int replayCount = 0,
-    bool skipped = false,
-    bool saved = false,
     bool? swipeUp,
     bool? swipeDown,
   }) async {
@@ -56,15 +54,30 @@ class FunctionsHumorDataSource implements HumorDataSource {
     if (swipeDown == true) {
       gestureHints['swipeDown'] = true;
     }
+    // `saved` is deliberately never sent: the server writes it only when a
+    // client asks explicitly, and there is no saved-items feature to ask.
     final data = await _backend.invoke('submitHumorFeedback', {
       'contentId': contentId,
       'rating': rating.apiValue,
       'dwellMs': dwellMs,
       'replayCount': replayCount,
-      'skipped': skipped,
-      'saved': saved,
       if (gestureHints.isNotEmpty) 'gestureHints': gestureHints,
     });
+    return _parseFeedback(data);
+  }
+
+  @override
+  Future<HumorFeedbackResult> skipContent({required String contentId}) async {
+    // No rating: a skip only marks the content as passed so it is not served
+    // again. The server leaves the profile, count and calibration alone.
+    final data = await _backend.invoke('submitHumorFeedback', {
+      'contentId': contentId,
+      'skipped': true,
+    });
+    return _parseFeedback(data);
+  }
+
+  HumorFeedbackResult _parseFeedback(Map<String, dynamic> data) {
     return HumorFeedbackResult(
       ok: data['ok'] == true,
       profileBuilding: data['profileBuilding'] == true,

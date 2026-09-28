@@ -1740,5 +1740,19 @@
   "premiumStoreUnavailable": "Mağaza bu cihazda kullanılamıyor.",
   "premiumAlreadyActive": "Zaten Premium üyesin.",
   "premiumRetry": "Tekrar dene",
-  "premiumRenewsLabel": "Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin."
+  "premiumRenewsLabel": "Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.",
+  "musicFollowedArtistsTitle": "Takip ettiğin sanatçılar",
+  "musicTopArtistsTitle": "En çok dinlediğin sanatçılar",
+  "musicTopTracksTitle": "En çok dinlediğin parçalar",
+  "musicPlaylistsTitle": "Playlistlerin",
+  "musicFollowedArtistsReconnect": "Takip ettiğin sanatçıları göstermek için Spotify'ı yeniden bağla.",
+  "musicPlaylistTrackCount": "{count} parça",
+  "@musicPlaylistTrackCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSectionEmpty": "Burada henüz bir şey yok."
 }

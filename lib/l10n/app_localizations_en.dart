@@ -4000,4 +4000,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get premiumRenewsLabel =>
       'Renews automatically. Cancel anytime in the store.';
+
+  @override
+  String get musicFollowedArtistsTitle => 'Artists you follow';
+
+  @override
+  String get musicTopArtistsTitle => 'Your top artists';
+
+  @override
+  String get musicTopTracksTitle => 'Your top tracks';
+
+  @override
+  String get musicPlaylistsTitle => 'Your playlists';
+
+  @override
+  String get musicFollowedArtistsReconnect =>
+      'Reconnect Spotify to show the artists you follow.';
+
+  @override
+  String musicPlaylistTrackCount(int count) {
+    return '$count tracks';
+  }
+
+  @override
+  String get musicSectionEmpty => 'Nothing here yet.';
 }

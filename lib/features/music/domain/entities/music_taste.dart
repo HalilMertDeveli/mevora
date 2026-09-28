@@ -31,6 +31,14 @@ class MusicTasteSnapshot {
 }
 
 /// Owner-visible music profile. Full listen history stays on the server.
+/// How many top artists and top tracks the Music Profile shows. Mirrors
+/// PROFILE_TOP_LIMIT in functions/src/spotifyMusic.ts.
+const int profileTopItemLimit = 5;
+
+/// How many followed artists the Music Profile shows. Mirrors
+/// FOLLOWED_ARTIST_LIMIT in functions/src/spotifyMusic.ts.
+const int followedArtistLimit = 10;
+
 class MusicProfile {
   const MusicProfile({
     required this.connected,
@@ -39,6 +47,11 @@ class MusicProfile {
     this.topTracks = const [],
     this.topArtists = const [],
     this.recentlyPlayed = const [],
+    this.followedArtists = const [],
+    this.profileTopArtists = const [],
+    this.profileTopTracks = const [],
+    this.playlists = const [],
+    this.followScopeGranted = false,
     this.genres = const [],
     this.taste = const MusicTasteSnapshot(),
     this.publicProfile = PublicMusicProfile.hidden,
@@ -52,6 +65,23 @@ class MusicProfile {
   final List<MusicTrack> topTracks;
   final List<MusicArtist> topArtists;
   final List<MusicTrack> recentlyPlayed;
+
+  /// Artists the member follows on Spotify. A deliberate choice rather
+  /// than a play count, so it says something the top lists cannot.
+  final List<MusicArtist> followedArtists;
+
+  /// The short lists the Music Profile shows. The fuller [topArtists] and
+  /// [topTracks] stay behind them for the selection pool and compatibility.
+  final List<MusicArtist> profileTopArtists;
+  final List<MusicTrack> profileTopTracks;
+
+  /// The member's own playlists. Names are private to this screen.
+  final List<MusicPlaylist> playlists;
+
+  /// False for a connection made before Mevora asked to read follows.
+  /// Nothing is broken; the member simply has to reconnect to see them.
+  final bool followScopeGranted;
+
   final List<GenreShare> genres;
   final MusicTasteSnapshot taste;
 
@@ -70,9 +100,20 @@ class MusicProfile {
   /// barely used account. Distinct from a failed request.
   bool get hasLimitedData => connected && taste.isEmpty;
 
-  /// Artists the owner may publish. Top artists only: recently played is
+  /// True when the member could see followed artists by reconnecting.
+  bool get canReconnectForFollowedArtists =>
+      connected && !followScopeGranted;
+
+  /// Artists the owner may publish: the ones they listen to most and the
+  /// ones they chose to follow. Recently played is excluded — it is
   /// private listening activity, not a chosen favourite.
-  List<MusicArtist> get selectableArtists => topArtists;
+  List<MusicArtist> get selectableArtists {
+    final seen = topArtists.map((artist) => artist.id).toSet();
+    return [
+      ...topArtists,
+      ...followedArtists.where((artist) => !seen.contains(artist.id)),
+    ];
+  }
 
   /// Tracks the owner may publish.
   List<MusicTrack> get selectableTracks => topTracks;
@@ -85,6 +126,11 @@ class MusicProfile {
       topTracks: topTracks,
       topArtists: topArtists,
       recentlyPlayed: recentlyPlayed,
+      followedArtists: followedArtists,
+      profileTopArtists: profileTopArtists,
+      profileTopTracks: profileTopTracks,
+      playlists: playlists,
+      followScopeGranted: followScopeGranted,
       genres: genres,
       taste: taste,
       publicProfile: publicProfile ?? this.publicProfile,

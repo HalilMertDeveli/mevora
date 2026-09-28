@@ -273,7 +273,18 @@ function readCatalog(raw: unknown): Map<string, CatalogEntry> {
  */
 export function selectableArtists(summary: unknown): Map<string, CatalogEntry> {
   const data = (summary ?? {}) as Record<string, unknown>;
-  return readCatalog(data.topArtists);
+  // Followed artists join the top ones. Following is a deliberate act, so an
+  // artist somebody follows is at least as much theirs as one they happen to
+  // play often — and the two lists do not always overlap, so a member who
+  // wanted to show a followed artist simply could not. Top artists are added
+  // first, so on a duplicate id they win and keep their listening metadata.
+  const catalog = readCatalog(data.topArtists);
+  for (const [id, entry] of readCatalog(data.followedArtists)) {
+    if (!catalog.has(id)) {
+      catalog.set(id, entry);
+    }
+  }
+  return catalog;
 }
 
 /** The tracks a member may publish: imported top tracks only. */

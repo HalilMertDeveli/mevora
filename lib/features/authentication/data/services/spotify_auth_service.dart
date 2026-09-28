@@ -105,8 +105,15 @@ class SpotifyAuthService {
   static const loginScopes = 'user-read-private';
 
   /// Taste analysis only. No streaming, playback, or playlist modification.
+  ///
+  /// `user-follow-read` is here for the artists a member follows: following is
+  /// a deliberate choice rather than a play count, so it says something the
+  /// top lists cannot. `user-read-recently-played` stays — it no longer
+  /// appears anywhere on a profile, but the private compatibility model still
+  /// reads it.
   static const musicScopes =
-      'user-top-read user-read-recently-played playlist-read-private';
+      'user-top-read user-read-recently-played playlist-read-private '
+      'user-follow-read';
 
   /// How long a started authorization stays honourable. The caller gives up
   /// after this, and the persisted record expires with it so a callback that

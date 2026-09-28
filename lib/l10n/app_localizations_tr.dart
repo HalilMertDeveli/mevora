@@ -3992,4 +3992,28 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get premiumRenewsLabel =>
       'Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.';
+
+  @override
+  String get musicFollowedArtistsTitle => 'Takip ettiğin sanatçılar';
+
+  @override
+  String get musicTopArtistsTitle => 'En çok dinlediğin sanatçılar';
+
+  @override
+  String get musicTopTracksTitle => 'En çok dinlediğin parçalar';
+
+  @override
+  String get musicPlaylistsTitle => 'Playlistlerin';
+
+  @override
+  String get musicFollowedArtistsReconnect =>
+      'Takip ettiğin sanatçıları göstermek için Spotify\'ı yeniden bağla.';
+
+  @override
+  String musicPlaylistTrackCount(int count) {
+    return '$count parça';
+  }
+
+  @override
+  String get musicSectionEmpty => 'Burada henüz bir şey yok.';
 }

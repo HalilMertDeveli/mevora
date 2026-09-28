@@ -1752,5 +1752,19 @@
   "premiumRenewsLabel": "Renews automatically. Cancel anytime in the store.",
   "@premiumRenewsLabel": {
     "description": "Auto-renew disclosure required by both stores."
-  }
+  },
+  "musicFollowedArtistsTitle": "Artists you follow",
+  "musicTopArtistsTitle": "Your top artists",
+  "musicTopTracksTitle": "Your top tracks",
+  "musicPlaylistsTitle": "Your playlists",
+  "musicFollowedArtistsReconnect": "Reconnect Spotify to show the artists you follow.",
+  "musicPlaylistTrackCount": "{count} tracks",
+  "@musicPlaylistTrackCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSectionEmpty": "Nothing here yet."
 }

@@ -3487,7 +3487,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorLabSubtitle =>
-      'Kısa klipleri ve memeleri izle, ne kadar komik olduğunu değerlendir.';
+      'Her espriye, klibe ya da memeye ne kadar güldüğünü söyle.';
 
   @override
   String get humorLabDiscoverCta => 'Mizah Labı\'nı aç';

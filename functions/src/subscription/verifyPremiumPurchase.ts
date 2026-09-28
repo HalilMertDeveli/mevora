@@ -19,6 +19,11 @@ import {
   PurchaseOwnershipConflict,
 } from "./premiumPurchaseStore.js";
 import {mapGoogleSubscription} from "./googleSubscriptionMapper.js";
+import {mapAppleSubscription} from "./appleSubscriptionMapper.js";
+import {
+  AppStoreServerApi,
+  type AppleSubscriptionApi,
+} from "./appleSubscriptionVerifier.js";
 import {
   PlayDeveloperApi,
   type GoogleSubscriptionApi,
@@ -145,6 +150,108 @@ export async function verifyAndroidPremiumPurchase(input: {
   }
 }
 
+/**
+ * The Apple counterpart, deliberately the same sequence as Android.
+ *
+ * The client presents a transaction id; everything that decides entitlement —
+ * product, status, expiry, whether it was revoked — is read from Apple. The
+ * subscription is then owned by its *original* transaction id, because Apple
+ * issues a new one every renewal and keying ownership on the latest would let
+ * each renewal look like an unclaimed purchase.
+ */
+export async function verifyIosPremiumPurchase(input: {
+  userId: string;
+  transactionId: string;
+  api: AppleSubscriptionApi;
+  now?: Date;
+  makeStore?: (args: {
+    userId: string;
+    purchaseToken: string;
+    productId: string;
+    linkedPurchaseToken: string | null;
+  }) => ConstructorParameters<typeof SubscriptionEntitlementWriter>[0];
+}): Promise<VerifyPremiumPurchaseResult> {
+  const now = input.now ?? new Date();
+  const catalogue = premiumCatalogue();
+
+  if (!catalogue.iosBundleId || catalogue.ios.length === 0) {
+    return {ok: false, isPremium: false, status: null, accessUntil: null, reason: "not_configured"};
+  }
+
+  const verified = await input.api.fetchSubscription({
+    transactionId: input.transactionId,
+  });
+  if (!verified.ok) {
+    if (verified.error === "transient") {
+      throw new HttpsError("unavailable", "store-unavailable");
+    }
+    return {
+      ok: false,
+      isPremium: false,
+      status: null,
+      accessUntil: null,
+      reason: verified.error,
+    };
+  }
+
+  const mapped = mapAppleSubscription({
+    userId: input.userId,
+    state: verified.state,
+    eventAt: now,
+  });
+  if (!mapped.ok) {
+    return {
+      ok: false,
+      isPremium: false,
+      status: null,
+      accessUntil: null,
+      reason: mapped.reason,
+    };
+  }
+
+  // Stable across renewals. Falling back to the presented id keeps a first
+  // purchase working if Apple has not filled the original in yet.
+  const ownershipKey = mapped.originalTransactionId ?? input.transactionId;
+  const persistence = input.makeStore
+    ? input.makeStore({
+        userId: input.userId,
+        purchaseToken: ownershipKey,
+        productId: String(mapped.write.productId),
+        linkedPurchaseToken: null,
+      })
+    : new PremiumPurchaseStore({
+        userId: input.userId,
+        purchaseToken: ownershipKey,
+        platform: "ios",
+        productId: String(mapped.write.productId),
+        linkedPurchaseToken: null,
+      });
+
+  try {
+    const writer = new SubscriptionEntitlementWriter(persistence, () => now);
+    const result = await writer.apply(mapped.write);
+    const access = evaluatePremiumAccess(result.state, now);
+    return {
+      ok: true,
+      isPremium: access.isPremium,
+      status: result.state?.status ?? null,
+      accessUntil: access.accessUntil ? access.accessUntil.toISOString() : null,
+    };
+  } catch (error) {
+    if (error instanceof PurchaseOwnershipConflict) {
+      logger.warn("premium: apple subscription claimed by another account");
+      return {
+        ok: false,
+        isPremium: false,
+        status: null,
+        accessUntil: null,
+        reason: "owned_by_other",
+      };
+    }
+    throw error;
+  }
+}
+
 export const verifyPremiumPurchase = onCall(
   premiumCallable,
   async (request): Promise<VerifyPremiumPurchaseResult> => {
@@ -159,16 +266,23 @@ export const verifyPremiumPurchase = onCall(
     if (!purchaseToken) {
       throw new HttpsError("invalid-argument", "purchase-token-required");
     }
-    if (platform !== "android") {
-      // Apple arrives through its own verifier; until then nothing is granted
-      // rather than falling through to the Android path.
-      throw new HttpsError("invalid-argument", "unsupported-platform");
-    }
 
-    return verifyAndroidPremiumPurchase({
-      userId,
-      purchaseToken,
-      api: new PlayDeveloperApi(),
-    });
+    if (platform === "android") {
+      return verifyAndroidPremiumPurchase({
+        userId,
+        purchaseToken,
+        api: new PlayDeveloperApi(),
+      });
+    }
+    if (platform === "ios") {
+      return verifyIosPremiumPurchase({
+        userId,
+        transactionId: purchaseToken,
+        api: new AppStoreServerApi(),
+      });
+    }
+    // Anything else grants nothing rather than falling through to a verifier
+    // that was not written for it.
+    throw new HttpsError("invalid-argument", "unsupported-platform");
   },
 );

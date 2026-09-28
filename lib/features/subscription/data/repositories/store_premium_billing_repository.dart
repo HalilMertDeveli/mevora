@@ -282,7 +282,7 @@ class StorePremiumBillingRepository implements PremiumBillingRepository {
   Future<PremiumVerificationResult> _verifyAndFinish(
     PurchaseDetails details,
   ) async {
-    final token = details.verificationData.serverVerificationData;
+    final token = _evidenceFor(details);
     if (token.isEmpty) {
       await _finish(details);
       return const PremiumVerificationResult.rejected('missing_evidence');
@@ -314,6 +314,20 @@ class StorePremiumBillingRepository implements PremiumBillingRepository {
     // counts: replaying it would just be rejected again.
     await _finish(details);
     return result;
+  }
+
+  /// What the backend needs in order to go and ask the store itself.
+  ///
+  /// The two stores identify a subscription differently, and sending the wrong
+  /// one would be a lookup that always fails rather than a security hole:
+  /// Google verifies a purchase token, Apple looks up a transaction id. The
+  /// iOS receipt in `serverVerificationData` is not an identifier the
+  /// subscription-status endpoint accepts, so the transaction id is sent.
+  String _evidenceFor(PurchaseDetails details) {
+    return switch (_platform) {
+      PremiumPlatform.android => details.verificationData.serverVerificationData,
+      PremiumPlatform.ios => details.purchaseID ?? '',
+    };
   }
 
   Future<void> _finish(PurchaseDetails details) async {

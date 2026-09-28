@@ -64,40 +64,50 @@ MusicProfile _connectedProfile({
 
 void main() {
   group('selection limits', () {
-    test('accepts zero, one and three artists', () {
-      final harness = _harness();
+    test('accepts zero, one and a full selection', () {
+      final harness = _harness(
+        profile: _connectedProfile(
+          artistCount: maxPublicMusicArtists + 2,
+          trackCount: maxPublicMusicTracks + 2,
+        ),
+      );
       final controller = harness.controller;
       expect(controller.state.selectedArtistIds, isEmpty);
 
       controller.toggleArtist('a0');
       expect(controller.state.selectedArtistIds.length, 1);
 
-      controller.toggleArtist('a1');
-      controller.toggleArtist('a2');
+      for (var k = 1; k < maxPublicMusicArtists; k++) {
+        controller.toggleArtist('a$k');
+      }
       expect(controller.state.selectedArtistIds.length, maxPublicMusicArtists);
     });
 
-    test('refuses a fourth artist instead of swapping one out', () {
-      final controller = _harness().controller;
-      for (final id in ['a0', 'a1', 'a2']) {
-        controller.toggleArtist(id);
+    test('refuses one past the limit instead of swapping one out', () {
+      final controller = _harness(
+        profile: _connectedProfile(artistCount: maxPublicMusicArtists + 2),
+      ).controller;
+      for (var k = 0; k < maxPublicMusicArtists; k++) {
+        controller.toggleArtist('a$k');
       }
-      controller.toggleArtist('a3');
+      controller.toggleArtist('a$maxPublicMusicArtists');
 
       expect(controller.state.selectedArtistIds.length, maxPublicMusicArtists);
-      expect(controller.state.selectedArtistIds.contains('a3'), isFalse);
+      expect(controller.state.selectedArtistIds.contains('a$maxPublicMusicArtists'), isFalse);
       expect(controller.state.selectedArtistIds.contains('a0'), isTrue);
     });
 
-    test('refuses a fourth track', () {
-      final controller = _harness().controller;
-      for (final id in ['t0', 't1', 't2']) {
-        controller.toggleTrack(id);
+    test('refuses one track past the limit', () {
+      final controller = _harness(
+        profile: _connectedProfile(trackCount: maxPublicMusicTracks + 2),
+      ).controller;
+      for (var k = 0; k < maxPublicMusicTracks; k++) {
+        controller.toggleTrack('t$k');
       }
-      controller.toggleTrack('t3');
+      controller.toggleTrack('t$maxPublicMusicTracks');
 
       expect(controller.state.selectedTrackIds.length, maxPublicMusicTracks);
-      expect(controller.state.selectedTrackIds.contains('t3'), isFalse);
+      expect(controller.state.selectedTrackIds.contains('t$maxPublicMusicTracks'), isFalse);
     });
 
     test('deselecting frees a slot again', () {
@@ -219,30 +229,33 @@ void main() {
 
       expect(find.text(_en.publicMusicTitle), findsOneWidget);
       expect(find.text(_en.publicMusicSubtitle), findsOneWidget);
-      expect(find.text(_en.publicMusicArtistCount(0, 3)), findsOneWidget);
+      expect(find.text(_en.publicMusicArtistCount(0, maxPublicMusicArtists)), findsOneWidget);
     });
 
-    testWidgets('a fourth artist chip cannot be tapped', (tester) async {
-      final controller = _harness().controller;
+    testWidgets('a chip past the limit cannot be tapped', (tester) async {
+      final controller = _harness(
+        profile: _connectedProfile(artistCount: maxPublicMusicArtists + 2),
+      ).controller;
       await tester.pumpWidget(
         _wrap(PublicMusicSelectionPage(controller: controller)),
       );
       await tester.pumpAndSettle();
 
-      for (final name in ['Artist 0', 'Artist 1', 'Artist 2']) {
-        await tester.tap(find.text(name));
+      for (var k = 0; k < maxPublicMusicArtists; k++) {
+        await tester.ensureVisible(find.text('Artist $k'));
+        await tester.tap(find.text('Artist $k'));
         await tester.pump();
       }
-      expect(find.text(_en.publicMusicArtistCount(3, 3)), findsOneWidget);
+      expect(find.text(_en.publicMusicArtistCount(maxPublicMusicArtists, maxPublicMusicArtists)), findsOneWidget);
       expect(find.text(_en.publicMusicLimitReached), findsWidgets);
 
-      await tester.ensureVisible(find.text('Artist 3'));
+      await tester.ensureVisible(find.text('Artist $maxPublicMusicArtists'));
       await tester.pump();
-      await tester.tap(find.text('Artist 3'), warnIfMissed: false);
+      await tester.tap(find.text('Artist $maxPublicMusicArtists'), warnIfMissed: false);
       await tester.pump();
 
-      expect(controller.state.selectedArtistIds.contains('a3'), isFalse);
-      expect(find.text(_en.publicMusicArtistCount(3, 3)), findsOneWidget);
+      expect(controller.state.selectedArtistIds.contains('a$maxPublicMusicArtists'), isFalse);
+      expect(find.text(_en.publicMusicArtistCount(maxPublicMusicArtists, maxPublicMusicArtists)), findsOneWidget);
     });
 
     testWidgets('an account with no imported data explains itself', (
@@ -346,11 +359,11 @@ void main() {
       final parsed = PublicMusicProfile.parse({
         'enabled': true,
         'artists': List.generate(
-          8,
+          maxPublicMusicArtists + 3,
           (i) => {'id': 'a$i', 'name': 'Artist $i'},
         ),
-        'tracks': List.generate(8, (i) => {'id': 't$i', 'name': 'Track $i'}),
-        'genres': ['g1', 'g2', 'g3', 'g4', 'g5'],
+        'tracks': List.generate(maxPublicMusicTracks + 3, (i) => {'id': 't$i', 'name': 'Track $i'}),
+        'genres': List.generate(maxPublicMusicGenres + 2, (k) => 'g'),
       });
 
       expect(parsed.artists.length, maxPublicMusicArtists);

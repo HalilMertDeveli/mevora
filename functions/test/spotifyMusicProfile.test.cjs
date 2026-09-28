@@ -311,11 +311,19 @@ describe("public card projection", () => {
   });
 
   it("enforces the display limits even on a tampered stored document", () => {
+    // Sized off the limits themselves, so this keeps testing the clamp if the
+    // product settles on a different number again.
     const card = toPublicMusicCard({
       enabled: true,
-      artists: Array.from({length: 9}, (_, i) => ({id: `x${i}`, name: `X${i}`})),
-      tracks: Array.from({length: 9}, (_, i) => ({id: `y${i}`, name: `Y${i}`})),
-      genres: ["g1", "g2", "g3", "g4", "g5", "g6"],
+      artists: Array.from({length: MAX_PUBLIC_ARTISTS + 4}, (_, i) => ({
+        id: `x${i}`,
+        name: `X${i}`,
+      })),
+      tracks: Array.from({length: MAX_PUBLIC_TRACKS + 4}, (_, i) => ({
+        id: `y${i}`,
+        name: `Y${i}`,
+      })),
+      genres: Array.from({length: MAX_PUBLIC_GENRES + 3}, (_, i) => `g${i}`),
     });
     assert.equal(card.artists.length, MAX_PUBLIC_ARTISTS);
     assert.equal(card.tracks.length, MAX_PUBLIC_TRACKS);

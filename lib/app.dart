@@ -343,6 +343,7 @@ class _MevoraAppState extends State<MevoraApp> {
         controller: subscription.controller,
         repository: subscription.repository,
         billing: subscription.billing,
+        analytics: widget.analytics,
         child: child,
       );
     }

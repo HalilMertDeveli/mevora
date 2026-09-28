@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/features/subscription/domain/entities/premium_plan.dart';
 import 'package:mevora/features/subscription/domain/repositories/premium_billing_repository.dart';
 
@@ -39,10 +42,23 @@ enum PremiumPurchaseStage {
 /// reads the server-written entitlement — so a bug here can, at worst, show a
 /// wrong message, never a wrong unlock.
 class PremiumPurchaseController extends ChangeNotifier {
-  PremiumPurchaseController({required PremiumBillingRepository billing})
-    : _billing = billing;
+  PremiumPurchaseController({
+    required PremiumBillingRepository billing,
+    AnalyticsProvider? analytics,
+  }) : _billing = billing,
+       _analytics = analytics;
 
   final PremiumBillingRepository _billing;
+  final AnalyticsProvider? _analytics;
+
+  /// Fire-and-forget. A failed analytics call must never fail a purchase.
+  void _track(String event) {
+    final analytics = _analytics;
+    if (analytics == null) {
+      return;
+    }
+    unawaited(analytics.logEvent(event).catchError((Object _) {}));
+  }
 
   PremiumPurchaseStage _stage = PremiumPurchaseStage.idle;
   List<PremiumPlan> _plans = const [];
@@ -79,6 +95,7 @@ class PremiumPurchaseController extends ChangeNotifier {
       // An empty catalogue is not an error state to apologise for; it is a
       // configuration fact. Either way there is nothing to sell here.
       _selected = plans.isEmpty ? null : _preferred(plans);
+      _track(AnalyticsEvents.premiumPaywallViewed);
       _set(
         stage: plans.isEmpty
             ? PremiumPurchaseStage.unavailable
@@ -102,6 +119,7 @@ class PremiumPurchaseController extends ChangeNotifier {
     if (plan == null || isBusy) {
       return;
     }
+    _track(AnalyticsEvents.premiumPurchaseStarted);
     _set(stage: PremiumPurchaseStage.purchasing, clearError: true);
     try {
       // The repository spans both steps, so the UI moves to "verifying" as
@@ -120,6 +138,7 @@ class PremiumPurchaseController extends ChangeNotifier {
     if (isBusy) {
       return;
     }
+    _track(AnalyticsEvents.premiumRestoreStarted);
     _set(stage: PremiumPurchaseStage.restoring, clearError: true);
     try {
       final result = await _billing.restore();
@@ -147,10 +166,16 @@ class PremiumPurchaseController extends ChangeNotifier {
 
   void _applyResult(PremiumVerificationResult result) {
     if (result.isPremium) {
+      _track(
+        _stage == PremiumPurchaseStage.restoring
+            ? AnalyticsEvents.premiumRestoreSuccess
+            : AnalyticsEvents.premiumPurchaseSuccess,
+      );
       _set(stage: PremiumPurchaseStage.purchased, clearError: true);
       return;
     }
     // Verified and refused. Not a crash and not a grant — say why.
+    _track(AnalyticsEvents.premiumPurchaseFailed);
     _failure = PremiumPurchaseFailure.verificationRejected;
     _reason = result.reason;
     _set(stage: PremiumPurchaseStage.failed);
@@ -163,6 +188,11 @@ class PremiumPurchaseController extends ChangeNotifier {
     if (_disposed) {
       return;
     }
+    _track(
+      error.failure == PremiumPurchaseFailure.cancelled
+          ? AnalyticsEvents.premiumPurchaseCancelled
+          : AnalyticsEvents.premiumPurchaseFailed,
+    );
     _failure = error.failure;
     _reason = error.reason;
     _set(

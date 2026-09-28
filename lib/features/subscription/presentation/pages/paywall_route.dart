@@ -30,7 +30,10 @@ class _PaywallRouteState extends State<PaywallRoute> {
     }
     final billing = SubscriptionScope.billingOf(context);
     if (billing != null) {
-      _controller = PremiumPurchaseController(billing: billing);
+      _controller = PremiumPurchaseController(
+        billing: billing,
+        analytics: SubscriptionScope.maybeOf(context)?.analytics,
+      );
     }
   }
 

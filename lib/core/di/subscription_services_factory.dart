@@ -1,3 +1,4 @@
+import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
@@ -43,13 +44,17 @@ SubscriptionServices createSubscriptionServices({
   PremiumProductConfig? productConfig,
   BackendCallable? backend,
   AppLogger? logger,
+  AnalyticsProvider? analytics,
 }) {
   final SubscriptionRepository resolved =
       repository ??
       (premiumEnabled
           ? FirestoreSubscriptionRepository(uidSource: uidSource)
           : const DisabledSubscriptionRepository());
-  final controller = SubscriptionController(repository: resolved)..start();
+  final controller = SubscriptionController(
+    repository: resolved,
+    analytics: analytics,
+  )..start();
 
   final PremiumBillingRepository? resolvedBilling =
       billing ??

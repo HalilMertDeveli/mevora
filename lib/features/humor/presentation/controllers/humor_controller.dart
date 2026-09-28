@@ -442,7 +442,23 @@ class HumorController extends ChangeNotifier {
   }
 
   /// Move past the card on screen without rating it.
-  Future<void> skip() async {
+  Future<void> skip() => _skip();
+
+  /// Move past [contentId], whose media could not be played, without rating
+  /// it. The server records it as a `media_failed` skip: never a rating,
+  /// never part of calibration, and the item is not served to this user again
+  /// — calibration then hands out a replacement through the usual tail fetch.
+  ///
+  /// Ignored unless [contentId] is the card on screen, so a late tap from a
+  /// card that has already scrolled away can never skip a different item.
+  Future<void> skipUnplayable(String contentId) {
+    if (_state.current?.contentId != contentId) {
+      return Future<void>.value();
+    }
+    return _skip(skipReason: HumorSkipReason.mediaFailed);
+  }
+
+  Future<void> _skip({String? skipReason}) async {
     final item = _state.current;
     if (item == null || !_state.canAct || _submitting) {
       return;
@@ -451,7 +467,10 @@ class HumorController extends ChangeNotifier {
     final index = _state.currentIndex;
     _beginSubmit();
 
-    final result = await _repository.skipContent(contentId: contentId);
+    final result = await _repository.skipContent(
+      contentId: contentId,
+      skipReason: skipReason,
+    );
     _submitting = false;
     if (_disposed) {
       return;
@@ -464,14 +483,27 @@ class HumorController extends ChangeNotifier {
           canGoBack: true,
           calibration: _withPoolFlag(feedback.calibration),
         );
-        _log(
-          AnalyticsEvents.humorContentSkipped,
-          parameters: {'content_id': contentId},
-        );
+        if (skipReason == HumorSkipReason.mediaFailed) {
+          _log(
+            AnalyticsEvents.humorMediaSkipped,
+            parameters: {
+              'content_id': contentId,
+              'reason': HumorSkipReason.mediaFailed,
+            },
+          );
+        } else {
+          _log(
+            AnalyticsEvents.humorContentSkipped,
+            parameters: {'content_id': contentId},
+          );
+        }
       },
       err: (failure) {
         _state = _state.copyWith(isSubmitting: false);
-        _reportActionFailure(failure, retry: () => _retryOn(contentId, skip));
+        _reportActionFailure(
+          failure,
+          retry: () => _retryOn(contentId, () => _skip(skipReason: skipReason)),
+        );
       },
     );
     notifyListeners();

@@ -67,12 +67,16 @@ class FunctionsHumorDataSource implements HumorDataSource {
   }
 
   @override
-  Future<HumorFeedbackResult> skipContent({required String contentId}) async {
+  Future<HumorFeedbackResult> skipContent({
+    required String contentId,
+    String? skipReason,
+  }) async {
     // No rating: a skip only marks the content as passed so it is not served
     // again. The server leaves the profile, count and calibration alone.
     final data = await _backend.invoke('submitHumorFeedback', {
       'contentId': contentId,
       'skipped': true,
+      if (skipReason != null) 'skipReason': skipReason,
     });
     return _parseFeedback(data);
   }
@@ -190,6 +194,7 @@ class FunctionsHumorDataSource implements HumorDataSource {
           calibrationStage: map['calibrationStage'] == null
               ? null
               : HumorCalibration.parseStage(map['calibrationStage'] as String?),
+          attribution: HumorContentAttribution.tryParse(map['attribution']),
         ),
       );
     }

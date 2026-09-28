@@ -56,10 +56,14 @@ class HumorRepositoryImpl implements HumorRepository {
   }
 
   @override
-  Future<Result<HumorFeedbackResult>> skipContent({required String contentId}) {
+  Future<Result<HumorFeedbackResult>> skipContent({
+    required String contentId,
+    String? skipReason,
+  }) {
     return _guard(
       'submitHumorFeedback',
-      () => _dataSource.skipContent(contentId: contentId),
+      () =>
+          _dataSource.skipContent(contentId: contentId, skipReason: skipReason),
     );
   }
 

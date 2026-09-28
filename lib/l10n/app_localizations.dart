@@ -6710,6 +6710,24 @@ abstract class AppLocalizations {
   /// **'This content can\'t be shown right now.'**
   String get humorMediaUnavailable;
 
+  /// No description provided for @humorVideoLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Video couldn\'t load'**
+  String get humorVideoLoadFailed;
+
+  /// No description provided for @humorMediaNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get humorMediaNext;
+
+  /// No description provided for @humorAttributionVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified creator'**
+  String get humorAttributionVerified;
+
   /// No description provided for @boostResultsTitle.
   ///
   /// In en, this message translates to:

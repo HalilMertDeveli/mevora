@@ -3666,6 +3666,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorMediaUnavailable => 'This content can\'t be shown right now.';
 
   @override
+  String get humorVideoLoadFailed => 'Video couldn\'t load';
+
+  @override
+  String get humorMediaNext => 'Next';
+
+  @override
+  String get humorAttributionVerified => 'Verified creator';
+
+  @override
   String get boostResultsTitle => 'Boost results';
 
   @override

@@ -41,6 +41,9 @@ class MockHumorDataSource implements HumorDataSource {
   var feedCalls = 0;
   var feedbackCalls = 0;
   var skipCalls = 0;
+
+  /// The `skipReason` of every skip, in order (`null` when none was sent).
+  final List<String?> skipReasons = <String?>[];
   var reportCalls = 0;
 
   UserHumorProfile get profile => _profile;
@@ -456,9 +459,13 @@ class MockHumorDataSource implements HumorDataSource {
   }
 
   @override
-  Future<HumorFeedbackResult> skipContent({required String contentId}) async {
+  Future<HumorFeedbackResult> skipContent({
+    required String contentId,
+    String? skipReason,
+  }) async {
     feedbackCalls += 1;
     skipCalls += 1;
+    skipReasons.add(skipReason);
     await feedbackGate?.future;
     if (failFeedback) {
       throw StateError('mock-skip-failed');

@@ -16,7 +16,9 @@
          storage and the functions have loaded.
       3. Seeds the QA users (only missing ones: existing users, their matches
          and chats are left alone) and the curated humor catalogue
-         (idempotent: never resets anyone's calibration progress).
+         (idempotent: never resets anyone's calibration progress), then
+         tops up licensed GIPHY content when functions/.secret.local
+         declares GIPHY_API_KEY (otherwise prints one "skipped" line).
       4. Prints one status line.
 
     It never targets the cloud. Nothing is deployed, and every seed write goes
@@ -332,7 +334,12 @@ $env:QA_PROJECT_ID = $ProjectId
 if ($LASTEXITCODE -ne 0) {
     Fail "QA user seed failed (exit code $LASTEXITCODE) - see its output above"
 }
-& $node.Source (Join-Path $PSScriptRoot "seedEmulatorHumorCatalog.cjs") --project $ProjectId
+# --provider-topup: after the catalogue, pull licensed GIPHY content through the
+# emulator's syncHumorFromProvider when functions/.secret.local declares
+# GIPHY_API_KEY; otherwise it prints one "Provider content skipped" line. A
+# provider failure is reported but never fails this step.
+& $node.Source (Join-Path $PSScriptRoot "seedEmulatorHumorCatalog.cjs") --project $ProjectId `
+    --provider-topup --functions-host "127.0.0.1:$($Ports.functions)"
 if ($LASTEXITCODE -ne 0) {
     Fail "humor catalogue seed failed (exit code $LASTEXITCODE) - see its output above"
 }

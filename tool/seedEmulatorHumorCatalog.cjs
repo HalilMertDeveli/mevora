@@ -8,6 +8,11 @@
  * approved and active. Both come from the COMPILED functions output, so the
  * emulator gets the same catalogue the deployed functions would seed.
  *
+ * The curated catalogue is text-only joke cards. Documents seeded by older
+ * versions carried unrelated stock media (picsum stills, sample clips); the
+ * upsert writes every media key explicitly, so re-seeding converts them to
+ * text cards with null media. The script reports how many it converted.
+ *
  * Emulator only. It refuses to run unless FIRESTORE_EMULATOR_HOST points at a
  * loopback address; with that variable set the Admin SDK cannot reach a cloud
  * database at all.
@@ -17,16 +22,29 @@
  * does on every F5) refreshes the catalogue without resetting anyone's
  * calibration progress, ratings or profile.
  *
+ * Optional provider top-up (--provider-topup): when functions/.secret.local
+ * declares a GIPHY_API_KEY entry (only the NAME is checked; the value is never
+ * read into anything, printed or logged), it calls the admin-only
+ * `syncHumorFromProvider` callable on the Functions emulator as a throwaway
+ * emulator admin and prints the diagnostic counts. Without that entry it
+ * prints one line and moves on. Needs FIREBASE_AUTH_EMULATOR_HOST and
+ * --functions-host (both loopback). A provider failure never fails the seed.
+ *
  * Usage, from the repo root (PowerShell):
  *
  *   npm --prefix functions run build
  *   $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
  *   node tool/seedEmulatorHumorCatalog.cjs [--project mevora-d6ed0]
  *
+ *   # plus the provider top-up:
+ *   $env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"
+ *   node tool/seedEmulatorHumorCatalog.cjs --provider-topup --functions-host 127.0.0.1:5001
+ *
  * The project defaults to QA_PROJECT_ID, then mevora-d6ed0 — the project the
  * app's "full emulator suite" launch configuration talks to. It must match the
  * --project the emulators were started with.
  */
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const {createRequire} = require("node:module");
@@ -57,13 +75,20 @@ if (!LOOPBACK_HOST.test(firestoreHost)) {
 }
 
 const argv = process.argv.slice(2);
-const projectFlag = argv.indexOf("--project");
-const projectId =
-  projectFlag >= 0 ? argv[projectFlag + 1] : process.env.QA_PROJECT_ID || "mevora-d6ed0";
+function flagValue(name) {
+  const index = argv.indexOf(name);
+  return index >= 0 ? argv[index + 1] : undefined;
+}
+const projectId = flagValue("--project") ?? (process.env.QA_PROJECT_ID || "mevora-d6ed0");
 if (!projectId || !/^[a-z0-9][a-z0-9-]{2,62}$/.test(projectId)) {
-  console.error("usage: node tool/seedEmulatorHumorCatalog.cjs [--project <projectId>]");
+  console.error(
+    "usage: node tool/seedEmulatorHumorCatalog.cjs [--project <projectId>] " +
+      "[--provider-topup --functions-host <127.0.0.1:port>]",
+  );
   process.exit(2);
 }
+const providerTopUp = argv.includes("--provider-topup");
+const functionsHost = flagValue("--functions-host");
 
 // --------------------------------------------------------------------------
 // Dependencies and compiled output both live under functions/
@@ -113,6 +138,135 @@ const {buildCalibrationPoolReport} = requireCompiled("lib/humor/calibrationPoolR
 warnIfStale("src/humor/calibrationSeed.ts", "lib/humor/calibrationSeed.js");
 
 // --------------------------------------------------------------------------
+// Provider top-up (optional)
+// --------------------------------------------------------------------------
+
+const PROVIDER_SKIPPED =
+  "Provider content skipped: GIPHY key unavailable (billing disabled; add " +
+  "functions/.secret.local to enable)";
+
+/**
+ * True when functions/.secret.local declares GIPHY_API_KEY. Only the part of
+ * each line before "=" is looked at; the value is never kept or printed.
+ * HUMOR_TOPUP_SECRET_FILE overrides the path (for testing this script).
+ */
+function giphyKeyDeclared() {
+  const file =
+    process.env.HUMOR_TOPUP_SECRET_FILE || path.join(FUNCTIONS_DIR, ".secret.local");
+  let text;
+  try {
+    text = fs.readFileSync(file, "utf8");
+  } catch (_) {
+    return false;
+  }
+  return text.split(/\r?\n/).some((line) => {
+    const name = line.split("=", 1)[0].replace(/^\s*export\s+/, "").trim();
+    return name === "GIPHY_API_KEY" && line.includes("=");
+  });
+}
+
+async function postJson(url, body, headers = {}, timeoutMs = 180000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "application/json", ...headers},
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const json = await response.json().catch(() => ({}));
+    return {status: response.status, json};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Calls syncHumorFromProvider on the Functions emulator as a throwaway admin
+ * created in the Auth emulator, then deletes that admin. Never throws.
+ */
+async function providerTopUpStep() {
+  if (!giphyKeyDeclared()) {
+    console.log(`  ${PROVIDER_SKIPPED}`);
+    return;
+  }
+  const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
+  if (!authHost || !LOOPBACK_HOST.test(authHost) || !functionsHost ||
+      !LOOPBACK_HOST.test(functionsHost)) {
+    console.warn(
+      "  Provider top-up skipped: needs loopback FIREBASE_AUTH_EMULATOR_HOST and " +
+        "--functions-host <127.0.0.1:port>",
+    );
+    return;
+  }
+
+  const suffix = crypto.randomBytes(6).toString("hex");
+  const email = `humor-topup-${suffix}@mevora.test`;
+  // Emulator-only credential for a user deleted a few seconds later; never printed.
+  const password = crypto.randomBytes(24).toString("base64url");
+  let uid = null;
+  try {
+    const user = await admin.auth().createUser({email, password, displayName: "Humor top-up (emulator)"});
+    uid = user.uid;
+    await admin.auth().setCustomUserClaims(uid, {admin: true});
+
+    const signIn = await postJson(
+      `http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=emulator`,
+      {email, password, returnSecureToken: true},
+    );
+    const idToken = signIn.json && signIn.json.idToken;
+    if (!idToken) {
+      console.warn(`  Provider top-up failed: emulator sign-in answered HTTP ${signIn.status}`);
+      return;
+    }
+
+    console.log("  Provider top-up: calling syncHumorFromProvider on the Functions emulator");
+    const call = await postJson(
+      `http://${functionsHost}/${projectId}/europe-west1/syncHumorFromProvider`,
+      {data: {language: "tr", limit: 24}},
+      {Authorization: `Bearer ${idToken}`},
+    );
+    const result = call.json && call.json.result;
+    if (!result) {
+      const status = call.json && call.json.error && call.json.error.status;
+      console.warn(`  Provider top-up failed: HTTP ${call.status}${status ? ` (${status})` : ""}`);
+      return;
+    }
+    if (result.configured === false) {
+      console.log(
+        "  Provider content skipped: the Functions emulator did not load GIPHY_API_KEY " +
+          "(restart the emulator suite after adding functions/.secret.local)",
+      );
+      return;
+    }
+    const rejected = Object.entries(result.rejected || {})
+      .map(([reason, n]) => `${reason} ${n}`)
+      .join(", ");
+    const errors = Object.entries(result.errors || {})
+      .map(([reason, n]) => `${reason} ${n}`)
+      .join(", ");
+    console.log(
+      `  provider: requested ${result.requested}, fetched ${result.fetched}, ` +
+        `accepted ${result.accepted}, duplicates ${result.duplicates}, ` +
+        `clips ${result.clipsAvailable ? "available" : "unavailable"}`,
+    );
+    console.log(`  provider rejected: ${rejected || "none"}`);
+    if (errors) {
+      console.warn(`  provider errors: ${errors}`);
+    }
+  } catch (error) {
+    console.warn(
+      `  Provider top-up failed: ${error && error.message ? error.message : String(error)}`,
+    );
+  } finally {
+    if (uid) {
+      await admin.auth().deleteUser(uid).catch(() => {});
+    }
+  }
+}
+
+// --------------------------------------------------------------------------
 
 (async () => {
   console.log("Seeding the curated humor catalogue into the Firestore emulator");
@@ -124,15 +278,20 @@ warnIfStale("src/humor/calibrationSeed.ts", "lib/humor/calibrationSeed.js");
 
   let created = 0;
   let refreshed = 0;
+  let converted = 0;
   for (const item of INTERNAL_HUMOR_SEED) {
-    const existed = (await collection.doc(item.contentId).get()).exists;
+    const before = await collection.doc(item.contentId).get();
+    const oldMedia = before.exists ? before.get("media") || {} : {};
+    if (before.exists && (oldMedia.downloadUrl || oldMedia.thumbUrl || before.get("type") !== "text")) {
+      converted += 1;
+    }
     // Same arguments as the admin seedInternalHumorContent callable.
     await upsertHumorContentDoc(db, {
       ...item,
       safetyStatus: "approved",
       active: true,
     });
-    if (existed) {
+    if (before.exists) {
       refreshed += 1;
     } else {
       created += 1;
@@ -140,8 +299,9 @@ warnIfStale("src/humor/calibrationSeed.ts", "lib/humor/calibrationSeed.js");
   }
   const total = (await collection.select().get()).size;
   console.log(
-    `  written: ${INTERNAL_HUMOR_SEED.length} curated items ` +
-      `(${created} new, ${refreshed} refreshed) · ${HUMOR_CONTENT_COLLECTION} holds ${total} docs`,
+    `  written: ${INTERNAL_HUMOR_SEED.length} curated text cards ` +
+      `(${created} new, ${refreshed} refreshed, ${converted} converted from old media) · ` +
+      `${HUMOR_CONTENT_COLLECTION} holds ${total} docs`,
   );
 
   const report = await buildCalibrationPoolReport(db);
@@ -165,8 +325,30 @@ warnIfStale("src/humor/calibrationSeed.ts", "lib/humor/calibrationSeed.js");
       console.warn(`    - ${warning}`);
     }
   }
-  process.exit(0);
-})().catch((error) => {
+
+  if (providerTopUp) {
+    await providerTopUpStep();
+  }
+  await closeAndExit(0);
+})().catch(async (error) => {
   console.error("HUMOR CATALOGUE SEED FAILED:", error && error.message ? error.message : error);
-  process.exit(1);
+  await closeAndExit(1);
 });
+
+/**
+ * Close the Admin SDK before leaving. Calling process.exit() while fetch
+ * sockets are still closing trips a libuv assertion on Windows
+ * (`!(handle->flags & UV_HANDLE_CLOSING)`, src\win\async.c) and turns a
+ * successful run into a crash exit code.
+ */
+async function closeAndExit(code) {
+  process.exitCode = code;
+  try {
+    await Promise.all(admin.apps.filter(Boolean).map((app) => app.delete()));
+  } catch (_) {
+    // Nothing left to close.
+  }
+  // Give in-flight sockets a moment to finish closing, then leave even if a
+  // stray handle would keep the event loop alive.
+  setTimeout(() => process.exit(code), 250).unref();
+}

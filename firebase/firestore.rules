@@ -562,6 +562,19 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      // Adaptive personalization. The learned per-dimension adjustments steer
+      // ranking, so only Cloud Functions write them; the owner may read their
+      // own. The event ledger (idempotency only) is never client-visible. The
+      // member's on/off switch lives in userSettings, not here.
+      match /personalization/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      match /personalizationEvents/{eventId} {
+        allow read, write: if false;
+      }
+
       match /verification/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
@@ -639,9 +652,15 @@ service cloud.firestore {
         || request.resource.data.languageCode in ['tr', 'en'];
     }
 
+    function personalizationSettingValid() {
+      return !('personalizeRecommendations' in request.resource.data)
+        || request.resource.data.personalizeRecommendations is bool;
+    }
+
     match /userSettings/{userId} {
       allow read: if isOwner(userId);
-      allow create, update: if isOwner(userId) && languageCodeValid();
+      allow create, update: if isOwner(userId) && languageCodeValid()
+        && personalizationSettingValid();
       allow delete: if isOwner(userId);
     }
 

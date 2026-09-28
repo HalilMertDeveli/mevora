@@ -38,6 +38,229 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discoveryActionPriorityIntro => 'Priority intro';
 
   @override
+  String get picksTitle => 'Mevora Picks';
+
+  @override
+  String get picksSubtitle => 'Chosen for you';
+
+  @override
+  String get picksHeadline => 'Today\'s Mevora Picks';
+
+  @override
+  String picksIntroCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people we think could be right for you.',
+      one: 'One person we think could be right for you.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get picksIntroNote =>
+      'Chosen from your compatibility, not at random. Refreshed daily.';
+
+  @override
+  String picksLowSupplyNote(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'We found $count strong matches today. Rather than lower the bar, we\'re showing fewer.',
+      one:
+          'We found one strong match today. Rather than lower the bar, we\'re showing fewer.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get picksLoading => 'Choosing people for you…';
+
+  @override
+  String get picksLoadErrorTitle => 'We couldn\'t load your Picks.';
+
+  @override
+  String get picksEmptyPreparingTitle => 'Your new Picks are on their way.';
+
+  @override
+  String get picksEmptyPreparingMessage =>
+      'Instead of showing you random profiles, we\'re finding more meaningful matches.';
+
+  @override
+  String get picksEmptyDoneTitle => 'You\'ve been through today\'s Picks.';
+
+  @override
+  String get picksDiscoveryOffTitle => 'Discovery is off';
+
+  @override
+  String get picksDiscoveryOffMessage =>
+      'Turn discovery on in settings to get Picks.';
+
+  @override
+  String get picksDiscoverMore => 'Discover more';
+
+  @override
+  String get picksDiscoverMoreHint => 'Browse more people beyond your Picks.';
+
+  @override
+  String get picksBackToPicks => 'Back to Mevora Picks';
+
+  @override
+  String get discoverMoreSubtitle => 'More people, beyond today\'s Picks';
+
+  @override
+  String get picksLike => 'Like';
+
+  @override
+  String get picksPass => 'Pass';
+
+  @override
+  String picksLikeSemantics(String name) {
+    return 'Like $name';
+  }
+
+  @override
+  String picksPassSemantics(String name) {
+    return 'Pass on $name';
+  }
+
+  @override
+  String picksOpenProfileSemantics(String name) {
+    return 'Open $name\'s profile';
+  }
+
+  @override
+  String get picksActionFailed => 'That didn\'t go through. Try again.';
+
+  @override
+  String picksMatchScore(int score) {
+    return 'Mevora match $score%';
+  }
+
+  @override
+  String get pickTypeBestOverall => 'Best match';
+
+  @override
+  String get pickTypeValuesMatch => 'Values match';
+
+  @override
+  String get pickTypeHumorMatch => 'Humor match';
+
+  @override
+  String get pickTypeMusicMatch => 'Music match';
+
+  @override
+  String get pickTypeNearbyMatch => 'Nearby match';
+
+  @override
+  String get pickTypeUnexpectedMatch => 'Unexpected match';
+
+  @override
+  String get pickHeadlineBestOverallStrong =>
+      'Your overall compatibility is very high.';
+
+  @override
+  String get pickHeadlineBestOverall => 'Your overall compatibility is strong.';
+
+  @override
+  String get pickHeadlineValues =>
+      'Your relationship expectations and core values line up strongly.';
+
+  @override
+  String pickHeadlineHumorScore(int score) {
+    return 'Your humor profiles are $score% compatible.';
+  }
+
+  @override
+  String pickHeadlineMusicArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You share $count artists.',
+      one: 'You share an artist you both love.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pickHeadlineMusic =>
+      'There\'s a strong overlap in your music taste.';
+
+  @override
+  String get pickHeadlineNearby => 'Close by — and a strong match.';
+
+  @override
+  String get pickHeadlineUnexpected => 'Someone you might otherwise overlook.';
+
+  @override
+  String get pickDetailUnexpected =>
+      'Your interests may not look alike, but your relationship expectations and communication style line up strongly.';
+
+  @override
+  String pickWhyTitle(String name) {
+    return 'Why $name?';
+  }
+
+  @override
+  String pickReasonOverall(int score) {
+    return 'Your overall Mevora compatibility is $score%.';
+  }
+
+  @override
+  String get pickReasonRelationship =>
+      'You\'re looking for the same kind of relationship.';
+
+  @override
+  String pickReasonViews(int aligned, int shared) {
+    return 'You gave the same answer on $aligned of $shared relationship questions.';
+  }
+
+  @override
+  String get pickReasonCommunication =>
+      'Your communication styles look compatible.';
+
+  @override
+  String get pickReasonLifestyle => 'Your lifestyle preferences fit together.';
+
+  @override
+  String pickReasonHumorTraits(String traits) {
+    return 'Humor styles you share: $traits.';
+  }
+
+  @override
+  String pickReasonMusicArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Your music profiles share $count artists.',
+      one: 'Your music profiles share an artist.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pickReasonMusicScore(int score) {
+    return 'Your music compatibility is $score%.';
+  }
+
+  @override
+  String pickReasonDistance(String distance) {
+    return '$distance — close enough to meet easily.';
+  }
+
+  @override
+  String pickReasonInterests(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You share $count interests.',
+      one: 'You share an interest.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get compatScoreHeading => 'Compatibility';
 
   @override
@@ -924,6 +1147,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoveryPreferences => 'Discovery preferences';
+
+  @override
+  String get settingsPersonalizeRecommendations =>
+      'Personalize my recommendations based on my interactions';
+
+  @override
+  String get settingsPersonalizeRecommendationsSubtitle =>
+      'We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.';
 
   @override
   String get minAge => 'Minimum age';

@@ -152,6 +152,306 @@ abstract class AppLocalizations {
   /// **'Priority intro'**
   String get discoveryActionPriorityIntro;
 
+  /// No description provided for @picksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora Picks'**
+  String get picksTitle;
+
+  /// No description provided for @picksSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen for you'**
+  String get picksSubtitle;
+
+  /// No description provided for @picksHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Mevora Picks'**
+  String get picksHeadline;
+
+  /// No description provided for @picksIntroCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One person we think could be right for you.} other{{count} people we think could be right for you.}}'**
+  String picksIntroCount(int count);
+
+  /// No description provided for @picksIntroNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen from your compatibility, not at random. Refreshed daily.'**
+  String get picksIntroNote;
+
+  /// No description provided for @picksLowSupplyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{We found one strong match today. Rather than lower the bar, we\'re showing fewer.} other{We found {count} strong matches today. Rather than lower the bar, we\'re showing fewer.}}'**
+  String picksLowSupplyNote(int count);
+
+  /// No description provided for @picksLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Choosing people for you…'**
+  String get picksLoading;
+
+  /// No description provided for @picksLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your Picks.'**
+  String get picksLoadErrorTitle;
+
+  /// No description provided for @picksEmptyPreparingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new Picks are on their way.'**
+  String get picksEmptyPreparingTitle;
+
+  /// No description provided for @picksEmptyPreparingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Instead of showing you random profiles, we\'re finding more meaningful matches.'**
+  String get picksEmptyPreparingMessage;
+
+  /// No description provided for @picksEmptyDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve been through today\'s Picks.'**
+  String get picksEmptyDoneTitle;
+
+  /// No description provided for @picksDiscoveryOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery is off'**
+  String get picksDiscoveryOffTitle;
+
+  /// No description provided for @picksDiscoveryOffMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn discovery on in settings to get Picks.'**
+  String get picksDiscoveryOffMessage;
+
+  /// No description provided for @picksDiscoverMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover more'**
+  String get picksDiscoverMore;
+
+  /// No description provided for @picksDiscoverMoreHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse more people beyond your Picks.'**
+  String get picksDiscoverMoreHint;
+
+  /// No description provided for @picksBackToPicks.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Mevora Picks'**
+  String get picksBackToPicks;
+
+  /// No description provided for @discoverMoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More people, beyond today\'s Picks'**
+  String get discoverMoreSubtitle;
+
+  /// No description provided for @picksLike.
+  ///
+  /// In en, this message translates to:
+  /// **'Like'**
+  String get picksLike;
+
+  /// No description provided for @picksPass.
+  ///
+  /// In en, this message translates to:
+  /// **'Pass'**
+  String get picksPass;
+
+  /// No description provided for @picksLikeSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Like {name}'**
+  String picksLikeSemantics(String name);
+
+  /// No description provided for @picksPassSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Pass on {name}'**
+  String picksPassSemantics(String name);
+
+  /// No description provided for @picksOpenProfileSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}\'s profile'**
+  String picksOpenProfileSemantics(String name);
+
+  /// No description provided for @picksActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t go through. Try again.'**
+  String get picksActionFailed;
+
+  /// No description provided for @picksMatchScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora match {score}%'**
+  String picksMatchScore(int score);
+
+  /// No description provided for @pickTypeBestOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Best match'**
+  String get pickTypeBestOverall;
+
+  /// No description provided for @pickTypeValuesMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Values match'**
+  String get pickTypeValuesMatch;
+
+  /// No description provided for @pickTypeHumorMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor match'**
+  String get pickTypeHumorMatch;
+
+  /// No description provided for @pickTypeMusicMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Music match'**
+  String get pickTypeMusicMatch;
+
+  /// No description provided for @pickTypeNearbyMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby match'**
+  String get pickTypeNearbyMatch;
+
+  /// No description provided for @pickTypeUnexpectedMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected match'**
+  String get pickTypeUnexpectedMatch;
+
+  /// No description provided for @pickHeadlineBestOverallStrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Your overall compatibility is very high.'**
+  String get pickHeadlineBestOverallStrong;
+
+  /// No description provided for @pickHeadlineBestOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Your overall compatibility is strong.'**
+  String get pickHeadlineBestOverall;
+
+  /// No description provided for @pickHeadlineValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Your relationship expectations and core values line up strongly.'**
+  String get pickHeadlineValues;
+
+  /// No description provided for @pickHeadlineHumorScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profiles are {score}% compatible.'**
+  String pickHeadlineHumorScore(int score);
+
+  /// No description provided for @pickHeadlineMusicArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You share an artist you both love.} other{You share {count} artists.}}'**
+  String pickHeadlineMusicArtists(int count);
+
+  /// No description provided for @pickHeadlineMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s a strong overlap in your music taste.'**
+  String get pickHeadlineMusic;
+
+  /// No description provided for @pickHeadlineNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Close by — and a strong match.'**
+  String get pickHeadlineNearby;
+
+  /// No description provided for @pickHeadlineUnexpected.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone you might otherwise overlook.'**
+  String get pickHeadlineUnexpected;
+
+  /// No description provided for @pickDetailUnexpected.
+  ///
+  /// In en, this message translates to:
+  /// **'Your interests may not look alike, but your relationship expectations and communication style line up strongly.'**
+  String get pickDetailUnexpected;
+
+  /// No description provided for @pickWhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why {name}?'**
+  String pickWhyTitle(String name);
+
+  /// No description provided for @pickReasonOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Your overall Mevora compatibility is {score}%.'**
+  String pickReasonOverall(int score);
+
+  /// No description provided for @pickReasonRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re looking for the same kind of relationship.'**
+  String get pickReasonRelationship;
+
+  /// No description provided for @pickReasonViews.
+  ///
+  /// In en, this message translates to:
+  /// **'You gave the same answer on {aligned} of {shared} relationship questions.'**
+  String pickReasonViews(int aligned, int shared);
+
+  /// No description provided for @pickReasonCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'Your communication styles look compatible.'**
+  String get pickReasonCommunication;
+
+  /// No description provided for @pickReasonLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lifestyle preferences fit together.'**
+  String get pickReasonLifestyle;
+
+  /// No description provided for @pickReasonHumorTraits.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor styles you share: {traits}.'**
+  String pickReasonHumorTraits(String traits);
+
+  /// No description provided for @pickReasonMusicArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Your music profiles share an artist.} other{Your music profiles share {count} artists.}}'**
+  String pickReasonMusicArtists(int count);
+
+  /// No description provided for @pickReasonMusicScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music compatibility is {score}%.'**
+  String pickReasonMusicScore(int score);
+
+  /// No description provided for @pickReasonDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} — close enough to meet easily.'**
+  String pickReasonDistance(String distance);
+
+  /// No description provided for @pickReasonInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You share an interest.} other{You share {count} interests.}}'**
+  String pickReasonInterests(int count);
+
   /// No description provided for @compatScoreHeading.
   ///
   /// In en, this message translates to:
@@ -1807,6 +2107,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discovery preferences'**
   String get discoveryPreferences;
+
+  /// No description provided for @settingsPersonalizeRecommendations.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalize my recommendations based on my interactions'**
+  String get settingsPersonalizeRecommendations;
+
+  /// No description provided for @settingsPersonalizeRecommendationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.'**
+  String get settingsPersonalizeRecommendationsSubtitle;
 
   /// No description provided for @minAge.
   ///

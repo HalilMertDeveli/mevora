@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,10 +7,16 @@ import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
+import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
+import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
+import 'package:mevora/features/picks/presentation/widgets/pick_card.dart';
+import 'package:mevora/features/picks/presentation/widgets/pick_why_section.dart';
 import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
+import 'package:mevora/features/personalization/data/profile_engagement_reporter.dart';
+import 'package:mevora/features/personalization/domain/profile_engagement_tracker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
@@ -22,10 +29,27 @@ class DiscoveryProfileDetailsPage extends StatefulWidget {
     super.key,
     required this.candidate,
     this.controller,
+    this.pick,
+    this.onHide,
+    this.onBlocked,
+    this.engagementReporter,
   });
 
   final DiscoveryCandidate candidate;
   final DiscoveryController? controller;
+
+  /// Set when this profile is a Mevora Pick: the page then explains why, and
+  /// offers Pass / Like. The page pops with the chosen [DiscoveryDecision];
+  /// leaving without one keeps the Pick exactly as it was.
+  final MevoraPick? pick;
+
+  /// Override the safety sheet's hide / block follow-ups (Picks uses its own).
+  final Future<void> Function(String userId)? onHide;
+  final Future<void> Function(String userId)? onBlocked;
+
+  /// Where this visit's weak engagement goes when the page closes. Defaults to
+  /// the backend when Firebase is available.
+  final ProfileEngagementReporter? engagementReporter;
 
   @override
   State<DiscoveryProfileDetailsPage> createState() =>
@@ -33,12 +57,64 @@ class DiscoveryProfileDetailsPage extends StatefulWidget {
 }
 
 class _DiscoveryProfileDetailsPageState
-    extends State<DiscoveryProfileDetailsPage> {
+    extends State<DiscoveryProfileDetailsPage>
+    with WidgetsBindingObserver {
+  late final ProfileEngagementTracker _engagement = ProfileEngagementTracker(
+    candidateUid: widget.candidate.uid,
+  );
+  final ScrollController _scroll = ScrollController();
+  final GlobalKey _musicSectionKey = GlobalKey();
+  final GlobalKey _whySectionKey = GlobalKey();
+  final GlobalKey _pickWhySectionKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     for (final url in widget.candidate.photos.take(4)) {
       DiscoveryNetworkImage.prefetch(url);
+    }
+    WidgetsBinding.instance.addObserver(this);
+    _engagement.start();
+    _scroll.addListener(_noteVisibleSections);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _noteVisibleSections());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _engagement.resume();
+    } else {
+      _engagement.pause();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _scroll.dispose();
+    final payload = _engagement.finish();
+    if (payload != null) {
+      final reporter =
+          widget.engagementReporter ?? ProfileEngagementReporter.resolve();
+      unawaited(reporter.report(payload));
+    }
+    super.dispose();
+  }
+
+  /// A section counts as seen once any of it is on screen.
+  void _noteVisibleSections() {
+    if (!mounted) return;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    bool onScreen(GlobalKey key) {
+      final box = key.currentContext?.findRenderObject();
+      if (box is! RenderBox || !box.attached) return false;
+      final top = box.localToGlobal(Offset.zero).dy;
+      return top < screenHeight && top + box.size.height > 0;
+    }
+
+    if (onScreen(_musicSectionKey)) _engagement.spotifySectionSeen();
+    if (onScreen(_whySectionKey) || onScreen(_pickWhySectionKey)) {
+      _engagement.whyThisPersonSeen();
     }
   }
 
@@ -61,12 +137,16 @@ class _DiscoveryProfileDetailsPageState
             onPressed: () => showDiscoverySafetySheet(
               context,
               userId: candidate.uid,
-              onHide: widget.controller == null
-                  ? null
-                  : (userId) => widget.controller!.hideCandidate(userId),
-              onBlocked: widget.controller == null
-                  ? null
-                  : (userId) => widget.controller!.hideCandidate(userId),
+              onHide:
+                  widget.onHide ??
+                  (widget.controller == null
+                      ? null
+                      : (userId) => widget.controller!.hideCandidate(userId)),
+              onBlocked:
+                  widget.onBlocked ??
+                  (widget.controller == null
+                      ? null
+                      : (userId) => widget.controller!.hideCandidate(userId)),
             ),
           ),
         ],
@@ -82,10 +162,14 @@ class _DiscoveryProfileDetailsPageState
                 AppSpacing.md,
                 0,
               ),
-              child: _DiscoveryPhotoCarousel(photos: candidate.photos),
+              child: _DiscoveryPhotoCarousel(
+                photos: candidate.photos,
+                onPhotoViewed: _engagement.photoViewed,
+              ),
             ),
             Expanded(
               child: ListView(
+                controller: _scroll,
                 padding: const EdgeInsets.all(AppSpacing.md),
                 children: [
                   Text(
@@ -107,6 +191,13 @@ class _DiscoveryProfileDetailsPageState
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
+                    ),
+                  ],
+                  if (widget.pick != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    KeyedSubtree(
+                      key: _pickWhySectionKey,
+                      child: PickWhySection(pick: widget.pick!),
                     ),
                   ],
                   const SizedBox(height: AppSpacing.sm),
@@ -146,8 +237,11 @@ class _DiscoveryProfileDetailsPageState
                   // selection and left it visible.
                   if (candidate.publicMusic.hasContent) ...[
                     const SizedBox(height: AppSpacing.md),
-                    PublicMusicTasteSection(
-                      profile: candidate.publicMusic,
+                    KeyedSubtree(
+                      key: _musicSectionKey,
+                      child: PublicMusicTasteSection(
+                        profile: candidate.publicMusic,
+                      ),
                     ),
                   ],
                   if (candidate.interests.isNotEmpty) ...[
@@ -167,6 +261,7 @@ class _DiscoveryProfileDetailsPageState
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     l10n.whyYoureSeeingThis,
+                    key: _whySectionKey,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -253,6 +348,22 @@ class _DiscoveryProfileDetailsPageState
                 ],
               ),
             ),
+            if (widget.pick != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                ),
+                child: PickDecisionBar(
+                  name: candidate.displayName,
+                  onPass: () =>
+                      Navigator.of(context).pop(DiscoveryDecision.pass),
+                  onLike: () =>
+                      Navigator.of(context).pop(DiscoveryDecision.like),
+                ),
+              ),
           ],
         ),
       ),
@@ -272,9 +383,10 @@ class _DiscoveryProfileDetailsPageState
 /// Isolated carousel so photo index updates do not rebuild the details list
 /// (match watchers / answer streams).
 class _DiscoveryPhotoCarousel extends StatefulWidget {
-  const _DiscoveryPhotoCarousel({required this.photos});
+  const _DiscoveryPhotoCarousel({required this.photos, this.onPhotoViewed});
 
   final List<String> photos;
+  final ValueChanged<int>? onPhotoViewed;
 
   @override
   State<_DiscoveryPhotoCarousel> createState() =>
@@ -312,11 +424,14 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
       // Ignore.
     }
     // #endregion
+    widget.onPhotoViewed?.call(index);
     setState(() => _photoIndex = index);
     final photos = widget.photos;
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final cacheWidth =
-        (MediaQuery.sizeOf(context).width * dpr).round().clamp(320, 1080);
+    final cacheWidth = (MediaQuery.sizeOf(context).width * dpr).round().clamp(
+      320,
+      1080,
+    );
     if (index + 1 < photos.length) {
       DiscoveryNetworkImage.prefetch(photos[index + 1], cacheWidth: cacheWidth);
     }
@@ -370,7 +485,9 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
                     right: AppSpacing.sm,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface.withValues(alpha: 0.82),
+                        color: theme.colorScheme.surface.withValues(
+                          alpha: 0.82,
+                        ),
                         borderRadius: BorderRadius.circular(AppRadii.pill),
                       ),
                       child: Padding(

@@ -9,6 +9,7 @@ import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/features/settings/presentation/widgets/language_settings_section.dart';
+import 'package:mevora/features/settings/presentation/widgets/personalization_setting_tile.dart';
 import 'package:mevora/features/settings/presentation/widgets/settings_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_dialog.dart';
@@ -115,6 +116,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: l10n.preferences,
                   onTap: () => context.push(AppRoutes.discoveryPreferences),
                 ),
+                const PersonalizationSettingTile(),
               ],
             ),
             SettingsSection(

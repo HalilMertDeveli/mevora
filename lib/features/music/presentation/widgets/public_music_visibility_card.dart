@@ -38,14 +38,34 @@ class PublicMusicVisibilityCard extends StatefulWidget {
 class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
   bool _busy = false;
 
+  /// What the member just asked for, while the write is still in flight.
+  ///
+  /// The switch showed the stored value until the round trip finished. Against
+  /// a real backend that is a second or two of a control that does not move
+  /// when tapped, which reads as broken — so the position follows the tap
+  /// immediately and only rolls back if the write actually fails.
+  bool? _pendingEnabled;
+
   /// Why the last visibility change did not stick, if it did not.
   String? _lastError;
+
+  @override
+  void didUpdateWidget(PublicMusicVisibilityCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Once the host hands back a reloaded profile, the stored value is the
+    // truth again.
+    if (oldWidget.profile.publicProfile.enabled !=
+        widget.profile.publicProfile.enabled) {
+      _pendingEnabled = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final published = widget.profile.publicProfile;
+    final shown = _pendingEnabled ?? published.enabled;
 
     return MevoraCard(
       child: Column(
@@ -60,7 +80,7 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
                 ),
               ),
               Switch(
-                value: published.enabled,
+                value: shown,
                 // A hidden card has no content by definition, so asking
                 // hasContent here left the switch dead exactly where it was
                 // needed. What matters is whether there is a selection to
@@ -78,9 +98,15 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          if (published.hasContent) ...[
+          // Follows the switch rather than the stored value, so the preview
+          // and the control never disagree while a write is in flight.
+          if (shown && published.hasSelection) ...[
             const SizedBox(height: AppSpacing.md),
-            PublicMusicTasteSection(profile: published),
+            PublicMusicTasteSection(
+              profile: published.enabled
+                  ? published
+                  : published.copyWith(enabled: true),
+            ),
           ] else if (published.hasSelection) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -113,6 +139,7 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
   Future<void> _setEnabled(bool enabled) async {
     setState(() {
       _busy = true;
+      _pendingEnabled = enabled;
       _lastError = null;
     });
     final published = widget.profile.publicProfile;
@@ -127,10 +154,13 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
     final failure = result.failureOrNull;
     setState(() {
       _busy = false;
+      // A failed write must not look like a successful one: roll the switch
+      // back to what is actually stored and say why.
+      if (failure != null) {
+        _pendingEnabled = null;
+      }
       _lastError = failure?.message;
     });
-    // A failed write must not look like a successful one: the switch snapping
-    // back with no explanation is how the old version behaved.
     if (failure == null) {
       widget.onChanged?.call();
     }

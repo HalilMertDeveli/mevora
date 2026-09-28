@@ -297,21 +297,12 @@ class _ConnectedMusicView extends StatelessWidget {
               },
             ),
           ),
-        const SizedBox(height: AppSpacing.xl),
-        Text(l10n.musicWeeklyTitle, style: theme.textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.sm),
-        if (state.weekly.isEmpty)
-          Text(l10n.musicWeeklyEmpty, style: theme.textTheme.bodyMedium)
-        else
-          ...state.weekly.tracks.map(
-            (item) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: _Cover(url: item.track.albumImage),
-              title: Text(item.track.name),
-              subtitle: Text(item.track.artist),
-              trailing: Text('${item.playCount}'),
-            ),
-          ),
+        // "This week's music" used to close this page. It is a community chart
+        // of the last seven days, and putting it here let a passing week read
+        // as the member's musical identity. What represents them is the
+        // published Music Taste and the general summary above it. The weekly
+        // aggregate stays in the backend for whatever wants a chart, rather
+        // than on the page that describes a person.
       ],
     );
   }

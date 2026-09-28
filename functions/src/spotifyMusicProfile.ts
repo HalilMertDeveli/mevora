@@ -1,3 +1,9 @@
+import {
+  type PublicGeneralTaste,
+  readGeneralMusicTaste,
+  toPublicGeneralTaste,
+} from "./musicTasteAnalysis.js";
+
 /**
  * Public Spotify music profile.
  *
@@ -18,7 +24,13 @@
 
 export const MAX_PUBLIC_ARTISTS = 3;
 export const MAX_PUBLIC_TRACKS = 3;
-export const MAX_PUBLIC_GENRES = 3;
+/**
+ * Genres now describe the member's general taste rather than only their three
+ * chosen artists, so the list is a little longer than the selections: three
+ * genres drawn from three artists says almost nothing; five drawn from months
+ * of listening says something.
+ */
+export const MAX_PUBLIC_GENRES = 5;
 
 /** Spotify open.spotify.com links, built from ids we already trust. */
 const SPOTIFY_ARTIST_URL = "https://open.spotify.com/artist/";
@@ -44,6 +56,12 @@ export type PublicMusicProfile = {
   artists: PublicMusicArtist[];
   tracks: PublicMusicTrack[];
   genres: string[];
+  /**
+   * The general taste summary, derived on the server from months of listening.
+   * Present only when a sync has produced one; a card published before this
+   * existed simply has none.
+   */
+  taste?: PublicGeneralTaste;
 };
 
 /** What a member with no public music looks like. Never `undefined`. */
@@ -346,13 +364,25 @@ export function buildPublicMusicProfile(input: {
   const hasSelection = artists.length > 0 || tracks.length > 0;
   const enabled = input.enabled && hasSelection;
 
+  // Genres describe the general taste when a sync has produced one, and fall
+  // back to the three chosen artists for a card published before that existed.
+  const general = readGeneralMusicTaste(
+    ((input.summary ?? {}) as Record<string, unknown>).generalTaste,
+  );
+  const hasGeneral = general.genres.length > 0;
+
   return {
     enabled,
     artists,
     tracks,
-    genres: enabled
-      ? derivePublicGenres(artists, artistCatalog, input.summary)
-      : [],
+    genres: enabled ?
+      (hasGeneral ?
+        general.genres.slice(0, MAX_PUBLIC_GENRES) :
+        derivePublicGenres(artists, artistCatalog, input.summary)) :
+      [],
+    ...(enabled && hasGeneral ?
+      {taste: toPublicGeneralTaste(general)} :
+      {}),
   };
 }
 
@@ -436,5 +466,10 @@ export function toPublicMusicCard(
     genres: (Array.isArray(data.genres) ? data.genres : [])
       .filter((genre): genre is string => typeof genre === "string")
       .slice(0, MAX_PUBLIC_GENRES),
+    // Re-projected rather than passed through, so nothing a tampered stored
+    // document carries can reach a viewer's payload unchecked.
+    ...(data.taste ?
+      {taste: toPublicGeneralTaste(readGeneralMusicTaste(data.taste))} :
+      {}),
   };
 }

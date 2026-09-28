@@ -6967,6 +6967,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Slight'**
   String get humorResultStrengthLow;
+
+  /// No description provided for @musicTasteGeneralHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Generally listens to'**
+  String get musicTasteGeneralHeading;
+
+  /// No description provided for @musicTasteDominant.
+  ///
+  /// In en, this message translates to:
+  /// **'Mostly around {genres}.'**
+  String musicTasteDominant(String genres);
+
+  /// No description provided for @musicTasteSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps coming back to {artists}.'**
+  String musicTasteSignature(String artists);
+
+  /// No description provided for @musicTasteStable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} artists that have stayed with them for months.'**
+  String musicTasteStable(int count);
 }
 
 class _AppLocalizationsDelegate

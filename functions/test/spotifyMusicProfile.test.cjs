@@ -580,3 +580,90 @@ describe("the private selection survives hiding", () => {
     assert.deepEqual(restored, emptyPublicMusicProfile());
   });
 });
+
+describe("the public card describes general taste, not a recent week", () => {
+  const general = {
+    dominantGenre: "alternative",
+    secondaryGenres: ["indie", "r&b"],
+    genres: ["alternative", "indie", "r&b", "pop", "psychedelic"],
+    signatureArtists: [
+      {id: "a1", name: "Arctic Monkeys"},
+      {id: "a2", name: "The Weeknd"},
+    ],
+    stableArtistCount: 2,
+    stableTrackCount: 1,
+    artistBreadth: 9,
+  };
+
+  const built = buildPublicMusicProfile({
+    enabled: true,
+    artistIds: ["a1", "a2"],
+    trackIds: ["t1"],
+    summary: {...summary(), generalTaste: general},
+  });
+
+  it("takes its genres from the general taste, not from three artists", () => {
+    assert.deepEqual(built.genres, general.genres);
+    assert.equal(built.genres.length, 5);
+  });
+
+  it("carries a summary a profile can render", () => {
+    assert.equal(built.taste.dominantGenre, "alternative");
+    assert.deepEqual(built.taste.signatureArtists, [
+      "Arctic Monkeys",
+      "The Weeknd",
+    ]);
+    assert.equal(built.taste.stableArtistCount, 2);
+  });
+
+  it("publishes no ids with the summary", () => {
+    assert.ok(!JSON.stringify(built.taste).includes("a1"));
+  });
+
+  it("falls back to the selection's genres when no sync has run yet", () => {
+    const legacy = buildPublicMusicProfile({
+      enabled: true,
+      artistIds: ["a1", "a2"],
+      trackIds: [],
+      summary: summary(),
+    });
+    assert.ok(legacy.genres.length > 0);
+    assert.equal(legacy.taste, undefined);
+  });
+
+  it("carries nothing at all once the card is hidden", () => {
+    const hidden = buildPublicMusicProfile({
+      enabled: false,
+      artistIds: ["a1"],
+      trackIds: [],
+      summary: {...summary(), generalTaste: general},
+    });
+    assert.deepEqual(hidden.genres, []);
+    assert.equal(hidden.taste, undefined);
+  });
+
+  it("re-projects a tampered stored summary instead of trusting it", () => {
+    const card = toPublicMusicCard({
+      enabled: true,
+      artists: [{id: "a1", name: "Arctic Monkeys"}],
+      tracks: [],
+      genres: ["indie"],
+      taste: {
+        dominantGenre: "indie",
+        signatureArtists: ["Real"],
+        stableArtistCount: 3,
+        playedAt: "2026-09-28T10:00:00Z",
+        secretField: "should not travel",
+      },
+    });
+    assert.deepEqual(Object.keys(card.taste).sort(), [
+      "artistBreadth",
+      "dominantGenre",
+      "secondaryGenres",
+      "signatureArtists",
+      "stableArtistCount",
+    ]);
+    assert.ok(!JSON.stringify(card.taste).includes("secretField"));
+    assert.ok(!JSON.stringify(card.taste).includes("playedAt"));
+  });
+});

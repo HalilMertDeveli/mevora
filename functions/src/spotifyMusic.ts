@@ -1,3 +1,4 @@
+import {consumeRateLimit} from "./callableRateLimit.js";
 import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
@@ -857,6 +858,9 @@ export const spotifyLinkMusic = onCall(callableOptions, async (request) => {
   const code = requireString(request.data?.code, "code");
   const codeVerifier = requireString(request.data?.codeVerifier, "codeVerifier");
   const redirectUri = requireString(request.data?.redirectUri, "redirectUri");
+  // The login half of the same OAuth flow has always been metered. This half
+  // reaches the same Spotify token endpoint, so it gets the same budget.
+  await consumeRateLimit(`spotify_link_${uid}`);
   const tokens = await exchangeAuthorizationCode({code, codeVerifier, redirectUri});
   const me = await spotifyGet<{id?: string; account_id?: string}>(
     tokens.accessToken,
@@ -979,7 +983,9 @@ export const updatePublicMusicProfile = onCall(
     let profile;
     try {
       profile = buildPublicMusicProfile({
-        enabled: request.data?.enabled !== false,
+        // Publishing to a dating profile is opt-in: only an explicit `true`
+        // turns the card on. A missing or malformed field means "no".
+        enabled: request.data?.enabled === true,
         artistIds: normalizeSelectionIds(
           request.data?.artistIds,
           MAX_PUBLIC_ARTISTS,

@@ -29,6 +29,8 @@ export {
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {verifyPremiumPurchase} from "./subscription/verifyPremiumPurchase.js";
+export {onPlaySubscriptionNotification} from "./subscription/googleRtdnFunction.js";
 export {
   createIdentityVerificationSession,
   getIdentityVerificationState,

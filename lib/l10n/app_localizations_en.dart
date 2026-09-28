@@ -3539,74 +3539,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Seems our humor lines up — what made you laugh today?';
 
   @override
-  String get humorChatStarterSarcasm =>
-      'Looks like we both enjoy a bit of irony — what made you laugh today?';
-
-  @override
-  String get humorChatStarterAbsurd =>
-      'Seems we both love absurd humor — what\'s the most absurd thing you\'ve seen lately?';
-
-  @override
-  String get humorChatStarterSilly =>
-      'Looks like we both laugh at silly stuff — what cracked you up last?';
-
-  @override
-  String get humorChatStarterRomantic =>
-      'Seems romantic humor works on both of us — what\'s your favorite rom-com?';
-
-  @override
-  String get humorChatStarterDark =>
-      'Looks like we\'re both into dark humor — what\'s the last joke that got you?';
-
-  @override
-  String get humorChatStarterMeme =>
-      'Looks like we\'re both meme people — what\'s your favorite meme right now?';
-
-  @override
-  String get humorChatStarterDry =>
-      'Seems we both like dry humor — what\'s the best deadpan line you know?';
-
-  @override
-  String get humorChatStarterWordplay =>
-      'Looks like we both love wordplay — got a favorite pun?';
-
-  @override
-  String get humorChatStarterSituational =>
-      'Seems everyday mishaps make us both laugh — what\'s the funniest thing that happened to you lately?';
-
-  @override
-  String get humorChatStarterCringe =>
-      'Looks like cringe content gets us both — what\'s the most cringe thing you\'ve seen lately?';
-
-  @override
-  String get humorChatStarterTeasing =>
-      'Seems we both enjoy a bit of playful teasing — should I start, or will you?';
-
-  @override
-  String get humorCompatibilityLevelHigh => 'Your humor match is high';
-
-  @override
-  String get humorCompatibilityLevelMedium => 'Your humor match is moderate';
-
-  @override
-  String get humorCompatibilityLevelLow => 'Your humor match is low';
-
-  @override
-  String get humorCompatibilityBuilding =>
-      'You\'ll both need to finish your humor profiles to see your humor match.';
-
-  @override
-  String get humorCompatibilitySharedStyles => 'Humor styles you share';
-
-  @override
-  String get humorCompatibilityNote =>
-      'A light signal from how you each reacted to humor content — not a verdict on the two of you.';
-
-  @override
   String get humorTopVibes => 'Top vibes';
-
-  @override
-  String get humorSkipContent => 'Skip';
 
   @override
   String get humorReport => 'Report';
@@ -3661,18 +3594,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorCategoryTeasing => 'Teasing';
-
-  @override
-  String get humorMediaUnavailable => 'This content can\'t be shown right now.';
-
-  @override
-  String get humorVideoLoadFailed => 'Video couldn\'t load';
-
-  @override
-  String get humorMediaNext => 'Next';
-
-  @override
-  String get humorAttributionVerified => 'Verified creator';
 
   @override
   String get boostResultsTitle => 'Boost results';
@@ -3915,6 +3836,149 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorResultStrengthLow => 'Slight';
+
+  @override
+  String get premiumTitle => 'Mevora Premium';
+
+  @override
+  String get premiumSubtitle => 'See who likes you, and more.';
+
+  @override
+  String get premiumSubscribeCta => 'Subscribe';
+
+  @override
+  String get premiumRestoreCta => 'Restore purchases';
+
+  @override
+  String get premiumLoadingPlans => 'Loading plans…';
+
+  @override
+  String get premiumUnavailableTitle => 'Premium is not available right now';
+
+  @override
+  String get premiumUnavailableBody =>
+      'Plans could not be loaded from the store. Check your connection and try again.';
+
+  @override
+  String get premiumPurchasing => 'Waiting for the store…';
+
+  @override
+  String get premiumVerifying => 'Checking your purchase…';
+
+  @override
+  String get premiumRestoring => 'Restoring…';
+
+  @override
+  String get premiumPurchasedTitle => 'You are Premium';
+
+  @override
+  String get premiumPurchasedBody => 'Your subscription is active. Enjoy.';
+
+  @override
+  String get premiumCancelled => 'Purchase cancelled.';
+
+  @override
+  String get premiumFailed => 'The purchase could not be completed.';
+
+  @override
+  String get premiumRejected => 'We could not confirm this purchase.';
+
+  @override
+  String get premiumNothingToRestore =>
+      'No previous purchase was found for this store account.';
+
+  @override
+  String get premiumStoreUnavailable =>
+      'The store is unavailable on this device.';
+
+  @override
+  String get premiumAlreadyActive => 'You already have Premium.';
+
+  @override
+  String get premiumRetry => 'Try again';
+
+  @override
+  String get premiumRenewsLabel =>
+      'Renews automatically. Cancel anytime in the store.';
+
+  @override
+  String get humorChatStarterSarcasm =>
+      'Looks like we both enjoy a bit of irony — what made you laugh today?';
+
+  @override
+  String get humorChatStarterAbsurd =>
+      'Seems we both love absurd humor — what\'s the most absurd thing you\'ve seen lately?';
+
+  @override
+  String get humorChatStarterSilly =>
+      'Looks like we both laugh at silly stuff — what cracked you up last?';
+
+  @override
+  String get humorChatStarterRomantic =>
+      'Seems romantic humor works on both of us — what\'s your favorite rom-com?';
+
+  @override
+  String get humorChatStarterDark =>
+      'Looks like we\'re both into dark humor — what\'s the last joke that got you?';
+
+  @override
+  String get humorChatStarterMeme =>
+      'Looks like we\'re both meme people — what\'s your favorite meme right now?';
+
+  @override
+  String get humorChatStarterDry =>
+      'Seems we both like dry humor — what\'s the best deadpan line you know?';
+
+  @override
+  String get humorChatStarterWordplay =>
+      'Looks like we both love wordplay — got a favorite pun?';
+
+  @override
+  String get humorChatStarterSituational =>
+      'Seems everyday mishaps make us both laugh — what\'s the funniest thing that happened to you lately?';
+
+  @override
+  String get humorChatStarterCringe =>
+      'Looks like cringe content gets us both — what\'s the most cringe thing you\'ve seen lately?';
+
+  @override
+  String get humorChatStarterTeasing =>
+      'Seems we both enjoy a bit of playful teasing — should I start, or will you?';
+
+  @override
+  String get humorCompatibilityLevelHigh => 'Your humor match is high';
+
+  @override
+  String get humorCompatibilityLevelMedium => 'Your humor match is moderate';
+
+  @override
+  String get humorCompatibilityLevelLow => 'Your humor match is low';
+
+  @override
+  String get humorCompatibilityBuilding =>
+      'You\'ll both need to finish your humor profiles to see your humor match.';
+
+  @override
+  String get humorCompatibilitySharedStyles => 'Humor styles you share';
+
+  @override
+  String get humorCompatibilityNote =>
+      'A light signal from how you each reacted to humor content — not a verdict on the two of you.';
+
+  @override
+  String get humorSkipContent => 'Skip';
+
+  @override
+  String get humorMediaUnavailable => 'This content can\'t be shown right now.';
+
+  @override
+  String get humorVideoLoadFailed => 'Video couldn\'t load';
+
+  @override
+  String get humorMediaNext => 'Next';
+
+  @override
+  String get humorAttributionVerified => 'Verified creator';
 
   @override
   String get musicTasteGeneralHeading => 'Generally listens to';

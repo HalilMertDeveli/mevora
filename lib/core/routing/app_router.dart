@@ -8,6 +8,7 @@ import 'package:mevora/core/routing/auth_redirector.dart';
 import 'package:mevora/core/routing/lazy_shell_navigator.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/settings/presentation/pages/blocked_users_page.dart';
+import 'package:mevora/features/subscription/presentation/pages/paywall_route.dart';
 import 'package:mevora/features/settings/presentation/pages/change_password_page.dart';
 import 'package:mevora/features/settings/presentation/pages/discovery_preferences_page.dart';
 import 'package:mevora/features/settings/presentation/pages/edit_profile_page.dart';
@@ -95,6 +96,13 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const QaLoginPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.premium,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const PaywallRoute(),
         ),
       ),
       GoRoute(

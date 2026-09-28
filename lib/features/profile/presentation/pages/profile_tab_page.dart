@@ -9,6 +9,7 @@ import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
+import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/core/routing/app_routes.dart';
@@ -79,6 +80,7 @@ class ProfileTabPage extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
           ],
           const _ProfileVerificationTile(),
+          const _ProfilePremiumTile(),
           const _ProfileBoostTile(),
           const _ProfileMatchScoreTile(),
           const _ProfileRelationshipTile(),
@@ -241,6 +243,44 @@ class _ProfileBoostTileState extends State<_ProfileBoostTile> {
           subtitle: _boost == null ? null : BoostActiveBadge(boost: _boost),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push(AppRoutes.boost),
+        ),
+      ),
+    );
+  }
+}
+
+/// Entry point to the paywall, and the Premium badge once it is active.
+///
+/// Hidden entirely when the app was wired without billing — Premium off, or
+/// a build with no store. Nothing here decides entitlement; it reads the
+/// server-written status the same way every other gate does.
+class _ProfilePremiumTile extends StatelessWidget {
+  const _ProfilePremiumTile();
+
+  @override
+  Widget build(BuildContext context) {
+    if (SubscriptionScope.billingOf(context) == null) {
+      return const SizedBox.shrink();
+    }
+    final l10n = AppLocalizations.of(context);
+    final isPremium = SubscriptionScope.isPremiumOf(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: ListTile(
+          leading: Icon(
+            isPremium
+                ? Icons.workspace_premium
+                : Icons.workspace_premium_outlined,
+          ),
+          title: Text(l10n.premiumTitle),
+          subtitle: Text(
+            isPremium ? l10n.premiumAlreadyActive : l10n.premiumSubtitle,
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => context.push(AppRoutes.premium),
         ),
       ),
     );

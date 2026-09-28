@@ -342,6 +342,7 @@ class _MevoraAppState extends State<MevoraApp> {
       child = SubscriptionScope(
         controller: subscription.controller,
         repository: subscription.repository,
+        billing: subscription.billing,
         child: child,
       );
     }

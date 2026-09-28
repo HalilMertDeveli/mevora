@@ -231,12 +231,14 @@ class _LockedLikesBody extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          l10n.likesYouBlurredHint,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall,
-        ),
+        if (placeholders > 0) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.likesYouBlurredHint,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
       ],
     );
   }

@@ -2081,7 +2081,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get likesYouSeeWhy => 'See why you match';
 
   @override
-  String get likesYouLockedTitle => 'People who may fit you';
+  String get likesYouLockedTitle => 'See who\'s already interested';
 
   @override
   String likesYouLockedCount(int count) {
@@ -2096,7 +2096,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get likesYouUnlockCta => 'Unlock with Premium';
 
   @override
-  String get likesYouBlurredHint => 'People who may fit you';
+  String get likesYouBlurredHint =>
+      'Each tile is a real person. Premium shows who, and why you fit.';
 
   @override
   String get likesYouHiddenName => 'Hidden profile';
@@ -2514,7 +2515,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compatReasonCommunication => 'You communicate in similar ways';
 
   @override
-  String get hiddenCompatTitle => 'Someone is thinking like you 👀';
+  String get hiddenCompatTitle => 'Someone is thinking like you';
 
   @override
   String hiddenCompatMessage(int count) {
@@ -3101,7 +3102,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String musicInsightSharedArtists(int count) {
-    return '🎤 You have $count shared artists.';
+    return 'You have $count shared artists.';
   }
 
   @override
@@ -3121,7 +3122,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String musicInsightTopSharedGenres(String genres) {
-    return '🎶 Your tastes overlap most in $genres.';
+    return 'Your tastes overlap most in $genres.';
   }
 
   @override
@@ -3135,10 +3136,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get musicSharedTracksHeading => 'Songs you both like';
 
   @override
-  String get musicSharedArtistsHeading => '🎤 Artists you both like';
+  String get musicSharedArtistsHeading => 'Artists you both like';
 
   @override
-  String get musicSharedGenresHeading => '🎶 Shared genres';
+  String get musicSharedGenresHeading => 'Shared genres';
 
   @override
   String musicViewAllShared(int count) {
@@ -4050,4 +4051,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get premiumPlansHeading => 'Choose a plan';
+
+  @override
+  String get chatPreviewEncrypted => 'Encrypted message';
 }

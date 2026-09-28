@@ -3911,7 +3911,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouLockedTitle.
   ///
   /// In en, this message translates to:
-  /// **'People who may fit you'**
+  /// **'See who\'s already interested'**
   String get likesYouLockedTitle;
 
   /// No description provided for @likesYouLockedCount.
@@ -3935,7 +3935,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouBlurredHint.
   ///
   /// In en, this message translates to:
-  /// **'People who may fit you'**
+  /// **'Each tile is a real person. Premium shows who, and why you fit.'**
   String get likesYouBlurredHint;
 
   /// No description provided for @likesYouHiddenName.
@@ -4643,7 +4643,7 @@ abstract class AppLocalizations {
   /// No description provided for @hiddenCompatTitle.
   ///
   /// In en, this message translates to:
-  /// **'Someone is thinking like you 👀'**
+  /// **'Someone is thinking like you'**
   String get hiddenCompatTitle;
 
   /// No description provided for @hiddenCompatMessage.
@@ -5663,7 +5663,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicInsightSharedArtists.
   ///
   /// In en, this message translates to:
-  /// **'🎤 You have {count} shared artists.'**
+  /// **'You have {count} shared artists.'**
   String musicInsightSharedArtists(int count);
 
   /// No description provided for @musicInsightSharedPlaylistTracks.
@@ -5687,7 +5687,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicInsightTopSharedGenres.
   ///
   /// In en, this message translates to:
-  /// **'🎶 Your tastes overlap most in {genres}.'**
+  /// **'Your tastes overlap most in {genres}.'**
   String musicInsightTopSharedGenres(String genres);
 
   /// No description provided for @musicInsightDataUnavailable.
@@ -5711,13 +5711,13 @@ abstract class AppLocalizations {
   /// No description provided for @musicSharedArtistsHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎤 Artists you both like'**
+  /// **'Artists you both like'**
   String get musicSharedArtistsHeading;
 
   /// No description provided for @musicSharedGenresHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎶 Shared genres'**
+  /// **'Shared genres'**
   String get musicSharedGenresHeading;
 
   /// No description provided for @musicViewAllShared.
@@ -7333,6 +7333,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose a plan'**
   String get premiumPlansHeading;
+
+  /// No description provided for @chatPreviewEncrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted message'**
+  String get chatPreviewEncrypted;
 }
 
 class _AppLocalizationsDelegate

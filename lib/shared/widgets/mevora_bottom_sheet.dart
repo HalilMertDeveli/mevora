@@ -16,6 +16,8 @@ abstract final class MevoraBottomSheet {
   }) {
     return showModalBottomSheet<T>(
       context: context,
+      // Above the tab bar: a modal should own the screen, not share it.
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       isDismissible: isDismissible,
@@ -71,6 +73,7 @@ abstract final class MevoraBottomSheet {
             for (final action in actions)
               MevoraListRow(
                 title: action.label,
+                subtitle: action.subtitle,
                 icon: action.icon,
                 destructive: action.destructive,
                 showChevron: false,
@@ -87,12 +90,14 @@ class MevoraSheetAction<T> {
   const MevoraSheetAction({
     required this.value,
     required this.label,
+    this.subtitle,
     this.icon,
     this.destructive = false,
   });
 
   final T value;
   final String label;
+  final String? subtitle;
   final IconData? icon;
   final bool destructive;
 }

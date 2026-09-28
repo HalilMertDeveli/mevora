@@ -288,8 +288,10 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         candidate: match,
         breakdown: breakdown,
       );
+      final me = AuthScope.maybeOf(context)?.user;
       return MevoraMatchCelebration(
-        leftName: l10n.you,
+        leftName: me?.displayName ?? l10n.you,
+        leftImage: MevoraNetworkImages.provider(me?.photoUrl),
         rightName: match.displayName,
         rightImage: MevoraNetworkImages.provider(match.photoUrl),
         compatibilitySection: WhyYouMatchPanel(

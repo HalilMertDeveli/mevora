@@ -135,6 +135,9 @@ class _ChatPageState extends State<ChatPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(l10n.permissionNotificationsDescription),
+        // A nudge, not a blocker: it must never sit on the composer.
+        persist: false,
+        duration: const Duration(seconds: 6),
         action: SnackBarAction(
           label: l10n.enableDeviceNotifications,
           onPressed: () =>

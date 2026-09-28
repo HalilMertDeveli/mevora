@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_scope.dart';
@@ -87,7 +88,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _birthDate = profile.birthDate;
     final birthLabel = _birthDate == null
         ? ''
-        : MaterialLocalizations.of(context).formatMediumDate(_birthDate!);
+        : L10nFormat.mediumDate(AppLocalizations.of(context), _birthDate!);
     if (_birthDateLabelController.text != birthLabel) {
       _birthDateLabelController.text = birthLabel;
     }
@@ -457,9 +458,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
       return;
     }
     setState(() => _birthDate = picked);
-    _birthDateLabelController.text = MaterialLocalizations.of(
-      context,
-    ).formatMediumDate(picked);
+    _birthDateLabelController.text = L10nFormat.mediumDate(
+      AppLocalizations.of(context),
+      picked,
+    );
     _controller.updateDraft((current) => current.copyWith(birthDate: picked));
   }
 

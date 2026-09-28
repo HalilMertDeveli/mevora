@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
@@ -42,11 +43,17 @@ class MatchConnectionTile extends StatelessWidget {
     final isNew = item.showNewMatchBadge;
     final isRelationship = item.match.isRelationshipTest;
     final lastMessage = item.match.lastMessage;
-    final subtitle = isNew
-        ? l10n.connectionBadgeNew
-        : (lastMessage != null && lastMessage.isNotEmpty)
-        ? lastMessage
-        : l10n.connectionBadgeActive;
+    // The server stores media and ciphertext previews as single-glyph
+    // sentinels; name them instead of showing a bare emoji.
+    final (String subtitle, IconData? subtitleIcon) = isNew
+        ? (l10n.connectionBadgeNew, null)
+        : switch (lastMessage) {
+            '🔒' => (l10n.chatPreviewEncrypted, MevoraIcons.lock),
+            '📷' => (l10n.attachPhoto, MevoraIcons.photo),
+            '🎤' => (l10n.recordVoice, MevoraIcons.mic),
+            final String text when text.isNotEmpty => (text, null),
+            _ => (l10n.connectionBadgeActive, null),
+          };
 
     Widget? trailing;
     if (unread > 0) {
@@ -119,6 +126,10 @@ class MatchConnectionTile extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: AppSpacing.xs + 2),
+                      ],
+                      if (subtitleIcon != null) ...[
+                        Icon(subtitleIcon, size: 16, color: p.textTertiary),
+                        const SizedBox(width: AppSpacing.xs),
                       ],
                       Expanded(
                         child: Text(

@@ -120,13 +120,8 @@ class _BoostScreenState extends State<BoostScreen> {
     final controller = _controller;
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          l10n.boostTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
+      // The page's serif headline names it; the bar only carries back.
+      appBar: AppBar(),
       body: SafeArea(
         child: controller == null
             ? MevoraLoading.page(message: l10n.boostLoadingProduct)

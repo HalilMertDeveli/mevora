@@ -170,8 +170,15 @@ Compatibility components (`lib/features/compatibility/presentation/widgets/`):
   `AppColors.onMedia`; they are the only theme-independent colours.
 * Use `MevoraDialog` / `MevoraBottomSheet`, not raw `AlertDialog` /
   `showModalBottomSheet` (the theme covers the rest when unavoidable).
+* Sheets open on the root navigator, above the tab bar. Close them with the
+  sheet's own context, never the page's.
 * Every icon-only control has a tooltip / semantic label.
 * Long Turkish labels wrap; do not shrink text to fit.
+* No emoji in UI copy — meaning is carried by `MevoraIcons`. Server-side
+  preview sentinels (`🔒` `📷` `🎤` in `lastMessage`) are mapped to an icon and
+  a localized label before display.
+* Dates that identify a person (birthdate) always show the year:
+  `L10nFormat.mediumDate`, not `MaterialLocalizations.formatMediumDate`.
 
 ## States
 

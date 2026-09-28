@@ -877,7 +877,7 @@
     }
   },
   "likesYouSeeWhy": "Neden uyumlusunuz?",
-  "likesYouLockedTitle": "Size uyabilecek kişiler",
+  "likesYouLockedTitle": "Seninle ilgilenenleri gör",
   "likesYouLockedCount": "{count} kişi seni beğendi",
   "@likesYouLockedCount": {
     "placeholders": {
@@ -888,7 +888,7 @@
   },
   "likesYouLockedMessage": "Size uyabilecek kişileri görmek için Premium'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.",
   "likesYouUnlockCta": "Premium ile aç",
-  "likesYouBlurredHint": "Size uyabilecek kişiler",
+  "likesYouBlurredHint": "Her kutu gerçek bir kişi. Premium kim olduğunu ve neden uyduğunuzu gösterir.",
   "likesYouHiddenName": "Gizli profil",
   "likesYouHiddenSubtitle": "Uyumluluğu keşfetmek için kilidi aç",
   "likesYouEmptyTitle": "Keşfetmeye devam edin",
@@ -1096,7 +1096,7 @@
     }
   },
   "compatReasonCommunication": "Benzer iletişim tarzlarınız var",
-  "hiddenCompatTitle": "Biri senin gibi düşünüyor 👀",
+  "hiddenCompatTitle": "Biri senin gibi düşünüyor",
   "hiddenCompatMessage": "Biri seninle aynı şekilde {count} soruya cevap verdi.",
   "@hiddenCompatMessage": {
     "placeholders": {
@@ -1294,7 +1294,7 @@
       }
     }
   },
-  "musicInsightSharedArtists": "🎤 {count} ortak sanatçınız var.",
+  "musicInsightSharedArtists": "{count} ortak sanatçınız var.",
   "@musicInsightSharedArtists": {
     "placeholders": {
       "count": {
@@ -1326,7 +1326,7 @@
       }
     }
   },
-  "musicInsightTopSharedGenres": "🎶 Müzik zevkinizin büyük kısmı {genres} türlerinde kesişiyor.",
+  "musicInsightTopSharedGenres": "Müzik zevkinizin büyük kısmı {genres} türlerinde kesişiyor.",
   "@musicInsightTopSharedGenres": {
     "placeholders": {
       "genres": {
@@ -1337,8 +1337,8 @@
   "musicInsightDataUnavailable": "Karşılaştırma için henüz yeterli Spotify verisi yok.",
   "musicSpotifyNotConnected": "Spotify bağlı değil",
   "musicSharedTracksHeading": "Ortak şarkılarınız",
-  "musicSharedArtistsHeading": "🎤 Ortak sanatçılarınız",
-  "musicSharedGenresHeading": "🎶 Ortak türler",
+  "musicSharedArtistsHeading": "Ortak sanatçılarınız",
+  "musicSharedGenresHeading": "Ortak türler",
   "musicViewAllShared": "Tümünü gör ({count})",
   "@musicViewAllShared": {
     "placeholders": {
@@ -1762,5 +1762,6 @@
   "premiumBenefitLikesBody": "Seni beğenen herkes tek listede — ve neden uyumlu olabileceğiniz.",
   "premiumBenefitMusicTitle": "Müzik uyumunun tamamı",
   "premiumBenefitMusicBody": "Her eşleşmenle paylaştığın şarkılar, sanatçılar ve türler.",
-  "premiumPlansHeading": "Planını seç"
+  "premiumPlansHeading": "Planını seç",
+  "chatPreviewEncrypted": "Şifreli mesaj"
 }

@@ -70,6 +70,8 @@ class MevoraAvatar extends StatelessWidget {
                 height: size,
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
+                frameBuilder: (context, child, frame, sync) =>
+                    sync || frame != null ? child : fallback(),
                 errorBuilder: (context, error, stackTrace) => fallback(),
               ),
       ),

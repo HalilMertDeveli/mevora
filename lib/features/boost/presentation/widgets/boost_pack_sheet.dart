@@ -126,6 +126,11 @@ class BoostPackTile extends StatelessWidget {
                   onPressed: product.available ? onTap : null,
                   isExpanded: false,
                   size: MevoraButtonSize.small,
+                  // Several packs share the screen: none of them is the one
+                  // primary action, so they stay secondary.
+                  variant: featured
+                      ? MevoraButtonVariant.primary
+                      : MevoraButtonVariant.secondary,
                 ),
               ],
             ],

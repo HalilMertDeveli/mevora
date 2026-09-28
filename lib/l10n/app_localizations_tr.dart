@@ -2075,7 +2075,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get likesYouSeeWhy => 'Neden uyumlusunuz?';
 
   @override
-  String get likesYouLockedTitle => 'Size uyabilecek kişiler';
+  String get likesYouLockedTitle => 'Seninle ilgilenenleri gör';
 
   @override
   String likesYouLockedCount(int count) {
@@ -2090,7 +2090,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get likesYouUnlockCta => 'Premium ile aç';
 
   @override
-  String get likesYouBlurredHint => 'Size uyabilecek kişiler';
+  String get likesYouBlurredHint =>
+      'Her kutu gerçek bir kişi. Premium kim olduğunu ve neden uyduğunuzu gösterir.';
 
   @override
   String get likesYouHiddenName => 'Gizli profil';
@@ -2509,7 +2510,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get compatReasonCommunication => 'Benzer iletişim tarzlarınız var';
 
   @override
-  String get hiddenCompatTitle => 'Biri senin gibi düşünüyor 👀';
+  String get hiddenCompatTitle => 'Biri senin gibi düşünüyor';
 
   @override
   String hiddenCompatMessage(int count) {
@@ -3097,7 +3098,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String musicInsightSharedArtists(int count) {
-    return '🎤 $count ortak sanatçınız var.';
+    return '$count ortak sanatçınız var.';
   }
 
   @override
@@ -3117,7 +3118,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String musicInsightTopSharedGenres(String genres) {
-    return '🎶 Müzik zevkinizin büyük kısmı $genres türlerinde kesişiyor.';
+    return 'Müzik zevkinizin büyük kısmı $genres türlerinde kesişiyor.';
   }
 
   @override
@@ -3131,10 +3132,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicSharedTracksHeading => 'Ortak şarkılarınız';
 
   @override
-  String get musicSharedArtistsHeading => '🎤 Ortak sanatçılarınız';
+  String get musicSharedArtistsHeading => 'Ortak sanatçılarınız';
 
   @override
-  String get musicSharedGenresHeading => '🎶 Ortak türler';
+  String get musicSharedGenresHeading => 'Ortak türler';
 
   @override
   String musicViewAllShared(int count) {
@@ -4042,4 +4043,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get premiumPlansHeading => 'Planını seç';
+
+  @override
+  String get chatPreviewEncrypted => 'Şifreli mesaj';
 }

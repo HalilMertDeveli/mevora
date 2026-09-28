@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_colors.dart';
@@ -54,9 +56,30 @@ class DiscoveryProfileDetailsPage extends StatefulWidget {
 
 class _DiscoveryProfileDetailsPageState
     extends State<DiscoveryProfileDetailsPage> {
+  final _scroll = ScrollController();
+  double _photoHeight = 0;
+
+  /// Once the portrait has scrolled away the chrome becomes a solid header,
+  /// so the buttons never float over text.
+  bool _solidHeader = false;
+
+  void _onScroll() {
+    final solid = _scroll.offset > _photoHeight - kToolbarHeight * 1.5;
+    if (solid != _solidHeader) {
+      setState(() => _solidHeader = solid);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    _scroll.addListener(_onScroll);
     for (final url in widget.candidate.photos.take(4)) {
       DiscoveryNetworkImage.prefetch(url);
     }
@@ -90,178 +113,227 @@ class _DiscoveryProfileDetailsPageState
         : candidate.distanceLabel;
     final photoHeight = (media.width * 5 / 4).clamp(0.0, media.height * 0.62);
     final shared = candidate.sharedInterests.toSet();
+    _photoHeight = photoHeight;
+    final chromeVariant = _solidHeader
+        ? MevoraIconButtonVariant.plain
+        : MevoraIconButtonVariant.onMedia;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: photoHeight,
-                  child: _PhotoCarousel(photos: candidate.photos),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _solidHeader
+          ? SystemUiOverlayStyle.dark
+          : SystemUiOverlayStyle.light,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            CustomScrollView(
+              controller: _scroll,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: photoHeight,
+                    child: _PhotoCarousel(photos: candidate.photos),
+                  ),
                 ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.screenPadding,
-                  AppSpacing.lg,
-                  AppSpacing.screenPadding,
-                  widget.showActions ? 128 : AppSpacing.xxl,
-                ),
-                sliver: SliverList.list(
-                  children: [
-                    Semantics(
-                      header: true,
-                      child: Text(
-                        '${candidate.displayName}, ${candidate.age}',
-                        style: theme.textTheme.displaySmall,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s12),
-                    Wrap(
-                      spacing: AppSpacing.xs + 2,
-                      runSpacing: AppSpacing.xs + 2,
-                      children: [
-                        if (candidate.isVerified)
-                          MevoraPill(
-                            label: l10n.profileVerifiedBadge,
-                            icon: MevoraIcons.verified,
-                            tone: MevoraTone.compatibility,
-                          ),
-                        if (candidate.isBoosted)
-                          const DiscoveryBoostBadge(
-                            compact: false,
-                            onMedia: false,
-                          ),
-                        if (candidate.city != null &&
-                            candidate.city!.isNotEmpty)
-                          MevoraPill(
-                            label: candidate.city!,
-                            icon: MevoraIcons.location,
-                          ),
-                        if (distance != null && distance.isNotEmpty)
-                          MevoraPill(label: distance),
-                        if (candidate.relationshipGoal != null)
-                          MevoraPill(
-                            label: _relationshipLabel(
-                              l10n,
-                              candidate.relationshipGoal!,
-                            ),
-                            icon: MevoraIcons.like,
-                          ),
-                      ],
-                    ),
-                    if (_hasWhy(candidate)) ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      _WhyYouFitCard(candidate: candidate),
-                    ],
-                    if (candidate.bio != null && candidate.bio!.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xl),
-                      MevoraSectionHeader(title: l10n.bio),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        candidate.bio!,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontSize: 17,
-                          height: 26 / 17,
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.screenPadding,
+                    AppSpacing.lg,
+                    AppSpacing.screenPadding,
+                    widget.showActions ? 128 : AppSpacing.xxl,
+                  ),
+                  sliver: SliverList.list(
+                    children: [
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          '${candidate.displayName}, ${candidate.age}',
+                          style: theme.textTheme.displaySmall,
                         ),
-                      ),
-                    ],
-                    // Renders nothing unless this member published a
-                    // selection and left it visible.
-                    if (candidate.publicMusic.hasContent) ...[
-                      const SizedBox(height: AppSpacing.xl),
-                      PublicMusicTasteSection(profile: candidate.publicMusic),
-                    ],
-                    if (candidate.interests.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xl),
-                      MevoraSectionHeader(
-                        title: l10n.interests,
-                        subtitle: shared.isEmpty
-                            ? null
-                            : l10n.sharedHobbiesCount(shared.length),
                       ),
                       const SizedBox(height: AppSpacing.s12),
                       Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.sm,
+                        spacing: AppSpacing.xs + 2,
+                        runSpacing: AppSpacing.xs + 2,
                         children: [
-                          // Shared interests first, drawn as selected.
-                          for (final interest in [
-                            ...candidate.interests.where(shared.contains),
-                            ...candidate.interests.where(
-                              (i) => !shared.contains(i),
+                          if (candidate.isVerified)
+                            MevoraPill(
+                              label: l10n.profileVerifiedBadge,
+                              icon: MevoraIcons.verified,
+                              tone: MevoraTone.compatibility,
                             ),
-                          ])
-                            MevoraChip(
-                              label: interest,
-                              selected: shared.contains(interest),
-                              compact: true,
+                          if (candidate.isBoosted)
+                            const DiscoveryBoostBadge(
+                              compact: false,
+                              onMedia: false,
+                            ),
+                          if (candidate.city != null &&
+                              candidate.city!.isNotEmpty)
+                            MevoraPill(
+                              label: candidate.city!,
+                              icon: MevoraIcons.location,
+                            ),
+                          if (distance != null && distance.isNotEmpty)
+                            MevoraPill(label: distance),
+                          if (candidate.relationshipGoal != null)
+                            MevoraPill(
+                              label: _relationshipLabel(
+                                l10n,
+                                candidate.relationshipGoal!,
+                              ),
+                              icon: MevoraIcons.like,
                             ),
                         ],
                       ),
+                      if (_hasWhy(candidate)) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        _WhyYouFitCard(candidate: candidate),
+                      ],
+                      if (candidate.bio != null &&
+                          candidate.bio!.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xl),
+                        MevoraSectionHeader(title: l10n.bio),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          candidate.bio!,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontSize: 17,
+                            height: 26 / 17,
+                          ),
+                        ),
+                      ],
+                      // Renders nothing unless this member published a
+                      // selection and left it visible.
+                      if (candidate.publicMusic.hasContent) ...[
+                        const SizedBox(height: AppSpacing.xl),
+                        PublicMusicTasteSection(profile: candidate.publicMusic),
+                      ],
+                      if (candidate.interests.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xl),
+                        MevoraSectionHeader(
+                          title: l10n.interests,
+                          subtitle: shared.isEmpty
+                              ? null
+                              : l10n.sharedHobbiesCount(shared.length),
+                        ),
+                        const SizedBox(height: AppSpacing.s12),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: [
+                            // Shared interests first, drawn as selected.
+                            for (final interest in [
+                              ...candidate.interests.where(shared.contains),
+                              ...candidate.interests.where(
+                                (i) => !shared.contains(i),
+                              ),
+                            ])
+                              MevoraChip(
+                                label: interest,
+                                selected: shared.contains(interest),
+                                compact: true,
+                              ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.xl),
+                      ProfileQuestionAnswersSection(uid: candidate.uid),
                     ],
-                    const SizedBox(height: AppSpacing.xl),
-                    ProfileQuestionAnswersSection(uid: candidate.uid),
-                  ],
+                  ),
+                ),
+              ],
+            ),
+            // Floating chrome over the portrait; solid once it scrolls away.
+            AnimatedContainer(
+              duration: AppDurations.fast,
+              curve: AppCurves.standard,
+              decoration: BoxDecoration(
+                color: _solidHeader
+                    ? p.background
+                    : p.background.withValues(alpha: 0),
+                border: Border(
+                  bottom: BorderSide(
+                    color: _solidHeader ? p.divider : Colors.transparent,
+                  ),
                 ),
               ),
-            ],
-          ),
-          // Floating chrome over the portrait.
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
-              ),
-              child: Row(
-                children: [
-                  MevoraIconButton(
-                    icon: MevoraIcons.back,
-                    tooltip: MaterialLocalizations.of(
-                      context,
-                    ).backButtonTooltip,
-                    variant: MevoraIconButtonVariant.onMedia,
-                    size: 44,
-                    onPressed: () => Navigator.of(context).maybePop(),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
                   ),
-                  const Spacer(),
-                  MevoraIconButton(
-                    icon: MevoraIcons.more,
-                    tooltip: l10n.more,
-                    variant: MevoraIconButtonVariant.onMedia,
-                    size: 44,
-                    onPressed: _openSafety,
+                  child: Row(
+                    children: [
+                      MevoraIconButton(
+                        icon: MevoraIcons.back,
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).backButtonTooltip,
+                        variant: chromeVariant,
+                        size: 44,
+                        onPressed: () => Navigator.of(context).maybePop(),
+                      ),
+                      Expanded(
+                        child: AnimatedOpacity(
+                          opacity: _solidHeader ? 1 : 0,
+                          duration: AppDurations.fast,
+                          child: ExcludeSemantics(
+                            // The page heading already names the person.
+                            child: Text(
+                              '${candidate.displayName}, ${candidate.age}',
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ),
+                        ),
+                      ),
+                      MevoraIconButton(
+                        icon: MevoraIcons.more,
+                        tooltip: l10n.more,
+                        variant: chromeVariant,
+                        size: 44,
+                        onPressed: _openSafety,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-          if (widget.showActions)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [p.background.withValues(alpha: 0), p.background],
-                    stops: const [0, 0.35],
+            if (widget.showActions) ...[
+              // The fade is decoration only; it must not swallow scroll
+              // gestures that start over it.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 160,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          p.background.withValues(alpha: 0),
+                          p.background,
+                        ],
+                        stops: const [0, 0.55],
+                      ),
+                    ),
                   ),
                 ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
                 child: SafeArea(
                   top: false,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.xl,
-                      AppSpacing.md,
-                      AppSpacing.md,
-                    ),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     child: DiscoveryActionButtons(
                       onPass: () =>
                           Navigator.of(context).pop(DiscoveryDecision.pass),
@@ -274,8 +346,9 @@ class _DiscoveryProfileDetailsPageState
                   ),
                 ),
               ),
-            ),
-        ],
+            ],
+          ],
+        ),
       ),
     );
   }

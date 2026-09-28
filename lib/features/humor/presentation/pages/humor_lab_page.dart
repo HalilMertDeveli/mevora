@@ -103,6 +103,8 @@ class _HumorLabPageState extends State<HumorLabPage> {
           ..showSnackBar(
             SnackBar(
               content: Text(L10nErrors.failure(l10n, failure)),
+              persist: false,
+              duration: const Duration(seconds: 6),
               action: SnackBarAction(
                 label: l10n.humorTryAgain,
                 onPressed: () => unawaited(controller.retryFailedAction()),

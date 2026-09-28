@@ -50,6 +50,10 @@ class MusicCover extends StatelessWidget {
                 ),
                 fit: BoxFit.cover,
                 gaplessPlayback: true,
+                // Show the placeholder until the first frame arrives, so a
+                // slow or unreachable cover never leaves an empty hole.
+                frameBuilder: (context, child, frame, sync) =>
+                    sync || frame != null ? child : fallback,
                 errorBuilder: (_, _, _) => fallback,
               ),
       ),

@@ -300,6 +300,9 @@ abstract final class AppTheme {
         thumbColor: scheme.primary,
         overlayColor: scheme.primary.withValues(alpha: 0.12),
         trackHeight: 4,
+        // Divisions snap without drawing a dotted ruler over the track.
+        activeTickMarkColor: Colors.transparent,
+        inactiveTickMarkColor: Colors.transparent,
         valueIndicatorColor: palette.textPrimary,
         valueIndicatorTextStyle: textTheme.labelMedium?.copyWith(
           color: palette.background,

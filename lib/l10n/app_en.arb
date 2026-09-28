@@ -877,7 +877,7 @@
     }
   },
   "likesYouSeeWhy": "See why you match",
-  "likesYouLockedTitle": "People who may fit you",
+  "likesYouLockedTitle": "See who's already interested",
   "likesYouLockedCount": "{count} people like you",
   "@likesYouLockedCount": {
     "placeholders": {
@@ -888,7 +888,7 @@
   },
   "likesYouLockedMessage": "Upgrade to Premium to see who may align with you. Photos and names stay hidden until then.",
   "likesYouUnlockCta": "Unlock with Premium",
-  "likesYouBlurredHint": "People who may fit you",
+  "likesYouBlurredHint": "Each tile is a real person. Premium shows who, and why you fit.",
   "likesYouHiddenName": "Hidden profile",
   "likesYouHiddenSubtitle": "Unlock to explore compatibility",
   "likesYouEmptyTitle": "Keep exploring",
@@ -1096,7 +1096,7 @@
     }
   },
   "compatReasonCommunication": "You communicate in similar ways",
-  "hiddenCompatTitle": "Someone is thinking like you 👀",
+  "hiddenCompatTitle": "Someone is thinking like you",
   "hiddenCompatMessage": "Someone answered {count} questions the same way you did.",
   "@hiddenCompatMessage": {
     "placeholders": {
@@ -1294,7 +1294,7 @@
       }
     }
   },
-  "musicInsightSharedArtists": "🎤 You have {count} shared artists.",
+  "musicInsightSharedArtists": "You have {count} shared artists.",
   "@musicInsightSharedArtists": {
     "placeholders": {
       "count": {
@@ -1326,7 +1326,7 @@
       }
     }
   },
-  "musicInsightTopSharedGenres": "🎶 Your tastes overlap most in {genres}.",
+  "musicInsightTopSharedGenres": "Your tastes overlap most in {genres}.",
   "@musicInsightTopSharedGenres": {
     "placeholders": {
       "genres": {
@@ -1337,8 +1337,8 @@
   "musicInsightDataUnavailable": "Not enough Spotify taste data to compare yet.",
   "musicSpotifyNotConnected": "Spotify not connected",
   "musicSharedTracksHeading": "Songs you both like",
-  "musicSharedArtistsHeading": "🎤 Artists you both like",
-  "musicSharedGenresHeading": "🎶 Shared genres",
+  "musicSharedArtistsHeading": "Artists you both like",
+  "musicSharedGenresHeading": "Shared genres",
   "musicViewAllShared": "View all ({count})",
   "@musicViewAllShared": {
     "placeholders": {
@@ -1774,5 +1774,6 @@
   "premiumBenefitLikesBody": "Everyone who liked you in one list — and why you might fit.",
   "premiumBenefitMusicTitle": "Your full music match",
   "premiumBenefitMusicBody": "The songs, artists and genres you share with each match.",
-  "premiumPlansHeading": "Choose a plan"
+  "premiumPlansHeading": "Choose a plan",
+  "chatPreviewEncrypted": "Encrypted message"
 }

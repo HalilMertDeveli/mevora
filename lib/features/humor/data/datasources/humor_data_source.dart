@@ -25,7 +25,12 @@ abstract class HumorDataSource {
   /// Move past [contentId] without rating it. Never changes the profile,
   /// the interaction count or calibration progress; it only keeps the content
   /// out of the user's feed.
-  Future<HumorFeedbackResult> skipContent({required String contentId});
+  ///
+  /// [skipReason] (see `HumorSkipReason`) says why; `null` sends none.
+  Future<HumorFeedbackResult> skipContent({
+    required String contentId,
+    String? skipReason,
+  });
 
   Future<UserHumorProfile> getProfile({bool detailed = false});
 

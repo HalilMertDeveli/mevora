@@ -17,6 +17,7 @@ class HumorContent {
     this.durationMs,
     this.aspectRatio,
     this.calibrationStage,
+    this.attribution,
   });
 
   final String contentId;
@@ -34,6 +35,10 @@ class HumorContent {
   /// content. The server never sends the anchor slot behind it.
   final HumorCalibrationStage? calibrationStage;
 
+  /// Who made a third-party item (GIPHY and similar providers require the
+  /// credit to be shown). `null` for curated Mevora content.
+  final HumorContentAttribution? attribution;
+
   bool get isCalibrationItem => calibrationStage != null;
 
   HumorContent copyWithCalibrationStage(HumorCalibrationStage? stage) {
@@ -49,6 +54,7 @@ class HumorContent {
       durationMs: durationMs,
       aspectRatio: aspectRatio,
       calibrationStage: stage,
+      attribution: attribution,
     );
   }
 
@@ -69,6 +75,85 @@ class HumorContent {
       default:
         return HumorContentType.text;
     }
+  }
+}
+
+/// Credit for a provider-sourced item, as the feed sends it. Only [provider]
+/// is required; everything else is optional and shown only when present.
+class HumorContentAttribution {
+  const HumorContentAttribution({
+    required this.provider,
+    this.displayName,
+    this.username,
+    this.sourceUrl,
+    this.verified = false,
+  });
+
+  /// Provider key, e.g. `giphy`.
+  final String provider;
+  final String? displayName;
+  final String? username;
+  final String? sourceUrl;
+  final bool verified;
+
+  /// Brand spelling for known providers; anything else as sent.
+  String get providerLabel {
+    switch (provider.toLowerCase()) {
+      case 'giphy':
+        return 'GIPHY';
+      case 'tenor':
+        return 'Tenor';
+      default:
+        return provider;
+    }
+  }
+
+  /// The creator's handle, or else their display name, if either is known.
+  String? get creatorLabel {
+    final handle = username;
+    if (handle != null && handle.isNotEmpty) {
+      return handle.startsWith('@') ? handle : '@$handle';
+    }
+    final name = displayName;
+    return name != null && name.isNotEmpty ? name : null;
+  }
+
+  /// e.g. `GIPHY · @username`, or just `GIPHY` without a known creator.
+  String get label {
+    final creator = creatorLabel;
+    return creator == null ? providerLabel : '$providerLabel · $creator';
+  }
+
+  /// Unknown or malformed data yields `null` (no label) rather than throwing:
+  /// an older or newer backend must never break the feed.
+  static HumorContentAttribution? tryParse(Object? raw) {
+    if (raw is! Map) {
+      return null;
+    }
+    final provider = _text(raw['provider']);
+    if (provider == null) {
+      return null;
+    }
+    final source = _text(raw['sourceUrl']);
+    final sourceUri = source == null ? null : Uri.tryParse(source);
+    final sourceOk =
+        sourceUri != null &&
+        (sourceUri.scheme == 'https' || sourceUri.scheme == 'http');
+    return HumorContentAttribution(
+      provider: provider,
+      displayName: _text(raw['displayName']),
+      username: _text(raw['username']),
+      sourceUrl: sourceOk ? source : null,
+      verified: raw['verified'] == true,
+    );
+  }
+
+  static String? _text(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 }
 

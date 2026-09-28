@@ -69,6 +69,7 @@ class _ScriptedFeedRepository implements HumorRepository {
   @override
   Future<Result<HumorFeedbackResult>> skipContent({
     required String contentId,
+    String? skipReason,
   }) => throw UnimplementedError();
 
   @override

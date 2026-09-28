@@ -1751,5 +1751,19 @@
         "type": "int"
       }
     }
-  }
+  },
+  "musicFollowedArtistsTitle": "Artists you follow",
+  "musicTopArtistsTitle": "Your top artists",
+  "musicTopTracksTitle": "Your top tracks",
+  "musicPlaylistsTitle": "Your playlists",
+  "musicFollowedArtistsReconnect": "Reconnect Spotify to show the artists you follow.",
+  "musicPlaylistTrackCount": "{count} tracks",
+  "@musicPlaylistTrackCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "musicSectionEmpty": "Nothing here yet."
 }

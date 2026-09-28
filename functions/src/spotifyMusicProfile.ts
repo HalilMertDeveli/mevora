@@ -24,8 +24,17 @@ import {
  * listened to.
  */
 
-export const MAX_PUBLIC_ARTISTS = 3;
-export const MAX_PUBLIC_TRACKS = 3;
+/**
+ * How much of their own taste a member may put on their profile.
+ *
+ * Ten, not three: three was enough to prove the feature worked and too little
+ * to describe anyone. The selection pool stays at the twenty items the import
+ * keeps, so this widens the choice from data already fetched rather than
+ * asking Spotify for more. These are ceilings, never targets — publishing one
+ * artist is a perfectly good answer.
+ */
+export const MAX_PUBLIC_ARTISTS = 10;
+export const MAX_PUBLIC_TRACKS = 10;
 /**
  * Genres now describe the member's general taste rather than only their three
  * chosen artists, so the list is a little longer than the selections: three
@@ -264,7 +273,18 @@ function readCatalog(raw: unknown): Map<string, CatalogEntry> {
  */
 export function selectableArtists(summary: unknown): Map<string, CatalogEntry> {
   const data = (summary ?? {}) as Record<string, unknown>;
-  return readCatalog(data.topArtists);
+  // Followed artists join the top ones. Following is a deliberate act, so an
+  // artist somebody follows is at least as much theirs as one they happen to
+  // play often — and the two lists do not always overlap, so a member who
+  // wanted to show a followed artist simply could not. Top artists are added
+  // first, so on a duplicate id they win and keep their listening metadata.
+  const catalog = readCatalog(data.topArtists);
+  for (const [id, entry] of readCatalog(data.followedArtists)) {
+    if (!catalog.has(id)) {
+      catalog.set(id, entry);
+    }
+  }
+  return catalog;
 }
 
 /** The tracks a member may publish: imported top tracks only. */

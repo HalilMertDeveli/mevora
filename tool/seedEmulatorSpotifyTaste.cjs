@@ -80,6 +80,13 @@ const ARTISTS = {
   tame: {id: "sp_art_tame", name: "Tame Impala", image: "https://i.scdn.co/image/qa-tame", genres: ["psychedelic", "alternative"]},
   radiohead: {id: "sp_art_radiohead", name: "Radiohead", image: null, genres: ["alternative", "rock"]},
   sza: {id: "sp_art_sza", name: "SZA", image: "https://i.scdn.co/image/qa-sza", genres: ["r&b"]},
+  tyler: {id: "sp_art_tyler", name: "Tyler, The Creator", image: null, genres: ["hip hop", "alternative"]},
+  fkatwigs: {id: "sp_art_fka", name: "FKA twigs", image: null, genres: ["r&b", "electronic"]},
+  boniver: {id: "sp_art_boniver", name: "Bon Iver", image: null, genres: ["indie", "folk"]},
+  portishead: {id: "sp_art_portis", name: "Portishead", image: null, genres: ["trip hop"]},
+  massive: {id: "sp_art_massive", name: "Massive Attack", image: null, genres: ["trip hop", "electronic"]},
+  caroline: {id: "sp_art_caroline", name: "Caroline Polachek", image: null, genres: ["pop", "art pop"]},
+  mitski: {id: "sp_art_mitski", name: "Mitski", image: null, genres: ["indie", "rock"]},
 };
 
 const TRACKS = {
@@ -89,6 +96,13 @@ const TRACKS = {
   letit: {id: "sp_trk_letit", name: "Let It Happen", artist: "Tame Impala", image: "https://i.scdn.co/image/qa-t4"},
   creep: {id: "sp_trk_creep", name: "Creep", artist: "Radiohead", image: null},
   kill: {id: "sp_trk_kill", name: "Kill Bill", artist: "SZA", image: "https://i.scdn.co/image/qa-t5"},
+  earfquake: {id: "sp_trk_earfquake", name: "EARFQUAKE", artist: "Tyler, The Creator", image: null},
+  cellophane: {id: "sp_trk_cellophane", name: "cellophane", artist: "FKA twigs", image: null},
+  holocene: {id: "sp_trk_holocene", name: "Holocene", artist: "Bon Iver", image: null},
+  glory: {id: "sp_trk_glory", name: "Glory Box", artist: "Portishead", image: null},
+  teardrop: {id: "sp_trk_teardrop", name: "Teardrop", artist: "Massive Attack", image: null},
+  soLong: {id: "sp_trk_solong", name: "Bunny Is A Rider", artist: "Caroline Polachek", image: null},
+  nobody: {id: "sp_trk_nobody", name: "Nobody", artist: "Mitski", image: null},
 };
 
 function genreShares(artists) {
@@ -142,7 +156,7 @@ function generalTasteFor(artists, tracks) {
   };
 }
 
-function summaryFor(uid, artists, tracks, recent) {
+function summaryFor(uid, artists, tracks, recent, followed = []) {
   const genres = genreShares(artists);
   return {
     spotifyConnected: true,
@@ -155,7 +169,11 @@ function summaryFor(uid, artists, tracks, recent) {
       ...track,
       playedAt: new Date(Date.now() - (i + 1) * 3600_000).toISOString(),
     })),
-    playlists: [{name: "QA mix", trackCount: 12}],
+    playlists: Array.from({length: 10}, (_, i) => ({
+      id: `pl_${uid}_${i}`,
+      name: `QA playlist ${i + 1}`,
+      trackCount: 8 + i,
+    })),
     musicProfile: {
       genres,
       genreNames: genres.map((g) => g.name),
@@ -173,6 +191,13 @@ function summaryFor(uid, artists, tracks, recent) {
       },
     },
     musicProfileVersion: 2,
+    // The four collections the Music Profile is built from. Followed
+    // artists deliberately overlap the top list only partly, so QA can
+    // see that publishing a followed artist is possible.
+    followedArtists: followed,
+    followScopeGranted: true,
+    profileTopArtists: artists.slice(0, 5),
+    profileTopTracks: tracks.slice(0, 5),
     generalTaste: generalTasteFor(artists, tracks),
     lastSyncedAt: FieldValue.serverTimestamp(),
     connectedAt: FieldValue.serverTimestamp(),
@@ -181,11 +206,17 @@ function summaryFor(uid, artists, tracks, recent) {
 
 const PLAN = {
   qa_user_a: {
-    artists: [ARTISTS.weeknd, ARTISTS.arctic, ARTISTS.lana, ARTISTS.tame, ARTISTS.radiohead],
-    tracks: [TRACKS.blinding, TRACKS.doiwanna, TRACKS.summertime, TRACKS.letit, TRACKS.creep],
+    followed: [ARTISTS.weeknd, ARTISTS.sza, ARTISTS.radiohead],
+    artists: [ARTISTS.weeknd, ARTISTS.arctic, ARTISTS.lana, ARTISTS.tame, ARTISTS.radiohead,
+      ARTISTS.tyler, ARTISTS.fkatwigs, ARTISTS.boniver, ARTISTS.portishead, ARTISTS.massive,
+      ARTISTS.caroline, ARTISTS.mitski],
+    tracks: [TRACKS.blinding, TRACKS.doiwanna, TRACKS.summertime, TRACKS.letit, TRACKS.creep,
+      TRACKS.earfquake, TRACKS.cellophane, TRACKS.holocene, TRACKS.glory, TRACKS.teardrop,
+      TRACKS.soLong, TRACKS.nobody],
     recent: [TRACKS.blinding, TRACKS.letit],
   },
   qa_user_b: {
+    followed: [ARTISTS.arctic, ARTISTS.tame],
     artists: [ARTISTS.weeknd, ARTISTS.arctic, ARTISTS.sza],
     tracks: [TRACKS.blinding, TRACKS.doiwanna, TRACKS.kill],
     recent: [TRACKS.doiwanna],
@@ -220,7 +251,7 @@ async function seed() {
     }
     await db
       .doc(`users/${uid}/music/summary`)
-      .set(summaryFor(uid, plan.artists, plan.tracks, plan.recent), {merge: true});
+      .set(summaryFor(uid, plan.artists, plan.tracks, plan.recent, plan.followed ?? []), {merge: true});
 
     const profileUpdate = {spotifyConnected: true};
     if (PUBLISHED && uid === "qa_user_a") {

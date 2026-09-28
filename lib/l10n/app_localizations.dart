@@ -7237,6 +7237,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} artists that have stayed with them for months.'**
   String musicTasteStable(int count);
+
+  /// No description provided for @musicFollowedArtistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists you follow'**
+  String get musicFollowedArtistsTitle;
+
+  /// No description provided for @musicTopArtistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top artists'**
+  String get musicTopArtistsTitle;
+
+  /// No description provided for @musicTopTracksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top tracks'**
+  String get musicTopTracksTitle;
+
+  /// No description provided for @musicPlaylistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your playlists'**
+  String get musicPlaylistsTitle;
+
+  /// No description provided for @musicFollowedArtistsReconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect Spotify to show the artists you follow.'**
+  String get musicFollowedArtistsReconnect;
+
+  /// No description provided for @musicPlaylistTrackCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tracks'**
+  String musicPlaylistTrackCount(int count);
+
+  /// No description provided for @musicSectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet.'**
+  String get musicSectionEmpty;
 }
 
 class _AppLocalizationsDelegate

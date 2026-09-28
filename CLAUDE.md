@@ -112,9 +112,38 @@ task branch  ──PR──▶  preview  ──owner approves──▶  main  �
 5. **`preview` → `main` needs explicit approval.** This is the gate. See **Approval gate**.
 6. **Deploy happens from `main`, and only the owner runs it.** See **Deploying**.
 
-After `preview` merges into `main` the two are identical, so `preview` does not drift.
-If they ever diverge, reset `preview` to `main` rather than reconciling — the task branches,
-not `preview`, are the source of truth.
+After `preview` merges into `main` the two are identical — **as long as step 5 actually runs.**
+Skip it and `preview` becomes the only place a growing pile of work exists.
+
+**Never reset `preview` to `main` without checking what it would destroy:**
+
+```bash
+git rev-list --count origin/main..origin/preview   # must be 0
+```
+
+Reset is safe at 0 and nowhere else. This repo has been at **93**: twenty-one task branches
+had been merged into `preview` and not one of them had a PR to `main`, so `preview` held the
+only copy. A reset would have deleted all of it. Above 0, reconcile with a `preview → main`
+PR instead. Task branches are the source of truth only while they are still reachable — once
+they are merged and pruned, `preview` is.
+
+### Keeping the gate cheap
+
+Conflicts are a function of divergence, so keep divergence small.
+
+- **Run the gate merge per accepted batch**, not eventually. Two aligned branches merge with
+  no conflicts; 93 commits of drift do not.
+- **Do not hand-port shared files to extract one feature** from `preview` to `main`. Lifting
+  a feature's own files is fine; partially porting a shared file
+  (`.vscode/launch.json`, `functions/package.json`, `firestore.rules`, `functions/src/index.ts`)
+  leaves `main` holding a subset of `preview`'s version and guarantees a conflict at the next
+  gate merge. Land the whole batch instead.
+- **Assume another agent is merging into `preview` right now.** Re-check it immediately before
+  and after you push. If two agents produced the same merge independently, compare
+  `git rev-parse <a>^{tree}` with `<b>^{tree}` — identical trees mean drop your duplicate
+  rather than add a second merge commit.
+- **Resolve a gate conflict toward `preview`, but verify rather than assume it.** Prove `main`
+  contributes nothing unique first — compare the two sides field by field, not by eye.
 
 ### What `preview` is not
 

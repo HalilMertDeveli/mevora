@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/theme/app_theme.dart';
+import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_content_player.dart';
@@ -295,6 +296,82 @@ void main() {
       expect(find.byType(VideoPlayer), findsNothing);
       expect(HumorContentPlayer.isVideoContent(_gifCard(id)), isFalse);
       expect(HumorContentPlayer.stillUrlFor(_gifCard(id)), _webpUrl(id));
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
+  testWidgets('a curated calibration GIF has no caption: poster, then the '
+      'animated image, with its credit and category and no caption box', (
+    tester,
+  ) async {
+    // Exactly what the curated catalogue serves: a GIPHY clip with the
+    // uploader's credit, a calibration stage, and no text at all — the joke
+    // is in the clip.
+    const id = 'MvdaYPuKPMNZRJCl8Z';
+    const webp =
+        'https://media1.giphy.com/media/v1.Y2lkPTNjNWVkMzZj/$id/giphy.webp';
+    const still = 'https://media.giphy.com/media/$id/giphy_s.gif';
+    const card = HumorContent(
+      contentId: 'hc_gif_$id',
+      type: HumorContentType.meme,
+      language: 'en',
+      category: HumorCategory.sarcasm,
+      downloadUrl: webp,
+      thumbUrl: still,
+      aspectRatio: 1,
+      calibrationStage: HumorCalibrationStage.anchor,
+      attribution: HumorContentAttribution(
+        provider: 'giphy',
+        displayName: 'Apple TV',
+        username: 'AppleTV',
+        sourceUrl: 'https://giphy.com/gifs/AppleTV-$id',
+        verified: true,
+      ),
+    );
+    final later = Completer<_Response>();
+    final client = _HttpClient({
+      webp: _Reply.later(later),
+      still: _Reply.bytes(_animatedGif),
+    });
+    final controllers = _Controllers();
+
+    /// Every piece of text on the card, in paint order.
+    List<String> texts() => [
+      for (final text in tester.widgetList<Text>(find.byType(Text)))
+        if (text.data != null) text.data!,
+    ];
+
+    await _withNetwork(client, () async {
+      await tester.pumpWidget(
+        _wrap(
+          HumorContentPlayer(
+            content: card,
+            videoControllerFactory: controllers.call,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Loading: the clip's own still with a spinner; only chip and credit.
+      expect(_imageOf(still), findsOneWidget);
+      expect(_imageOf(webp), findsOneWidget);
+      expect(_spinner, findsOneWidget);
+      expect(texts(), [_en.humorCategorySarcasm, 'GIPHY · @AppleTV']);
+      expect(find.byIcon(Icons.verified), findsOneWidget);
+
+      later.complete(_Response(200, _animatedGif));
+      await _decode(tester);
+
+      // Shown: the animated image replaces the poster; still no caption box
+      // and nothing that reads as an (empty) text card.
+      expect(_paintedMain(tester, webp)?.image, isNotNull);
+      expect(_imageOf(still), findsNothing);
+      expect(_spinner, findsNothing);
+      expect(texts(), [_en.humorCategorySarcasm, 'GIPHY · @AppleTV']);
+      expect(_failed, findsNothing);
+      expect(controllers.created, isEmpty);
+      expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(const SizedBox());
     });

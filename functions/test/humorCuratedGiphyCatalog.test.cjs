@@ -6,7 +6,7 @@ const {FIXTURES, fakeGiphyFetch} = require("./helpers/giphyFixtures.cjs");
 
 const {
   ACTIVE_CALIBRATION_CATALOG,
-  CALIBRATION_SEED,
+  ANCHOR_POOL_TARGET,
   CURATED_GIPHY_CATALOG,
   CURATED_GIPHY_ID_PREFIX,
   curatedGiphyContentId,
@@ -27,15 +27,16 @@ const {
   upsertHumorContentDoc,
 } = require("../lib/humor/contentRepository.js");
 const {buildCalibrationPoolReport} = require("../lib/humor/calibrationPoolReport.js");
-const {HUMOR_CALIBRATION_VERSION} = require("../lib/humor/calibration.js");
+const {ANCHOR_SLOTS, HUMOR_CALIBRATION_VERSION} = require("../lib/humor/calibration.js");
+const {HUMOR_CATEGORIES} = require("../lib/humor/categories.js");
 const {GiphyHumorSource, GIPHY_QUERY_FAMILIES} = require("../lib/humor/giphySource.js");
 const {syncHumorFromGiphy} = require("../lib/humor/ingest.js");
 
 /**
  * The curated GIPHY catalogue: every Humor card — calibration included — is a
- * GIF Mevora hand-picked. Phase 1 ships the format, the validation and the
- * seeding/retirement path with an empty catalogue; these tests drive that
- * path with a fixture catalogue shaped exactly like the real one will be.
+ * GIF Mevora hand-picked. The real catalogue is checked as data; the seeding
+ * and retirement path is driven with a fixture catalogue of the same shape on
+ * fake GIPHY ids, and with the real one.
  */
 
 /** A well-formed curated entry for a fake GIPHY id. */
@@ -68,31 +69,53 @@ function entry(giphyId, overrides = {}) {
 }
 
 /**
- * A full fixture catalogue with the text catalogue's exact pool shape: the
+ * A full fixture catalogue with the real catalogue's exact pool shape: the
  * same slots, categories and vectors, each on its own fake GIPHY clip.
  */
 function fullFixtureCatalog() {
-  return CALIBRATION_SEED.map((item, index) =>
+  return CURATED_GIPHY_CATALOG.map((item, index) =>
     entry(`FxClip${String(index).padStart(3, "0")}`, {
-      slot: item.calibration.slot ?? undefined,
+      slot: item.slot,
       category: item.category,
       humorVector: item.humorVector,
-      language: item.language === "en" ? "en" : "tr",
+      language: item.language,
     }),
   );
 }
 
+/**
+ * A database as the retired text catalogue left it: 36 active, calibration-
+ * eligible text cards written by the old seeder.
+ */
 async function seededTextDb() {
   const db = createFakeFirestore({});
-  await seedCalibrationCatalog(db, {kind: "text_jokes"});
+  for (const contentId of TEXT_JOKE_CONTENT_IDS) {
+    await upsertHumorContentDoc(db, {
+      contentId,
+      type: "text",
+      language: "tr",
+      category: "dry",
+      humorVector: {dry: 0.8},
+      media: {textBody: "Evet. Güzel. Devam edelim."},
+      safetyStatus: "approved",
+      active: true,
+      sourceType: "internal",
+      provider: "mevora-qa-seed",
+      calibration: {eligible: true, slot: null, version: HUMOR_CALIBRATION_VERSION},
+    });
+  }
   return db;
 }
 
 describe("curated GIPHY catalogue format", () => {
-  it("phase 1: calibration still runs on the text catalogue, GIPHY catalogue empty", () => {
-    assert.equal(ACTIVE_CALIBRATION_CATALOG, "text_jokes");
-    assert.deepEqual([...CURATED_GIPHY_CATALOG], []);
+  it("calibration runs on the curated GIPHY catalogue; the text cards are retired", () => {
+    assert.equal(ACTIVE_CALIBRATION_CATALOG, "curated_giphy");
     assert.equal(TEXT_JOKE_CONTENT_IDS.length, 36);
+    const plan = calibrationCatalogPlan();
+    assert.equal(plan.kind, "curated_giphy");
+    assert.equal(plan.items.length, CURATED_GIPHY_CATALOG.length);
+    const retired = new Set(plan.retire.map((r) => r.contentId));
+    for (const id of TEXT_JOKE_CONTENT_IDS) assert.ok(retired.has(id), id);
   });
 
   it("derives ids and stable media URLs from the GIPHY id", () => {
@@ -166,6 +189,80 @@ describe("curated GIPHY catalogue format", () => {
       () => calibrationCatalogPlan("curated_giphy", [entry("AbCd1234"), entry("AbCd1234")]),
       /duplicate contentId/,
     );
+  });
+});
+
+describe("the real curated GIPHY catalogue", () => {
+  it("every entry is well-formed", () => {
+    for (const item of CURATED_GIPHY_CATALOG) {
+      assert.deepEqual(curatedGiphyEntryProblems(item), [], item.contentId);
+    }
+  });
+
+  it("holds 36 unique clips: 4 anchors per slot and a 12-clip open pool", () => {
+    assert.equal(CURATED_GIPHY_CATALOG.length, 36);
+    const ids = CURATED_GIPHY_CATALOG.map((e) => e.contentId);
+    assert.equal(new Set(ids).size, 36, "duplicate contentId");
+    assert.equal(new Set(CURATED_GIPHY_CATALOG.map((e) => e.giphyId)).size, 36, "duplicate clip");
+    const anchors = CURATED_GIPHY_CATALOG.filter((e) => e.slot !== undefined);
+    assert.equal(anchors.length, 24);
+    for (const slot of ANCHOR_SLOTS) {
+      const candidates = anchors.filter((e) => e.slot === slot.id);
+      assert.equal(candidates.length, ANCHOR_POOL_TARGET, slot.id);
+      for (const candidate of candidates) {
+        assert.equal(candidate.category, slot.primary, candidate.contentId);
+      }
+    }
+    // Open pool, mirroring the text catalogue: calibration content, no slot.
+    const open = CURATED_GIPHY_CATALOG.filter((e) => e.slot === undefined);
+    assert.equal(open.length, 12);
+    for (const item of open) {
+      assert.equal(item.calibrationEligible, true, item.contentId);
+      assert.equal(Object.hasOwn(item, "slot"), false, item.contentId);
+    }
+    assert.ok(CURATED_GIPHY_CATALOG.every((e) => e.calibrationEligible === true));
+  });
+
+  it("represents all 11 humor categories, each as some clip's primary", () => {
+    const categories = new Set(CURATED_GIPHY_CATALOG.map((e) => e.category));
+    assert.deepEqual([...categories].sort(), [...HUMOR_CATEGORIES].sort());
+    for (const item of CURATED_GIPHY_CATALOG) {
+      const [top] = Object.entries(item.humorVector).sort((a, b) => b[1] - a[1]);
+      assert.equal(top[0], item.category, `${item.contentId}: vector peaks on ${top[0]}`);
+      assert.ok(top[1] >= 0.75 && top[1] <= 0.95, `${item.contentId}: primary ${top[1]}`);
+      // Secondaries never reach coverage, so a clip measures one thing.
+      for (const [dim, w] of Object.entries(item.humorVector)) {
+        if (dim !== item.category) assert.ok(w < 0.5, `${item.contentId}: ${dim} ${w}`);
+      }
+    }
+  });
+
+  it("carries no caption: the joke is in the clip", () => {
+    for (const item of CURATED_GIPHY_CATALOG) {
+      assert.equal(item.caption, null, item.contentId);
+      assert.equal(curatedGiphyUpsertInput(item).media.textBody, null, item.contentId);
+    }
+  });
+
+  it("serves each clip's own rendition, poster and GIPHY credit", () => {
+    for (const item of CURATED_GIPHY_CATALOG) {
+      const media = new URL(item.media.downloadUrl);
+      assert.ok(media.hostname.endsWith(".giphy.com"), item.contentId);
+      assert.match(media.pathname, /\.(webp|gif)$/, item.contentId);
+      assert.equal(item.media.thumbUrl, giphyStableStillUrl(item.giphyId), item.contentId);
+      assert.ok(item.media.aspectRatio > 0.5 && item.media.aspectRatio < 2, item.contentId);
+      assert.equal(item.attribution.provider, "giphy");
+      assert.ok(item.attribution.sourceUrl.endsWith(item.giphyId), item.contentId);
+      assert.equal(item.sourceTrust, "curated");
+    }
+  });
+
+  it("marks exactly the Turkish broadcaster clips as Turkish", () => {
+    for (const item of CURATED_GIPHY_CATALOG) {
+      const turkish = ["trt_network", "showtv"].includes(item.attribution.username);
+      assert.equal(item.language, turkish ? "tr" : "en", item.contentId);
+    }
+    assert.ok(CURATED_GIPHY_CATALOG.some((e) => e.language === "tr"));
   });
 });
 
@@ -249,7 +346,7 @@ describe("seeding the curated GIPHY catalogue", () => {
     assert.equal(doc.retiredReason, "superseded-by-curated");
   });
 
-  it("retires a clip dropped from the catalogue, and a revert brings the text back", async () => {
+  it("retires a clip dropped from the catalogue, and restoring it brings it back", async () => {
     const db = await seededTextDb();
     const catalog = fullFixtureCatalog();
     await seedCalibrationCatalog(db, {kind: "curated_giphy", catalog});
@@ -258,24 +355,39 @@ describe("seeding the curated GIPHY catalogue", () => {
     assert.deepEqual(dropped.retiredIds, ["hc_gif_FxClip000"]);
     assert.equal(db.read("humorContent/hc_gif_FxClip000").retiredReason, "removed-from-curated-catalog");
 
-    const reverted = await seedCalibrationCatalog(db, {kind: "text_jokes"});
-    assert.equal(reverted.retired, 35, "every remaining curated GIF leaves calibration");
+    const restored = await seedCalibrationCatalog(db, {kind: "curated_giphy", catalog});
+    assert.equal(restored.retired, 0);
+    const clip = db.read("humorContent/hc_gif_FxClip000");
+    assert.equal(clip.active, true);
+    assert.equal(clip.calibrationEligible, true);
+    assert.equal(clip.retiredReason, null);
+    // The text cards stay retired throughout.
     const text = db.read(`humorContent/${TEXT_JOKE_CONTENT_IDS[0]}`);
-    assert.equal(text.active, true);
-    assert.equal(text.calibrationEligible, true);
-    assert.equal(text.retiredReason, null);
+    assert.equal(text.active, false);
     const pool = await listCalibrationPool(db, {calibrationVersion: HUMOR_CALIBRATION_VERSION, limit: 200});
-    assert.ok(pool.every((item) => !item.contentId.startsWith("hc_gif_")));
+    assert.equal(pool.length, 36);
+    assert.ok(pool.every((item) => item.contentId.startsWith("hc_gif_")));
   });
 
-  it("the text catalogue seeds exactly as before", async () => {
-    const db = createFakeFirestore({});
+  it("the default seed writes the real catalogue and retires the text cards", async () => {
+    const db = await seededTextDb();
     const result = await seedCalibrationCatalog(db);
-    assert.equal(result.kind, "text_jokes");
+    assert.equal(result.kind, "curated_giphy");
     assert.equal(result.written, 36);
-    assert.equal(result.retired, 0);
+    assert.equal(result.created, 36);
+    assert.equal(result.retired, 36);
+    const pool = await listCalibrationPool(db, {calibrationVersion: HUMOR_CALIBRATION_VERSION, limit: 200});
+    assert.equal(pool.length, 36);
+    assert.ok(pool.every((item) => item.type === "meme" && item.media.textBody === null));
     const report = await buildCalibrationPoolReport(db);
     assert.equal(report.healthy, true, report.warnings.join("; "));
+    assert.deepEqual(report.uncoveredDimensions, []);
+
+    // On an empty database it seeds the same 36 and retires nothing.
+    const fresh = createFakeFirestore({});
+    const first = await seedCalibrationCatalog(fresh);
+    assert.equal(first.written, 36);
+    assert.equal(first.retired, 0);
   });
 });
 

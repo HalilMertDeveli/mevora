@@ -529,24 +529,13 @@ export async function upsertHumorContentDoc(
 }
 
 /**
- * Curated calibration catalog, re-exported under its historical name.
+ * Curated calibration catalogue, re-exported under its historical name.
  *
- * The content itself now lives in `calibrationSeed.ts`, which keeps curation
- * — what measures what, which slot it fills, how deep each pool is — separate
- * from persistence. `seedInternalHumorContent` is unchanged and still writes
- * exactly this list.
+ * The content lives in `calibrationSeed.ts` (curation: what measures what,
+ * which slot it fills, how deep each pool is), separate from persistence. It
+ * is now the curated GIPHY catalogue — licensed provider GIFs Mevora picked
+ * by hand — not internal text; `seedInternalHumorContent` writes exactly this
+ * list (and retires the text cards it replaced).
  */
 export const INTERNAL_HUMOR_SEED: Array<Omit<UpsertHumorContentInput, "safetyStatus">> =
-  CALIBRATION_SEED.map((item) => ({
-    contentId: item.contentId,
-    type: item.type,
-    language: item.language,
-    category: item.category,
-    humorTags: item.humorTags,
-    humorVector: item.humorVector,
-    media: item.media,
-    active: item.active,
-    sourceType: item.sourceType,
-    provider: item.provider,
-    calibration: item.calibration,
-  }));
+  CALIBRATION_SEED.map(({safetyStatus: _safetyStatus, ...item}) => item);

@@ -347,38 +347,38 @@ test("AI tagging is metadata-only and never used for user scoring", () => {
   assert.ok(fallback.humorVector.silly >= 0.7);
 });
 
-test("internal seed is Turkish-first, text-only joke cards", () => {
-  // Lower bound rather than an exact count: the seed grew when calibration
-  // added a second candidate per anchor slot, and it must stay large enough to
+test("the curated seed is credited, caption-less GIPHY cards", () => {
+  // Lower bound rather than an exact count: it must stay large enough to
   // carry a full 15-item calibration.
   assert.ok(
     INTERNAL_HUMOR_SEED.length >= 15,
     `seed must cover a full calibration, got ${INTERNAL_HUMOR_SEED.length}`,
   );
-  const tr = INTERNAL_HUMOR_SEED.filter((item) => item.language === "tr");
-  assert.ok(tr.length >= 8);
+  assert.ok(INTERNAL_HUMOR_SEED.some((item) => item.language === "tr"), "no Turkish clip");
   for (const item of INTERNAL_HUMOR_SEED) {
-    // The joke is the item: no borrowed backdrop that was never made for it.
-    assert.equal(item.type, "text", item.contentId);
-    assert.equal(item.media.downloadUrl, null, item.contentId);
-    assert.equal(item.media.thumbUrl, null, item.contentId);
-    assert.ok(String(item.media.textBody).trim().length > 0, item.contentId);
+    // The clip is the item: its own animated rendition and still, no caption.
+    assert.equal(item.type, "meme", item.contentId);
+    assert.match(item.media.downloadUrl, /^https:\/\/media\d?\.giphy\.com\//, item.contentId);
+    assert.match(item.media.thumbUrl, /^https:\/\/media\d?\.giphy\.com\//, item.contentId);
+    assert.equal(item.media.textBody, null, item.contentId);
+    assert.equal(item.attribution.provider, "giphy", item.contentId);
   }
-  const parsed = parseHumorContent(INTERNAL_HUMOR_SEED[0].contentId, {
-    ...INTERNAL_HUMOR_SEED[0],
+  const first = INTERNAL_HUMOR_SEED[0];
+  const parsed = parseHumorContent(first.contentId, {
+    ...first,
     safetyStatus: "approved",
     safetyFlags: emptySafetyFlags(),
-    source: {type: "internal", provider: "mevora-internal"},
+    source: {type: "licensed_api", provider: "giphy", licenseRef: first.licenseRef},
     stats: {viewCount: 0, ratingCount: 0, avgRating: 0},
   });
   assert.ok(parsed);
   const safe = toFeedSafeContent(parsed);
-  assert.equal(safe.contentId, INTERNAL_HUMOR_SEED[0].contentId);
-  assert.equal(safe.type, "text");
-  assert.equal(safe.media.downloadUrl, null);
-  assert.equal(safe.media.thumbUrl, null);
-  assert.equal(safe.media.textBody, INTERNAL_HUMOR_SEED[0].media.textBody);
-  assert.equal(safe.attribution, null, "Mevora-authored content carries no provider credit");
+  assert.equal(safe.contentId, first.contentId);
+  assert.equal(safe.type, "meme");
+  assert.equal(safe.media.downloadUrl, first.media.downloadUrl);
+  assert.equal(safe.media.thumbUrl, first.media.thumbUrl);
+  assert.equal(safe.media.textBody, null, "no caption: the joke is in the clip");
+  assert.deepEqual(safe.attribution, first.attribution, "the card credits GIPHY's uploader");
   assert.equal("humorVector" in safe, false);
   assert.equal("safetyFlags" in safe, false);
 });

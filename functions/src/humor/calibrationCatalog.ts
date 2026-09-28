@@ -1,13 +1,14 @@
 import {FieldValue, type Firestore} from "firebase-admin/firestore";
-import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
+import {isAnchorSlotId} from "./calibration.js";
 import {isHumorCategory} from "./categories.js";
 import {
   ACTIVE_CALIBRATION_CATALOG,
-  CALIBRATION_SEED,
   CURATED_GIPHY_CATALOG,
   CURATED_GIPHY_ID_PREFIX,
   GIPHY_ID_PATTERN,
+  RETIRED_TEXT_JOKE_CONTENT_IDS,
   curatedGiphyContentId,
+  curatedGiphyUpsertInput,
   type CalibrationCatalogKind,
   type CuratedGiphyEntry,
 } from "./calibrationSeed.js";
@@ -16,7 +17,6 @@ import {
   CALIBRATION_SLOT_FIELD,
   CALIBRATION_VERSION_FIELD,
   HUMOR_CONTENT_COLLECTION,
-  INTERNAL_HUMOR_SEED,
   upsertHumorContentDoc,
   type UpsertHumorContentInput,
 } from "./contentRepository.js";
@@ -34,7 +34,11 @@ import {MAX_CAPTION_LENGTH} from "./giphySource.js";
  * documents and retires nothing new.
  */
 
-export const TEXT_JOKE_CONTENT_IDS: readonly string[] = CALIBRATION_SEED.map((i) => i.contentId);
+/** The retired text-joke cards, retired by every curated-catalogue seed. */
+export const TEXT_JOKE_CONTENT_IDS: readonly string[] = RETIRED_TEXT_JOKE_CONTENT_IDS;
+
+// Kept importable from here, where it always lived.
+export {curatedGiphyUpsertInput};
 
 /** Provider-sync doc id of a GIPHY item (same rule as ingest.ts contentIdFor). */
 function providerSyncContentId(giphyId: string): string {
@@ -105,40 +109,6 @@ export function curatedGiphyEntryProblems(entry: CuratedGiphyEntry): string[] {
   return problems;
 }
 
-/** The upsert a curated GIPHY entry is written with. */
-export function curatedGiphyUpsertInput(entry: CuratedGiphyEntry): UpsertHumorContentInput {
-  return {
-    contentId: entry.contentId,
-    // A GIF is an animated image, shown like any provider GIF.
-    type: "meme",
-    language: entry.language,
-    category: entry.category,
-    humorTags: entry.humorTags ?? [],
-    humorVector: entry.humorVector,
-    media: {
-      downloadUrl: entry.media.downloadUrl,
-      thumbUrl: entry.media.thumbUrl,
-      durationMs: null,
-      aspectRatio: entry.media.aspectRatio,
-      // GIPHY's own cleaned title, or nothing.
-      textBody: entry.caption,
-    },
-    safetyStatus: "approved",
-    active: true,
-    sourceType: "licensed_api",
-    provider: "giphy",
-    licenseRef: entry.attribution.sourceUrl,
-    calibration: entry.calibrationEligible
-      ? {eligible: true, slot: entry.slot ?? null, version: HUMOR_CALIBRATION_VERSION}
-      : {eligible: false},
-    sourceTrust: "curated",
-    curatedCatalogEntry: true,
-    attribution: entry.attribution,
-    sourceId: entry.giphyId,
-    sourceUrl: entry.attribution.sourceUrl,
-  };
-}
-
 export type CalibrationCatalogPlan = {
   kind: CalibrationCatalogKind;
   items: UpsertHumorContentInput[];
@@ -150,13 +120,6 @@ export function calibrationCatalogPlan(
   kind: CalibrationCatalogKind = ACTIVE_CALIBRATION_CATALOG,
   catalog: readonly CuratedGiphyEntry[] = CURATED_GIPHY_CATALOG,
 ): CalibrationCatalogPlan {
-  if (kind === "text_jokes") {
-    return {
-      kind,
-      items: INTERNAL_HUMOR_SEED.map((item) => ({...item, safetyStatus: "approved", active: true})),
-      retire: [],
-    };
-  }
   const invalid = catalog
     .map((entry) => ({entry, problems: curatedGiphyEntryProblems(entry)}))
     .filter((e) => e.problems.length > 0);
@@ -258,8 +221,7 @@ export async function seedCalibrationCatalog(
   for (const {contentId, reason} of plan.retire) {
     if (!keep.has(contentId)) retire.set(contentId, reason);
   }
-  // Curated GIPHY docs that left the catalogue (or the whole GIPHY catalogue,
-  // when calibration runs on text again).
+  // Curated GIPHY docs that left the catalogue.
   const curated = await collection.where("sourceTrust", "==", "curated").get();
   for (const doc of curated.docs) {
     if (doc.id.startsWith(CURATED_GIPHY_ID_PREFIX) && !keep.has(doc.id) && !retire.has(doc.id)) {

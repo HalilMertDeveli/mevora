@@ -162,13 +162,23 @@ test("missing or malformed input is refused before host checks", () => {
   assert.equal(validateHumorSourceItem(item("not-a-url")).reason, "invalid-url");
 });
 
-test("the curated seed carries no media URL for the allowlist to vet", () => {
-  // Curated content is text-only, so the allowlist no longer has to admit
-  // any stock-media host on its behalf.
+test("every curated seed clip passes the media allowlist as it stands", () => {
+  // Curated content is hand-picked GIPHY clips: GIPHY's CDN is the only host
+  // the allowlist has to admit on its behalf — no stock-media host.
   const {CALIBRATION_SEED} = require("../lib/humor/calibrationSeed.js");
+  assert.ok(CALIBRATION_SEED.length > 0);
   for (const seed of CALIBRATION_SEED) {
-    assert.equal(seed.media.downloadUrl, null, seed.contentId);
-    assert.equal(seed.media.thumbUrl, null, seed.contentId);
+    const result = validateHumorSourceItem({
+      sourceId: seed.sourceId,
+      type: seed.type,
+      language: seed.language,
+      media: seed.media,
+    });
+    assert.equal(result.ok, true, `${seed.contentId}: ${result.reason}`);
+    for (const url of [seed.media.downloadUrl, seed.media.thumbUrl]) {
+      const host = new URL(url).hostname;
+      assert.ok(host === "giphy.com" || host.endsWith(".giphy.com"), `${seed.contentId}: ${host}`);
+    }
   }
 });
 

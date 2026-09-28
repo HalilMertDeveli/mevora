@@ -36,6 +36,10 @@ const {
   upsertHumorContentDoc,
   listCalibrationPool,
 } = require("../../lib/humor/contentRepository.js");
+const {
+  TEXT_JOKE_CONTENT_IDS,
+  seedCalibrationCatalog,
+} = require("../../lib/humor/calibrationCatalog.js");
 const {buildHumorFeed, loadUserHumorCalibration} = require("../../lib/humor/feed.js");
 const {submitHumorFeedbackTx} = require("../../lib/humor/feedback.js");
 
@@ -49,42 +53,63 @@ function step(name, fn) {
   steps.push([name, fn]);
 }
 
-step("re-seeding converts an old media-backed item to a text card", async () => {
+step("re-seeding replaces a stale item with exactly the curated clip", async () => {
   // Real Firestore merge semantics: `set(..., {merge: true})` deep-merges
-  // maps, so only explicit nulls clear what an older seed left behind.
-  const seed = INTERNAL_HUMOR_SEED.find((i) => i.contentId === "hc_tr_img_015");
+  // maps, so only explicit values replace what an older seed left behind.
+  const seed = INTERNAL_HUMOR_SEED.find((i) => i.calibration.slot === "anchor_everyday");
   await db.doc(`humorContent/${seed.contentId}`).set({
     contentId: seed.contentId,
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "situational",
     media: {
       downloadUrl: "https://picsum.photos/seed/mevora-tr-15/1080/1920",
       thumbUrl: "https://picsum.photos/seed/mevora-tr-15/540/960",
       aspectRatio: 0.5625,
-      textBody: seed.media.textBody,
+      textBody: "Markete süt için girdim, üç poşetle çıktım. Süt yok.",
     },
     stats: {viewCount: 0, ratingCount: 0, avgRating: 0, ratingSum: 0},
   });
   await upsertHumorContentDoc(db, {...seed, safetyStatus: "approved", active: true});
   const stored = (await db.doc(`humorContent/${seed.contentId}`).get()).data();
-  assert.equal(stored.type, "text");
-  assert.equal(stored.media.downloadUrl, null);
-  assert.equal(stored.media.thumbUrl, null);
-  assert.equal(stored.media.aspectRatio, null);
-  assert.equal(stored.media.textBody, seed.media.textBody);
+  assert.equal(stored.type, "meme");
+  assert.equal(stored.media.downloadUrl, seed.media.downloadUrl);
+  assert.equal(stored.media.thumbUrl, seed.media.thumbUrl);
+  assert.equal(stored.media.aspectRatio, seed.media.aspectRatio);
+  assert.equal(stored.media.textBody, null, "no caption survives on a clip");
+  assert.deepEqual(stored.attribution, seed.attribution);
+  assert.equal(stored.sourceTrust, "curated");
   assert.equal(stored.stats.ratingSum, 0, "existing stats are kept, not reset");
-  return "media cleared, stats kept";
+  return "clip media and credit written, caption cleared, stats kept";
 });
 
 step("seed the curated catalog", async () => {
+  // A text card an earlier seed left active: the curated seed retires it.
+  const legacyId = TEXT_JOKE_CONTENT_IDS[0];
+  await upsertHumorContentDoc(db, {
+    contentId: legacyId,
+    type: "text",
+    language: "tr",
+    category: "sarcasm",
+    humorVector: {sarcasm: 0.88},
+    media: {textBody: "Tabii, trafik yine benim yüzümden oluştu."},
+    safetyStatus: "approved",
+    active: true,
+    calibration: {eligible: true, slot: "anchor_wit", version: HUMOR_CALIBRATION_VERSION},
+  });
+  const seeded = await seedCalibrationCatalog(db);
+  assert.equal(seeded.kind, "curated_giphy");
+  assert.equal(seeded.written, INTERNAL_HUMOR_SEED.length);
+  assert.deepEqual(seeded.retiredIds, [legacyId]);
+  const legacy = (await db.doc(`humorContent/${legacyId}`).get()).data();
+  assert.equal(legacy.active, false);
+  assert.equal(legacy.calibrationEligible, false);
   for (const item of INTERNAL_HUMOR_SEED) {
-    await upsertHumorContentDoc(db, {...item, safetyStatus: "approved", active: true});
-  }
-  for (const item of INTERNAL_HUMOR_SEED) {
-    const media = (await db.doc(`humorContent/${item.contentId}`).get()).get("media");
-    assert.equal(media.downloadUrl, null, `${item.contentId} still carries media`);
-    assert.equal(media.thumbUrl, null, `${item.contentId} still carries a thumbnail`);
+    const doc = (await db.doc(`humorContent/${item.contentId}`).get()).data();
+    assert.equal(doc.type, "meme", item.contentId);
+    assert.equal(doc.media.downloadUrl, item.media.downloadUrl, item.contentId);
+    assert.equal(doc.media.textBody, null, `${item.contentId} carries a caption`);
+    assert.equal(doc.attribution.provider, "giphy", item.contentId);
   }
   // Provider-shaped content: approved and servable, but never curated. It must
   // not appear in the pool, and its slot claim must be ignored.
@@ -429,7 +454,7 @@ step("changing a rating replaces it instead of stacking", async () => {
 });
 
 step("concurrent ratings keep content stats exact", async () => {
-  const contentId = "hc_tr_img_025";
+  const contentId = INTERNAL_HUMOR_SEED.find((i) => i.calibration.slot === null).contentId;
   const before = (await db.doc(`humorContent/${contentId}`).get()).data().stats ?? {};
   const users = ["qa_stats_1", "qa_stats_2", "qa_stats_3", "qa_stats_4"];
   const ratings = ["very_funny", "funny", "not_funny", "not_at_all"];

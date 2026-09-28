@@ -7,13 +7,11 @@
  * runs: `seedCalibrationCatalog` from the COMPILED functions output, so the
  * emulator gets the same catalogue the deployed functions would seed.
  *
- * Which catalogue is seeded is ACTIVE_CALIBRATION_CATALOG in
- * functions/src/humor/calibrationSeed.ts:
- * - "text_jokes": the Mevora-authored text cards (INTERNAL_HUMOR_SEED);
- * - "curated_giphy": the hand-picked GIPHY items (CURATED_GIPHY_CATALOG), and
- *   the text-joke documents are retired — deactivated and un-curated, never
- *   deleted — as is any `ext_giphy_<id>` sync copy of a curated clip and any
- *   `hc_gif_*` doc that left the catalogue.
+ * The catalogue is ACTIVE_CALIBRATION_CATALOG ("curated_giphy") in
+ * functions/src/humor/calibrationSeed.ts: the hand-picked GIPHY items
+ * (CURATED_GIPHY_CATALOG). Text-joke documents an earlier seed wrote are retired —
+ * deactivated and un-curated, never deleted — as is any `ext_giphy_<id>` sync
+ * copy of a curated clip and any `hc_gif_*` doc that left the catalogue.
  * The script reports how many docs it created, refreshed, converted (type
  * changed) and retired.
  *

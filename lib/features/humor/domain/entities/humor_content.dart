@@ -36,7 +36,8 @@ class HumorContent {
   final HumorCalibrationStage? calibrationStage;
 
   /// Who made a third-party item (GIPHY and similar providers require the
-  /// credit to be shown). `null` for curated Mevora content.
+  /// credit to be shown) — curated GIPHY clips included. `null` for content
+  /// Mevora wrote itself.
   final HumorContentAttribution? attribution;
 
   bool get isCalibrationItem => calibrationStage != null;

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
@@ -154,31 +154,19 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                // Skip never waits on the server: leaving must always work.
-                child: TextButton(
-                  onPressed: _skip,
-                  child: Text(l10n.humorCalibrationSkip),
-                ),
-              ),
               const Spacer(),
               Semantics(
                 // The illustration is decorative; the heading carries meaning.
                 excludeSemantics: true,
-                child: Icon(
-                  MevoraIcons.humor,
-                  size: 64,
-                  color: theme.colorScheme.primary,
+                child: const Center(
+                  child: MevoraSpot(art: MevoraArt.humor, size: 140),
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
                 l10n.humorCalibrationIntroTitle,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: theme.textTheme.headlineMedium,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -225,9 +213,11 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
                 onPressed: _loading ? null : () => unawaited(_start()),
               ),
               const SizedBox(height: AppSpacing.sm),
-              TextButton(
+              // Skip never waits on the server: leaving must always work.
+              MevoraButton(
+                label: l10n.humorCalibrationSkip,
+                variant: MevoraButtonVariant.ghost,
                 onPressed: _skip,
-                child: Text(l10n.humorCalibrationSkip),
               ),
             ],
           ),

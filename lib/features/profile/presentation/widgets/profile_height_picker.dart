@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/profile/domain/catalog/height_catalog.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
@@ -79,47 +81,66 @@ class _ProfileHeightPickerState extends State<ProfileHeightPicker> {
     final theme = Theme.of(context);
     final textStyle = theme.textTheme.bodyLarge;
 
+    // A band marks the row that counts, so the wheel reads as a picker
+    // rather than as a floating list.
     return SizedBox(
       height: 160,
-      child: ListWheelScrollView.useDelegate(
-        controller: _controller,
-        itemExtent: 36,
-        diameterRatio: 1.35,
-        perspective: 0.003,
-        physics: widget.enabled
-            ? const FixedExtentScrollPhysics(
-                parent: BouncingScrollPhysics(
-                  decelerationRate: ScrollDecelerationRate.fast,
-                ),
-              )
-            : const NeverScrollableScrollPhysics(),
-        onSelectedItemChanged: widget.enabled
-            ? (index) {
-                if (_suppressNotify) {
-                  return;
-                }
-                widget.onChanged(options[index]);
-              }
-            : null,
-        childDelegate: ListWheelChildBuilderDelegate(
-          childCount: options.length,
-          builder: (context, index) {
-            final cm = options[index];
-            final label = l10n.profileHeightCm(cm);
-            final isSelected = widget.valueCm == cm;
-            return Center(
-              child: Text(
-                label,
-                style: textStyle?.copyWith(
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          IgnorePointer(
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: context.palette.surface,
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                border: Border.all(color: context.palette.border),
               ),
-            );
-          },
-        ),
+            ),
+          ),
+          ListWheelScrollView.useDelegate(
+            controller: _controller,
+            itemExtent: 36,
+            diameterRatio: 1.35,
+            perspective: 0.003,
+            physics: widget.enabled
+                ? const FixedExtentScrollPhysics(
+                    parent: BouncingScrollPhysics(
+                      decelerationRate: ScrollDecelerationRate.fast,
+                    ),
+                  )
+                : const NeverScrollableScrollPhysics(),
+            onSelectedItemChanged: widget.enabled
+                ? (index) {
+                    if (_suppressNotify) {
+                      return;
+                    }
+                    widget.onChanged(options[index]);
+                  }
+                : null,
+            childDelegate: ListWheelChildBuilderDelegate(
+              childCount: options.length,
+              builder: (context, index) {
+                final cm = options[index];
+                final label = l10n.profileHeightCm(cm);
+                final isSelected = widget.valueCm == cm;
+                return Center(
+                  child: Text(
+                    label,
+                    style: textStyle?.copyWith(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

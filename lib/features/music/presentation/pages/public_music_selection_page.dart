@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 import 'package:mevora/features/music/presentation/controllers/public_music_controller.dart';
@@ -266,6 +267,7 @@ class _SelectableChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.pill),
           onTap: enabled ? onTap : null,
           child: Container(
+            constraints: const BoxConstraints(minHeight: 48),
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.sm,
               vertical: AppSpacing.xs,
@@ -273,12 +275,12 @@ class _SelectableChip extends StatelessWidget {
             decoration: BoxDecoration(
               color: selected
                   ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.surfaceContainerHighest,
+                  : context.palette.surface,
               borderRadius: BorderRadius.circular(AppRadii.pill),
               border: Border.all(
                 color: selected
                     ? theme.colorScheme.primary
-                    : Colors.transparent,
+                    : context.palette.border,
               ),
             ),
             child: Row(
@@ -304,7 +306,7 @@ class _SelectableChip extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(label, style: theme.textTheme.bodyMedium),
+                    Text(label, style: theme.textTheme.labelLarge),
                     if (sublabel != null)
                       Text(
                         sublabel!,

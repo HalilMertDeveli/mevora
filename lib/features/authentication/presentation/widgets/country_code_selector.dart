@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/authentication/domain/entities/country_code.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_bottom_sheet.dart';
@@ -24,8 +26,13 @@ class CountryCodeSelector extends StatelessWidget {
       label: '${l10n.countryCode} ${selected.flag} ${selected.dialPrefix}',
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(96, 52),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          // Matches the text field beside it, so the pair reads as one input.
+          minimumSize: const Size(96, 56),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s12),
+          side: BorderSide(color: context.palette.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
         ),
         onPressed: () async {
           final next = await MevoraBottomSheet.show<CountryCode>(
@@ -66,7 +73,8 @@ class _CountryCodePickerSheetState extends State<_CountryCodePickerSheet> {
     }).toList();
 
     return SizedBox(
-      height: 420,
+      // Tall enough to browse, short enough to leave the keyboard room.
+      height: MediaQuery.sizeOf(context).height * 0.6,
       child: Column(
         children: [
           MevoraTextField(

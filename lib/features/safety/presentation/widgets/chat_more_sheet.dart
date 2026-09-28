@@ -17,42 +17,48 @@ Future<void> showChatMoreSheet(
 }) {
   final l10n = AppLocalizations.of(context);
   final pageContext = context;
-  return MevoraBottomSheet.show<void>(
+  return MevoraBottomSheet.showActions<_ChatAction>(
     context,
     title: l10n.more,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const Icon(MevoraIcons.unmatch),
-          title: Text(l10n.unmatch),
-          onTap: () {
-            Navigator.pop(context);
-            unawaited(_unmatch(pageContext, controller));
-          },
-        ),
-        ListTile(
-          leading: const Icon(MevoraIcons.block),
-          title: Text(l10n.block),
-          onTap: () {
-            Navigator.pop(context);
-            unawaited(_block(pageContext, controller));
-          },
-        ),
-        ListTile(
-          leading: const Icon(MevoraIcons.report),
-          title: Text(l10n.report),
-          onTap: () {
-            Navigator.pop(context);
-            pageContext.push(
-              '${AppRoutes.report}?userId=${controller.otherUid}&matchId=${controller.matchId}',
-            );
-          },
-        ),
-      ],
-    ),
-  );
+    actions: [
+      MevoraSheetAction(
+        value: _ChatAction.unmatch,
+        label: l10n.unmatch,
+        icon: MevoraIcons.unmatch,
+      ),
+      MevoraSheetAction(
+        value: _ChatAction.block,
+        label: l10n.block,
+        icon: MevoraIcons.block,
+        destructive: true,
+      ),
+      MevoraSheetAction(
+        value: _ChatAction.report,
+        label: l10n.report,
+        icon: MevoraIcons.report,
+        destructive: true,
+      ),
+    ],
+  ).then((action) {
+    if (action == null || !pageContext.mounted) {
+      return;
+    }
+    switch (action) {
+      case _ChatAction.unmatch:
+        unawaited(_unmatch(pageContext, controller));
+      case _ChatAction.block:
+        unawaited(_block(pageContext, controller));
+      case _ChatAction.report:
+        unawaited(
+          pageContext.push(
+            '${AppRoutes.report}?userId=${controller.otherUid}&matchId=${controller.matchId}',
+          ),
+        );
+    }
+  });
 }
+
+enum _ChatAction { unmatch, block, report }
 
 Future<void> _unmatch(BuildContext context, ChatController controller) async {
   if (!context.mounted) {
@@ -77,9 +83,9 @@ Future<void> _unmatch(BuildContext context, ChatController controller) async {
   } on Object {
     if (context.mounted) {
       final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.somethingWentWrong)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.somethingWentWrong)));
     }
   }
 }

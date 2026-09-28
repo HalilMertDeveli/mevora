@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
@@ -199,10 +200,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               MevoraListRow(
                                 icon: MevoraIcons.calendar,
                                 title: l10n.onboardingBirthDate,
-                                value: MaterialLocalizations.of(context)
-                                    .formatMediumDate(
-                                      profile.birthDate!.toLocal(),
-                                    ),
+                                value: L10nFormat.mediumDate(
+                                  l10n,
+                                  profile.birthDate!,
+                                ),
                                 subtitle: l10n.settingsBirthDateLocked,
                                 trailing: Icon(
                                   MevoraIcons.lock,
@@ -229,6 +230,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           l10n.onboardingEducation,
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
+                        const SizedBox(height: AppSpacing.sm),
                         ProfileEducationPicker(
                           value: _education,
                           onChanged: (value) =>

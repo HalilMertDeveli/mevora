@@ -30,6 +30,7 @@ abstract final class MevoraIcons {
   static const IconData chevronUp = PhosphorIconsRegular.caretUp;
   static const IconData close = PhosphorIconsRegular.x;
   static const IconData more = PhosphorIconsRegular.dotsThree;
+  static const IconData dragHandle = PhosphorIconsRegular.dotsSixVertical;
   static const IconData moreVertical = PhosphorIconsRegular.dotsThreeVertical;
   static const IconData externalLink = PhosphorIconsRegular.arrowUpRight;
 
@@ -84,6 +85,7 @@ abstract final class MevoraIcons {
   static const IconData edit = PhosphorIconsRegular.pencilSimple;
   static const IconData editNote = PhosphorIconsRegular.notePencil;
   static const IconData delete = PhosphorIconsRegular.trash;
+  static const IconData export = PhosphorIconsRegular.downloadSimple;
   static const IconData search = PhosphorIconsRegular.magnifyingGlass;
   static const IconData searchEmpty = PhosphorIconsRegular.binoculars;
   static const IconData filters = PhosphorIconsRegular.slidersHorizontal;

@@ -18,7 +18,9 @@ import 'package:mevora/features/settings/presentation/widgets/language_settings_
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_dialog.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 class AccountSettingsPage extends StatefulWidget {
   const AccountSettingsPage({super.key});
@@ -42,114 +44,132 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.account)),
       body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenPadding,
+          AppSpacing.sm,
+          AppSpacing.screenPadding,
+          AppSpacing.xl,
+        ),
         children: [
           const LanguageSettingsSection(),
-          const SizedBox(height: AppSpacing.xl),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.privacyPermissionsTitle),
-            trailing: const Icon(MevoraIcons.chevronRight),
-            onTap: () => context.push(AppRoutes.privacyPermissions),
+          // The section carries its own bottom spacing.
+          MevoraListGroup(
+            children: [
+              MevoraListRow(
+                title: l10n.privacyPermissionsTitle,
+                icon: MevoraIcons.privacy,
+                onTap: () => context.push(AppRoutes.privacyPermissions),
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            l10n.linkedAccounts,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _linkTile(
-            context,
-            label: l10n.email,
-            linked: providers?.email ?? false,
-            linkedLabel: l10n.linked,
-            linkLabel: l10n.link,
-            onLink: () => unawaited(showLinkEmailDialog(context)),
-          ),
-          _linkTile(
-            context,
-            label: l10n.continueWithGoogle,
-            linked: providers?.google ?? false,
-            linkedLabel: l10n.linked,
-            linkLabel: l10n.link,
-            onLink: () => unawaited(auth.linkProvider(AuthProviderId.google)),
-          ),
-          _linkTile(
-            context,
-            label: l10n.continueWithApple,
-            linked: providers?.apple ?? false,
-            linkedLabel: l10n.linked,
-            linkLabel: l10n.link,
-            onLink: () => unawaited(auth.linkProvider(AuthProviderId.apple)),
-          ),
-          _linkTile(
-            context,
-            label: l10n.continueWithSpotify,
-            linked: providers?.spotify ?? false,
-            linkedLabel: l10n.linked,
-            linkLabel: l10n.link,
-            onLink: () => unawaited(auth.linkProvider(AuthProviderId.spotify)),
-          ),
-          _linkTile(
-            context,
-            label: l10n.continueWithPhone,
-            linked: providers?.phone ?? false,
-            linkedLabel: l10n.linked,
-            linkLabel: l10n.link,
-            onLink: null,
+          const SizedBox(height: AppSpacing.lg),
+          MevoraListGroup(
+            title: l10n.linkedAccounts,
+            children: [
+              _linkRow(
+                label: l10n.email,
+                icon: MevoraIcons.email,
+                linked: providers?.email ?? false,
+                l10n: l10n,
+                onLink: () => unawaited(showLinkEmailDialog(context)),
+              ),
+              // Brand names stay untranslated.
+              _linkRow(
+                label: 'Google',
+                icon: MevoraIcons.google,
+                linked: providers?.google ?? false,
+                l10n: l10n,
+                onLink: () =>
+                    unawaited(auth.linkProvider(AuthProviderId.google)),
+              ),
+              _linkRow(
+                label: 'Apple',
+                icon: MevoraIcons.apple,
+                linked: providers?.apple ?? false,
+                l10n: l10n,
+                onLink: () =>
+                    unawaited(auth.linkProvider(AuthProviderId.apple)),
+              ),
+              _linkRow(
+                label: 'Spotify',
+                icon: MevoraIcons.spotify,
+                linked: providers?.spotify ?? false,
+                l10n: l10n,
+                onLink: () =>
+                    unawaited(auth.linkProvider(AuthProviderId.spotify)),
+              ),
+              _linkRow(
+                label: l10n.phoneNumber,
+                icon: MevoraIcons.phone,
+                linked: providers?.phone ?? false,
+                l10n: l10n,
+                onLink: null,
+              ),
+            ],
           ),
           if (error != null) ...[
             const SizedBox(height: AppSpacing.md),
             AuthErrorBanner(message: error),
           ],
-          const SizedBox(height: AppSpacing.xl),
-          if (_exportInFlight)
-            MevoraLoading(message: l10n.exportMyData)
+          const SizedBox(height: AppSpacing.lg),
+          if (_exportInFlight || _deleteInFlight)
+            MevoraLoading(
+              message: _exportInFlight ? l10n.exportMyData : l10n.deleteAccount,
+            )
           else
-            MevoraButton(
-              label: l10n.exportMyData,
-              variant: MevoraButtonVariant.secondary,
-              onPressed: actionsLocked
-                  ? null
-                  : () => unawaited(_confirmExport(context)),
-            ),
-          const SizedBox(height: AppSpacing.md),
-          MevoraButton(
-            label: l10n.logOut,
-            variant: MevoraButtonVariant.secondary,
-            onPressed: actionsLocked ? null : () => unawaited(auth.signOut()),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (_deleteInFlight)
-            MevoraLoading(message: l10n.deleteAccount)
-          else
-            MevoraButton(
-              label: l10n.deleteAccount,
-              variant: MevoraButtonVariant.destructive,
-              onPressed: actionsLocked
-                  ? null
-                  : () => unawaited(_confirmDelete(context)),
+            MevoraListGroup(
+              children: [
+                MevoraListRow(
+                  title: l10n.exportMyData,
+                  icon: MevoraIcons.export,
+                  enabled: !actionsLocked,
+                  onTap: () => unawaited(_confirmExport(context)),
+                ),
+                MevoraListRow(
+                  title: l10n.logOut,
+                  icon: MevoraIcons.signOut,
+                  enabled: !actionsLocked,
+                  showChevron: false,
+                  onTap: () => unawaited(auth.signOut()),
+                ),
+                MevoraListRow(
+                  title: l10n.deleteAccount,
+                  icon: MevoraIcons.delete,
+                  destructive: true,
+                  enabled: !actionsLocked,
+                  showChevron: false,
+                  onTap: () => unawaited(_confirmDelete(context)),
+                ),
+              ],
             ),
         ],
       ),
     );
   }
 
-  Widget _linkTile(
-    BuildContext context, {
+  Widget _linkRow({
     required String label,
+    required IconData icon,
     required bool linked,
-    required String linkedLabel,
-    required String linkLabel,
+    required AppLocalizations l10n,
     required VoidCallback? onLink,
   }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(label, maxLines: 2, overflow: TextOverflow.ellipsis),
+    return MevoraListRow(
+      title: label,
+      icon: icon,
+      iconTone: linked ? MevoraTone.success : MevoraTone.neutral,
+      showChevron: false,
       trailing: linked
-          ? Text(linkedLabel)
+          ? MevoraPill(
+              label: l10n.linked,
+              icon: MevoraIcons.check,
+              tone: MevoraTone.success,
+              dense: true,
+            )
+          : onLink == null
+          ? null
           : MevoraButton(
-              label: linkLabel,
+              label: l10n.link,
               variant: MevoraButtonVariant.ghost,
               isExpanded: false,
               onPressed: onLink,

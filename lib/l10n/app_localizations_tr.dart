@@ -1478,7 +1478,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get boostSubtitle =>
-      'Boost açıkken profilin, seninle uyumu yüksek kişilere daha önce ve biraz daha geniş bir alanda gösterilir.';
+      'Boost aktifken profilin, seninle uyumu yüksek kişilere daha önce ve biraz daha geniş bir alanda gösterilir.';
 
   @override
   String get boostDuration => 'Profilini öne çıkar';
@@ -1496,11 +1496,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostVerifying => 'Satın alma doğrulanıyor...';
 
   @override
-  String get boostSuccessTitle => 'Boost açık';
+  String get boostSuccessTitle => 'Boost aktif';
 
   @override
   String get boostSuccessMessage =>
-      'Boost açık. Süresi boyunca profilin, seninle uyumu yüksek kişilere daha önce gösterilir.';
+      'Boost aktif. Süresi boyunca profilin, seninle uyumu yüksek kişilere daha önce gösterilir.';
 
   @override
   String get boostAlreadyActive =>

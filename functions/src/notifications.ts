@@ -63,7 +63,7 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
     en: {title: "Mevora", body: "Someone liked you"},
   },
   boostActivated: {
-    tr: {title: "Mevora", body: "Boost açık"},
+    tr: {title: "Mevora", body: "Boost aktif"},
     en: {title: "Mevora", body: "Boost is on"},
   },
   boostExpired: {

@@ -296,7 +296,9 @@ abstract final class MusicCompatibilityCalculator {
       insights.add(
         MusicInsight(
           code: MusicInsightCode.topSharedGenres,
-          params: {'genres': sharedGenreNames.take(2).join(', ')},
+          // Three, matching the three artists and three tracks the rest of the
+          // music surface works in. Two read as a thin answer.
+          params: {'genres': sharedGenreNames.take(3).join(', ')},
         ),
       );
     }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/errors/failure.dart';
@@ -17,9 +18,12 @@ final _en = lookupAppLocalizations(const Locale('en'));
 
 /// Records what the card asked the backend to publish, and can fail on demand.
 class _RecordingRepository implements MusicRepository {
-  _RecordingRepository({this.failure});
+  _RecordingRepository({this.failure, this.gate});
 
   final Failure? failure;
+
+  /// When set, the write does not finish until this completes.
+  final Completer<void>? gate;
   final calls = <({bool enabled, List<String> artistIds, List<String> trackIds})>[];
 
   @override
@@ -29,6 +33,7 @@ class _RecordingRepository implements MusicRepository {
     required List<String> trackIds,
   }) async {
     calls.add((enabled: enabled, artistIds: artistIds, trackIds: trackIds));
+    await gate?.future;
     final error = failure;
     if (error != null) {
       return Err(error);
@@ -184,4 +189,64 @@ void main() {
 
     expect(find.text('Spotify is unreachable'), findsOneWidget);
   });
+
+  testWidgets('the switch moves as soon as it is tapped', (tester) async {
+    // Against a real backend the write takes a moment. A control that does not
+    // move until it returns reads as broken, which is what was reported.
+    final gate = Completer<void>();
+    final repository = _RecordingRepository(gate: gate);
+    await _pump(tester, repository, _published);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pump();
+
+    expect(
+      tester.widget<Switch>(find.byType(Switch)).value,
+      isFalse,
+      reason: 'the tap must be visible before the write comes back',
+    );
+    expect(repository.calls.single.enabled, isFalse);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('a failed write rolls the switch back', (tester) async {
+    final repository = _RecordingRepository(
+      failure: const NetworkFailure('Spotify is unreachable'),
+    );
+    await _pump(tester, repository, _published);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<Switch>(find.byType(Switch)).value,
+      isTrue,
+      reason: 'nothing was stored, so the switch must show the stored value',
+    );
+    expect(find.text('Spotify is unreachable'), findsOneWidget);
+  });
+
+  testWidgets('the preview follows the switch, not the stored value', (
+    tester,
+  ) async {
+    final gate = Completer<void>();
+    final repository = _RecordingRepository(gate: gate);
+    await _pump(tester, repository, _published);
+    expect(find.text('Artist 1'), findsOneWidget);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pump();
+
+    expect(
+      find.text('Artist 1'),
+      findsNothing,
+      reason: 'the card should go as soon as the member turns it off',
+    );
+
+    gate.complete();
+    await tester.pumpAndSettle();
+  });
+
 }

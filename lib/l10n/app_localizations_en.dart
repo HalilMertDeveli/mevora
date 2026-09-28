@@ -3915,4 +3915,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorResultStrengthLow => 'Slight';
+
+  @override
+  String get musicTasteGeneralHeading => 'Generally listens to';
+
+  @override
+  String musicTasteDominant(String genres) {
+    return 'Mostly around $genres.';
+  }
+
+  @override
+  String musicTasteSignature(String artists) {
+    return 'Keeps coming back to $artists.';
+  }
+
+  @override
+  String musicTasteStable(int count) {
+    return '$count artists that have stayed with them for months.';
+  }
 }

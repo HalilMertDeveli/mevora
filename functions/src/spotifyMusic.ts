@@ -1,4 +1,5 @@
 import {consumeRateLimit} from "./callableRateLimit.js";
+import {deriveGeneralMusicTaste} from "./musicTasteAnalysis.js";
 import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
@@ -636,14 +637,36 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
   if (!me.id) {
     throw new HttpsError("unauthenticated", "oauth");
   }
-  const [topTracks, topArtists, recentlyPlayed, playlistTaste] = await Promise.all([
+  // Two windows, not one. `medium_term` is roughly the last six months and
+  // stays the basis of the imported taste; `long_term` covers the account's
+  // lifetime and is what tells a lasting favourite apart from a passing one.
+  // Both come from the scope already granted, and the long-term lists are
+  // smaller because only their top entries feed the summary.
+  const [
+    topTracks,
+    topArtists,
+    longTermTracks,
+    longTermArtists,
+    recentlyPlayed,
+    playlistTaste,
+  ] = await Promise.all([
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/tracks?time_range=medium_term&limit=50"),
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/artists?time_range=medium_term&limit=50"),
+    spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/tracks?time_range=long_term&limit=20"),
+    spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/artists?time_range=long_term&limit=20"),
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/player/recently-played?limit=50"),
     fetchPlaylistTaste(tokens.accessToken, tokens.scope),
   ]);
   const tracks = summarizeTracks(topTracks.items ?? []);
   const artists = summarizeArtists(topArtists.items ?? []);
+  const lastingTracks = summarizeTracks(longTermTracks.items ?? []);
+  const lastingArtists = summarizeArtists(longTermArtists.items ?? []);
+  const generalTaste = deriveGeneralMusicTaste({
+    longTermArtists: lastingArtists,
+    mediumTermArtists: artists,
+    longTermTracks: lastingTracks,
+    mediumTermTracks: tracks,
+  });
   // Last N unique recently-played tracks by Spotify track id (no string-name matching).
   const recent = summarizeTracks(recentlyPlayed.items ?? [], RECENT_UNIQUE_TRACK_LIMIT);
   const genres = genreShares(artists);
@@ -687,6 +710,9 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
     playlists: playlistTaste.playlists,
     musicProfile,
     musicProfileVersion: MUSIC_PROFILE_VERSION,
+    // Derived once per sync and stored beside the imported taste, so opening
+    // somebody's profile never recomputes it.
+    generalTaste,
     lastSyncedAt: FieldValue.serverTimestamp(),
     ...(existing.data()?.connectedAt ? {} : {connectedAt: FieldValue.serverTimestamp()}),
   };
@@ -702,6 +728,7 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
     topArtists: artists,
     topTracks: tracks,
     musicProfile,
+    generalTaste,
   };
   const selection = readPublicMusicSelection(
     existing.data(),

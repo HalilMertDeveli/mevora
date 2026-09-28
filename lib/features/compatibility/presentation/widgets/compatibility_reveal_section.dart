@@ -45,11 +45,21 @@ class CompatibilityRevealSection extends StatelessWidget {
       breakdown,
       maxBars: density == CompatibilityRevealDensity.compact ? 3 : 5,
     );
-    final strongest = compatibilityStrongestLabel(l10n, breakdown);
+    final strongest = CompatibilityL10n.strongest(l10n, breakdown);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Tier first, the number as supporting detail.
+        Text(
+          CompatibilityL10n.tier(l10n, breakdown.overallScore),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: AppColors.softGreen,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
         Center(
           child: AnimatedCompatibilityScore(
             target: breakdown.overallScore,
@@ -61,7 +71,7 @@ class CompatibilityRevealSection extends StatelessWidget {
             density == CompatibilityRevealDensity.full) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(
-            l10n.matchStrongestConnectionLabel(strongest),
+            strongest,
             textAlign: TextAlign.center,
             style: theme.textTheme.labelLarge?.copyWith(
               color: AppColors.softGreen,
@@ -119,9 +129,11 @@ class CompatibilityRevealSection extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    l10n.whyYouMatch,
-                    style: theme.textTheme.labelLarge,
+                  Flexible(
+                    child: Text(
+                      l10n.whyYouMatch,
+                      style: theme.textTheme.labelLarge,
+                    ),
                   ),
                   const SizedBox(width: 4),
                   const Icon(Icons.arrow_forward_rounded, size: 16),

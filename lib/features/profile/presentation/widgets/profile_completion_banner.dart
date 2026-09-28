@@ -30,12 +30,25 @@ class ProfileCompletionBanner extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Why first; the percentage is progress detail, not the reason.
             Text(
-              l10n.profileCompletionTitle(result.percent),
+              l10n.profileCompletionHeadline,
               style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.profileCompletionBody,
+              style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: AppSpacing.sm),
             LinearProgressIndicator(value: result.percent / 100),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.profileCompletionTitle(result.percent),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
             if (missingLabels.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(

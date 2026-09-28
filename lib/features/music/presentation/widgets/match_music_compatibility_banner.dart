@@ -7,6 +7,7 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
+import 'package:mevora/features/music/domain/services/music_insight_localizer.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
@@ -137,8 +138,14 @@ class _MatchMusicCompatibilityBannerState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                l10n.musicMatchTitle(score),
+                MusicInsightLocalizer.headline(l10n, score),
                 style: theme.textTheme.titleSmall,
+              ),
+              Text(
+                l10n.musicMatchTitle(score),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               if (data.sharedTrackCount > 0) ...[
                 const SizedBox(height: AppSpacing.xs),

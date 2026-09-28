@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
-import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_category_bar.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
@@ -34,15 +33,4 @@ List<Widget> compatibilityCategoryBarsFromBreakdown(
       .take(maxBars)
       .map((e) => DiscoveryCategoryBar(label: e.label, score: e.score))
       .toList();
-}
-
-String? compatibilityStrongestLabel(
-  AppLocalizations l10n,
-  CompatibilityBreakdown breakdown,
-) {
-  final category = breakdown.strongestCategory;
-  if (category == null) {
-    return null;
-  }
-  return CompatibilityL10n.category(l10n, category);
 }

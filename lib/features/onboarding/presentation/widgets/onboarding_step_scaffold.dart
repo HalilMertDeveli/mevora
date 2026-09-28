@@ -18,6 +18,7 @@ class OnboardingStepScaffold extends StatelessWidget {
     this.canContinue = true,
     this.showContinue = true,
     this.riveAsset,
+    this.subtitle,
   });
 
   final OnboardingStep step;
@@ -35,6 +36,10 @@ class OnboardingStepScaffold extends StatelessWidget {
   final bool showContinue;
 
   final String? riveAsset;
+
+  /// Why Mevora asks for this step, shown under the title. The basic-info
+  /// step falls back to the general "why we ask" message.
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -69,10 +74,10 @@ class OnboardingStepScaffold extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        if (step == OnboardingStep.basicInfo) ...[
+        if (_why(l10n) case final why?) ...[
           const SizedBox(height: AppSpacing.xs),
           Text(
-            l10n.onboardingUnderstandingMessage,
+            why,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               height: 1.45,
@@ -107,4 +112,10 @@ class OnboardingStepScaffold extends StatelessWidget {
       ],
     );
   }
+
+  String? _why(AppLocalizations l10n) =>
+      subtitle ??
+      (step == OnboardingStep.basicInfo
+          ? l10n.onboardingUnderstandingMessage
+          : null);
 }

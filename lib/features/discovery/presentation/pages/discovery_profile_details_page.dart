@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
+import 'package:mevora/features/discovery/domain/compatibility/compatibility_engine.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
 import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
+import 'package:mevora/features/onboarding/presentation/onboarding_labels.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
@@ -47,6 +50,11 @@ class _DiscoveryProfileDetailsPageState
     final candidate = widget.candidate;
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final reasons = CompatibilityL10n.serverReasons(
+      l10n,
+      candidate.compatibilityReasons,
+      relationshipGoal: candidate.relationshipGoal,
+    );
     final distance = candidate.distanceKm != null
         ? L10nFormat.distance(l10n, candidate.distanceKm!)
         : candidate.distanceLabel;
@@ -158,7 +166,11 @@ class _DiscoveryProfileDetailsPageState
                       spacing: AppSpacing.xs,
                       runSpacing: AppSpacing.xs,
                       children: candidate.interests
-                          .map((interest) => MevoraChip(label: interest))
+                          .map(
+                            (interest) => MevoraChip(
+                              label: OnboardingLabels.interest(l10n, interest),
+                            ),
+                          )
                           .toList(),
                     ),
                   ],
@@ -166,13 +178,14 @@ class _DiscoveryProfileDetailsPageState
                   ProfileQuestionAnswersSection(uid: candidate.uid),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
-                    l10n.whyYoureSeeingThis,
+                    l10n.compatWhyThisPerson(candidate.displayName),
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (candidate.hasCompatibilityScore)
                     MevoraChip(
-                      label: l10n.compatDiscoverBadge(
+                      label: CompatibilityL10n.tierWithPercent(
+                        l10n,
                         candidate.compatibilityScore,
                       ),
                       selected: true,
@@ -219,15 +232,17 @@ class _DiscoveryProfileDetailsPageState
                       runSpacing: AppSpacing.xs,
                       children: candidate.sharedInterests
                           .map(
-                            (interest) =>
-                                MevoraChip(label: interest, compact: true),
+                            (interest) => MevoraChip(
+                              label: OnboardingLabels.interest(l10n, interest),
+                              compact: true,
+                            ),
                           )
                           .toList(),
                     ),
                   ],
-                  if (candidate.compatibilityReasons.isNotEmpty) ...[
+                  if (reasons.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.sm),
-                    ...candidate.compatibilityReasons.map(
+                    ...reasons.map(
                       (reason) => Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                         child: Row(
@@ -259,14 +274,12 @@ class _DiscoveryProfileDetailsPageState
     );
   }
 
-  String _relationshipLabel(AppLocalizations l10n, String goal) {
-    return switch (goal) {
-      'longTerm' => l10n.relationshipGoalLongTerm,
-      'casual' => l10n.relationshipGoalCasual,
-      'figuringOut' => l10n.relationshipGoalFiguringOut,
-      _ => goal,
-    };
-  }
+  // Stored goals are onboarding ids ('long_term'); older data used camelCase.
+  String _relationshipLabel(AppLocalizations l10n, String goal) =>
+      OnboardingLabels.relationshipGoal(
+        l10n,
+        CompatibilityScoring.normalizeRelationshipGoal(goal),
+      );
 }
 
 /// Isolated carousel so photo index updates do not rebuild the details list

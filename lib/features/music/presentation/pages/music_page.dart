@@ -133,6 +133,13 @@ class _UnconnectedMusicView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
+        // Benefit first; the Connect button comes after the reason.
+        Text(
+          l10n.musicUnconnectedHeadline,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleLarge,
+        ),
+        const SizedBox(height: AppSpacing.sm),
         Text(
           l10n.musicUnconnectedCopy,
           textAlign: TextAlign.center,

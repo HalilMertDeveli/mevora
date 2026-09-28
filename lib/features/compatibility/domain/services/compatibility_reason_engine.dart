@@ -1,6 +1,7 @@
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_reason.dart';
 import 'package:mevora/features/discovery/domain/compatibility/compatibility_engine.dart';
+import 'package:mevora/features/onboarding/domain/entities/onboarding_enums.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 /// Deterministic "Why you match" reasons from real profile + breakdown data.
 abstract final class CompatibilityReasonEngine {
@@ -11,16 +12,21 @@ abstract final class CompatibilityReasonEngine {
   }) {
     final reasons = <CompatibilityReason>[];
 
+    final viewerGoal =
+        CompatibilityScoring.normalizeRelationshipGoal(viewer.relationshipGoal);
+    // "You want the same thing" needs a goal that says what someone wants;
+    // two people who both declined to answer do not share one.
     if (breakdown.relationshipScore >= 85 &&
-        CompatibilityScoring.normalizeRelationshipGoal(viewer.relationshipGoal) ==
+        viewerGoal != null &&
+        viewerGoal != OnboardingRelationshipGoal.preferNotToSay &&
+        viewerGoal ==
             CompatibilityScoring.normalizeRelationshipGoal(
               candidate.relationshipGoal,
-            ) &&
-        viewer.relationshipGoal != null) {
+            )) {
       reasons.add(
         CompatibilityReason(
           messageKey: 'compatReasonSameRelationshipGoal',
-          messageArgs: [_goalLabel(viewer.relationshipGoal!)],
+          messageArgs: [viewerGoal],
           category: CompatibilityCategory.relationship,
           priority: CompatibilityReasonPriority.high,
           iconName: 'favorite',
@@ -129,14 +135,6 @@ abstract final class CompatibilityReasonEngine {
     });
 
     return reasons.take(6).toList();
-  }
-
-  static String _goalLabel(String goal) {
-    final normalized = goal.replaceAll('_', '').toLowerCase();
-    if (normalized == 'longterm') {
-      return 'longTerm';
-    }
-    return goal;
   }
 
   static List<String> _sharedLanguages(UserProfile a, UserProfile b) {

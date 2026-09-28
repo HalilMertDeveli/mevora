@@ -12,33 +12,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'Mevora';
 
   @override
-  String get tagline => 'Find compatible people, not just nearby people.';
+  String get tagline => 'Not more people. Better matches for you.';
 
   @override
   String get connectTagline => 'Connect with people who match you.';
 
   @override
-  String get loginSlogan => 'Meet someone who fits you.';
+  String get loginSlogan => 'Not more people. Better matches for you.';
 
   @override
-  String get discoverBestMatchesTitle => 'Your best matches';
+  String get discoverBestMatchesTitle => 'For You';
 
   @override
-  String get discoverBestMatchesSubtitle =>
-      'Selected based on your compatibility';
+  String get discoverBestMatchesSubtitle => 'People who may be right for you';
 
   @override
   String get onboardingUnderstandingMessage =>
-      'Your answers help us understand your compatibility.';
+      'We use your answers to choose people who may be a better fit for you.';
 
   @override
-  String get discoveryActionConnect => 'Connect';
+  String get onboardingWhyRelationshipGoal =>
+      'This helps us find people who want the same thing.';
+
+  @override
+  String get onboardingWhyLifestyle =>
+      'Everyday habits matter more over time than they seem.';
+
+  @override
+  String get onboardingWhyBio =>
+      'Even a few lines give people somewhere to start.';
+
+  @override
+  String get discoveryActionConnect => 'Like';
 
   @override
   String get discoveryActionPriorityIntro => 'Priority intro';
 
   @override
   String get compatScoreHeading => 'Compatibility';
+
+  @override
+  String get compatTierStrong => 'Strong match';
+
+  @override
+  String get compatTierClose => 'Close on a lot of things';
+
+  @override
+  String get compatTierNotable => 'Real things in common';
+
+  @override
+  String get compatTierSome => 'A few things in common';
 
   @override
   String get continueWithEmail => 'Continue with email';
@@ -118,14 +141,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeBack => 'Welcome back';
 
   @override
-  String get loginSubtitle => 'Sign in to keep discovering compatible people.';
+  String get loginSubtitle => 'Sign in to see who we picked for you.';
 
   @override
   String get createAccountTitle => 'Create your account';
 
   @override
   String get registerSubtitle =>
-      'Join Mevora to meet people you are likely to connect with.';
+      'Join Mevora to meet people who may genuinely fit you.';
 
   @override
   String get email => 'Email';
@@ -423,11 +446,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authAppleFailed => 'Apple Sign-In could not be completed.';
 
   @override
-  String get onboardingTitle => 'A few more steps';
+  String get onboardingTitle => 'Let\'s get to know you';
 
   @override
   String get onboardingMessage =>
-      'Complete your profile so Mevora can introduce compatible people.';
+      'The better we know you, the more carefully we can choose who to show you.';
 
   @override
   String get onboardingFirstName => 'First name';
@@ -493,7 +516,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingInterestsHint =>
-      'Pick at least 3 interests so Mevora can find compatible people.';
+      'Pick at least 3. Shared interests help us find people you\'ll have something to talk about with.';
 
   @override
   String get onboardingBioHint => 'Share a little about yourself.';
@@ -515,10 +538,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingCompleteMessage =>
-      'Your profile is ready. Mevora will start introducing compatible people.';
+      'Your profile is ready. The better we get to know you, the more meaningful the people we pick for you will be.';
 
   @override
-  String get onboardingStartDiscovering => 'Start discovering';
+  String get onboardingStartDiscovering => 'See who we picked';
 
   @override
   String get onboardingGenderMan => 'Man';
@@ -668,11 +691,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get interestCooking => 'Cooking';
 
   @override
-  String get locationPermissionTitle => 'Discover people nearby';
+  String get locationPermissionTitle => 'Find people near you';
 
   @override
   String get locationPermissionMessage =>
-      'Mevora uses your location to show more compatible matches around you.';
+      'Mevora uses your location to pick people who fit you and are close enough to actually meet.';
 
   @override
   String get locationPermissionSub =>
@@ -686,7 +709,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get locationSkipHint =>
-      'Location is needed for matching and discovery. You can turn it on later in Settings.';
+      'Location helps us pick people near you. You can turn it on later in Settings.';
 
   @override
   String get locationSettingsTitle => 'Location permission is off';
@@ -703,21 +726,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gpsDisabledMessage =>
-      'Turn on location services on your device so we can show nearby matches.';
+      'Turn on location services so we can pick people near you.';
 
   @override
   String get locationDeniedMessage =>
-      'Without location permission we cannot show matches near you.';
+      'Without location permission we can\'t pick people near you.';
 
   @override
   String get locationSuccessTitle =>
-      'Nice. We are ready to find matches nearby.';
+      'All set. We can now pick people near you.';
 
   @override
   String get locationLocating => 'Finding your location...';
 
   @override
-  String get locationPreparingMatches => 'Preparing nearby matches...';
+  String get locationPreparingMatches => 'Picking people near you...';
 
   @override
   String get locationUnavailableTitle => 'Could not get your location';
@@ -741,34 +764,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueWithoutLocation => 'Continue without location';
 
   @override
-  String get discoveryTitle => 'Your matches are next';
+  String get discoveryTitle => 'Your picks are on the way';
 
   @override
   String get discoveryMessage =>
-      'Compatible people will appear here once discovery is ready.';
+      'People who may be right for you will appear here.';
 
   @override
-  String get discoveryEmptyTitle => 'No one new right now';
+  String get discoveryEmptyTitle => 'That\'s everyone for now';
 
   @override
   String get discoveryEmptyMessage =>
-      'Widen your distance or check back a little later.';
+      'When we find new people who may be right for you, you\'ll see them here. You can also widen your distance.';
 
   @override
-  String get discoverySeenEveryoneTitle => 'You\'ve seen everyone for now';
+  String get discoverySeenEveryoneTitle =>
+      'You\'ve seen everyone we picked for now';
 
   @override
   String get discoverySeenEveryoneMessage =>
-      'Check back later for new people, or restart the demo to explore again.';
+      'New people who may be right for you will show up here as we find them.';
 
   @override
-  String get exploreAgain => 'Explore again';
+  String get exploreAgain => 'Check again';
 
   @override
   String get restartDemo => 'Restart demo';
 
   @override
-  String get discoveryFiltersTitle => 'Discovery filters';
+  String get discoveryFiltersTitle => 'Your preferences';
 
   @override
   String get discoveryFiltersHint =>
@@ -811,7 +835,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compatibilityReasonsHeading => 'Why you might connect';
 
   @override
-  String get whyYoureSeeingThis => 'Why this profile is shown';
+  String get whyYoureSeeingThis => 'Why they could be right for you';
+
+  @override
+  String compatWhyThisPerson(String name) {
+    return 'Why $name?';
+  }
 
   @override
   String get sharedInterests => 'Shared interests';
@@ -825,7 +854,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tabDiscovery => 'Discover';
+  String get tabDiscovery => 'For You';
 
   @override
   String get tabMatches => 'Matches';
@@ -849,7 +878,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String compatibilityPercent(int percent) {
-    return 'Suggested · $percent% compatible';
+    return 'Picked for you · $percent% match';
   }
 
   @override
@@ -862,11 +891,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get superLike => 'Super Like';
 
   @override
-  String get itsAMatch => 'Strong connection';
+  String get itsAMatch => 'You chose each other';
 
   @override
-  String get youLikedEachOther =>
-      'You connected with someone who aligns with you.';
+  String get youLikedEachOther => 'You both said yes.';
 
   @override
   String get sendMessage => 'Send message';
@@ -875,7 +903,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startChat => 'Say hello';
 
   @override
-  String get keepSwiping => 'Keep exploring';
+  String get keepSwiping => 'Back to your picks';
 
   @override
   String get profile => 'Profile';
@@ -923,7 +951,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get blockedUsers => 'Blocked users';
 
   @override
-  String get discoveryPreferences => 'Discovery preferences';
+  String get discoveryPreferences => 'Match preferences';
 
   @override
   String get minAge => 'Minimum age';
@@ -935,24 +963,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maxDistance => 'Maximum distance';
 
   @override
-  String get matchesTitle => 'Your connections';
+  String get matchesTitle => 'Your matches';
 
   @override
-  String get matchesSubtitle =>
-      'People you\'ve connected with — ranked by compatibility.';
+  String get matchesSubtitle => 'People who chose you back, best match first.';
 
   @override
-  String get matchesEmptyTitle => 'Your strongest connections will appear here';
+  String get matchesEmptyTitle => 'Your matches will show up here';
 
   @override
   String get matchesEmptyMessage =>
-      'When you connect with someone, compatibility insights will show here.';
+      'When you and someone choose each other, you\'ll find them here — along with what you have in common.';
 
   @override
-  String get newMatch => 'New connection';
+  String get newMatch => 'New match';
 
   @override
-  String get connectionBadgeNew => 'New connection';
+  String get connectionBadgeNew => 'New match';
 
   @override
   String get connectionBadgeActive => 'Active conversation';
@@ -961,6 +988,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String matchStrongestConnectionLabel(String category) {
     return 'Strongest in $category';
   }
+
+  @override
+  String get compatStrongestRelationship => 'You want the same thing';
+
+  @override
+  String get compatStrongestValues => 'You see life in similar ways';
+
+  @override
+  String get compatStrongestQuestions =>
+      'You answered a lot of questions alike';
+
+  @override
+  String get compatStrongestMusic => 'Your music tastes have a lot in common';
+
+  @override
+  String get compatStrongestLifestyle => 'Your lifestyles fit together';
+
+  @override
+  String get compatStrongestInterests => 'You enjoy similar things';
+
+  @override
+  String get compatStrongestCommunication => 'You communicate in similar ways';
+
+  @override
+  String get compatStrongestLanguages => 'You share a language';
 
   @override
   String get chatHint => 'Write a message...';
@@ -1214,7 +1266,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get blockConfirmMessage =>
-      'They will disappear from discovery, and you will not be able to message or call each other.';
+      'We won\'t show them to you again, and you won\'t be able to message or call each other.';
 
   @override
   String get report => 'Report';
@@ -1266,8 +1318,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hideProfileTitle => 'Hide this profile?';
 
   @override
-  String get hideProfileMessage =>
-      'They will not appear in your discovery stack again.';
+  String get hideProfileMessage => 'We won\'t show them to you again.';
 
   @override
   String get linkedAccounts => 'Linked accounts';
@@ -1350,7 +1401,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hideOnlineStatus => 'Hide my online status';
 
   @override
-  String get notificationNewMatch => 'You have a new match!';
+  String get notificationNewMatch => 'You have a new match';
 
   @override
   String get notificationNewMessage => 'You have a new message';
@@ -1363,7 +1414,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get boostSubtitle =>
-      'Not more random people — more people who actually fit you.';
+      'While it\'s on, your profile is shown earlier — and a little further out — to people you\'re well matched with.';
 
   @override
   String get boostDuration => 'Boost your profile';
@@ -1381,11 +1432,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boostVerifying => 'Confirming your purchase...';
 
   @override
-  String get boostSuccessTitle => 'Boost is on! 🚀';
+  String get boostSuccessTitle => 'Boost is on';
 
   @override
   String get boostSuccessMessage =>
-      'Boost is on. While it lasts, your profile ranks higher among eligible Discover profiles.';
+      'Boost is on. While it lasts, your profile is shown earlier to people you\'re well matched with.';
 
   @override
   String get boostAlreadyActive =>
@@ -1421,7 +1472,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boostLoadingProduct => 'Loading store details...';
 
   @override
-  String get boostBackToDiscovery => 'Back to Discover';
+  String get boostBackToDiscovery => 'Back to For You';
 
   @override
   String get boostTooltip => 'Boost';
@@ -1585,7 +1636,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionLocationDescription =>
-      'Mevora uses your location to improve distance and nearby discovery.';
+      'Mevora uses your location to show distance and pick people near you.';
 
   @override
   String get permissionNotificationsTitle => 'Notifications';
@@ -1858,26 +1909,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get citySelectNone => 'No province found';
 
   @override
-  String get discoveryLoading => 'Discovering people for you...';
+  String get discoveryLoading => 'Picking people for you...';
 
   @override
-  String get discoveryLoadErrorTitle => 'Couldn\'t load profiles';
+  String get discoveryLoadErrorTitle => 'Couldn\'t load your picks';
 
   @override
   String get discoveryLoadErrorMessage =>
-      'Something went wrong while loading profiles.';
+      'Check your connection and try again.';
 
   @override
-  String get discoveryChangePreferences => 'Change discovery preferences';
+  String get discoveryChangePreferences => 'Change your preferences';
 
   @override
-  String get itsAMatchHeadline => 'Strong connection';
+  String get itsAMatchHeadline => 'Now you can start talking.';
 
   @override
-  String get matchCelebrationLead => 'You found a strong connection.';
+  String get matchCelebrationLead => 'You chose each other';
 
   @override
-  String get matchCelebrationInsight => 'See what aligns between you.';
+  String get matchCelebrationInsight => 'Here\'s what you have in common.';
 
   @override
   String get demoProfileBadge => 'Sample';
@@ -1897,14 +1948,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get musicTitle => 'Music';
 
   @override
-  String get musicConnectCta => '🎵 Connect Spotify';
+  String get musicConnectCta => 'Connect Spotify';
 
   @override
   String get musicConnected => '✓ Spotify connected';
 
   @override
+  String get musicUnconnectedHeadline =>
+      'Let your music taste be part of your match';
+
+  @override
   String get musicUnconnectedCopy =>
-      'Connect your Spotify account and discover people who fit your music taste.';
+      'Mevora looks at the artists and tracks you love to spot the taste you share with others. It\'s one part of your match — never the whole story.';
 
   @override
   String get musicConnecting => 'Connecting Spotify…';
@@ -1977,7 +2032,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSpotifySubtitle =>
-      'Music taste matching — no playback in Mevora.';
+      'Let your music taste be part of your match. Mevora doesn\'t play music.';
 
   @override
   String get matchScoreTitle => 'Match points';
@@ -2026,35 +2081,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchFeedbackFailed => 'Couldn\'t save that note. Try again.';
 
   @override
-  String get relationshipPromptTitle =>
-      'What do you think about relationships?';
+  String get relationshipPromptTitle => 'Help Mevora get to know you';
 
   @override
   String get relationshipQuestionsPreparing =>
-      'New questions are being prepared. Please try again in a bit.';
+      'New questions are on the way. Try again in a little while.';
 
   @override
-  String get relationshipTestTitle => 'Relationship Test';
+  String get relationshipTestTitle => 'Help Mevora get to know you';
 
   @override
-  String get relationshipTestHeadline => 'Discover aligned perspectives';
+  String get relationshipTestHeadline => 'Help Mevora get to know you';
 
   @override
   String get relationshipTestMessage =>
-      'Answer a few calm questions to see who may think similarly.';
+      'A few calm questions about what matters to you in a relationship. Your answers help us make more meaningful picks.';
 
   @override
-  String get relationshipTestStart => 'Start the Relationship Test';
+  String get relationshipTestStart => 'Let\'s start';
 
   @override
   String get relationshipTestLater => 'Not now';
 
   @override
-  String get relationshipContinueTitle => 'Keep matching?';
+  String get relationshipContinueTitle => 'A few more questions?';
 
   @override
   String get relationshipContinueMessage =>
-      'You\'ve completed 5 matching rounds. Do you want to continue finding people who share your answers?';
+      'Each answer helps us choose who to show you. Keep going now, or come back later.';
 
   @override
   String get relationshipContinueYes => 'Continue';
@@ -2063,25 +2117,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipContinueNo => 'Not now';
 
   @override
-  String get likesYouTitle => 'People who may fit you';
+  String get likesYouTitle => 'People who liked you';
 
   @override
-  String get likesYouEntrySubtitle => 'Explore who may align with you';
+  String get likesYouEntrySubtitle => 'See why you might be a good match';
 
   @override
   String get likesYouInsightSubtitle =>
-      'Tap to explore compatibility before you connect.';
+      'Tap to see what you have in common before you decide.';
 
   @override
   String likesYouCompatibilityLabel(int score) {
-    return '$score% Compatibility';
+    return '$score% match';
   }
 
   @override
-  String get likesYouSeeWhy => 'See why you match';
+  String get likesYouSeeWhy => 'Why this person?';
 
   @override
-  String get likesYouLockedTitle => 'People who may fit you';
+  String get likesYouLockedTitle => 'People who liked you';
 
   @override
   String likesYouLockedCount(int count) {
@@ -2090,35 +2144,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get likesYouLockedMessage =>
-      'Upgrade to Premium to see who may align with you. Photos and names stay hidden until then.';
+      'Upgrade to Premium to see who liked you and why you might be a good match. Photos and names stay hidden until then.';
 
   @override
   String get likesYouUnlockCta => 'Unlock with Premium';
 
   @override
-  String get likesYouBlurredHint => 'People who may fit you';
+  String get likesYouBlurredHint => 'People who liked you';
 
   @override
   String get likesYouHiddenName => 'Hidden profile';
 
   @override
-  String get likesYouHiddenSubtitle => 'Unlock to explore compatibility';
+  String get likesYouHiddenSubtitle => 'Unlock to see what you have in common';
 
   @override
-  String get likesYouEmptyTitle => 'Keep exploring';
+  String get likesYouEmptyTitle => 'No likes yet';
 
   @override
   String get likesYouEmptyMessage =>
-      'We\'ll surface people who may fit you here.';
+      'When someone likes you, you\'ll see them here — with why you might fit.';
 
   @override
   String get likesYouLoadError => 'Couldn\'t load likes. Please try again.';
 
   @override
-  String get relationshipTestDoneTitle => 'Your relationship test is complete';
+  String get relationshipTestDoneTitle =>
+      'Thanks — now we know you a little better';
 
   @override
-  String get relationshipTestFound => 'Someone answered in a similar way.';
+  String get relationshipTestFound => 'Someone answered a lot like you.';
 
   @override
   String get relationshipTestAlign => 'Your answers overlap on shared topics.';
@@ -2128,7 +2183,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipTestEmpty =>
-      'There\'s no one nearby who thinks like you right now.';
+      'No one nearby has answered quite like you yet.';
 
   @override
   String get relationshipTestViewProfile => 'View profile';
@@ -2137,7 +2192,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipTestOpenChat => 'Open chat';
 
   @override
-  String get relationshipMatchBadge => 'Relationship Test';
+  String get relationshipMatchBadge => 'Similar answers';
 
   @override
   String relationshipPromptProgress(int answered, int total) {
@@ -2321,21 +2376,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'You will be taken to our verification partner to scan your ID and take a selfie, then brought back here.';
 
   @override
-  String get whyYouMatch => 'Why you match';
+  String get whyYouMatch => 'Why they could be right for you';
 
   @override
   String get compatWhyButton => 'Why?';
 
   @override
   String compatDiscoverBadge(int percent) {
-    return '$percent% Compatible';
+    return '$percent% match';
   }
 
   @override
   String get compatCalculating => 'Calculating...';
 
   @override
-  String get compatUnavailable => 'Compatibility unavailable';
+  String get compatUnavailable => 'Match not available yet';
 
   @override
   String get profileEditSectionPhotos => 'Photos';
@@ -2402,7 +2457,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get questionAnswersEmptyHint =>
-      'Answer a few relationship questions to make your profile more personal. You can edit them anytime.';
+      'Answer a few relationship questions so people — and Mevora — can get to know you. You can edit them anytime.';
 
   @override
   String get questionAnswersSaveError =>
@@ -2425,8 +2480,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Match with this person to see their answers.';
 
   @override
-  String get questionAnswersMatchedSubtitle =>
-      'Discover what you have in common.';
+  String get questionAnswersMatchedSubtitle => 'See what you have in common.';
 
   @override
   String get questionAnswersPremiumRequired =>
@@ -2448,14 +2502,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String compatOverallLabel(int percent) {
-    return 'You\'re $percent% compatible';
+    return '$percent% match';
   }
 
   @override
-  String get compatNotEnoughData => 'Not enough data yet';
+  String get compatNotEnoughData => 'Not enough to go on yet';
 
   @override
-  String get compatStrongestConnection => 'Strongest connection';
+  String get compatStrongestConnection => 'What you share most';
 
   @override
   String get compatPotentialDifference => 'Potential difference';
@@ -2488,17 +2542,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compatCategoryActivity => 'Activity';
 
   @override
-  String compatReasonSameRelationshipGoal(String goal) {
-    return 'You both want a $goal relationship';
-  }
+  String get compatReasonSameRelationshipGoal => 'You want the same thing';
+
+  @override
+  String get compatReasonGoalLongTerm =>
+      'You\'re both looking for a long-term relationship';
+
+  @override
+  String get compatReasonGoalShortTerm =>
+      'You\'re both looking for something more casual';
+
+  @override
+  String get compatReasonGoalFriendship =>
+      'You\'re both here to make new friends';
+
+  @override
+  String get compatReasonGoalNotSure =>
+      'You\'re both still figuring out what you want';
 
   @override
   String compatReasonSharedInterests(String interests) {
-    return 'You both like $interests';
+    return 'You\'re both into $interests';
   }
 
   @override
-  String get compatReasonSimilarLifestyle => 'You have a similar lifestyle';
+  String get compatReasonSomeSharedInterests => 'You share some interests';
+
+  @override
+  String get compatReasonSimilarLifestyle => 'Your lifestyles fit together';
 
   @override
   String compatReasonSameAnswers(String aligned, String shared) {
@@ -2506,28 +2577,31 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String compatReasonSimilarMusic(String score) {
-    return 'Your music taste is $score% aligned';
-  }
+  String get compatReasonSimilarViews =>
+      'You answered relationship questions in similar ways';
+
+  @override
+  String get compatReasonSimilarMusic =>
+      'Your music tastes have a lot in common';
 
   @override
   String get compatReasonCommunication => 'You communicate in similar ways';
 
   @override
-  String get hiddenCompatTitle => 'Someone is thinking like you 👀';
+  String get hiddenCompatTitle => 'Someone here thinks a lot like you';
 
   @override
   String hiddenCompatMessage(int count) {
-    return 'Someone answered $count questions the same way you did.';
+    return 'They answered $count questions the same way you did.';
   }
 
   @override
   String hiddenCompatCompatibility(int percent) {
-    return '$percent% compatibility';
+    return '$percent% match';
   }
 
   @override
-  String get hiddenCompatCta => 'Discover who';
+  String get hiddenCompatCta => 'See who it is';
 
   @override
   String get hiddenCompatDismiss => 'Not now';
@@ -2677,14 +2751,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get faqHowMatchA =>
-      'When you and another person both like each other in Discover, Mevora creates a mutual match. You can then chat from the Matches tab.';
+      'Mevora picks people who may be right for you. When you and someone like each other, you match and can chat from the Matches tab.';
 
   @override
   String get faqMatchPercentQ => 'What does the match percentage mean?';
 
   @override
   String get faqMatchPercentA =>
-      'It is a compatibility estimate based on profile answers, interests, lifestyle, music taste, and other signals Mevora uses. It helps you understand why you might connect, but it is not a guarantee.';
+      'It\'s an estimate of how well you might fit, based on your answers, interests, lifestyle, music taste and other signals. It helps explain why Mevora picked someone for you — it\'s never a guarantee.';
 
   @override
   String get faqCantMessageQ => 'Why can\'t I send a message?';
@@ -3081,18 +3155,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String musicMatchTitle(int percent) {
-    return '🎵 Music Match — $percent%';
+    return 'Music match · $percent%';
   }
 
   @override
-  String get musicInsightBandHigh => 'Your music tastes are quite similar.';
+  String get musicInsightBandHigh => 'Your music tastes have a lot in common.';
 
   @override
-  String get musicInsightBandMid => 'You share some strong music tastes.';
+  String get musicInsightBandMid =>
+      'Your music tastes share some clear common ground.';
 
   @override
-  String get musicInsightBandLow =>
-      'Your music tastes differ, but you still share a few artists.';
+  String get musicInsightBandLow => 'Your music tastes overlap in places.';
 
   @override
   String musicInsightSharedTracks(int count) {
@@ -3155,7 +3229,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileEditSectionHobbies => 'Hobbies';
 
   @override
-  String get profileEditSectionExtended => 'Complete your profile';
+  String get profileEditSectionExtended => 'Help us get to know you';
 
   @override
   String get profileLanguagesHint => 'Select the languages you speak.';
@@ -3181,6 +3255,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String profileCompletionTitle(int percent) {
     return 'Your profile is $percent% complete';
   }
+
+  @override
+  String get profileCompletionHeadline => 'Help us get to know you';
+
+  @override
+  String get profileCompletionBody =>
+      'What you add to your profile helps us pick more meaningful people for you.';
 
   @override
   String profileCompletionMissing(String fields) {
@@ -3474,7 +3555,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicMatchTeaser =>
-      '🎵 Your music tastes may align — unlock full insights with Premium';
+      'Your music tastes may overlap. See the details with Premium.';
 
   @override
   String get musicPremiumUnlock => 'Unlock';
@@ -3489,8 +3570,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorLabTitle => 'Humor Lab';
 
   @override
-  String get humorLabSubtitle =>
-      'Tell us how funny each joke, clip or meme is.';
+  String get humorLabSubtitle => 'Keep showing us what makes you laugh.';
 
   @override
   String get humorLabDiscoverCta => 'Open Humor Lab';
@@ -3583,13 +3663,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Seems we both enjoy a bit of playful teasing — should I start, or will you?';
 
   @override
-  String get humorCompatibilityLevelHigh => 'Your humor match is high';
+  String get humorCompatibilityLevelHigh => 'Your sense of humor is very close';
 
   @override
-  String get humorCompatibilityLevelMedium => 'Your humor match is moderate';
+  String get humorCompatibilityLevelMedium =>
+      'You laugh at a lot of the same things';
 
   @override
-  String get humorCompatibilityLevelLow => 'Your humor match is low';
+  String get humorCompatibilityLevelLow => 'Your humor overlaps in places';
 
   @override
   String get humorCompatibilityBuilding =>
@@ -3731,14 +3812,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Counts can lag a little behind live activity.';
 
   @override
-  String get onboardingMusicTitle => 'Does music matter to you? 🎧';
+  String get onboardingMusicTitle =>
+      'Let your music taste be part of your match';
 
   @override
   String get onboardingMusicBody =>
-      'Connect Spotify and Mevora can find people who actually listen to what you listen to — and explain why you fit.';
+      'Connect Spotify and Mevora will also look at the artists and tracks you love, then show you the taste you share with someone. Music never decides a match on its own.';
 
   @override
-  String get onboardingMusicConnect => 'Connect my Spotify';
+  String get onboardingMusicConnect => 'Connect Spotify';
 
   @override
   String get onboardingMusicSkip => 'Skip for now';
@@ -3814,11 +3896,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Spotify is connected, but there isn\'t much listening history yet.';
 
   @override
-  String get humorCalibrationIntroTitle => 'Let us find your humor';
+  String get humorCalibrationIntroTitle => 'Let\'s learn what makes you laugh';
 
   @override
   String get humorCalibrationIntroBody =>
-      'React to a few short pieces. We will learn what makes you laugh, shape Humor Lab around you and show you the humor you share with your matches.';
+      'React to a few short pieces. Your reactions help us understand your sense of humor, so we can show you the humor you share with your matches.';
 
   @override
   String get humorCalibrationIntroMeta => '15 short pieces · about a minute';
@@ -3854,7 +3936,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not enough content right now. Please try again later.';
 
   @override
-  String get humorProfileEntryNotStarted => 'Discover your humor';
+  String get humorProfileEntryNotStarted => 'Let\'s learn what makes you laugh';
 
   @override
   String humorProfileEntryInProgress(int completed, int total) {

@@ -4,6 +4,7 @@ import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_category_bars.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -115,15 +116,14 @@ class MatchConnectionTile extends StatelessWidget {
                     if (breakdown != null) ...[
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        '${breakdown!.overallScore}%',
-                        style: theme.textTheme.headlineSmall?.copyWith(
+                        CompatibilityL10n.tier(l10n, breakdown!.overallScore),
+                        style: theme.textTheme.titleSmall?.copyWith(
                           color: AppColors.softGreen,
                           fontWeight: FontWeight.w600,
-                          height: 1,
                         ),
                       ),
                       Text(
-                        l10n.compatScoreHeading,
+                        l10n.compatDiscoverBadge(breakdown!.overallScore),
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -142,10 +142,13 @@ class MatchConnectionTile extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  l10n.whyYouMatch,
-                                  style: theme.textTheme.labelLarge?.copyWith(
-                                    color: theme.colorScheme.secondary,
+                                Flexible(
+                                  child: Text(
+                                    l10n.whyYouMatch,
+                                    style:
+                                        theme.textTheme.labelLarge?.copyWith(
+                                      color: theme.colorScheme.secondary,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 4),

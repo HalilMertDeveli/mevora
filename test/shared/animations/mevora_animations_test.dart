@@ -79,9 +79,9 @@ void main() {
       expect(find.byType(MevoraAvatar), findsNWidgets(2));
       await tester.pump();
       await tester.pump(AppDurations.match);
-      expect(find.text('You found a strong connection.'), findsOneWidget);
-      expect(find.text('Strong connection'), findsOneWidget);
-      expect(find.text('Keep exploring'), findsOneWidget);
+      expect(find.text('You chose each other'), findsOneWidget);
+      expect(find.text('Now you can start talking.'), findsOneWidget);
+      expect(find.text('Back to your picks'), findsOneWidget);
     },
   );
 

@@ -31,10 +31,12 @@ export type PushPrefKey =
   | "likeNotifications"
   | "notificationsEnabled";
 
+// Push copy follows docs/product-language.md: describe the real event, calmly —
+// no exclamation marks, no counts or urgency meant to pull someone back in.
 const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: string; body: string}}> = {
   newMatch: {
-    tr: {title: "Mevora", body: "Yeni bir eşleşmen var!"},
-    en: {title: "Mevora", body: "You have a new match!"},
+    tr: {title: "Mevora", body: "Biriyle birbirinizi seçtiniz. Artık konuşabilirsiniz."},
+    en: {title: "Mevora", body: "You and someone chose each other. You can start talking now."},
   },
   newMessage: {
     tr: {title: "Mevora", body: "Yeni mesaj"},
@@ -61,7 +63,7 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
     en: {title: "Mevora", body: "Someone liked you"},
   },
   boostActivated: {
-    tr: {title: "Mevora", body: "Boost aktif"},
+    tr: {title: "Mevora", body: "Boost açık"},
     en: {title: "Mevora", body: "Boost is on"},
   },
   boostExpired: {

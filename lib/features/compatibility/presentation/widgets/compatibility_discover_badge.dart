@@ -3,6 +3,7 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 /// Prominent compatibility score for discovery cards (Mevora 2.0).
@@ -57,17 +58,17 @@ class DiscoveryCompatibilityScore extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // The tier is the message; the percentage is the detail under it.
         Text(
-          '$score%',
-          style: theme.textTheme.displayMedium?.copyWith(
+          CompatibilityL10n.tier(l10n, score),
+          style: theme.textTheme.titleMedium?.copyWith(
             color: AppColors.softGreen,
             fontWeight: FontWeight.w600,
-            height: 1,
           ),
         ),
         const SizedBox(height: 2),
         Text(
-          l10n.compatScoreHeading,
+          l10n.compatDiscoverBadge(score),
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -85,9 +86,11 @@ class DiscoveryCompatibilityScore extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  l10n.whyYouMatch,
-                  style: theme.textTheme.labelLarge,
+                Flexible(
+                  child: Text(
+                    l10n.whyYouMatch,
+                    style: theme.textTheme.labelLarge,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 const Icon(Icons.arrow_forward_rounded, size: 16),

@@ -45,8 +45,9 @@ void main() {
     );
     expect(find.text('Elif, 26'), findsOneWidget);
     expect(find.text('Istanbul'), findsOneWidget);
-    expect(find.text('88%'), findsOneWidget);
-    expect(find.text(_en.compatScoreHeading), findsOneWidget);
+    // Tier leads, the percentage is the detail under it.
+    expect(find.text(_en.compatTierStrong), findsOneWidget);
+    expect(find.text(_en.compatDiscoverBadge(88)), findsOneWidget);
     expect(find.text('Coffee lover'), findsOneWidget);
   });
 
@@ -109,12 +110,20 @@ void main() {
     await tester.pumpAndSettle();
     // Photo PageView is above the details ListView — scroll the list only.
     await tester.scrollUntilVisible(
-      find.text(_en.whyYoureSeeingThis),
+      find.text(_en.compatWhyThisPerson(candidate.displayName)),
       120,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text(_en.whyYoureSeeingThis), findsOneWidget);
-    expect(find.text(_en.compatDiscoverBadge(91)), findsWidgets);
+    expect(
+      find.text(_en.compatWhyThisPerson(candidate.displayName)),
+      findsOneWidget,
+    );
+    expect(
+      find.text('${_en.compatTierStrong} · ${_en.compatDiscoverBadge(91)}'),
+      findsWidgets,
+    );
+    // Free-text reasons the backend never sends are not shown raw.
+    expect(find.text('Both love specialty coffee'), findsNothing);
   });
 
   testWidgets('profile photo carousel swipes to second photo', (tester) async {

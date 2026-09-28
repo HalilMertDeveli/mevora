@@ -3,6 +3,7 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_category_bars.dart';
 import 'package:mevora/features/matching/domain/models/incoming_likes.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -88,7 +89,10 @@ class LikesYouInsightCard extends StatelessWidget {
             if (breakdown != null) ...[
               const SizedBox(height: AppSpacing.md),
               Text(
-                l10n.likesYouCompatibilityLabel(breakdown!.overallScore),
+                CompatibilityL10n.tierWithPercent(
+                  l10n,
+                  breakdown!.overallScore,
+                ),
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: AppColors.softGreen,
                   fontWeight: FontWeight.w600,

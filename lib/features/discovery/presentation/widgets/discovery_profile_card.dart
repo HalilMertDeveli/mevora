@@ -5,11 +5,13 @@ import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/theme/app_shadows.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_category_bar.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
+import 'package:mevora/features/onboarding/presentation/onboarding_labels.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
@@ -35,6 +37,11 @@ class DiscoveryProfileCard extends StatelessWidget {
         ? L10nFormat.distance(l10n, candidate.distanceKm!)
         : candidate.distanceLabel;
     final categoryBars = discoveryCategoryBars(context, candidate);
+    final reasons = CompatibilityL10n.serverReasons(
+      l10n,
+      candidate.compatibilityReasons,
+      relationshipGoal: candidate.relationshipGoal,
+    );
     final showScore = candidate.compatibilityStatus ==
             CompatibilityDisplayStatus.calculating ||
         candidate.compatibilityStatus == CompatibilityDisplayStatus.unavailable ||
@@ -163,17 +170,20 @@ class DiscoveryProfileCard extends StatelessWidget {
                             children: candidate.interests
                                 .map(
                                   (interest) => MevoraChip(
-                                    label: interest,
+                                    label: OnboardingLabels.interest(
+                                      l10n,
+                                      interest,
+                                    ),
                                     compact: true,
                                   ),
                                 )
                                 .toList(),
                           ),
                         ],
-                        if (candidate.compatibilityReasons.isNotEmpty) ...[
+                        if (reasons.isNotEmpty) ...[
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            candidate.compatibilityReasons.first,
+                            reasons.first,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),

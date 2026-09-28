@@ -34,8 +34,8 @@ that was not made for it.
   `calibrationSeed.ts` is exactly this. (It used to glue captions onto random
   picsum stills and four stock clips — a grocery joke over a seascape, a fridge
   joke under a sword fight. That is gone, and so are those hosts.)
-- **Provider (GIPHY)**: the item's own MP4, its own still frame as poster, and
-  its own title as caption (cleaned of "GIF", "GIF by …", "by <user>"). An empty,
+- **Provider (GIPHY)**: the item's own animated image (a Clip: its own MP4),
+  its own still frame as poster, and its own title as caption (cleaned of "GIF", "GIF by …", "by <user>"). An empty,
   generic or uploader-only title becomes `textBody: null` — never invented text.
   Credit is stored as `attribution` and sent to the client (contract K1).
 
@@ -66,12 +66,26 @@ the primary category signal (weight ≤ 0.6; a keyword in the item's own text ad
 a secondary dimension at 0.35). Rotation is deterministic: the UTC day number
 picks the starting family and page.
 
-**Renditions.** GIFs: the highest-resolution H.264 MP4 among `original_mp4`,
-`fixed_height.mp4`, `downsized_small.mp4` whose `mp4_size` ≤ 2.5 MB, else the
-smallest. Clips (`/v1/clips/search`, needs GIPHY approval; opt in with
-`clips: true` or `GIPHY_CLIPS_ENABLED=true`): `480p`, else `360p`, else `720p`,
-never 1080p/4k; 401/403/404 fall back to GIF search silently. Poster:
-`fixed_height_still`, else `original_still`.
+**Renditions.** A GIF is a silent short loop — an image, not a video — so it is
+stored as `type: "meme"` with an animated image the client shows through
+Flutter's own image pipeline (which decodes and loops animated WebP/GIF):
+`original.webp` when `webp_size` ≤ 1.5 MB, else `downsized_medium` (animated
+GIF), else the wider of `fixed_width.webp` / `fixed_height.webp`, else the
+smallest known WebP; `aspectRatio` comes from the chosen rendition. Only a GIF
+with no animated-image rendition falls back to its MP4 (the highest-resolution
+one ≤ 2.5 MB among `original_mp4`, `fixed_height.mp4`, `downsized_small.mp4`)
+as `type: "video"`. Why: on an Android 16 emulator (media3 1.9.2) ExoPlayer
+often never received a byte for GIPHY's small MP4s — 12 s init timeouts, two
+attempts, "Video yüklenemedi" — while the posters from the same CDN loaded at
+once through the image stack. Clips (`/v1/clips/search`, needs GIPHY approval;
+opt in with `clips: true` or `GIPHY_CLIPS_ENABLED=true`) are real video with
+sound and stay MP4 `video`: `480p`, else `360p`, else `720p`, never 1080p/4k;
+401/403/404 fall back to GIF search silently. Poster: `fixed_height_still`,
+else `original_still`. Docs ingested earlier as GIF MP4 video are switched by
+the sync when the same GIF is fetched again — `type` and
+`media.downloadUrl`/`aspectRatio` only, and only while the doc is approved and
+active; rejected or inactive docs and Clips are never touched. (Restarting the
+emulator wipes its data, which also re-ingests with the new rendition.)
 
 **Relevance (deterministic, no LLM).** Accept only items whose title / slug /
 alt text / tags carry a TR+EN humour, reaction or comedy marker, or that come
@@ -79,7 +93,7 @@ from a verified entertainment account through a comedy query. Reject the
 stop-list (wallpaper, landscape, nature, background, scenery, loop pattern,
 abstract, aesthetic, logos, greeting cards such as "happy birthday" /
 "günaydın", transparent stickers), any rating other than g / pg / pg-13, and
-items without a usable HTTPS MP4. Fewer items beat filler.
+items without usable HTTPS media. Fewer items beat filler.
 
 **Trust tiers** (`sourceTrust` on the doc): `curated`, `verified_provider`
 (GIPHY `is_verified` or a known studio/network account), `provider`,
@@ -184,8 +198,10 @@ not "the profile stopped learning".
 
 ## Flutter media
 
-- `video_player` for MP4 autoplay / mute / loop / pause when off-screen
-- Images/memes via `MevoraNetworkImages`
+- `video_player` for MP4 autoplay / mute / loop / pause when off-screen (Clips)
+- Images/memes (GIPHY GIFs as animated WebP/GIF included) via
+  `MevoraNetworkImages`: poster + spinner until the first frame, bounded by
+  `imageLoadTimeout` (15 s); failure → "Tekrar dene" (once) / "Sonraki"
 - Vertical `PageView` + 5-level rating bar + undo
 
 ## Setup

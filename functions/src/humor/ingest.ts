@@ -1,4 +1,4 @@
-import type {Firestore} from "firebase-admin/firestore";
+import {FieldValue, type DocumentData, type Firestore} from "firebase-admin/firestore";
 import {logger} from "firebase-functions";
 import {safeLogMeta} from "../security/logHygiene.js";
 import {applyHumorAiTagging} from "./aiTagging.js";
@@ -8,12 +8,14 @@ import {
   type UpsertHumorContentInput,
 } from "./contentRepository.js";
 import {
+  isAllowedMediaUrl,
   probeMediaUrl,
   validateHumorSourceItem,
 } from "./contentValidation.js";
 import {
   cleanProviderTitle,
   GiphyHumorSource,
+  mediaPathKey,
   selectQueryFamilies,
   titleIdentityKey,
 } from "./giphySource.js";
@@ -90,6 +92,72 @@ export function inferProviderCategory(item: HumorSourceItem): {
   return {category: primary, vector};
 }
 
+/**
+ * True when `data` is a GIPHY GIF that an earlier ingest stored as MP4 video
+ * and `item` — the provider result for that same sourceId, fetched again — now
+ * maps to an animated image. Every condition must hold:
+ * - the doc is `ext_giphy_*`, a licensed GIPHY item, still approved AND active
+ *   (rejected / pending / deactivated docs are never touched, so moderation
+ *   can never be undone from here);
+ * - it is stored as `type: "video"` with no duration (GIF ingest never wrote
+ *   one; a Clip carries its real duration);
+ * - its stored MP4 is one of this GIF's own MP4 renditions (same `<id>/<file>`
+ *   tail), which a Clip's assets never are;
+ * - the fresh item is a GIF (not a Clip) whose new media is an allowed image.
+ */
+export function isLegacyGifVideoDoc(
+  contentId: string,
+  data: DocumentData | undefined,
+  item: HumorSourceItem,
+): boolean {
+  if (!data || !contentId.startsWith("ext_giphy_")) return false;
+  if (item.origin !== "gif" || item.type === "video" || item.type === "text") return false;
+  if (!isAllowedMediaUrl(item.media?.downloadUrl)) return false;
+  if (data.source?.type !== "licensed_api" || data.source?.provider !== "giphy") return false;
+  if (data.safetyStatus !== "approved" || data.active !== true) return false;
+  if (data.type !== "video") return false;
+  const media = (data.media ?? {}) as Record<string, unknown>;
+  if (media.durationMs !== null && media.durationMs !== undefined) return false;
+  const storedKey = mediaPathKey(typeof media.downloadUrl === "string" ? media.downloadUrl : null);
+  if (!storedKey || !storedKey.endsWith(".mp4")) return false;
+  return (item.legacyVideoKeys ?? []).includes(storedKey);
+}
+
+/**
+ * Narrow, idempotent migration used only by the provider sync: swaps a legacy
+ * GIF-as-MP4 doc's `type` and `media.downloadUrl` / `media.aspectRatio` to the
+ * animated-image rendition. Re-checked inside a transaction, so a doc an admin
+ * rejects or deactivates meanwhile is left alone; never touches safety status,
+ * `active`, the poster, the caption, attribution, trust or calibration.
+ * Returns true only when it wrote.
+ */
+export async function migrateLegacyGifVideoDoc(
+  db: Firestore,
+  contentId: string,
+  item: HumorSourceItem,
+  options?: {probe?: boolean},
+): Promise<boolean> {
+  if (options?.probe !== false && !(await probeMediaUrl(item.media.downloadUrl))) {
+    return false;
+  }
+  const ref = db.collection("humorContent").doc(contentId);
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.exists ? snap.data() : undefined;
+    if (!isLegacyGifVideoDoc(contentId, data, item)) {
+      return false;
+    }
+    const aspectRatio = item.media.aspectRatio ?? data?.media?.aspectRatio ?? null;
+    tx.update(ref, {
+      "type": "meme",
+      "media.downloadUrl": item.media.downloadUrl,
+      "media.aspectRatio": aspectRatio,
+      "updatedAt": FieldValue.serverTimestamp(),
+    });
+    return true;
+  });
+}
+
 export async function ingestHumorSourceItem(
   db: Firestore,
   item: HumorSourceItem,
@@ -108,6 +176,15 @@ export async function ingestHumorSourceItem(
   const contentId = contentIdFor(provider, item.sourceId);
   const existing = await db.collection("humorContent").doc(contentId).get();
   if (existing.exists) {
+    // The one exception: a GIF stored as MP4 video before GIFs became
+    // animated images gets its rendition (type + media) swapped — nothing else.
+    if (
+      provider === "giphy" &&
+      isLegacyGifVideoDoc(contentId, existing.data(), item) &&
+      (await migrateLegacyGifVideoDoc(db, contentId, item, options))
+    ) {
+      return {upserted: false, contentId, reason: "migrated"};
+    }
     return {
       upserted: false,
       contentId,
@@ -188,6 +265,8 @@ export type HumorProviderSyncResult = {
   rejected: Record<string, number>;
   /** Within-batch repeats plus items already in the catalogue. */
   duplicates: number;
+  /** Legacy GIF-as-MP4 docs switched to their animated-image rendition. */
+  migrated: number;
   /** Provider request failures by kind (status only; never a URL). */
   errors: Record<string, number>;
   /** True only when the Clips endpoint answered for this key. */
@@ -238,6 +317,7 @@ export async function syncHumorFromGiphy(input: {
     accepted: 0,
     rejected: {},
     duplicates: 0,
+    migrated: 0,
     errors: {},
     clipsAvailable: false,
   };
@@ -337,6 +417,8 @@ export async function syncHumorFromGiphy(input: {
       });
       if (written.upserted) {
         result.accepted += 1;
+      } else if (written.reason === "migrated") {
+        result.migrated += 1;
       } else if (written.reason === "duplicate") {
         result.duplicates += 1;
       } else {
@@ -359,6 +441,7 @@ export async function syncHumorFromGiphy(input: {
       fetched: result.fetched,
       accepted: result.accepted,
       duplicates: result.duplicates,
+      migrated: result.migrated,
       rejected: result.rejected,
       errors: result.errors,
       clipsAvailable: result.clipsAvailable,

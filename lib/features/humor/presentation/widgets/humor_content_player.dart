@@ -39,6 +39,12 @@ enum HumorMediaFailure {
 /// Full-bleed humor media: video (autoplay/mute/loop), image/meme, or a text
 /// card.
 ///
+/// An image or meme — including a GIPHY GIF, which the backend stores as an
+/// animated WebP/GIF — goes through Flutter's own image pipeline, which
+/// decodes and loops animated images itself; no video player is involved.
+/// Its still poster shows while it loads, the first frame is bounded by
+/// [imageLoadTimeout], and a failure gets "Try again" (once) and "Next".
+///
 /// A clip runs through an explicit state machine:
 ///
 /// ```text
@@ -75,6 +81,10 @@ class HumorContentPlayer extends StatefulWidget {
   /// How long an initialised clip that should be playing may go without its
   /// position advancing (buffering included) before it counts as stalled.
   static const playbackStallTimeout = Duration(seconds: 8);
+
+  /// How long an image (an animated GIPHY WebP/GIF included) may take to show
+  /// its first frame before it counts as broken.
+  static const imageLoadTimeout = Duration(seconds: 15);
 
   /// Pause before the one silent retry, so a transient drop can clear.
   static const autoRetryDelay = Duration(milliseconds: 600);
@@ -167,6 +177,21 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
   var _muted = true;
   var _errorReported = false;
   var _appVisible = true;
+
+  /// Image media: bounds the wait for the first frame.
+  Timer? _imageTimer;
+
+  /// Image media: the first frame is on screen (the timeout no longer applies).
+  var _imageShown = false;
+
+  /// Image media: the first frame did not arrive within the timeout.
+  var _imageTimedOut = false;
+
+  /// Image media: bumped by "Try again" so a fresh [Image] loads it anew.
+  var _imageLoad = 0;
+
+  /// Image media: why it failed, for the one failure report.
+  var _imageFailure = HumorMediaFailure.error;
 
   /// True inside initState/didUpdateWidget, where a build follows anyway and
   /// setState must not be called.
@@ -263,11 +288,78 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
 
   void _startMedia() {
     if (!_isVideo) {
+      _startImageTimer();
       return;
     }
     _phase = _VideoPhase.loading;
     _attempt = 1;
     _startAttempt();
+  }
+
+  /// The URL an image card draws: its media, else its still.
+  String? get _imageUrl {
+    final download = widget.content.downloadUrl;
+    return download != null && download.isNotEmpty
+        ? download
+        : widget.content.thumbUrl;
+  }
+
+  /// Arms the first-frame timeout for an image card, so a load that never
+  /// answers ends in the failed state instead of a blank card forever.
+  void _startImageTimer() {
+    _imageTimer?.cancel();
+    _imageTimer = null;
+    if (MevoraNetworkImages.provider(_imageUrl) == null) {
+      return;
+    }
+    final generation = _generation;
+    _imageTimer = Timer(HumorContentPlayer.imageLoadTimeout, () {
+      _imageTimer = null;
+      if (!_isCurrent(generation) || _imageShown || _imageTimedOut) {
+        return;
+      }
+      _imageFailure = HumorMediaFailure.timeout;
+      _update(() => _imageTimedOut = true);
+      _reportMediaError();
+    });
+  }
+
+  /// Called from the image's frame builder: the picture is on screen.
+  void _onImageShown() {
+    if (_imageShown) {
+      return;
+    }
+    _imageShown = true;
+    _imageTimer?.cancel();
+    _imageTimer = null;
+  }
+
+  /// Called from the image's error builder: the load is over, badly.
+  void _onImageError() {
+    _imageTimer?.cancel();
+    _imageTimer = null;
+    _reportMediaError();
+  }
+
+  void _retryImage() {
+    if (!_canRetryManually) {
+      return;
+    }
+    _manualRetries += 1;
+    _logRetry('manual');
+    final image = MevoraNetworkImages.provider(_imageUrl);
+    if (image != null) {
+      // Drop whatever the cache holds (a pending or failed load) so the
+      // retry really fetches again.
+      unawaited(image.evict().then<void>((_) {}, onError: (Object _) {}));
+    }
+    setState(() {
+      _imageTimedOut = false;
+      _imageShown = false;
+      _imageFailure = HumorMediaFailure.error;
+      _imageLoad += 1;
+    });
+    _startImageTimer();
   }
 
   /// One download of the clip with a fresh controller.
@@ -408,6 +500,8 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
     _generation++;
     _retryTimer?.cancel();
     _retryTimer = null;
+    _imageTimer?.cancel();
+    _imageTimer = null;
     _stopWatchdog();
     _load?.cancel();
     _load = null;
@@ -427,6 +521,9 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
     _attempt = 1;
     _manualRetries = 0;
     _errorReported = false;
+    _imageShown = false;
+    _imageTimedOut = false;
+    _imageFailure = HumorMediaFailure.error;
   }
 
   /// Tells [HumorContentPlayer.onMediaError] once per item, after the frame,
@@ -437,7 +534,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
     }
     _errorReported = true;
     if (!_isVideo) {
-      _logFailure(HumorMediaFailure.error);
+      _logFailure(_imageFailure);
     }
     final generation = _generation;
     final contentId = widget.content.contentId;
@@ -725,12 +822,13 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
     );
   }
 
+  /// An image or meme — a still, or an animated WebP/GIF that Flutter's image
+  /// pipeline decodes and loops by itself. Until the first frame arrives the
+  /// item's own poster (when it has a separate one) shows with a spinner; the
+  /// wait is bounded by [HumorContentPlayer.imageLoadTimeout].
   Widget _buildImage(AppLocalizations l10n) {
     final content = widget.content;
-    final downloadUrl = content.downloadUrl;
-    final url = downloadUrl != null && downloadUrl.isNotEmpty
-        ? downloadUrl
-        : content.thumbUrl;
+    final url = _imageUrl;
     final image = MevoraNetworkImages.provider(url);
     if (image == null) {
       _reportMediaError();
@@ -740,29 +838,66 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
         onNext: _nextAction(l10n),
       );
     }
+    if (_imageTimedOut) {
+      return _buildImageFailed(l10n);
+    }
     final caption = _caption;
-    // The caption rides on the loaded picture and the error fallback carries
-    // it instead, so the text is on screen exactly once either way.
+    final poster = content.thumbUrl != url ? _poster() : null;
+    // The caption rides on the picture (or its poster while loading) and the
+    // error fallback carries it instead, so the text is on screen exactly
+    // once either way.
     return Image(
+      key: ValueKey(_imageLoad),
       image: image,
       fit: _fitFor(content.aspectRatio),
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        final shown = wasSynchronouslyLoaded || frame != null;
+        if (shown) {
+          _onImageShown();
+        }
         return Stack(
           fit: StackFit.expand,
           children: [
+            if (!shown) ...[
+              ?poster,
+              const Center(child: CircularProgressIndicator()),
+            ],
             child,
             if (caption != null) _CaptionOverlay(text: caption),
           ],
         );
       },
       errorBuilder: (context, error, stackTrace) {
-        _reportMediaError();
-        return _MediaFallback(
-          message: l10n.humorMediaUnavailable,
-          caption: caption,
-          onNext: _nextAction(l10n),
-        );
+        _onImageError();
+        return _buildImageFailed(l10n);
       },
+    );
+  }
+
+  /// An image that cannot be shown: its poster (if it has its own) dimmed
+  /// behind a plain message, a one-time "Try again" and "Next".
+  Widget _buildImageFailed(AppLocalizations l10n) {
+    final poster = widget.content.thumbUrl != _imageUrl ? _poster() : null;
+    final theme = Theme.of(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (poster != null) ...[
+          poster,
+          ColoredBox(color: theme.colorScheme.scrim.withValues(alpha: 0.6)),
+        ],
+        _MediaFallback(
+          message: l10n.humorMediaUnavailable,
+          caption: _caption,
+          onRetry: _canRetryManually
+              ? _FallbackAction(
+                  label: l10n.humorTryAgain,
+                  onPressed: _retryImage,
+                )
+              : null,
+          onNext: _nextAction(l10n),
+        ),
+      ],
     );
   }
 

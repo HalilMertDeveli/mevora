@@ -110,13 +110,21 @@ interface GiphyRendition {
   mp4?: string;
   mp4_size?: Numeric;
   size?: Numeric;
+  webp?: string;
+  webp_size?: Numeric;
 }
 
 interface GiphyImages {
   original?: GiphyRendition;
   original_mp4?: GiphyRendition;
   fixed_height?: GiphyRendition;
+  fixed_width?: GiphyRendition;
+  fixed_height_small?: GiphyRendition;
+  fixed_width_small?: GiphyRendition;
+  fixed_height_downsampled?: GiphyRendition;
+  fixed_width_downsampled?: GiphyRendition;
   downsized_small?: GiphyRendition;
+  downsized_medium?: GiphyRendition;
   fixed_height_still?: GiphyRendition;
   original_still?: GiphyRendition;
 }
@@ -218,6 +226,117 @@ export function pickGifRendition(images: GiphyImages | undefined | null): Select
   // No sizes reported: the renditions are listed largest-first, so the last
   // available one is the lightest bet.
   return candidates[candidates.length - 1];
+}
+
+/** Largest original animated WebP we hand a full-width phone card (1.5 MB). */
+export const MAX_ORIGINAL_WEBP_BYTES = 1_500_000;
+
+export type SelectedImageRendition = SelectedRendition & {
+  mimeHint: "image/webp" | "image/gif";
+};
+
+/** Renditions that may carry an animated WebP, largest first. */
+const WEBP_RENDITIONS = [
+  "original",
+  "fixed_width",
+  "fixed_height",
+  "fixed_width_downsampled",
+  "fixed_height_downsampled",
+  "fixed_width_small",
+  "fixed_height_small",
+] as const;
+
+function webpOf(
+  images: GiphyImages,
+  name: (typeof WEBP_RENDITIONS)[number],
+): SelectedImageRendition | null {
+  const rendition = images[name];
+  const url = rendition?.webp ?? "";
+  if (!isAllowedMediaUrl(url)) return null;
+  return {
+    name: `${name}.webp`,
+    url,
+    width: num(rendition?.width),
+    height: num(rendition?.height),
+    sizeBytes: num(rendition?.webp_size),
+    mimeHint: "image/webp",
+  };
+}
+
+/**
+ * The animated-image rendition a GIF is shown as (Flutter decodes and loops
+ * animated WebP/GIF in its own image pipeline; no video player involved):
+ * 1. `original.webp` when its `webp_size` is known and ≤ MAX_ORIGINAL_WEBP_BYTES;
+ * 2. else `downsized_medium.url` (an animated GIF GIPHY keeps small);
+ * 3. else the wider of `fixed_width.webp` / `fixed_height.webp`;
+ * 4. else the smallest known WebP of any other rendition.
+ * Only HTTPS URLs on an allowed host are considered. `null` means the item
+ * has no animated-image rendition at all (the caller may fall back to MP4).
+ */
+export function pickGifImageRendition(
+  images: GiphyImages | undefined | null,
+): SelectedImageRendition | null {
+  if (!images) return null;
+
+  const original = webpOf(images, "original");
+  if (original && original.sizeBytes !== null && original.sizeBytes <= MAX_ORIGINAL_WEBP_BYTES) {
+    return original;
+  }
+
+  const medium = images.downsized_medium;
+  if (medium && isAllowedMediaUrl(medium.url)) {
+    return {
+      name: "downsized_medium",
+      url: medium.url!,
+      width: num(medium.width),
+      height: num(medium.height),
+      sizeBytes: num(medium.size),
+      mimeHint: "image/gif",
+    };
+  }
+
+  const fixed = [webpOf(images, "fixed_width"), webpOf(images, "fixed_height")]
+    .filter((c): c is SelectedImageRendition => c !== null);
+  if (fixed.length > 0) {
+    return fixed.reduce((best, c) => ((c.width ?? 0) > (best.width ?? 0) ? c : best));
+  }
+
+  const rest = WEBP_RENDITIONS
+    .map((name) => webpOf(images, name))
+    .filter((c): c is SelectedImageRendition => c !== null);
+  if (rest.length === 0) return null;
+  const sized = rest.filter((c) => c.sizeBytes !== null);
+  if (sized.length > 0) {
+    return sized.reduce((best, c) => (c.sizeBytes! < best.sizeBytes! ? c : best));
+  }
+  // No sizes reported: listed largest-first, so the last is the lightest bet.
+  return rest[rest.length - 1];
+}
+
+/** Last two path segments (`<id>/<file>`) of an allowed HTTPS URL, lowercased. */
+export function mediaPathKey(raw: string | null | undefined): string | null {
+  if (!raw || !isAllowedMediaUrl(raw)) return null;
+  try {
+    const parts = new URL(raw).pathname.split("/").filter(Boolean);
+    return parts.length >= 2 ? parts.slice(-2).join("/").toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `<id>/<file>` of every GIF MP4 rendition of this item. The host (CDN shard)
+ * and the query string (`cid`, …) vary between API responses; the tail does
+ * not. Used only to recognise a doc stored before GIFs became images.
+ */
+export function gifMp4Keys(images: GiphyImages | undefined | null): string[] {
+  if (!images) return [];
+  const keys = new Set<string>();
+  for (const rendition of Object.values(images) as Array<GiphyRendition | undefined>) {
+    const key = mediaPathKey(rendition?.mp4);
+    if (key) keys.add(key);
+  }
+  return [...keys];
 }
 
 /** Clip renditions in preference order: moderate first, never 1080p / 4k. */
@@ -357,13 +476,14 @@ function mapCommon(
   ctx: MapContext,
   origin: "gif" | "clip",
   durationMs: number | null,
+  as: {type: "video" | "meme"; mimeHint: string} = {type: "video", mimeHint: "video/mp4"},
 ): HumorSourceItem {
   const attribution = giphyAttribution(raw);
   const title = cleanProviderTitle(raw.title, attribution);
   return {
     sourceId: String(raw.id),
     sourceUrl: attribution.sourceUrl,
-    type: "video",
+    type: as.type,
     language: ctx.language,
     title,
     rawTitle: typeof raw.title === "string" ? raw.title : null,
@@ -383,21 +503,34 @@ function mapCommon(
       durationMs,
       aspectRatio: aspectOf(rendition, raw.images),
       textBody: title,
-      mimeHint: "video/mp4",
+      mimeHint: as.mimeHint,
     },
   };
 }
 
-/** One GIF search result → one source item, with its own media and title. */
+/**
+ * One GIF search result → one source item, with its own media and title.
+ *
+ * A GIF is a silent short loop — an image, not a video — so it is stored as a
+ * "meme" whose media is an animated WebP/GIF (see pickGifImageRendition) and
+ * the client shows it through its image pipeline. Only a GIF with no
+ * animated-image rendition at all falls back to its MP4 as a "video".
+ */
 export function mapGiphyGif(gif: GiphyGif, ctx: MapContext): GiphyMapOutcome {
   if (!gif || typeof gif !== "object" || !gif.id) {
     return {ok: false, reason: "missing-id"};
+  }
+  const legacyVideoKeys = gifMp4Keys(gif.images);
+  const image = pickGifImageRendition(gif.images);
+  if (image) {
+    const item = mapCommon(gif, image, ctx, "gif", null, {type: "meme", mimeHint: image.mimeHint});
+    return {ok: true, item: {...item, legacyVideoKeys}};
   }
   const rendition = pickGifRendition(gif.images);
   if (!rendition) {
     return {ok: false, reason: "missing-media"};
   }
-  return {ok: true, item: mapCommon(gif, rendition, ctx, "gif", null)};
+  return {ok: true, item: {...mapCommon(gif, rendition, ctx, "gif", null), legacyVideoKeys}};
 }
 
 /** One Clips search result → one source item (480p, else 360p). */
@@ -672,7 +805,7 @@ export class GiphyHumorSource implements HumorContentSource {
     cursor?: string | null;
     query?: string;
   }): Promise<HumorSourcePage> {
-    // Every mapped item is an MP4 rendition.
+    // GIF search: animated images, with an MP4 only where no image exists.
     return this.getImages(input);
   }
 

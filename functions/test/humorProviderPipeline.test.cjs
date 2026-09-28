@@ -124,7 +124,7 @@ describe("GIF mapping", () => {
     const b = mapped(FIXTURES.sitcomReaction);
 
     assert.equal(a.sourceId, "trReact01");
-    assert.equal(a.type, "video");
+    assert.equal(a.type, "meme", "a GIF is an animated image, not a video");
     assert.ok(a.media.downloadUrl.includes("/trReact01/"), a.media.downloadUrl);
     assert.ok(a.media.thumbUrl.includes("/trReact01/"), a.media.thumbUrl);
     assert.equal(a.media.textBody, "Komik Tepki");
@@ -168,7 +168,7 @@ describe("GIF mapping", () => {
     assert.deepEqual(mapped(FIXTURES.laughing), mapped(FIXTURES.laughing));
   });
 
-  it("rejects items without a usable MP4 instead of guessing", () => {
+  it("rejects items without any usable media instead of guessing", () => {
     for (const name of ["noMp4", "insecureMedia", "offHostMedia"]) {
       const outcome = mapGiphyGif(FIXTURES[name], {language: "tr", family: TR_FAMILY});
       assert.equal(outcome.ok, false, name);
@@ -490,7 +490,9 @@ describe("provider sync", () => {
   it("stores each item's own media, poster, caption, provenance and trust", async () => {
     const {db} = await runSync();
     const doc = db.read("humorContent/ext_giphy_trReact01");
-    assert.equal(doc.type, "video");
+    assert.equal(doc.type, "meme");
+    assert.ok(doc.media.downloadUrl.endsWith("/trReact01/giphy.webp"));
+    assert.equal(doc.media.durationMs, null);
     assert.ok(doc.media.downloadUrl.includes("/trReact01/"));
     assert.ok(doc.media.thumbUrl.includes("/trReact01/200_s.gif"));
     assert.equal(doc.media.textBody, "Komik Tepki");
@@ -565,6 +567,7 @@ describe("provider sync", () => {
     });
     assert.equal(result.clipsAvailable, true);
     const doc = db.read("humorContent/ext_giphy_clip01");
+    assert.equal(doc.type, "video", "a Clip stays a video");
     assert.ok(doc.media.downloadUrl.endsWith("/480p.mp4"));
     assert.equal(doc.media.durationMs, 7500);
     assert.equal(doc.media.textBody, "Awkward Reaction");

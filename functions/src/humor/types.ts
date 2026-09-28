@@ -57,6 +57,40 @@ export type HumorSource = {
 };
 
 /**
+ * How much we trust where an item came from.
+ *
+ * - `curated`: Mevora-authored (the internal seed, admin upserts).
+ * - `verified_provider`: licensed provider item from a verified account or a
+ *   known entertainment studio/network (see `providerRelevance.ts`).
+ * - `provider`: any other licensed provider item that passed the filters.
+ * - `qa_fixture`: test/QA-only fixtures; never produced by a seeder or callable.
+ */
+export type HumorSourceTrust = "curated" | "verified_provider" | "provider" | "qa_fixture";
+
+export const HUMOR_SOURCE_TRUST_TIERS: readonly HumorSourceTrust[] = [
+  "curated",
+  "verified_provider",
+  "provider",
+  "qa_fixture",
+] as const;
+
+/**
+ * Who made a provider item — contract K1. `null` for Mevora-authored content.
+ * Every field is the provider's own data; nothing here is invented.
+ */
+export type HumorAttribution = {
+  provider: string;
+  displayName: string | null;
+  username: string | null;
+  /** The provider's page for this item (https, allowed host) or null. */
+  sourceUrl: string | null;
+  verified: boolean;
+};
+
+/** Why a card was skipped — contract K3. */
+export type HumorSkipReason = "user" | "media_failed";
+
+/**
  * Calibration curation for a content item.
  *
  * Defaults are deliberately closed: content that says nothing about
@@ -90,6 +124,10 @@ export type HumorContentDoc = {
   safetyStatus: HumorSafetyStatus;
   safetyFlags: HumorSafetyFlags;
   source: HumorSource;
+  /** Absent on documents written before trust tiers existed; parsed to a default. */
+  sourceTrust?: HumorSourceTrust;
+  /** Provider attribution; always null for internal (Mevora-authored) content. */
+  attribution?: HumorAttribution | null;
   calibration: HumorCalibrationMeta;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -123,6 +161,8 @@ export type HumorInteractionDoc = {
   dwellMs?: number;
   replayCount?: number;
   skipped: boolean;
+  /** On a skip marker only: "user" (swiped past) or "media_failed" (did not play). */
+  skipReason?: HumorSkipReason;
   /** Written only when the client explicitly sends it. */
   saved?: boolean;
   /** Set by `reportHumorContent`. */
@@ -146,6 +186,11 @@ export type HumorFeedItem = {
   category: HumorCategory;
   humorTags: string[];
   media: HumorMedia;
+  /**
+   * Contract K1: who made this item, for on-card credit. `null` for
+   * Mevora-authored (curated) content.
+   */
+  attribution: HumorAttribution | null;
   calibrationStage?: HumorCalibrationStage | null;
 };
 

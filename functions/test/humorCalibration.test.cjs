@@ -1570,10 +1570,12 @@ test("a skip writes a marker and changes nothing else", async () => {
     "contentId",
     "createdAt",
     "rating",
+    "skipReason",
     "skipped",
     "updatedAt",
   ]);
   assert.equal(marker.skipped, true);
+  assert.equal(marker.skipReason, "user", "a skip without a reason is a user skip");
   assert.equal(marker.rating, null);
   assert.equal(db._store.has(`users/${uid}/humor/summary`), false, "profile untouched");
   assert.equal(db._store.has(`users/${uid}/humor/calibration`), false, "progress untouched");
@@ -1869,6 +1871,61 @@ test("the callable payload is validated and normalized", () => {
   assert.deepEqual(rated.gestureHints, {swipeUp: false, swipeDown: true});
   assert.equal(ok({contentId: ANCHOR_ID, rating: "funny", gestureHints: [1]}).gestureHints, null);
   assert.equal(ok({contentId: ANCHOR_ID, rating: "funny", saved: false}).saved, false);
+});
+
+test("skipReason (K3) is whitelisted and read only with skipped:true", () => {
+  const parse = (data) => {
+    const parsed = parseSubmitHumorFeedbackInput(data);
+    assert.equal(parsed.ok, true, JSON.stringify(parsed));
+    return parsed.value;
+  };
+  assert.equal(
+    parse({contentId: ANCHOR_ID, skipped: true, skipReason: "media_failed"}).skipReason,
+    "media_failed",
+  );
+  assert.equal(parse({contentId: ANCHOR_ID, skipped: true, skipReason: "user"}).skipReason, "user");
+  assert.equal(parse({contentId: ANCHOR_ID, skipped: true}).skipReason, "user");
+  for (const junk of ["MEDIA_FAILED", "crash", "", 7, {x: 1}, ["media_failed"], null]) {
+    assert.equal(
+      parse({contentId: ANCHOR_ID, skipped: true, skipReason: junk}).skipReason,
+      "user",
+      `unrecognised reason ${JSON.stringify(junk)} must become "user"`,
+    );
+  }
+  // Without skipped:true the reason is ignored entirely, not an error.
+  const rated = parse({contentId: ANCHOR_ID, rating: "funny", skipReason: "media_failed"});
+  assert.equal("skipReason" in rated, false);
+  assert.equal(rated.skipped, false);
+});
+
+test("a media_failed skip is stored on the marker and still changes nothing else", async () => {
+  const db = seededDb();
+  const uid = "user_media_failed";
+  const statsBefore = JSON.stringify(db._store.get(`humorContent/${ANCHOR_ID}`).stats);
+  const parsed = parseSubmitHumorFeedbackInput({
+    contentId: ANCHOR_ID,
+    skipped: true,
+    skipReason: "media_failed",
+  });
+  const result = await submitHumorFeedbackTx({db, uid, ...parsed.value});
+  assert.equal(result.interactionCount, 0);
+  assert.equal(result.calibration.completedCount, 0);
+  const marker = db._store.get(`users/${uid}/humorInteractions/${ANCHOR_ID}`);
+  assert.equal(marker.skipped, true);
+  assert.equal(marker.skipReason, "media_failed");
+  assert.equal(marker.rating, null);
+  assert.equal(db._store.has(`users/${uid}/humor/summary`), false, "profile untouched");
+  assert.equal(db._store.has(`users/${uid}/humor/calibration`), false, "progress untouched");
+  assert.equal(JSON.stringify(db._store.get(`humorContent/${ANCHOR_ID}`).stats), statsBefore);
+
+  // A junk reason passed straight to the transaction is whitelisted there too.
+  await submitHumorFeedbackTx({db, uid, contentId: OTHER_ID, skipped: true, skipReason: "<script>"});
+  assert.equal(db._store.get(`users/${uid}/humorInteractions/${OTHER_ID}`).skipReason, "user");
+
+  // A later real rating is still the item's first and counts normally.
+  const rated = await submitHumorFeedbackTx({db, uid, contentId: ANCHOR_ID, rating: "funny"});
+  assert.equal(rated.interactionCount, 1);
+  assert.equal(rated.calibration.completedCount, 1);
 });
 
 test("gesture hints are stored as two booleans", async () => {

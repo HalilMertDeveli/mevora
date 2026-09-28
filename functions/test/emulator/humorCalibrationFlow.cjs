@@ -49,9 +49,42 @@ function step(name, fn) {
   steps.push([name, fn]);
 }
 
+step("re-seeding converts an old media-backed item to a text card", async () => {
+  // Real Firestore merge semantics: `set(..., {merge: true})` deep-merges
+  // maps, so only explicit nulls clear what an older seed left behind.
+  const seed = INTERNAL_HUMOR_SEED.find((i) => i.contentId === "hc_tr_img_015");
+  await db.doc(`humorContent/${seed.contentId}`).set({
+    contentId: seed.contentId,
+    type: "meme",
+    language: "tr",
+    category: "situational",
+    media: {
+      downloadUrl: "https://picsum.photos/seed/mevora-tr-15/1080/1920",
+      thumbUrl: "https://picsum.photos/seed/mevora-tr-15/540/960",
+      aspectRatio: 0.5625,
+      textBody: seed.media.textBody,
+    },
+    stats: {viewCount: 0, ratingCount: 0, avgRating: 0, ratingSum: 0},
+  });
+  await upsertHumorContentDoc(db, {...seed, safetyStatus: "approved", active: true});
+  const stored = (await db.doc(`humorContent/${seed.contentId}`).get()).data();
+  assert.equal(stored.type, "text");
+  assert.equal(stored.media.downloadUrl, null);
+  assert.equal(stored.media.thumbUrl, null);
+  assert.equal(stored.media.aspectRatio, null);
+  assert.equal(stored.media.textBody, seed.media.textBody);
+  assert.equal(stored.stats.ratingSum, 0, "existing stats are kept, not reset");
+  return "media cleared, stats kept";
+});
+
 step("seed the curated catalog", async () => {
   for (const item of INTERNAL_HUMOR_SEED) {
     await upsertHumorContentDoc(db, {...item, safetyStatus: "approved", active: true});
+  }
+  for (const item of INTERNAL_HUMOR_SEED) {
+    const media = (await db.doc(`humorContent/${item.contentId}`).get()).get("media");
+    assert.equal(media.downloadUrl, null, `${item.contentId} still carries media`);
+    assert.equal(media.thumbUrl, null, `${item.contentId} still carries a thumbnail`);
   }
   // Provider-shaped content: approved and servable, but never curated. It must
   // not appear in the pool, and its slot claim must be ignored.

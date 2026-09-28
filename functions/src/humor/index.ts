@@ -284,7 +284,7 @@ export const syncHumorFromProvider = onCall(
   async (request) => {
     const uid = requireUid(request);
     await requireAdmin(uid);
-    const data = (request.data ?? {}) as {language?: string; limit?: number};
+    const data = (request.data ?? {}) as {language?: unknown; limit?: unknown; clips?: unknown};
     const {syncHumorFromGiphy} = await import("./ingest.js");
     const {isGiphyConfigured} = await import("./humorApiConfig.js");
     if (!isGiphyConfigured()) {
@@ -294,11 +294,14 @@ export const syncHumorFromProvider = onCall(
         message: "Set GIPHY_API_KEY (firebase functions:secrets:set GIPHY_API_KEY).",
       };
     }
+    // Clips needs GIPHY approval: opt in per call or with GIPHY_CLIPS_ENABLED.
+    // Without access the source falls back to GIF search on its own.
     const result = await syncHumorFromGiphy({
       db,
-      language: data.language ?? "tr",
+      language: typeof data.language === "string" ? data.language : "tr",
       limit: typeof data.limit === "number" ? data.limit : 24,
       probe: true,
+      clipsEnabled: data.clips === true || process.env.GIPHY_CLIPS_ENABLED === "true",
     });
     return {ok: true, ...result};
   },

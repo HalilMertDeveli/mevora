@@ -36,6 +36,7 @@ import {
   HUMOR_RATINGS,
   type HumorContentDoc,
   type HumorRating,
+  type HumorSkipReason,
   type UserHumorProfileDoc,
 } from "./types.js";
 
@@ -55,11 +56,22 @@ const MAX_REPLAY_COUNT = 1000;
 
 export type HumorGestureHints = {swipeUp: boolean; swipeDown: boolean};
 
+/**
+ * Contract K3: why a card was skipped. "media_failed" means the client could
+ * not play it; anything unrecognised (or absent) is an ordinary "user" skip.
+ * Either way a skip never counts toward calibration or the profile.
+ */
+export function parseSkipReason(value: unknown): HumorSkipReason {
+  return value === "media_failed" ? "media_failed" : "user";
+}
+
 export type SubmitHumorFeedbackInput = {
   contentId: string;
   /** `null` only for a skip. */
   rating: HumorRating | null;
   skipped: boolean;
+  /** Only on a skip (K3): "user" or "media_failed". Ignored otherwise. */
+  skipReason?: HumorSkipReason;
   /** Present only when the client explicitly sent a boolean. */
   saved?: boolean;
   dwellMs: number;
@@ -78,6 +90,8 @@ function boundedCount(value: unknown, max: number): number {
  * Validate and normalize a `submitHumorFeedback` payload.
  *
  * - `rating` is required unless `skipped === true`; a skip ignores any rating.
+ * - `skipReason` is read only together with `skipped: true`, whitelisted to
+ *   "user" | "media_failed" (anything else becomes "user").
  * - `saved` is carried only when it is an explicit boolean, so a plain rating
  *   can never silently clear an earlier bookmark.
  * - `gestureHints` is reduced to two booleans: the document must not store an
@@ -114,6 +128,7 @@ export function parseSubmitHumorFeedbackInput(
       contentId,
       rating: skipped ? null : (raw.rating as HumorRating),
       skipped,
+      ...(skipped ? {skipReason: parseSkipReason(raw.skipReason)} : {}),
       ...(typeof raw.saved === "boolean" ? {saved: raw.saved} : {}),
       dwellMs: boundedCount(raw.dwellMs, MAX_DWELL_MS),
       replayCount: boundedCount(raw.replayCount, MAX_REPLAY_COUNT),
@@ -323,6 +338,8 @@ export async function submitHumorFeedbackTx(input: {
   dwellMs?: number;
   replayCount?: number;
   skipped?: boolean;
+  /** Stored on a new skip marker; whitelisted again here. */
+  skipReason?: unknown;
   saved?: boolean;
   gestureHints?: HumorGestureHints | null;
 }): Promise<HumorFeedbackResult> {
@@ -400,6 +417,7 @@ export async function submitHumorFeedbackTx(input: {
         tx.set(interactionRef, {
           contentId: input.contentId,
           skipped: true,
+          skipReason: parseSkipReason(input.skipReason),
           rating: null,
           createdAt: now,
           updatedAt: now,

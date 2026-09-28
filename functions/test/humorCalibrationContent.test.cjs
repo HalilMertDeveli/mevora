@@ -11,16 +11,18 @@ const {
   ANCHOR_POOL_TARGET,
   CALIBRATION_SEED,
   QA_SEED_PROVIDER,
-  SEED_VIDEO_CLIPS,
   seedAnchorPools,
 } = require("../lib/humor/calibrationSeed.js");
-const {validateHumorSourceItem} = require("../lib/humor/contentValidation.js");
+const calibrationSeedModule = require("../lib/humor/calibrationSeed.js");
 const {buildCalibrationPoolReport} = require("../lib/humor/calibrationPoolReport.js");
 const {
   INTERNAL_HUMOR_SEED,
+  parseHumorContent,
+  toFeedSafeContent,
   upsertHumorContentDoc,
 } = require("../lib/humor/contentRepository.js");
 const {HUMOR_CATEGORIES} = require("../lib/humor/categories.js");
+const {createFakeFirestore} = require("./helpers/fakeFirestore.cjs");
 
 /** Firestore double: equality filters plus doc get/set, which is all this needs. */
 function makeDb(seed = {}) {
@@ -140,63 +142,149 @@ test("curated content ids are unique and provenance is explicit", () => {
   }
 });
 
-test("curated media is https and comes from permitted hosts only", () => {
-  const allowed = [
-    "test-videos.co.uk",
-    "interactive-examples.mdn.mozilla.net",
-    "picsum.photos",
-  ];
+// --------------------------------------------------------------------------
+// Content integrity: one coherent Mevora-authored joke per item
+// --------------------------------------------------------------------------
+
+/** Any URL anywhere in a value — the seed must not carry a single one. */
+function urlsIn(value, out = []) {
+  if (typeof value === "string") {
+    if (/https?:\/\//i.test(value)) out.push(value);
+  } else if (Array.isArray(value)) {
+    value.forEach((v) => urlsIn(v, out));
+  } else if (value && typeof value === "object") {
+    Object.values(value).forEach((v) => urlsIn(v, out));
+  }
+  return out;
+}
+
+test("every curated item is a text joke card with no media at all", () => {
+  // Regression: jokes used to be glued onto random stock photos and sample
+  // clips ("Markete süt için girdim…" over a seascape, a fridge joke under a
+  // sword fight). A curated item is now exactly one thing: its text.
   for (const item of CALIBRATION_SEED) {
-    const urls = [item.media.downloadUrl, item.media.thumbUrl].filter(
-      (url) => url !== null,
-    );
-    for (const url of urls) {
-      const parsed = new URL(url);
-      assert.equal(parsed.protocol, "https:", `${item.contentId}: ${url}`);
-      assert.ok(
-        allowed.includes(parsed.hostname),
-        `${item.contentId} uses an unapproved host: ${parsed.hostname}`,
-      );
-      // The server's own ingest allowlist must accept it too, so the seed can
-      // never drift onto a host the backend would refuse.
-      const verdict = validateHumorSourceItem({
-        sourceId: item.contentId,
-        type: item.type,
-        language: item.language,
-        media: {downloadUrl: url},
-      });
-      assert.equal(verdict.ok, true, `${item.contentId} ${url}: ${verdict.reason}`);
+    assert.equal(item.type, "text", `${item.contentId} is not a text card`);
+    assert.equal(item.media.downloadUrl, null, `${item.contentId} carries media`);
+    assert.equal(item.media.thumbUrl, null, `${item.contentId} carries a thumbnail`);
+    // Present and null, not absent: the seed is written with a merge, so only
+    // an explicit null clears media an older seed left on the document.
+    for (const key of ["downloadUrl", "thumbUrl", "durationMs", "aspectRatio"]) {
+      assert.ok(Object.hasOwn(item.media, key), `${item.contentId} omits media.${key}`);
+      assert.equal(item.media[key], null, `${item.contentId} media.${key}`);
     }
-    assert.ok(item.media.textBody.trim().length > 0, `${item.contentId} has no caption`);
+    assert.equal(typeof item.media.textBody, "string", item.contentId);
+    assert.ok(item.media.textBody.trim().length >= 8, `${item.contentId} has no joke`);
+    assert.deepEqual(urlsIn(item), [], `${item.contentId} carries a URL`);
+  }
+  for (const item of INTERNAL_HUMOR_SEED) {
+    assert.deepEqual(urlsIn(item), [], `${item.contentId} (seeder input) carries a URL`);
   }
 });
 
-test("curated videos are short, licensed clips with an honest thumbnail", () => {
-  const clips = Object.values(SEED_VIDEO_CLIPS);
-  const used = new Set();
-  const videos = CALIBRATION_SEED.filter((item) => item.type === "video");
-  assert.ok(videos.length > 0);
-  for (const item of videos) {
-    const clip = clips.find((c) => c.url === item.media.downloadUrl);
-    assert.ok(clip, `${item.contentId} plays media outside SEED_VIDEO_CLIPS`);
-    used.add(clip.url);
-    assert.equal(item.media.durationMs, clip.durationMs, item.contentId);
-    assert.equal(item.media.aspectRatio, clip.aspectRatio, item.contentId);
-    // Present and null, not absent: the seed is written with a merge, so only
-    // an explicit null replaces a dead thumbnail left by an older seed.
-    assert.ok(Object.hasOwn(item.media, "thumbUrl"), item.contentId);
-    assert.equal(item.media.thumbUrl, null, item.contentId);
+test("the stock-media helpers are gone from the user-facing catalogue module", () => {
+  assert.equal("SEED_VIDEO_CLIPS" in calibrationSeedModule, false);
+  const source = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "..", "src", "humor", "calibrationSeed.ts"),
+    "utf8",
+  );
+  for (const host of ["picsum.photos", "test-videos.co.uk", "mdn.mozilla.net"]) {
+    assert.equal(source.includes(host), false, `calibrationSeed.ts still references ${host}`);
   }
-  for (const clip of clips) {
-    assert.ok(used.has(clip.url), `${clip.url} is declared but unused`);
-    assert.ok(clip.url.endsWith(".mp4"), clip.url);
-    assert.ok(
-      clip.durationMs > 0 && clip.durationMs <= 30000,
-      `${clip.url} runs ${clip.durationMs} ms`,
-    );
-    assert.ok(["CC0-1.0", "CC-BY-3.0"].includes(clip.license), clip.url);
-    assert.ok(clip.credit.trim().length > 0, `${clip.url} has no credit`);
+});
+
+test("curation of the text catalogue is unchanged: ids, slots, vectors, categories", () => {
+  // The switch to text cards must not move calibration: same 36 ids, same
+  // 6 slots x 4 candidates, same open pool.
+  assert.equal(CALIBRATION_SEED.length, 36);
+  assert.equal(CALIBRATION_SEED.filter((i) => i.calibration.slot !== null).length, 24);
+  assert.equal(CALIBRATION_SEED.filter((i) => i.language === "en").length, 2);
+  for (const item of CALIBRATION_SEED) {
+    assert.equal(item.calibration.eligible, true, item.contentId);
+    assert.ok(HUMOR_CATEGORIES.includes(item.category), item.contentId);
+    assert.ok(Object.keys(item.humorVector).length > 0, item.contentId);
   }
+});
+
+test("re-seeding over a document that had media ends with null media and type text", async () => {
+  // Real merge semantics: `set(..., {merge: true})` deep-merges maps, so a
+  // missing key would keep the old URL. The fake deep-merges like Firestore.
+  const db = createFakeFirestore({});
+  const seed = INTERNAL_HUMOR_SEED.find((i) => i.contentId === "hc_tr_img_015");
+  db.reset({
+    [`humorContent/${seed.contentId}`]: {
+      contentId: seed.contentId,
+      type: "meme",
+      language: "tr",
+      category: "situational",
+      humorTags: ["günlük", "market"],
+      humorVector: {situational: 0.86},
+      media: {
+        downloadUrl: "https://picsum.photos/seed/mevora-tr-15/1080/1920",
+        thumbUrl: "https://picsum.photos/seed/mevora-tr-15/540/960",
+        durationMs: 10000,
+        aspectRatio: 0.5625,
+        textBody: "Markete süt için girdim, üç poşetle çıktım. Süt yok.",
+        storagePath: "legacy/path.jpg",
+      },
+      safetyStatus: "approved",
+      active: true,
+      source: {type: "internal", provider: "mevora-qa-seed", licenseRef: null},
+      stats: {viewCount: 4, ratingCount: 3, avgRating: 0.5, ratingSum: 1.5},
+    },
+  });
+
+  await upsertHumorContentDoc(db, {...seed, safetyStatus: "approved", active: true});
+
+  const stored = db.read(`humorContent/${seed.contentId}`);
+  assert.equal(stored.type, "text");
+  assert.deepEqual(stored.media, {
+    storagePath: null,
+    downloadUrl: null,
+    thumbUrl: null,
+    durationMs: null,
+    aspectRatio: null,
+    textBody: seed.media.textBody,
+  });
+  assert.equal(stored.sourceTrust, "curated");
+  assert.equal(stored.attribution, null);
+  // Ratings and calibration curation survive the conversion.
+  assert.equal(stored.stats.ratingCount, 3);
+  assert.equal(stored.calibrationEligible, true);
+  assert.equal(stored.calibrationSlot, "anchor_everyday");
+
+  const card = toFeedSafeContent(parseHumorContent(seed.contentId, stored));
+  assert.equal(card.type, "text");
+  assert.equal(card.media.downloadUrl, null);
+  assert.equal(card.media.thumbUrl, null);
+  assert.equal(card.media.textBody, seed.media.textBody);
+  assert.equal(card.attribution, null);
+
+  // Idempotent: a second run changes nothing but the timestamp.
+  await upsertHumorContentDoc(db, {...seed, safetyStatus: "approved", active: true});
+  const again = db.read(`humorContent/${seed.contentId}`);
+  assert.deepEqual({...again, updatedAt: null}, {...stored, updatedAt: null});
+});
+
+test("a text upsert drops media even when the caller passes some", async () => {
+  const db = createFakeFirestore({});
+  await upsertHumorContentDoc(db, {
+    contentId: "hc_admin_text",
+    type: "text",
+    language: "tr",
+    category: "dry",
+    humorVector: {dry: 0.8},
+    media: {
+      downloadUrl: "https://media.giphy.com/media/x/giphy.mp4",
+      thumbUrl: "https://media.giphy.com/media/x/200_s.gif",
+      textBody: "Evet.",
+    },
+    safetyStatus: "approved",
+    active: true,
+  });
+  const stored = db.read("humorContent/hc_admin_text");
+  assert.equal(stored.media.downloadUrl, null);
+  assert.equal(stored.media.thumbUrl, null);
+  assert.equal(stored.media.textBody, "Evet.");
 });
 
 // --------------------------------------------------------------------------

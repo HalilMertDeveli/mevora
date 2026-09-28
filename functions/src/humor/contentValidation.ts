@@ -15,19 +15,18 @@ export interface ContentValidationResult {
  * `media0..4.giphy.com` and `i.giphy.com` CDN shard, so those no longer need
  * listing one by one.
  *
- * `test-videos.co.uk` and `interactive-examples.mdn.mozilla.net` serve the
- * openly licensed clips of the curated seed (`SEED_VIDEO_CLIPS`).
- * `commondatastorage.googleapis.com` is gone: its sample bucket now answers
+ * Only production media hosts remain. The stock hosts the curated seed used
+ * to borrow backdrops from (`picsum.photos`, `test-videos.co.uk`,
+ * `interactive-examples.mdn.mozilla.net`, plus the never-used
+ * `images.unsplash.com`) are gone: curated content is text-only now, and
+ * media comes from the licensed provider (Giphy) or our own Storage bucket.
+ * `commondatastorage.googleapis.com` is gone too: its sample bucket answers
  * 403, and that host fronts every public Cloud Storage bucket, so allowing
  * it allowed anyone's bucket.
  */
 const ALLOWED_MEDIA_HOSTS = [
   "giphy.com",
-  "picsum.photos",
-  "images.unsplash.com",
   "firebasestorage.googleapis.com",
-  "test-videos.co.uk",
-  "interactive-examples.mdn.mozilla.net",
 ];
 
 function isAllowedMediaHost(host: string): boolean {
@@ -36,24 +35,20 @@ function isAllowedMediaHost(host: string): boolean {
   );
 }
 
-export function validateHumorSourceItem(
-  item: HumorSourceItem,
-): ContentValidationResult {
-  if (!item.sourceId || !item.sourceId.trim()) {
-    return {ok: false, reason: "missing-sourceId"};
-  }
-  const url = item.media?.downloadUrl?.trim() ?? "";
+/** Why a URL is not servable, or null when it is (https + allowed host). */
+export function mediaUrlProblem(raw: string | null | undefined): string | null {
+  const url = raw?.trim() ?? "";
   if (!url) {
-    return {ok: false, reason: "missing-media-url"};
+    return "missing-media-url";
   }
   let parsed: URL;
   try {
     parsed = new URL(url);
   } catch {
-    return {ok: false, reason: "invalid-url"};
+    return "invalid-url";
   }
   if (parsed.protocol !== "https:") {
-    return {ok: false, reason: "insecure-url"};
+    return "insecure-url";
   }
   // The host we will actually fetch bytes from is the only one that matters.
   // There used to be an escape hatch here: if `sourceUrl` merely contained
@@ -62,7 +57,32 @@ export function validateHumorSourceItem(
   // for another. Removed — Giphy's own CDN shards all end in `.giphy.com` and
   // pass on their own.
   if (!isAllowedMediaHost(parsed.hostname.toLowerCase())) {
-    return {ok: false, reason: "host-not-allowed"};
+    return "host-not-allowed";
+  }
+  return null;
+}
+
+/** True for an https URL on an allowed media host. */
+export function isAllowedMediaUrl(raw: string | null | undefined): boolean {
+  return mediaUrlProblem(raw) === null;
+}
+
+export function validateHumorSourceItem(
+  item: HumorSourceItem,
+): ContentValidationResult {
+  if (!item.sourceId || !item.sourceId.trim()) {
+    return {ok: false, reason: "missing-sourceId"};
+  }
+  const problem = mediaUrlProblem(item.media?.downloadUrl);
+  if (problem) {
+    return {ok: false, reason: problem};
+  }
+  // The poster is fetched by the client just like the media, so it is held
+  // to the same rule. The provider mapping never produces a bad one; this is
+  // the backstop for any other caller.
+  const thumb = item.media?.thumbUrl;
+  if (thumb != null && mediaUrlProblem(thumb) !== null) {
+    return {ok: false, reason: "poster-not-allowed"};
   }
   return {ok: true};
 }

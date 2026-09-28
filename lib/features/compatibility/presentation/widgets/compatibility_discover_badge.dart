@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/localization/locale_casing.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
@@ -59,7 +60,10 @@ class DiscoveryCompatibilityScore extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                l10n.whyYouMatch.toUpperCase(),
+                LocaleCasing.upper(
+                  l10n.whyYouMatch,
+                  Localizations.localeOf(context),
+                ),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: p.compatibility,
                   letterSpacing: 1,

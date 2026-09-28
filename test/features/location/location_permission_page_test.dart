@@ -8,8 +8,7 @@ import 'package:mevora/features/location/domain/entities/location_screen_state.d
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
 import 'package:mevora/features/location/presentation/pages/location_permission_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 
 import '../../helpers/recording_location_analytics.dart';
 
@@ -68,7 +67,9 @@ void main() {
     expect(find.text(_l10n.useMyLocation), findsOneWidget);
   });
 
-  testWidgets('loading state shows locating Rive and copy', (tester) async {
+  testWidgets('loading state shows the animated location spot and copy', (
+    tester,
+  ) async {
     final controller = LocationController(
       repository: FakeLocationRepository(),
       successHold: Duration.zero,
@@ -78,17 +79,16 @@ void main() {
     await tester.pumpWidget(_wrap(controller));
 
     expect(find.text(_l10n.locationLocating), findsOneWidget);
-    expect(find.byType(MevoraRiveAnimation), findsOneWidget);
+    expect(_locatingSpot, findsOneWidget);
     expect(
-      tester
-          .widget<MevoraRiveAnimation>(find.byType(MevoraRiveAnimation))
-          .asset,
-      MevoraRiveAssets.locationLocating,
+      tester.widget<MevoraSpot>(find.byType(MevoraSpot)).art,
+      MevoraArt.location,
     );
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('English locating copy stays with Rive', (tester) async {
+  testWidgets('English locating copy stays with its illustration', (
+    tester,
+  ) async {
     final l10n = lookupAppLocalizations(const Locale('en'));
     final controller = LocationController(
       repository: FakeLocationRepository(),
@@ -99,10 +99,12 @@ void main() {
     await tester.pumpWidget(_wrap(controller, locale: const Locale('en')));
 
     expect(find.text(l10n.locationLocating), findsOneWidget);
-    expect(find.byType(MevoraRiveAnimation), findsOneWidget);
+    expect(_locatingSpot, findsOneWidget);
   });
 
-  testWidgets('locating Rive is removed when location fails', (tester) async {
+  testWidgets('locating animation is removed when location fails', (
+    tester,
+  ) async {
     final controller = LocationController(
       repository: FakeLocationRepository(),
       successHold: Duration.zero,
@@ -110,7 +112,7 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(_wrap(controller));
-    expect(find.byType(MevoraRiveAnimation), findsOneWidget);
+    expect(_locatingSpot, findsOneWidget);
 
     controller
       ..errorMessage = _l10n.locationTimeoutMessage
@@ -119,7 +121,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.byType(MevoraRiveAnimation), findsNothing);
+    expect(_locatingSpot, findsNothing);
     expect(find.text(_l10n.locationUnavailableTitle), findsOneWidget);
     expect(find.text(_l10n.tryAgain), findsOneWidget);
     expect(find.text(_l10n.notNow), findsOneWidget);
@@ -154,7 +156,7 @@ void main() {
     expect(find.text(_l10n.locationUnavailableTitle), findsOneWidget);
     expect(find.text(_l10n.locationTimeoutMessage), findsOneWidget);
     expect(find.text(_l10n.tryAgain), findsOneWidget);
-    expect(find.byType(MevoraRiveAnimation), findsNothing);
+    expect(_locatingSpot, findsNothing);
     expect(find.textContaining('41.'), findsNothing);
   });
 
@@ -179,3 +181,9 @@ void main() {
     expect(repo.stored['u1'], isNotNull);
   });
 }
+
+/// The animated location illustration shown only while locating.
+final Finder _locatingSpot = find.byWidgetPredicate(
+  (widget) =>
+      widget is MevoraSpot && widget.animate && widget.art == MevoraArt.location,
+);

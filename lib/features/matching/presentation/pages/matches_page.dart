@@ -10,7 +10,7 @@ import 'package:mevora/features/matching/presentation/controllers/matches_contro
 import 'package:mevora/features/matching/presentation/widgets/likes_you_insight_card.dart';
 import 'package:mevora/features/matching/presentation/widgets/match_connection_tile.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
@@ -68,8 +68,10 @@ class _MatchesPageState extends State<MatchesPage> {
       builder: (context, _) {
         final uid = controller.uid;
         final l10n = AppLocalizations.of(context);
+        final theme = Theme.of(context);
         return Scaffold(
           appBar: AppBar(
+            toolbarHeight: 64,
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -78,14 +80,13 @@ class _MatchesPageState extends State<MatchesPage> {
                   l10n.matchesTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineMedium,
                 ),
                 Text(
                   l10n.matchesSubtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  style: theme.textTheme.bodySmall,
                 ),
               ],
             ),
@@ -107,31 +108,39 @@ class _MatchesPageState extends State<MatchesPage> {
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     MevoraEmptyState(
-                      icon: Icons.insights_outlined,
-                      riveAsset: MevoraRiveAssets.emptyMatches,
+                      art: MevoraArt.emptyMatches,
                       title: l10n.matchesEmptyTitle,
                       message: l10n.matchesEmptyMessage,
                     ),
                   ],
                 )
               : ListView(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xl),
                   children: [
                     LikesYouEntryCard(
                       onTap: () => context.push(AppRoutes.likesYou),
                     ),
-                    ...controller.items.map(
-                      (item) => MatchConnectionTile(
-                        item: item,
+                    const SizedBox(height: AppSpacing.md),
+                    for (var i = 0; i < controller.items.length; i++) ...[
+                      if (i > 0)
+                        const Divider(
+                          indent: AppSpacing.md + 56 + AppSpacing.s12 + 2,
+                          endIndent: AppSpacing.md,
+                        ),
+                      MatchConnectionTile(
+                        item: controller.items[i],
                         currentUid: uid,
-                        breakdown: item.breakdown,
+                        breakdown: controller.items[i].breakdown,
                         showOnlineIndicator:
-                            controller.presenceFor(item.otherUserId) ==
+                            controller.presenceFor(
+                              controller.items[i].otherUserId,
+                            ) ==
                             PresenceStatus.online,
-                        onTap: () =>
-                            context.push(AppRoutes.chatPath(item.match.id)),
+                        onTap: () => context.push(
+                          AppRoutes.chatPath(controller.items[i].match.id),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
         );

@@ -32,7 +32,11 @@ abstract final class PhotoPolicy {
     return null;
   }
 
-  static List<ProfilePhoto> reorder(List<ProfilePhoto> photos, int oldIndex, int newIndex) {
+  static List<ProfilePhoto> reorder(
+    List<ProfilePhoto> photos,
+    int oldIndex,
+    int newIndex,
+  ) {
     final sorted = [...photos]..sort((a, b) => a.order.compareTo(b.order));
     if (oldIndex < 0 ||
         newIndex < 0 ||
@@ -47,7 +51,10 @@ abstract final class PhotoPolicy {
     ];
   }
 
-  static List<ProfilePhoto> setPrimary(List<ProfilePhoto> photos, String photoId) {
+  static List<ProfilePhoto> setPrimary(
+    List<ProfilePhoto> photos,
+    String photoId,
+  ) {
     return [
       for (final photo in photos)
         photo.copyWith(isPrimary: photo.id == photoId),

@@ -144,7 +144,9 @@ class MockRelationshipDataSource implements RelationshipDataSource {
     return _exactSuggestions(ids);
   }
 
-  List<RelationshipMatchSuggestion> _exactSuggestions(List<String> questionIds) {
+  List<RelationshipMatchSuggestion> _exactSuggestions(
+    List<String> questionIds,
+  ) {
     if (_answers.isEmpty || questionIds.length != 3) {
       return const [];
     }

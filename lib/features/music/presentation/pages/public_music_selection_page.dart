@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
@@ -86,9 +87,8 @@ class _PublicMusicSelectionPageState extends State<PublicMusicSelectionPage> {
                                   rounded: true,
                                   selected: state.isArtistSelected(artist.id),
                                   enabled: state.canSelectArtist(artist.id),
-                                  onTap: () => widget.controller.toggleArtist(
-                                    artist.id,
-                                  ),
+                                  onTap: () =>
+                                      widget.controller.toggleArtist(artist.id),
                                 ),
                             ],
                           ),
@@ -118,9 +118,8 @@ class _PublicMusicSelectionPageState extends State<PublicMusicSelectionPage> {
                                   imageUrl: track.albumImage,
                                   selected: state.isTrackSelected(track.id),
                                   enabled: state.canSelectTrack(track.id),
-                                  onTap: () => widget.controller.toggleTrack(
-                                    track.id,
-                                  ),
+                                  onTap: () =>
+                                      widget.controller.toggleTrack(track.id),
                                 ),
                             ],
                           ),
@@ -318,7 +317,7 @@ class _SelectableChip extends StatelessWidget {
                 if (selected) ...[
                   const SizedBox(width: AppSpacing.xs),
                   Icon(
-                    Icons.check_circle,
+                    MevoraIcons.success,
                     size: 18,
                     color: theme.colorScheme.primary,
                   ),

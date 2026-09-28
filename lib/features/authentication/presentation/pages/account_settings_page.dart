@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
@@ -48,7 +49,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.privacyPermissionsTitle),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(MevoraIcons.chevronRight),
             onTap: () => context.push(AppRoutes.privacyPermissions),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -71,9 +72,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             linked: providers?.google ?? false,
             linkedLabel: l10n.linked,
             linkLabel: l10n.link,
-            onLink: () => unawaited(
-              auth.linkProvider(AuthProviderId.google),
-            ),
+            onLink: () => unawaited(auth.linkProvider(AuthProviderId.google)),
           ),
           _linkTile(
             context,
@@ -81,9 +80,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             linked: providers?.apple ?? false,
             linkedLabel: l10n.linked,
             linkLabel: l10n.link,
-            onLink: () => unawaited(
-              auth.linkProvider(AuthProviderId.apple),
-            ),
+            onLink: () => unawaited(auth.linkProvider(AuthProviderId.apple)),
           ),
           _linkTile(
             context,
@@ -91,9 +88,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             linked: providers?.spotify ?? false,
             linkedLabel: l10n.linked,
             linkLabel: l10n.link,
-            onLink: () => unawaited(
-              auth.linkProvider(AuthProviderId.spotify),
-            ),
+            onLink: () => unawaited(auth.linkProvider(AuthProviderId.spotify)),
           ),
           _linkTile(
             context,
@@ -190,16 +185,16 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
         FileShareOutcome.dismissed => l10n.exportMyDataReady,
         FileShareOutcome.unavailable => l10n.exportMyDataShareUnavailable,
       };
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } on Object {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.exportMyDataFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.exportMyDataFailed)));
     } finally {
       if (mounted) {
         setState(() => _exportInFlight = false);

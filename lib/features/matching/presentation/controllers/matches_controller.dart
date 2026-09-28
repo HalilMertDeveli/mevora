@@ -90,17 +90,22 @@ class MatchesController extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    _subscription = _matchRepository.watchMatches(current).listen((value) {
-      items = value;
-      loading = false;
-      error = null;
-      _syncPresenceSubscriptions(value);
-      notifyListeners();
-    }, onError: (_) {
-      error = MatchingError.generic;
-      loading = false;
-      notifyListeners();
-    });
+    _subscription = _matchRepository
+        .watchMatches(current)
+        .listen(
+          (value) {
+            items = value;
+            loading = false;
+            error = null;
+            _syncPresenceSubscriptions(value);
+            notifyListeners();
+          },
+          onError: (_) {
+            error = MatchingError.generic;
+            loading = false;
+            notifyListeners();
+          },
+        );
   }
 
   PresenceStatus presenceFor(String otherUserId) {

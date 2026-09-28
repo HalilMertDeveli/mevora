@@ -117,10 +117,7 @@ class UpdateUserLocation {
   final DateTime Function() _clock;
 
   /// Returns whether a Firestore write happened.
-  Future<Result<bool>> call({
-    required String uid,
-    bool force = false,
-  }) async {
+  Future<Result<bool>> call({required String uid, bool force = false}) async {
     if (uid.isEmpty) {
       return const Err(
         LocationFailure(

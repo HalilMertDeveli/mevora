@@ -11,10 +11,7 @@ import 'package:mevora/features/safety/domain/safety_policy.dart';
 
 /// Merges Firebase matches with in-memory demo matches.
 class OverlayMatchRepository implements MatchRepository {
-  OverlayMatchRepository({
-    required this.remote,
-    required this.hub,
-  });
+  OverlayMatchRepository({required this.remote, required this.hub});
 
   final MatchRepository remote;
   final DemoSocialHub hub;
@@ -44,20 +41,14 @@ class OverlayMatchRepository implements MatchRepository {
       controller.add(merged);
     }
 
-    final remoteSub = remote.watchMatches(uid).listen(
-      (value) {
-        remoteItems = value;
-        emit();
-      },
-      onError: (_) => emit(),
-    );
-    final localSub = hub.matches.watchMatches(uid).listen(
-      (value) {
-        localItems = value;
-        emit();
-      },
-      onError: controller.addError,
-    );
+    final remoteSub = remote.watchMatches(uid).listen((value) {
+      remoteItems = value;
+      emit();
+    }, onError: (_) => emit());
+    final localSub = hub.matches.watchMatches(uid).listen((value) {
+      localItems = value;
+      emit();
+    }, onError: controller.addError);
 
     controller.onCancel = () async {
       await remoteSub.cancel();
@@ -67,15 +58,13 @@ class OverlayMatchRepository implements MatchRepository {
   }
 
   bool _isDemoMatch(String matchId) {
-    return hub.graph.matches.containsKey(matchId) ||
-        matchId.contains('mock-');
+    return hub.graph.matches.containsKey(matchId) || matchId.contains('mock-');
   }
 
   @override
   Future<Match?> getMatch(String matchId) async {
     if (_isDemoMatch(matchId)) {
-      return hub.graph.matches[matchId] ??
-          await hub.matches.getMatch(matchId);
+      return hub.graph.matches[matchId] ?? await hub.matches.getMatch(matchId);
     }
     try {
       return await remote.getMatch(matchId);
@@ -90,7 +79,9 @@ class OverlayMatchRepository implements MatchRepository {
       yield* hub.matches.watchMatch(matchId);
       return;
     }
-    yield* remote.watchMatch(matchId).handleError((Object error, StackTrace stackTrace) {});
+    yield* remote
+        .watchMatch(matchId)
+        .handleError((Object error, StackTrace stackTrace) {});
   }
 
   @override
@@ -105,10 +96,7 @@ class OverlayMatchRepository implements MatchRepository {
 
 /// Routes demo conversations to the in-memory graph; real matches stay on Firebase.
 class OverlayChatRepository implements ChatRepository {
-  OverlayChatRepository({
-    required this.remote,
-    required this.hub,
-  });
+  OverlayChatRepository({required this.remote, required this.hub});
 
   final ChatRepository remote;
   final DemoSocialHub hub;
@@ -142,11 +130,7 @@ class OverlayChatRepository implements ChatRepository {
     int limit = 30,
   }) {
     if (_isDemo(matchId)) {
-      return hub.chat.loadOlder(
-        matchId: matchId,
-        before: before,
-        limit: limit,
-      );
+      return hub.chat.loadOlder(matchId: matchId, before: before, limit: limit);
     }
     return remote.loadOlder(matchId: matchId, before: before, limit: limit);
   }
@@ -264,10 +248,8 @@ class OverlayChatRepository implements ChatRepository {
 
 /// Demo matches live only in memory. Unmatch/block must not hit Cloud Functions.
 class OverlaySafetyRepository implements SafetyRepository {
-  OverlaySafetyRepository({
-    required this.remote,
-    required this.hub,
-  }) : _local = GraphSafetyRepository(hub.graph, hub.uidSource);
+  OverlaySafetyRepository({required this.remote, required this.hub})
+    : _local = GraphSafetyRepository(hub.graph, hub.uidSource);
 
   final SafetyRepository remote;
   final DemoSocialHub hub;
@@ -277,8 +259,7 @@ class OverlaySafetyRepository implements SafetyRepository {
     if (matchId == null || matchId.isEmpty) {
       return false;
     }
-    return hub.graph.matches.containsKey(matchId) ||
-        matchId.contains('mock-');
+    return hub.graph.matches.containsKey(matchId) || matchId.contains('mock-');
   }
 
   bool _isDemoUser(String userId) => DemoSocialHub.isDemoUid(userId);
@@ -341,10 +322,7 @@ class OverlaySafetyRepository implements SafetyRepository {
 
 /// Demo (`mock-*`) presence stays in-memory; real users use Firestore.
 class OverlayPresenceRepository implements PresenceRepository {
-  OverlayPresenceRepository({
-    required this.remote,
-    required this.local,
-  });
+  OverlayPresenceRepository({required this.remote, required this.local});
 
   final PresenceRepository remote;
   final PresenceRepository local;

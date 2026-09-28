@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/authentication/presentation/widgets/country_dial_codes.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -63,7 +64,7 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
         children: [
           MevoraTextField(
             hint: AppLocalizations.of(context).countrySearchHint,
-            prefixIcon: Icons.search,
+            prefixIcon: MevoraIcons.search,
             onChanged: (value) => setState(() => _query = value),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -73,10 +74,14 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
               itemBuilder: (context, index) {
                 final country = filtered[index];
                 return ListTile(
-                  leading: Text(country.flag, style: const TextStyle(fontSize: 22)),
+                  leading: Text(
+                    country.flag,
+                    style: const TextStyle(fontSize: 22),
+                  ),
                   title: Text(country.name),
                   trailing: Text('+${country.dialCode}'),
-                  selected: country.iso2 == widget.selected.iso2 &&
+                  selected:
+                      country.iso2 == widget.selected.iso2 &&
                       country.dialCode == widget.selected.dialCode,
                   onTap: () => Navigator.of(context).pop(country),
                 );
@@ -124,7 +129,7 @@ class PhoneNumberInput extends StatelessWidget {
             label: AppLocalizations.of(context).phoneNumber,
             hint: AppLocalizations.of(context).phoneHint,
             keyboardType: TextInputType.phone,
-            prefixIcon: Icons.phone_outlined,
+            prefixIcon: MevoraIcons.phone,
             errorText: errorText,
             onSubmitted: onSubmitted,
           ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
@@ -14,6 +15,12 @@ import 'package:mevora/features/profile/domain/services/profile_question_answer_
 import 'package:mevora/features/profile/domain/services/profile_question_answer_display.dart';
 import 'package:mevora/features/profile/presentation/pages/profile_question_answers_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/shared/widgets/mevora_bottom_sheet.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
+import 'package:mevora/shared/widgets/mevora_section_header.dart';
 
 class ProfileQuestionAnswersSection extends StatefulWidget {
   const ProfileQuestionAnswersSection({
@@ -88,7 +95,9 @@ class _ProfileQuestionAnswersSectionState
     if (_boundUid == widget.uid &&
         _boundIsOwner == widget.isOwner &&
         _boundViewerUid == viewerUid &&
-        (_answersSubscription != null || _matchSubscription != null || _matchChecked)) {
+        (_answersSubscription != null ||
+            _matchSubscription != null ||
+            _matchChecked)) {
       return;
     }
     _boundUid = widget.uid;
@@ -134,53 +143,54 @@ class _ProfileQuestionAnswersSectionState
       return;
     }
 
-    _matchSubscription = ProfileQuestionAnswerAccess.watchCanView(
-      matches: social.matchRepository,
-      viewerUid: viewerUid,
-      profileUid: widget.uid,
-    ).listen(
-      (canView) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _canView = canView;
-          _matchChecked = true;
-        });
-        if (canView) {
-          _subscribeAnswers(repository);
-        } else {
-          unawaited(_answersSubscription?.cancel());
-          _answersSubscription = null;
-          setState(() {
-            _answers = const [];
-            _loading = false;
-            _error = null;
-          });
-        }
-      },
-      onError: (Object error) {
-        // #region agent log
-        // ignore: avoid_print
-        print(
-          '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"photo-swipe",'
-          '"hypothesisId":"H5","location":"profile_question_answers_section.dart",'
-          '"message":"match_watch_error","data":{"error":"$error"},'
-          '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
+    _matchSubscription =
+        ProfileQuestionAnswerAccess.watchCanView(
+          matches: social.matchRepository,
+          viewerUid: viewerUid,
+          profileUid: widget.uid,
+        ).listen(
+          (canView) {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _canView = canView;
+              _matchChecked = true;
+            });
+            if (canView) {
+              _subscribeAnswers(repository);
+            } else {
+              unawaited(_answersSubscription?.cancel());
+              _answersSubscription = null;
+              setState(() {
+                _answers = const [];
+                _loading = false;
+                _error = null;
+              });
+            }
+          },
+          onError: (Object error) {
+            // #region agent log
+            // ignore: avoid_print
+            print(
+              '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"photo-swipe",'
+              '"hypothesisId":"H5","location":"profile_question_answers_section.dart",'
+              '"message":"match_watch_error","data":{"error":"$error"},'
+              '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
+            );
+            // #endregion
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _canView = false;
+              _matchChecked = true;
+              _loading = false;
+              _answers = const [];
+              _error = null;
+            });
+          },
         );
-        // #endregion
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _canView = false;
-          _matchChecked = true;
-          _loading = false;
-          _answers = const [];
-          _error = null;
-        });
-      },
-    );
   }
 
   void _subscribeAnswers(ProfileQuestionAnswerRepository repository) {
@@ -190,50 +200,50 @@ class _ProfileQuestionAnswersSectionState
     _answersSubscription = repository
         .watchAnswers(widget.uid, visibleOnly: visibleOnly)
         .listen(
-      (value) async {
-        if (!mounted) {
-          return;
-        }
-        if (widget.isOwner && value.isEmpty && !_syncAttempted) {
-          _syncAttempted = true;
-          try {
-            await repository
-                .syncFromMatching()
-                .timeout(const Duration(seconds: 12));
-          } on Object {
-            // Stream stays subscribed; UI shows empty / error below.
-          }
-          // Do not paint the pre-sync empty snapshot as final — wait for the
-          // next Firestore emission after dual-write / backfill.
-          if (!mounted) {
-            return;
-          }
-          setState(() {
-            _loading = false;
-            _error = null;
-            _answers = value;
-          });
-          return;
-        }
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _answers = value;
-          _loading = false;
-          _error = null;
-        });
-      },
-      onError: (_) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _loading = false;
-          _error = AppLocalizations.of(context).questionAnswersLoadError;
-        });
-      },
-    );
+          (value) async {
+            if (!mounted) {
+              return;
+            }
+            if (widget.isOwner && value.isEmpty && !_syncAttempted) {
+              _syncAttempted = true;
+              try {
+                await repository.syncFromMatching().timeout(
+                  const Duration(seconds: 12),
+                );
+              } on Object {
+                // Stream stays subscribed; UI shows empty / error below.
+              }
+              // Do not paint the pre-sync empty snapshot as final — wait for the
+              // next Firestore emission after dual-write / backfill.
+              if (!mounted) {
+                return;
+              }
+              setState(() {
+                _loading = false;
+                _error = null;
+                _answers = value;
+              });
+              return;
+            }
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _answers = value;
+              _loading = false;
+              _error = null;
+            });
+          },
+          onError: (_) {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _loading = false;
+              _error = AppLocalizations.of(context).questionAnswersLoadError;
+            });
+          },
+        );
   }
 
   @override
@@ -306,54 +316,48 @@ class _ProfileQuestionAnswersSectionState
           ? const EdgeInsets.all(AppSpacing.md)
           : EdgeInsets.zero,
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.highlightWhenMatched
-                        ? l10n.chatDiscoverAnswersPrompt
-                        : l10n.questionAnswersTitle,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                if (widget.showEditAction)
-                  TextButton(
-                    onPressed: () => context.push(AppRoutes.profileAnswers),
-                    child: Text(l10n.profileAnswersEdit),
-                  ),
-              ],
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          MevoraSectionHeader(
+            title: widget.highlightWhenMatched
+                ? l10n.chatDiscoverAnswersPrompt
+                : l10n.questionAnswersTitle,
+            icon: MevoraIcons.questions,
+            iconColor: context.palette.compatibility,
+            actionLabel: widget.showEditAction ? l10n.profileAnswersEdit : null,
+            onAction: widget.showEditAction
+                ? () => context.push(AppRoutes.profileAnswers)
+                : null,
+          ),
+          if (widget.highlightWhenMatched) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.questionAnswersMatchedSubtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-            if (widget.highlightWhenMatched) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                l10n.questionAnswersMatchedSubtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.sm),
-            for (final card in preview) ...[
-              _AnswerCard(display: card),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            if (hiddenCount > 0)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () => showProfileQuestionAnswersSheet(
-                    context,
-                    uid: widget.uid,
-                    isOwner: widget.isOwner,
-                    answers: visibleAnswers,
-                  ),
-                  child: Text(l10n.seeAllAnswers(hiddenCount)),
-                ),
-              ),
           ],
-        ),
+          const SizedBox(height: AppSpacing.s12),
+          for (final card in preview) ...[
+            _AnswerCard(display: card),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          if (hiddenCount > 0)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () => showProfileQuestionAnswersSheet(
+                  context,
+                  uid: widget.uid,
+                  isOwner: widget.isOwner,
+                  answers: visibleAnswers,
+                ),
+                child: Text(l10n.seeAllAnswers(hiddenCount)),
+              ),
+            ),
+        ],
+      ),
     );
 
     if (!widget.highlightWhenMatched) {
@@ -362,7 +366,7 @@ class _ProfileQuestionAnswersSectionState
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.25),
+        color: context.palette.compatibilityContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
       child: content,
@@ -379,46 +383,41 @@ class _OwnerEmptyAnswers extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(AppRadii.md),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.questionAnswersTitle,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              l10n.questionAnswersEmpty,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+    return MevoraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const MevoraIconBadge(
+                icon: MevoraIcons.questions,
+                tone: MevoraTone.compatibility,
+                size: 40,
               ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              l10n.questionAnswersEmptyHint,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (onEdit != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: onEdit,
-                  child: Text(l10n.profileAnswersEdit),
+              const SizedBox(width: AppSpacing.s12),
+              Expanded(
+                child: Text(
+                  l10n.questionAnswersTitle,
+                  style: theme.textTheme.titleMedium,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.s12),
+          Text(l10n.questionAnswersEmpty, style: theme.textTheme.bodyLarge),
+          const SizedBox(height: AppSpacing.xs),
+          Text(l10n.questionAnswersEmptyHint, style: theme.textTheme.bodySmall),
+          if (onEdit != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            MevoraButton(
+              label: l10n.profileAnswersEdit,
+              variant: MevoraButtonVariant.tonal,
+              size: MevoraButtonSize.small,
+              isExpanded: false,
+              onPressed: onEdit,
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -433,47 +432,38 @@ class _LockedAnswersCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(AppRadii.md),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.lock_outline,
-              size: 20,
-              color: theme.colorScheme.onSurfaceVariant,
+    return MevoraCard(
+      emphasis: MevoraCardEmphasis.quiet,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            MevoraIcons.locked,
+            size: 18,
+            color: context.palette.textSecondary,
+          ),
+          const SizedBox(width: AppSpacing.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.questionAnswersTitle,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(message, style: theme.textTheme.bodyMedium),
+              ],
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.questionAnswersTitle,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    message,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
+/// One answered question, set like a pull quote: the question small, the
+/// answer in the serif — the person's own words are the point.
 class _AnswerCard extends StatelessWidget {
   const _AnswerCard({required this.display});
 
@@ -482,40 +472,20 @@ class _AnswerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(AppRadii.md),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    display.questionText,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
-              ],
+    final p = context.palette;
+    return MevoraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            display.questionText,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: p.compatibility,
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '"${display.answerText}"',
-              style: theme.textTheme.bodyLarge,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(display.answerText, style: theme.textTheme.headlineSmall),
+        ],
       ),
     );
   }
@@ -526,23 +496,15 @@ Future<void> showMatchedProfileAnswersSheet(
   BuildContext context, {
   required String otherUid,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (context) {
-      return SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.screenPadding),
-          child: ProfileQuestionAnswersSection(
-            uid: otherUid,
-            requireMatch: true,
-            highlightWhenMatched: true,
-            previewLimit: 20,
-          ),
-        ),
-      );
-    },
+  return MevoraBottomSheet.show<void>(
+    context,
+    scrollable: true,
+    child: ProfileQuestionAnswersSection(
+      uid: otherUid,
+      requireMatch: true,
+      highlightWhenMatched: true,
+      previewLimit: 20,
+    ),
   );
 }
 
@@ -555,29 +517,15 @@ class _PeerEmptyAnswers extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.questionAnswersTitle,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+    return MevoraCard(
+      emphasis: MevoraCardEmphasis.quiet,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.questionAnswersTitle, style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Text(message, style: theme.textTheme.bodyMedium),
+        ],
       ),
     );
   }

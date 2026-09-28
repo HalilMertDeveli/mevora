@@ -63,14 +63,20 @@ class ProfilePhotoManager {
     );
     final validation = ProfileEditValidator.validateProfile(nextProfile);
     if (validation != null) {
-      await _storage.deleteProfileImage(ownerUid: profile.uid, imageId: imageId);
+      await _storage.deleteProfileImage(
+        ownerUid: profile.uid,
+        imageId: imageId,
+      );
       return Err(ValidationFailure(validation));
     }
     try {
       await _settingsHub.saveProfile(nextProfile);
       return Success(nextProfile);
     } on Object catch (error) {
-      await _storage.deleteProfileImage(ownerUid: profile.uid, imageId: imageId);
+      await _storage.deleteProfileImage(
+        ownerUid: profile.uid,
+        imageId: imageId,
+      );
       return Err(ValidationFailure(error.toString()));
     }
   }
@@ -93,7 +99,10 @@ class ProfilePhotoManager {
     } on Object catch (error) {
       return Err(ValidationFailure(error.toString()));
     }
-    await _storage.deleteProfileImage(ownerUid: profile.uid, imageId: target.id);
+    await _storage.deleteProfileImage(
+      ownerUid: profile.uid,
+      imageId: target.id,
+    );
     return Success(nextProfile);
   }
 

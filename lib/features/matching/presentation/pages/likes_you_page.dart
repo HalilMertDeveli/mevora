@@ -1,7 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/social_scope.dart';
@@ -15,6 +14,8 @@ import 'package:mevora/features/matching/domain/models/incoming_likes.dart';
 import 'package:mevora/features/matching/presentation/controllers/incoming_likes_controller.dart';
 import 'package:mevora/features/matching/presentation/widgets/likes_you_insight_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_page_transitions.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
@@ -41,7 +42,8 @@ class _LikesYouPageState extends State<LikesYouPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final social = SocialScope.maybeOf(context);
-    final uid = AuthScope.maybeOf(context)?.user?.id ?? social?.uidSource.currentUid;
+    final uid =
+        AuthScope.maybeOf(context)?.user?.id ?? social?.uidSource.currentUid;
     if (social == null) {
       return;
     }
@@ -89,9 +91,7 @@ class _LikesYouPageState extends State<LikesYouPage> {
                   l10n.likesYouEntrySubtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -103,21 +103,24 @@ class _LikesYouPageState extends State<LikesYouPage> {
                   message: l10n.likesYouLoadError,
                   onRetry: controller.load,
                 )
-              : controller.snapshot.locked || controller.snapshot.premiumRequired
+              : controller.snapshot.locked ||
+                    controller.snapshot.premiumRequired
               ? _LockedLikesBody(
                   count: controller.snapshot.count,
-                  onUpgrade: () => context.push(AppRoutes.boost),
+                  onUpgrade: () => context.push(AppRoutes.premium),
                 )
               : controller.snapshot.items.isEmpty
               ? MevoraEmptyState(
-                  icon: Icons.insights_outlined,
+                  art: MevoraArt.emptyLikes,
                   title: l10n.likesYouEmptyTitle,
                   message: l10n.likesYouEmptyMessage,
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenPadding,
+                    AppSpacing.sm,
+                    AppSpacing.screenPadding,
+                    AppSpacing.xl,
                   ),
                   itemCount: controller.snapshot.items.length,
                   separatorBuilder: (_, _) =>
@@ -152,7 +155,7 @@ class _LikesYouPageState extends State<LikesYouPage> {
       compatibilityStatus: CompatibilityDisplayStatus.ready,
     );
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      MevoraPageTransitions.route<void>(
         builder: (_) => DiscoveryProfileDetailsPage(candidate: candidate),
       ),
     );
@@ -169,109 +172,126 @@ class _LockedLikesBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final placeholders = count.clamp(0, 12);
+    final p = context.palette;
+    final placeholders = count.clamp(0, 6);
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.md,
+        AppSpacing.screenPadding,
+        AppSpacing.xl,
+      ),
       children: [
+        if (placeholders > 0) ...[
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: AppSpacing.sm,
+            crossAxisSpacing: AppSpacing.sm,
+            childAspectRatio: 3 / 4,
+            children: [
+              for (var i = 0; i < placeholders; i++)
+                _HiddenLiker(onTap: onUpgrade, index: i),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         MevoraCard(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.softGreen.withValues(alpha: 0.14),
-                    border: Border.all(
-                      color: AppColors.softGreen.withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.lock_rounded,
-                    color: AppColors.softGreen,
-                    size: 28,
-                  ),
+          color: p.premiumSurface,
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            children: [
+              Icon(MevoraIcons.locked, color: p.premium, size: 28),
+              const SizedBox(height: AppSpacing.s12),
+              Text(
+                count > 0
+                    ? l10n.likesYouLockedCount(count)
+                    : l10n.likesYouLockedTitle,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: p.onPremiumSurface,
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  count > 0
-                      ? l10n.likesYouLockedCount(count)
-                      : l10n.likesYouLockedTitle,
-                  style: theme.textTheme.titleLarge,
-                  textAlign: TextAlign.center,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                l10n.likesYouLockedMessage,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: p.onPremiumSurface.withValues(alpha: 0.8),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  l10n.likesYouLockedMessage,
-                  style: theme.textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                MevoraButton(
-                  label: l10n.likesYouUnlockCta,
-                  onPressed: onUpgrade,
-                ),
-              ],
-            ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              MevoraButton(
+                label: l10n.likesYouUnlockCta,
+                icon: MevoraIcons.premiumActive,
+                variant: MevoraButtonVariant.inverse,
+                onPressed: onUpgrade,
+              ),
+            ],
           ),
         ),
-        if (placeholders > 0) ...[
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            l10n.likesYouBlurredHint,
-            style: theme.textTheme.labelLarge,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          ...List.generate(
-            placeholders,
-            (index) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-              child: _BlurredLikerCard(onUpgrade: onUpgrade),
-            ),
-          ),
-        ],
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          l10n.likesYouBlurredHint,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall,
+        ),
       ],
     );
   }
 }
 
-/// Anonymous card — no network image, no name, no uid.
-class _BlurredLikerCard extends StatelessWidget {
-  const _BlurredLikerCard({required this.onUpgrade});
+/// An anonymous tile — no network image, no name, no uid. Just the shape of
+/// someone waiting, in one of Mevora's warm tints.
+class _HiddenLiker extends StatelessWidget {
+  const _HiddenLiker({required this.onTap, required this.index});
 
-  final VoidCallback onUpgrade;
+  final VoidCallback onTap;
+  final int index;
+
+  static const _tints = [
+    AppColors.emberSoft,
+    AppColors.sageSoft,
+    AppColors.duskSoft,
+    AppColors.marigoldSoft,
+    AppColors.roseSoft,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return MevoraCard(
-      onTap: onUpgrade,
-      child: ListTile(
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: CircleAvatar(
-              radius: 26,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(
-                Icons.person,
-                color: theme.colorScheme.onSurfaceVariant,
+    final p = context.palette;
+    return Semantics(
+      button: true,
+      label: '${l10n.likesYouHiddenName}. ${l10n.likesYouHiddenSubtitle}',
+      excludeSemantics: true,
+      child: Material(
+        color: _tints[index % _tints.length],
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              Center(
+                child: Icon(
+                  MevoraIcons.profileActive,
+                  size: 40,
+                  color: p.textPrimary.withValues(alpha: 0.12),
+                ),
               ),
-            ),
+              Positioned(
+                right: AppSpacing.sm,
+                bottom: AppSpacing.sm,
+                child: Icon(
+                  MevoraIcons.locked,
+                  size: 16,
+                  color: p.textSecondary,
+                ),
+              ),
+            ],
           ),
-        ),
-        title: Text(
-          l10n.likesYouHiddenName,
-          style: theme.textTheme.titleMedium,
-        ),
-        subtitle: Text(l10n.likesYouHiddenSubtitle),
-        trailing: Icon(
-          Icons.lock_outline,
-          color: theme.colorScheme.primary,
         ),
       ),
     );

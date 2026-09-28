@@ -75,8 +75,9 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
         }
       }
       final byId = {for (final item in storeItems) item.productId: item};
-      final merged = packs.map((pack) => _mergePack(pack, byId[pack.productId])).toList()
-        ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+      final merged =
+          packs.map((pack) => _mergePack(pack, byId[pack.productId])).toList()
+            ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
       return Success(merged);
     } on Object catch (error) {
       return Err(FailureMapper.from(error));

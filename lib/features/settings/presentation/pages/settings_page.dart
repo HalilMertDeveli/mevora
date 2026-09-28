@@ -11,6 +11,8 @@ import 'package:mevora/features/verification/presentation/widgets/verified_profi
 import 'package:mevora/features/settings/presentation/widgets/language_settings_section.dart';
 import 'package:mevora/features/settings/presentation/widgets/settings_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/shared/widgets/mevora_dialog.dart';
 
 /// Main settings hub: account, discovery, privacy, notifications, support.
@@ -65,36 +67,44 @@ class _SettingsPageState extends State<SettingsPage> {
       appBar: AppBar(title: Text(l10n.settings)),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screenPadding),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenPadding,
+            AppSpacing.sm,
+            AppSpacing.screenPadding,
+            AppSpacing.xxl,
+          ),
           children: [
             SettingsSection(
               title: l10n.account,
               children: [
                 SettingsNavTile(
+                  icon: MevoraIcons.edit,
                   title: l10n.editProfile,
                   onTap: () => context.push(AppRoutes.editProfile),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.email,
+                  title: l10n.email,
+                  subtitle: user?.email ?? l10n.settingsEmailUnavailable,
+                  trailing: MevoraPill(
+                    label: l10n.settingsReadOnly,
+                    dense: true,
+                  ),
+                ),
+                SettingsNavTile(
+                  icon: MevoraIcons.lock,
                   title: l10n.settingsChangePassword,
                   onTap: () => context.push(AppRoutes.changePassword),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.people,
                   title: l10n.linkedAccounts,
                   onTap: () => context.push(AppRoutes.accountSettings),
                 ),
                 SettingsNavTile(
-                  title: l10n.deleteAccount,
-                  destructive: true,
-                  onTap: () => context.push(AppRoutes.accountSettings),
-                ),
-                SettingsNavTile(
+                  icon: MevoraIcons.boost,
                   title: l10n.boostHistoryTitle,
                   onTap: () => context.push(AppRoutes.boost),
-                ),
-                ListTile(
-                  title: Text(l10n.email),
-                  subtitle: Text(user?.email ?? l10n.settingsEmailUnavailable),
-                  trailing: Text(l10n.settingsReadOnly),
                 ),
               ],
             ),
@@ -102,6 +112,8 @@ class _SettingsPageState extends State<SettingsPage> {
               title: l10n.musicTitle,
               children: [
                 SettingsNavTile(
+                  icon: MevoraIcons.spotify,
+                  iconTone: MevoraTone.music,
                   title: l10n.settingsConnectSpotify,
                   subtitle: l10n.settingsSpotifySubtitle,
                   onTap: () => context.go(AppRoutes.music),
@@ -112,6 +124,7 @@ class _SettingsPageState extends State<SettingsPage> {
               title: l10n.discoveryPreferences,
               children: [
                 SettingsNavTile(
+                  icon: MevoraIcons.filters,
                   title: l10n.preferences,
                   onTap: () => context.push(AppRoutes.discoveryPreferences),
                 ),
@@ -121,6 +134,8 @@ class _SettingsPageState extends State<SettingsPage> {
               title: l10n.settingsPrivacySafety,
               children: [
                 SettingsNavTile(
+                  icon: MevoraIcons.verify,
+                  iconTone: MevoraTone.compatibility,
                   title: verificationEntryTitle(
                     l10n,
                     _verificationStatus,
@@ -131,7 +146,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     _verificationStatus,
                     accountVerified: user?.isVerified ?? false,
                   ),
-                  trailing: user?.isVerified == true ||
+                  trailing:
+                      user?.isVerified == true ||
                           _verificationStatus ==
                               IdentityVerificationStatus.verified
                       ? const VerifiedProfileBadge(compact: true)
@@ -141,14 +157,17 @@ class _SettingsPageState extends State<SettingsPage> {
                       : () => context.push(AppRoutes.verifyProfile),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.block,
                   title: l10n.blockedUsers,
                   onTap: () => context.push(AppRoutes.blockedUsers),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.privacy,
                   title: l10n.settingsPrivacyControls,
                   onTap: () => context.push(AppRoutes.privacySettings),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.location,
                   title: l10n.settingsLocation,
                   onTap: () => context.push(AppRoutes.locationSettings),
                 ),
@@ -158,6 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
               title: l10n.notificationsTitle,
               children: [
                 SettingsNavTile(
+                  icon: MevoraIcons.notifications,
                   title: l10n.notificationsTitle,
                   onTap: () => context.push(AppRoutes.notificationSettings),
                 ),
@@ -167,19 +187,23 @@ class _SettingsPageState extends State<SettingsPage> {
               title: l10n.settingsSupport,
               children: [
                 SettingsNavTile(
+                  icon: MevoraIcons.support,
                   title: l10n.supportCenterTitle,
                   subtitle: l10n.supportCenterSubtitle,
                   onTap: () => context.push(AppRoutes.supportCenter),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.people,
                   title: l10n.communityGuidelines,
                   onTap: () => context.push(AppRoutes.communityGuidelines),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.books,
                   title: l10n.termsOfService,
                   onTap: () => context.push(AppRoutes.termsOfService),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.safety,
                   title: l10n.privacyPolicy,
                   onTap: () => context.push(AppRoutes.privacyPolicy),
                 ),
@@ -187,16 +211,22 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const LanguageSettingsSection(),
             const SizedBox(height: AppSpacing.md),
-            SettingsSection(
-              title: l10n.account,
+            MevoraSettingsGroup(
               children: [
                 SettingsNavTile(
+                  icon: MevoraIcons.signOut,
                   title: l10n.logOut,
-                  destructive: true,
-                  trailing: const SizedBox.shrink(),
                   onTap: logoutLocked
                       ? null
                       : () => unawaited(_confirmLogout()),
+                ),
+                // Account-ending: last, in the error colour, separate from
+                // everyday account rows.
+                SettingsNavTile(
+                  icon: MevoraIcons.delete,
+                  title: l10n.deleteAccount,
+                  destructive: true,
+                  onTap: () => context.push(AppRoutes.accountSettings),
                 ),
               ],
             ),

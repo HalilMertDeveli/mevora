@@ -11,11 +11,7 @@ sealed class AuthStatus {
   static const NeedsOnboarding needsOnboarding = NeedsOnboarding();
   static const AuthenticationError error = AuthenticationError('');
   static const Authenticated authenticated = Authenticated(
-    AuthUser(
-      id: 'complete',
-      profileCompleted: true,
-      onboardingCompleted: true,
-    ),
+    AuthUser(id: 'complete', profileCompleted: true, onboardingCompleted: true),
   );
 }
 

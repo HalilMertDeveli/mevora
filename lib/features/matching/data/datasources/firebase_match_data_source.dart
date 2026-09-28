@@ -88,25 +88,22 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
     if (raw is Map) {
       match = _matchFrom(
         (raw['id'] as String?) ??
-            MatchEngine.matchId(
-              _uidSource.currentUid ?? '',
-              targetUserId,
-            ),
+            MatchEngine.matchId(_uidSource.currentUid ?? '', targetUserId),
         Map<String, dynamic>.from(raw),
       );
     }
-    return SwipeResultWrapper(
-      matched: data['matched'] == true,
-      match: match,
-    );
+    return SwipeResultWrapper(matched: data['matched'] == true, match: match);
   }
 
   Match _matchFrom(String id, Map<String, dynamic> data) {
-    final userIds = (data['userIds'] as List?)?.whereType<String>().toList() ??
+    final userIds =
+        (data['userIds'] as List?)?.whereType<String>().toList() ??
         const <String>[];
     final matchedAt = _date(data['matchedAt']);
     final createdAt =
-        _date(data['createdAt']) ?? matchedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        _date(data['createdAt']) ??
+        matchedAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
     return Match(
       id: (data['matchId'] as String?) ?? id,
       userIds: userIds,

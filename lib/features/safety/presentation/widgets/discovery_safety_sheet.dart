@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
@@ -28,7 +29,7 @@ Future<void> showDiscoverySafetySheet(
       mainAxisSize: MainAxisSize.min,
       children: [
         ListTile(
-          leading: const Icon(Icons.visibility_off_outlined),
+          leading: const Icon(MevoraIcons.hidden),
           title: Text(l10n.hideProfile),
           subtitle: Text(l10n.hideProfileMessage),
           onTap: () {
@@ -37,7 +38,7 @@ Future<void> showDiscoverySafetySheet(
           },
         ),
         ListTile(
-          leading: const Icon(Icons.block),
+          leading: const Icon(MevoraIcons.block),
           title: Text(l10n.block),
           onTap: () {
             Navigator.pop(context);
@@ -45,7 +46,7 @@ Future<void> showDiscoverySafetySheet(
           },
         ),
         ListTile(
-          leading: const Icon(Icons.flag_outlined),
+          leading: const Icon(MevoraIcons.report),
           title: Text(l10n.report),
           onTap: () {
             Navigator.pop(context);

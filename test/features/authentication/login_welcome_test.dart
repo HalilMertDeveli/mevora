@@ -125,7 +125,7 @@ void main() {
 
     expect(find.byType(LoginHeroBackground), findsOneWidget);
     expect(find.byType(WelcomeAuthButtons), findsOneWidget);
-    expect(find.text('MEVORA'), findsOneWidget);
+    expect(find.text('mevora'), findsOneWidget);
     expect(find.text(_en.loginSlogan), findsOneWidget);
     expect(find.text(_en.continueWithGoogle), findsOneWidget);
     expect(find.text(_en.continueWithApple), findsOneWidget);
@@ -222,7 +222,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('MEVORA'), findsOneWidget);
+    expect(find.text('mevora'), findsOneWidget);
     expect(find.text(_en.loginSlogan), findsOneWidget);
     expect(find.byType(LoginHeroBackground), findsOneWidget);
   });

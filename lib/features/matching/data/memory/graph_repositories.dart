@@ -10,7 +10,8 @@ import 'package:mevora/features/matching/domain/repositories/match_repository.da
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
 import 'package:mevora/features/safety/domain/safety_policy.dart';
 
-class GraphMatchRepository implements MatchRepository, LikeRepository, DiscoveryExclusionSource {
+class GraphMatchRepository
+    implements MatchRepository, LikeRepository, DiscoveryExclusionSource {
   GraphMatchRepository(this.graph, this.auth);
 
   final InMemorySocialGraph graph;
@@ -82,8 +83,7 @@ class GraphChatRepository implements ChatRepository {
   Future<bool> isE2eeActive({
     required String matchId,
     required String peerUid,
-  }) async =>
-      false;
+  }) async => false;
 
   @override
   Stream<List<ChatMessage>> watchLatest(String matchId, {int limit = 30}) {
@@ -154,15 +154,14 @@ class GraphChatRepository implements ChatRepository {
     required String matchId,
     required String messageId,
   }) async {
-    graph.deleteMessage(
-      actorUid: _uid,
-      matchId: matchId,
-      messageId: messageId,
-    );
+    graph.deleteMessage(actorUid: _uid, matchId: matchId, messageId: messageId);
   }
 
   @override
-  Future<void> markDelivered(String matchId, List<ChatMessage> messages) async {}
+  Future<void> markDelivered(
+    String matchId,
+    List<ChatMessage> messages,
+  ) async {}
 
   @override
   Future<void> markRead(String matchId, List<ChatMessage> messages) async {

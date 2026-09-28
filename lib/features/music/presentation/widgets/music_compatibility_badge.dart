@@ -36,7 +36,8 @@ class MusicCompatibilityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return GestureDetector(
-      onTap: onTap ??
+      onTap:
+          onTap ??
           () {
             unawaited(
               MusicCompatibilitySheet.show(
@@ -56,7 +57,8 @@ class MusicCompatibilityBadge extends StatelessWidget {
         label: compact
             ? l10n.musicCompatibilityShort(score)
             : l10n.musicCompatibilityPercent(score),
-        selected: MusicCompatibilityCalculator.band(score) !=
+        selected:
+            MusicCompatibilityCalculator.band(score) !=
             MusicCompatibilityBand.low,
         compact: compact,
       ),

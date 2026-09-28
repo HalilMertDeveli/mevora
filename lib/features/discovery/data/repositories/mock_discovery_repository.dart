@@ -109,8 +109,7 @@ class MockDiscoveryRepository
       musicBonusOf: (_) => 0,
       distanceOf: (seed) => seed.distanceKm,
       relationshipAlignedOf: (_) => 0,
-      tieBreak: (a, b) =>
-          b.compatibilityScore.compareTo(a.compatibilityScore),
+      tieBreak: (a, b) => b.compatibilityScore.compareTo(a.compatibilityScore),
     );
     final start = cursor == null
         ? 0

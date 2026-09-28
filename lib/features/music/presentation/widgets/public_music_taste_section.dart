@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
+import 'package:mevora/features/music/presentation/widgets/music_ui.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/images/mevora_network_images.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_section_header.dart';
 
 /// The Music Taste block on a dating profile.
 ///
@@ -26,59 +28,87 @@ class PublicMusicTasteSection extends StatelessWidget {
     }
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final p = context.palette;
+    final summary = _generalTaste(l10n, profile.taste);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          l10n.profileMusicTasteHeading,
-          style: theme.textTheme.titleMedium,
+        MevoraSectionHeader(
+          title: l10n.profileMusicTasteHeading,
+          icon: MevoraIcons.musicActive,
+          iconColor: p.music,
         ),
-        const SizedBox(height: AppSpacing.sm),
-        if (profile.artists.isNotEmpty)
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final artist in profile.artists)
-                _MusicItemChip(
-                  label: artist.name,
-                  imageUrl: artist.imageUrl,
-                  spotifyUrl: artist.spotifyUrl,
-                  rounded: true,
-                ),
-            ],
+        const SizedBox(height: AppSpacing.s12),
+        MevoraCard(
+          color: p.musicContainer.withValues(alpha: 0.55),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.s12,
           ),
-        if (profile.tracks.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // The general summary already names the genres, so the bare
+              // genre line is only the fallback for a card published before
+              // the analysis existed.
+              if (summary.isNotEmpty) ...[
+                Text(
+                  l10n.musicTasteGeneralHeading,
+                  style: theme.textTheme.labelMedium?.copyWith(color: p.music),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                for (final line in summary.take(3))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                    child: Text(
+                      line,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: p.onMusicContainer,
+                        fontSize: 15,
+                        height: 22 / 15,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.sm),
+              ] else if (profile.genres.isNotEmpty) ...[
+                Text(
+                  profile.genres.map(_titleCase).join(' · '),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: p.onMusicContainer,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s12),
+              ],
+              if (profile.artists.isNotEmpty)
+                MusicArtistRow(
+                  children: [
+                    for (final artist in profile.artists)
+                      MusicArtistTile(
+                        name: artist.name,
+                        imageUrl: artist.imageUrl,
+                        spotifyUrl: artist.spotifyUrl,
+                      ),
+                  ],
+                ),
               for (final track in profile.tracks)
-                _MusicItemChip(
-                  label: track.name,
-                  sublabel: track.artist.isEmpty ? null : track.artist,
+                MusicTrackRow(
+                  title: track.name,
+                  artist: track.artist,
                   imageUrl: track.imageUrl,
                   spotifyUrl: track.spotifyUrl,
                 ),
+              const SizedBox(height: AppSpacing.xs),
+              const Align(
+                alignment: Alignment.centerRight,
+                child: SpotifyAttribution(),
+              ),
             ],
           ),
-        ],
-        // The general summary already names the genres, so the bare genre line
-        // is only the fallback for a card published before the analysis
-        // existed. Showing both would say the same thing twice.
-        if (profile.taste.hasContent)
-          ..._generalTaste(context, profile.taste)
-        else if (profile.genres.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            profile.genres.map(_titleCase).join(' · '),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+        ),
       ],
     );
   }
@@ -86,11 +116,9 @@ class PublicMusicTasteSection extends StatelessWidget {
   /// At most three plain statements about what this member generally listens
   /// to. Each is a fact the backend derived and can be checked against the
   /// data — never a claim about the person.
-  List<Widget> _generalTaste(BuildContext context, PublicMusicTaste taste) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+  List<String> _generalTaste(AppLocalizations l10n, PublicMusicTaste taste) {
+    if (!taste.hasContent) return const [];
     final lines = <String>[];
-
     final dominant = taste.dominantGenre;
     if (dominant != null && dominant.isNotEmpty) {
       final named = [dominant, ...taste.secondaryGenres].map(_titleCase);
@@ -103,135 +131,7 @@ class PublicMusicTasteSection extends StatelessWidget {
     if (lines.length < 3 && taste.stableArtistCount >= 2) {
       lines.add(l10n.musicTasteStable(taste.stableArtistCount));
     }
-    if (lines.isEmpty) {
-      return const [];
-    }
-
-    return [
-      const SizedBox(height: AppSpacing.sm),
-      Text(
-        l10n.musicTasteGeneralHeading,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-      for (final line in lines.take(3)) ...[
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          line,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    ];
-  }
-}
-
-/// One artist or track. Tapping opens it in Spotify when a link is present,
-/// which is how Spotify expects its content to be attributed and reachable.
-class _MusicItemChip extends StatelessWidget {
-  const _MusicItemChip({
-    required this.label,
-    this.sublabel,
-    this.imageUrl,
-    this.spotifyUrl,
-    this.rounded = false,
-  });
-
-  final String label;
-  final String? sublabel;
-  final String? imageUrl;
-  final String? spotifyUrl;
-  final bool rounded;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final url = spotifyUrl;
-    final content = Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (imageUrl != null) ...[
-            _Thumb(url: imageUrl!, rounded: rounded),
-            const SizedBox(width: AppSpacing.xs),
-          ],
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(label, style: theme.textTheme.bodyMedium),
-              if (sublabel != null)
-                Text(
-                  sublabel!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-
-    if (url == null || url.isEmpty) {
-      return content;
-    }
-    return Semantics(
-      link: true,
-      label: '$label · ${AppLocalizations.of(context).profileMusicOpenInSpotify}',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-        onTap: () => _openSpotify(url),
-        child: content,
-      ),
-    );
-  }
-
-  Future<void> _openSpotify(String url) async {
-    final uri = Uri.tryParse(url);
-    // Only ever an open.spotify.com link built server-side from an id, but the
-    // scheme is re-checked here so a tampered document cannot launch anything
-    // else from a profile card.
-    if (uri == null || uri.scheme != 'https' || uri.host != 'open.spotify.com') {
-      return;
-    }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-}
-
-class _Thumb extends StatelessWidget {
-  const _Thumb({required this.url, required this.rounded});
-
-  final String url;
-  final bool rounded;
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = MevoraNetworkImages.provider(url);
-    if (provider == null) {
-      return const SizedBox.shrink();
-    }
-    const size = 28.0;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(rounded ? size : AppRadii.sm),
-      child: Image(
-        image: provider,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const SizedBox(width: size, height: size),
-      ),
-    );
+    return lines;
   }
 }
 

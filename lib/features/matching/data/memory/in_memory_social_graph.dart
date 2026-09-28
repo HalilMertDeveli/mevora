@@ -22,10 +22,8 @@ import 'package:mevora/features/safety/domain/safety_policy.dart';
 /// Trusted-backend stand-in used by tests. Mirrors Cloud Function rules:
 /// clients never create matches directly.
 class InMemorySocialGraph {
-  InMemorySocialGraph({
-    this.now,
-    MemoryMatchScoreDataSource? matchScore,
-  }) : matchScore = matchScore ?? MemoryMatchScoreDataSource();
+  InMemorySocialGraph({this.now, MemoryMatchScoreDataSource? matchScore})
+    : matchScore = matchScore ?? MemoryMatchScoreDataSource();
 
   DateTime Function()? now;
   final MemoryMatchScoreDataSource matchScore;
@@ -134,23 +132,24 @@ class InMemorySocialGraph {
   }
 
   List<MatchListItem> listMatches(String uid) {
-    final items = matches.values
-        .where((match) => match.isActive && match.isParticipant(uid))
-        .map((match) {
-          final other = match.otherUserId(uid);
-          return MatchListItem(
-            match: match,
-            otherUserId: other,
-            name: match.otherName(uid),
-            photoUrl: match.otherPhoto(uid),
-          );
-        })
-        .toList()
-      ..sort((a, b) {
-        final aTime = a.match.lastMessageAt ?? a.match.createdAt;
-        final bTime = b.match.lastMessageAt ?? b.match.createdAt;
-        return bTime.compareTo(aTime);
-      });
+    final items =
+        matches.values
+            .where((match) => match.isActive && match.isParticipant(uid))
+            .map((match) {
+              final other = match.otherUserId(uid);
+              return MatchListItem(
+                match: match,
+                otherUserId: other,
+                name: match.otherName(uid),
+                photoUrl: match.otherPhoto(uid),
+              );
+            })
+            .toList()
+          ..sort((a, b) {
+            final aTime = a.match.lastMessageAt ?? a.match.createdAt;
+            final bTime = b.match.lastMessageAt ?? b.match.createdAt;
+            return bTime.compareTo(aTime);
+          });
     return items;
   }
 
@@ -313,11 +312,7 @@ class InMemorySocialGraph {
       participantPhotos: match.participantPhotos,
       source: match.source,
     );
-    matchScore.recordMessage(
-      matchId: match.id,
-      senderId: senderId,
-      now: at,
-    );
+    matchScore.recordMessage(matchId: match.id, senderId: senderId, now: at);
     _emitMessages(match.id);
     _emitMatches(match.userIds[0]);
     _emitMatches(match.userIds[1]);
@@ -342,10 +337,7 @@ class InMemorySocialGraph {
       return const ChatPage(messages: [], hasMore: false);
     }
     final start = (index - limit) < 0 ? 0 : index - limit;
-    return ChatPage(
-      messages: all.sublist(start, index),
-      hasMore: start > 0,
-    );
+    return ChatPage(messages: all.sublist(start, index), hasMore: start > 0);
   }
 
   void markRead({
@@ -446,7 +438,9 @@ class InMemorySocialGraph {
   }
 
   void blockUser({required String actorUid, required String userId}) {
-    blockIds.add(SafetyPolicy.blockId(blockerId: actorUid, blockedUserId: userId));
+    blockIds.add(
+      SafetyPolicy.blockId(blockerId: actorUid, blockedUserId: userId),
+    );
     final matchId = MatchEngine.matchId(actorUid, userId);
     if (matches.containsKey(matchId)) {
       unmatch(actorUid: actorUid, matchId: matchId, reason: 'block');
@@ -456,7 +450,8 @@ class InMemorySocialGraph {
   void _endLiveCalls(String matchId) {
     final live = calls.values.where(
       (call) =>
-          call.matchId == matchId && !CallStateMachine.isTerminal(call.lifecycle),
+          call.matchId == matchId &&
+          !CallStateMachine.isTerminal(call.lifecycle),
     );
     for (final call in live) {
       calls[call.id] = call.copyWith(lifecycle: CallLifecycle.ended);
@@ -632,9 +627,8 @@ class InMemorySocialGraph {
       () => StreamController<PresenceWatch>.broadcast(),
     );
     scheduleMicrotask(
-      () => controller.add(
-        presence[uid] ?? const PresenceWatch(updatedAt: null),
-      ),
+      () =>
+          controller.add(presence[uid] ?? const PresenceWatch(updatedAt: null)),
     );
     return controller.stream;
   }

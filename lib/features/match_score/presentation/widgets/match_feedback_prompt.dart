@@ -62,9 +62,9 @@ class _MatchFeedbackPromptState extends State<MatchFeedbackPrompt> {
       setState(() => _error = l10n.matchFeedbackFailed);
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.matchFeedbackThanks)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.matchFeedbackThanks)));
   }
 
   Future<void> _skip() {
@@ -132,7 +132,9 @@ class _MatchFeedbackPromptState extends State<MatchFeedbackPrompt> {
                     child: MevoraButton(
                       label: l10n.matchFeedbackSubmit,
                       isLoading: _submitting,
-                      onPressed: _submitting ? null : () => unawaited(_submit()),
+                      onPressed: _submitting
+                          ? null
+                          : () => unawaited(_submit()),
                     ),
                   ),
                 ],
@@ -166,10 +168,7 @@ class MatchFeedbackForChat extends StatelessWidget {
         if (pending == null) {
           return const SizedBox.shrink();
         }
-        return MatchFeedbackPrompt(
-          pending: pending,
-          repository: repository,
-        );
+        return MatchFeedbackPrompt(pending: pending, repository: repository);
       },
     );
   }
@@ -204,24 +203,26 @@ class _MatchFeedbackHostState extends State<MatchFeedbackHost> {
     if (uid == null || repository == null) {
       return;
     }
-    _sub = repository.watchPendingFeedback(uid).listen(
-      (items) {
-        if (!mounted || items.isEmpty) {
-          return;
-        }
-        final next = items
-            .where((item) => !_shown.contains(item.matchId))
-            .firstOrNull;
-        if (next == null) {
-          return;
-        }
-        _shown.add(next.matchId);
-        unawaited(_show(next, repository));
-      },
-      onError: (_) {
-        // Permission-denied / App Check noise must not take down the shell.
-      },
-    );
+    _sub = repository
+        .watchPendingFeedback(uid)
+        .listen(
+          (items) {
+            if (!mounted || items.isEmpty) {
+              return;
+            }
+            final next = items
+                .where((item) => !_shown.contains(item.matchId))
+                .firstOrNull;
+            if (next == null) {
+              return;
+            }
+            _shown.add(next.matchId);
+            unawaited(_show(next, repository));
+          },
+          onError: (_) {
+            // Permission-denied / App Check noise must not take down the shell.
+          },
+        );
   }
 
   Future<void> _show(

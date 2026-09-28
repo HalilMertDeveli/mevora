@@ -2,6 +2,7 @@ import 'package:mevora/features/compatibility/domain/entities/compatibility_brea
 import 'package:mevora/features/compatibility/domain/entities/compatibility_reason.dart';
 import 'package:mevora/features/discovery/domain/compatibility/compatibility_engine.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+
 /// Deterministic "Why you match" reasons from real profile + breakdown data.
 abstract final class CompatibilityReasonEngine {
   static List<CompatibilityReason> build({
@@ -12,7 +13,9 @@ abstract final class CompatibilityReasonEngine {
     final reasons = <CompatibilityReason>[];
 
     if (breakdown.relationshipScore >= 85 &&
-        CompatibilityScoring.normalizeRelationshipGoal(viewer.relationshipGoal) ==
+        CompatibilityScoring.normalizeRelationshipGoal(
+              viewer.relationshipGoal,
+            ) ==
             CompatibilityScoring.normalizeRelationshipGoal(
               candidate.relationshipGoal,
             ) &&

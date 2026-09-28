@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 class BoostActiveBadge extends StatelessWidget {
   const BoostActiveBadge({
@@ -33,30 +33,11 @@ class BoostActiveBadge extends StatelessWidget {
     final label = compact
         ? l10n.boostActiveBadge
         : '${l10n.boostActiveBadge} · $remainingLabel';
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.bolt_rounded,
-            size: 16,
-            color: Theme.of(context).colorScheme.onSecondaryContainer,
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-        ],
-      ),
+    return MevoraPill(
+      label: label,
+      icon: MevoraIcons.boostActive,
+      tone: MevoraTone.accent,
+      dense: compact,
     );
   }
 }

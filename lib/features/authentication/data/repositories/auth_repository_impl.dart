@@ -91,33 +91,28 @@ class AuthRepositoryImpl implements AuthRepository {
         );
       }
 
-      authSub = _firebaseAuth.authStateChanges().listen(
-        (firebaseUser) {
-          if (firebaseUser == null) {
-            unawaited(
-              listenInner(
-                Stream<AuthSnapshot>.value(const AuthSignedOut()),
-              ),
-            );
-            return;
-          }
+      authSub = _firebaseAuth.authStateChanges().listen((firebaseUser) {
+        if (firebaseUser == null) {
           unawaited(
-            listenInner(
-              _userRemoteDataSource.watchUser(firebaseUser.uid).map((doc) {
-                if (doc == null) {
-                  return AuthProfilePending(firebaseUser.uid);
-                }
-                return AuthProfileReady(
-                  doc.toEntity().copyWith(
-                    emailVerified: firebaseUser.emailVerified,
-                  ),
-                );
-              }),
-            ),
+            listenInner(Stream<AuthSnapshot>.value(const AuthSignedOut())),
           );
-        },
-        onError: listener.addError,
-      );
+          return;
+        }
+        unawaited(
+          listenInner(
+            _userRemoteDataSource.watchUser(firebaseUser.uid).map((doc) {
+              if (doc == null) {
+                return AuthProfilePending(firebaseUser.uid);
+              }
+              return AuthProfileReady(
+                doc.toEntity().copyWith(
+                  emailVerified: firebaseUser.emailVerified,
+                ),
+              );
+            }),
+          ),
+        );
+      }, onError: listener.addError);
 
       listener.onCancel = () async {
         await innerSub?.cancel();
@@ -240,7 +235,9 @@ class AuthRepositoryImpl implements AuthRepository {
           linkToCurrentUser: true,
         ),
         AuthProviderId.phone => throw AuthErrorMapper.fromCode('invalid-phone'),
-        AuthProviderId.email => throw AuthErrorMapper.fromCode('not-configured'),
+        AuthProviderId.email => throw AuthErrorMapper.fromCode(
+          'not-configured',
+        ),
       };
       return _userRemoteDataSource.upsertFromSession(session);
     });
@@ -341,7 +338,6 @@ class AuthRepositoryImpl implements AuthRepository {
       ),
     );
   }
-
 
   Future<AuthUser> _persistPhoneSession(AuthSession session) async {
     if (kDebugMode) {

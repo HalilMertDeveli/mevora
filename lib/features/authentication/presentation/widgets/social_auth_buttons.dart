@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -36,7 +37,7 @@ class SocialAuthButtons extends StatelessWidget {
         const SizedBox(height: AppSpacing.sm),
         _button(
           label: l10n.continueWithApple,
-          icon: Icons.apple,
+          icon: MevoraIcons.apple,
           onPressed: onApple,
           provider: 'apple',
         ),
@@ -44,7 +45,7 @@ class SocialAuthButtons extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _button(
             label: l10n.continueWithSpotify,
-            icon: Icons.library_music_outlined,
+            icon: MevoraIcons.music,
             onPressed: onSpotify!,
             provider: 'spotify',
           ),
@@ -53,7 +54,7 @@ class SocialAuthButtons extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _button(
             label: l10n.continueWithPhone,
-            icon: Icons.phone_outlined,
+            icon: MevoraIcons.phone,
             onPressed: onPhone!,
             provider: 'phone',
           ),

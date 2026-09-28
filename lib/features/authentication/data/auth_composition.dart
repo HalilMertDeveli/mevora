@@ -32,7 +32,8 @@ AuthController createAuthController({
       emailAuthService: EmailAuthService(),
       googleAuthService: google,
       appleAuthService: AppleAuthService(config: config),
-      spotifyAuthService: spotifyAuthService ?? SpotifyAuthService(config: config),
+      spotifyAuthService:
+          spotifyAuthService ?? SpotifyAuthService(config: config),
       phoneAuthService: PhoneAuthService(),
       userRemoteDataSource: userRemote,
       accountSync: FirebaseFunctionsCallable(region: config.functionsRegion),

@@ -83,10 +83,7 @@ class VerifyPhoneCode {
     required PhoneChallenge challenge,
     required String smsCode,
   }) {
-    return _repository.verifyPhoneCode(
-      challenge: challenge,
-      smsCode: smsCode,
-    );
+    return _repository.verifyPhoneCode(challenge: challenge, smsCode: smsCode);
   }
 }
 

@@ -252,7 +252,8 @@ class InAppStorePurchaseDataSource implements StorePurchaseDataSource {
 
   void _onPurchases(List<PurchaseDetails> purchases) {
     for (final details in purchases) {
-      final transactionId = details.purchaseID ?? details.verificationData.source;
+      final transactionId =
+          details.purchaseID ?? details.verificationData.source;
       if (transactionId.isEmpty) {
         _events.add(
           const StorePurchaseEvent(

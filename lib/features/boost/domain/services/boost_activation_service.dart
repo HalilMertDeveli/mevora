@@ -83,10 +83,9 @@ class BoostActivationService {
     if (grant <= Duration.zero) {
       return BoostActivationDecision.insufficientBalance();
     }
-    final live =
-        currentActive != null && currentActive.isActiveAt(now)
-            ? currentActive
-            : null;
+    final live = currentActive != null && currentActive.isActiveAt(now)
+        ? currentActive
+        : null;
     if (live != null && !allowStacking) {
       return BoostActivationDecision.alreadyActive();
     }

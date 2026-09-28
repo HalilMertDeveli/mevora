@@ -10,17 +10,11 @@ abstract final class CompatibilityL10n {
           _goalLabel(l10n, reason.messageArgs.first),
         );
       case 'compatReasonSharedInterests':
-        return l10n.compatReasonSharedInterests(
-          reason.messageArgs.join(', '),
-        );
+        return l10n.compatReasonSharedInterests(reason.messageArgs.join(', '));
       case 'compatReasonSharedLanguages':
-        return l10n.compatReasonSharedLanguages(
-          reason.messageArgs.first,
-        );
+        return l10n.compatReasonSharedLanguages(reason.messageArgs.first);
       case 'compatReasonSharedHobbies':
-        return l10n.compatReasonSharedHobbies(
-          reason.messageArgs.first,
-        );
+        return l10n.compatReasonSharedHobbies(reason.messageArgs.first);
       case 'compatReasonSimilarLifestyle':
         return l10n.compatReasonSimilarLifestyle;
       case 'compatReasonSameAnswers':
@@ -37,7 +31,10 @@ abstract final class CompatibilityL10n {
     }
   }
 
-  static String category(AppLocalizations l10n, CompatibilityCategory category) {
+  static String category(
+    AppLocalizations l10n,
+    CompatibilityCategory category,
+  ) {
     return switch (category) {
       CompatibilityCategory.overall => l10n.compatCategoryOverall,
       CompatibilityCategory.relationship => l10n.compatCategoryRelationship,

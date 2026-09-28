@@ -451,14 +451,18 @@ class DiscoveryController extends ChangeNotifier {
           _discoverLog(
             'Strict client filters emptied deck — relaxing distance/goal',
           );
-          filtered = _applyFilters(
-            value.candidates,
-            relaxDistance: true,
-            relaxSecondary: true,
-          ).where((candidate) => !_actedUserIds.contains(candidate.uid)).toList();
+          filtered =
+              _applyFilters(
+                    value.candidates,
+                    relaxDistance: true,
+                    relaxSecondary: true,
+                  )
+                  .where((candidate) => !_actedUserIds.contains(candidate.uid))
+                  .toList();
         }
-        final ranked =
-            DiscoveryRankingEngine.applyCompatibilityTiebreak(filtered);
+        final ranked = DiscoveryRankingEngine.applyCompatibilityTiebreak(
+          filtered,
+        );
         final resolved = _resolveCompatibility(ranked, viewer);
         final merged = refresh
             ? resolved
@@ -627,8 +631,9 @@ class DiscoveryController extends ChangeNotifier {
   }
 
   void _removeCandidate(String userId) {
-    final remaining =
-        state.candidates.where((candidate) => candidate.uid != userId).toList();
+    final remaining = state.candidates
+        .where((candidate) => candidate.uid != userId)
+        .toList();
     if (remaining.length == state.candidates.length) {
       return;
     }

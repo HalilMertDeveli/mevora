@@ -1,12 +1,7 @@
 import 'package:mevora/features/discovery/domain/services/discovery_boost_ranking.dart';
 
 /// Soft distance tiers used when preferred radius returns too few people.
-enum DiscoveryDistanceTier {
-  nearby,
-  extended,
-  far,
-  noLocation,
-}
+enum DiscoveryDistanceTier { nearby, extended, far, noLocation }
 
 abstract final class DiscoveryFallback {
   static const double extendedCapKm = 100;
@@ -28,7 +23,9 @@ abstract final class DiscoveryFallback {
     if (distanceKm <= nearbyMax) {
       return DiscoveryDistanceTier.nearby;
     }
-    final extended = radiusKm > extendedCapKm ? radiusKm.toDouble() : extendedCapKm;
+    final extended = radiusKm > extendedCapKm
+        ? radiusKm.toDouble()
+        : extendedCapKm;
     if (distanceKm <= extended) {
       return DiscoveryDistanceTier.extended;
     }

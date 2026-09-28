@@ -247,10 +247,7 @@ class SpotifyAuthService {
     if (!launched) {
       _pending = null;
       await _pendingStore.clear();
-      throw const AuthException(
-        AuthMessages.oauth,
-        kind: AuthErrorKind.oauth,
-      );
+      throw const AuthException(AuthMessages.oauth, kind: AuthErrorKind.oauth);
     }
   }
 
@@ -379,8 +376,7 @@ class SpotifyAuthService {
       });
     } on FirebaseFunctionsException catch (error) {
       throw AuthErrorMapper.fromCode(
-        error.details is Map &&
-                (error.details as Map)['mevoraCode'] is String
+        error.details is Map && (error.details as Map)['mevoraCode'] is String
             ? (error.details as Map)['mevoraCode'] as String
             : (error.message ?? error.code),
         cause: error,
@@ -439,8 +435,7 @@ class SpotifyAuthService {
       );
     } on FirebaseFunctionsException catch (error) {
       throw AuthErrorMapper.fromCode(
-        error.details is Map &&
-                (error.details as Map)['mevoraCode'] is String
+        error.details is Map && (error.details as Map)['mevoraCode'] is String
             ? (error.details as Map)['mevoraCode'] as String
             : error.code,
         cause: error,

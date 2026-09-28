@@ -15,8 +15,5 @@ abstract class MatchScoreDataSource {
     required String text,
   });
 
-  Future<void> dismissFeedback({
-    required String uid,
-    required String matchId,
-  });
+  Future<void> dismissFeedback({required String uid, required String matchId});
 }

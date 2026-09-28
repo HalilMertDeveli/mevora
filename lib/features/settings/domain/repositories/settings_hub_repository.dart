@@ -28,5 +28,8 @@ abstract class SettingsHubRepository {
 
   Stream<List<BlockedUserEntry>> watchBlockedUsers(String uid);
 
-  Future<void> unblockUser({required String uid, required String blockedUserId});
+  Future<void> unblockUser({
+    required String uid,
+    required String blockedUserId,
+  });
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
@@ -10,7 +11,10 @@ import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_chat_starter_chip.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_compatibility_badge.dart';
+import 'package:mevora/features/humor/presentation/widgets/humor_compatibility_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_context_row.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 /// Match-chat humor strip, the sibling of the music banner.
 ///
@@ -114,32 +118,43 @@ class _MatchHumorCompatibilityBannerState
           widget.showChatStarter &&
           onChatStarter != null &&
           data.strongestShared.isNotEmpty;
-      return Material(
-        color: theme.colorScheme.surfaceContainerHighest,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              HumorCompatibilityBadge(
-                score: data.score!,
+      final l10n = AppLocalizations.of(context);
+      final score = data.score!;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MevoraContextRow(
+            icon: MevoraIcons.humor,
+            tone: MevoraTone.humor,
+            title: l10n.humorLabTitle,
+            trailing: HumorCompatibilityBadge(
+              score: score,
+              strongestShared: data.strongestShared,
+            ),
+            onTap: () => unawaited(
+              HumorCompatibilitySheet.show(
+                context,
+                score: score,
                 strongestShared: data.strongestShared,
               ),
-              if (offerStarter) ...[
-                const SizedBox(height: AppSpacing.sm),
-                HumorChatStarterChip(
-                  sharedCategories: data.strongestShared,
-                  analytics: widget.analytics,
-                  onUsed: onChatStarter,
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
+          if (offerStarter)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
+              child: HumorChatStarterChip(
+                sharedCategories: data.strongestShared,
+                analytics: widget.analytics,
+                onUsed: onChatStarter,
+              ),
+            ),
+        ],
       );
     }
     if (data.isBuilding) {
@@ -151,7 +166,7 @@ class _MatchHumorCompatibilityBannerState
         ),
         child: Row(
           children: [
-            Icon(Icons.theater_comedy_outlined, size: 16, color: muted),
+            Icon(MevoraIcons.humor, size: 16, color: muted),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(

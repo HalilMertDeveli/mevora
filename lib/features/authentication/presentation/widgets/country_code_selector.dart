@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/authentication/domain/entities/country_code.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -48,7 +49,8 @@ class _CountryCodePickerSheet extends StatefulWidget {
   final CountryCode selected;
 
   @override
-  State<_CountryCodePickerSheet> createState() => _CountryCodePickerSheetState();
+  State<_CountryCodePickerSheet> createState() =>
+      _CountryCodePickerSheetState();
 }
 
 class _CountryCodePickerSheetState extends State<_CountryCodePickerSheet> {
@@ -69,7 +71,7 @@ class _CountryCodePickerSheetState extends State<_CountryCodePickerSheet> {
         children: [
           MevoraTextField(
             hint: AppLocalizations.of(context).countrySearchHint,
-            prefixIcon: Icons.search,
+            prefixIcon: MevoraIcons.search,
             onChanged: (value) => setState(() => _query = value),
           ),
           const SizedBox(height: AppSpacing.sm),

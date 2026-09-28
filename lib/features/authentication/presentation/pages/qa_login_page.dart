@@ -55,9 +55,7 @@ class _QaLoginPageState extends State<QaLoginPage> {
     final config = AppScope.of(context).config;
     if (!EmulatorQaLogin.isEnabled(config)) {
       // Belt and braces: the router already blocks this path.
-      return const Scaffold(
-        body: Center(child: Text('Not available.')),
-      );
+      return const Scaffold(body: Center(child: Text('Not available.')));
     }
     final auth = AuthScope.of(context);
     return Scaffold(

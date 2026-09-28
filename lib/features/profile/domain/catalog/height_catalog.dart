@@ -4,9 +4,7 @@ abstract final class HeightCatalog {
   static const maxCm = 220;
 
   static List<int> get options {
-    return [
-      for (var cm = minCm; cm <= maxCm; cm++) cm,
-    ];
+    return [for (var cm = minCm; cm <= maxCm; cm++) cm];
   }
 
   static bool isValid(int? cm) {

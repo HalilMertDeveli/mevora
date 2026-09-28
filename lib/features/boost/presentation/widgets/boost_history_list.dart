@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/entities/boost_history_entry.dart';
@@ -72,7 +73,7 @@ class BoostHistoryTile extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            isPurchase ? Icons.shopping_bag_outlined : Icons.bolt_rounded,
+            isPurchase ? MevoraIcons.shopping : MevoraIcons.boost,
             color: Theme.of(context).colorScheme.secondary,
           ),
           const SizedBox(width: AppSpacing.md),
@@ -81,10 +82,7 @@ class BoostHistoryTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: Theme.of(context).textTheme.titleSmall),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),

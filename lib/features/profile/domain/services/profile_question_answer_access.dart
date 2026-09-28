@@ -37,12 +37,14 @@ abstract final class ProfileQuestionAnswerAccess {
       return Stream.value(true);
     }
     final matchId = matchIdFor(viewerUid, profileUid);
-    return matches.watchMatch(matchId).map(
-      (match) => canView(
-        viewerUid: viewerUid,
-        profileUid: profileUid,
-        match: match,
-      ),
-    );
+    return matches
+        .watchMatch(matchId)
+        .map(
+          (match) => canView(
+            viewerUid: viewerUid,
+            profileUid: profileUid,
+            match: match,
+          ),
+        );
   }
 }

@@ -303,7 +303,8 @@ class MockHumorDataSource implements HumorDataSource {
     );
   }
 
-  int get _completedCalibration => _ratings.length > HumorCalibration.totalInteractions
+  int get _completedCalibration =>
+      _ratings.length > HumorCalibration.totalInteractions
       ? HumorCalibration.totalInteractions
       : _ratings.length;
 

@@ -97,40 +97,43 @@ abstract final class DiscoveryBoostRanking {
       return value;
     }
 
-    final sorted = [...items]..sort((a, b) {
-      final tierDelta = alignmentTier(b).compareTo(alignmentTier(a));
-      if (tierDelta != 0) {
-        return tierDelta;
-      }
-      final distanceDelta = distanceKey(a).compareTo(distanceKey(b));
-      if (distanceDelta != 0) {
-        return distanceDelta;
-      }
-      final aScore = rankScore(
-        uid: uidOf(a),
-        compatibilityScore: compatibilityOf(a),
-        musicRankingBonus: musicBonusOf(a),
-        distanceKm: distanceOf(a),
-        radiusKm: radiusKm,
-        boostedUids: boostedUids,
-      );
-      final bScore = rankScore(
-        uid: uidOf(b),
-        compatibilityScore: compatibilityOf(b),
-        musicRankingBonus: musicBonusOf(b),
-        distanceKm: distanceOf(b),
-        radiusKm: radiusKm,
-        boostedUids: boostedUids,
-      );
-      if (bScore != aScore) {
-        return bScore.compareTo(aScore);
-      }
-      return tieBreak?.call(a, b) ?? 0;
-    });
+    final sorted = [...items]
+      ..sort((a, b) {
+        final tierDelta = alignmentTier(b).compareTo(alignmentTier(a));
+        if (tierDelta != 0) {
+          return tierDelta;
+        }
+        final distanceDelta = distanceKey(a).compareTo(distanceKey(b));
+        if (distanceDelta != 0) {
+          return distanceDelta;
+        }
+        final aScore = rankScore(
+          uid: uidOf(a),
+          compatibilityScore: compatibilityOf(a),
+          musicRankingBonus: musicBonusOf(a),
+          distanceKm: distanceOf(a),
+          radiusKm: radiusKm,
+          boostedUids: boostedUids,
+        );
+        final bScore = rankScore(
+          uid: uidOf(b),
+          compatibilityScore: compatibilityOf(b),
+          musicRankingBonus: musicBonusOf(b),
+          distanceKm: distanceOf(b),
+          radiusKm: radiusKm,
+          boostedUids: boostedUids,
+        );
+        if (bScore != aScore) {
+          return bScore.compareTo(aScore);
+        }
+        return tieBreak?.call(a, b) ?? 0;
+      });
 
     final out = <T>[];
     for (final tier in const [3, 2, 1, 0]) {
-      final group = sorted.where((item) => alignmentTier(item) == tier).toList();
+      final group = sorted
+          .where((item) => alignmentTier(item) == tier)
+          .toList();
       out.addAll(_capDensity(group, boostedUids, uidOf, compatibilityOf));
     }
     return out;

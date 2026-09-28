@@ -94,6 +94,8 @@ void main() {
 
     expect(find.text(_en.musicCompatibilityPercent(91)), findsNothing);
     expect(find.text(_en.musicCompatibilityShort(91)), findsNothing);
-    expect(find.text(_en.compatDiscoverBadge(78)), findsWidgets);
+    // Overall compatibility stays visible as the quiet ring.
+    expect(find.text('78'), findsWidgets);
+    expect(find.text('91'), findsNothing);
   });
 }

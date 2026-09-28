@@ -70,8 +70,9 @@ abstract final class CompatibilityScoreResolver {
     required DiscoveryCandidate candidate,
     DiscoveryFilters filters = const DiscoveryFilters(),
   }) {
-    final serverMapped =
-        CompatibilityBreakdownMapper.fromCandidateIfComplete(candidate);
+    final serverMapped = CompatibilityBreakdownMapper.fromCandidateIfComplete(
+      candidate,
+    );
     if (serverMapped != null) {
       final serverScore = _serverOverallScore(candidate);
       return serverMapped.copyWith(
@@ -148,7 +149,9 @@ abstract final class CompatibilityScoreResolver {
     UserProfile viewer,
     DiscoveryCandidate candidate,
   ) {
-    final viewerSet = viewer.interests.map((i) => i.trim().toLowerCase()).toSet();
+    final viewerSet = viewer.interests
+        .map((i) => i.trim().toLowerCase())
+        .toSet();
     return candidate.interests
         .where((interest) => viewerSet.contains(interest.trim().toLowerCase()))
         .toList();
@@ -164,10 +167,12 @@ abstract final class CompatibilityScoreResolver {
     required UserProfile viewer,
     required DiscoveryCandidate candidate,
   }) {
-    final viewerHasProfile = viewer.interests.isNotEmpty ||
+    final viewerHasProfile =
+        viewer.interests.isNotEmpty ||
         (viewer.relationshipGoal?.isNotEmpty ?? false) ||
         viewer.lifestyle.isNotEmpty;
-    final candidateHasProfile = candidate.interests.isNotEmpty ||
+    final candidateHasProfile =
+        candidate.interests.isNotEmpty ||
         (candidate.relationshipGoal?.isNotEmpty ?? false) ||
         candidate.categoryInterestScore != null ||
         candidate.categoryRelationshipScore != null;

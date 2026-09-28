@@ -45,10 +45,9 @@ class AppleAuthService {
         );
       }
 
-      final oauth = OAuthProvider('apple.com').credential(
-        idToken: identityToken,
-        rawNonce: rawNonce,
-      );
+      final oauth = OAuthProvider(
+        'apple.com',
+      ).credential(idToken: identityToken, rawNonce: rawNonce);
       final UserCredential result;
       if (link) {
         final current = _firebaseAuth.currentUser;

@@ -268,15 +268,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('MEVORA'), findsOneWidget);
+    expect(find.text('mevora'), findsOneWidget);
     expect(find.text(_l10n.loginSlogan), findsOneWidget);
     expect(find.text(_l10n.continueWithGoogle), findsOneWidget);
     expect(find.text(_l10n.continueWithApple), findsOneWidget);
     expect(find.text(_l10n.continueWithSpotify), findsOneWidget);
     expect(find.text(_l10n.continueWithPhone), findsOneWidget);
     expect(find.text(_l10n.continueWithEmail), findsOneWidget);
-    expect(find.text(_l10n.termsOfService), findsOneWidget);
-    expect(find.text(_l10n.privacyPolicy), findsOneWidget);
+    expect(
+      find.textContaining(_l10n.termsOfService, findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(_l10n.privacyPolicy, findRichText: true),
+      findsOneWidget,
+    );
   });
 
   testWidgets('phone entry shows an error for an empty number', (tester) async {

@@ -41,9 +41,7 @@ class AccountDeletionService {
       final deleted = payload['deleted'] == true;
       if (!ok || !deleted) {
         throw AuthException(
-          kDebugMode
-              ? 'Delete account failed: $payload'
-              : AuthMessages.unknown,
+          kDebugMode ? 'Delete account failed: $payload' : AuthMessages.unknown,
           kind: AuthErrorKind.unknown,
           code: payload['code'].toString(),
         );

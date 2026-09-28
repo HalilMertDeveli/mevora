@@ -39,7 +39,10 @@ class PhoneAuthService implements FirebaseAuthDataSource {
     int? forceResendingToken,
     int resendAttempt = 0,
   }) async {
-    _log('START', 'resendAttempt=$resendAttempt hasResendToken=${forceResendingToken != null}');
+    _log(
+      'START',
+      'resendAttempt=$resendAttempt hasResendToken=${forceResendingToken != null}',
+    );
     if (!PhoneMask.isValidE164(e164Phone)) {
       _log('PHONE_NORMALIZED', 'invalid');
       throw const AuthException(
@@ -48,7 +51,10 @@ class PhoneAuthService implements FirebaseAuthDataSource {
         code: 'invalid-phone-number',
       );
     }
-    _log('PHONE_NORMALIZED', 'ok length=${e164Phone.length} country=${e164Phone.length >= 3 ? e164Phone.substring(0, 3) : "?"}');
+    _log(
+      'PHONE_NORMALIZED',
+      'ok length=${e164Phone.length} country=${e164Phone.length >= 3 ? e164Phone.substring(0, 3) : "?"}',
+    );
     if (_sendCount >= OtpValidator.maxResendAttempts + 1) {
       _log('VERIFICATION_FAILED', 'code=too-many-requests local-limit');
       throw const AuthException(
@@ -101,7 +107,10 @@ class PhoneAuthService implements FirebaseAuthDataSource {
             'code=${error.code} message=${error.message}',
           );
           if (kDebugMode) {
-            _log('VERIFICATION_FAILED', 'plugin=${error.plugin} details=${error.toString()}');
+            _log(
+              'VERIFICATION_FAILED',
+              'plugin=${error.plugin} details=${error.toString()}',
+            );
           }
           if (!completer.isCompleted) {
             completer.completeError(AuthErrorMapper.map(error));
@@ -144,7 +153,10 @@ class PhoneAuthService implements FirebaseAuthDataSource {
           // fail instead of hanging until the outer timeout.
           if (!completer.isCompleted && verificationId.isNotEmpty) {
             _sendCount += 1;
-            _log('CODE_SENT', 'via=autoRetrievalTimeout verificationIdEmpty=false');
+            _log(
+              'CODE_SENT',
+              'via=autoRetrievalTimeout verificationIdEmpty=false',
+            );
             completer.complete(
               PhoneChallenge(
                 verificationId: verificationId,
@@ -223,7 +235,11 @@ class PhoneAuthService implements FirebaseAuthDataSource {
     );
     final error = OtpValidator.validate(smsCode);
     if (error != null) {
-      throw AuthException(error, kind: AuthErrorKind.invalidOtp, code: 'invalid-otp-format');
+      throw AuthException(
+        error,
+        kind: AuthErrorKind.invalidOtp,
+        code: 'invalid-otp-format',
+      );
     }
     if (challenge.verificationId.trim().isEmpty) {
       _log('CREDENTIAL_CREATED', 'failed missing-verification-id');
@@ -265,7 +281,11 @@ class PhoneAuthService implements FirebaseAuthDataSource {
     }
     final error = OtpValidator.validate(smsCode);
     if (error != null) {
-      throw AuthException(error, kind: AuthErrorKind.invalidOtp, code: 'invalid-otp-format');
+      throw AuthException(
+        error,
+        kind: AuthErrorKind.invalidOtp,
+        code: 'invalid-otp-format',
+      );
     }
     try {
       final credential = PhoneAuthProvider.credential(
@@ -299,7 +319,10 @@ class PhoneAuthService implements FirebaseAuthDataSource {
       );
     }
     _log('SIGN_IN_SUCCESS');
-    _log('FIREBASE_UID_RECEIVED', 'isNewUser=${result.additionalUserInfo?.isNewUser == true}');
+    _log(
+      'FIREBASE_UID_RECEIVED',
+      'isNewUser=${result.additionalUserInfo?.isNewUser == true}',
+    );
     return AuthSession(
       uid: user.uid,
       provider: AuthProviderId.phone,

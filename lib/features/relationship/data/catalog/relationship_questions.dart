@@ -100,7 +100,8 @@ RelationshipQuestion relationshipQuestion(
   String tr,
   RelationshipQuestionType type,
   List<RelationshipAnswerOption> answers, {
-  RelationshipContentCategory category = RelationshipContentCategory.relationship,
+  RelationshipContentCategory category =
+      RelationshipContentCategory.relationship,
 }) {
   return buildCatalogQuestion(
     n,
@@ -121,7 +122,8 @@ RelationshipQuestion buildCatalogQuestion(
   String tr,
   RelationshipQuestionType type,
   List<RelationshipAnswerOption> answers, {
-  RelationshipContentCategory category = RelationshipContentCategory.relationship,
+  RelationshipContentCategory category =
+      RelationshipContentCategory.relationship,
 }) {
   assert(answers.length == 3, 'Each question must have exactly 3 answers');
   return RelationshipQuestion(
@@ -191,12 +193,13 @@ abstract final class RelationshipQuestionCatalog {
         .replaceAll(RegExp(r'[^\w\sçğıöşüÇĞİÖŞÜâîûÂÎÛ]', unicode: false), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-    final tokens = normalized
-        .split(' ')
-        .where((token) => token.length > 1)
-        .where((token) => !_semanticStopwords.contains(token))
-        .toList()
-      ..sort();
+    final tokens =
+        normalized
+            .split(' ')
+            .where((token) => token.length > 1)
+            .where((token) => !_semanticStopwords.contains(token))
+            .toList()
+          ..sort();
     return tokens.join('|');
   }
 
@@ -265,7 +268,8 @@ abstract final class RelationshipQuestionCatalog {
       if (!ids.add(question.id)) {
         throw StateError('Duplicate question id: ${question.id}');
       }
-      if (question.promptTr.trim().isEmpty || question.promptEn.trim().isEmpty) {
+      if (question.promptTr.trim().isEmpty ||
+          question.promptEn.trim().isEmpty) {
         throw StateError('${question.id} has empty prompt');
       }
       if (question.promptTr.length > 90 || question.promptEn.length > 100) {

@@ -2,10 +2,7 @@ import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 
 class SwipeResultWrapper {
-  const SwipeResultWrapper({
-    required this.matched,
-    this.match,
-  });
+  const SwipeResultWrapper({required this.matched, this.match});
 
   final bool matched;
   final Match? match;

@@ -1376,7 +1376,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostVerifying => 'Satın alma doğrulanıyor...';
 
   @override
-  String get boostSuccessTitle => 'Boost aktif! 🚀';
+  String get boostSuccessTitle => 'Boost aktif';
 
   @override
   String get boostSuccessMessage =>
@@ -1892,10 +1892,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicTitle => 'Müzik';
 
   @override
-  String get musicConnectCta => '🎵 Spotify\'ı Bağla';
+  String get musicConnectCta => 'Spotify\'ı bağla';
 
   @override
-  String get musicConnected => '✓ Spotify Bağlandı';
+  String get musicConnected => 'Spotify bağlı';
 
   @override
   String get musicUnconnectedCopy =>
@@ -1908,7 +1908,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicSyncing => 'Müzik zevkin yenileniyor…';
 
   @override
-  String get musicRefresh => 'Müzik Verilerini Yenile';
+  String get musicRefresh => 'Müzik verilerini yenile';
 
   @override
   String get musicRefreshCooldown => 'Daha sonra tekrar yenileyebilirsin.';
@@ -1917,7 +1917,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicProfileTitle => 'Müzik profilin';
 
   @override
-  String get musicSameTasteTitle => 'Seninle Aynı Müziği Dinleyenler';
+  String get musicSameTasteTitle => 'Seninle aynı müziği dinleyenler';
 
   @override
   String get musicSameTasteEmpty =>
@@ -3077,7 +3077,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String musicMatchTitle(int percent) {
-    return '🎵 Müzik Eşleşmesi — %$percent';
+    return 'Müzik uyumu · %$percent';
   }
 
   @override
@@ -3092,7 +3092,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String musicInsightSharedTracks(int count) {
-    return '🎵 $count ortak şarkınız var.';
+    return '$count ortak şarkınız var.';
   }
 
   @override
@@ -3102,17 +3102,17 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String musicInsightSharedPlaylistTracks(int count) {
-    return '🎧 Playlistlerinizde $count ortak şarkı var.';
+    return 'Playlistlerinizde $count ortak şarkı var.';
   }
 
   @override
   String musicInsightSharedRecentTracks(int count) {
-    return '🎵 Son dönemde $count aynı şarkıyı dinlemişsiniz.';
+    return 'Son dönemde $count aynı şarkıyı dinlemişsiniz.';
   }
 
   @override
   String musicInsightTopSharedArtist(String name) {
-    return '🎵 İkiniz de $name\'i sık dinliyorsunuz.';
+    return 'İkiniz de $name\'i sık dinliyorsunuz.';
   }
 
   @override
@@ -3128,7 +3128,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicSpotifyNotConnected => 'Spotify bağlı değil';
 
   @override
-  String get musicSharedTracksHeading => '🎵 Ortak şarkılarınız';
+  String get musicSharedTracksHeading => 'Ortak şarkılarınız';
 
   @override
   String get musicSharedArtistsHeading => '🎤 Ortak sanatçılarınız';
@@ -3471,13 +3471,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get musicMatchTeaser =>
-      '🎵 Müzik zevkiniz uyumlu olabilir — detaylar Premium ile';
+      'Müzik zevkiniz uyumlu olabilir — detaylar Premium ile';
 
   @override
   String get musicPremiumUnlock => 'Aç';
 
   @override
-  String get musicNoCommonTracks => 'Henüz ortak dinlediğiniz bir şarkı yok 🎵';
+  String get musicNoCommonTracks => 'Henüz ortak dinlediğiniz bir şarkı yok';
 
   @override
   String get musicRecentlyPlayedHeading => 'Son dinlenenler';
@@ -3727,7 +3727,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sayılar canlı etkinliğin biraz gerisinde kalabilir.';
 
   @override
-  String get onboardingMusicTitle => 'Müzik senin için önemli mi? 🎧';
+  String get onboardingMusicTitle => 'Müzik senin için önemli mi?';
 
   @override
   String get onboardingMusicBody =>
@@ -3748,7 +3748,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Spotify bağlantısı iptal edildi. Tekrar deneyebilir veya geçebilirsin.';
 
   @override
-  String get publicMusicTitle => 'Spotify zevkini yakaladık 🎧';
+  String get publicMusicTitle => 'Spotify zevkini yakaladık';
 
   @override
   String get publicMusicSubtitle => 'Profilinde göstermek istediklerini seç.';
@@ -3798,7 +3798,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get publicMusicEditCta => 'Müzik Zevkimi düzenle';
 
   @override
-  String get profileMusicTasteHeading => 'Müzik Zevki 🎧';
+  String get profileMusicTasteHeading => 'Müzik zevki';
 
   @override
   String get profileMusicOpenInSpotify => 'Spotify\'da aç';
@@ -4016,4 +4016,30 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get musicSectionEmpty => 'Burada henüz bir şey yok.';
+
+  @override
+  String get profileSectionSignals => 'Uyum sinyallerin';
+
+  @override
+  String get profileSectionTrust => 'Güven ve görünürlük';
+
+  @override
+  String get premiumBenefitsHeading => 'Premium ile neler açılır';
+
+  @override
+  String get premiumBenefitLikesTitle => 'Seni kimlerin beğendiğini gör';
+
+  @override
+  String get premiumBenefitLikesBody =>
+      'Seni beğenen herkes tek listede — ve neden uyumlu olabileceğiniz.';
+
+  @override
+  String get premiumBenefitMusicTitle => 'Müzik uyumunun tamamı';
+
+  @override
+  String get premiumBenefitMusicBody =>
+      'Her eşleşmenle paylaştığın şarkılar, sanatçılar ve türler.';
+
+  @override
+  String get premiumPlansHeading => 'Planını seç';
 }

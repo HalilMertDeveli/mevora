@@ -65,10 +65,7 @@ class FirebaseMatchScoreDataSource implements MatchScoreDataSource {
   }
 
   @override
-  Future<void> dismissFeedback({
-    required String uid,
-    required String matchId,
-  }) {
+  Future<void> dismissFeedback({required String uid, required String matchId}) {
     return _backend.invoke('dismissMatchFeedback', {'matchId': matchId});
   }
 
@@ -91,7 +88,8 @@ class FirebaseMatchScoreDataSource implements MatchScoreDataSource {
       id: doc.id,
       type: type,
       delta: firestoreInt(data['delta'], 1),
-      createdAt: firestoreDate(data['createdAt']) ??
+      createdAt:
+          firestoreDate(data['createdAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
@@ -147,7 +149,7 @@ class _RecordingAnalytics implements AnalyticsProvider {
   Future<void> setUserId(String? userId) async {}
 }
 
-Finder get _spinner => find.byType(CircularProgressIndicator);
+Finder get _spinner => find.byType(MevoraOrbitLoader);
 Finder get _failedMessage => find.text(_en.humorVideoLoadFailed);
 Finder get _tryAgain => find.widgetWithText(OutlinedButton, _en.humorTryAgain);
 Finder get _next => find.widgetWithText(FilledButton, _en.humorMediaNext);
@@ -289,8 +291,8 @@ void main() {
       expect(find.text(joke), findsOneWidget);
       expect(find.text(_en.humorCategoryWordplay), findsOneWidget);
       _expectNoFailure();
-      expect(find.byIcon(Icons.hide_image_outlined), findsNothing);
-      expect(find.byIcon(Icons.videocam_off_outlined), findsNothing);
+      expect(find.byIcon(MevoraIcons.photoBroken), findsNothing);
+      expect(find.byIcon(MevoraIcons.videoOff), findsNothing);
       expect(find.byType(Image), findsNothing, reason: 'no fake picture');
       expect(_spinner, findsNothing);
       expect(_next, findsNothing);
@@ -342,7 +344,7 @@ void main() {
       );
 
       expect(find.text('GIPHY · @funnyperson'), findsOneWidget);
-      expect(find.byIcon(Icons.verified), findsOneWidget);
+      expect(find.byIcon(MevoraIcons.verified), findsOneWidget);
       expect(find.bySemanticsLabel(_en.humorAttributionVerified), findsOne);
     });
 
@@ -363,7 +365,7 @@ void main() {
         ),
       );
       expect(find.text('GIPHY · Some Studio'), findsOneWidget);
-      expect(find.byIcon(Icons.verified), findsNothing);
+      expect(find.byIcon(MevoraIcons.verified), findsNothing);
 
       await tester.pumpWidget(
         _wrap(
@@ -851,7 +853,7 @@ void main() {
         BoxFit.contain,
       );
       expect(controllers.created.single.playCalls, 1);
-      expect(find.byIcon(Icons.volume_off), findsOneWidget);
+      expect(find.byIcon(MevoraIcons.volumeOff), findsOneWidget);
 
       controllers.size = const Size(720, 1280);
       await tester.pumpWidget(

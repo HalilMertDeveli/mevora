@@ -81,7 +81,10 @@ class FirebaseLocationDataSource {
 
   Future<void> clearOwnerLocation(String uid) async {
     try {
-      await _firestore.collection(FirestorePaths.userLocation).doc(uid).delete();
+      await _firestore
+          .collection(FirestorePaths.userLocation)
+          .doc(uid)
+          .delete();
     } on FirebaseException catch (error, stackTrace) {
       Error.throwWithStackTrace(_mapFirebase(error), stackTrace);
     }
@@ -116,7 +119,9 @@ class FirebaseLocationDataSource {
             'locationEnabled': flags.locationEnabled,
             'locationOnboardingCompleted': flags.locationOnboardingCompleted,
             if (flags.lastLocationUpdate != null)
-              'lastLocationUpdate': Timestamp.fromDate(flags.lastLocationUpdate!),
+              'lastLocationUpdate': Timestamp.fromDate(
+                flags.lastLocationUpdate!,
+              ),
             'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
     } on FirebaseException catch (error, stackTrace) {
@@ -146,7 +151,8 @@ class FirebaseLocationDataSource {
   }
 
   LocationException _mapFirebase(FirebaseException error) {
-    final network = error.code == 'unavailable' || error.code == 'network-request-failed';
+    final network =
+        error.code == 'unavailable' || error.code == 'network-request-failed';
     return LocationException(
       'Location is currently unavailable.',
       cause: error,

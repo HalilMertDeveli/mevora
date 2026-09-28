@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/boost/domain/config/boost_pack_catalog.dart';
 import 'package:mevora/features/boost/domain/entities/boost_product.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 class BoostPackSheet extends StatelessWidget {
-  const BoostPackSheet({
-    super.key,
-    required this.products,
-    this.onSelect,
-  });
+  const BoostPackSheet({super.key, required this.products, this.onSelect});
 
   final List<BoostProduct> products;
   final ValueChanged<BoostProduct>? onSelect;
@@ -47,10 +44,7 @@ class BoostPackSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              l10n.boostBuy,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text(l10n.boostBuy, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: AppSpacing.md),
             for (final product in products)
               Padding(
@@ -81,65 +75,59 @@ class BoostPackTile extends StatelessWidget {
     final price = product.displayPrice.isEmpty
         ? l10n.boostPriceUnavailable
         : product.displayPrice;
-    final featured = product.featured ||
-        product.productId == BoostPackCatalog.year;
+    final featured =
+        product.featured || product.productId == BoostPackCatalog.year;
+    final theme = Theme.of(context);
+    final enabled = product.available && onTap != null;
     return MevoraCard(
-      emphasis: MevoraCardEmphasis.elevated,
-      onTap: product.available && onTap != null ? onTap : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      onTap: enabled ? onTap : null,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      semanticLabel: '$title, $price',
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.bolt_rounded,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          const MevoraIconBadge(
+            icon: MevoraIcons.boostActive,
+            tone: MevoraTone.accent,
+            size: 44,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                    Text(title, style: theme.textTheme.titleSmall),
+                    if (featured)
+                      MevoraPill(
+                        label: l10n.boostBestValue,
+                        tone: MevoraTone.premium,
+                        dense: true,
+                      ),
                   ],
                 ),
-              ),
-              if (featured)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(AppRadii.pill),
-                  ),
-                  child: Text(
-                    l10n.boostBestValue,
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
-                ),
-            ],
+                const SizedBox(height: AppSpacing.xxs),
+                Text(subtitle, style: theme.textTheme.bodySmall),
+              ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
+          const SizedBox(width: AppSpacing.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                price,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const Spacer(),
-              if (onTap != null)
+              Text(price, style: theme.textTheme.titleMedium),
+              if (onTap != null) ...[
+                const SizedBox(height: AppSpacing.xs),
                 MevoraButton(
                   label: l10n.boostBuyPack,
                   onPressed: product.available ? onTap : null,
                   isExpanded: false,
                   size: MevoraButtonSize.small,
                 ),
+              ],
             ],
           ),
         ],
@@ -185,19 +173,10 @@ class BoostBalanceChip extends StatelessWidget {
     if (balance < 1) {
       return const SizedBox.shrink();
     }
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Text(
-        AppLocalizations.of(context).boostBalance(balance),
-        style: Theme.of(context).textTheme.labelLarge,
-      ),
+    return MevoraPill(
+      label: AppLocalizations.of(context).boostBalance(balance),
+      icon: MevoraIcons.boostActive,
+      tone: MevoraTone.accent,
     );
   }
 }

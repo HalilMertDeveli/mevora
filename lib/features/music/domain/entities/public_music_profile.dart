@@ -117,8 +117,7 @@ class PublicMusicProfile {
 
   /// True when there is something worth rendering. A profile with the section
   /// enabled but nothing selected must not draw an empty card.
-  bool get hasContent =>
-      enabled && (artists.isNotEmpty || tracks.isNotEmpty);
+  bool get hasContent => enabled && (artists.isNotEmpty || tracks.isNotEmpty);
 
   /// True when the member has picked something, whether or not it is currently
   /// on show. Visibility asks this, not [hasContent] — a hidden card still has
@@ -222,12 +221,12 @@ class PublicMusicTaste {
     final dominant = _nonEmpty(map['dominantGenre']);
     return PublicMusicTaste(
       dominantGenre: dominant,
-      secondaryGenres: firestoreStringList(map['secondaryGenres'])
-          .take(2)
-          .toList(),
-      signatureArtists: firestoreStringList(map['signatureArtists'])
-          .take(maxSignatureArtists)
-          .toList(),
+      secondaryGenres: firestoreStringList(
+        map['secondaryGenres'],
+      ).take(2).toList(),
+      signatureArtists: firestoreStringList(
+        map['signatureArtists'],
+      ).take(maxSignatureArtists).toList(),
       stableArtistCount: firestoreInt(map['stableArtistCount'], 0),
       artistBreadth: firestoreInt(map['artistBreadth'], 0),
     );

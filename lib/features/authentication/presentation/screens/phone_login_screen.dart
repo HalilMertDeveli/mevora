@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
@@ -47,7 +48,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             leading: IconButton(
               tooltip: l10n.back,
               onPressed: () => context.go(AppRoutes.login),
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(MevoraIcons.back),
             ),
           ),
           body: SafeArea(

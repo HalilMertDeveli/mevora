@@ -88,10 +88,7 @@ class ChatController extends ChangeNotifier {
   }
 
   bool get canChat =>
-      match != null &&
-      match!.isActive &&
-      !blocked &&
-      uid != null;
+      match != null && match!.isActive && !blocked && uid != null;
 
   bool get canCall => canChat;
 
@@ -168,8 +165,7 @@ class ChatController extends ChangeNotifier {
       final other = otherUid;
       final at = value[other];
       final typingAllowed = PresenceSubtitle.showsTyping(otherPrivacy);
-      typingUid =
-          typingAllowed && ChatPolicy.isTypingFresh(at) ? other : null;
+      typingUid = typingAllowed && ChatPolicy.isTypingFresh(at) ? other : null;
       notifyListeners();
     }, onError: (_) {});
     _presenceSub = _presence.watch(otherUid).listen((value) {
@@ -242,7 +238,10 @@ class ChatController extends ChangeNotifier {
     }
     loadingOlder = true;
     notifyListeners();
-    final page = await _chat.loadOlder(matchId: matchId, before: messages.first);
+    final page = await _chat.loadOlder(
+      matchId: matchId,
+      before: messages.first,
+    );
     messages.insertAll(0, page.messages);
     hasMore = page.hasMore;
     loadingOlder = false;

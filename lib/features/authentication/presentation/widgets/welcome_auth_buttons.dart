@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_press_scale.dart';
 
-/// Premium provider CTAs for the login welcome screen.
+/// Sign-in providers on the welcome screen.
+///
+/// Providers are peers, so they share one style — white pill, provider glyph
+/// on the left, label centred. The first is filled ink so the eye has a
+/// starting point without implying the others are second-class.
 class WelcomeAuthButtons extends StatelessWidget {
   const WelcomeAuthButtons({
     super.key,
@@ -29,199 +33,145 @@ class WelcomeAuthButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final isIos = Theme.of(context).platform == TargetPlatform.iOS;
+
+    MevoraProviderButton button(
+      String id,
+      String label,
+      IconData icon,
+      VoidCallback onTap, {
+      bool emphasized = false,
+    }) => MevoraProviderButton(
+      label: label,
+      loadingLabel: l10n.signingIn,
+      icon: icon,
+      emphasized: emphasized,
+      isLoading: busyProvider == id,
+      onPressed: enabled && busyProvider != id ? onTap : null,
+    );
+
+    final google = button(
+      'google',
+      l10n.continueWithGoogle,
+      MevoraIcons.google,
+      onGoogle,
+      emphasized: !isIos,
+    );
+    final apple = button(
+      'apple',
+      l10n.continueWithApple,
+      MevoraIcons.apple,
+      onApple,
+      emphasized: isIos,
+    );
+    final ordered = isIos ? [apple, google] : [google, apple];
+
+    final buttons = [
+      ...ordered,
+      button('phone', l10n.continueWithPhone, MevoraIcons.device, onPhone),
+      button(
+        'spotify',
+        l10n.continueWithSpotify,
+        MevoraIcons.spotify,
+        onSpotify,
+      ),
+      button('email', l10n.continueWithEmail, MevoraIcons.email, onEmail),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _WelcomeProviderButton(
-          label: l10n.continueWithGoogle,
-          loadingLabel: l10n.signingIn,
-          isLoading: busyProvider == 'google',
-          onPressed: enabled && busyProvider != 'google' ? onGoogle : null,
-          leading: const _GoogleMark(),
-          style: _WelcomeButtonStyle.outlined,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _WelcomeProviderButton(
-          label: l10n.continueWithApple,
-          loadingLabel: l10n.signingIn,
-          isLoading: busyProvider == 'apple',
-          onPressed: enabled && busyProvider != 'apple' ? onApple : null,
-          leading: Icon(Icons.apple, size: 22, color: theme.colorScheme.onSurface),
-          style: _WelcomeButtonStyle.outlined,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _WelcomeProviderButton(
-          label: l10n.continueWithPhone,
-          loadingLabel: l10n.signingIn,
-          isLoading: busyProvider == 'phone',
-          onPressed: enabled && busyProvider != 'phone' ? onPhone : null,
-          leading: Icon(
-            Icons.phone_iphone_rounded,
-            size: 20,
-            color: theme.colorScheme.onSurface,
-          ),
-          style: _WelcomeButtonStyle.outlined,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _WelcomeProviderButton(
-          label: l10n.continueWithSpotify,
-          loadingLabel: l10n.signingIn,
-          isLoading: busyProvider == 'spotify',
-          onPressed: enabled && busyProvider != 'spotify' ? onSpotify : null,
-          leading: const _SpotifyMark(),
-          style: _WelcomeButtonStyle.spotify,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _WelcomeProviderButton(
-          label: l10n.continueWithEmail,
-          loadingLabel: l10n.signingIn,
-          isLoading: busyProvider == 'email',
-          onPressed: enabled && busyProvider != 'email' ? onEmail : null,
-          leading: Icon(
-            Icons.mail_outline_rounded,
-            size: 20,
-            color: theme.colorScheme.onPrimary,
-          ),
-          style: _WelcomeButtonStyle.primary,
-        ),
+        for (var i = 0; i < buttons.length; i++) ...[
+          if (i > 0) const SizedBox(height: AppSpacing.s12 - 2),
+          buttons[i],
+        ],
       ],
     );
   }
 }
 
-enum _WelcomeButtonStyle { primary, outlined, spotify }
-
-class _WelcomeProviderButton extends StatelessWidget {
-  const _WelcomeProviderButton({
+/// A sign-in provider button: glyph left, label centred, full width.
+class MevoraProviderButton extends StatelessWidget {
+  const MevoraProviderButton({
+    super.key,
     required this.label,
-    required this.loadingLabel,
+    required this.icon,
     required this.onPressed,
-    required this.leading,
-    required this.style,
+    this.loadingLabel,
     this.isLoading = false,
+    this.emphasized = false,
   });
 
   final String label;
-  final String loadingLabel;
+  final String? loadingLabel;
+  final IconData icon;
   final VoidCallback? onPressed;
-  final Widget leading;
-  final _WelcomeButtonStyle style;
   final bool isLoading;
+
+  /// Filled ink instead of white.
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onPressed != null && !isLoading;
     final theme = Theme.of(context);
-    final colors = _colorsFor(style, theme);
+    final p = context.palette;
+    final enabled = onPressed != null && !isLoading;
+    final bg = emphasized ? p.textPrimary : p.surface;
+    final fg = emphasized ? p.background : p.textPrimary;
     return Semantics(
       button: true,
       enabled: enabled,
-      label: isLoading ? loadingLabel : label,
-      child: ExcludeSemantics(
-        child: MevoraPressScale(
-          enabled: enabled,
-          child: SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: Material(
-              color: colors.background,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadii.md),
-                side: BorderSide(color: colors.border),
-              ),
-              child: InkWell(
-                onTap: enabled ? onPressed : null,
-                borderRadius: BorderRadius.circular(AppRadii.md),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  child: isLoading
-                      ? Center(
-                          child: SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: colors.foreground,
-                            ),
+      label: isLoading ? (loadingLabel ?? label) : label,
+      excludeSemantics: true,
+      child: MevoraPressScale(
+        enabled: enabled,
+        child: SizedBox(
+          height: 52,
+          child: Material(
+            color: bg,
+            shape: StadiumBorder(
+              side: emphasized
+                  ? BorderSide.none
+                  : BorderSide(color: p.borderStrong),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: enabled ? onPressed : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s20),
+                child: isLoading
+                    ? Center(
+                        child: SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: fg,
                           ),
-                        )
-                      : Row(
-                          children: [
-                            SizedBox(width: 28, child: Center(child: leading)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                label,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: colors.foreground,
-                                ),
+                        ),
+                      )
+                    : Row(
+                        children: [
+                          Icon(icon, size: 20, color: fg),
+                          const SizedBox(width: AppSpacing.s12),
+                          Expanded(
+                            child: Text(
+                              label,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: fg,
                               ),
                             ),
-                            const SizedBox(width: 28),
-                          ],
-                        ),
-                ),
+                          ),
+                          const SizedBox(width: AppSpacing.s12 + 20),
+                        ],
+                      ),
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  static ({Color background, Color foreground, Color border}) _colorsFor(
-    _WelcomeButtonStyle style,
-    ThemeData theme,
-  ) {
-    return switch (style) {
-      _WelcomeButtonStyle.primary => (
-        background: theme.colorScheme.primary,
-        foreground: theme.colorScheme.onPrimary,
-        border: theme.colorScheme.primary,
-      ),
-      _WelcomeButtonStyle.outlined => (
-        background: AppColors.surface,
-        foreground: theme.colorScheme.onSurface,
-        border: AppColors.outline,
-      ),
-      _WelcomeButtonStyle.spotify => (
-        background: const Color(0xFF1DB954),
-        foreground: AppColors.midnight,
-        border: const Color(0xFF1DB954),
-      ),
-    };
-  }
-}
-
-class _GoogleMark extends StatelessWidget {
-  const _GoogleMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      'G',
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: const Color(0xFF4285F4),
-        height: 1,
-      ),
-    );
-  }
-}
-
-class _SpotifyMark extends StatelessWidget {
-  const _SpotifyMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Icon(
-      Icons.graphic_eq_rounded,
-      size: 20,
-      color: AppColors.midnight,
     );
   }
 }

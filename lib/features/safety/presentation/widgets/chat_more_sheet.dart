@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/chat/presentation/controllers/chat_controller.dart';
@@ -23,7 +24,7 @@ Future<void> showChatMoreSheet(
       mainAxisSize: MainAxisSize.min,
       children: [
         ListTile(
-          leading: const Icon(Icons.heart_broken_outlined),
+          leading: const Icon(MevoraIcons.unmatch),
           title: Text(l10n.unmatch),
           onTap: () {
             Navigator.pop(context);
@@ -31,7 +32,7 @@ Future<void> showChatMoreSheet(
           },
         ),
         ListTile(
-          leading: const Icon(Icons.block),
+          leading: const Icon(MevoraIcons.block),
           title: Text(l10n.block),
           onTap: () {
             Navigator.pop(context);
@@ -39,7 +40,7 @@ Future<void> showChatMoreSheet(
           },
         ),
         ListTile(
-          leading: const Icon(Icons.flag_outlined),
+          leading: const Icon(MevoraIcons.report),
           title: Text(l10n.report),
           onTap: () {
             Navigator.pop(context);

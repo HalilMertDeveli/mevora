@@ -1,14 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
-import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/match_score/domain/entities/match_score.dart';
 import 'package:mevora/features/match_score/domain/repositories/match_score_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_bottom_sheet.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 class MatchScoreTile extends StatelessWidget {
   const MatchScoreTile({
@@ -27,27 +30,18 @@ class MatchScoreTile extends StatelessWidget {
       stream: repository.watchScore(uid),
       builder: (context, snapshot) {
         final score = snapshot.data?.score;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: Material(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            child: ListTile(
-              leading: const Icon(Icons.favorite_rounded),
-              title: Text(l10n.matchScoreTitle),
-              subtitle: Text(
-                score == null
-                    ? l10n.matchScoreSubtitle
-                    : l10n.matchScoreValue(score),
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => unawaited(
-                showMatchScoreHistorySheet(
-                  context,
-                  uid: uid,
-                  repository: repository,
-                ),
-              ),
+        return MevoraListRow(
+          icon: MevoraIcons.liked,
+          iconTone: MevoraTone.match,
+          title: l10n.matchScoreTitle,
+          subtitle: score == null
+              ? l10n.matchScoreSubtitle
+              : l10n.matchScoreValue(score),
+          onTap: () => unawaited(
+            showMatchScoreHistorySheet(
+              context,
+              uid: uid,
+              repository: repository,
             ),
           ),
         );
@@ -73,7 +67,8 @@ Future<void> showMatchScoreHistorySheet(
           return Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: MevoraEmptyState(
-              icon: Icons.favorite_outline,
+              art: MevoraArt.emptyLikes,
+              compact: true,
               message: l10n.matchScoreHistoryEmpty,
             ),
           );
@@ -90,8 +85,9 @@ Future<void> showMatchScoreHistorySheet(
                 : l10n.matchScoreHistoryInteraction;
             return ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                child: Text('+${entry.delta}'),
+              leading: MevoraPill(
+                label: '+${entry.delta}',
+                tone: MevoraTone.match,
               ),
               title: Text(label),
               trailing: Text(

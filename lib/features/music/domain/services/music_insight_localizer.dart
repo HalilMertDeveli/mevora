@@ -6,8 +6,7 @@ abstract final class MusicInsightLocalizer {
   static String headline(AppLocalizations l10n, int score) {
     return switch (MusicCompatibilityCalculator.band(score)) {
       MusicCompatibilityBand.veryHigh ||
-      MusicCompatibilityBand.high =>
-        l10n.musicInsightBandHigh,
+      MusicCompatibilityBand.high => l10n.musicInsightBandHigh,
       MusicCompatibilityBand.mid => l10n.musicInsightBandMid,
       MusicCompatibilityBand.low => l10n.musicInsightBandLow,
     };
@@ -22,8 +21,8 @@ abstract final class MusicInsightLocalizer {
     final name = insight.params['name']?.toString() ?? '';
     final genres = insight.params['genres']?.toString() ?? '';
     return switch (insight.code) {
-      MusicInsightCode.bandVeryHigh || MusicInsightCode.bandHigh =>
-        l10n.musicInsightBandHigh,
+      MusicInsightCode.bandVeryHigh ||
+      MusicInsightCode.bandHigh => l10n.musicInsightBandHigh,
       MusicInsightCode.bandMid => l10n.musicInsightBandMid,
       MusicInsightCode.bandLow => l10n.musicInsightBandLow,
       MusicInsightCode.sharedTracks => l10n.musicInsightSharedTracks(count),
@@ -32,10 +31,12 @@ abstract final class MusicInsightLocalizer {
         l10n.musicInsightSharedPlaylistTracks(count),
       MusicInsightCode.sharedRecentTracks =>
         l10n.musicInsightSharedRecentTracks(count),
-      MusicInsightCode.topSharedArtist =>
-        l10n.musicInsightTopSharedArtist(name),
-      MusicInsightCode.topSharedGenres =>
-        l10n.musicInsightTopSharedGenres(genres),
+      MusicInsightCode.topSharedArtist => l10n.musicInsightTopSharedArtist(
+        name,
+      ),
+      MusicInsightCode.topSharedGenres => l10n.musicInsightTopSharedGenres(
+        genres,
+      ),
       MusicInsightCode.notConnected => l10n.musicSpotifyNotConnected,
       MusicInsightCode.dataUnavailable => l10n.musicInsightDataUnavailable,
     };

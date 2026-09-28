@@ -53,7 +53,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.textContaining('%'), findsNothing);
-    expect(find.text('0%'), findsNothing);
+    expect(find.text('0'), findsNothing);
   });
 
   testWidgets('new match with snapshot shows real score and Why You Match', (
@@ -84,8 +84,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.text('94%'), findsOneWidget);
-    expect(find.text('0%'), findsNothing);
+    expect(find.text('94'), findsOneWidget);
+    expect(find.text('0'), findsNothing);
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(find.text(l10n.whyYouMatch), findsOneWidget);
     await tester.tap(find.text(l10n.whyYouMatch));

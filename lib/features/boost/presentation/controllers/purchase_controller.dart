@@ -150,9 +150,7 @@ class PurchaseController extends ChangeNotifier {
 
     final loadedWallet = wallet.valueOrNull ?? const BoostWallet();
     final loadedHistory = history.valueOrNull ?? const <BoostHistoryEntry>[];
-    final product = products.isNotEmpty
-        ? products.first
-        : single.valueOrNull;
+    final product = products.isNotEmpty ? products.first : single.valueOrNull;
 
     if (products.isEmpty && single is Err<BoostProduct>) {
       final failure = single.failure;
@@ -303,7 +301,8 @@ class PurchaseController extends ChangeNotifier {
     state = state.copyWith(
       status: PurchaseUiStatus.success,
       activeBoost: boost,
-      wallet: wallet.valueOrNull ??
+      wallet:
+          wallet.valueOrNull ??
           BoostWallet(balance: (state.wallet.balance - 1).clamp(0, 1 << 30)),
       history: history.valueOrNull ?? state.history,
       message: AppStrings.boostSuccessTitle,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/support/domain/content/support_content.dart';
@@ -54,7 +55,7 @@ class _FaqPageState extends State<FaqPage> {
               controller: _search,
               decoration: InputDecoration(
                 hintText: l10n.supportFaqSearchHint,
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(MevoraIcons.search),
               ),
               onChanged: (value) => setState(() => _query = value),
             ),
@@ -103,7 +104,7 @@ class _FaqPageState extends State<FaqPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.supportTicketCreate),
-        icon: const Icon(Icons.support_agent_outlined),
+        icon: const Icon(MevoraIcons.support),
         label: Text(l10n.supportCreateTicket),
       ),
     );

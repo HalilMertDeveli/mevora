@@ -3,7 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/localization/app_language.dart';
 import 'package:mevora/core/localization/language_scope.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/features/settings/presentation/widgets/settings_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
 
 /// Settings language picker. Language logic lives on [LanguageController].
 class LanguageSettingsSection extends StatelessWidget {
@@ -16,39 +20,36 @@ class LanguageSettingsSection extends StatelessWidget {
     return ListenableBuilder(
       listenable: language,
       builder: (context, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Widget option(AppLanguage value, String label) {
+          final selected = language.language == value;
+          return Semantics(
+            inMutuallyExclusiveGroup: true,
+            selected: selected,
+            child: MevoraListRow(
+              title: label,
+              showChevron: false,
+              trailing: selected
+                  ? Icon(
+                      MevoraIcons.check,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                  : SizedBox.square(
+                      dimension: 20,
+                      child: ColoredBox(color: context.palette.surface),
+                    ),
+              onTap: selected
+                  ? null
+                  : () => unawaited(language.setLanguage(value)),
+            ),
+          );
+        }
+
+        return SettingsSection(
+          title: l10n.language,
           children: [
-            Text(l10n.language, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            RadioListTile<AppLanguage>(
-              title: Text(
-                l10n.languageTurkish,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              value: AppLanguage.turkish,
-              groupValue: language.language,
-              onChanged: (value) {
-                if (value != null) {
-                  unawaited(language.setLanguage(value));
-                }
-              },
-            ),
-            RadioListTile<AppLanguage>(
-              title: Text(
-                l10n.languageEnglish,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              value: AppLanguage.english,
-              groupValue: language.language,
-              onChanged: (value) {
-                if (value != null) {
-                  unawaited(language.setLanguage(value));
-                }
-              },
-            ),
+            option(AppLanguage.turkish, l10n.languageTurkish),
+            option(AppLanguage.english, l10n.languageEnglish),
           ],
         );
       },

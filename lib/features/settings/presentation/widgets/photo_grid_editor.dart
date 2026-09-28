@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
@@ -33,7 +34,8 @@ class PhotoGridEditor extends StatelessWidget {
         ReorderableListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: sorted.length + (PhotoPolicy.canAdd(sorted.length) ? 1 : 0),
+          itemCount:
+              sorted.length + (PhotoPolicy.canAdd(sorted.length) ? 1 : 0),
           onReorder: (oldIndex, newIndex) {
             if (oldIndex >= sorted.length || newIndex > sorted.length) {
               return;
@@ -45,7 +47,7 @@ class PhotoGridEditor extends StatelessWidget {
             if (index == sorted.length) {
               return ListTile(
                 key: const ValueKey('add_photo'),
-                leading: const Icon(Icons.add_a_photo_outlined),
+                leading: const Icon(MevoraIcons.addPhoto),
                 title: Text(l10n.settingsAddPhoto),
                 onTap: onAdd,
               );
@@ -54,9 +56,11 @@ class PhotoGridEditor extends StatelessWidget {
             return ListTile(
               key: ValueKey(photo.id),
               leading: CircleAvatar(
-                backgroundImage: MevoraNetworkImages.provider(photo.downloadUrl),
+                backgroundImage: MevoraNetworkImages.provider(
+                  photo.downloadUrl,
+                ),
                 child: MevoraNetworkImages.provider(photo.downloadUrl) == null
-                    ? const Icon(Icons.person_outline)
+                    ? const Icon(MevoraIcons.profile)
                     : null,
               ),
               title: Text(

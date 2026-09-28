@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
@@ -68,9 +69,9 @@ void main() {
     );
     expect(find.text('Ada, 27'), findsOneWidget);
     expect(find.textContaining('3.8 km away'), findsOneWidget);
-    expect(find.text('82%'), findsOneWidget);
-    expect(find.text(_en.compatScoreHeading), findsOneWidget);
-    expect(find.text('travel'), findsOneWidget);
+    // Score as a ring; interests live on the profile, not the card.
+    expect(find.byType(CompatibilityRing), findsOneWidget);
+    expect(find.text('82'), findsOneWidget);
     expect(find.text('41.0082'), findsNothing);
   });
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
@@ -166,7 +167,7 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
                 // The illustration is decorative; the heading carries meaning.
                 excludeSemantics: true,
                 child: Icon(
-                  Icons.theater_comedy_outlined,
+                  MevoraIcons.humor,
                   size: 64,
                   color: theme.colorScheme.primary,
                 ),

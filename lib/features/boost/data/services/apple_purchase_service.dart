@@ -4,11 +4,9 @@ import 'package:mevora/core/services/app_logger.dart';
 
 /// StoreKit finish-transaction helper. Consumable Boost is not restored by Apple.
 class ApplePurchaseService {
-  ApplePurchaseService({
-    InAppPurchase? store,
-    AppLogger? logger,
-  }) : _store = store ?? InAppPurchase.instance,
-       _logger = logger;
+  ApplePurchaseService({InAppPurchase? store, AppLogger? logger})
+    : _store = store ?? InAppPurchase.instance,
+      _logger = logger;
 
   final InAppPurchase _store;
   final AppLogger? _logger;

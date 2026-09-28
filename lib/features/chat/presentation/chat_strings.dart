@@ -3,7 +3,8 @@ abstract final class ChatStrings {
   static const String cannotMessageSelf = 'Kendine mesaj gönderemezsin.';
   static const String blockedInteraction = 'Bu kişiyle mesajlaşamazsın.';
   static const String matchInactive = 'Bu kişiyle eşleşmeniz kaldırıldı.';
-  static const String notMatched = 'Yalnızca eşleştiğin kişilerle yazabilirsin.';
+  static const String notMatched =
+      'Yalnızca eşleştiğin kişilerle yazabilirsin.';
   static const String alreadySwiped = 'Bu kişiyi zaten değerlendirdin.';
   static const String notAllowed = 'Bu işlem için yetkin yok.';
   static const String notFound = 'Sohbet bulunamadı.';

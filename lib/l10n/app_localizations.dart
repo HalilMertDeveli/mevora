@@ -233,13 +233,13 @@ abstract class AppLocalizations {
   /// No description provided for @picksDiscoverMore.
   ///
   /// In en, this message translates to:
-  /// **'Discover more'**
+  /// **'Beyond your picks'**
   String get picksDiscoverMore;
 
   /// No description provided for @picksDiscoverMoreHint.
   ///
   /// In en, this message translates to:
-  /// **'Browse more people beyond your Picks.'**
+  /// **'People outside your Picks who may still be a good fit.'**
   String get picksDiscoverMoreHint;
 
   /// No description provided for @picksBackToPicks.
@@ -251,7 +251,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverMoreSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'More people, beyond today\'s Picks'**
+  /// **'People outside today\'s Picks'**
   String get discoverMoreSubtitle;
 
   /// No description provided for @picksLike.

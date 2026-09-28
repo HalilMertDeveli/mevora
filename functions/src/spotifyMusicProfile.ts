@@ -24,8 +24,17 @@ import {
  * listened to.
  */
 
-export const MAX_PUBLIC_ARTISTS = 3;
-export const MAX_PUBLIC_TRACKS = 3;
+/**
+ * How much of their own taste a member may put on their profile.
+ *
+ * Ten, not three: three was enough to prove the feature worked and too little
+ * to describe anyone. The selection pool stays at the twenty items the import
+ * keeps, so this widens the choice from data already fetched rather than
+ * asking Spotify for more. These are ceilings, never targets — publishing one
+ * artist is a perfectly good answer.
+ */
+export const MAX_PUBLIC_ARTISTS = 10;
+export const MAX_PUBLIC_TRACKS = 10;
 /**
  * Genres now describe the member's general taste rather than only their three
  * chosen artists, so the list is a little longer than the selections: three

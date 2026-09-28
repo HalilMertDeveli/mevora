@@ -3,12 +3,21 @@ import 'package:mevora/core/data/firestore_codec.dart';
 /// Hard limits on what a dating profile may show. The backend enforces the
 /// same numbers; these exist so the picker can disable a fourth tap instead of
 /// letting the member make a selection the server will reject.
-const int maxPublicMusicArtists = 3;
-const int maxPublicMusicTracks = 3;
-/// Genres describe the member's general taste, not just their three chosen
-/// artists, so this list is longer than the selections. Mirrors
-/// MAX_PUBLIC_GENRES in functions/src/spotifyMusicProfile.ts.
+/// Ten, not three: three was too little to describe anyone. The selection pool
+/// is unchanged, so this is a wider choice from the same imported data. They
+/// are ceilings, never targets — publishing one artist is a fine answer.
+const int maxPublicMusicArtists = 10;
+const int maxPublicMusicTracks = 10;
+
+/// Genres describe the member's general taste, not just their chosen artists.
+/// Mirrors MAX_PUBLIC_GENRES in functions/src/spotifyMusicProfile.ts.
 const int maxPublicMusicGenres = 5;
+
+/// The general-taste summary names the few artists the member keeps returning
+/// to. It stays short whatever the publishing limit is: it reads as a
+/// sentence, not a list. Mirrors MAX_SIGNATURE_ARTISTS in
+/// functions/src/musicTasteAnalysis.ts.
+const int maxSignatureArtists = 3;
 
 /// An artist the member chose to show. Every field is resolved server-side
 /// from their own Spotify import — the client never supplies metadata.
@@ -217,7 +226,7 @@ class PublicMusicTaste {
           .take(2)
           .toList(),
       signatureArtists: firestoreStringList(map['signatureArtists'])
-          .take(maxPublicMusicArtists)
+          .take(maxSignatureArtists)
           .toList(),
       stableArtistCount: firestoreInt(map['stableArtistCount'], 0),
       artistBreadth: firestoreInt(map['artistBreadth'], 0),

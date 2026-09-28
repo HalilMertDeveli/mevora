@@ -173,6 +173,63 @@ export function hasPlaylistScope(scope: string | undefined): boolean {
   return scope.includes("playlist-read-private") || scope.includes("playlist-read-collaborative");
 }
 
+/** Whether a stored grant covers reading the artists a member follows. */
+export function hasFollowScope(scope: string | undefined): boolean {
+  if (!scope) return false;
+  return scope.includes("user-follow-read");
+}
+
+/** How many followed artists the profile keeps. */
+export const FOLLOWED_ARTIST_LIMIT = 10;
+
+/**
+ * How many top artists and tracks the Music Profile shows.
+ *
+ * Five each, which is a readable section rather than a dump. The import keeps
+ * more than this: the selection pool and the compatibility engine both work
+ * from the fuller lists, and shrinking those to satisfy a display limit would
+ * cost matching accuracy for nothing.
+ */
+export const PROFILE_TOP_LIMIT = 5;
+
+/**
+ * The artists a member deliberately chose to follow.
+ *
+ * A different signal from listening counts: following is an explicit act, so
+ * it says something top artists cannot. It is also the one source that needs
+ * a permission existing members have not granted — everyone who linked
+ * Spotify before `user-follow-read` was asked for holds a token without it.
+ * That is an ordinary, recoverable state rather than a failure: the rest of
+ * the import still succeeds, and the flag lets the app offer a reconnect.
+ */
+export async function fetchFollowedArtists(
+  accessToken: string,
+  scope: string | undefined,
+): Promise<{artists: NamedItem[]; scopeGranted: boolean}> {
+  if (!hasFollowScope(scope)) {
+    return {artists: [], scopeGranted: false};
+  }
+  try {
+    type FollowingPage = {artists?: {items?: Array<DocumentData>}};
+    const page = await spotifyGet<FollowingPage>(
+      accessToken,
+      `/me/following?type=artist&limit=${FOLLOWED_ARTIST_LIMIT}`,
+    );
+    return {
+      artists: summarizeArtists(
+        page.artists?.items ?? [],
+        FOLLOWED_ARTIST_LIMIT,
+      ),
+      scopeGranted: true,
+    };
+  } catch (error) {
+    // One optional source failing must not cost the member their whole
+    // import: top artists, tracks and playlists are unaffected.
+    logger.warn("followed artists unavailable", {error});
+    return {artists: [], scopeGranted: true};
+  }
+}
+
 async function fetchPlaylistTaste(
   accessToken: string,
   scope: string | undefined,
@@ -649,6 +706,7 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
     longTermArtists,
     recentlyPlayed,
     playlistTaste,
+    followed,
   ] = await Promise.all([
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/tracks?time_range=medium_term&limit=50"),
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/artists?time_range=medium_term&limit=50"),
@@ -656,6 +714,7 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/top/artists?time_range=long_term&limit=20"),
     spotifyGet<Paging<DocumentData>>(tokens.accessToken, "/me/player/recently-played?limit=50"),
     fetchPlaylistTaste(tokens.accessToken, tokens.scope),
+    fetchFollowedArtists(tokens.accessToken, tokens.scope),
   ]);
   const tracks = summarizeTracks(topTracks.items ?? []);
   const artists = summarizeArtists(topArtists.items ?? []);
@@ -708,6 +767,18 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
     topArtists: artists,
     recentlyPlayed: recent,
     playlists: playlistTaste.playlists,
+    // The artists the member follows, and whether the permission to read them
+    // was granted. An older connection has the flag false and an empty list,
+    // which is what the Music page needs to offer a reconnect instead of
+    // showing an empty section as if nobody were followed.
+    followedArtists: followed.artists,
+    followScopeGranted: followed.scopeGranted,
+    // The four collections the Music Profile is built from. Capped here so
+    // the screen never has to decide, and kept separate from the richer
+    // topArtists/topTracks above, which the selection pool and the
+    // compatibility engine still need in full.
+    profileTopArtists: artists.slice(0, PROFILE_TOP_LIMIT),
+    profileTopTracks: tracks.slice(0, PROFILE_TOP_LIMIT),
     musicProfile,
     musicProfileVersion: MUSIC_PROFILE_VERSION,
     // Derived once per sync and stored beside the imported taste, so opening
@@ -784,6 +855,17 @@ export function toClientProfile(data: DocumentData | undefined): Record<string, 
     topArtists: data.topArtists ?? [],
     recentlyPlayed: data.recentlyPlayed ?? [],
     playlists: data.playlists ?? data.musicProfile?.playlists ?? [],
+    // The Music Profile's four collections. Only the owner ever receives
+    // these — this is the reply to getMusicAccount, which requires auth and
+    // reads that caller's own document.
+    followedArtists: data.followedArtists ?? [],
+    followScopeGranted: data.followScopeGranted === true,
+    profileTopArtists:
+      data.profileTopArtists ??
+      (data.topArtists ?? []).slice(0, PROFILE_TOP_LIMIT),
+    profileTopTracks:
+      data.profileTopTracks ??
+      (data.topTracks ?? []).slice(0, PROFILE_TOP_LIMIT),
     musicProfile: data.musicProfile ?? {},
     musicProfileVersion: data.musicProfileVersion ?? MUSIC_PROFILE_VERSION,
     lastSyncedAt: data.lastSyncedAt ?? null,

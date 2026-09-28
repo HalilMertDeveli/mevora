@@ -3,6 +3,7 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
+import {consumeRateLimit} from "./callableRateLimit.js";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
 import {
   resolveIndexOwnership,
@@ -109,29 +110,6 @@ export function requireString(value: unknown, field: string): string {
   return value.trim();
 }
 
-async function consumeRateLimit(key: string): Promise<void> {
-  const ref = db.doc(`authRateLimits/${key}`);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const now = Date.now();
-    const windowMs = 10 * 60 * 1000;
-    const data = snap.data() ?? {};
-    const started = typeof data.windowStart === "number" ? data.windowStart : now;
-    const count = typeof data.count === "number" ? data.count : 0;
-    if (now - started > windowMs) {
-      tx.set(ref, {windowStart: now, count: 1, updatedAt: FieldValue.serverTimestamp()});
-      return;
-    }
-    if (count >= 20) {
-      throw new HttpsError("resource-exhausted", "too-many-requests");
-    }
-    tx.set(ref, {
-      windowStart: started,
-      count: count + 1,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-  });
-}
 
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 

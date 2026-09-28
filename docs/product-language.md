@@ -173,6 +173,17 @@ Push copy lives in `functions/src/notifications.ts`.
 - *the algorithm knows*, *AI score*, *your soulmate*, *guaranteed*
 - raw ids or server strings in the UI
 
+## Formatting and errors
+
+- Percentages go through `percentValue`: Turkish writes the sign first
+  (`%60`), English after (`60%`). Never build `'$score%'` in Dart.
+- Dates shown to people use the locale's full or medium format with the year
+  when the year matters (a birth date always does).
+- Domain and data layers return stable identifiers, never display text in
+  one language. Presentation localizes them (`OnboardingErrorL10n`,
+  `L10nErrors`). A validation message a member can read must exist in both
+  ARB files.
+
 ## Where copy lives
 
 - App strings: `lib/l10n/app_en.arb` (template) and `lib/l10n/app_tr.arb`. See

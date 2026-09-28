@@ -110,10 +110,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'Picks alabilmek için ayarlardan keşfi aç.';
 
   @override
-  String get picksDiscoverMore => 'Daha fazlasını keşfet';
+  String get picksDiscoverMore => 'Seçimlerinin dışında';
 
   @override
-  String get picksDiscoverMoreHint => 'Picks dışındaki kişilere de göz at.';
+  String get picksDiscoverMoreHint =>
+      'Picks dışında kalan ama yine de sana uygun olabilecek kişiler.';
 
   @override
   String get picksBackToPicks => 'Mevora Picks\'e dön';

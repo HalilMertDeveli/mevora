@@ -110,16 +110,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Turn discovery on in settings to get Picks.';
 
   @override
-  String get picksDiscoverMore => 'Discover more';
+  String get picksDiscoverMore => 'Beyond your picks';
 
   @override
-  String get picksDiscoverMoreHint => 'Browse more people beyond your Picks.';
+  String get picksDiscoverMoreHint =>
+      'People outside your Picks who may still be a good fit.';
 
   @override
   String get picksBackToPicks => 'Back to Mevora Picks';
 
   @override
-  String get discoverMoreSubtitle => 'More people, beyond today\'s Picks';
+  String get discoverMoreSubtitle => 'People outside today\'s Picks';
 
   @override
   String get picksLike => 'Like';

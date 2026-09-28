@@ -16,6 +16,7 @@ import 'package:mevora/features/humor/presentation/widgets/humor_report_sheet.da
 import 'package:mevora/features/humor/presentation/widgets/humor_swipe_hints.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
@@ -324,6 +325,12 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
   /// [PageView.onPageChanged] while a newer one is still moving.
   var _syncGeneration = 0;
 
+  /// How many upcoming cards get their still warmed in the image cache.
+  static const _precacheAhead = 2;
+
+  /// Stills already handed to the image cache, so each is requested once.
+  final Set<String> _precached = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -331,6 +338,7 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
       initialPage: widget.controller.state.currentIndex,
     );
     widget.controller.addListener(_scheduleSync);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheUpcoming());
   }
 
   @override
@@ -360,7 +368,29 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncScheduled = false;
       _syncPage();
+      _precacheUpcoming();
     });
+  }
+
+  /// Warm only the stills (a clip's poster, an image's picture) of the next
+  /// [_precacheAhead] cards. Video controllers are never created ahead — the
+  /// pager builds only the cards on screen — and a still that fails to load
+  /// is ignored here: its own card will show its own fallback.
+  void _precacheUpcoming() {
+    if (!mounted) {
+      return;
+    }
+    final state = widget.controller.state;
+    final items = state.items;
+    final last = state.currentIndex + _precacheAhead;
+    for (var i = state.currentIndex + 1; i <= last && i < items.length; i++) {
+      final url = HumorContentPlayer.stillUrlFor(items[i]);
+      final image = MevoraNetworkImages.provider(url);
+      if (url == null || image == null || !_precached.add(url)) {
+        continue;
+      }
+      unawaited(precacheImage(image, context, onError: (_, _) {}));
+    }
   }
 
   void _syncPage() {
@@ -470,6 +500,11 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
                         content: item,
                         isActive: index == state.currentIndex,
                         replayToken: state.replayToken,
+                        analytics: controller.analytics,
+                        // A card whose media failed is passed server-side as
+                        // `media_failed` — never a rating, never counted.
+                        onSkipUnplayable: (contentId) =>
+                            unawaited(controller.skipUnplayable(contentId)),
                       ),
                     );
                   },

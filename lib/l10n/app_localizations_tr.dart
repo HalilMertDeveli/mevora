@@ -3663,6 +3663,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorMediaUnavailable => 'Bu içerik şu anda gösterilemiyor.';
 
   @override
+  String get humorVideoLoadFailed => 'Video yüklenemedi';
+
+  @override
+  String get humorMediaNext => 'Sonraki';
+
+  @override
+  String get humorAttributionVerified => 'Doğrulanmış içerik üreticisi';
+
+  @override
   String get boostResultsTitle => 'Boost sonuçları';
 
   @override

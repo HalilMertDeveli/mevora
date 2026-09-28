@@ -12,6 +12,137 @@
   "onboardingUnderstandingMessage": "Your answers help us understand your compatibility.",
   "discoveryActionConnect": "Connect",
   "discoveryActionPriorityIntro": "Priority intro",
+  "picksTitle": "Mevora Picks",
+  "picksSubtitle": "Chosen for you",
+  "picksHeadline": "Today's Mevora Picks",
+  "picksIntroCount": "{count, plural, =1{One person we think could be right for you.} other{{count} people we think could be right for you.}}",
+  "@picksIntroCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "picksIntroNote": "Chosen from your compatibility, not at random. Refreshed daily.",
+  "picksLowSupplyNote": "{count, plural, =1{We found one strong match today. Rather than lower the bar, we're showing fewer.} other{We found {count} strong matches today. Rather than lower the bar, we're showing fewer.}}",
+  "@picksLowSupplyNote": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "picksLoading": "Choosing people for you…",
+  "picksLoadErrorTitle": "We couldn't load your Picks.",
+  "picksEmptyPreparingTitle": "Your new Picks are on their way.",
+  "picksEmptyPreparingMessage": "Instead of showing you random profiles, we're finding more meaningful matches.",
+  "picksEmptyDoneTitle": "You've been through today's Picks.",
+  "picksDiscoveryOffTitle": "Discovery is off",
+  "picksDiscoveryOffMessage": "Turn discovery on in settings to get Picks.",
+  "picksDiscoverMore": "Discover more",
+  "picksDiscoverMoreHint": "Browse more people beyond your Picks.",
+  "picksBackToPicks": "Back to Mevora Picks",
+  "discoverMoreSubtitle": "More people, beyond today's Picks",
+  "picksLike": "Like",
+  "picksPass": "Pass",
+  "picksLikeSemantics": "Like {name}",
+  "@picksLikeSemantics": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "picksPassSemantics": "Pass on {name}",
+  "@picksPassSemantics": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "picksOpenProfileSemantics": "Open {name}'s profile",
+  "@picksOpenProfileSemantics": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "picksActionFailed": "That didn't go through. Try again.",
+  "picksMatchScore": "Mevora match {score}%",
+  "@picksMatchScore": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "pickTypeBestOverall": "Best match",
+  "pickTypeValuesMatch": "Values match",
+  "pickTypeHumorMatch": "Humor match",
+  "pickTypeMusicMatch": "Music match",
+  "pickTypeNearbyMatch": "Nearby match",
+  "pickTypeUnexpectedMatch": "Unexpected match",
+  "pickHeadlineBestOverallStrong": "Your overall compatibility is very high.",
+  "pickHeadlineBestOverall": "Your overall compatibility is strong.",
+  "pickHeadlineValues": "Your relationship expectations and core values line up strongly.",
+  "pickHeadlineHumorScore": "Your humor profiles are {score}% compatible.",
+  "@pickHeadlineHumorScore": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "pickHeadlineMusicArtists": "{count, plural, =1{You share an artist you both love.} other{You share {count} artists.}}",
+  "@pickHeadlineMusicArtists": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pickHeadlineMusic": "There's a strong overlap in your music taste.",
+  "pickHeadlineNearby": "Close by — and a strong match.",
+  "pickHeadlineUnexpected": "Someone you might otherwise overlook.",
+  "pickDetailUnexpected": "Your interests may not look alike, but your relationship expectations and communication style line up strongly.",
+  "pickWhyTitle": "Why {name}?",
+  "@pickWhyTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "pickReasonOverall": "Your overall Mevora compatibility is {score}%.",
+  "@pickReasonOverall": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "pickReasonRelationship": "You're looking for the same kind of relationship.",
+  "pickReasonViews": "You gave the same answer on {aligned} of {shared} relationship questions.",
+  "@pickReasonViews": {
+    "placeholders": {
+      "aligned": {"type": "int"},
+      "shared": {"type": "int"}
+    }
+  },
+  "pickReasonCommunication": "Your communication styles look compatible.",
+  "pickReasonLifestyle": "Your lifestyle preferences fit together.",
+  "pickReasonHumorTraits": "Humor styles you share: {traits}.",
+  "@pickReasonHumorTraits": {
+    "placeholders": {
+      "traits": {"type": "String"}
+    }
+  },
+  "pickReasonMusicArtists": "{count, plural, =1{Your music profiles share an artist.} other{Your music profiles share {count} artists.}}",
+  "@pickReasonMusicArtists": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pickReasonMusicScore": "Your music compatibility is {score}%.",
+  "@pickReasonMusicScore": {
+    "placeholders": {
+      "score": {"type": "int"}
+    }
+  },
+  "pickReasonDistance": "{distance} — close enough to meet easily.",
+  "@pickReasonDistance": {
+    "placeholders": {
+      "distance": {"type": "String"}
+    }
+  },
+  "pickReasonInterests": "{count, plural, =1{You share an interest.} other{You share {count} interests.}}",
+  "@pickReasonInterests": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "compatScoreHeading": "Compatibility",
   "continueWithEmail": "Continue with email",
   "somethingWentWrong": "Something went wrong",

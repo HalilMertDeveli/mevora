@@ -133,7 +133,9 @@ class DiscoveryController extends ChangeNotifier {
     ViewerProfileLoader? viewerProfileLoader,
     bool skipExplanationIfAlreadyGranted = true,
     this.swipeThreshold = 120,
-  }) : _locationRepository = locationRepository,
+    bool loadDeckOnStart = true,
+  }) : _deckWanted = loadDeckOnStart,
+       _locationRepository = locationRepository,
        _discoveryRepository = discoveryRepository,
        _purchaseRepository = purchaseRepository,
        _locationSync = locationSync ?? LocationSyncCoordinator(),
@@ -155,6 +157,30 @@ class DiscoveryController extends ChangeNotifier {
   final bool _skipExplanationIfAlreadyGranted;
 
   UserProfile? _viewerProfile;
+
+  /// Whether the Discover deck should load once location is settled. False
+  /// while Mevora Picks is the screen in front: the deck is then fetched only
+  /// when the member opens Discover More, so opening the app costs one pool
+  /// scan, not two.
+  bool _deckWanted;
+
+  /// Opens the deck: from now on location changes load it as before.
+  Future<void> ensureDeckLoaded() async {
+    final firstTime = !_deckWanted;
+    _deckWanted = true;
+    if (state.phase == LocationPromptPhase.explanation) {
+      return;
+    }
+    if (firstTime || (state.candidates.isEmpty && !state.isLoading)) {
+      await loadCandidates();
+    }
+  }
+
+  Future<void> _loadDeckIfWanted() async {
+    if (_deckWanted) {
+      await loadCandidates();
+    }
+  }
 
   /// Minimum drag distance (px) before a swipe action fires.
   final double swipeThreshold;
@@ -201,7 +227,7 @@ class DiscoveryController extends ChangeNotifier {
   void onProfileUpdated() {
     _compatibilityCache.invalidateViewer(uid);
     _viewerProfile = null;
-    unawaited(loadCandidates());
+    unawaited(_loadDeckIfWanted());
   }
 
   Future<UserProfile?> _loadViewerProfile() async {
@@ -243,7 +269,7 @@ class DiscoveryController extends ChangeNotifier {
       declinedLocation = flags?.locationEnabled != true;
       state = state.copyWith(phase: LocationPromptPhase.ready);
       notifyListeners();
-      await loadCandidates();
+      await _loadDeckIfWanted();
       return;
     }
     final permission = await _locationRepository.checkPermission();
@@ -257,13 +283,13 @@ class DiscoveryController extends ChangeNotifier {
     if (permission == LocationPermissionStatus.permanentlyDenied) {
       state = state.copyWith(phase: LocationPromptPhase.permanentlyDenied);
       notifyListeners();
-      await loadCandidates();
+      await _loadDeckIfWanted();
       return;
     }
     if (!gpsOn && permission == LocationPermissionStatus.granted) {
       state = state.copyWith(phase: LocationPromptPhase.gpsDisabled);
       notifyListeners();
-      await loadCandidates();
+      await _loadDeckIfWanted();
       return;
     }
     state = state.copyWith(phase: LocationPromptPhase.explanation);
@@ -280,7 +306,7 @@ class DiscoveryController extends ChangeNotifier {
         isLoading: false,
       );
       notifyListeners();
-      await loadCandidates();
+      await _loadDeckIfWanted();
       return;
     }
     final permission = await _locationRepository.requestPermission();
@@ -290,7 +316,7 @@ class DiscoveryController extends ChangeNotifier {
         isLoading: false,
       );
       notifyListeners();
-      await loadCandidates();
+      await _loadDeckIfWanted();
       return;
     }
     if (permission != LocationPermissionStatus.granted) {
@@ -300,7 +326,7 @@ class DiscoveryController extends ChangeNotifier {
         isLoading: false,
       );
       notifyListeners();
-      await loadCandidates();
+      await _loadDeckIfWanted();
       return;
     }
     await _captureAndLoad();
@@ -317,7 +343,7 @@ class DiscoveryController extends ChangeNotifier {
     );
     state = state.copyWith(phase: LocationPromptPhase.ready, clearError: true);
     notifyListeners();
-    await loadCandidates();
+    await _loadDeckIfWanted();
   }
 
   Future<void> openSettings() async {
@@ -350,7 +376,7 @@ class DiscoveryController extends ChangeNotifier {
         await _maybePersistLocation();
       }
     }
-    await loadCandidates();
+    await _loadDeckIfWanted();
   }
 
   void dismissHiddenCompatibility() {
@@ -714,7 +740,7 @@ class DiscoveryController extends ChangeNotifier {
     await _maybePersistLocation();
     state = state.copyWith(phase: LocationPromptPhase.ready, isLoading: false);
     notifyListeners();
-    await loadCandidates();
+    await _loadDeckIfWanted();
   }
 
   Future<void> _maybePersistLocation() async {

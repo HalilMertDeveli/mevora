@@ -6,7 +6,11 @@ import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
+import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
+import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
+import 'package:mevora/features/picks/presentation/widgets/pick_card.dart';
+import 'package:mevora/features/picks/presentation/widgets/pick_why_section.dart';
 import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
@@ -22,10 +26,22 @@ class DiscoveryProfileDetailsPage extends StatefulWidget {
     super.key,
     required this.candidate,
     this.controller,
+    this.pick,
+    this.onHide,
+    this.onBlocked,
   });
 
   final DiscoveryCandidate candidate;
   final DiscoveryController? controller;
+
+  /// Set when this profile is a Mevora Pick: the page then explains why, and
+  /// offers Pass / Like. The page pops with the chosen [DiscoveryDecision];
+  /// leaving without one keeps the Pick exactly as it was.
+  final MevoraPick? pick;
+
+  /// Override the safety sheet's hide / block follow-ups (Picks uses its own).
+  final Future<void> Function(String userId)? onHide;
+  final Future<void> Function(String userId)? onBlocked;
 
   @override
   State<DiscoveryProfileDetailsPage> createState() =>
@@ -61,12 +77,16 @@ class _DiscoveryProfileDetailsPageState
             onPressed: () => showDiscoverySafetySheet(
               context,
               userId: candidate.uid,
-              onHide: widget.controller == null
-                  ? null
-                  : (userId) => widget.controller!.hideCandidate(userId),
-              onBlocked: widget.controller == null
-                  ? null
-                  : (userId) => widget.controller!.hideCandidate(userId),
+              onHide:
+                  widget.onHide ??
+                  (widget.controller == null
+                      ? null
+                      : (userId) => widget.controller!.hideCandidate(userId)),
+              onBlocked:
+                  widget.onBlocked ??
+                  (widget.controller == null
+                      ? null
+                      : (userId) => widget.controller!.hideCandidate(userId)),
             ),
           ),
         ],
@@ -109,6 +129,10 @@ class _DiscoveryProfileDetailsPageState
                       ),
                     ),
                   ],
+                  if (widget.pick != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    PickWhySection(pick: widget.pick!),
+                  ],
                   const SizedBox(height: AppSpacing.sm),
                   Wrap(
                     spacing: AppSpacing.sm,
@@ -146,9 +170,7 @@ class _DiscoveryProfileDetailsPageState
                   // selection and left it visible.
                   if (candidate.publicMusic.hasContent) ...[
                     const SizedBox(height: AppSpacing.md),
-                    PublicMusicTasteSection(
-                      profile: candidate.publicMusic,
-                    ),
+                    PublicMusicTasteSection(profile: candidate.publicMusic),
                   ],
                   if (candidate.interests.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.md),
@@ -253,6 +275,22 @@ class _DiscoveryProfileDetailsPageState
                 ],
               ),
             ),
+            if (widget.pick != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                ),
+                child: PickDecisionBar(
+                  name: candidate.displayName,
+                  onPass: () =>
+                      Navigator.of(context).pop(DiscoveryDecision.pass),
+                  onLike: () =>
+                      Navigator.of(context).pop(DiscoveryDecision.like),
+                ),
+              ),
           ],
         ),
       ),
@@ -315,8 +353,10 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
     setState(() => _photoIndex = index);
     final photos = widget.photos;
     final dpr = MediaQuery.devicePixelRatioOf(context);
-    final cacheWidth =
-        (MediaQuery.sizeOf(context).width * dpr).round().clamp(320, 1080);
+    final cacheWidth = (MediaQuery.sizeOf(context).width * dpr).round().clamp(
+      320,
+      1080,
+    );
     if (index + 1 < photos.length) {
       DiscoveryNetworkImage.prefetch(photos[index + 1], cacheWidth: cacheWidth);
     }
@@ -370,7 +410,9 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
                     right: AppSpacing.sm,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surface.withValues(alpha: 0.82),
+                        color: theme.colorScheme.surface.withValues(
+                          alpha: 0.82,
+                        ),
                         borderRadius: BorderRadius.circular(AppRadii.pill),
                       ),
                       child: Padding(

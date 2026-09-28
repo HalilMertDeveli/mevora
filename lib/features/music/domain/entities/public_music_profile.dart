@@ -103,6 +103,11 @@ class PublicMusicProfile {
   bool get hasContent =>
       enabled && (artists.isNotEmpty || tracks.isNotEmpty);
 
+  /// True when the member has picked something, whether or not it is currently
+  /// on show. Visibility asks this, not [hasContent] — a hidden card still has
+  /// a selection to turn back on.
+  bool get hasSelection => artists.isNotEmpty || tracks.isNotEmpty;
+
   List<String> get artistIds => artists.map((artist) => artist.id).toList();
 
   List<String> get trackIds => tracks.map((track) => track.id).toList();

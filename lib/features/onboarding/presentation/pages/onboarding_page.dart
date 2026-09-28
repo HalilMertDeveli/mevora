@@ -87,7 +87,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _birthDate = profile.birthDate;
     final birthLabel = _birthDate == null
         ? ''
-        : MaterialLocalizations.of(context).formatMediumDate(_birthDate!);
+        : MaterialLocalizations.of(context).formatFullDate(_birthDate!);
     if (_birthDateLabelController.text != birthLabel) {
       _birthDateLabelController.text = birthLabel;
     }
@@ -165,7 +165,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
     return OnboardingStepScaffold(
       step: OnboardingStep.music,
-      title: l10n.onboardingMusicTitle,
+      title: l10n.musicTitle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.canGoBack ? _controller.goBack : null,
@@ -472,7 +472,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
     setState(() => _birthDate = picked);
     _birthDateLabelController.text =
-        MaterialLocalizations.of(context).formatMediumDate(picked);
+        MaterialLocalizations.of(context).formatFullDate(picked);
     _controller.updateDraft((current) => current.copyWith(birthDate: picked));
   }
 

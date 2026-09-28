@@ -211,6 +211,51 @@
       }
     }
   },
+  "onboardingErrorBirthday": "Add your birthday.",
+  "onboardingErrorFirstName": "Add your first name.",
+  "onboardingErrorGender": "Choose how you identify.",
+  "onboardingErrorInterestedIn": "Choose who you'd like to meet.",
+  "onboardingErrorCity": "Choose your city.",
+  "onboardingErrorEducation": "Choose your education.",
+  "onboardingErrorRelationshipGoal": "Choose what you're looking for.",
+  "onboardingErrorLifestyle": "Answer all of the lifestyle questions.",
+  "onboardingErrorInterestsMax": "Choose up to {max} interests.",
+  "@onboardingErrorInterestsMax": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingErrorBioShort": "Write at least {min} characters about yourself.",
+  "@onboardingErrorBioShort": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingErrorBioLong": "Keep it to {max} characters or fewer.",
+  "@onboardingErrorBioLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingErrorPhotosMax": "You can add up to {max} photos.",
+  "@onboardingErrorPhotosMax": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingErrorPhotosInReview": "Your photos are still being reviewed. Try again shortly.",
+  "onboardingErrorProfileIncomplete": "Some required details are missing. Go back and fill them in.",
+  "onboardingErrorSignInAgain": "Sign in again to finish setting up your profile.",
+  "onboardingErrorNotAllowed": "This account can't finish setup.",
+  "onboardingErrorGeneric": "We couldn't finish setting up your profile. Please try again.",
   "onboardingBack": "Back",
   "onboardingContinue": "Continue",
   "onboardingEducation": "Education",
@@ -697,6 +742,15 @@
       }
     }
   },
+  "percentValue": "{value}%",
+  "@percentValue": {
+    "description": "A bare percentage. Turkish puts the sign first (%60).",
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
   "paymentTitle": "Payment",
   "paymentProcessing": "Processing payment...",
   "paymentSuccess": "Payment successful.",
@@ -741,6 +795,9 @@
     }
   },
   "photoUploadFailed": "Photo could not be uploaded. Please try again.",
+  "photoNoneSelected": "No photo selected.",
+  "photoNeedSignIn": "Sign in to upload a photo.",
+  "photoInvalidFile": "This photo's type or size isn't supported.",
   "photoUploaded": "Photo uploaded",
   "photoSelected": "Photo selected",
   "photoRetry": "Try again",

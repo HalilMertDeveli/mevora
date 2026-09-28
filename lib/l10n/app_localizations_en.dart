@@ -491,6 +491,71 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get onboardingErrorBirthday => 'Add your birthday.';
+
+  @override
+  String get onboardingErrorFirstName => 'Add your first name.';
+
+  @override
+  String get onboardingErrorGender => 'Choose how you identify.';
+
+  @override
+  String get onboardingErrorInterestedIn => 'Choose who you\'d like to meet.';
+
+  @override
+  String get onboardingErrorCity => 'Choose your city.';
+
+  @override
+  String get onboardingErrorEducation => 'Choose your education.';
+
+  @override
+  String get onboardingErrorRelationshipGoal =>
+      'Choose what you\'re looking for.';
+
+  @override
+  String get onboardingErrorLifestyle =>
+      'Answer all of the lifestyle questions.';
+
+  @override
+  String onboardingErrorInterestsMax(int max) {
+    return 'Choose up to $max interests.';
+  }
+
+  @override
+  String onboardingErrorBioShort(int min) {
+    return 'Write at least $min characters about yourself.';
+  }
+
+  @override
+  String onboardingErrorBioLong(int max) {
+    return 'Keep it to $max characters or fewer.';
+  }
+
+  @override
+  String onboardingErrorPhotosMax(int max) {
+    return 'You can add up to $max photos.';
+  }
+
+  @override
+  String get onboardingErrorPhotosInReview =>
+      'Your photos are still being reviewed. Try again shortly.';
+
+  @override
+  String get onboardingErrorProfileIncomplete =>
+      'Some required details are missing. Go back and fill them in.';
+
+  @override
+  String get onboardingErrorSignInAgain =>
+      'Sign in again to finish setting up your profile.';
+
+  @override
+  String get onboardingErrorNotAllowed => 'This account can\'t finish setup.';
+
+  @override
+  String get onboardingErrorGeneric =>
+      'We couldn\'t finish setting up your profile. Please try again.';
+
+  @override
   String get onboardingBack => 'Back';
 
   @override
@@ -1592,6 +1657,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String percentValue(int value) {
+    return '$value%';
+  }
+
+  @override
   String get paymentTitle => 'Payment';
 
   @override
@@ -1713,6 +1783,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get photoUploadFailed =>
       'Photo could not be uploaded. Please try again.';
+
+  @override
+  String get photoNoneSelected => 'No photo selected.';
+
+  @override
+  String get photoNeedSignIn => 'Sign in to upload a photo.';
+
+  @override
+  String get photoInvalidFile => 'This photo\'s type or size isn\'t supported.';
 
   @override
   String get photoUploaded => 'Photo uploaded';

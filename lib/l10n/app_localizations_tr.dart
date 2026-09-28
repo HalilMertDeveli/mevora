@@ -490,6 +490,70 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get onboardingErrorBirthday => 'Doğum tarihini ekle.';
+
+  @override
+  String get onboardingErrorFirstName => 'Adını ekle.';
+
+  @override
+  String get onboardingErrorGender => 'Kendini nasıl tanımladığını seç.';
+
+  @override
+  String get onboardingErrorInterestedIn => 'Kiminle tanışmak istediğini seç.';
+
+  @override
+  String get onboardingErrorCity => 'Şehrini seç.';
+
+  @override
+  String get onboardingErrorEducation => 'Eğitim durumunu seç.';
+
+  @override
+  String get onboardingErrorRelationshipGoal => 'Ne aradığını seç.';
+
+  @override
+  String get onboardingErrorLifestyle =>
+      'Yaşam tarzı sorularının hepsini cevapla.';
+
+  @override
+  String onboardingErrorInterestsMax(int max) {
+    return 'En fazla $max ilgi alanı seç.';
+  }
+
+  @override
+  String onboardingErrorBioShort(int min) {
+    return 'Kendinden en az $min karakterle bahset.';
+  }
+
+  @override
+  String onboardingErrorBioLong(int max) {
+    return 'En fazla $max karakter yazabilirsin.';
+  }
+
+  @override
+  String onboardingErrorPhotosMax(int max) {
+    return 'En fazla $max fotoğraf ekleyebilirsin.';
+  }
+
+  @override
+  String get onboardingErrorPhotosInReview =>
+      'Fotoğrafların hâlâ inceleniyor. Biraz sonra tekrar dene.';
+
+  @override
+  String get onboardingErrorProfileIncomplete =>
+      'Bazı zorunlu bilgiler eksik. Geri dönüp tamamla.';
+
+  @override
+  String get onboardingErrorSignInAgain =>
+      'Profilini tamamlamak için tekrar giriş yap.';
+
+  @override
+  String get onboardingErrorNotAllowed => 'Bu hesap kurulumu tamamlayamıyor.';
+
+  @override
+  String get onboardingErrorGeneric =>
+      'Profilin tamamlanamadı. Lütfen tekrar dene.';
+
+  @override
   String get onboardingBack => 'Geri';
 
   @override
@@ -1591,6 +1655,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String percentValue(int value) {
+    return '%$value';
+  }
+
+  @override
   String get paymentTitle => 'Ödeme';
 
   @override
@@ -1712,6 +1781,15 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get photoUploadFailed => 'Fotoğraf yüklenemedi. Lütfen tekrar dene.';
+
+  @override
+  String get photoNoneSelected => 'Fotoğraf seçilmedi.';
+
+  @override
+  String get photoNeedSignIn => 'Fotoğraf yüklemek için giriş yapmalısın.';
+
+  @override
+  String get photoInvalidFile => 'Bu fotoğraf türü veya boyutu uygun değil.';
 
   @override
   String get photoUploaded => 'Fotoğraf yüklendi';

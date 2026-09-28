@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
+import 'package:mevora/features/onboarding/presentation/onboarding_error_l10n.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
@@ -88,7 +89,7 @@ class OnboardingStepScaffold extends StatelessWidget {
         Expanded(child: child),
         if (errorMessage != null) ...[
           Text(
-            errorMessage!,
+            OnboardingErrorL10n.message(l10n, errorMessage!),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.error,
             ),

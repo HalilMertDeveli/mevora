@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 
@@ -64,7 +65,7 @@ class _AnimatedCompatibilityScoreState extends State<AnimatedCompatibilityScore>
           child: Column(
             children: [
               Text(
-                '${_score.value}%',
+                AppLocalizations.of(context).percentValue(_score.value),
                 style: displayStyle?.copyWith(
                   color: AppColors.softGreen,
                   fontWeight: FontWeight.w600,

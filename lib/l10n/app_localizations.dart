@@ -986,6 +986,108 @@ abstract class AppLocalizations {
   /// **'Step {current} of {total}'**
   String onboardingStepProgress(int current, int total);
 
+  /// No description provided for @onboardingErrorBirthday.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your birthday.'**
+  String get onboardingErrorBirthday;
+
+  /// No description provided for @onboardingErrorFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first name.'**
+  String get onboardingErrorFirstName;
+
+  /// No description provided for @onboardingErrorGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you identify.'**
+  String get onboardingErrorGender;
+
+  /// No description provided for @onboardingErrorInterestedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose who you\'d like to meet.'**
+  String get onboardingErrorInterestedIn;
+
+  /// No description provided for @onboardingErrorCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your city.'**
+  String get onboardingErrorCity;
+
+  /// No description provided for @onboardingErrorEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your education.'**
+  String get onboardingErrorEducation;
+
+  /// No description provided for @onboardingErrorRelationshipGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what you\'re looking for.'**
+  String get onboardingErrorRelationshipGoal;
+
+  /// No description provided for @onboardingErrorLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer all of the lifestyle questions.'**
+  String get onboardingErrorLifestyle;
+
+  /// No description provided for @onboardingErrorInterestsMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose up to {max} interests.'**
+  String onboardingErrorInterestsMax(int max);
+
+  /// No description provided for @onboardingErrorBioShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Write at least {min} characters about yourself.'**
+  String onboardingErrorBioShort(int min);
+
+  /// No description provided for @onboardingErrorBioLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it to {max} characters or fewer.'**
+  String onboardingErrorBioLong(int max);
+
+  /// No description provided for @onboardingErrorPhotosMax.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {max} photos.'**
+  String onboardingErrorPhotosMax(int max);
+
+  /// No description provided for @onboardingErrorPhotosInReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Your photos are still being reviewed. Try again shortly.'**
+  String get onboardingErrorPhotosInReview;
+
+  /// No description provided for @onboardingErrorProfileIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Some required details are missing. Go back and fill them in.'**
+  String get onboardingErrorProfileIncomplete;
+
+  /// No description provided for @onboardingErrorSignInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again to finish setting up your profile.'**
+  String get onboardingErrorSignInAgain;
+
+  /// No description provided for @onboardingErrorNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This account can\'t finish setup.'**
+  String get onboardingErrorNotAllowed;
+
+  /// No description provided for @onboardingErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t finish setting up your profile. Please try again.'**
+  String get onboardingErrorGeneric;
+
   /// No description provided for @onboardingBack.
   ///
   /// In en, this message translates to:
@@ -3020,6 +3122,12 @@ abstract class AppLocalizations {
   /// **'{km} km'**
   String radiusKm(int km);
 
+  /// A bare percentage. Turkish puts the sign first (%60).
+  ///
+  /// In en, this message translates to:
+  /// **'{value}%'**
+  String percentValue(int value);
+
   /// No description provided for @paymentTitle.
   ///
   /// In en, this message translates to:
@@ -3241,6 +3349,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo could not be uploaded. Please try again.'**
   String get photoUploadFailed;
+
+  /// No description provided for @photoNoneSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No photo selected.'**
+  String get photoNoneSelected;
+
+  /// No description provided for @photoNeedSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to upload a photo.'**
+  String get photoNeedSignIn;
+
+  /// No description provided for @photoInvalidFile.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo\'s type or size isn\'t supported.'**
+  String get photoInvalidFile;
 
   /// No description provided for @photoUploaded.
   ///

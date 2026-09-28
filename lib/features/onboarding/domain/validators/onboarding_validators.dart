@@ -3,18 +3,19 @@ import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_config.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
+import 'package:mevora/features/onboarding/domain/onboarding_messages.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 
 abstract final class OnboardingValidators {
   static Result<void> validateAge(DateTime? birthDate) {
     if (birthDate == null) {
-      return const Err(ValidationFailure('Birthday is required'));
+      return const Err(ValidationFailure(OnboardingMessages.birthdayRequired));
     }
     final age = _ageFrom(birthDate);
     if (age < AppConstants.minimumAge) {
       return const Err(
-        ValidationFailure('You must be 18 or older to use Mevora.'),
+        ValidationFailure(OnboardingMessages.underage),
       );
     }
     return const Success(null);
@@ -22,52 +23,46 @@ abstract final class OnboardingValidators {
 
   static Result<void> validateBasicInfo(UserProfile profile) {
     if (profile.displayName.trim().isEmpty) {
-      return const Err(ValidationFailure('First name is required'));
+      return const Err(ValidationFailure(OnboardingMessages.firstNameRequired));
     }
     final ageResult = validateAge(profile.birthDate);
     if (ageResult.isError) {
       return ageResult;
     }
     if (profile.gender == null || profile.gender!.isEmpty) {
-      return const Err(ValidationFailure('Gender is required'));
+      return const Err(ValidationFailure(OnboardingMessages.genderRequired));
     }
     if (profile.interestedIn == null || profile.interestedIn!.isEmpty) {
-      return const Err(ValidationFailure('Interested in is required'));
+      return const Err(ValidationFailure(OnboardingMessages.interestedInRequired));
     }
     if (profile.city == null || profile.city!.trim().isEmpty) {
-      return const Err(ValidationFailure('City is required'));
+      return const Err(ValidationFailure(OnboardingMessages.cityRequired));
     }
     return const Success(null);
   }
 
   static Result<void> validateInterests(List<String> interests) {
     if (interests.length < OnboardingConfig.minInterests) {
-      return Err(
-        ValidationFailure(
-          'Select at least ${OnboardingConfig.minInterests} interests',
-        ),
-      );
+      return Err(ValidationFailure(OnboardingMessages.interestsTooFew));
     }
     if (interests.length > OnboardingConfig.maxInterests) {
-      return Err(
-        ValidationFailure(
-          'Select up to ${OnboardingConfig.maxInterests} interests',
-        ),
-      );
+      return Err(ValidationFailure(OnboardingMessages.interestsTooMany));
     }
     return const Success(null);
   }
 
   static Result<void> validateEducation(String? education) {
     if (education == null || education.isEmpty) {
-      return const Err(ValidationFailure('Education is required'));
+      return const Err(ValidationFailure(OnboardingMessages.educationRequired));
     }
     return const Success(null);
   }
 
   static Result<void> validateRelationshipGoal(String? goal) {
     if (goal == null || goal.isEmpty) {
-      return const Err(ValidationFailure('Relationship goal is required'));
+      return const Err(
+        ValidationFailure(OnboardingMessages.relationshipGoalRequired),
+      );
     }
     return const Success(null);
   }
@@ -82,7 +77,7 @@ abstract final class OnboardingValidators {
         lifestyle.exercise!.isEmpty ||
         lifestyle.pets == null ||
         lifestyle.pets!.isEmpty) {
-      return const Err(ValidationFailure('Lifestyle details are required'));
+      return const Err(ValidationFailure(OnboardingMessages.lifestyleRequired));
     }
     return const Success(null);
   }
@@ -90,18 +85,10 @@ abstract final class OnboardingValidators {
   static Result<void> validateBio(String? bio) {
     final value = bio?.trim() ?? '';
     if (value.length < OnboardingConfig.minBioLength) {
-      return Err(
-        ValidationFailure(
-          'Bio must be at least ${OnboardingConfig.minBioLength} characters',
-        ),
-      );
+      return Err(ValidationFailure(OnboardingMessages.bioTooShort));
     }
     if (value.length > OnboardingConfig.maxBioLength) {
-      return Err(
-        ValidationFailure(
-          'Bio must be ${OnboardingConfig.maxBioLength} characters or fewer',
-        ),
-      );
+      return Err(ValidationFailure(OnboardingMessages.bioTooLong));
     }
     return const Success(null);
   }
@@ -112,11 +99,7 @@ abstract final class OnboardingValidators {
       return const Err(ValidationFailure(PhotoUploadMessages.minRequired));
     }
     if (usable > OnboardingConfig.maxPhotos) {
-      return Err(
-        ValidationFailure(
-          'You can add up to ${OnboardingConfig.maxPhotos} photos',
-        ),
-      );
+      return Err(ValidationFailure(OnboardingMessages.photosTooMany));
     }
     return const Success(null);
   }

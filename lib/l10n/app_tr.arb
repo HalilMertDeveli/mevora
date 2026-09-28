@@ -199,6 +199,51 @@
       }
     }
   },
+  "onboardingErrorBirthday": "Doğum tarihini ekle.",
+  "onboardingErrorFirstName": "Adını ekle.",
+  "onboardingErrorGender": "Kendini nasıl tanımladığını seç.",
+  "onboardingErrorInterestedIn": "Kiminle tanışmak istediğini seç.",
+  "onboardingErrorCity": "Şehrini seç.",
+  "onboardingErrorEducation": "Eğitim durumunu seç.",
+  "onboardingErrorRelationshipGoal": "Ne aradığını seç.",
+  "onboardingErrorLifestyle": "Yaşam tarzı sorularının hepsini cevapla.",
+  "onboardingErrorInterestsMax": "En fazla {max} ilgi alanı seç.",
+  "@onboardingErrorInterestsMax": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingErrorBioShort": "Kendinden en az {min} karakterle bahset.",
+  "@onboardingErrorBioShort": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingErrorBioLong": "En fazla {max} karakter yazabilirsin.",
+  "@onboardingErrorBioLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingErrorPhotosMax": "En fazla {max} fotoğraf ekleyebilirsin.",
+  "@onboardingErrorPhotosMax": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingErrorPhotosInReview": "Fotoğrafların hâlâ inceleniyor. Biraz sonra tekrar dene.",
+  "onboardingErrorProfileIncomplete": "Bazı zorunlu bilgiler eksik. Geri dönüp tamamla.",
+  "onboardingErrorSignInAgain": "Profilini tamamlamak için tekrar giriş yap.",
+  "onboardingErrorNotAllowed": "Bu hesap kurulumu tamamlayamıyor.",
+  "onboardingErrorGeneric": "Profilin tamamlanamadı. Lütfen tekrar dene.",
   "onboardingBack": "Geri",
   "onboardingContinue": "Devam et",
   "onboardingEducation": "Eğitim",
@@ -684,6 +729,14 @@
       }
     }
   },
+  "percentValue": "%{value}",
+  "@percentValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
   "paymentTitle": "Ödeme",
   "paymentProcessing": "Ödeme işleniyor...",
   "paymentSuccess": "Ödeme başarılı.",
@@ -728,6 +781,9 @@
     }
   },
   "photoUploadFailed": "Fotoğraf yüklenemedi. Lütfen tekrar dene.",
+  "photoNoneSelected": "Fotoğraf seçilmedi.",
+  "photoNeedSignIn": "Fotoğraf yüklemek için giriş yapmalısın.",
+  "photoInvalidFile": "Bu fotoğraf türü veya boyutu uygun değil.",
   "photoUploaded": "Fotoğraf yüklendi",
   "photoSelected": "Fotoğraf seçildi",
   "photoRetry": "Tekrar Dene",

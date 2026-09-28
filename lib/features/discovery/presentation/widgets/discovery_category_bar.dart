@@ -49,7 +49,7 @@ class DiscoveryCategoryBar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: AppSpacing.sm),
             child: Text(
-              '$score%',
+              AppLocalizations.of(context).percentValue(score),
               textAlign: TextAlign.end,
               maxLines: 1,
               style: theme.textTheme.labelMedium?.copyWith(

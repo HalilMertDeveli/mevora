@@ -163,7 +163,7 @@ class _PhotoTile extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '$percent%',
+                        AppLocalizations.of(context).percentValue(percent),
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: Colors.white,
                         ),

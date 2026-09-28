@@ -12,7 +12,7 @@ import {
   handleDeveloperNotification,
   type OwnerLookup,
 } from "./googleRtdn.js";
-import {PlayDeveloperApi} from "./googleSubscriptionVerifier.js";
+import {googleSubscriptionApi} from "./emulatorGoogleSubscriptionApi.js";
 import {PremiumPurchaseStore} from "./premiumPurchaseStore.js";
 import {ownershipRef, type OwnershipRecord} from "./purchaseOwnership.js";
 
@@ -52,7 +52,7 @@ export const onPlaySubscriptionNotification = onMessagePublished(
 
     const result = await handleDeveloperNotification({
       notification,
-      api: new PlayDeveloperApi(),
+      api: googleSubscriptionApi(),
       owners: new FirestoreOwnerLookup(),
       persistenceFor: (args) =>
         new PremiumPurchaseStore({

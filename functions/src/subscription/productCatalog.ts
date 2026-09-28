@@ -52,19 +52,47 @@ export interface PremiumCatalogue {
 }
 
 /**
+ * The catalogue the Functions emulator uses when nothing is configured.
+ *
+ * Deliberately not a real store identity: the package name says "emulator" so
+ * it can never be mistaken for, or collide with, the production app. It exists
+ * only so the emulator's test store has something to buy; the matching client
+ * store lives in `EmulatorPremiumBillingRepository`.
+ */
+export const EMULATOR_PREMIUM_PACKAGE = "com.mevora.app.emulator";
+export const EMULATOR_PREMIUM_PRODUCT_ID = "mevora_premium";
+
+/**
  * Reads the catalogue from the environment on every call rather than at module
  * load, so a test can vary it and a deployed config change takes effect on the
  * next cold start without a code change.
+ *
+ * Under the Functions emulator, and only there, an empty Android configuration
+ * falls back to the emulator catalogue. Anywhere else an empty configuration
+ * stays empty and grants nothing.
  */
 export function premiumCatalogue(
   env: NodeJS.ProcessEnv = process.env,
 ): PremiumCatalogue {
-  return {
+  const configured: PremiumCatalogue = {
     androidPackageName: (env.PREMIUM_ANDROID_PACKAGE_NAME ?? "").trim(),
     iosBundleId: (env.PREMIUM_IOS_BUNDLE_ID ?? "").trim(),
     android: parseProducts(env.PREMIUM_ANDROID_PRODUCT_IDS),
     ios: parseProducts(env.PREMIUM_IOS_PRODUCT_IDS),
   };
+  const unconfiguredAndroid =
+    configured.androidPackageName.length === 0 && configured.android.length === 0;
+  if (env.FUNCTIONS_EMULATOR === "true" && unconfiguredAndroid) {
+    return {
+      ...configured,
+      androidPackageName: EMULATOR_PREMIUM_PACKAGE,
+      android: [
+        {productId: EMULATOR_PREMIUM_PRODUCT_ID, basePlanId: "monthly", tier: "premium"},
+        {productId: EMULATOR_PREMIUM_PRODUCT_ID, basePlanId: "yearly", tier: "premium"},
+      ],
+    };
+  }
+  return configured;
 }
 
 export type CatalogueRejection =

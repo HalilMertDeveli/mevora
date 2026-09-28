@@ -24,10 +24,8 @@ import {
   AppStoreServerApi,
   type AppleSubscriptionApi,
 } from "./appleSubscriptionVerifier.js";
-import {
-  PlayDeveloperApi,
-  type GoogleSubscriptionApi,
-} from "./googleSubscriptionVerifier.js";
+import {type GoogleSubscriptionApi} from "./googleSubscriptionVerifier.js";
+import {googleSubscriptionApi} from "./emulatorGoogleSubscriptionApi.js";
 import {premiumCatalogue} from "./productCatalog.js";
 import {evaluatePremiumAccess} from "./entitlementPolicy.js";
 
@@ -271,7 +269,7 @@ export const verifyPremiumPurchase = onCall(
       return verifyAndroidPremiumPurchase({
         userId,
         purchaseToken,
-        api: new PlayDeveloperApi(),
+        api: googleSubscriptionApi(),
       });
     }
     if (platform === "ios") {

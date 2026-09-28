@@ -3,6 +3,7 @@ import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/core/services/app_logger.dart';
+import 'package:mevora/features/subscription/data/repositories/emulator_premium_billing_repository.dart';
 import 'package:mevora/features/subscription/data/repositories/firestore_subscription_repository.dart';
 import 'package:mevora/features/subscription/data/repositories/store_premium_billing_repository.dart';
 import 'package:mevora/features/subscription/domain/config/premium_product_config.dart';
@@ -45,6 +46,10 @@ SubscriptionServices createSubscriptionServices({
   BackendCallable? backend,
   AppLogger? logger,
   AnalyticsProvider? analytics,
+
+  /// Swaps the store for a fixed-price test store whose purchases the
+  /// Functions emulator verifies. Only ever true against the Emulator Suite.
+  bool useEmulatorStore = false,
 }) {
   final SubscriptionRepository resolved =
       repository ??
@@ -58,13 +63,18 @@ SubscriptionServices createSubscriptionServices({
 
   final PremiumBillingRepository? resolvedBilling =
       billing ??
-      (premiumEnabled
-          ? StorePremiumBillingRepository(
+      (!premiumEnabled
+          ? null
+          : useEmulatorStore
+          ? EmulatorPremiumBillingRepository(
+              backend: backend ?? FirebaseFunctionsCallable(),
+              logger: logger,
+            )
+          : StorePremiumBillingRepository(
               backend: backend ?? FirebaseFunctionsCallable(),
               config: productConfig ?? PremiumProductConfig.fromEnvironment(),
               logger: logger,
-            )
-          : null);
+            ));
 
   return SubscriptionServices(
     repository: resolved,

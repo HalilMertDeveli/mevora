@@ -2,6 +2,7 @@ import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/core/services/app_logger.dart';
+import 'package:mevora/features/boost/data/datasources/emulator_store_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/datasources/firebase_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/datasources/in_app_store_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/datasources/store_purchase_data_source.dart';
@@ -23,14 +24,20 @@ BoostServices createBoostServices({
   StorePurchaseDataSource? store,
   AppLogger? logger,
   BoostProductConfig config = const BoostProductConfig(),
+
+  /// Swaps the store for a fixed-price test store. Only ever true against
+  /// the Firebase Emulator Suite, where no real store product exists.
+  bool useEmulatorStore = false,
 }) {
   final resolvedStore =
       store ??
-      InAppStorePurchaseDataSource(
-        apple: ApplePurchaseService(logger: logger),
-        google: GooglePurchaseService(logger: logger),
-        logger: logger,
-      );
+      (useEmulatorStore
+          ? EmulatorStorePurchaseDataSource()
+          : InAppStorePurchaseDataSource(
+              apple: ApplePurchaseService(logger: logger),
+              google: GooglePurchaseService(logger: logger),
+              logger: logger,
+            ));
   return BoostServices(
     purchaseRepository: PurchaseRepositoryImpl(
       store: resolvedStore,

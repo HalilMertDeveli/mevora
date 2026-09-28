@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 
 import '../../helpers/pump_app.dart';
@@ -11,7 +11,7 @@ void main() {
     await tester.pumpWidget(
       wrapWithApp(
         MevoraEmptyState(
-          icon: Icons.people_outline,
+          art: MevoraArt.emptyProfiles,
           title: 'No profiles',
           message: 'Try expanding your filters.',
           actionLabel: 'Adjust filters',

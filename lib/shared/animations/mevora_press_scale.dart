@@ -5,11 +5,7 @@ import 'package:mevora/core/constants/app_durations.dart';
 
 /// Subtle press feedback for buttons: 150–200ms scale and opacity.
 class MevoraPressScale extends StatefulWidget {
-  const MevoraPressScale({
-    super.key,
-    required this.child,
-    this.enabled = true,
-  });
+  const MevoraPressScale({super.key, required this.child, this.enabled = true});
 
   final Widget child;
   final bool enabled;
@@ -31,12 +27,14 @@ class _MevoraPressScaleState extends State<MevoraPressScale>
       vsync: this,
       duration: AppDurations.button,
     );
-    _scale = Tween<double>(begin: 1, end: 0.97).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _opacity = Tween<double>(begin: 1, end: 0.92).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scale = Tween<double>(
+      begin: 1,
+      end: 0.97,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _opacity = Tween<double>(
+      begin: 1,
+      end: 0.92,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override

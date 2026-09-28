@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/constants/app_durations.dart';
+import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/shared/animations/mevora_press_scale.dart';
 
+/// A selectable choice (interests, filters, answers). For read-only labels
+/// use [MevoraPill].
 class MevoraChip extends StatelessWidget {
   const MevoraChip({
     super.key,
@@ -18,58 +22,46 @@ class MevoraChip extends StatelessWidget {
   final String label;
   final bool selected;
   final ValueChanged<bool>? onSelected;
+
+  /// Leading widget — usually an [Icon].
   final Widget? avatar;
   final bool compact;
 
   /// When true, long labels wrap instead of ellipsizing to one line.
   final bool wrapLabel;
 
-  /// When true, force light-on-dark styling for photo overlays.
+  /// Light-on-dark styling for use over photography.
   final bool onMedia;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final colors = theme.colorScheme;
+    final scheme = theme.colorScheme;
+    final p = context.palette;
 
-    late final Color bgColor;
-    late final Color textColor;
-    late final Border? border;
-
-    if (onMedia) {
-      bgColor = selected
-          ? AppColors.accentPrimary.withValues(alpha: 0.85)
-          : Colors.white.withValues(alpha: 0.14);
-      textColor = AppColors.onMedia;
-      border = selected
-          ? null
-          : Border.all(color: Colors.white.withValues(alpha: 0.28));
-    } else {
-      bgColor = selected
-          ? colors.primary
-          : (isDark ? Colors.transparent : Colors.transparent);
-      textColor = selected
-          ? colors.onPrimary
-          : (isDark ? AppColors.primaryText : colors.onSurface);
-      border = selected
-          ? null
-          : Border.all(
-              color: isDark ? AppColors.glassBorder : colors.outline,
-            );
-    }
+    final (Color bg, Color fg, Color line) = onMedia
+        ? (
+            selected ? AppColors.onMedia : AppColors.mediaControl,
+            selected ? AppColors.ink : AppColors.onMedia,
+            selected ? AppColors.onMedia : AppColors.mediaControlBorder,
+          )
+        : (
+            selected ? scheme.primaryContainer : p.surface,
+            selected ? scheme.onPrimaryContainer : p.textPrimary,
+            selected ? scheme.primary : p.border,
+          );
 
     final text = Text(
       label,
       maxLines: wrapLabel ? null : 1,
       overflow: wrapLabel ? TextOverflow.visible : TextOverflow.ellipsis,
       softWrap: true,
-      style: TextStyle(
-        fontFamily: 'Manrope',
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        color: textColor,
-      ),
+      style:
+          (compact ? theme.textTheme.labelMedium : theme.textTheme.labelLarge)
+              ?.copyWith(
+                color: fg,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              ),
     );
 
     final content = Row(
@@ -80,46 +72,59 @@ class MevoraChip extends StatelessWidget {
       children: [
         if (avatar != null) ...[
           IconTheme(
-            data: IconThemeData(color: textColor, size: 18),
+            data: IconThemeData(color: fg, size: compact ? 16 : 18),
             child: avatar!,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: AppSpacing.xs + AppSpacing.xxs),
         ],
-        if (wrapLabel)
-          Flexible(child: text)
-        else
-          Flexible(child: text),
+        Flexible(child: text),
       ],
     );
 
-    final body = wrapLabel
-        ? ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width - 64,
-            ),
-            child: content,
-          )
-        : content;
+    final chip = AnimatedContainer(
+      duration: AppDurations.fast,
+      curve: AppCurves.standard,
+      constraints: BoxConstraints(minHeight: compact ? 32 : 40),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? AppSpacing.s12 : AppSpacing.md,
+        vertical: compact ? AppSpacing.xs : AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(
+          wrapLabel ? AppRadii.md : AppRadii.pill,
+        ),
+        border: Border.all(color: line, width: selected ? 1.5 : 1),
+      ),
+      child: wrapLabel
+          ? ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width - 64,
+              ),
+              child: content,
+            )
+          : content,
+    );
 
-    return MevoraPressScale(
-      enabled: onSelected != null,
-      child: GestureDetector(
-        onTap: onSelected != null ? () => onSelected!(!selected) : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 16,
-            vertical: compact ? 6 : 10,
-          ),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(
-              wrapLabel ? AppRadii.md : AppRadii.pill,
+    if (onSelected == null) {
+      return Semantics(label: label, selected: selected, child: chip);
+    }
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      child: MevoraPressScale(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onSelected!(!selected),
+          // Keep the visual compact but the hit area at the 48dp minimum.
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              vertical: compact ? AppSpacing.sm : AppSpacing.xs,
             ),
-            border: border,
+            child: chip,
           ),
-          child: body,
         ),
       ),
     );

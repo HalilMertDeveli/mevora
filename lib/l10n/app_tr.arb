@@ -1673,5 +1673,30 @@
   "humorResultEvolvesNote": "Yeni içeriklere tepki verdikçe profilin gelişmeye devam eder.",
   "humorResultStrengthHigh": "Güçlü",
   "humorResultStrengthMedium": "Belirgin",
-  "humorResultStrengthLow": "Hafif"
+  "humorResultStrengthLow": "Hafif",
+  "musicTasteGeneralHeading": "Genel olarak dinlediği",
+  "musicTasteDominant": "Ağırlıklı olarak {genres} çevresinde.",
+  "@musicTasteDominant": {
+    "placeholders": {
+      "genres": {
+        "type": "String"
+      }
+    }
+  },
+  "musicTasteSignature": "Dönüp dolaşıp {artists} dinliyor.",
+  "@musicTasteSignature": {
+    "placeholders": {
+      "artists": {
+        "type": "String"
+      }
+    }
+  },
+  "musicTasteStable": "Aylardır bırakmadığı {count} sanatçı.",
+  "@musicTasteStable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

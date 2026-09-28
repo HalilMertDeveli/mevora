@@ -108,6 +108,40 @@ function genreShares(artists) {
     }));
 }
 
+
+/**
+ * The same general-taste shape the sync derives, so seeded QA exercises the
+ * V2 profile without a live Spotify authorization. The long-term window is
+ * the first three artists — the ones a seeded member has 'always' listened to
+ * — so some artists are stable across windows and some are not.
+ */
+function generalTasteFor(artists, tracks) {
+  const lasting = artists.slice(0, 3);
+  const genreScore = new Map();
+  const bump = (list, weight) => {
+    for (const artist of list) {
+      for (const genre of artist.genres ?? []) {
+        genreScore.set(genre, (genreScore.get(genre) ?? 0) + weight);
+      }
+    }
+  };
+  bump(lasting, 3);
+  bump(artists, 2);
+  const genres = [...genreScore.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name]) => name);
+  return {
+    dominantGenre: genres[0] ?? null,
+    secondaryGenres: genres.slice(1),
+    genres,
+    signatureArtists: lasting.slice(0, 3).map((a) => ({id: a.id, name: a.name})),
+    stableArtistCount: lasting.length,
+    stableTrackCount: Math.min(2, tracks.length),
+    artistBreadth: artists.length,
+  };
+}
+
 function summaryFor(uid, artists, tracks, recent) {
   const genres = genreShares(artists);
   return {
@@ -139,6 +173,7 @@ function summaryFor(uid, artists, tracks, recent) {
       },
     },
     musicProfileVersion: 2,
+    generalTaste: generalTasteFor(artists, tracks),
     lastSyncedAt: FieldValue.serverTimestamp(),
     connectedAt: FieldValue.serverTimestamp(),
   };

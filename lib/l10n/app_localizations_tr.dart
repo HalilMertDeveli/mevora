@@ -3831,4 +3831,22 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorResultStrengthLow => 'Hafif';
+
+  @override
+  String get musicTasteGeneralHeading => 'Genel olarak dinlediği';
+
+  @override
+  String musicTasteDominant(String genres) {
+    return 'Ağırlıklı olarak $genres çevresinde.';
+  }
+
+  @override
+  String musicTasteSignature(String artists) {
+    return 'Dönüp dolaşıp $artists dinliyor.';
+  }
+
+  @override
+  String musicTasteStable(int count) {
+    return 'Aylardır bırakmadığı $count sanatçı.';
+  }
 }

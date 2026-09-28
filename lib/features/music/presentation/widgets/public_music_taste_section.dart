@@ -65,7 +65,12 @@ class PublicMusicTasteSection extends StatelessWidget {
             ],
           ),
         ],
-        if (profile.genres.isNotEmpty) ...[
+        // The general summary already names the genres, so the bare genre line
+        // is only the fallback for a card published before the analysis
+        // existed. Showing both would say the same thing twice.
+        if (profile.taste.hasContent)
+          ..._generalTaste(context, profile.taste)
+        else if (profile.genres.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(
             profile.genres.map(_titleCase).join(' · '),
@@ -76,6 +81,50 @@ class PublicMusicTasteSection extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// At most three plain statements about what this member generally listens
+  /// to. Each is a fact the backend derived and can be checked against the
+  /// data — never a claim about the person.
+  List<Widget> _generalTaste(BuildContext context, PublicMusicTaste taste) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final lines = <String>[];
+
+    final dominant = taste.dominantGenre;
+    if (dominant != null && dominant.isNotEmpty) {
+      final named = [dominant, ...taste.secondaryGenres].map(_titleCase);
+      lines.add(l10n.musicTasteDominant(named.join(', ')));
+    }
+    if (taste.signatureArtists.isNotEmpty) {
+      lines.add(l10n.musicTasteSignature(taste.signatureArtists.join(', ')));
+    }
+    // Only worth saying when more than one artist has actually stayed.
+    if (lines.length < 3 && taste.stableArtistCount >= 2) {
+      lines.add(l10n.musicTasteStable(taste.stableArtistCount));
+    }
+    if (lines.isEmpty) {
+      return const [];
+    }
+
+    return [
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        l10n.musicTasteGeneralHeading,
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      for (final line in lines.take(3)) ...[
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          line,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    ];
   }
 }
 

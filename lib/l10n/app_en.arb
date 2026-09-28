@@ -1673,5 +1673,30 @@
   "humorResultEvolvesNote": "Your profile keeps evolving as you react to new content.",
   "humorResultStrengthHigh": "Strong",
   "humorResultStrengthMedium": "Clear",
-  "humorResultStrengthLow": "Slight"
+  "humorResultStrengthLow": "Slight",
+  "musicTasteGeneralHeading": "Generally listens to",
+  "musicTasteDominant": "Mostly around {genres}.",
+  "@musicTasteDominant": {
+    "placeholders": {
+      "genres": {
+        "type": "String"
+      }
+    }
+  },
+  "musicTasteSignature": "Keeps coming back to {artists}.",
+  "@musicTasteSignature": {
+    "placeholders": {
+      "artists": {
+        "type": "String"
+      }
+    }
+  },
+  "musicTasteStable": "{count} artists that have stayed with them for months.",
+  "@musicTasteStable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

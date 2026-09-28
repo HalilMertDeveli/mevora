@@ -84,7 +84,7 @@ class AppConfig {
   /// A --dart-define still overrides this.
   String get spotifyClientId => const String.fromEnvironment(
     'SPOTIFY_CLIENT_ID',
-    defaultValue: 'a937aa81f01645f78c5ba8c174c800d1',
+    defaultValue: 'b0a808c4c2264b0ba179c2045a8d3445',
   );
 
   String get spotifyRedirectUri => const String.fromEnvironment(

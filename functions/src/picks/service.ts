@@ -18,6 +18,7 @@ import {humorScoreForPair, isHumorCalibrationReady} from "../humor/compatibility
 import type {UserHumorProfileDoc} from "../humor/types.js";
 import {PICK_QUALITY, PICKS_CONFIG} from "./config.js";
 import {composePicks, evaluatePool} from "./selection.js";
+import {loadPersonalizationContext} from "../personalization/store.js";
 import {
   activePicks,
   appendPicks,
@@ -194,6 +195,8 @@ async function selectFromPool(input: {
   slots: number;
   existing: StoredPick[];
   firstRank: number;
+  /** The batch's generation id: keeps exploration stable within a batch. */
+  batchKey: string;
 }): Promise<{
   composed: ReturnType<typeof composePicks>;
   cards: Map<string, PickCardSnapshot>;
@@ -245,10 +248,18 @@ async function selectFromPool(input: {
       boosted: viewer.boosted,
     }),
   );
+  // The viewer's learned preferences: loaded once per selection, never per
+  // candidate. Switched off, missing or unreadable all mean 1.00 everywhere.
+  const personalization = await loadPersonalizationContext(db, viewer.uid);
   const composed = composePicks(evaluatePool(signals), {
     targetCount: input.slots + input.existing.length,
     existing: input.existing,
     firstRank: input.firstRank,
+    personalization: {
+      viewerUid: viewer.uid,
+      batchKey: input.batchKey,
+      adjustments: personalization.adjustments,
+    },
   });
   const itemsByUid = new Map(items.map((item) => [String(item.uid), item]));
   const cards = new Map<string, PickCardSnapshot>();
@@ -369,6 +380,7 @@ export async function servePicks(input: {
       slots: PICKS_CONFIG.targetCount,
       existing: [],
       firstRank: 0,
+      batchKey: generationId,
     });
     delivered = buildStoredPicks(generationId, composed, cards, nowMs);
     const fresh = newBatch({generationId, nowMs, picks: delivered, cooldowns});
@@ -421,6 +433,7 @@ export async function servePicks(input: {
       slots: topUpSlots(batch),
       existing: activePicks(batch),
       firstRank: batch.picks.reduce((max, pick) => Math.max(max, pick.rank + 1), 0),
+      batchKey: batch.generationId,
     });
     const replacements = buildStoredPicks(batch.generationId, composed, cards, nowMs);
     batch = replacements.length > 0 ? appendPicks(batch, replacements, nowMs) : markScanned(batch, nowMs);

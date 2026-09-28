@@ -106,4 +106,11 @@ export interface ComposedPick {
   reasons: PickReason[];
   overallScore: number;
   isBoosted: boolean;
+  /**
+   * How adaptive personalization placed this Pick. "exploit" follows what the
+   * member's learned preferences favour (plain canonical order while nothing
+   * is learned); "explore" is a strong candidate deliberately outside that
+   * pattern. Internal metadata, never shown to the member.
+   */
+  selectionStrategy: "exploit" | "explore";
 }

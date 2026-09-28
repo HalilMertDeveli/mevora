@@ -53,6 +53,8 @@ export interface StoredPick {
   reasons: PickReason[];
   overallScore: number;
   isBoosted: boolean;
+  /** See ComposedPick.selectionStrategy. Kept for a future Unexpected Match. */
+  selectionStrategy: "exploit" | "explore";
   state: PickState;
   deliveredAtMs: number;
   decidedAtMs: number | null;
@@ -114,6 +116,7 @@ export function parseBatch(raw: unknown): PicksBatch | null {
       reasons: Array.isArray(p.reasons) ? (p.reasons as PickReason[]) : [],
       overallScore: finiteOr(p.overallScore, 0),
       isBoosted: p.isBoosted === true,
+      selectionStrategy: p.selectionStrategy === "explore" ? "explore" : "exploit",
       state,
       deliveredAtMs: finiteOr(p.deliveredAtMs, 0),
       decidedAtMs: p.decidedAtMs == null ? null : finiteOr(p.decidedAtMs, 0),
@@ -209,6 +212,7 @@ export function buildStoredPicks(
     reasons: pick.reasons,
     overallScore: pick.overallScore,
     isBoosted: pick.isBoosted,
+    selectionStrategy: pick.selectionStrategy,
     state: "active" as const,
     deliveredAtMs: nowMs,
     decidedAtMs: null,

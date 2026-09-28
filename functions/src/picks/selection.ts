@@ -1,6 +1,16 @@
 import {PICK_COMPOSITION} from "./config.js";
 import {buildPickReasons, evaluateCandidate, passesQualityFloor, rankLabels} from "./categories.js";
 import type {ComposedPick, PickEvaluation, PickSignals, PickType} from "./types.js";
+import type {Adjustments} from "../personalization/learner.js";
+import {
+  explorationScore,
+  explorationSlotCount,
+  explorationSlotPositions,
+  isExplorationCandidate,
+  isPersonalizationActive,
+  personalRankingPoints,
+  vectorFromSignals,
+} from "../personalization/ranking.js";
 
 /**
  * Batch composition for Mevora Picks.
@@ -35,6 +45,16 @@ export interface ComposeOptions {
   existing?: Array<{pickType: PickType; isBoosted: boolean}>;
   /** First rank to hand out (a top-up continues after the existing ones). */
   firstRank?: number;
+  /**
+   * The viewer's effective observed adjustments (all 1.00 when switched off
+   * or nothing is learned). Absent means canonical ranking, exactly as before.
+   */
+  personalization?: {
+    viewerUid: string;
+    /** Stable for the batch, so exploration never reshuffles on reopen. */
+    batchKey: string;
+    adjustments: Adjustments;
+  };
 }
 
 /**
@@ -74,35 +94,77 @@ export function composePicks(
     eligible.filter((item) => !item.signals.withinPreferredRadius),
   ];
 
+  // Adaptive personalization: a bounded per-candidate ranking term from the
+  // viewer's learned adjustments, and — once anything has been learned — a
+  // minority of exploration slots. Both sit on top of the quality floor and
+  // the eligibility chain, never instead of them.
+  const personalization = options.personalization ?? null;
+  const personalPoints = new Map<string, number>();
+  if (personalization) {
+    for (const item of eligible) {
+      const {points} = personalRankingPoints(
+        vectorFromSignals(item.signals),
+        personalization.adjustments,
+      );
+      personalPoints.set(item.signals.uid, points);
+    }
+  }
+  const exploreSlots = explorationSlotPositions(
+    slots,
+    explorationSlotCount(
+      slots,
+      personalization !== null && isPersonalizationActive(personalization.adjustments),
+    ),
+  );
+
   const chosen: ComposedPick[] = [];
   let rank = options.firstRank ?? 0;
   for (const stage of stages) {
     const remaining = [...stage];
     while (chosen.length < slots && remaining.length > 0) {
-      let best: {index: number; type: PickType; adjusted: number; boosted: boolean} | null = null;
-      for (let i = 0; i < remaining.length; i++) {
-        const item = remaining[i];
-        const type = chooseDisplayType(item, used);
-        if (type === null) continue;
-        // Once the batch carries its boosted profile, further boosted people
-        // compete on compatibility alone — exactly as if they had not bought.
-        const boostApplies =
-          item.signals.isBoosted && boostedUsed < PICK_COMPOSITION.maxBoostedPerBatch;
-        const penalty = Math.min(
-          PICK_COMPOSITION.maxRepeatPenalty,
-          PICK_COMPOSITION.repeatPenalty * (used.get(type) ?? 0),
-        );
-        const adjusted =
-          item.signals.overall + (boostApplies ? PICK_COMPOSITION.boostBonus : 0) - penalty;
-        if (
-          best === null ||
-          adjusted > best.adjusted ||
-          (adjusted === best.adjusted &&
-            byOverallThenUid(item.signals, remaining[best.index].signals) < 0)
-        ) {
-          best = {index: i, type, adjusted, boosted: boostApplies};
+      const exploring = personalization !== null && exploreSlots.has(chosen.length);
+      const pickBest = (explore: boolean) => {
+        let best: {index: number; type: PickType; adjusted: number; boosted: boolean} | null = null;
+        for (let i = 0; i < remaining.length; i++) {
+          const item = remaining[i];
+          const personal = personalPoints.get(item.signals.uid) ?? 0;
+          if (explore && !isExplorationCandidate(item.signals.overall, personal)) continue;
+          const type = chooseDisplayType(item, used);
+          if (type === null) continue;
+          // Once the batch carries its boosted profile, further boosted people
+          // compete on compatibility alone — exactly as if they had not bought.
+          // An exploration slot is never bought: Boost does not apply there.
+          const boostApplies =
+            !explore &&
+            item.signals.isBoosted && boostedUsed < PICK_COMPOSITION.maxBoostedPerBatch;
+          const penalty = Math.min(
+            PICK_COMPOSITION.maxRepeatPenalty,
+            PICK_COMPOSITION.repeatPenalty * (used.get(type) ?? 0),
+          );
+          const base = explore && personalization
+            ? explorationScore(
+                item.signals.overall,
+                personalization.viewerUid,
+                item.signals.uid,
+                personalization.batchKey,
+              )
+            : item.signals.overall + personal;
+          const adjusted = base + (boostApplies ? PICK_COMPOSITION.boostBonus : 0) - penalty;
+          if (
+            best === null ||
+            adjusted > best.adjusted ||
+            (adjusted === best.adjusted &&
+              byOverallThenUid(item.signals, remaining[best.index].signals) < 0)
+          ) {
+            best = {index: i, type, adjusted, boosted: boostApplies};
+          }
         }
-      }
+        return best;
+      };
+      // No strong candidate outside the learned pattern: the slot stays a
+      // normal one rather than lowering the bar.
+      const explored = exploring ? pickBest(true) : null;
+      const best = explored ?? pickBest(false);
       if (best === null) break;
       const [picked] = remaining.splice(best.index, 1);
       used.set(best.type, (used.get(best.type) ?? 0) + 1);
@@ -115,6 +177,7 @@ export function composePicks(
         reasons: buildPickReasons(picked, best.type),
         overallScore: picked.signals.overall,
         isBoosted: picked.signals.isBoosted,
+        selectionStrategy: explored ? "explore" : "exploit",
       });
     }
   }

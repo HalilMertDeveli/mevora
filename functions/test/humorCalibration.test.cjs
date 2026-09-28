@@ -221,6 +221,12 @@ function seededDb(overrides = {}) {
   return makeDb(docs);
 }
 
+/** The curated catalogue's anchor candidates for a slot, in catalogue order. */
+const {seedAnchorPools: curatedAnchorPools} = require("../lib/humor/calibrationSeed.js");
+function anchorIdOf(slotId, index = 0) {
+  return curatedAnchorPools().get(slotId)[index].contentId;
+}
+
 // --------------------------------------------------------------------------
 // Stage contract
 // --------------------------------------------------------------------------
@@ -654,22 +660,27 @@ test("dimensions outside the anchor baseline are picked up by later stages", () 
 });
 
 test("pool query excludes inactive, unapproved and uncurated content", async () => {
+  const inactive = anchorIdOf("anchor_wit");
+  const unapproved = anchorIdOf("anchor_absurd");
+  const uncurated = anchorIdOf("anchor_wordplay");
+  const foreignVersion = anchorIdOf("anchor_everyday");
   const db = seededDb({
-    hc_tr_img_001: {active: false},
-    hc_tr_vid_001: {safetyStatus: "needs_review"},
-    hc_tr_img_002: {calibrationEligible: false, calibrationSlot: "anchor_wordplay"},
-    hc_tr_vid_002: {calibrationVersion: 99},
+    [inactive]: {active: false},
+    [unapproved]: {safetyStatus: "needs_review"},
+    [uncurated]: {calibrationEligible: false, calibrationSlot: "anchor_wordplay"},
+    [foreignVersion]: {calibrationVersion: 99},
   });
   const pool = await listCalibrationPool(db, {
     calibrationVersion: HUMOR_CALIBRATION_VERSION,
     limit: 200,
   });
   const ids = pool.map((item) => item.contentId);
-  assert.equal(ids.includes("hc_tr_img_001"), false, "inactive excluded");
-  assert.equal(ids.includes("hc_tr_vid_001"), false, "unapproved excluded");
-  assert.equal(ids.includes("hc_tr_img_002"), false, "uncurated excluded");
-  assert.equal(ids.includes("hc_tr_vid_002"), false, "foreign version excluded");
-  assert.ok(ids.length > 0);
+  assert.equal(ids.includes(inactive), false, "inactive excluded");
+  assert.equal(ids.includes(unapproved), false, "unapproved excluded");
+  assert.equal(ids.includes(uncurated), false, "uncurated excluded");
+  assert.equal(ids.includes(foreignVersion), false, "foreign version excluded");
+  // Exactly those four — everything else in the catalogue is served.
+  assert.equal(ids.length, INTERNAL_HUMOR_SEED.length - 4);
 });
 
 // --------------------------------------------------------------------------
@@ -943,6 +954,15 @@ test("an exhausted anchor slot does not stop the other slots", async () => {
 
 test("language preference is honoured but never empties a slot", async () => {
   const db = seededDb();
+  // The curated GIF catalogue is mostly English: only some slots have a
+  // Turkish candidate. Those must serve it; the rest must still fill.
+  const turkishSlots = new Set(
+    INTERNAL_HUMOR_SEED.filter((i) => i.language === "tr" && i.calibration?.slot).map(
+      (i) => i.calibration.slot,
+    ),
+  );
+  assert.ok(turkishSlots.size > 0, "precondition: some slot has a Turkish candidate");
+  assert.ok(turkishSlots.size < ANCHOR_SLOTS.length, "precondition: some slot has none");
   const turkish = await selectCalibrationItems({
     db,
     uid: "user_lang",
@@ -953,8 +973,15 @@ test("language preference is honoured but never empties a slot", async () => {
   });
   assert.equal(turkish.picks.length, ANCHOR_INTERACTIONS);
   for (const pick of turkish.picks) {
-    assert.equal(pick.content.language, "tr");
+    const slot = pick.content.calibration.slot;
+    if (turkishSlots.has(slot)) {
+      assert.equal(pick.content.language, "tr", `${slot} has Turkish content but served ${pick.content.language}`);
+    }
   }
+  assert.equal(
+    turkish.picks.filter((pick) => pick.content.language === "tr").length,
+    turkishSlots.size,
+  );
 
   // A language with no curated content at all must still calibrate.
   const german = await selectCalibrationItems({
@@ -1128,8 +1155,9 @@ test("standalone humor compatibility is unchanged by calibration", () => {
 
 test("feed-safe content carries the stage but never the slot or safety data", () => {
   const {toFeedSafeContent} = require("../lib/humor/contentRepository.js");
-  const doc = parseHumorContent("hc_tr_img_001", {
-    ...seedDocFrom(INTERNAL_HUMOR_SEED.find((i) => i.contentId === "hc_tr_img_001")),
+  const id = anchorIdOf("anchor_wit");
+  const doc = parseHumorContent(id, {
+    ...seedDocFrom(INTERNAL_HUMOR_SEED.find((i) => i.contentId === id)),
   });
   const safe = toFeedSafeContent(doc, "anchor");
   assert.equal(safe.calibrationStage, "anchor");
@@ -1338,14 +1366,36 @@ test("the adaptive stage reacts to the anchor answers", async () => {
       adaptive: run.picks.slice(6, 12).map((pick) => pick.content.contentId),
     };
   };
+  // The six anchors measure exactly their six primaries, so the five
+  // dimensions they leave unmeasured are probed whatever the answers were;
+  // the answers decide the order (which neighbour of the strongest reaction
+  // is separated first) and what fills the remaining position.
   const a = await adaptiveFor({sarcasm: 1, silly: -1});
-  const b = await adaptiveFor({absurd: 1, cringe: -1});
+  const b = await adaptiveFor({wordplay: 1, sarcasm: -1});
+  const c = await adaptiveFor({absurd: 1, cringe: -1});
   assert.deepEqual(a.anchors, b.anchors, "precondition: the same anchors were shown");
+  assert.deepEqual(a.anchors, c.anchors, "precondition: the same anchors were shown");
   assert.notDeepEqual(
     [...a.adaptive].sort(),
     [...b.adaptive].sort(),
     "adaptive picks must depend on how the anchors were rated",
   );
+  assert.notDeepEqual(a.adaptive, c.adaptive, "adaptive order must depend on the answers");
+
+  // The first adaptive probe separates the strongest anchor reaction from
+  // one of its neighbours.
+  const {ADJACENT_DIMENSIONS} = require("../lib/humor/calibration.js");
+  const dimOf = (id) => primaryDimensionOf(seedById.get(id));
+  for (const [run, strongestReaction] of [
+    [a, "sarcasm"],
+    [b, "sarcasm"],
+    [c, "cringe"],
+  ]) {
+    assert.ok(
+      ADJACENT_DIMENSIONS[strongestReaction].includes(dimOf(run.adaptive[0])),
+      `first probe ${dimOf(run.adaptive[0])} is not a neighbour of ${strongestReaction}`,
+    );
+  }
 });
 
 test("after the anchors, no dimension is probed twice", async () => {
@@ -1414,14 +1464,16 @@ test("a fallback probe excludes what the item measured, not only its target", as
 });
 
 test("validation re-tests the headline like and dislike with different items", async () => {
+  // Both headline traits are anchor-measured, so each rests on one anchor
+  // until validation re-tests it. (A trait the adaptive stage already probed —
+  // e.g. silly, which no anchor measures — is not re-tested again.)
   const run = await calibrateThroughServer(
     seededDb(),
     "persona_validation",
-    persona({sarcasm: 1, silly: -1}),
+    persona({sarcasm: 1, cringe: -1}),
   );
-  const anchorSarcasm = run.picks
-    .slice(0, 6)
-    .find((pick) => primaryDimensionOf(pick.content) === "sarcasm");
+  const anchorFor = (dim) =>
+    run.picks.slice(0, 6).find((pick) => primaryDimensionOf(pick.content) === dim);
   const final = run.picks.slice(12);
   assert.deepEqual(
     final.map((pick) => pick.stage),
@@ -1430,8 +1482,10 @@ test("validation re-tests the headline like and dislike with different items", a
   );
   const like = final[0];
   assert.equal(primaryDimensionOf(like.content), "sarcasm");
-  assert.notEqual(like.content.contentId, anchorSarcasm.content.contentId);
-  assert.equal(primaryDimensionOf(final[1].content), "silly");
+  assert.notEqual(like.content.contentId, anchorFor("sarcasm").content.contentId);
+  const dislike = final[1];
+  assert.equal(primaryDimensionOf(dislike.content), "cringe");
+  assert.notEqual(dislike.content.contentId, anchorFor("cringe").content.contentId);
 
   // Nobody to validate for a neutral user: all three positions explore.
   const neutral = await calibrateThroughServer(seededDb(), "persona_flat", () => "neutral");
@@ -1545,8 +1599,8 @@ test("a user with earlier Humor Lab ratings still gets a visible profile from ca
 // Feedback semantics: skip, markers, re-rate, same rating, saved, gestures
 // --------------------------------------------------------------------------
 
-const ANCHOR_ID = "hc_tr_img_001";
-const OTHER_ID = "hc_tr_img_006";
+const ANCHOR_ID = anchorIdOf("anchor_wit", 0);
+const OTHER_ID = anchorIdOf("anchor_wit", 1);
 
 test("a skip writes a marker and changes nothing else", async () => {
   const db = seededDb();

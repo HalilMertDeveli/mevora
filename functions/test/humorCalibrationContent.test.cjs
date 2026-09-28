@@ -10,7 +10,7 @@ const {
 const {
   ANCHOR_POOL_TARGET,
   CALIBRATION_SEED,
-  QA_SEED_PROVIDER,
+  RETIRED_TEXT_JOKE_CONTENT_IDS,
   seedAnchorPools,
 } = require("../lib/humor/calibrationSeed.js");
 const calibrationSeedModule = require("../lib/humor/calibrationSeed.js");
@@ -132,21 +132,23 @@ test("curated content ids are unique and provenance is explicit", () => {
   const ids = CALIBRATION_SEED.map((i) => i.contentId);
   assert.equal(new Set(ids).size, ids.length, "duplicate content id in the seed");
   for (const item of CALIBRATION_SEED) {
-    assert.equal(
-      item.provider,
-      QA_SEED_PROVIDER,
-      `${item.contentId} does not declare QA-tier provenance`,
-    );
-    assert.equal(item.sourceType, "internal");
+    // Licensed GIPHY media that Mevora hand-picked: provider-sourced, curated
+    // tier, and credited to its uploader.
+    assert.equal(item.provider, "giphy", item.contentId);
+    assert.equal(item.sourceType, "licensed_api", item.contentId);
+    assert.equal(item.sourceTrust, "curated", item.contentId);
+    assert.equal(item.curatedCatalogEntry, true, item.contentId);
+    assert.equal(item.attribution.provider, "giphy", item.contentId);
+    assert.equal(item.contentId, `hc_gif_${item.sourceId}`);
     assert.equal(item.calibration.version, HUMOR_CALIBRATION_VERSION);
   }
 });
 
 // --------------------------------------------------------------------------
-// Content integrity: one coherent Mevora-authored joke per item
+// Content integrity: one exact, credited GIPHY clip per item
 // --------------------------------------------------------------------------
 
-/** Any URL anywhere in a value — the seed must not carry a single one. */
+/** Every URL anywhere in a value. */
 function urlsIn(value, out = []) {
   if (typeof value === "string") {
     if (/https?:\/\//i.test(value)) out.push(value);
@@ -158,26 +160,28 @@ function urlsIn(value, out = []) {
   return out;
 }
 
-test("every curated item is a text joke card with no media at all", () => {
-  // Regression: jokes used to be glued onto random stock photos and sample
-  // clips ("Markete süt için girdim…" over a seascape, a fridge joke under a
-  // sword fight). A curated item is now exactly one thing: its text.
+test("every curated item is one GIPHY clip with its own media and no caption", () => {
+  // Regression guard: jokes used to be glued onto unrelated stock media ("a
+  // fridge joke under a sword fight"). A curated item is now exactly one
+  // thing — a clip — and everything on it belongs to that clip.
   for (const item of CALIBRATION_SEED) {
-    assert.equal(item.type, "text", `${item.contentId} is not a text card`);
-    assert.equal(item.media.downloadUrl, null, `${item.contentId} carries media`);
-    assert.equal(item.media.thumbUrl, null, `${item.contentId} carries a thumbnail`);
-    // Present and null, not absent: the seed is written with a merge, so only
-    // an explicit null clears media an older seed left on the document.
-    for (const key of ["downloadUrl", "thumbUrl", "durationMs", "aspectRatio"]) {
+    assert.equal(item.type, "meme", `${item.contentId} is not a GIF card`);
+    // Present, not absent: the seed is written with a merge, so only an
+    // explicit value replaces what an older seed left on the document.
+    for (const key of ["downloadUrl", "thumbUrl", "durationMs", "aspectRatio", "textBody"]) {
       assert.ok(Object.hasOwn(item.media, key), `${item.contentId} omits media.${key}`);
-      assert.equal(item.media[key], null, `${item.contentId} media.${key}`);
     }
-    assert.equal(typeof item.media.textBody, "string", item.contentId);
-    assert.ok(item.media.textBody.trim().length >= 8, `${item.contentId} has no joke`);
-    assert.deepEqual(urlsIn(item), [], `${item.contentId} carries a URL`);
-  }
-  for (const item of INTERNAL_HUMOR_SEED) {
-    assert.deepEqual(urlsIn(item), [], `${item.contentId} (seeder input) carries a URL`);
+    assert.equal(item.media.textBody, null, `${item.contentId} carries a caption`);
+    assert.equal(item.media.durationMs, null, item.contentId);
+    assert.ok(item.media.aspectRatio > 0, item.contentId);
+    // Every URL on the item is GIPHY's, and the media are this clip's own.
+    for (const url of urlsIn(item)) {
+      const host = new URL(url).hostname;
+      assert.ok(host === "giphy.com" || host.endsWith(".giphy.com"), `${item.contentId}: ${url}`);
+    }
+    for (const url of [item.media.downloadUrl, item.media.thumbUrl]) {
+      assert.ok(new URL(url).pathname.split("/").includes(item.sourceId), `${item.contentId}: ${url}`);
+    }
   }
 });
 
@@ -192,12 +196,12 @@ test("the stock-media helpers are gone from the user-facing catalogue module", (
   }
 });
 
-test("curation of the text catalogue is unchanged: ids, slots, vectors, categories", () => {
-  // The switch to text cards must not move calibration: same 36 ids, same
-  // 6 slots x 4 candidates, same open pool.
+test("the catalogue keeps the calibration shape: 36 items, 6 slots x 4, open pool", () => {
+  // Switching from text cards to GIFs must not move calibration: 6 slots x 4
+  // candidates plus a 12-item open pool, every item calibration content.
   assert.equal(CALIBRATION_SEED.length, 36);
   assert.equal(CALIBRATION_SEED.filter((i) => i.calibration.slot !== null).length, 24);
-  assert.equal(CALIBRATION_SEED.filter((i) => i.language === "en").length, 2);
+  assert.equal(CALIBRATION_SEED.filter((i) => i.calibration.slot === null).length, 12);
   for (const item of CALIBRATION_SEED) {
     assert.equal(item.calibration.eligible, true, item.contentId);
     assert.ok(HUMOR_CATEGORIES.includes(item.category), item.contentId);
@@ -205,30 +209,41 @@ test("curation of the text catalogue is unchanged: ids, slots, vectors, categori
   }
 });
 
-test("re-seeding over a document that had media ends with null media and type text", async () => {
+test("only the ids of the retired text cards remain, and none is reused", () => {
+  assert.equal(RETIRED_TEXT_JOKE_CONTENT_IDS.length, 36);
+  assert.equal(new Set(RETIRED_TEXT_JOKE_CONTENT_IDS).size, 36);
+  const active = new Set(CALIBRATION_SEED.map((i) => i.contentId));
+  for (const id of RETIRED_TEXT_JOKE_CONTENT_IDS) {
+    assert.match(id, /^hc_(tr|en)_(img|vid)_\d{3}$/);
+    assert.equal(active.has(id), false, `${id} is back in the active catalogue`);
+  }
+});
+
+test("re-seeding over a stale document ends with exactly the clip, uncaptioned", async () => {
   // Real merge semantics: `set(..., {merge: true})` deep-merges maps, so a
-  // missing key would keep the old URL. The fake deep-merges like Firestore.
+  // missing key would keep an old value. The fake deep-merges like Firestore.
   const db = createFakeFirestore({});
-  const seed = INTERNAL_HUMOR_SEED.find((i) => i.contentId === "hc_tr_img_015");
+  const seed = seedAnchorPools().get("anchor_everyday")[0];
   db.reset({
     [`humorContent/${seed.contentId}`]: {
       contentId: seed.contentId,
-      type: "meme",
+      type: "video",
       language: "tr",
       category: "situational",
-      humorTags: ["günlük", "market"],
+      humorTags: ["legacy"],
       humorVector: {situational: 0.86},
       media: {
-        downloadUrl: "https://picsum.photos/seed/mevora-tr-15/1080/1920",
-        thumbUrl: "https://picsum.photos/seed/mevora-tr-15/540/960",
+        downloadUrl: "https://media.giphy.com/media/Other123/giphy.mp4",
+        thumbUrl: "https://media.giphy.com/media/Other123/200_s.gif",
         durationMs: 10000,
         aspectRatio: 0.5625,
-        textBody: "Markete süt için girdim, üç poşetle çıktım. Süt yok.",
-        storagePath: "legacy/path.jpg",
+        textBody: "Epic Fail",
+        storagePath: "legacy/path.gif",
       },
       safetyStatus: "approved",
       active: true,
-      source: {type: "internal", provider: "mevora-qa-seed", licenseRef: null},
+      source: {type: "licensed_api", provider: "giphy", licenseRef: null},
+      sourceTrust: "provider",
       stats: {viewCount: 4, ratingCount: 3, avgRating: 0.5, ratingSum: 1.5},
     },
   });
@@ -236,28 +251,28 @@ test("re-seeding over a document that had media ends with null media and type te
   await upsertHumorContentDoc(db, {...seed, safetyStatus: "approved", active: true});
 
   const stored = db.read(`humorContent/${seed.contentId}`);
-  assert.equal(stored.type, "text");
+  assert.equal(stored.type, "meme");
   assert.deepEqual(stored.media, {
     storagePath: null,
-    downloadUrl: null,
-    thumbUrl: null,
+    downloadUrl: seed.media.downloadUrl,
+    thumbUrl: seed.media.thumbUrl,
     durationMs: null,
-    aspectRatio: null,
-    textBody: seed.media.textBody,
+    aspectRatio: seed.media.aspectRatio,
+    textBody: null,
   });
   assert.equal(stored.sourceTrust, "curated");
-  assert.equal(stored.attribution, null);
-  // Ratings and calibration curation survive the conversion.
+  assert.deepEqual(stored.attribution, seed.attribution);
+  // Ratings and calibration curation survive the refresh.
   assert.equal(stored.stats.ratingCount, 3);
   assert.equal(stored.calibrationEligible, true);
   assert.equal(stored.calibrationSlot, "anchor_everyday");
 
   const card = toFeedSafeContent(parseHumorContent(seed.contentId, stored));
-  assert.equal(card.type, "text");
-  assert.equal(card.media.downloadUrl, null);
-  assert.equal(card.media.thumbUrl, null);
-  assert.equal(card.media.textBody, seed.media.textBody);
-  assert.equal(card.attribution, null);
+  assert.equal(card.type, "meme");
+  assert.equal(card.media.downloadUrl, seed.media.downloadUrl);
+  assert.equal(card.media.thumbUrl, seed.media.thumbUrl);
+  assert.equal(card.media.textBody, null);
+  assert.deepEqual(card.attribution, seed.attribution);
 
   // Idempotent: a second run changes nothing but the timestamp.
   await upsertHumorContentDoc(db, {...seed, safetyStatus: "approved", active: true});

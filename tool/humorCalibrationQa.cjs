@@ -3,7 +3,7 @@
  * local Firestore emulator — and verify the calibration engine end to end
  * against it.
  *
- * Runs the real server code paths — `upsertHumorContentDoc`, `buildHumorFeed`,
+ * Runs the real server code paths — `seedCalibrationCatalog`, `buildHumorFeed`,
  * `submitHumorFeedbackTx` — against real Firestore. The unit suite proves the
  * policy with an in-memory double and `functions/test/emulator/*` proves it on
  * the emulator; this is the layer that proves the deployed composite indexes,
@@ -177,9 +177,9 @@ const db = openFirestore();
 
 const {
   INTERNAL_HUMOR_SEED,
-  upsertHumorContentDoc,
   listCalibrationPool,
 } = requireCompiled("lib/humor/contentRepository.js");
+const {seedCalibrationCatalog} = requireCompiled("lib/humor/calibrationCatalog.js");
 const {
   ANCHOR_SLOTS,
   CALIBRATION_TOTAL,
@@ -236,14 +236,10 @@ async function wipeAll() {
 
   if (!verifyOnly) {
     await step("seed the curated calibration catalog", async () => {
-      for (const item of INTERNAL_HUMOR_SEED) {
-        await upsertHumorContentDoc(db, {
-          ...item,
-          safetyStatus: "approved",
-          active: true,
-        });
-      }
-      return `${INTERNAL_HUMOR_SEED.length} curated documents upserted`;
+      // Same path as the seedInternalHumorContent callable: writes the active
+      // catalogue and retires what it replaced (the old text cards).
+      const seeded = await seedCalibrationCatalog(db);
+      return `${seeded.written} curated documents upserted (${seeded.kind}), ${seeded.retired} retired`;
     });
   }
 

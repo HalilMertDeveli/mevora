@@ -1,24 +1,32 @@
 import {ANCHOR_SLOTS, HUMOR_CALIBRATION_VERSION} from "./calibration.js";
 import type {HumorCategory, HumorVector} from "./categories.js";
-import type {HumorContentType} from "./types.js";
 
 /**
  * Curated calibration catalog — QA / development tier.
  *
  * This is deliberately *not* a production meme library. It exists so the
- * calibration engine can be exercised end to end with real playable media and
- * honest vector annotations, and so anchor pools are deep enough to rotate.
- * Production curation is content-ops work; the architecture here is what makes
- * that work possible without touching code.
+ * calibration engine can be exercised end to end with honest vector
+ * annotations, and so anchor pools are deep enough to rotate. Production
+ * curation is content-ops work; the architecture here is what makes that work
+ * possible without touching code.
  *
  * Provenance is explicit: every item below is written with
  * {@link QA_SEED_PROVIDER}, so a production catalog audit can tell curated
  * dev content apart from anything else at a glance.
  *
- * Licensing: Mevora-authored Turkish captions over openly licensed sample
- * media — the CC0 / CC BY clips in {@link SEED_VIDEO_CLIPS} (credits in
- * docs/HUMOR_LAB.md) and picsum stills. No scraping of TikTok, Instagram,
- * YouTube or any copyrighted source.
+ * Content integrity: every curated item is ONE coherent, Mevora-authored text
+ * joke card — `type: "text"`, no media at all. The catalogue used to attach
+ * these captions to unrelated stock media (random picsum photos and four
+ * sample clips such as Big Buck Bunny and Sintel), so users saw a grocery
+ * joke over a seascape and a fridge joke under a sword fight. A joke and a
+ * picture that were never made for each other are not a meme; they are noise
+ * that corrupts the very ratings calibration measures. Media humour comes from
+ * the licensed provider pipeline (`giphySource.ts`), where the caption is the
+ * provider's own title for that exact item — never text we attach.
+ *
+ * Media fields are present and `null` rather than absent: the seed is written
+ * with a merge, and only an explicit null clears the media an older seed left
+ * on the same document.
  */
 
 export const QA_SEED_PROVIDER = "mevora-qa-seed";
@@ -27,17 +35,17 @@ export const QA_SEED_PROVIDER = "mevora-qa-seed";
 export const ANCHOR_POOL_TARGET = 4;
 
 type SeedMedia = {
-  downloadUrl: string;
-  /** Explicit `null` when the clip has no poster on an allowed host. */
-  thumbUrl: string | null;
-  durationMs?: number;
-  aspectRatio: number;
+  downloadUrl: null;
+  thumbUrl: null;
+  durationMs: null;
+  aspectRatio: null;
+  /** The joke itself. */
   textBody: string;
 };
 
 type SeedItem = {
   contentId: string;
-  type: HumorContentType;
+  type: "text";
   language: string;
   category: HumorCategory;
   humorTags: string[];
@@ -47,75 +55,13 @@ type SeedItem = {
   slot?: string;
 };
 
-export type SeedVideoClip = {
-  url: string;
-  /** Measured from the file itself, not a guess. */
-  durationMs: number;
-  aspectRatio: number;
-  license: "CC0-1.0" | "CC-BY-3.0";
-  credit: string;
-};
-
-/**
- * The openly licensed clips behind every curated video item.
- *
- * Short (at most ~10 s, about 1 MB), HTTPS, H.264 MP4 with a permissive
- * licence. The previous Google sample bucket started answering 403 for every
- * clip and thumbnail, so these are re-verified with a live GET before any
- * change to this list. Credits are mirrored in docs/HUMOR_LAB.md.
- *
- * There are only four distinct clips, so items share them. The humour lives in
- * each item's own caption; the clip is the moving backdrop.
- */
-export const SEED_VIDEO_CLIPS = {
-  bigBuckBunny: {
-    url: "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4",
-    durationMs: 10000,
-    aspectRatio: 16 / 9,
-    license: "CC-BY-3.0",
-    credit: "Big Buck Bunny, (c) 2008 Blender Foundation, peach.blender.org",
-  },
-  sintel: {
-    url: "https://test-videos.co.uk/vids/sintel/mp4/h264/360/Sintel_360_10s_1MB.mp4",
-    durationMs: 10000,
-    aspectRatio: 16 / 9,
-    license: "CC-BY-3.0",
-    credit: "Sintel, (c) Blender Foundation, durian.blender.org",
-  },
-  flower: {
-    url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    durationMs: 5055,
-    aspectRatio: 16 / 9,
-    license: "CC0-1.0",
-    credit: "MDN Web Docs interactive examples, cc0-videos/flower.mp4",
-  },
-  friday: {
-    url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/friday.mp4",
-    durationMs: 6166,
-    aspectRatio: 4 / 3,
-    license: "CC0-1.0",
-    credit: "MDN Web Docs interactive examples, cc0-videos/friday.mp4",
-  },
-} as const satisfies Record<string, SeedVideoClip>;
-
-function clip(source: SeedVideoClip, textBody: string): SeedMedia {
+/** A text-only joke card. The text is the whole item. */
+function joke(textBody: string): SeedMedia {
   return {
-    downloadUrl: source.url,
-    // No poster for these cuts exists on an allowed host, and an unrelated
-    // photo would be a lie. `null`, not absent: the seed writes with a merge,
-    // so only an explicit null clears the dead thumbnail an older seed left.
+    downloadUrl: null,
     thumbUrl: null,
-    durationMs: source.durationMs,
-    aspectRatio: source.aspectRatio,
-    textBody,
-  };
-}
-
-function still(seed: string, textBody: string): SeedMedia {
-  return {
-    downloadUrl: `https://picsum.photos/seed/${seed}/1080/1920`,
-    thumbUrl: `https://picsum.photos/seed/${seed}/540/960`,
-    aspectRatio: 9 / 16,
+    durationMs: null,
+    aspectRatio: null,
     textBody,
   };
 }
@@ -125,8 +71,8 @@ function still(seed: string, textBody: string): SeedMedia {
  *
  * Every candidate carries decisive mass on its slot's `primary` dimension —
  * that is the measurement the slot exists to make, and a test enforces it.
- * Candidates deliberately differ in format and secondary flavour so rotation
- * gives genuinely different content while measuring the same thing.
+ * Candidates deliberately differ in secondary flavour so rotation gives
+ * genuinely different content while measuring the same thing.
  *
  * A slot's `contrast` dimension is *not* required here, and should not be:
  * an item that scores high on both sarcasm and dry cannot separate them. The
@@ -136,252 +82,252 @@ const ANCHOR_SEED: readonly SeedItem[] = [
   // anchor_wit — sarcasm
   {
     contentId: "hc_tr_img_001",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "sarcasm",
     humorTags: ["ironi", "meme"],
     humorVector: {sarcasm: 0.88, dry: 0.55, teasing: 0.4},
-    media: still("mevora-tr-1", "Tabii, trafik yine benim yüzümden oluştu."),
+    media: joke("Tabii, trafik yine benim yüzümden oluştu."),
     slot: "anchor_wit",
   },
   {
     contentId: "hc_tr_img_006",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "sarcasm",
     humorTags: ["ironi", "gunluk"],
     humorVector: {sarcasm: 0.86, dry: 0.5, situational: 0.35},
-    media: still("mevora-tr-6", "Harika, tam da bugün bitmesi gereken şey bitmedi."),
+    media: joke("Harika, tam da bugün bitmesi gereken şey bitmedi."),
     slot: "anchor_wit",
   },
   {
     contentId: "hc_tr_img_012",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "sarcasm",
     humorTags: ["ironi", "toplanti"],
     humorVector: {sarcasm: 0.9, situational: 0.4},
-    media: still("mevora-tr-12", "Bu toplantı bir e-posta olabilirdi. Yine oldu."),
+    media: joke("Bu toplantı bir e-posta olabilirdi. Yine oldu."),
     slot: "anchor_wit",
   },
   {
     contentId: "hc_tr_vid_007",
-    type: "video",
+    type: "text",
     language: "tr",
     category: "sarcasm",
-    humorTags: ["ironi", "video"],
+    humorTags: ["ironi"],
     humorVector: {sarcasm: 0.85, dry: 0.45},
-    media: clip(SEED_VIDEO_CLIPS.friday, "Tabii ki ilk denemede oldu. Sadece on yedinciydi."),
+    media: joke("Tabii ki ilk denemede oldu. Sadece on yedinciydi."),
     slot: "anchor_wit",
   },
 
   // anchor_absurd — absurd
   {
     contentId: "hc_tr_vid_001",
-    type: "video",
+    type: "text",
     language: "tr",
     category: "absurd",
-    humorTags: ["absürt", "video"],
+    humorTags: ["absürt"],
     humorVector: {absurd: 0.85, silly: 0.6, meme: 0.4},
-    media: clip(SEED_VIDEO_CLIPS.bigBuckBunny, "Alarm değil, sabah sabotajı."),
+    media: joke("Alarm değil, sabah sabotajı."),
     slot: "anchor_absurd",
   },
   {
     contentId: "hc_tr_vid_006",
-    type: "video",
+    type: "text",
     language: "tr",
     category: "absurd",
-    humorTags: ["absürt", "video"],
+    humorTags: ["absürt"],
     humorVector: {absurd: 0.87, silly: 0.55},
-    media: clip(SEED_VIDEO_CLIPS.bigBuckBunny, "Rüyamda da sıra bekliyordum. Uyanınca da."),
+    media: joke("Rüyamda da sıra bekliyordum. Uyanınca da."),
     slot: "anchor_absurd",
   },
   {
     contentId: "hc_tr_img_013",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "absurd",
     humorTags: ["absürt"],
     humorVector: {absurd: 0.88, silly: 0.5},
-    media: still("mevora-tr-13", "Buzdolabına neden geldiğimi hatırlamak için bir kurul topladım."),
+    media: joke("Buzdolabına neden geldiğimi hatırlamak için bir kurul topladım."),
     slot: "anchor_absurd",
   },
   {
     contentId: "hc_tr_img_014",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "absurd",
     humorTags: ["absürt", "saçma"],
     humorVector: {absurd: 0.84, wordplay: 0.35},
-    media: still("mevora-tr-14", "Takvimime 'düşünmek' yazdım. Düşünemedim, takvim doluydu."),
+    media: joke("Takvimime 'düşünmek' yazdım. Düşünemedim, takvim doluydu."),
     slot: "anchor_absurd",
   },
 
   // anchor_everyday — situational
   {
     contentId: "hc_tr_vid_002",
-    type: "video",
+    type: "text",
     language: "tr",
     category: "situational",
-    humorTags: ["günlük", "video"],
+    humorTags: ["günlük"],
     humorVector: {situational: 0.88, dry: 0.45, silly: 0.5},
-    media: clip(SEED_VIDEO_CLIPS.sintel, "Buzdolabı yine boş fikirler sunuyor."),
+    media: joke("Buzdolabı yine boş fikirler sunuyor."),
     slot: "anchor_everyday",
   },
   {
     contentId: "hc_tr_img_007",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "situational",
     humorTags: ["günlük", "sosyal"],
     humorVector: {situational: 0.85, cringe: 0.4, dry: 0.35},
-    media: still("mevora-tr-7", "Asansörde sohbet başlatan insan türü üzerine bir inceleme."),
+    media: joke("Asansörde sohbet başlatan insan türü üzerine bir inceleme."),
     slot: "anchor_everyday",
   },
   {
     contentId: "hc_tr_img_015",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "situational",
     humorTags: ["günlük", "market"],
     humorVector: {situational: 0.86, meme: 0.35},
-    media: still("mevora-tr-15", "Markete süt için girdim, üç poşetle çıktım. Süt yok."),
+    media: joke("Markete süt için girdim, üç poşetle çıktım. Süt yok."),
     slot: "anchor_everyday",
   },
   {
     contentId: "hc_tr_vid_008",
-    type: "video",
+    type: "text",
     language: "tr",
     category: "situational",
-    humorTags: ["günlük", "video"],
+    humorTags: ["günlük"],
     humorVector: {situational: 0.83, silly: 0.4},
-    media: clip(SEED_VIDEO_CLIPS.sintel, "Beş dakika daha dedim. Öğlen oldu."),
+    media: joke("Beş dakika daha dedim. Öğlen oldu."),
     slot: "anchor_everyday",
   },
 
   // anchor_meme — meme
   {
     contentId: "hc_tr_vid_004",
-    type: "video",
+    type: "text",
     language: "tr",
     category: "meme",
-    humorTags: ["meme", "video"],
+    humorTags: ["meme"],
     humorVector: {meme: 0.9, situational: 0.6, cringe: 0.25},
-    media: clip(SEED_VIDEO_CLIPS.flower, "Wi‑Fi şifresi kadar karmaşık bir ruh hali."),
+    media: joke("Wi‑Fi şifresi kadar karmaşık bir ruh hali."),
     slot: "anchor_meme",
   },
   {
     contentId: "hc_tr_img_008",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "meme",
     humorTags: ["meme", "klasik"],
     humorVector: {meme: 0.88, silly: 0.45},
-    media: still("mevora-tr-8", "Bildirimi kapattım, huzur geldi sandım. Gelmedi."),
+    media: joke("Bildirimi kapattım, huzur geldi sandım. Gelmedi."),
     slot: "anchor_meme",
   },
   {
     contentId: "hc_tr_img_016",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "meme",
     humorTags: ["meme", "internet"],
     humorVector: {meme: 0.91, absurd: 0.4},
-    media: still("mevora-tr-16", "Şarjım %1. Ben de öyle."),
+    media: joke("Şarjım %1. Ben de öyle."),
     slot: "anchor_meme",
   },
   {
     contentId: "hc_tr_img_017",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "meme",
     humorTags: ["meme", "pazartesi"],
     humorVector: {meme: 0.85, situational: 0.45},
-    media: still("mevora-tr-17", "Pazartesi: bir gün değil, bir ruh hali."),
+    media: joke("Pazartesi: bir gün değil, bir ruh hali."),
     slot: "anchor_meme",
   },
 
   // anchor_wordplay — wordplay
   {
     contentId: "hc_tr_img_002",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "wordplay",
     humorTags: ["kelime", "espri"],
     humorVector: {wordplay: 0.85, silly: 0.55},
-    media: still("mevora-tr-2", "Kahve olmadan ben 'ben' değilim; 'be n'."),
+    media: joke("Kahve olmadan ben 'ben' değilim; 'be n'."),
     slot: "anchor_wordplay",
   },
   {
     contentId: "hc_tr_img_009",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "wordplay",
     humorTags: ["kelime", "espri"],
     humorVector: {wordplay: 0.87, sarcasm: 0.4},
-    media: still("mevora-tr-9", "Planım yoktu ama planım olmadığına dair bir planım vardı."),
+    media: joke("Planım yoktu ama planım olmadığına dair bir planım vardı."),
     slot: "anchor_wordplay",
   },
   {
     contentId: "hc_tr_img_018",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "wordplay",
     humorTags: ["kelime"],
     humorVector: {wordplay: 0.89, absurd: 0.35},
-    media: still("mevora-tr-18", "Uykusuzum ama uyanık da sayılmam. Arada bir yerdeyim: uyanıksız."),
+    media: joke("Uykusuzum ama uyanık da sayılmam. Arada bir yerdeyim: uyanıksız."),
     slot: "anchor_wordplay",
   },
   {
     contentId: "hc_tr_img_019",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "wordplay",
     humorTags: ["kelime", "espri"],
     humorVector: {wordplay: 0.83, silly: 0.4},
-    media: still("mevora-tr-19", "Bugün üretken oldum: iki fikir ürettim, ikisi de kötüydü."),
+    media: joke("Bugün üretken oldum: iki fikir ürettim, ikisi de kötüydü."),
     slot: "anchor_wordplay",
   },
 
   // anchor_social — cringe
   {
     contentId: "hc_tr_img_004",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "cringe",
     humorTags: ["cringe", "sosyal"],
     humorVector: {cringe: 0.82, situational: 0.65, silly: 0.4},
-    media: still("mevora-tr-4", "Arkandaki kişiye el sallayanı sandım. Klasik."),
+    media: joke("Arkandaki kişiye el sallayanı sandım. Klasik."),
     slot: "anchor_social",
   },
   {
     contentId: "hc_tr_img_010",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "cringe",
     humorTags: ["cringe", "sosyal"],
     humorVector: {cringe: 0.85, teasing: 0.45, situational: 0.5},
-    media: still("mevora-tr-10", "Sesli mesajı yanlış gruba attım. İyi geceler herkese."),
+    media: joke("Sesli mesajı yanlış gruba attım. İyi geceler herkese."),
     slot: "anchor_social",
   },
   {
     contentId: "hc_tr_img_020",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "cringe",
     humorTags: ["cringe"],
     humorVector: {cringe: 0.87, situational: 0.45},
-    media: still("mevora-tr-20", "Görüntülü aramada mikrofonum kapalıydı. İki dakika anlattım."),
+    media: joke("Görüntülü aramada mikrofonum kapalıydı. İki dakika anlattım."),
     slot: "anchor_social",
   },
   {
     contentId: "hc_tr_img_021",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "cringe",
     humorTags: ["cringe", "sosyal"],
     humorVector: {cringe: 0.84, teasing: 0.4},
-    media: still("mevora-tr-21", "Tanımadığım birine 'kanka' dedim. Geri alamadım."),
+    media: joke("Tanımadığım birine 'kanka' dedim. Geri alamadım."),
     slot: "anchor_social",
   },
 ];
@@ -396,111 +342,111 @@ const ANCHOR_SEED: readonly SeedItem[] = [
 const POOL_SEED: readonly SeedItem[] = [
   {
     contentId: "hc_tr_vid_003",
-    type: "video",
+    type: "text",
     language: "tr",
     category: "silly",
-    humorTags: ["saçma", "video"],
+    humorTags: ["saçma"],
     humorVector: {silly: 0.9, absurd: 0.55, meme: 0.35},
-    media: clip(SEED_VIDEO_CLIPS.bigBuckBunny, "Planım vardı… sonra pazartesi oldu."),
+    media: joke("Planım vardı… sonra pazartesi oldu."),
   },
   {
     contentId: "hc_tr_img_003",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "teasing",
     humorTags: ["takılma"],
     humorVector: {teasing: 0.86, romantic: 0.35, silly: 0.45},
-    media: still("mevora-tr-3", "Poker suratın tatilde galiba."),
+    media: joke("Poker suratın tatilde galiba."),
   },
   {
     contentId: "hc_tr_img_022",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "teasing",
     humorTags: ["takılma"],
     humorVector: {teasing: 0.88, cringe: 0.3},
-    media: still("mevora-tr-22", "Yol tarifi vermeyi seviyorsun. Doğru olmasını değil."),
+    media: joke("Yol tarifi vermeyi seviyorsun. Doğru olmasını değil."),
   },
   {
     contentId: "hc_tr_img_005",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "dark",
     humorTags: ["kuru", "bitki"],
     humorVector: {dark: 0.68, dry: 0.6, situational: 0.4},
-    media: still("mevora-tr-5", "Bitkilerimle karşılıklı ihmal anlaşmamız var."),
+    media: joke("Bitkilerimle karşılıklı ihmal anlaşmamız var."),
   },
   {
     contentId: "hc_tr_img_023",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "dark",
     humorTags: ["kara mizah"],
     humorVector: {dark: 0.82, dry: 0.5},
-    media: still("mevora-tr-23", "Emeklilik planım: umut."),
+    media: joke("Emeklilik planım: umut."),
   },
   {
     contentId: "hc_tr_vid_005",
-    type: "video",
+    type: "text",
     language: "tr",
     category: "romantic",
     humorTags: ["romantik", "espri"],
     humorVector: {romantic: 0.75, teasing: 0.5, silly: 0.4},
-    media: clip(SEED_VIDEO_CLIPS.flower, "Sen Wi‑Fi misin? Bağlantı hissediyorum."),
+    media: joke("Sen Wi‑Fi misin? Bağlantı hissediyorum."),
   },
   {
     contentId: "hc_tr_img_024",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "romantic",
     humorTags: ["romantik"],
     humorVector: {romantic: 0.84, wordplay: 0.4},
-    media: still("mevora-tr-24", "Kahveni nasıl içersin? Yanımda."),
+    media: joke("Kahveni nasıl içersin? Yanımda."),
   },
   {
     contentId: "hc_tr_img_011",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "dry",
     humorTags: ["kuru", "sakin"],
     humorVector: {dry: 0.86, situational: 0.4},
-    media: still("mevora-tr-11", "Evet. Güzel. Devam edelim."),
+    media: joke("Evet. Güzel. Devam edelim."),
   },
   {
     contentId: "hc_tr_img_025",
-    type: "image",
+    type: "text",
     language: "tr",
     category: "dry",
     humorTags: ["kuru"],
     humorVector: {dry: 0.88},
-    media: still("mevora-tr-25", "Heyecanlıyım. Öyle görünmüyor olabilirim."),
+    media: joke("Heyecanlıyım. Öyle görünmüyor olabilirim."),
   },
   {
     contentId: "hc_tr_img_026",
-    type: "meme",
+    type: "text",
     language: "tr",
     category: "silly",
     humorTags: ["saçma"],
     humorVector: {silly: 0.87, absurd: 0.45},
-    media: still("mevora-tr-26", "Ördek sesi çıkarabiliyorum. Kimse istemedi."),
+    media: joke("Ördek sesi çıkarabiliyorum. Kimse istemedi."),
   },
   {
     contentId: "hc_en_vid_001",
-    type: "video",
+    type: "text",
     language: "en",
     category: "silly",
-    humorTags: ["silly", "fallback"],
+    humorTags: ["silly"],
     humorVector: {silly: 0.8, meme: 0.5},
-    media: clip(SEED_VIDEO_CLIPS.bigBuckBunny, "English fallback clip for bilingual users."),
+    media: joke("I put my phone on airplane mode. It still refuses to fly."),
   },
   {
     contentId: "hc_en_img_001",
-    type: "image",
+    type: "text",
     language: "en",
     category: "meme",
-    humorTags: ["meme", "fallback"],
+    humorTags: ["meme"],
     humorVector: {meme: 0.85, situational: 0.5},
-    media: still("mevora-en-1", "English fallback still — TR feed stays primary."),
+    media: joke("Me: I'll just check one thing. Also me, three hours later: still checking."),
   },
 ];
 

@@ -347,7 +347,7 @@ test("AI tagging is metadata-only and never used for user scoring", () => {
   assert.ok(fallback.humorVector.silly >= 0.7);
 });
 
-test("internal seed is Turkish-first with real media URLs", () => {
+test("internal seed is Turkish-first, text-only joke cards", () => {
   // Lower bound rather than an exact count: the seed grew when calibration
   // added a second candidate per anchor slot, and it must stay large enough to
   // carry a full 15-item calibration.
@@ -358,8 +358,11 @@ test("internal seed is Turkish-first with real media URLs", () => {
   const tr = INTERNAL_HUMOR_SEED.filter((item) => item.language === "tr");
   assert.ok(tr.length >= 8);
   for (const item of INTERNAL_HUMOR_SEED) {
-    assert.ok(item.media?.downloadUrl, "seed must include media URL");
-    assert.ok(String(item.media.downloadUrl).startsWith("https://"));
+    // The joke is the item: no borrowed backdrop that was never made for it.
+    assert.equal(item.type, "text", item.contentId);
+    assert.equal(item.media.downloadUrl, null, item.contentId);
+    assert.equal(item.media.thumbUrl, null, item.contentId);
+    assert.ok(String(item.media.textBody).trim().length > 0, item.contentId);
   }
   const parsed = parseHumorContent(INTERNAL_HUMOR_SEED[0].contentId, {
     ...INTERNAL_HUMOR_SEED[0],
@@ -371,12 +374,16 @@ test("internal seed is Turkish-first with real media URLs", () => {
   assert.ok(parsed);
   const safe = toFeedSafeContent(parsed);
   assert.equal(safe.contentId, INTERNAL_HUMOR_SEED[0].contentId);
-  assert.ok(safe.media.downloadUrl);
+  assert.equal(safe.type, "text");
+  assert.equal(safe.media.downloadUrl, null);
+  assert.equal(safe.media.thumbUrl, null);
+  assert.equal(safe.media.textBody, INTERNAL_HUMOR_SEED[0].media.textBody);
+  assert.equal(safe.attribution, null, "Mevora-authored content carries no provider credit");
   assert.equal("humorVector" in safe, false);
   assert.equal("safetyFlags" in safe, false);
 });
 
-test("content validation rejects empty and accepts sample video hosts", () => {
+test("content validation rejects empty and accepts provider CDN hosts", () => {
   const {validateHumorSourceItem} = require("../lib/humor/contentValidation.js");
   assert.equal(
     validateHumorSourceItem({
@@ -392,10 +399,7 @@ test("content validation rejects empty and accepts sample video hosts", () => {
       sourceId: "x",
       type: "video",
       language: "tr",
-      media: {
-        downloadUrl:
-          "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4",
-      },
+      media: {downloadUrl: "https://media2.giphy.com/media/abc123/giphy.mp4"},
     }).ok,
     true,
   );

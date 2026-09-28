@@ -22,7 +22,7 @@ import 'package:mevora/shared/widgets/mevora_button.dart';
 class HumorCalibrationIntroPage extends StatefulWidget {
   const HumorCalibrationIntroPage({super.key, this.onExit});
 
-  /// Where to go when the user starts, finishes or skips. Defaults to
+  /// Where to go when the user skips. Defaults to back to the opener, or to
   /// discovery, which is where post-onboarding personalization hands off.
   final VoidCallback? onExit;
 
@@ -34,14 +34,17 @@ class HumorCalibrationIntroPage extends StatefulWidget {
 class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
   HumorCalibration _calibration = HumorCalibration.empty;
   bool _loading = true;
+  bool _requested = false;
   bool _logged = false;
+  bool _startLogged = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_loading) {
+    if (_requested) {
       return;
     }
+    _requested = true;
     unawaited(_load());
   }
 
@@ -60,13 +63,17 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
       return;
     }
     setState(() {
-      _calibration = result.valueOrNull?.calibration ?? HumorCalibration.empty;
+      // A failed refresh keeps what was already known rather than claiming
+      // the user has not started.
+      _calibration = result.valueOrNull?.calibration ?? _calibration;
       _loading = false;
     });
     if (!_logged) {
       _logged = true;
+      // Analytics parameters must be String or num; a bool fails the
+      // firebase_analytics assertion and the event is lost.
       _log(AnalyticsEvents.humorCalibrationImpression, {
-        'resumed': _calibration.started,
+        'resumed': _calibration.started ? 1 : 0,
       });
     }
   }
@@ -79,22 +86,49 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
     unawaited(analytics.logEvent(name, parameters: parameters));
   }
 
+  /// Back to wherever the invitation was opened from (Profile, Discover), or
+  /// on to discovery when it was the only screen (after onboarding).
   void _exit() {
     final onExit = widget.onExit;
     if (onExit != null) {
       onExit();
       return;
     }
-    if (context.mounted) {
-      context.go(AppRoutes.discovery);
+    if (!context.mounted) {
+      return;
+    }
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      unawaited(Navigator.of(context).maybePop());
+      return;
+    }
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      router.go(AppRoutes.discovery);
     }
   }
 
-  void _start() {
-    _log(AnalyticsEvents.humorCalibrationStarted, {
-      'resumed': _calibration.started,
-    });
-    context.go(AppRoutes.humorLab);
+  Future<void> _start() async {
+    // The one place calibration "starts": the Lab itself only reports
+    // progress and completion, so reopening it never re-counts a start.
+    if (!_startLogged) {
+      _startLogged = true;
+      _log(AnalyticsEvents.humorCalibrationStarted, {
+        'resumed': _calibration.started ? 1 : 0,
+      });
+    }
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      return;
+    }
+    // Pushed, not gone to: the Lab must be able to close back to here.
+    await router.push<void>(AppRoutes.humorLab);
+    if (!mounted) {
+      return;
+    }
+    // Back from the Lab part-way through: show where the user now is.
+    await _load();
   }
 
   void _skip() {
@@ -121,8 +155,9 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
             children: [
               Align(
                 alignment: Alignment.centerRight,
+                // Skip never waits on the server: leaving must always work.
                 child: TextButton(
-                  onPressed: _loading ? null : _skip,
+                  onPressed: _skip,
                   child: Text(l10n.humorCalibrationSkip),
                 ),
               ),
@@ -186,11 +221,11 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
                 label: resuming
                     ? l10n.humorCalibrationResume
                     : l10n.humorCalibrationStart,
-                onPressed: _loading ? null : _start,
+                onPressed: _loading ? null : () => unawaited(_start()),
               ),
               const SizedBox(height: AppSpacing.sm),
               TextButton(
-                onPressed: _loading ? null : _skip,
+                onPressed: _skip,
                 child: Text(l10n.humorCalibrationSkip),
               ),
             ],

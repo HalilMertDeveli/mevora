@@ -1,9 +1,10 @@
 import {
   emptyHumorVector,
   clamp01,
-  clamp100,
+  clampProfileValue,
+  exactProfileVector,
+  isHumorCategory,
   normalizeHumorVector,
-  normalizeProfileVector,
   HUMOR_CATEGORIES,
   type HumorCategory,
   type HumorVector,
@@ -34,9 +35,96 @@ export function confidenceFromInteractions(interactionCount: number): number {
   return clamp01(1 - Math.exp(-count / n0));
 }
 
-export function learningRate(confidence: number): number {
-  // Early: faster learning; mature: slower.
-  return 0.15 - 0.1 * clamp01(confidence);
+/**
+ * Step size while the profile is young: the first {@link YOUNG_PROFILE_RATINGS}
+ * counted ratings — and every rating made while the initial calibration is
+ * still running — each move a fully-weighted dimension this far toward its
+ * target.
+ *
+ * It has to be large. Calibration is 15 ratings spread over 11 dimensions, so
+ * a dimension is typically measured by only one to three focused items. With
+ * the old 0.15 step two confident ratings could not lift a dimension past the
+ * client's "medium" (60) bucket, and the result screen had nothing to say.
+ */
+export const YOUNG_LEARNING_RATE = 0.45;
+
+/** Counted ratings that learn at the full {@link YOUNG_LEARNING_RATE}. */
+export const YOUNG_PROFILE_RATINGS = 15;
+
+/**
+ * Floor for mature profiles. Learning never stops: interaction 500 still
+ * moves a fully-weighted dimension by this fraction of its distance to target.
+ */
+export const MATURE_LEARNING_RATE = 0.08;
+
+/**
+ * Step size for the `countedIndex`-th counted rating (1-based).
+ *
+ * Flat while young, then a harmonic decay (0.45·15/k) — the step a running
+ * mean would take — down to {@link MATURE_LEARNING_RATE}, so an established
+ * profile is refined rather than overwritten by its latest rating.
+ */
+export function learningRate(countedIndex: number): number {
+  const k = Math.max(1, Math.floor(Number.isFinite(countedIndex) ? countedIndex : 1));
+  if (k <= YOUNG_PROFILE_RATINGS) {
+    return YOUNG_LEARNING_RATE;
+  }
+  return Math.max(
+    MATURE_LEARNING_RATE,
+    (YOUNG_LEARNING_RATE * YOUNG_PROFILE_RATINGS) / k,
+  );
+}
+
+/** A persisted step is reusable only if it is one this module could produce. */
+function isUsableStep(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= MATURE_LEARNING_RATE &&
+    value <= YOUNG_LEARNING_RATE
+  );
+}
+
+/**
+ * Mass an item without any usable vector contributes to its declared
+ * category — roughly what a focused curated item carries.
+ */
+const CATEGORY_FALLBACK_MASS = 0.8;
+
+/** Per-dimension change one rating applied to the stored vector. */
+export type HumorProfileDelta = Partial<Record<HumorCategory, number>>;
+
+/** Tolerant read of a persisted `appliedDelta` map. */
+export function parseProfileDelta(raw: unknown): HumorProfileDelta {
+  const out: HumorProfileDelta = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return out;
+  }
+  for (const dim of HUMOR_CATEGORIES) {
+    const value = (raw as Record<string, unknown>)[dim];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      out[dim] = value;
+    }
+  }
+  return out;
+}
+
+/** Dimensions the content actually carries, with their 0..1 mass. */
+function contentMass(
+  contentVector: HumorVector | Partial<HumorVector>,
+  category: string | undefined,
+): Partial<Record<HumorCategory, number>> {
+  const vector = normalizeHumorVector(contentVector, 0);
+  const mass: Partial<Record<HumorCategory, number>> = {};
+  for (const dim of HUMOR_CATEGORIES) {
+    if (vector[dim] > 0) {
+      mass[dim] = vector[dim];
+    }
+  }
+  if (Object.keys(mass).length === 0 && category && isHumorCategory(category)) {
+    mass[category] = CATEGORY_FALLBACK_MASS;
+  }
+  return mass;
 }
 
 export function isProfileBuilding(interactionCount: number): boolean {
@@ -54,28 +142,83 @@ export function defaultUserHumorProfile(): UserHumorProfileDoc {
 }
 
 /**
- * EMA update: profile[d] ← (1-α)·profile[d] + α·(50 + 50·w·contentVector[d])
- * Profile dims stay in 0..100.
+ * One rating's effect on the lifetime profile.
+ *
+ * For every dimension `d` the content carries (mass `m = contentVector[d] > 0`):
+ *
+ *   profile[d] ← profile[d] + α·m·(50 + 50·w − profile[d])
+ *
+ * - Only the dimensions the content carries move. A sarcasm clip says nothing
+ *   about romantic humor, so it no longer drags `romantic` back toward 50 —
+ *   the old update did exactly that on every rating, which is why fifteen
+ *   ratings could never produce a visible trait.
+ * - The target depends on the rating alone (very_funny → 100, not_at_all → 0,
+ *   neutral → 50); the content's mass scales how far this one item may move
+ *   the dimension, so a secondary tag moves it less than the item's focus.
+ * - α is {@link YOUNG_LEARNING_RATE} while the initial calibration is running
+ *   (`calibrating`), whatever the lifetime count — a user with earlier Humor
+ *   Lab ratings still gets a visible profile from their 15 calibration
+ *   ratings. Otherwise {@link learningRate} of the counted index: large for a
+ *   young profile, decaying for a mature one.
+ * - Stored values keep full precision; views round.
+ *
+ * `mode: "replace"` is a *changed* rating on already-counted content: the
+ * previous rating's `previousDelta` is subtracted first and the new rating is
+ * applied with the step the replaced rating used (`previousStep`, persisted
+ * next to the delta), without counting a second interaction. Rating A
+ * very_funny and then changing it to not_at_all therefore ends where a single
+ * not_at_all would have — even when the change comes long after the profile
+ * matured. Without a usable `previousStep` the current step applies.
+ *
+ * Returns the `step` it applied so the caller can persist it.
  */
-export function applyFeedbackToProfile(input: {
+export function applyRatingToProfile(input: {
   profile: UserHumorProfileDoc;
   contentVector: HumorVector | Partial<HumorVector>;
   category?: string;
   rating: HumorRating;
-}): UserHumorProfileDoc {
+  mode?: "first" | "replace";
+  previousDelta?: HumorProfileDelta | null;
+  /** Replace mode: the step the replaced rating was applied with. */
+  previousStep?: number | null;
+  /** The initial calibration is still incomplete. */
+  calibrating?: boolean;
+}): {profile: UserHumorProfileDoc; appliedDelta: HumorProfileDelta; step: number} {
   const prev = input.profile;
-  const contentVec = normalizeHumorVector(input.contentVector, 0);
-  const profileVec = normalizeProfileVector(prev.vector, 50);
-  const w = ratingWeight(input.rating);
-  const nextCount = Math.max(0, (prev.interactionCount ?? 0) + 1);
-  const confidence = confidenceFromInteractions(nextCount);
-  const alpha = learningRate(confidence);
-  const nextVector = emptyHumorVector(50);
-  for (const dim of HUMOR_CATEGORIES) {
-    const signal = w * contentVec[dim];
-    const target = 50 + 50 * signal;
-    nextVector[dim] = clamp100((1 - alpha) * profileVec[dim] + alpha * target);
+  const replacing = input.mode === "replace";
+  const prevCount = Math.max(0, Math.floor(Number(prev.interactionCount ?? 0)) || 0);
+  const nextCount = replacing ? Math.max(1, prevCount) : prevCount + 1;
+  const vector = exactProfileVector(prev.vector, 50);
+
+  if (replacing && input.previousDelta) {
+    for (const dim of HUMOR_CATEGORIES) {
+      const delta = input.previousDelta[dim];
+      if (typeof delta === "number" && Number.isFinite(delta)) {
+        vector[dim] = clampProfileValue(vector[dim] - delta);
+      }
+    }
   }
+
+  const alpha =
+    replacing && isUsableStep(input.previousStep)
+      ? input.previousStep
+      : input.calibrating === true
+        ? YOUNG_LEARNING_RATE
+        : learningRate(nextCount);
+  const target = 50 + 50 * ratingWeight(input.rating);
+  const mass = contentMass(input.contentVector, input.category);
+  const appliedDelta: HumorProfileDelta = {};
+  for (const dim of HUMOR_CATEGORIES) {
+    const m = mass[dim];
+    if (!m) {
+      continue;
+    }
+    const before = vector[dim];
+    const after = clampProfileValue(before + alpha * m * (target - before));
+    vector[dim] = after;
+    appliedDelta[dim] = after - before;
+  }
+
   const explored = new Set(
     (prev.exploredCategories ?? []).map((c) => String(c).trim()).filter(Boolean),
   );
@@ -83,12 +226,26 @@ export function applyFeedbackToProfile(input: {
     explored.add(input.category);
   }
   return {
-    vector: nextVector,
-    confidence,
-    interactionCount: nextCount,
-    exploredCategories: [...explored].sort(),
-    version: HUMOR_PROFILE_VERSION,
+    profile: {
+      vector,
+      confidence: confidenceFromInteractions(nextCount),
+      interactionCount: nextCount,
+      exploredCategories: [...explored].sort(),
+      version: HUMOR_PROFILE_VERSION,
+    },
+    appliedDelta,
+    step: alpha,
   };
+}
+
+/** A first rating of new content: counts one interaction. */
+export function applyFeedbackToProfile(input: {
+  profile: UserHumorProfileDoc;
+  contentVector: HumorVector | Partial<HumorVector>;
+  category?: string;
+  rating: HumorRating;
+}): UserHumorProfileDoc {
+  return applyRatingToProfile({...input, mode: "first"}).profile;
 }
 
 /** Cosine similarity of two profile (0..100) or content (0..1) vectors. */

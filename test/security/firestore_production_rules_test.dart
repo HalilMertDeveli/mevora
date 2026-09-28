@@ -178,16 +178,19 @@ void main() {
       );
     });
 
-    test('humorContent is readable only when approved and active', () {
-      expect(rules.contains('match /humorContent/{contentId}'), isTrue);
-      expect(
-        rules.contains("resource.data.get('safetyStatus', '') == 'approved'"),
-        isTrue,
+    test('humorContent is admin-read only', () {
+      // Cards reach clients only through getHumorFeed, which strips vectors,
+      // safety flags and anchor slots. Behaviour is covered by
+      // firebase/tests/firestore.security.emulator.test.mjs.
+      const marker = 'match /humorContent/{contentId} {';
+      final start = rules.indexOf(marker);
+      expect(start, isNot(-1));
+      final block = rules.substring(
+        start,
+        rules.indexOf('}', start + marker.length),
       );
-      expect(
-        rules.contains("resource.data.get('active', false) == true"),
-        isTrue,
-      );
+      expect(block.contains('allow read: if isAdmin();'), isTrue);
+      expect(block.contains('isAuthenticated()'), isFalse);
     });
 
     test('humor reports and moderation queue are not client-writable', () {

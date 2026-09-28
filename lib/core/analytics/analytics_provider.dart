@@ -61,6 +61,10 @@ abstract final class AnalyticsEvents {
   static const String humorContentSkipped = 'humor_content_skipped';
   static const String humorContentReplayed = 'humor_content_replayed';
   static const String humorContentSaved = 'humor_content_saved';
+  // Humor media reliability: {reason, attempt}, {kind}, {reason}. Never a URL.
+  static const String humorMediaFailed = 'humor_media_failed';
+  static const String humorMediaRetry = 'humor_media_retry';
+  static const String humorMediaSkipped = 'humor_media_skipped';
   // Initial calibration milestone. Stage and counts only — a humor vector is
   // behavioural data and must never reach analytics.
   static const String humorCalibrationImpression =

@@ -9,8 +9,9 @@
  * Deliberately lives in a subdirectory so `testSuiteCoverage.test.cjs` does not
  * demand it in the emulator-free `npm test` list.
  *
- * Run from the repo root:
- *   npx firebase emulators:exec --only firestore --project mevora-calibration-qa \
+ * Run from the repo root (build functions first; use a `demo-` project id so
+ * nothing can reach a real project):
+ *   npx firebase emulators:exec --only firestore --project demo-mevora-calibration \
  *     "node functions/test/emulator/humorCalibrationFlow.cjs"
  */
 const assert = require("node:assert/strict");
@@ -35,10 +36,14 @@ const {
   upsertHumorContentDoc,
   listCalibrationPool,
 } = require("../../lib/humor/contentRepository.js");
+const {
+  TEXT_JOKE_CONTENT_IDS,
+  seedCalibrationCatalog,
+} = require("../../lib/humor/calibrationCatalog.js");
 const {buildHumorFeed, loadUserHumorCalibration} = require("../../lib/humor/feed.js");
 const {submitHumorFeedbackTx} = require("../../lib/humor/feedback.js");
 
-initializeApp({projectId: process.env.GCLOUD_PROJECT || "mevora-calibration-qa"});
+initializeApp({projectId: process.env.GCLOUD_PROJECT || "demo-mevora-calibration"});
 const db = getFirestore();
 
 const UID = "qa_calibration_user";
@@ -48,9 +53,63 @@ function step(name, fn) {
   steps.push([name, fn]);
 }
 
+step("re-seeding replaces a stale item with exactly the curated clip", async () => {
+  // Real Firestore merge semantics: `set(..., {merge: true})` deep-merges
+  // maps, so only explicit values replace what an older seed left behind.
+  const seed = INTERNAL_HUMOR_SEED.find((i) => i.calibration.slot === "anchor_everyday");
+  await db.doc(`humorContent/${seed.contentId}`).set({
+    contentId: seed.contentId,
+    type: "text",
+    language: "tr",
+    category: "situational",
+    media: {
+      downloadUrl: "https://picsum.photos/seed/mevora-tr-15/1080/1920",
+      thumbUrl: "https://picsum.photos/seed/mevora-tr-15/540/960",
+      aspectRatio: 0.5625,
+      textBody: "Markete süt için girdim, üç poşetle çıktım. Süt yok.",
+    },
+    stats: {viewCount: 0, ratingCount: 0, avgRating: 0, ratingSum: 0},
+  });
+  await upsertHumorContentDoc(db, {...seed, safetyStatus: "approved", active: true});
+  const stored = (await db.doc(`humorContent/${seed.contentId}`).get()).data();
+  assert.equal(stored.type, "meme");
+  assert.equal(stored.media.downloadUrl, seed.media.downloadUrl);
+  assert.equal(stored.media.thumbUrl, seed.media.thumbUrl);
+  assert.equal(stored.media.aspectRatio, seed.media.aspectRatio);
+  assert.equal(stored.media.textBody, null, "no caption survives on a clip");
+  assert.deepEqual(stored.attribution, seed.attribution);
+  assert.equal(stored.sourceTrust, "curated");
+  assert.equal(stored.stats.ratingSum, 0, "existing stats are kept, not reset");
+  return "clip media and credit written, caption cleared, stats kept";
+});
+
 step("seed the curated catalog", async () => {
+  // A text card an earlier seed left active: the curated seed retires it.
+  const legacyId = TEXT_JOKE_CONTENT_IDS[0];
+  await upsertHumorContentDoc(db, {
+    contentId: legacyId,
+    type: "text",
+    language: "tr",
+    category: "sarcasm",
+    humorVector: {sarcasm: 0.88},
+    media: {textBody: "Tabii, trafik yine benim yüzümden oluştu."},
+    safetyStatus: "approved",
+    active: true,
+    calibration: {eligible: true, slot: "anchor_wit", version: HUMOR_CALIBRATION_VERSION},
+  });
+  const seeded = await seedCalibrationCatalog(db);
+  assert.equal(seeded.kind, "curated_giphy");
+  assert.equal(seeded.written, INTERNAL_HUMOR_SEED.length);
+  assert.deepEqual(seeded.retiredIds, [legacyId]);
+  const legacy = (await db.doc(`humorContent/${legacyId}`).get()).data();
+  assert.equal(legacy.active, false);
+  assert.equal(legacy.calibrationEligible, false);
   for (const item of INTERNAL_HUMOR_SEED) {
-    await upsertHumorContentDoc(db, {...item, safetyStatus: "approved", active: true});
+    const doc = (await db.doc(`humorContent/${item.contentId}`).get()).data();
+    assert.equal(doc.type, "meme", item.contentId);
+    assert.equal(doc.media.downloadUrl, item.media.downloadUrl, item.contentId);
+    assert.equal(doc.media.textBody, null, `${item.contentId} carries a caption`);
+    assert.equal(doc.attribution.provider, "giphy", item.contentId);
   }
   // Provider-shaped content: approved and servable, but never curated. It must
   // not appear in the pool, and its slot claim must be ignored.
@@ -86,21 +145,20 @@ step("seed the curated catalog", async () => {
   return `${pool.length} curated of ${all.docs.length} total; provider item excluded`;
 });
 
-step("start calibration: first page is anchor-led and exactly 15", async () => {
+step("start calibration: the first page is the anchor stage only", async () => {
+  // Even when the client asks for 15, the page stops at the stage boundary:
+  // the adaptive picks must be computed from the anchor answers.
   const feed = await buildHumorFeed({db, uid: UID, languages: ["tr", "en"], limit: 15});
   assert.equal(feed.calibration.stage, "anchor");
   assert.equal(feed.calibration.completedCount, 0);
   assert.equal(feed.calibration.complete, false);
   assert.equal(feed.calibration.insufficientPool, false);
-  assert.equal(feed.items.length, CALIBRATION_TOTAL);
+  assert.equal(feed.calibration.degraded, false);
+  assert.equal(feed.nextCursor, null);
+  assert.equal(feed.items.length, ANCHOR_INTERACTIONS);
 
   const stages = feed.items.map((i) => i.calibrationStage);
-  assert.equal(stages.filter((s) => s === "anchor").length, ANCHOR_INTERACTIONS);
-  assert.equal(stages.filter((s) => s === "adaptive").length, ADAPTIVE_INTERACTIONS);
-  assert.equal(
-    stages.filter((s) => s === "exploration").length,
-    EXPLORATION_INTERACTIONS,
-  );
+  assert.ok(stages.every((s) => s === "anchor"), `stages ${stages.join(",")}`);
   const ids = feed.items.map((i) => i.contentId);
   assert.equal(new Set(ids).size, ids.length, "duplicate content in calibration page");
   // Feed cards must not leak curation internals.
@@ -130,20 +188,34 @@ step("rate through the anchor stage", async () => {
   return `slots ${state.coveredSlots.join(",")}`;
 });
 
-step("interrupt and resume: next page continues at adaptive", async () => {
+step("interrupt and resume: next page is the adaptive stage only", async () => {
   // A fresh buildHumorFeed call is exactly what a cold app start does.
   const feed = await buildHumorFeed({db, uid: UID, languages: ["tr", "en"], limit: 15});
   assert.equal(feed.calibration.stage, "adaptive");
   assert.equal(feed.calibration.completedCount, ANCHOR_INTERACTIONS);
-  assert.equal(feed.items.length, CALIBRATION_TOTAL - ANCHOR_INTERACTIONS);
-  assert.equal(feed.items[0].calibrationStage, "adaptive");
+  assert.equal(feed.items.length, ADAPTIVE_INTERACTIONS);
+  assert.ok(feed.items.every((i) => i.calibrationStage === "adaptive"));
+  assert.equal(feed.nextCursor, null);
 
   const state = await loadUserHumorCalibration(db, UID);
   const rated = new Set(state.ratedContentIds);
   for (const item of feed.items) {
     assert.equal(rated.has(item.contentId), false, `re-served ${item.contentId}`);
   }
-  return `${feed.items.length} items remaining`;
+  return `${feed.items.length} adaptive items`;
+});
+
+step("rate the adaptive stage: the next page is exploration only", async () => {
+  const feed = await buildHumorFeed({db, uid: UID, languages: ["tr", "en"], limit: 12});
+  for (const item of feed.items) {
+    await submitHumorFeedbackTx({db, uid: UID, contentId: item.contentId, rating: "funny"});
+  }
+  const next = await buildHumorFeed({db, uid: UID, languages: ["tr", "en"], limit: 12});
+  assert.equal(next.calibration.completedCount, ANCHOR_INTERACTIONS + ADAPTIVE_INTERACTIONS);
+  assert.equal(next.calibration.stage, "exploration");
+  assert.equal(next.items.length, EXPLORATION_INTERACTIONS);
+  assert.ok(next.items.every((i) => i.calibrationStage === "exploration"));
+  return `${next.items.length} exploration items`;
 });
 
 step("complete item 15", async () => {
@@ -303,6 +375,109 @@ step("re-rating after completion cannot restart or extend calibration", async ()
     "re-rating known content must not increment the lifetime counter",
   );
   return `stayed at ${after.completedCount}/${CALIBRATION_TOTAL}`;
+});
+
+step("a skip leaves progress untouched and the card is never served again", async () => {
+  const uid = "qa_skip_user";
+  const feed = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 12});
+  const skipped = feed.items[0].contentId;
+  const result = await submitHumorFeedbackTx({db, uid, contentId: skipped, skipped: true});
+  assert.equal(result.interactionCount, 0);
+  assert.equal(result.calibration.completedCount, 0);
+
+  const marker = (await db.doc(`users/${uid}/humorInteractions/${skipped}`).get()).data();
+  assert.equal(marker.skipped, true);
+  assert.equal(marker.rating, null);
+  assert.equal((await db.doc(`users/${uid}/humor/summary`).get()).exists, false);
+  assert.equal((await db.doc(`users/${uid}/humor/calibration`).get()).exists, false);
+
+  const next = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 12});
+  assert.equal(next.items.some((i) => i.contentId === skipped), false, "skipped card re-served");
+  assert.equal(next.items.length, ANCHOR_INTERACTIONS, "the slot rotates to another anchor");
+
+  // A later real rating of the skipped card is its first rating.
+  const rated = await submitHumorFeedbackTx({db, uid, contentId: skipped, rating: "funny"});
+  assert.equal(rated.interactionCount, 1);
+  assert.equal(rated.calibration.completedCount, 1);
+  return "marker only; rotated; a later rating counted once";
+});
+
+step("uncurated content cannot take an anchor position", async () => {
+  const uid = "qa_uncurated_user";
+  const result = await submitHumorFeedbackTx({
+    db,
+    uid,
+    contentId: "ext_giphy_untrusted",
+    rating: "very_funny",
+  });
+  assert.equal(result.interactionCount, 1);
+  assert.equal(result.calibration.completedCount, 0);
+  assert.equal((await db.doc(`users/${uid}/humor/calibration`).get()).exists, false);
+  return "lifetime profile learned, calibration did not advance";
+});
+
+step("a user with earlier ratings calibrates at the calibration step", async () => {
+  const uid = "qa_returning_user";
+  // Humor Lab ratings from before calibration existed: a count, no calibration doc.
+  await db.doc(`users/${uid}/humor/summary`).set({interactionCount: 40, confidence: 0.6});
+  const feed = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 12});
+  assert.equal(feed.calibration.stage, "anchor", "calibration still runs for them");
+  const contentId = feed.items[0].contentId;
+  const result = await submitHumorFeedbackTx({db, uid, contentId, rating: "very_funny"});
+  assert.equal(result.interactionCount, 41);
+  assert.equal(result.calibration.completedCount, 1);
+  const doc = (await db.doc(`users/${uid}/humorInteractions/${contentId}`).get()).data();
+  assert.equal(doc.appliedStep, 0.45, "calibration ratings learn at the young step");
+  return `step ${doc.appliedStep} at lifetime rating 41`;
+});
+
+step("changing a rating replaces it instead of stacking", async () => {
+  const feed = await buildHumorFeed({db, uid: "qa_rerate_a", languages: ["tr"], limit: 12});
+  const contentId = feed.items[0].contentId;
+  await submitHumorFeedbackTx({db, uid: "qa_rerate_a", contentId, rating: "very_funny"});
+  const changed = await submitHumorFeedbackTx({
+    db,
+    uid: "qa_rerate_a",
+    contentId,
+    rating: "not_at_all",
+  });
+  await submitHumorFeedbackTx({db, uid: "qa_rerate_b", contentId, rating: "not_at_all"});
+
+  const a = (await db.doc("users/qa_rerate_a/humor/summary").get()).data();
+  const b = (await db.doc("users/qa_rerate_b/humor/summary").get()).data();
+  for (const dim of Object.keys(b.vector)) {
+    assert.ok(Math.abs(a.vector[dim] - b.vector[dim]) < 1e-9, `${dim} stacked`);
+  }
+  assert.equal(changed.interactionCount, 1);
+  assert.equal(changed.calibration.completedCount, 1);
+  return "very_funny → not_at_all equals a single not_at_all";
+});
+
+step("concurrent ratings keep content stats exact", async () => {
+  const contentId = INTERNAL_HUMOR_SEED.find((i) => i.calibration.slot === null).contentId;
+  const before = (await db.doc(`humorContent/${contentId}`).get()).data().stats ?? {};
+  const users = ["qa_stats_1", "qa_stats_2", "qa_stats_3", "qa_stats_4"];
+  const ratings = ["very_funny", "funny", "not_funny", "not_at_all"];
+  const results = await Promise.allSettled(
+    users.map((uid, i) =>
+      submitHumorFeedbackTx({db, uid, contentId, rating: ratings[i]}),
+    ),
+  );
+  assert.equal(results.filter((r) => r.status === "rejected").length, 0);
+  let stats = (await db.doc(`humorContent/${contentId}`).get()).data().stats;
+  const sum = 1 + 0.6 - 0.5 - 1;
+  // The counters are increments: exact under concurrency.
+  assert.equal(stats.ratingCount, Number(before.ratingCount ?? 0) + users.length);
+  assert.equal(stats.viewCount, Number(before.viewCount ?? 0) + users.length);
+  assert.ok(Math.abs(stats.ratingSum - (Number(before.ratingSum ?? 0) + sum)) < 1e-9);
+  // The average may trail concurrent ratings, but never drifts: the next
+  // rating re-derives it from the exact counters.
+  assert.ok(stats.avgRating >= -1 && stats.avgRating <= 1, String(stats.avgRating));
+  await submitHumorFeedbackTx({db, uid: "qa_stats_5", contentId, rating: "funny"});
+  stats = (await db.doc(`humorContent/${contentId}`).get()).data().stats;
+  assert.equal(stats.ratingCount, Number(before.ratingCount ?? 0) + users.length + 1);
+  assert.ok(Math.abs(stats.avgRating - stats.ratingSum / stats.ratingCount) < 1e-9);
+  return `count ${stats.ratingCount}, avg ${stats.avgRating.toFixed(3)}`;
 });
 
 step("account deletion removes calibration through the existing humor sweep", async () => {

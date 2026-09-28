@@ -16,32 +16,50 @@
  *   - real preferences, location, age and account status.
  *
  * Usage:
- *   1. firebase emulators:start --config firebase.qa.json \
- *        --only auth,firestore,functions --project mevora-d6ed0
+ *   One click: press F5 on "Mevora (development · full emulator suite)". Its
+ *   preLaunchTask runs tool/ensure_emulators.ps1, which builds functions/lib,
+ *   starts the emulators when they are not running yet, and runs this script
+ *   with --if-missing plus tool/seedEmulatorHumorCatalog.cjs.
  *
- *      Use firebase.qa.json, not the default config. It binds the emulators to
- *      0.0.0.0 so an Android emulator can reach them on 10.0.2.2. FlutterFire
- *      rewrites 127.0.0.1 to 10.0.2.2 on Android automatically, so pointing the
- *      app at the host loopback cannot work — not via FIREBASE_EMULATOR_HOST and
- *      not via `adb reverse`, because the SDK overrides the host either way.
- *      Sign-in then fails with a bare "Check your internet connection".
+ *   Manually, from the repo root (PowerShell):
  *
- *   2. FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 \
- *      FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
- *      node tool/seedEmulatorQaUsers.cjs
+ *   1. npm --prefix functions run build
+ *      firebase emulators:start --config firebase.qa.json `
+ *        --project mevora-d6ed0 --only auth,firestore,functions,storage
  *
- *   3. flutter run --dart-define=USE_EMULATORS=true \
- *        --dart-define=USE_AUTH_EMULATOR=true \
- *        --dart-define=QA_EMAIL_A=qa_user_a@mevora.test \
- *        --dart-define=QA_EMAIL_B=qa_user_b@mevora.test \
+ *      Use firebase.qa.json, not the default config: its ports are the ones
+ *      the app's emulator launch configuration expects. Functions must run
+ *      too — the photo moderation trigger is what approves the seeded photos.
+ *
+ *   2. $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
+ *      $env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"
+ *      node tool/seedEmulatorQaUsers.cjs [--if-missing]
+ *
+ *      Without --if-missing every QA user is reset: auth account recreated,
+ *      likes, matches, passes, boosts and the moderation ledger purged. With
+ *      --if-missing only QA users that do not exist yet are created; existing
+ *      ones, and their matches and chats, are left untouched.
+ *
+ *   3. flutter run --flavor development -t lib/main_development.dart `
+ *        --dart-define=USE_EMULATORS=true `
+ *        --dart-define=USE_AUTH_EMULATOR=true `
+ *        --dart-define=USE_MOCK_HUMOR=false `
+ *        --dart-define=QA_EMAIL_A=qa_user_a@mevora.test `
+ *        --dart-define=QA_EMAIL_B=qa_user_b@mevora.test `
  *        --dart-define=QA_PASSWORD=<the password printed below>
  *
  *      Both emulator defines are required: USE_EMULATORS alone leaves Auth
- *      pointed at production. Do NOT pass FIREBASE_EMULATOR_HOST on Android.
+ *      pointed at production. Do NOT pass FIREBASE_EMULATOR_HOST on Android:
+ *      the app already targets 10.0.2.2, the Android emulator's alias for the
+ *      host loopback. Android 16+ also needs ACCESS_LOCAL_NETWORK granted to
+ *      the installed app (tool/flutter_prepare.ps1 does it); without it
+ *      sign-in fails with a bare "Check your internet connection".
  */
-const admin = require("firebase-admin");
+const path = require("node:path");
+const {createRequire} = require("node:module");
 
 const PROJECT = process.env.QA_PROJECT_ID || "mevora-d6ed0";
+const IF_MISSING = process.argv.slice(2).includes("--if-missing");
 
 // Hard safety gate. Without both emulator hosts the Admin SDK would talk to
 // production, and this script writes profiles and moderation decisions.
@@ -62,6 +80,17 @@ for (const [name, value] of [
     console.error(`REFUSING TO RUN: ${name}="${value}" is not a local emulator host.`);
     process.exit(1);
   }
+}
+
+// tool/ has no node_modules of its own: resolve firebase-admin from functions/,
+// the same way tool/humorCalibrationQa.cjs does. Loaded only after the gate.
+const fromFunctions = createRequire(path.join(__dirname, "..", "functions", "package.json"));
+let admin;
+try {
+  admin = fromFunctions("firebase-admin");
+} catch (_) {
+  console.error("firebase-admin not found — run: npm --prefix functions ci");
+  process.exit(1);
 }
 
 admin.initializeApp({projectId: PROJECT});
@@ -217,11 +246,38 @@ async function seed(user) {
   return {uid, email};
 }
 
+/** Both the sign-in account and the profile exist, so there is nothing to create. */
+async function alreadySeeded(uid) {
+  const account = await auth.getUser(uid).then(
+    () => true,
+    (error) => {
+      if (error && error.code === "auth/user-not-found") {
+        return false;
+      }
+      throw error;
+    },
+  );
+  return account && (await db.doc(`profiles/${uid}`).get()).exists;
+}
+
 (async () => {
-  console.log(`Seeding QA users into the emulator (project ${PROJECT})`);
+  console.log(
+    `Seeding QA users into the emulator (project ${PROJECT}` +
+      `${IF_MISSING ? ", only missing users" : ", resetting every QA user"})`,
+  );
   const seeded = [];
+  let kept = 0;
   for (const user of QA_USERS) {
+    if (IF_MISSING && (await alreadySeeded(user.uid))) {
+      kept += 1;
+      continue;
+    }
     seeded.push(await seed(user));
+  }
+  if (IF_MISSING) {
+    console.log(
+      `  ${seeded.length} created, ${kept} already present (left untouched)`,
+    );
   }
 
   // The moderation trigger reconciles photos asynchronously, so poll rather
@@ -246,11 +302,12 @@ async function seed(user) {
   }
 
   console.log("\nSign in through the app's normal email/password form:");
-  for (const {email} of seeded) {
+  for (const {email} of QA_USERS) {
     console.log(`  ${email}  /  ${QA_PASSWORD}`);
   }
   console.log(
-    "\nLaunch: flutter run --dart-define=USE_EMULATORS=true --dart-define=USE_AUTH_EMULATOR=true",
+    '\nLaunch: F5 on "Mevora (development · full emulator suite)", or see the ' +
+      "flutter run line in this file's header.",
   );
   process.exit(0);
 })().catch((error) => {

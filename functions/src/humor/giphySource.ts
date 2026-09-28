@@ -699,6 +699,24 @@ export class GiphyHumorSource implements HumorContentSource {
     };
   }
 
+  private async gifSearchBody(input: {
+    query: string;
+    language: string;
+    limit: number;
+    offset?: number;
+  }): Promise<Record<string, unknown> | null> {
+    const res = await this.request("/gifs/search", {
+      q: input.query.slice(0, 50),
+      lang: langOf(input.language),
+      limit: Math.min(50, Math.max(1, Math.floor(input.limit))),
+      offset: Math.max(0, Math.floor(input.offset ?? 0)),
+    });
+    if (!res.ok) {
+      throw new Error(`giphy-http-${res.status}`);
+    }
+    return res.body;
+  }
+
   async searchGifs(input: {
     query: string;
     language: string;
@@ -707,18 +725,31 @@ export class GiphyHumorSource implements HumorContentSource {
     family?: GiphyQueryFamily | null;
   }): Promise<GiphySearchResult> {
     const lang = langOf(input.language);
-    const res = await this.request("/gifs/search", {
-      q: input.query.slice(0, 50),
-      lang,
-      limit: Math.min(50, Math.max(1, Math.floor(input.limit))),
-      offset: Math.max(0, Math.floor(input.offset ?? 0)),
-    });
-    if (!res.ok) {
-      throw new Error(`giphy-http-${res.status}`);
-    }
-    return this.collect<GiphyGif>(res.body, (gif) =>
+    const body = await this.gifSearchBody(input);
+    return this.collect<GiphyGif>(body, (gif) =>
       mapGiphyGif(gif, {language: lang, family: input.family ?? null}),
     );
+  }
+
+  /**
+   * The provider's GIF objects for a search, unmapped: the curator tool needs
+   * rendition sizes and dimensions that mapping deliberately drops.
+   */
+  async searchGifsRaw(input: {
+    query: string;
+    language: string;
+    limit: number;
+    offset?: number;
+  }): Promise<{gifs: GiphyGif[]; total: number | null}> {
+    const body = await this.gifSearchBody(input);
+    const gifs = Array.isArray(body?.data)
+      ? (body!.data as unknown[]).filter(
+          (g): g is GiphyGif => !!g && typeof g === "object" && !Array.isArray(g),
+        )
+      : [];
+    const pagination = body?.pagination as {total_count?: unknown} | undefined;
+    const total = Number(pagination?.total_count);
+    return {gifs, total: Number.isFinite(total) ? total : null};
   }
 
   /**

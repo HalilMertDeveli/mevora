@@ -1,5 +1,6 @@
 import {ANCHOR_SLOTS, HUMOR_CALIBRATION_VERSION} from "./calibration.js";
 import type {HumorCategory, HumorVector} from "./categories.js";
+import type {HumorAttribution} from "./types.js";
 
 /**
  * Curated calibration catalog — QA / development tier.
@@ -27,6 +28,11 @@ import type {HumorCategory, HumorVector} from "./categories.js";
  * Media fields are present and `null` rather than absent: the seed is written
  * with a merge, and only an explicit null clears the media an older seed left
  * on the same document.
+ *
+ * Being replaced: the owner decided every Humor card, calibration included,
+ * is a GIF. The text cards below stay only until {@link CURATED_GIPHY_CATALOG}
+ * holds real, hand-picked GIPHY items; then {@link ACTIVE_CALIBRATION_CATALOG}
+ * flips and the seeders retire these documents (see `calibrationCatalog.ts`).
  */
 
 export const QA_SEED_PROVIDER = "mevora-qa-seed";
@@ -478,6 +484,108 @@ export const CALIBRATION_SEED: readonly CalibrationSeedEntry[] = [
 ];
 
 export const ANCHOR_SEED_IDS: readonly string[] = ANCHOR_SEED.map((i) => i.contentId);
+
+// --------------------------------------------------------------------------
+// Curated GIPHY catalogue
+// --------------------------------------------------------------------------
+
+/** Content-id namespace of curated GIPHY items. Provider sync uses `ext_giphy_`. */
+export const CURATED_GIPHY_ID_PREFIX = "hc_gif_";
+
+/** GIPHY ids are short alphanumeric strings. */
+export const GIPHY_ID_PATTERN = /^[A-Za-z0-9]{4,64}$/;
+
+export function curatedGiphyContentId(giphyId: string): string {
+  return `${CURATED_GIPHY_ID_PREFIX}${giphyId}`;
+}
+
+/** Stable, shard-independent animated WebP of a GIPHY item. */
+export function giphyStableWebpUrl(giphyId: string): string {
+  return `https://media.giphy.com/media/${giphyId}/giphy.webp`;
+}
+
+/** Stable, shard-independent still (first frame) of a GIPHY item. */
+export function giphyStableStillUrl(giphyId: string): string {
+  return `https://media.giphy.com/media/${giphyId}/giphy_s.gif`;
+}
+
+/**
+ * One exact GIPHY item that a Mevora curator watched and annotated.
+ *
+ * Everything here describes THAT clip: the vector is authored for it, the
+ * media and poster are its own renditions, the caption is GIPHY's own title
+ * for it (cleaned by `cleanProviderTitle`) or null — never text we wrote —
+ * and the attribution is GIPHY's credit for it, shown on the card (K1).
+ *
+ * Curated GIPHY entries are the only provider items that may be
+ * calibration-eligible: Mevora explicitly chose this exact media. Items the
+ * provider sync pulls in (`ext_giphy_*`) never are.
+ */
+export type CuratedGiphyEntry = {
+  /** Always `curatedGiphyContentId(giphyId)`. */
+  contentId: string;
+  giphyId: string;
+  /** Anchor slot this clip can fill; omitted means adaptive/exploration only. */
+  slot?: string;
+  /** False keeps a curated clip out of calibration (ordinary feed only). */
+  calibrationEligible: boolean;
+  category: HumorCategory;
+  humorTags?: string[];
+  humorVector: Partial<HumorVector>;
+  language: "tr" | "en";
+  caption: string | null;
+  media: {
+    /** Animated rendition: `giphyStableWebpUrl(id)` or the harvested rendition. */
+    downloadUrl: string;
+    /** A still of the same item. */
+    thumbUrl: string;
+    aspectRatio: number | null;
+  };
+  attribution: HumorAttribution;
+  sourceTrust: "curated";
+};
+
+/**
+ * The curated GIPHY catalogue. Empty until phase 2 fills it with real,
+ * reviewed GIPHY ids (harvested with `tool/humorCuratorSearch.cjs`), with the
+ * same shape of pool as the text catalogue: 6 anchor slots x 4 candidates,
+ * plus an open pool covering teasing, romantic and dark.
+ *
+ * Example entry (illustrative; not a real id):
+ *
+ *   {
+ *     contentId: "hc_gif_AbCd1234",
+ *     giphyId: "AbCd1234",
+ *     slot: "anchor_wit",
+ *     calibrationEligible: true,
+ *     category: "sarcasm",
+ *     humorTags: ["sitcom", "eyeroll"],
+ *     humorVector: {sarcasm: 0.88, dry: 0.4},
+ *     language: "en",
+ *     caption: "Oh Really",
+ *     media: {
+ *       downloadUrl: "https://media.giphy.com/media/AbCd1234/giphy.webp",
+ *       thumbUrl: "https://media.giphy.com/media/AbCd1234/giphy_s.gif",
+ *       aspectRatio: 1.78,
+ *     },
+ *     attribution: {
+ *       provider: "giphy", displayName: "The Office", username: "theoffice",
+ *       sourceUrl: "https://giphy.com/gifs/theoffice-oh-really-AbCd1234",
+ *       verified: true,
+ *     },
+ *     sourceTrust: "curated",
+ *   }
+ */
+export const CURATED_GIPHY_CATALOG: readonly CuratedGiphyEntry[] = [];
+
+/**
+ * Which catalogue calibration runs on. Phase 2 is a data swap: fill
+ * CURATED_GIPHY_CATALOG and set this to "curated_giphy"; the seeders then
+ * write the GIPHY items and retire the text-joke documents.
+ */
+export type CalibrationCatalogKind = "text_jokes" | "curated_giphy";
+
+export const ACTIVE_CALIBRATION_CATALOG: CalibrationCatalogKind = "text_jokes";
 
 /** Candidates per anchor slot, for pool-health reporting and tests. */
 export function seedAnchorPools(): Map<string, CalibrationSeedEntry[]> {

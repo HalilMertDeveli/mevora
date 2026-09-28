@@ -13,7 +13,6 @@ import {
   unavailableHumorCompatibility,
 } from "./compatibility.js";
 import {
-  INTERNAL_HUMOR_SEED,
   upsertHumorContentDoc,
   type UpsertHumorContentInput,
 } from "./contentRepository.js";
@@ -250,21 +249,52 @@ export const runHumorModeration = onCall(callableOptions, async (request) => {
   return applyHumorModerationDecision(db, uid, data);
 });
 
-/** Admin-only: seed internal repository (no scraping). */
+/**
+ * Admin-only: seed the active curated calibration catalogue (no scraping) and
+ * retire the documents it replaced. Same code path as the emulator seeder.
+ */
 export const seedInternalHumorContent = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
-  let count = 0;
-  for (const item of INTERNAL_HUMOR_SEED) {
-    await upsertHumorContentDoc(db, {
-      ...item,
-      safetyStatus: "approved",
-      active: true,
-    });
-    count += 1;
-  }
-  return {ok: true, seeded: count};
+  const {seedCalibrationCatalog} = await import("./calibrationCatalog.js");
+  const result = await seedCalibrationCatalog(db);
+  return {ok: true, seeded: result.written, retired: result.retired, catalog: result.kind};
 });
+
+/**
+ * Admin-only, EMULATOR-ONLY curator tool: search GIPHY and return candidate
+ * items (own title, credit, rating, renditions with sizes, still, relevance
+ * verdict) for a human to pick the curated catalogue from. Writes nothing.
+ *
+ * Inert when deployed: it refuses before reading auth or input unless it runs
+ * inside the Functions emulator. The emulator is also where the GIPHY key
+ * lives for development (functions/.secret.local); the key never leaves this
+ * process — results carry media URLs only, errors a status code only.
+ */
+export const searchHumorProviderCandidates = onCall(
+  {...callableOptions, secrets: [giphyApiKey]},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true") {
+      throw new HttpsError("failed-precondition", "emulator-only");
+    }
+    const uid = requireUid(request);
+    await requireAdmin(uid);
+    const {parseProviderCandidateSearchInput, searchProviderCandidates} = await import(
+      "./providerCandidates.js"
+    );
+    const parsed = parseProviderCandidateSearchInput(request.data);
+    if (!parsed.ok) {
+      throw new HttpsError("invalid-argument", parsed.field);
+    }
+    const {GiphyHumorSource} = await import("./giphySource.js");
+    const source = GiphyHumorSource.tryCreate({rating: parsed.value.rating});
+    if (!source) {
+      return {ok: false, configured: false};
+    }
+    const result = await searchProviderCandidates(source, parsed.value);
+    return {ok: true, configured: true, ...result};
+  },
+);
 
 /**
  * Admin: pull licensed Giphy content (lang=tr preferred) into humorContent.

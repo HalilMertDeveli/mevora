@@ -2,6 +2,7 @@ import {FieldValue, type DocumentData, type Firestore} from "firebase-admin/fire
 import {logger} from "firebase-functions";
 import {safeLogMeta} from "../security/logHygiene.js";
 import {applyHumorAiTagging} from "./aiTagging.js";
+import {CURATED_GIPHY_CATALOG} from "./calibrationSeed.js";
 import type {HumorCategory, HumorVector} from "./categories.js";
 import {
   upsertHumorContentDoc,
@@ -304,6 +305,8 @@ export async function syncHumorFromGiphy(input: {
   clipsEnabled?: boolean;
   /** Query rotation; defaults to the UTC day number. */
   rotation?: number;
+  /** GIPHY ids of the curated catalogue; defaults to CURATED_GIPHY_CATALOG. */
+  curatedGiphyIds?: ReadonlySet<string>;
   queryCount?: number;
   log?: (message: string, meta: Record<string, unknown>) => void;
 }): Promise<HumorProviderSyncResult> {
@@ -339,7 +342,11 @@ export async function syncHumorFromGiphy(input: {
   const offset = (Math.floor(rotation / Math.max(1, families.length)) % 5) * perQuery;
   let clipsDenied = false;
 
-  const seenSourceIds = new Set<string>();
+  // A clip Mevora curated already lives in the catalogue as `hc_gif_<id>`;
+  // syncing it again as `ext_giphy_<id>` would show the same clip twice.
+  const curatedIds =
+    input.curatedGiphyIds ?? new Set(CURATED_GIPHY_CATALOG.map((e) => e.giphyId));
+  const seenSourceIds = new Set<string>(curatedIds);
   const seenMedia = new Set<string>();
   const seenTitles = new Set<string>();
 

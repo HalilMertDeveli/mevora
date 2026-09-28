@@ -437,6 +437,12 @@ export type UpsertHumorContentInput = {
   calibration?: {eligible: boolean; slot?: string | null; version?: number};
   /** Defaults: internal → "curated", licensed_api → "provider". */
   sourceTrust?: HumorSourceTrust;
+  /**
+   * Set only by the curated-catalogue seeder (`calibrationCatalog.ts`): this
+   * provider item was hand-picked by Mevora, so it may keep the "curated"
+   * tier. Provider sync and the admin upsert callable never set it.
+   */
+  curatedCatalogEntry?: boolean;
   /** Provider credit (K1). Always stored as null for internal content. */
   attribution?: HumorAttribution | null;
   /** Provider identity, for provider content only. */
@@ -464,15 +470,18 @@ export async function upsertHumorContentDoc(
       ? String(input.calibration?.slot)
       : null;
   const internal = adapter.kind === "internal";
-  // "curated" means Mevora-authored, so provider content can never claim it,
-  // and internal content is curated unless it is explicitly a QA fixture.
+  // "curated" means Mevora chose it: internal content is curated unless it is
+  // explicitly a QA fixture, and provider content only when it comes from the
+  // curated GIPHY catalogue — a sync or a bare claim is downgraded.
   const requestedTrust =
     input.sourceTrust && (HUMOR_SOURCE_TRUST_TIERS as readonly string[]).includes(input.sourceTrust)
       ? input.sourceTrust
       : null;
   const sourceTrust: HumorSourceTrust = internal
     ? (requestedTrust === "qa_fixture" ? "qa_fixture" : "curated")
-    : (requestedTrust && requestedTrust !== "curated" ? requestedTrust : "provider");
+    : requestedTrust === "curated"
+      ? (input.curatedCatalogEntry === true ? "curated" : "provider")
+      : (requestedTrust ?? "provider");
   const doc = {
     contentId: input.contentId,
     type: input.type,

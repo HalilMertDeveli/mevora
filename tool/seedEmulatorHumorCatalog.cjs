@@ -3,15 +3,19 @@
  * Seeds the curated humor calibration catalogue into the Firebase Emulator
  * Suite, so "Mizahını Keşfet" has content to calibrate on locally.
  *
- * It writes exactly what the admin-only `seedInternalHumorContent` callable
- * writes: every INTERNAL_HUMOR_SEED item through `upsertHumorContentDoc`, as
- * approved and active. Both come from the COMPILED functions output, so the
+ * It runs exactly what the admin-only `seedInternalHumorContent` callable
+ * runs: `seedCalibrationCatalog` from the COMPILED functions output, so the
  * emulator gets the same catalogue the deployed functions would seed.
  *
- * The curated catalogue is text-only joke cards. Documents seeded by older
- * versions carried unrelated stock media (picsum stills, sample clips); the
- * upsert writes every media key explicitly, so re-seeding converts them to
- * text cards with null media. The script reports how many it converted.
+ * Which catalogue is seeded is ACTIVE_CALIBRATION_CATALOG in
+ * functions/src/humor/calibrationSeed.ts:
+ * - "text_jokes": the Mevora-authored text cards (INTERNAL_HUMOR_SEED);
+ * - "curated_giphy": the hand-picked GIPHY items (CURATED_GIPHY_CATALOG), and
+ *   the text-joke documents are retired — deactivated and un-curated, never
+ *   deleted — as is any `ext_giphy_<id>` sync copy of a curated clip and any
+ *   `hc_gif_*` doc that left the catalogue.
+ * The script reports how many docs it created, refreshed, converted (type
+ * changed) and retired.
  *
  * Emulator only. It refuses to run unless FIRESTORE_EMULATOR_HOST points at a
  * loopback address; with that variable set the Admin SDK cannot reach a cloud
@@ -132,8 +136,8 @@ function warnIfStale(sourceRelative, compiledRelative) {
 }
 
 const admin = requireFromFunctions("firebase-admin");
-const {INTERNAL_HUMOR_SEED, upsertHumorContentDoc, HUMOR_CONTENT_COLLECTION} =
-  requireCompiled("lib/humor/contentRepository.js");
+const {HUMOR_CONTENT_COLLECTION} = requireCompiled("lib/humor/contentRepository.js");
+const {seedCalibrationCatalog} = requireCompiled("lib/humor/calibrationCatalog.js");
 const {buildCalibrationPoolReport} = requireCompiled("lib/humor/calibrationPoolReport.js");
 warnIfStale("src/humor/calibrationSeed.ts", "lib/humor/calibrationSeed.js");
 
@@ -276,33 +280,18 @@ async function providerTopUpStep() {
   const db = admin.firestore();
   const collection = db.collection(HUMOR_CONTENT_COLLECTION);
 
-  let created = 0;
-  let refreshed = 0;
-  let converted = 0;
-  for (const item of INTERNAL_HUMOR_SEED) {
-    const before = await collection.doc(item.contentId).get();
-    const oldMedia = before.exists ? before.get("media") || {} : {};
-    if (before.exists && (oldMedia.downloadUrl || oldMedia.thumbUrl || before.get("type") !== "text")) {
-      converted += 1;
-    }
-    // Same arguments as the admin seedInternalHumorContent callable.
-    await upsertHumorContentDoc(db, {
-      ...item,
-      safetyStatus: "approved",
-      active: true,
-    });
-    if (before.exists) {
-      refreshed += 1;
-    } else {
-      created += 1;
-    }
-  }
+  // Same code path as the admin seedInternalHumorContent callable.
+  const seeded = await seedCalibrationCatalog(db);
   const total = (await collection.select().get()).size;
+  const label = seeded.kind === "curated_giphy" ? "curated GIPHY items" : "curated text cards";
   console.log(
-    `  written: ${INTERNAL_HUMOR_SEED.length} curated text cards ` +
-      `(${created} new, ${refreshed} refreshed, ${converted} converted from old media) · ` +
-      `${HUMOR_CONTENT_COLLECTION} holds ${total} docs`,
+    `  catalogue: ${seeded.kind} · written: ${seeded.written} ${label} ` +
+      `(${seeded.created} new, ${seeded.refreshed} refreshed, ${seeded.converted} converted) · ` +
+      `retired: ${seeded.retired} · ${HUMOR_CONTENT_COLLECTION} holds ${total} docs`,
   );
+  if (seeded.written === 0) {
+    console.warn("  WARNING: the active calibration catalogue is empty");
+  }
 
   const report = await buildCalibrationPoolReport(db);
   console.log(

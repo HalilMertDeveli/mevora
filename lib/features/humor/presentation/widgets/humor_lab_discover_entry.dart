@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 /// Discover promo entry for Humor Lab (not Settings; does not change tab indexes).
 ///
@@ -16,7 +19,10 @@ import 'package:mevora/l10n/app_localizations.dart';
 /// anyone who has not finished calibration goes through the invitation first,
 /// which explains what the fifteen items are for and offers a way out.
 class HumorLabDiscoverEntry extends StatefulWidget {
-  const HumorLabDiscoverEntry({super.key});
+  const HumorLabDiscoverEntry({super.key, this.compact = false});
+
+  /// A one-line pill for the Discover header instead of the full card.
+  final bool compact;
 
   @override
   State<HumorLabDiscoverEntry> createState() => _HumorLabDiscoverEntryState();
@@ -84,54 +90,94 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
         calibration.totalCount,
       );
     }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Material(
-        color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          onTap: () => unawaited(_open()),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.theater_comedy_outlined,
-                  color: theme.colorScheme.onSecondaryContainer,
+    final p = context.palette;
+    if (widget.compact) {
+      final progress =
+          calibration != null && calibration.started && !calibration.complete
+          ? ' · ${calibration.completedCount}/${calibration.totalCount}'
+          : '';
+      return Semantics(
+        button: true,
+        label: '${l10n.humorLabDiscoverCta}. $subtitle',
+        excludeSemantics: true,
+        child: Material(
+          color: p.humorContainer,
+          shape: const StadiumBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => unawaited(_open()),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 40),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s12 + 2,
+                  vertical: AppSpacing.sm,
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.humorLabDiscoverCta,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: theme.colorScheme.onSecondaryContainer,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(MevoraIcons.humor, size: 18, color: p.humor),
+                    const SizedBox(width: AppSpacing.sm),
+                    Flexible(
+                      child: Text(
+                        '${l10n.humorLabTitle}$progress',
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSecondaryContainer
-                              .withValues(alpha: 0.85),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: p.onHumorContainer,
                         ),
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Icon(
+                      MevoraIcons.chevronRight,
+                      size: 14,
+                      color: p.onHumorContainer,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return MevoraCard(
+      color: p.humorContainer,
+      onTap: () => unawaited(_open()),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          const MevoraIconBadge(
+            icon: MevoraIcons.humor,
+            tone: MevoraTone.humor,
+            size: 44,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.humorLabDiscoverCta,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: p.onHumorContainer,
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  color: theme.colorScheme.onSecondaryContainer,
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: p.onHumorContainer,
+                  ),
                 ),
               ],
             ),
           ),
-        ),
+          Icon(MevoraIcons.chevronRight, color: p.onHumorContainer, size: 18),
+        ],
       ),
     );
   }

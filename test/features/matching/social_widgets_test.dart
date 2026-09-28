@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/di/social_services_factory.dart';
 import 'package:mevora/core/theme/app_theme.dart';
@@ -178,9 +179,9 @@ void main() {
     await tester.pump();
     expect(find.text('Merhaba'), findsOneWidget);
     expect(find.text('12:05'), findsOneWidget);
-    expect(find.byIcon(Icons.done_all), findsOneWidget);
-    expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.checkAll), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.play), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.photo), findsOneWidget);
   });
 
   testWidgets('composer exposes attach and voice actions', (tester) async {
@@ -241,14 +242,14 @@ void main() {
       ),
     );
     expect(find.byKey(const ValueKey('chat-record-voice')), findsOneWidget);
-    expect(find.byIcon(Icons.send_rounded), findsNothing);
+    expect(find.byIcon(MevoraIcons.send), findsNothing);
 
     composer.text = 'Merhaba';
     composer.notifyListeners();
     await tester.pump();
 
     expect(find.byKey(const ValueKey('chat-record-voice')), findsNothing);
-    expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.send), findsOneWidget);
     expect(find.byTooltip(_l10n.send), findsOneWidget);
   });
 

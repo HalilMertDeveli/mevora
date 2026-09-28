@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
@@ -71,7 +72,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 phone.resetToPhoneEntry();
                 context.go(AppRoutes.phone);
               },
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(MevoraIcons.back),
             ),
           ),
           body: SafeArea(

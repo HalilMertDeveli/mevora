@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
 
 import '../../helpers/pump_app.dart';
@@ -13,6 +13,6 @@ void main() {
     );
 
     expect(find.text('AL'), findsOneWidget);
-    expect(find.byIcon(Icons.verified), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.verified), findsOneWidget);
   });
 }

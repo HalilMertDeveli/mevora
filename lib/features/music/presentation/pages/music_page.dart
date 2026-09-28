@@ -1,27 +1,35 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_profile_details_page.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/presentation/controllers/music_controller.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_badge.dart';
+import 'package:mevora/features/music/presentation/widgets/music_ui.dart';
 import 'package:mevora/features/music/presentation/widgets/public_music_visibility_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_motion_size.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_avatar.dart';
+import 'package:mevora/shared/widgets/mevora_banner.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_dialog.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
+import 'package:mevora/shared/widgets/mevora_error_view.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
+import 'package:mevora/shared/widgets/mevora_section_header.dart';
 
 class MusicPage extends StatefulWidget {
   const MusicPage({super.key, this.controller});
@@ -71,8 +79,7 @@ class _MusicPageState extends State<MusicPage> {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.musicTitle)),
         body: MevoraEmptyState(
-          icon: Icons.library_music_outlined,
-          riveAsset: MevoraRiveAssets.empty,
+          art: MevoraArt.music,
           title: l10n.musicTitle,
           message: l10n.musicUnconnectedCopy,
         ),
@@ -88,7 +95,7 @@ class _MusicPageState extends State<MusicPage> {
             child: state.isLoading
                 ? MevoraLoading.page(
                     message: l10n.loading,
-                    asset: MevoraRiveAssets.musicAnalyzing,
+                    art: MevoraArt.music,
                   )
                 : state.loadFailed
                 ? _MusicLoadFailedView(controller: controller)
@@ -113,51 +120,49 @@ class _UnconnectedMusicView extends StatelessWidget {
     final theme = Theme.of(context);
     final connecting = controller.state.phase == MusicConnectPhase.connecting;
     final error = _musicError(l10n, controller.state.failure);
-    final accentSize = MevoraMotionSize.accent(context);
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.screenPadding),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.lg,
+        AppSpacing.screenPadding,
+        AppSpacing.xl,
+      ),
       children: [
         Center(
-          child: MevoraRiveAnimation(
-            asset: connecting
-                ? MevoraRiveAssets.spotifyConnecting
-                : MevoraRiveAssets.spotifyIdle,
-            width: accentSize,
-            height: accentSize,
-            semanticsLabel: connecting ? l10n.musicConnecting : l10n.musicTitle,
-            fallback: Icon(
-              Icons.library_music_outlined,
-              size: 40,
-              color: theme.colorScheme.primary,
-            ),
-          ),
+          child: MevoraSpot(art: MevoraArt.music, animate: connecting),
         ),
         const SizedBox(height: AppSpacing.lg),
+        Semantics(
+          header: true,
+          child: Text(
+            l10n.profileMusicTasteHeading,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineMedium,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.s12),
         Text(
           l10n.musicUnconnectedCopy,
           textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: context.palette.textSecondary,
+          ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          l10n.musicPrivacyNotice,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall,
+        const SizedBox(height: AppSpacing.lg),
+        MevoraBanner(
+          message: l10n.musicPrivacyNotice,
+          icon: MevoraIcons.lock,
+          tone: MevoraTone.music,
         ),
         if (error != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            error,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
+          const SizedBox(height: AppSpacing.s12),
+          MevoraBanner(message: error, tone: MevoraTone.error),
         ],
         const SizedBox(height: AppSpacing.xl),
         MevoraButton(
           label: l10n.musicConnectCta,
-          icon: Icons.headphones_outlined,
+          icon: MevoraIcons.spotify,
+          size: MevoraButtonSize.large,
           isLoading: connecting,
           onPressed: connecting ? null : controller.connectSpotify,
         ),
@@ -180,82 +185,44 @@ class _ConnectedMusicView extends StatelessWidget {
     final repository = MusicScope.maybeOf(context);
     final syncing = state.phase == MusicConnectPhase.syncing;
     final error = _musicError(l10n, state.failure);
+
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.screenPadding),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        AppSpacing.sm,
+        AppSpacing.screenPadding,
+        AppSpacing.xl,
+      ),
       children: [
-        MevoraCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.musicConnected, style: theme.textTheme.titleMedium),
-              if (profile.displayName != null) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(profile.displayName!, style: theme.textTheme.bodyMedium),
-              ],
-              const SizedBox(height: AppSpacing.md),
-              MevoraButton(
-                label: l10n.musicRefresh,
-                variant: MevoraButtonVariant.secondary,
-                isLoading: syncing,
-                onPressed: state.canRefresh && !syncing
-                    ? controller.syncTaste
-                    : null,
-              ),
-              if (!state.canRefresh) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  l10n.musicRefreshCooldown,
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-              const SizedBox(height: AppSpacing.sm),
-              MevoraButton(
-                label: l10n.musicDisconnectCta,
-                variant: MevoraButtonVariant.ghost,
-                onPressed: syncing
-                    ? null
-                    : () => unawaited(_confirmDisconnect(context, controller)),
-              ),
-            ],
-          ),
+        _MusicSignatureCard(
+          title: l10n.musicProfileTitle,
+          genres: [
+            for (final g in profile.genres) (name: g.name, percent: g.percent),
+          ],
+          artistImages: [for (final a in profile.profileTopArtists) a.image],
+          syncing: syncing,
+          syncingLabel: l10n.musicSyncing,
+          emptyLabel: l10n.musicSameTasteEmpty,
+          connectedLabel: l10n.musicConnected,
         ),
-        if (syncing) ...[
-          const SizedBox(height: AppSpacing.md),
-          MevoraLoading(
-            message: l10n.musicSyncing,
-            asset: MevoraRiveAssets.musicAnalyzing,
-          ),
-        ],
         if (error != null) ...[
           const SizedBox(height: AppSpacing.md),
-          Text(
-            error,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
+          MevoraBanner(message: error, tone: MevoraTone.error),
+        ],
+        if (profile.hasLimitedData) ...[
+          const SizedBox(height: AppSpacing.md),
+          MevoraBanner(message: l10n.musicLimitedData, tone: MevoraTone.info),
         ],
         // Connection and visibility are separate: this card publishes or
         // hides the selection without touching the Spotify connection.
         if (repository != null) ...[
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
           PublicMusicVisibilityCard(
             repository: repository,
             profile: profile,
             onChanged: () => unawaited(controller.load()),
           ),
         ],
-        if (profile.hasLimitedData) ...[
-          const SizedBox(height: AppSpacing.md),
-          Text(l10n.musicLimitedData, style: theme.textTheme.bodyMedium),
-        ],
-        const SizedBox(height: AppSpacing.lg),
-        Text(l10n.musicProfileTitle, style: theme.textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.sm),
-        if (profile.genres.isEmpty)
-          Text(l10n.musicSameTasteEmpty, style: theme.textTheme.bodyMedium)
-        else
-          ...profile.genres.map((genre) => _GenreBar(genre: genre)),
         // The four collections the Music Profile is built from. Each is
         // already capped by the backend; the screen only lays them out.
         ..._artistSection(
@@ -281,18 +248,25 @@ class _ConnectedMusicView extends StatelessWidget {
         ),
         ..._playlistSection(context, playlists: profile.playlists),
         const SizedBox(height: AppSpacing.xl),
-        Text(l10n.musicSameTasteTitle, style: theme.textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.sm),
+        MevoraSectionHeader(
+          title: l10n.musicSameTasteTitle,
+          icon: MevoraIcons.people,
+          iconColor: context.palette.music,
+        ),
+        const SizedBox(height: AppSpacing.s12),
         if (state.sameTaste.isEmpty)
-          MevoraEmptyState(
-            icon: Icons.people_outline,
-            riveAsset: MevoraRiveAssets.emptyProfiles,
-            title: l10n.musicSameTasteTitle,
-            message: l10n.musicSameTasteEmpty,
+          MevoraCard(
+            emphasis: MevoraCardEmphasis.quiet,
+            child: MevoraEmptyState(
+              art: MevoraArt.music,
+              compact: true,
+              title: l10n.musicSameTasteTitle,
+              message: l10n.musicSameTasteEmpty,
+            ),
           )
         else
-          ...state.sameTaste.map(
-            (match) => _SameTasteTile(
+          for (final match in state.sameTaste)
+            _SameTasteTile(
               match: match,
               onTap: () {
                 unawaited(
@@ -306,19 +280,172 @@ class _ConnectedMusicView extends StatelessWidget {
                 );
               },
             ),
-          ),
         // "This week's music" used to close this page. It is a community chart
         // of the last seven days, and putting it here let a passing week read
         // as the member's musical identity. What represents them is the
         // published Music Taste and the general summary above it. The weekly
         // aggregate stays in the backend for whatever wants a chart, rather
         // than on the page that describes a person.
+        const SizedBox(height: AppSpacing.xl),
+        MevoraListGroup(
+          children: [
+            MevoraListRow(
+              title: 'Spotify',
+              subtitle: profile.displayName,
+              leading: const MevoraIconBadge(
+                icon: MevoraIcons.spotify,
+                tone: MevoraTone.music,
+                size: 36,
+              ),
+              showChevron: false,
+            ),
+            MevoraListRow(
+              title: l10n.musicRefresh,
+              subtitle: state.canRefresh ? null : l10n.musicRefreshCooldown,
+              icon: MevoraIcons.refresh,
+              enabled: state.canRefresh && !syncing,
+              trailing: syncing
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+              showChevron: false,
+              onTap: state.canRefresh && !syncing ? controller.syncTaste : null,
+            ),
+            MevoraListRow(
+              title: l10n.musicDisconnectCta,
+              icon: MevoraIcons.signOut,
+              destructive: true,
+              showChevron: false,
+              enabled: !syncing,
+              onTap: syncing
+                  ? null
+                  : () => unawaited(_confirmDisconnect(context, controller)),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(l10n.musicPrivacyNotice, style: theme.textTheme.bodySmall),
       ],
     );
   }
 }
 
-/// One titled row of artist chips, or nothing when there is nothing to show.
+/// The member's musical signature: their top artists overlapping like the
+/// Mevora mark, and the shape of their taste as one composition bar.
+class _MusicSignatureCard extends StatelessWidget {
+  const _MusicSignatureCard({
+    required this.title,
+    required this.genres,
+    required this.artistImages,
+    required this.syncing,
+    required this.syncingLabel,
+    required this.emptyLabel,
+    required this.connectedLabel,
+  });
+
+  final String title;
+  final List<GenreSlice> genres;
+  final List<String?> artistImages;
+  final bool syncing;
+  final String syncingLabel;
+  final String emptyLabel;
+
+  /// "Spotify connected" — the connection state and the attribution in one.
+  final String connectedLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final topGenres = genres.take(3).map((g) => _titleCase(g.name)).join(' · ');
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s20),
+      decoration: BoxDecoration(
+        color: AppColors.duskInk,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (artistImages.isNotEmpty) ...[
+                MusicPortraitStack(imageUrls: artistImages),
+                const SizedBox(width: AppSpacing.md),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: AppColors.onMedia,
+                        ),
+                      ),
+                    ),
+                    if (topGenres.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        topGenres,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.onMediaMuted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s20),
+          if (syncing)
+            Row(
+              children: [
+                const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.onMedia,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  syncingLabel,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.onMediaMuted,
+                  ),
+                ),
+              ],
+            )
+          else if (genres.isEmpty)
+            Text(
+              emptyLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.onMediaMuted,
+              ),
+            )
+          else
+            GenreComposition(genres: genres, onDark: true),
+          const SizedBox(height: AppSpacing.md),
+          MevoraPill(
+            label: connectedLabel,
+            icon: MevoraIcons.spotify,
+            tone: MevoraTone.onMedia,
+            dense: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One titled row of artists, or nothing when there is nothing to show.
 ///
 /// A note replaces the list when Mevora cannot read the data yet — an empty
 /// section would otherwise claim the member follows nobody.
@@ -333,59 +460,43 @@ List<Widget> _artistSection(
     return const [];
   }
   return [
-    const SizedBox(height: AppSpacing.lg),
-    Text(title, style: theme.textTheme.titleMedium),
-    const SizedBox(height: AppSpacing.sm),
-    if (artists.isEmpty)
-      Text(
-        note!,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      )
-    else ...[
-      Wrap(
-        spacing: AppSpacing.sm,
-        runSpacing: AppSpacing.sm,
-        children: artists
-            .map((artist) => _TasteChip(label: artist.name, image: artist.image))
-            .toList(),
+    const SizedBox(height: AppSpacing.xl),
+    MevoraSectionHeader(title: title),
+    const SizedBox(height: AppSpacing.s12),
+    if (artists.isNotEmpty)
+      MusicArtistRow(
+        children: [
+          for (final artist in artists)
+            MusicArtistTile(name: artist.name, imageUrl: artist.image),
+        ],
       ),
-      if (note != null) ...[
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          note,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+    if (note != null) ...[
+      const SizedBox(height: AppSpacing.xs),
+      Text(note, style: theme.textTheme.bodyMedium),
     ],
   ];
 }
 
-/// One titled row of track chips, each labelled with its artist.
+/// Top tracks, ranked.
 List<Widget> _trackSection(
   BuildContext context, {
   required String title,
   required List<MusicTrack> tracks,
 }) {
-  final theme = Theme.of(context);
   if (tracks.isEmpty) {
     return const [];
   }
   return [
-    const SizedBox(height: AppSpacing.lg),
-    Text(title, style: theme.textTheme.titleMedium),
-    const SizedBox(height: AppSpacing.sm),
-    ...tracks.map(
-      (track) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: _Cover(url: track.albumImage),
-        title: Text(track.name),
-        subtitle: track.artist.isEmpty ? null : Text(track.artist),
+    const SizedBox(height: AppSpacing.xl),
+    MevoraSectionHeader(title: title),
+    const SizedBox(height: AppSpacing.xs),
+    for (var i = 0; i < tracks.length; i++)
+      MusicTrackRow(
+        rank: i + 1,
+        title: tracks[i].name,
+        artist: tracks[i].artist,
+        imageUrl: tracks[i].albumImage,
       ),
-    ),
   ];
 }
 
@@ -396,75 +507,22 @@ List<Widget> _playlistSection(
   required List<MusicPlaylist> playlists,
 }) {
   final l10n = AppLocalizations.of(context);
-  final theme = Theme.of(context);
   if (playlists.isEmpty) {
     return const [];
   }
   return [
-    const SizedBox(height: AppSpacing.lg),
-    Text(l10n.musicPlaylistsTitle, style: theme.textTheme.titleMedium),
-    const SizedBox(height: AppSpacing.sm),
-    ...playlists.map(
-      (playlist) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.queue_music_outlined),
-        title: Text(playlist.name),
-        subtitle: playlist.trackCount > 0
-            ? Text(l10n.musicPlaylistTrackCount(playlist.trackCount))
+    const SizedBox(height: AppSpacing.xl),
+    MevoraSectionHeader(title: l10n.musicPlaylistsTitle),
+    const SizedBox(height: AppSpacing.xs),
+    for (final playlist in playlists)
+      MusicTrackRow(
+        icon: MevoraIcons.playlist,
+        title: playlist.name,
+        artist: playlist.trackCount > 0
+            ? l10n.musicPlaylistTrackCount(playlist.trackCount)
             : null,
       ),
-    ),
   ];
-}
-
-class _GenreBar extends StatelessWidget {
-  const _GenreBar({required this.genre});
-
-  final GenreShare genre;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(genre.name, style: theme.textTheme.bodyMedium),
-              ),
-              Text('${genre.percent}%', style: theme.textTheme.labelMedium),
-            ],
-          ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadii.pill),
-            child: LinearProgressIndicator(
-              value: (genre.percent / 100).clamp(0, 1),
-              minHeight: 8,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TasteChip extends StatelessWidget {
-  const _TasteChip({required this.label, this.image});
-
-  final String label;
-  final String? image;
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      avatar: _Cover(url: image, size: 24),
-      label: Text(label),
-    );
-  }
 }
 
 class _SameTasteTile extends StatelessWidget {
@@ -476,14 +534,20 @@ class _SameTasteTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final candidate = match.candidate;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: MevoraCard(
         onTap: onTap,
+        padding: const EdgeInsets.all(AppSpacing.s12 + 2),
         child: Row(
           children: [
-            _Cover(url: candidate.photoUrl, size: 56),
+            MevoraAvatar(
+              name: candidate.displayName,
+              image: MevoraNetworkImages.provider(candidate.photoUrl),
+              size: 56,
+            ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
@@ -491,9 +555,9 @@ class _SameTasteTile extends StatelessWidget {
                 children: [
                   Text(
                     '${candidate.displayName}, ${candidate.age}',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: theme.textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   MusicCompatibilityBadge(
                     score: match.musicScore,
                     sharedTracks: match.sharedTracks,
@@ -502,16 +566,21 @@ class _SameTasteTile extends StatelessWidget {
                     sharedTrackCount: match.sharedTrackCount,
                     sharedArtistCount: match.sharedArtistCount,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     l10n.musicSharedCounts(
                       match.sharedTrackCount,
                       match.sharedArtistCount,
                     ),
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
+            ),
+            Icon(
+              MevoraIcons.chevronRight,
+              size: 18,
+              color: context.palette.textTertiary,
             ),
           ],
         ),
@@ -520,35 +589,8 @@ class _SameTasteTile extends StatelessWidget {
   }
 }
 
-class _Cover extends StatelessWidget {
-  const _Cover({this.url, this.size = 48});
-
-  final String? url;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadii.md),
-      child: SizedBox(
-        width: size,
-        height: size,
-        child:
-            url == null ||
-                url!.isEmpty ||
-                MevoraNetworkImages.provider(url) == null
-            ? ColoredBox(
-                color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                child: const Icon(Icons.album_outlined),
-              )
-            : Image(
-                image: MevoraNetworkImages.provider(url)!,
-                fit: BoxFit.cover,
-              ),
-      ),
-    );
-  }
-}
+String _titleCase(String value) =>
+    value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
 
 /// Shown when `getMusicAccount` itself failed. A connected user must not be
 /// told to connect Spotify because the request did not come back.
@@ -560,30 +602,13 @@ class _MusicLoadFailedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.screenPadding),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.cloud_off_outlined,
-            size: 48,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            _musicError(l10n, controller.state.failure) ?? l10n.musicNetwork,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          MevoraButton(
-            label: l10n.retry,
-            isLoading: controller.state.isLoading,
-            onPressed: () => unawaited(controller.load()),
-          ),
-        ],
-      ),
+    return MevoraErrorView(
+      art: MevoraArt.offline,
+      title: l10n.musicTitle,
+      message: _musicError(l10n, controller.state.failure) ?? l10n.musicNetwork,
+      onRetry: controller.state.isLoading
+          ? null
+          : () => unawaited(controller.load()),
     );
   }
 }
@@ -613,22 +638,13 @@ Future<void> _confirmDisconnect(
   MusicController controller,
 ) async {
   final l10n = AppLocalizations.of(context);
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(l10n.musicDisconnectConfirmTitle),
-      content: Text(l10n.musicDisconnectConfirmBody),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.musicDisconnectCta),
-        ),
-      ],
-    ),
+  final confirmed = await MevoraDialog.show(
+    context,
+    title: l10n.musicDisconnectConfirmTitle,
+    message: l10n.musicDisconnectConfirmBody,
+    confirmLabel: l10n.musicDisconnectCta,
+    cancelLabel: l10n.cancel,
+    confirmVariant: MevoraButtonVariant.destructive,
   );
   if (confirmed == true) {
     await controller.disconnect();

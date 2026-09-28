@@ -699,7 +699,7 @@
   "boostBuy": "Buy Boost",
   "boostPurchasing": "Starting purchase...",
   "boostVerifying": "Confirming your purchase...",
-  "boostSuccessTitle": "Boost is on! 🚀",
+  "boostSuccessTitle": "Boost is on",
   "boostSuccessMessage": "Boost is on. While it lasts, your profile ranks higher among eligible Discover profiles.",
   "boostAlreadyActive": "You already have an active Boost. Buying another pack adds time to the remaining period.",
   "boostPurchaseCancelled": "Purchase cancelled.",
@@ -919,8 +919,8 @@
   "tabSettings": "Settings",
   "tabMusic": "Music",
   "musicTitle": "Music",
-  "musicConnectCta": "🎵 Connect Spotify",
-  "musicConnected": "✓ Spotify connected",
+  "musicConnectCta": "Connect Spotify",
+  "musicConnected": "Spotify connected",
   "musicUnconnectedCopy": "Connect your Spotify account and discover people who fit your music taste.",
   "musicConnecting": "Connecting Spotify…",
   "musicSyncing": "Refreshing your music taste…",
@@ -1010,7 +1010,7 @@
     }
   },
   "likesYouSeeWhy": "See why you match",
-  "likesYouLockedTitle": "People who may fit you",
+  "likesYouLockedTitle": "See who's already interested",
   "likesYouLockedCount": "{count} people like you",
   "@likesYouLockedCount": {
     "placeholders": {
@@ -1021,7 +1021,7 @@
   },
   "likesYouLockedMessage": "Upgrade to Premium to see who may align with you. Photos and names stay hidden until then.",
   "likesYouUnlockCta": "Unlock with Premium",
-  "likesYouBlurredHint": "People who may fit you",
+  "likesYouBlurredHint": "Each tile is a real person. Premium shows who, and why you fit.",
   "likesYouHiddenName": "Hidden profile",
   "likesYouHiddenSubtitle": "Unlock to explore compatibility",
   "likesYouEmptyTitle": "Keep exploring",
@@ -1229,7 +1229,7 @@
     }
   },
   "compatReasonCommunication": "You communicate in similar ways",
-  "hiddenCompatTitle": "Someone is thinking like you 👀",
+  "hiddenCompatTitle": "Someone is thinking like you",
   "hiddenCompatMessage": "Someone answered {count} questions the same way you did.",
   "@hiddenCompatMessage": {
     "placeholders": {
@@ -1408,7 +1408,7 @@
   "privacyChangesBody": "We may update this policy. The latest version is always available in the app and on our public policy page.",
   "privacyContactTitle": "Contact",
   "privacyContactBody": "Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.",
-  "musicMatchTitle": "🎵 Music Match — {percent}%",
+  "musicMatchTitle": "Music match · {percent}%",
   "@musicMatchTitle": {
     "placeholders": {
       "percent": {
@@ -1419,7 +1419,7 @@
   "musicInsightBandHigh": "Your music tastes are quite similar.",
   "musicInsightBandMid": "You share some strong music tastes.",
   "musicInsightBandLow": "Your music tastes differ, but you still share a few artists.",
-  "musicInsightSharedTracks": "🎵 You have {count} shared songs.",
+  "musicInsightSharedTracks": "You have {count} shared songs.",
   "@musicInsightSharedTracks": {
     "placeholders": {
       "count": {
@@ -1427,7 +1427,7 @@
       }
     }
   },
-  "musicInsightSharedArtists": "🎤 You have {count} shared artists.",
+  "musicInsightSharedArtists": "You have {count} shared artists.",
   "@musicInsightSharedArtists": {
     "placeholders": {
       "count": {
@@ -1435,7 +1435,7 @@
       }
     }
   },
-  "musicInsightSharedPlaylistTracks": "🎧 Your playlists share {count} songs.",
+  "musicInsightSharedPlaylistTracks": "Your playlists share {count} songs.",
   "@musicInsightSharedPlaylistTracks": {
     "placeholders": {
       "count": {
@@ -1443,7 +1443,7 @@
       }
     }
   },
-  "musicInsightSharedRecentTracks": "🎵 You recently listened to {count} of the same songs.",
+  "musicInsightSharedRecentTracks": "You recently listened to {count} of the same songs.",
   "@musicInsightSharedRecentTracks": {
     "placeholders": {
       "count": {
@@ -1451,7 +1451,7 @@
       }
     }
   },
-  "musicInsightTopSharedArtist": "🎵 You both listen to {name} a lot.",
+  "musicInsightTopSharedArtist": "You both listen to {name} a lot.",
   "@musicInsightTopSharedArtist": {
     "placeholders": {
       "name": {
@@ -1459,7 +1459,7 @@
       }
     }
   },
-  "musicInsightTopSharedGenres": "🎶 Your tastes overlap most in {genres}.",
+  "musicInsightTopSharedGenres": "Your tastes overlap most in {genres}.",
   "@musicInsightTopSharedGenres": {
     "placeholders": {
       "genres": {
@@ -1469,9 +1469,9 @@
   },
   "musicInsightDataUnavailable": "Not enough Spotify taste data to compare yet.",
   "musicSpotifyNotConnected": "Spotify not connected",
-  "musicSharedTracksHeading": "🎵 Songs you both like",
-  "musicSharedArtistsHeading": "🎤 Artists you both like",
-  "musicSharedGenresHeading": "🎶 Shared genres",
+  "musicSharedTracksHeading": "Songs you both like",
+  "musicSharedArtistsHeading": "Artists you both like",
+  "musicSharedGenresHeading": "Shared genres",
   "musicViewAllShared": "View all ({count})",
   "@musicViewAllShared": {
     "placeholders": {
@@ -1620,9 +1620,9 @@
   "musicDisconnectCta": "Disconnect Spotify",
   "musicDisconnectConfirmTitle": "Disconnect Spotify?",
   "musicDisconnectConfirmBody": "We'll remove your Spotify link and clear cached music taste. Match music compatibility will stop showing until you reconnect.",
-  "musicMatchTeaser": "🎵 Your music tastes may align — unlock full insights with Premium",
+  "musicMatchTeaser": "Your music tastes may align — unlock full insights with Premium",
   "musicPremiumUnlock": "Unlock",
-  "musicNoCommonTracks": "No shared songs yet 🎵",
+  "musicNoCommonTracks": "No shared songs yet",
   "musicRecentlyPlayedHeading": "Recently played",
   "humorLabTitle": "Humor Lab",
   "humorLabSubtitle": "Tell us how funny each joke, clip or meme is.",
@@ -1712,13 +1712,13 @@
   "boostCompletedEmpty": "This Boost did not reach anyone.",
   "boostResultsUnavailable": "Results are not available for this Boost.",
   "boostResultsDelayNote": "Counts can lag a little behind live activity.",
-  "onboardingMusicTitle": "Does music matter to you? 🎧",
+  "onboardingMusicTitle": "Does music matter to you?",
   "onboardingMusicBody": "Connect Spotify and Mevora can find people who actually listen to what you listen to — and explain why you fit.",
   "onboardingMusicConnect": "Connect my Spotify",
   "onboardingMusicSkip": "Skip for now",
   "onboardingMusicSkipNote": "You can connect Spotify later from the Music tab.",
   "onboardingMusicCancelled": "Spotify connection was cancelled. You can try again or skip.",
-  "publicMusicTitle": "We picked up your Spotify taste 🎧",
+  "publicMusicTitle": "We picked up your Spotify taste",
   "publicMusicSubtitle": "Choose what you want to show on your profile.",
   "publicMusicArtistsHeading": "Artists",
   "publicMusicTracksHeading": "Songs",
@@ -1752,7 +1752,7 @@
   "publicMusicVisibilityBody": "Turn this off to keep your selection private. Spotify stays connected and still improves your matches.",
   "publicMusicHiddenNotice": "Your Music Taste is hidden from other people.",
   "publicMusicEditCta": "Edit my Music Taste",
-  "profileMusicTasteHeading": "Music Taste 🎧",
+  "profileMusicTasteHeading": "Music taste",
   "profileMusicOpenInSpotify": "Open in Spotify",
   "musicLimitedData": "Spotify is connected, but there isn't much listening history yet.",
   "humorCalibrationIntroTitle": "Let us find your humor",
@@ -1899,5 +1899,14 @@
       }
     }
   },
-  "musicSectionEmpty": "Nothing here yet."
+  "musicSectionEmpty": "Nothing here yet.",
+  "profileSectionSignals": "Your compatibility signals",
+  "profileSectionTrust": "Trust & visibility",
+  "premiumBenefitsHeading": "What Premium adds",
+  "premiumBenefitLikesTitle": "See who liked you",
+  "premiumBenefitLikesBody": "Everyone who liked you in one list — and why you might fit.",
+  "premiumBenefitMusicTitle": "Your full music match",
+  "premiumBenefitMusicBody": "The songs, artists and genres you share with each match.",
+  "premiumPlansHeading": "Choose a plan",
+  "chatPreviewEncrypted": "Encrypted message"
 }

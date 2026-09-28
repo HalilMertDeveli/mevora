@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
 import 'package:mevora/features/permissions/presentation/permission_copy.dart';
@@ -39,7 +40,7 @@ class PermissionDeniedView extends StatelessWidget {
           const Spacer(),
           Icon(
             permanentlyDenied
-                ? Icons.lock_outline_rounded
+                ? MevoraIcons.lock
                 : PermissionCopy.icon(type),
             size: 56,
             color: theme.colorScheme.primary,

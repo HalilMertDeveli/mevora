@@ -1,21 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/features/authentication/presentation/pages/splash_page.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
-import 'package:mevora/shared/components/mevora_logo.dart';
+import 'package:mevora/shared/art/mevora_mark.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
 
 import '../../helpers/pump_app.dart';
 
 void main() {
-  testWidgets('splash shows only the lower loading rive', (tester) async {
+  testWidgets('splash shows the settling mark, wordmark and one loader', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrapWithApp(const SplashPage(), scaffold: false));
 
-    expect(find.byType(MevoraLogo), findsOneWidget);
-    expect(find.byType(MevoraRiveAnimation), findsOneWidget);
-    final rive = tester.widget<MevoraRiveAnimation>(
-      find.byType(MevoraRiveAnimation),
-    );
-    expect(rive.asset, MevoraRiveAssets.loading);
-    expect(rive.asset, isNot(MevoraRiveAssets.splash));
+    expect(find.byType(MevoraMarkIntro), findsOneWidget);
+    expect(find.text('mevora'), findsOneWidget);
+    expect(find.byType(MevoraOrbitLoader), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1300));
   });
 }

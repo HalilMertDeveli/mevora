@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/support_scope.dart';
@@ -108,9 +109,9 @@ class _SupportTicketDetailPageState extends State<SupportTicketDetailPage> {
           child: _isLoading
               ? MevoraLoading.page(message: l10n.loading)
               : MevoraErrorView(
-                  icon: _notFound
-                      ? Icons.search_off_rounded
-                      : Icons.error_outline_rounded,
+                  art: _notFound
+                      ? MevoraArt.emptyMessages
+                      : MevoraArt.error,
                   title: _notFound
                       ? l10n.supportTicketNotFoundTitle
                       : l10n.somethingWentWrong,

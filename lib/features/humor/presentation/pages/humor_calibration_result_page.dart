@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
@@ -152,6 +154,7 @@ class _HumorCalibrationResultPageState
     }
 
     final vibes = HumorProfileDisplay.visibleTopVibes(profile, max: 4);
+    final p = context.palette;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.humorResultTitle)),
@@ -171,15 +174,16 @@ class _HumorCalibrationResultPageState
               const SizedBox(height: AppSpacing.md),
             ],
             const SizedBox(height: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(AppRadii.lg),
-              ),
+            // The summary is the payoff of calibration, so it reads as a
+            // quote in the display face rather than as body copy.
+            MevoraCard(
+              color: p.humorContainer,
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Text(
                 HumorProfileDisplay.summarySentence(l10n, profile),
-                style: theme.textTheme.bodyLarge,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: p.onHumorContainer,
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -194,9 +198,10 @@ class _HumorCalibrationResultPageState
             const SizedBox(height: AppSpacing.xl),
             MevoraButton(label: l10n.humorResultDone, onPressed: _done),
             const SizedBox(height: AppSpacing.sm),
-            TextButton(
+            MevoraButton(
+              label: l10n.humorResultKeepGoing,
+              variant: MevoraButtonVariant.ghost,
               onPressed: () => context.push(AppRoutes.humorLab),
-              child: Text(l10n.humorResultKeepGoing),
             ),
           ],
         ),
@@ -249,6 +254,8 @@ class _VibeBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: (vibe.value / 100).clamp(0.0, 1.0),
                 minHeight: 8,
+                color: context.palette.humor,
+                backgroundColor: context.palette.humorContainer,
               ),
             ),
           ),

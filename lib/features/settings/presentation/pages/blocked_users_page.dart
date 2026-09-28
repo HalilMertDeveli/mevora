@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/features/settings/domain/entities/blocked_user_entry.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
@@ -28,16 +29,12 @@ class BlockedUsersPage extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting &&
               !snapshot.hasData) {
-            return MevoraLoading.page(
-              message: l10n.blockedUsers,
-              size: 72,
-            );
+            return MevoraLoading.page(message: l10n.blockedUsers);
           }
           final entries = snapshot.data ?? const [];
           if (entries.isEmpty) {
             return MevoraEmptyState(
-              icon: Icons.block_outlined,
-              riveAsset: MevoraRiveAssets.empty,
+              art: MevoraArt.blocked,
               title: l10n.settingsBlockedEmptyTitle,
               message: l10n.settingsBlockedEmptyMessage,
             );
@@ -51,9 +48,7 @@ class BlockedUsersPage extends StatelessWidget {
               return ListTile(
                 leading: CircleAvatar(
                   backgroundImage: photo,
-                  child: photo == null
-                      ? const Icon(Icons.person_outline)
-                      : null,
+                  child: photo == null ? const Icon(MevoraIcons.profile) : null,
                 ),
                 title: Text(entry.displayName),
                 trailing: TextButton(

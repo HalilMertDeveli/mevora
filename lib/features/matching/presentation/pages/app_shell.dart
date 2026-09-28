@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_colors.dart';
-import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
 import 'package:mevora/features/match_score/presentation/widgets/match_feedback_prompt.dart';
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
@@ -44,84 +43,49 @@ class AppShell extends StatelessWidget {
 
     return Scaffold(
       body: body,
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.sm,
-          0,
-          AppSpacing.sm,
-          AppSpacing.sm,
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          color: context.palette.surface,
+          border: Border(top: BorderSide(color: context.palette.divider)),
         ),
-        child: Builder(
-          builder: (context) {
-            final theme = Theme.of(context);
-            final isDark = theme.brightness == Brightness.dark;
-            return DecoratedBox(
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.glassFill
-                    : AppColors.lightGlassFill,
-                borderRadius: BorderRadius.circular(AppRadii.xl),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.glassBorder
-                      : AppColors.lightGlassBorder,
-                ),
-                boxShadow: isDark
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 12,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadii.xl),
-                child: NavigationBar(
-                  selectedIndex: navigationShell.currentIndex,
-                  onDestinationSelected: (index) {
-                    _logTabChange(
-                      from: navigationShell.currentIndex,
-                      to: index,
-                      uid: social?.uidSource.currentUid,
-                    );
-                    navigationShell.goBranch(index);
-                  },
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  destinations: [
-                    NavigationDestination(
-                      icon: const Icon(Icons.explore_outlined),
-                      selectedIcon: const Icon(Icons.explore),
-                      label: l10n.tabDiscovery,
-                    ),
-                    NavigationDestination(
-                      icon: _UnreadMatchesIcon(
-                        matchesController: matches,
-                        selected: false,
-                      ),
-                      selectedIcon: _UnreadMatchesIcon(
-                        matchesController: matches,
-                        selected: true,
-                      ),
-                      label: l10n.tabMatches,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.library_music_outlined),
-                      selectedIcon: const Icon(Icons.library_music),
-                      label: l10n.tabMusic,
-                    ),
-                    NavigationDestination(
-                      icon: const Icon(Icons.person_outline),
-                      selectedIcon: const Icon(Icons.person),
-                      label: l10n.tabProfile,
-                    ),
-                  ],
-                ),
-              ),
+        child: NavigationBar(
+          selectedIndex: navigationShell.currentIndex,
+          onDestinationSelected: (index) {
+            _logTabChange(
+              from: navigationShell.currentIndex,
+              to: index,
+              uid: social?.uidSource.currentUid,
             );
+            navigationShell.goBranch(index);
           },
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(MevoraIcons.discover),
+              selectedIcon: const Icon(MevoraIcons.discoverActive),
+              label: l10n.tabDiscovery,
+            ),
+            NavigationDestination(
+              icon: _UnreadMatchesIcon(
+                matchesController: matches,
+                selected: false,
+              ),
+              selectedIcon: _UnreadMatchesIcon(
+                matchesController: matches,
+                selected: true,
+              ),
+              label: l10n.tabMatches,
+            ),
+            NavigationDestination(
+              icon: const Icon(MevoraIcons.music),
+              selectedIcon: const Icon(MevoraIcons.musicActive),
+              label: l10n.tabMusic,
+            ),
+            NavigationDestination(
+              icon: const Icon(MevoraIcons.profile),
+              selectedIcon: const Icon(MevoraIcons.profileActive),
+              label: l10n.tabProfile,
+            ),
+          ],
         ),
       ),
     );
@@ -135,14 +99,12 @@ class AppShell extends StatelessWidget {
     if (!kDebugMode || from == to) {
       return;
     }
-    final fromLabel =
-        from >= 0 && from < _tabLabels.length ? _tabLabels[from] : '$from';
-    final toLabel =
-        to >= 0 && to < _tabLabels.length ? _tabLabels[to] : '$to';
+    final fromLabel = from >= 0 && from < _tabLabels.length
+        ? _tabLabels[from]
+        : '$from';
+    final toLabel = to >= 0 && to < _tabLabels.length ? _tabLabels[to] : '$to';
     // ignore: avoid_print
-    print(
-      '[TAB] changed: $fromLabel → $toLabel | uid=${uid ?? 'none'}',
-    );
+    print('[TAB] changed: $fromLabel → $toLabel | uid=${uid ?? 'none'}');
   }
 }
 
@@ -198,7 +160,9 @@ class _UnreadMatchesIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = Icon(selected ? Icons.favorite : Icons.favorite_outline);
+    final icon = Icon(
+      selected ? MevoraIcons.matchesActive : MevoraIcons.matches,
+    );
     final matches = matchesController;
     if (matches == null) {
       return icon;
@@ -207,9 +171,12 @@ class _UnreadMatchesIcon extends StatelessWidget {
       animation: matches,
       builder: (context, _) {
         final unread = matches.totalUnread;
+        final scheme = Theme.of(context).colorScheme;
         return Badge(
           isLabelVisible: unread > 0,
-          label: Text('$unread'),
+          backgroundColor: scheme.primary,
+          textColor: scheme.onPrimary,
+          label: Text(unread > 99 ? '99+' : '$unread'),
           child: icon,
         );
       },

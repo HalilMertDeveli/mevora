@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/support_scope.dart';
@@ -25,7 +27,7 @@ class SupportTicketsPage extends StatelessWidget {
       appBar: AppBar(title: Text(l10n.supportMyTickets)),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.supportTicketCreate),
-        icon: const Icon(Icons.add),
+        icon: const Icon(MevoraIcons.add),
         label: Text(l10n.supportCreateTicket),
       ),
       body: StreamBuilder(
@@ -34,7 +36,7 @@ class SupportTicketsPage extends StatelessWidget {
           final tickets = snapshot.data ?? const <SupportTicket>[];
           if (tickets.isEmpty) {
             return MevoraEmptyState(
-              icon: Icons.support_agent_outlined,
+              art: MevoraArt.support,
               title: l10n.supportTicketsEmptyTitle,
               message: l10n.supportTicketsEmptyMessage,
             );
@@ -54,7 +56,7 @@ class SupportTicketsPage extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   isThreeLine: true,
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const Icon(MevoraIcons.chevronRight),
                   onTap: () => context.push(
                     AppRoutes.supportTicketDetailPath(ticket.id),
                     extra: ticket,

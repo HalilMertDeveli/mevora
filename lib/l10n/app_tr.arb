@@ -618,7 +618,7 @@
   "boostBuy": "Boost satın al",
   "boostPurchasing": "Satın alma işlemi başlatılıyor...",
   "boostVerifying": "Satın alma doğrulanıyor...",
-  "boostSuccessTitle": "Boost aktif! 🚀",
+  "boostSuccessTitle": "Boost aktif",
   "boostSuccessMessage": "Boost aktif. Süresi boyunca profilin uygun Discover profilleri arasında daha üst sırada çıkar.",
   "boostAlreadyActive": "Aktif bir Boost'un var. Yeni paket kalan süreye eklenir.",
   "boostPurchaseCancelled": "Satın alma iptal edildi.",
@@ -838,15 +838,15 @@
   "tabSettings": "Ayarlar",
   "tabMusic": "Müzik",
   "musicTitle": "Müzik",
-  "musicConnectCta": "🎵 Spotify'ı Bağla",
-  "musicConnected": "✓ Spotify Bağlandı",
+  "musicConnectCta": "Spotify'ı bağla",
+  "musicConnected": "Spotify bağlı",
   "musicUnconnectedCopy": "Spotify hesabını bağla ve müzik zevkine göre sana en uygun kişileri keşfet.",
   "musicConnecting": "Spotify bağlanıyor…",
   "musicSyncing": "Müzik zevkin yenileniyor…",
-  "musicRefresh": "Müzik Verilerini Yenile",
+  "musicRefresh": "Müzik verilerini yenile",
   "musicRefreshCooldown": "Daha sonra tekrar yenileyebilirsin.",
   "musicProfileTitle": "Müzik profilin",
-  "musicSameTasteTitle": "Seninle Aynı Müziği Dinleyenler",
+  "musicSameTasteTitle": "Seninle aynı müziği dinleyenler",
   "musicSameTasteEmpty": "Henüz örtüşen bir müzik zevki yok. Biraz dinledikten sonra yenile.",
   "musicWeeklyTitle": "Bu Haftanın Müzikleri",
   "musicWeeklyEmpty": "Yeterince kişi Spotify bağladığında haftalık öne çıkanlar burada görünür.",
@@ -929,7 +929,7 @@
     }
   },
   "likesYouSeeWhy": "Neden uyumlusunuz?",
-  "likesYouLockedTitle": "Size uyabilecek kişiler",
+  "likesYouLockedTitle": "Seninle ilgilenenleri gör",
   "likesYouLockedCount": "{count} kişi seni beğendi",
   "@likesYouLockedCount": {
     "placeholders": {
@@ -940,7 +940,7 @@
   },
   "likesYouLockedMessage": "Size uyabilecek kişileri görmek için Premium'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.",
   "likesYouUnlockCta": "Premium ile aç",
-  "likesYouBlurredHint": "Size uyabilecek kişiler",
+  "likesYouBlurredHint": "Her kutu gerçek bir kişi. Premium kim olduğunu ve neden uyduğunuzu gösterir.",
   "likesYouHiddenName": "Gizli profil",
   "likesYouHiddenSubtitle": "Uyumluluğu keşfetmek için kilidi aç",
   "likesYouEmptyTitle": "Keşfetmeye devam edin",
@@ -1148,7 +1148,7 @@
     }
   },
   "compatReasonCommunication": "Benzer iletişim tarzlarınız var",
-  "hiddenCompatTitle": "Biri senin gibi düşünüyor 👀",
+  "hiddenCompatTitle": "Biri senin gibi düşünüyor",
   "hiddenCompatMessage": "Biri seninle aynı şekilde {count} soruya cevap verdi.",
   "@hiddenCompatMessage": {
     "placeholders": {
@@ -1327,7 +1327,7 @@
   "privacyChangesBody": "Bu politikayı güncelleyebiliriz. Güncel sürüm uygulamada ve kamuya açık politika sayfasında yer alır.",
   "privacyContactTitle": "İletişim",
   "privacyContactBody": "Gizlilik soruları: halilmertdeveliii@gmail.com veya Ayarlar'dan destek talebi oluşturun.",
-  "musicMatchTitle": "🎵 Müzik Eşleşmesi — %{percent}",
+  "musicMatchTitle": "Müzik uyumu · %{percent}",
   "@musicMatchTitle": {
     "placeholders": {
       "percent": {
@@ -1338,7 +1338,7 @@
   "musicInsightBandHigh": "Müzik zevkiniz oldukça benzer.",
   "musicInsightBandMid": "Bazı güçlü ortak müzik zevkleriniz var.",
   "musicInsightBandLow": "Müzik zevkleriniz farklı olsa da birkaç ortak sanatçınız var.",
-  "musicInsightSharedTracks": "🎵 {count} ortak şarkınız var.",
+  "musicInsightSharedTracks": "{count} ortak şarkınız var.",
   "@musicInsightSharedTracks": {
     "placeholders": {
       "count": {
@@ -1346,7 +1346,7 @@
       }
     }
   },
-  "musicInsightSharedArtists": "🎤 {count} ortak sanatçınız var.",
+  "musicInsightSharedArtists": "{count} ortak sanatçınız var.",
   "@musicInsightSharedArtists": {
     "placeholders": {
       "count": {
@@ -1354,7 +1354,7 @@
       }
     }
   },
-  "musicInsightSharedPlaylistTracks": "🎧 Playlistlerinizde {count} ortak şarkı var.",
+  "musicInsightSharedPlaylistTracks": "Playlistlerinizde {count} ortak şarkı var.",
   "@musicInsightSharedPlaylistTracks": {
     "placeholders": {
       "count": {
@@ -1362,7 +1362,7 @@
       }
     }
   },
-  "musicInsightSharedRecentTracks": "🎵 Son dönemde {count} aynı şarkıyı dinlemişsiniz.",
+  "musicInsightSharedRecentTracks": "Son dönemde {count} aynı şarkıyı dinlemişsiniz.",
   "@musicInsightSharedRecentTracks": {
     "placeholders": {
       "count": {
@@ -1370,7 +1370,7 @@
       }
     }
   },
-  "musicInsightTopSharedArtist": "🎵 İkiniz de {name}'i sık dinliyorsunuz.",
+  "musicInsightTopSharedArtist": "İkiniz de {name}'i sık dinliyorsunuz.",
   "@musicInsightTopSharedArtist": {
     "placeholders": {
       "name": {
@@ -1378,7 +1378,7 @@
       }
     }
   },
-  "musicInsightTopSharedGenres": "🎶 Müzik zevkinizin büyük kısmı {genres} türlerinde kesişiyor.",
+  "musicInsightTopSharedGenres": "Müzik zevkinizin büyük kısmı {genres} türlerinde kesişiyor.",
   "@musicInsightTopSharedGenres": {
     "placeholders": {
       "genres": {
@@ -1388,9 +1388,9 @@
   },
   "musicInsightDataUnavailable": "Karşılaştırma için henüz yeterli Spotify verisi yok.",
   "musicSpotifyNotConnected": "Spotify bağlı değil",
-  "musicSharedTracksHeading": "🎵 Ortak şarkılarınız",
-  "musicSharedArtistsHeading": "🎤 Ortak sanatçılarınız",
-  "musicSharedGenresHeading": "🎶 Ortak türler",
+  "musicSharedTracksHeading": "Ortak şarkılarınız",
+  "musicSharedArtistsHeading": "Ortak sanatçılarınız",
+  "musicSharedGenresHeading": "Ortak türler",
   "musicViewAllShared": "Tümünü gör ({count})",
   "@musicViewAllShared": {
     "placeholders": {
@@ -1539,9 +1539,9 @@
   "musicDisconnectCta": "Spotify bağlantısını kaldır",
   "musicDisconnectConfirmTitle": "Spotify bağlantısı kaldırılsın mı?",
   "musicDisconnectConfirmBody": "Spotify bağlantın ve önbellekteki müzik zevki verilerin silinir. Yeniden bağlanana kadar eşleşme müzik uyumu gösterilmez.",
-  "musicMatchTeaser": "🎵 Müzik zevkiniz uyumlu olabilir — detaylar Premium ile",
+  "musicMatchTeaser": "Müzik zevkiniz uyumlu olabilir — detaylar Premium ile",
   "musicPremiumUnlock": "Aç",
-  "musicNoCommonTracks": "Henüz ortak dinlediğiniz bir şarkı yok 🎵",
+  "musicNoCommonTracks": "Henüz ortak dinlediğiniz bir şarkı yok",
   "musicRecentlyPlayedHeading": "Son dinlenenler",
   "humorLabTitle": "Mizah Labı",
   "humorLabSubtitle": "Her espriye, klibe ya da memeye ne kadar güldüğünü söyle.",
@@ -1631,13 +1631,13 @@
   "boostCompletedEmpty": "Bu Boost kimseye ulaşmadı.",
   "boostResultsUnavailable": "Bu Boost için sonuç bilgisi yok.",
   "boostResultsDelayNote": "Sayılar canlı etkinliğin biraz gerisinde kalabilir.",
-  "onboardingMusicTitle": "Müzik senin için önemli mi? 🎧",
+  "onboardingMusicTitle": "Müzik senin için önemli mi?",
   "onboardingMusicBody": "Spotify'ını bağla, Mevora seninle aynı müzikleri dinleyen kişileri bulsun ve neden uyduğunuzu anlatsın.",
   "onboardingMusicConnect": "Spotify'ımı Bağla",
   "onboardingMusicSkip": "Şimdilik Geç",
   "onboardingMusicSkipNote": "Spotify'ı sonra Müzik sekmesinden bağlayabilirsin.",
   "onboardingMusicCancelled": "Spotify bağlantısı iptal edildi. Tekrar deneyebilir veya geçebilirsin.",
-  "publicMusicTitle": "Spotify zevkini yakaladık 🎧",
+  "publicMusicTitle": "Spotify zevkini yakaladık",
   "publicMusicSubtitle": "Profilinde göstermek istediklerini seç.",
   "publicMusicArtistsHeading": "Sanatçılar",
   "publicMusicTracksHeading": "Şarkılar",
@@ -1671,7 +1671,7 @@
   "publicMusicVisibilityBody": "Kapatırsan seçimin gizli kalır. Spotify bağlı kalır ve eşleşmelerini iyileştirmeye devam eder.",
   "publicMusicHiddenNotice": "Müzik Zevkin diğer kişilerden gizli.",
   "publicMusicEditCta": "Müzik Zevkimi düzenle",
-  "profileMusicTasteHeading": "Müzik Zevki 🎧",
+  "profileMusicTasteHeading": "Müzik zevki",
   "profileMusicOpenInSpotify": "Spotify'da aç",
   "musicLimitedData": "Spotify bağlı, ancak henüz fazla dinleme geçmişi yok.",
   "humorCalibrationIntroTitle": "Mizahını keşfedelim",
@@ -1806,5 +1806,14 @@
       }
     }
   },
-  "musicSectionEmpty": "Burada henüz bir şey yok."
+  "musicSectionEmpty": "Burada henüz bir şey yok.",
+  "profileSectionSignals": "Uyum sinyallerin",
+  "profileSectionTrust": "Güven ve görünürlük",
+  "premiumBenefitsHeading": "Premium ile neler açılır",
+  "premiumBenefitLikesTitle": "Seni kimlerin beğendiğini gör",
+  "premiumBenefitLikesBody": "Seni beğenen herkes tek listede — ve neden uyumlu olabileceğiniz.",
+  "premiumBenefitMusicTitle": "Müzik uyumunun tamamı",
+  "premiumBenefitMusicBody": "Her eşleşmenle paylaştığın şarkılar, sanatçılar ve türler.",
+  "premiumPlansHeading": "Planını seç",
+  "chatPreviewEncrypted": "Şifreli mesaj"
 }

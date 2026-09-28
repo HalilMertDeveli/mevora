@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/services/permissions/permission_status.dart';
@@ -119,7 +120,7 @@ class _PermissionTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(PermissionCopy.statusLabel(l10n, status)),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: const Icon(MevoraIcons.chevronRight),
       onTap: onOpenPrompt,
     );
   }

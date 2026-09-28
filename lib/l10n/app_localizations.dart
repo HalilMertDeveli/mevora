@@ -2963,7 +2963,7 @@ abstract class AppLocalizations {
   /// No description provided for @boostSuccessTitle.
   ///
   /// In en, this message translates to:
-  /// **'Boost is on! 🚀'**
+  /// **'Boost is on'**
   String get boostSuccessTitle;
 
   /// No description provided for @boostSuccessMessage.
@@ -3905,13 +3905,13 @@ abstract class AppLocalizations {
   /// No description provided for @musicConnectCta.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Connect Spotify'**
+  /// **'Connect Spotify'**
   String get musicConnectCta;
 
   /// No description provided for @musicConnected.
   ///
   /// In en, this message translates to:
-  /// **'✓ Spotify connected'**
+  /// **'Spotify connected'**
   String get musicConnected;
 
   /// No description provided for @musicUnconnectedCopy.
@@ -4223,7 +4223,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouLockedTitle.
   ///
   /// In en, this message translates to:
-  /// **'People who may fit you'**
+  /// **'See who\'s already interested'**
   String get likesYouLockedTitle;
 
   /// No description provided for @likesYouLockedCount.
@@ -4247,7 +4247,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouBlurredHint.
   ///
   /// In en, this message translates to:
-  /// **'People who may fit you'**
+  /// **'Each tile is a real person. Premium shows who, and why you fit.'**
   String get likesYouBlurredHint;
 
   /// No description provided for @likesYouHiddenName.
@@ -4955,7 +4955,7 @@ abstract class AppLocalizations {
   /// No description provided for @hiddenCompatTitle.
   ///
   /// In en, this message translates to:
-  /// **'Someone is thinking like you 👀'**
+  /// **'Someone is thinking like you'**
   String get hiddenCompatTitle;
 
   /// No description provided for @hiddenCompatMessage.
@@ -5945,7 +5945,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicMatchTitle.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Music Match — {percent}%'**
+  /// **'Music match · {percent}%'**
   String musicMatchTitle(int percent);
 
   /// No description provided for @musicInsightBandHigh.
@@ -5969,37 +5969,37 @@ abstract class AppLocalizations {
   /// No description provided for @musicInsightSharedTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You have {count} shared songs.'**
+  /// **'You have {count} shared songs.'**
   String musicInsightSharedTracks(int count);
 
   /// No description provided for @musicInsightSharedArtists.
   ///
   /// In en, this message translates to:
-  /// **'🎤 You have {count} shared artists.'**
+  /// **'You have {count} shared artists.'**
   String musicInsightSharedArtists(int count);
 
   /// No description provided for @musicInsightSharedPlaylistTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎧 Your playlists share {count} songs.'**
+  /// **'Your playlists share {count} songs.'**
   String musicInsightSharedPlaylistTracks(int count);
 
   /// No description provided for @musicInsightSharedRecentTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You recently listened to {count} of the same songs.'**
+  /// **'You recently listened to {count} of the same songs.'**
   String musicInsightSharedRecentTracks(int count);
 
   /// No description provided for @musicInsightTopSharedArtist.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You both listen to {name} a lot.'**
+  /// **'You both listen to {name} a lot.'**
   String musicInsightTopSharedArtist(String name);
 
   /// No description provided for @musicInsightTopSharedGenres.
   ///
   /// In en, this message translates to:
-  /// **'🎶 Your tastes overlap most in {genres}.'**
+  /// **'Your tastes overlap most in {genres}.'**
   String musicInsightTopSharedGenres(String genres);
 
   /// No description provided for @musicInsightDataUnavailable.
@@ -6017,19 +6017,19 @@ abstract class AppLocalizations {
   /// No description provided for @musicSharedTracksHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Songs you both like'**
+  /// **'Songs you both like'**
   String get musicSharedTracksHeading;
 
   /// No description provided for @musicSharedArtistsHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎤 Artists you both like'**
+  /// **'Artists you both like'**
   String get musicSharedArtistsHeading;
 
   /// No description provided for @musicSharedGenresHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎶 Shared genres'**
+  /// **'Shared genres'**
   String get musicSharedGenresHeading;
 
   /// No description provided for @musicViewAllShared.
@@ -6671,7 +6671,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicMatchTeaser.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Your music tastes may align — unlock full insights with Premium'**
+  /// **'Your music tastes may align — unlock full insights with Premium'**
   String get musicMatchTeaser;
 
   /// No description provided for @musicPremiumUnlock.
@@ -6683,7 +6683,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicNoCommonTracks.
   ///
   /// In en, this message translates to:
-  /// **'No shared songs yet 🎵'**
+  /// **'No shared songs yet'**
   String get musicNoCommonTracks;
 
   /// No description provided for @musicRecentlyPlayedHeading.
@@ -7097,7 +7097,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingMusicTitle.
   ///
   /// In en, this message translates to:
-  /// **'Does music matter to you? 🎧'**
+  /// **'Does music matter to you?'**
   String get onboardingMusicTitle;
 
   /// No description provided for @onboardingMusicBody.
@@ -7133,7 +7133,7 @@ abstract class AppLocalizations {
   /// No description provided for @publicMusicTitle.
   ///
   /// In en, this message translates to:
-  /// **'We picked up your Spotify taste 🎧'**
+  /// **'We picked up your Spotify taste'**
   String get publicMusicTitle;
 
   /// No description provided for @publicMusicSubtitle.
@@ -7217,7 +7217,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileMusicTasteHeading.
   ///
   /// In en, this message translates to:
-  /// **'Music Taste 🎧'**
+  /// **'Music taste'**
   String get profileMusicTasteHeading;
 
   /// No description provided for @profileMusicOpenInSpotify.
@@ -7597,6 +7597,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing here yet.'**
   String get musicSectionEmpty;
+
+  /// No description provided for @profileSectionSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Your compatibility signals'**
+  String get profileSectionSignals;
+
+  /// No description provided for @profileSectionTrust.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust & visibility'**
+  String get profileSectionTrust;
+
+  /// No description provided for @premiumBenefitsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'What Premium adds'**
+  String get premiumBenefitsHeading;
+
+  /// No description provided for @premiumBenefitLikesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See who liked you'**
+  String get premiumBenefitLikesTitle;
+
+  /// No description provided for @premiumBenefitLikesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone who liked you in one list — and why you might fit.'**
+  String get premiumBenefitLikesBody;
+
+  /// No description provided for @premiumBenefitMusicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your full music match'**
+  String get premiumBenefitMusicTitle;
+
+  /// No description provided for @premiumBenefitMusicBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The songs, artists and genres you share with each match.'**
+  String get premiumBenefitMusicBody;
+
+  /// No description provided for @premiumPlansHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a plan'**
+  String get premiumPlansHeading;
+
+  /// No description provided for @chatPreviewEncrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted message'**
+  String get chatPreviewEncrypted;
 }
 
 class _AppLocalizationsDelegate

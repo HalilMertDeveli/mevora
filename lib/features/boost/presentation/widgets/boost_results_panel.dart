@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
-import 'package:mevora/features/boost/domain/entities/boost_results.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
 
 /// Shows what a Boost actually delivered.
 ///
@@ -12,11 +12,7 @@ import 'package:mevora/l10n/app_localizations.dart';
 /// and never a comparison percentage, because no visibility baseline is
 /// measured yet to compare against.
 class BoostResultsPanel extends StatelessWidget {
-  const BoostResultsPanel({
-    super.key,
-    required this.boost,
-    this.now,
-  });
+  const BoostResultsPanel({super.key, required this.boost, this.now});
 
   final Boost? boost;
   final DateTime? now;
@@ -56,17 +52,17 @@ class BoostResultsPanel extends StatelessWidget {
           )
         else ...[
           _MetricRow(
-            icon: Icons.visibility_outlined,
+            icon: MevoraIcons.visible,
             label: l10n.boostReachedPeople(results.uniqueUsersReached),
           ),
           const SizedBox(height: AppSpacing.xs),
           _MetricRow(
-            icon: Icons.favorite_outline,
+            icon: MevoraIcons.like,
             label: l10n.boostLikesReceived(results.likesReceived),
           ),
           const SizedBox(height: AppSpacing.xs),
           _MetricRow(
-            icon: Icons.people_outline,
+            icon: MevoraIcons.people,
             label: l10n.boostMatchesCreated(results.matchesCreated),
           ),
         ],
@@ -91,13 +87,9 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
+    return MevoraCard(
+      emphasis: MevoraCardEmphasis.quiet,
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -122,7 +114,7 @@ class _MetricRow extends StatelessWidget {
     final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
         const SizedBox(width: AppSpacing.sm),
         Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
       ],

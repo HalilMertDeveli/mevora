@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mevora branded launch splash — dark brand bg + centered mark -->
+<!-- Mevora branded launch splash — linen page + centered mark -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_background" />
     <item

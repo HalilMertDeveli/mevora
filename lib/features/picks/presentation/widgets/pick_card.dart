@@ -53,7 +53,7 @@ class PickCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.lg),
         color: theme.colorScheme.surfaceContainerLowest,
         boxShadow: AppShadows.discoveryCard(theme.brightness),
-        border: Border.all(color: AppColors.outline.withValues(alpha: 0.6)),
+        border: Border.all(color: context.palette.border),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadii.lg),

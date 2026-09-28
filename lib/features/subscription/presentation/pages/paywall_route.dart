@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/features/subscription/presentation/controllers/premium_purchase_controller.dart';
@@ -69,7 +70,7 @@ class _PremiumOffPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.storefront_outlined,
+                MevoraIcons.store,
                 size: 40,
                 color: theme.colorScheme.onSurfaceVariant,
               ),

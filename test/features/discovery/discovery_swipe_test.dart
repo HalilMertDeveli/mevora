@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
@@ -45,9 +46,10 @@ void main() {
     );
     expect(find.text('Elif, 26'), findsOneWidget);
     expect(find.text('Istanbul'), findsOneWidget);
-    expect(find.text('88%'), findsOneWidget);
-    expect(find.text(_en.compatScoreHeading), findsOneWidget);
-    expect(find.text('Coffee lover'), findsOneWidget);
+    // Why-you-fit strip: the reason in words, the score as a quiet ring.
+    expect(find.text('Shared interest in coffee culture'), findsOneWidget);
+    expect(find.byType(CompatibilityRing), findsOneWidget);
+    expect(find.text('88'), findsOneWidget);
   });
 
   testWidgets('action buttons trigger controller methods', (tester) async {
@@ -114,7 +116,8 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     expect(find.text(_en.whyYoureSeeingThis), findsOneWidget);
-    expect(find.text(_en.compatDiscoverBadge(91)), findsWidgets);
+    // The score is a quiet ring inside the why-you-fit card, not a badge.
+    expect(find.byType(CompatibilityRing), findsWidgets);
   });
 
   testWidgets('profile photo carousel swipes to second photo', (tester) async {
@@ -135,19 +138,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text(_en.photoCounter(1, 3)), findsOneWidget);
+    expect(_photoCounter(_en.photoCounter(1, 3)), findsOneWidget);
 
     await tester.fling(find.byType(PageView), const Offset(-500, 0), 1200);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text(_en.photoCounter(2, 3)), findsOneWidget);
+    expect(_photoCounter(_en.photoCounter(2, 3)), findsOneWidget);
 
     await tester.fling(find.byType(PageView), const Offset(-500, 0), 1200);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text(_en.photoCounter(3, 3)), findsOneWidget);
+    expect(_photoCounter(_en.photoCounter(3, 3)), findsOneWidget);
   });
 
   testWidgets('discovery supports dark theme layout', (tester) async {
@@ -175,3 +178,7 @@ void main() {
     expect(find.text('Deniz, 29'), findsOneWidget);
   });
 }
+
+Finder _photoCounter(String label) => find.byWidgetPredicate(
+  (widget) => widget is Semantics && widget.properties.label == label,
+);

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/presentation/widgets/chat_fullscreen_image_viewer.dart';
@@ -87,7 +88,7 @@ void main() {
 
     expect(find.byType(ChatFullscreenImageViewer), findsOneWidget);
     expect(find.byType(InteractiveViewer), findsOneWidget);
-    expect(find.byIcon(Icons.close), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.close), findsOneWidget);
   });
 
   testWidgets('incoming image also opens viewer', (tester) async {
@@ -140,7 +141,7 @@ void main() {
     await tester.tap(find.byType(ChatImageBody));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.byIcon(MevoraIcons.close));
     await tester.pumpAndSettle();
 
     expect(find.byType(ChatFullscreenImageViewer), findsNothing);
@@ -198,8 +199,8 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.byIcon(Icons.image_outlined), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.image_outlined));
+    expect(find.byIcon(MevoraIcons.photo), findsOneWidget);
+    await tester.tap(find.byIcon(MevoraIcons.photo));
     await tester.pumpAndSettle();
     expect(find.byType(ChatFullscreenImageViewer), findsNothing);
   });
@@ -221,7 +222,7 @@ void main() {
       tester.takeException();
     }
 
-    expect(find.byIcon(Icons.broken_image_outlined), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.photoBroken), findsOneWidget);
     expect(
       find.text(lookupAppLocalizations(const Locale('tr')).retry),
       findsOneWidget,

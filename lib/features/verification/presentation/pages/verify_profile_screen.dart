@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/verification_scope.dart';
@@ -10,6 +11,11 @@ import 'package:mevora/features/verification/domain/entities/identity_verificati
 import 'package:mevora/features/verification/presentation/controllers/verification_controller.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
+import 'package:mevora/shared/widgets/mevora_banner.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
@@ -81,35 +87,52 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen>
     final controller = _controller;
     if (controller == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(l10n.verifyYourProfile)),
-        body: MevoraLoading(message: l10n.loading),
+        appBar: AppBar(),
+        body: MevoraLoading.page(message: l10n.loading),
       );
     }
 
     final status = controller.verification.status;
-    final accountVerified = user?.isVerified == true || status.grantsVerifiedBadge;
+    final accountVerified =
+        user?.isVerified == true || status.grantsVerifiedBadge;
     final busy = controller.isBusy;
     final retry = controller.verification.retryEligibility();
     final canStart = controller.canStart && !accountVerified;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.verifyYourProfile)),
+      appBar: AppBar(),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),
           children: [
             if (accountVerified) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Center(
+                child: MevoraSuccessMark(
+                  size: 112,
+                  color: context.palette.compatibility,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
               const Center(child: VerifiedProfileBadge()),
               const SizedBox(height: AppSpacing.md),
               Text(
                 l10n.profileVerified,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall,
+                style: theme.textTheme.headlineLarge,
               ),
             ] else ...[
-              Text(
-                l10n.verifyYourProfile,
-                style: theme.textTheme.headlineSmall,
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: MevoraSpot(art: MevoraArt.verification, size: 88),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Semantics(
+                header: true,
+                child: Text(
+                  l10n.verifyYourProfile,
+                  style: theme.textTheme.headlineLarge,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
@@ -133,46 +156,30 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen>
               ),
               const SizedBox(height: AppSpacing.lg),
               if (status.isInFlight || controller.awaitingReturn)
-                MevoraCard(
-                  emphasis: MevoraCardEmphasis.quiet,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        status == IdentityVerificationStatus.inReview
-                            ? l10n.verificationUnderReview
-                            : l10n.verificationProcessing,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      TextButton(
-                        onPressed: busy
-                            ? null
-                            : () => unawaited(controller.refresh()),
-                        child: Text(l10n.verificationCheckAgain),
-                      ),
-                    ],
-                  ),
+                MevoraBanner(
+                  tone: MevoraTone.info,
+                  icon: MevoraIcons.pending,
+                  message: status == IdentityVerificationStatus.inReview
+                      ? l10n.verificationUnderReview
+                      : l10n.verificationProcessing,
+                  actionLabel: l10n.verificationCheckAgain,
+                  onAction: busy ? null : () => unawaited(controller.refresh()),
                 ),
               if (status == IdentityVerificationStatus.declined ||
                   status == IdentityVerificationStatus.expired) ...[
                 const SizedBox(height: AppSpacing.md),
-                Text(
-                  status == IdentityVerificationStatus.expired
+                MevoraBanner(
+                  tone: MevoraTone.warning,
+                  message: status == IdentityVerificationStatus.expired
                       ? l10n.verificationExpired
                       : _declineMessage(l10n, controller.verification.reason),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
                 ),
               ],
               if (status == IdentityVerificationStatus.error) ...[
                 const SizedBox(height: AppSpacing.md),
-                Text(
-                  l10n.verificationTemporaryError,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                MevoraBanner(
+                  tone: MevoraTone.neutral,
+                  message: l10n.verificationTemporaryError,
                 ),
               ],
               if (!retry.allowed && retry.blockedBy != null) ...[
@@ -186,11 +193,9 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen>
               ],
               if (controller.errorKey != null) ...[
                 const SizedBox(height: AppSpacing.md),
-                Text(
-                  _errorMessage(l10n, controller.errorKey!),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
+                MevoraBanner(
+                  tone: MevoraTone.error,
+                  message: _errorMessage(l10n, controller.errorKey!),
                 ),
               ],
               const SizedBox(height: AppSpacing.xl),
@@ -198,15 +203,15 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen>
                 MevoraLoading(
                   message: switch (controller.phase) {
                     VerificationUiPhase.creatingSession ||
-                    VerificationUiPhase.refreshing =>
-                      l10n.loading,
+                    VerificationUiPhase.refreshing => l10n.loading,
                     _ => l10n.followVerificationInstructions,
                   },
                 )
               else
                 MevoraButton(
                   label: _primaryLabel(l10n, status),
-                  icon: Icons.verified_user_outlined,
+                  icon: MevoraIcons.safety,
+                  size: MevoraButtonSize.large,
                   onPressed: canStart
                       ? () => unawaited(
                           controller.startVerification(
@@ -242,7 +247,10 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen>
     );
   }
 
-  String _primaryLabel(AppLocalizations l10n, IdentityVerificationStatus status) {
+  String _primaryLabel(
+    AppLocalizations l10n,
+    IdentityVerificationStatus status,
+  ) {
     if (status == IdentityVerificationStatus.declined ||
         status == IdentityVerificationStatus.expired) {
       return l10n.tryVerificationAgain;
@@ -283,8 +291,7 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen>
         l10n.verificationDeclinedFaceMatch,
       IdentityVerificationReason.manualReview => l10n.verificationUnderReview,
       IdentityVerificationReason.providerError ||
-      null =>
-        l10n.verificationCouldNotComplete,
+      null => l10n.verificationCouldNotComplete,
     };
   }
 
@@ -296,7 +303,8 @@ class _VerifyProfileScreenState extends State<VerifyProfileScreen>
       IdentityVerificationRetryBlock.alreadyVerified => l10n.profileVerified,
       IdentityVerificationRetryBlock.inFlight => l10n.verificationProcessing,
       IdentityVerificationRetryBlock.cooldown => l10n.verificationCooldown,
-      IdentityVerificationRetryBlock.dailyLimit => l10n.verificationAttemptLimit,
+      IdentityVerificationRetryBlock.dailyLimit =>
+        l10n.verificationAttemptLimit,
     };
   }
 }
@@ -312,7 +320,11 @@ class _BenefitRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.check_circle_outline, color: theme.colorScheme.tertiary),
+        Icon(
+          MevoraIcons.success,
+          color: context.palette.compatibility,
+          size: 20,
+        ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
       ],

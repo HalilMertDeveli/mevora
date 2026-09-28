@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
-import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_press_scale.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
+/// Header action for Boost. Ink bolt at rest; a filled ember bolt while a
+/// boost is running.
 class BoostButton extends StatelessWidget {
   const BoostButton({
     super.key,
@@ -20,24 +22,20 @@ class BoostButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
-    return Semantics(
-      button: true,
-      label: l10n.boostTooltip,
-      child: MevoraPressScale(
-        enabled: onPressed != null,
-        child: IconButton(
-          tooltip: l10n.boostTooltip,
-          onPressed: onPressed,
-          icon: AnimatedSwitcher(
-            duration: AppDurations.short,
-            child: Icon(
-              isActive ? Icons.bolt : Icons.bolt_outlined,
-              key: ValueKey(isActive),
-              color: isActive ? colors.secondary : colors.primary,
-            ),
-          ),
+    return IconButton(
+      tooltip: l10n.boostTooltip,
+      onPressed: onPressed,
+      style: isActive
+          ? IconButton.styleFrom(backgroundColor: scheme.primaryContainer)
+          : null,
+      icon: AnimatedSwitcher(
+        duration: AppDurations.fast,
+        child: Icon(
+          isActive ? MevoraIcons.boostActive : MevoraIcons.boost,
+          key: ValueKey(isActive),
+          color: isActive ? scheme.primary : context.palette.textPrimary,
         ),
       ),
     );
@@ -57,19 +55,11 @@ class BoostRemainingChip extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final minutes = remaining.inMinutes.clamp(1, 24 * 60);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Text(
-        AppLocalizations.of(context).boostRemainingMinutes(minutes),
-        style: Theme.of(context).textTheme.labelSmall,
-      ),
+    return MevoraPill(
+      label: AppLocalizations.of(context).boostRemainingMinutes(minutes),
+      icon: MevoraIcons.boostActive,
+      tone: MevoraTone.accent,
+      dense: true,
     );
   }
 }

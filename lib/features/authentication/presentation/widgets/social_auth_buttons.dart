@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/features/authentication/presentation/widgets/welcome_auth_buttons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/widgets/mevora_button.dart';
 
+/// Provider sign-up options on the register page. Shares
+/// [MevoraProviderButton] with the welcome screen so the two entry points
+/// look like one product.
 class SocialAuthButtons extends StatelessWidget {
   const SocialAuthButtons({
     super.key,
@@ -25,131 +28,35 @@ class SocialAuthButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    Widget button(String id, String label, IconData icon, VoidCallback onTap) =>
+        MevoraProviderButton(
+          label: label,
+          loadingLabel: l10n.signingIn,
+          icon: icon,
+          isLoading: busyProvider == id,
+          onPressed: enabled && busyProvider != id ? onTap : null,
+        );
+
     return Column(
       children: [
-        _GoogleContinueButton(
-          label: l10n.continueWithGoogle,
-          loadingLabel: l10n.signingIn,
-          isLoading: busyProvider == 'google',
-          onPressed: enabled && busyProvider != 'google' ? onGoogle : null,
-        ),
+        button('google', l10n.continueWithGoogle, MevoraIcons.google, onGoogle),
         const SizedBox(height: AppSpacing.sm),
-        _button(
-          label: l10n.continueWithApple,
-          icon: Icons.apple,
-          onPressed: onApple,
-          provider: 'apple',
-        ),
+        button('apple', l10n.continueWithApple, MevoraIcons.apple, onApple),
         if (onSpotify != null) ...[
           const SizedBox(height: AppSpacing.sm),
-          _button(
-            label: l10n.continueWithSpotify,
-            icon: Icons.library_music_outlined,
-            onPressed: onSpotify!,
-            provider: 'spotify',
+          button(
+            'spotify',
+            l10n.continueWithSpotify,
+            MevoraIcons.spotify,
+            onSpotify!,
           ),
         ],
         if (onPhone != null) ...[
           const SizedBox(height: AppSpacing.sm),
-          _button(
-            label: l10n.continueWithPhone,
-            icon: Icons.phone_outlined,
-            onPressed: onPhone!,
-            provider: 'phone',
-          ),
+          button('phone', l10n.continueWithPhone, MevoraIcons.phone, onPhone!),
         ],
       ],
-    );
-  }
-
-  Widget _button({
-    required String label,
-    required IconData icon,
-    required VoidCallback onPressed,
-    required String provider,
-  }) {
-    final loading = busyProvider == provider;
-    return MevoraButton(
-      label: label,
-      variant: MevoraButtonVariant.secondary,
-      icon: icon,
-      isLoading: loading,
-      onPressed: enabled && !loading ? onPressed : null,
-    );
-  }
-}
-
-/// Light outlined Google continue control — Mevora styling with Google-appropriate
-/// contrast (no custom logo asset; "G" mark is typographic).
-class _GoogleContinueButton extends StatelessWidget {
-  const _GoogleContinueButton({
-    required this.label,
-    required this.loadingLabel,
-    required this.onPressed,
-    this.isLoading = false,
-  });
-
-  final String label;
-  final String loadingLabel;
-  final VoidCallback? onPressed;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final enabled = onPressed != null && !isLoading;
-    return Semantics(
-      button: true,
-      label: isLoading ? loadingLabel : label,
-      child: SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: OutlinedButton(
-          onPressed: enabled ? onPressed : null,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: theme.colorScheme.surface,
-            foregroundColor: theme.colorScheme.onSurface,
-            side: BorderSide(color: theme.colorScheme.outlineVariant),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadii.md),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-          ),
-          child: isLoading
-              ? Semantics(
-                  label: loadingLabel,
-                  child: SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'G',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF4285F4),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(
-                      child: Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
     );
   }
 }

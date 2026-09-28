@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
@@ -26,7 +27,13 @@ import 'package:mevora/features/profile/data/services/profile_image_pipeline.dar
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/safety/presentation/widgets/chat_more_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
+import 'package:mevora/shared/images/mevora_network_images.dart';
+import 'package:mevora/shared/widgets/mevora_avatar.dart';
+import 'package:mevora/shared/widgets/mevora_banner.dart';
+import 'package:mevora/shared/widgets/mevora_context_row.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 import 'package:mevora/shared/widgets/mevora_dialog.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
@@ -63,6 +70,7 @@ class _ChatPageState extends State<ChatPage> {
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
   DateTime? _recordingStartedAt;
+
   /// Bumped on stop/cancel so an in-flight [_startVoice] cannot leave a stuck
   /// recording after the finger already lifted (permission dialog / slow start).
   int _voiceEpoch = 0;
@@ -93,7 +101,8 @@ class _ChatPageState extends State<ChatPage> {
     }
     _boundUid = uid;
     final settingsHub = SettingsScope.maybeOf(context)?.settingsHub;
-    _controller = widget.controller ??
+    _controller =
+        widget.controller ??
         ChatController(
           matchId: widget.matchId,
           chatRepository: social.chatRepository,
@@ -126,9 +135,13 @@ class _ChatPageState extends State<ChatPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(l10n.permissionNotificationsDescription),
+        // A nudge, not a blocker: it must never sit on the composer.
+        persist: false,
+        duration: const Duration(seconds: 6),
         action: SnackBarAction(
           label: l10n.enableDeviceNotifications,
-          onPressed: () => unawaited(permissions.request(PermissionType.notifications)),
+          onPressed: () =>
+              unawaited(permissions.request(PermissionType.notifications)),
         ),
       ),
     );
@@ -161,9 +174,7 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     final controller = _controller;
     if (controller == null) {
-      return Scaffold(
-        body: MevoraLoading.page(asset: MevoraRiveAssets.loading),
-      );
+      return Scaffold(body: MevoraLoading.page());
     }
     return AnimatedBuilder(
       animation: controller,
@@ -174,15 +185,38 @@ class _ChatPageState extends State<ChatPage> {
         return Scaffold(
           resizeToAvoidBottomInset: true,
           appBar: AppBar(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            titleSpacing: 0,
+            title: Row(
               children: [
-                Text(controller.otherName),
-                if (subtitle != null && subtitle.isNotEmpty)
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.labelSmall,
+                MevoraAvatar(
+                  name: controller.otherName,
+                  image: MevoraNetworkImages.provider(
+                    controller.match?.otherPhoto(controller.uid ?? ''),
                   ),
+                  size: 40,
+                ),
+                const SizedBox(width: AppSpacing.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        controller.otherName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      if (subtitle != null && subtitle.isNotEmpty)
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
             actions: [
@@ -191,61 +225,88 @@ class _ChatPageState extends State<ChatPage> {
                 onPressed: controller.canCall
                     ? () => unawaited(_startCall())
                     : null,
-                icon: const Icon(Icons.videocam_outlined),
+                icon: const Icon(MevoraIcons.video),
               ),
               IconButton(
                 tooltip: l10n.more,
                 onPressed: () => unawaited(
                   showChatMoreSheet(context, controller: controller),
                 ),
-                icon: const Icon(Icons.more_vert),
+                icon: const Icon(MevoraIcons.moreVertical),
               ),
             ],
           ),
           body: Column(
             children: [
               if (!controller.canChat)
-                MaterialBanner(
-                  content: Text(l10n.unmatchedBanner),
-                  actions: const [SizedBox.shrink()],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                    0,
+                  ),
+                  child: MevoraBanner(
+                    message: l10n.unmatchedBanner,
+                    tone: MevoraTone.warning,
+                  ),
                 ),
               if (!controller.canChat)
                 MatchFeedbackForChat(matchId: controller.matchId),
-              if (controller.canChat && controller.otherUid.isNotEmpty)
-                Material(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.quiz_outlined),
-                    title: Text(l10n.chatDiscoverAnswersPrompt),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => unawaited(
-                      showMatchedProfileAnswersSheet(
-                        context,
-                        otherUid: controller.otherUid,
-                      ),
+              // Why-you-fit context: one compact group, secondary to the chat.
+              if (controller.canChat)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: context.palette.surface,
+                    border: Border(
+                      bottom: BorderSide(color: context.palette.divider),
                     ),
                   ),
-                ),
-              if (controller.canChat)
-                MatchMusicCompatibilityBanner(matchId: controller.matchId),
-              if (controller.canChat)
-                MatchHumorCompatibilityBanner(
-                  matchId: controller.matchId,
-                  showChatStarter: controller.messages.isEmpty,
-                  onChatStarter: _prefillComposer,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (controller.otherUid.isNotEmpty)
+                        MevoraContextRow(
+                          icon: MevoraIcons.questions,
+                          tone: MevoraTone.compatibility,
+                          title: l10n.chatDiscoverAnswersPrompt,
+                          onTap: () => unawaited(
+                            showMatchedProfileAnswersSheet(
+                              context,
+                              otherUid: controller.otherUid,
+                            ),
+                          ),
+                        ),
+                      MatchMusicCompatibilityBanner(
+                        matchId: controller.matchId,
+                      ),
+                      MatchHumorCompatibilityBanner(
+                        matchId: controller.matchId,
+                        showChatStarter: controller.messages.isEmpty,
+                        onChatStarter: _prefillComposer,
+                      ),
+                    ],
+                  ),
                 ),
               if (controller.error != null)
-                MevoraErrorView(
-                  message: L10nErrors.message(l10n, controller.error),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                    0,
+                  ),
+                  child: MevoraBanner(
+                    message: L10nErrors.message(l10n, controller.error),
+                    tone: MevoraTone.error,
+                  ),
                 ),
               if (controller.uploadProgress != null)
                 LinearProgressIndicator(value: controller.uploadProgress),
               Expanded(
                 child: controller.messages.isEmpty
                     ? MevoraEmptyState(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        riveAsset: MevoraRiveAssets.chatEmpty,
+                        art: MevoraArt.emptyMessages,
                         title: l10n.chatEmptyTitle,
                         message: l10n.chatEmptyMessage,
                       )
@@ -342,7 +403,9 @@ class _ChatPageState extends State<ChatPage> {
       final message = type == PermissionType.microphone
           ? l10n.micDeniedChat
           : l10n.photoDeniedChat;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
     return false;
   }
@@ -388,7 +451,9 @@ class _ChatPageState extends State<ChatPage> {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(L10nErrors.message(l10n, ctrl.error ?? l10n.chatGeneric)),
+            content: Text(
+              L10nErrors.message(l10n, ctrl.error ?? l10n.chatGeneric),
+            ),
           ),
         );
       }
@@ -436,8 +501,9 @@ class _ChatPageState extends State<ChatPage> {
         return;
       }
       setState(() {
-        _recordingSeconds =
-            DateTime.now().difference(_recordingStartedAt!).inSeconds;
+        _recordingSeconds = DateTime.now()
+            .difference(_recordingStartedAt!)
+            .inSeconds;
       });
     });
   }
@@ -535,9 +601,7 @@ class _ChatPageState extends State<ChatPage> {
       }
       if (recorded == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context).voiceTooShort),
-          ),
+          SnackBar(content: Text(AppLocalizations.of(context).voiceTooShort)),
         );
         return;
       }
@@ -547,9 +611,7 @@ class _ChatPageState extends State<ChatPage> {
           : DateTime.now().difference(startedAt).inMilliseconds;
       if (heldMs < kMinVoiceDurationMs) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context).voiceTooShort),
-          ),
+          SnackBar(content: Text(AppLocalizations.of(context).voiceTooShort)),
         );
         return;
       }
@@ -567,7 +629,9 @@ class _ChatPageState extends State<ChatPage> {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(L10nErrors.message(l10n, ctrl.error ?? l10n.chatGeneric)),
+            content: Text(
+              L10nErrors.message(l10n, ctrl.error ?? l10n.chatGeneric),
+            ),
           ),
         );
       }

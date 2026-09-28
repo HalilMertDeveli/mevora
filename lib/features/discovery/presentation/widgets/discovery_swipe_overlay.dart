@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
 
-/// Subtle directional hint while dragging a discovery card: a round icon
-/// that fades in and grows with the drag, matching the action buttons.
+/// Directional hint while dragging a card: an icon-only disc in the corner
+/// the card is heading toward, growing with the drag. Same vocabulary as the
+/// action buttons — ember for connect, ink for pass, marigold for priority —
+/// and deliberately wordless so it never covers the person.
 class DiscoverySwipeOverlay extends StatelessWidget {
   const DiscoverySwipeOverlay({
     super.key,
@@ -13,49 +18,66 @@ class DiscoverySwipeOverlay extends StatelessWidget {
   final Offset dragOffset;
   final double threshold;
 
-  static const _passColor = Color(0xFFFF4458);
-  static const _superLikeColor = Color(0xFF1EA7FD);
-  static const _likeColor = Color(0xFF2BD68A);
-
   @override
   Widget build(BuildContext context) {
     final direction = _resolveDirection();
     if (direction == DiscoverySwipeDirection.none) {
       return const SizedBox.shrink();
     }
-
+    final p = context.palette;
+    final scheme = Theme.of(context).colorScheme;
     final progress = _progressFor(direction);
-    final (icon, color) = switch (direction) {
-      DiscoverySwipeDirection.like => (Icons.favorite_rounded, _likeColor),
-      DiscoverySwipeDirection.pass => (Icons.close_rounded, _passColor),
-      DiscoverySwipeDirection.superLike => (
-        Icons.star_rounded,
-        _superLikeColor,
+    final (
+      IconData icon,
+      Color bg,
+      Color fg,
+      Alignment at,
+    ) = switch (direction) {
+      DiscoverySwipeDirection.like => (
+        MevoraIcons.liked,
+        scheme.primary,
+        scheme.onPrimary,
+        Alignment.topLeft,
       ),
-      DiscoverySwipeDirection.none => (Icons.circle, Colors.transparent),
+      DiscoverySwipeDirection.pass => (
+        MevoraIcons.pass,
+        p.textPrimary,
+        p.background,
+        Alignment.topRight,
+      ),
+      _ => (
+        MevoraIcons.superLike,
+        p.humor,
+        AppColors.paper,
+        Alignment.topCenter,
+      ),
     };
 
     return IgnorePointer(
-      child: Center(
-        child: Opacity(
-          opacity: (0.2 + progress * 0.8).clamp(0.0, 1.0),
-          child: Transform.scale(
-            scale: 0.7 + progress * 0.3,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.9),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.35),
-                    blurRadius: 24,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Icon(icon, color: color, size: 56),
+      child: Align(
+        alignment: at,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Opacity(
+            opacity: progress.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: 0.8 + progress * 0.2,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: bg,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.ink.withValues(alpha: 0.18),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Icon(icon, color: fg, size: 32),
+                ),
               ),
             ),
           ),
@@ -70,28 +92,18 @@ class DiscoverySwipeOverlay extends StatelessWidget {
     if (dy < -threshold * 0.55 && dy.abs() > dx.abs()) {
       return DiscoverySwipeDirection.superLike;
     }
-    if (dx > threshold * 0.35) {
-      return DiscoverySwipeDirection.like;
-    }
-    if (dx < -threshold * 0.35) {
-      return DiscoverySwipeDirection.pass;
-    }
+    if (dx > threshold * 0.35) return DiscoverySwipeDirection.like;
+    if (dx < -threshold * 0.35) return DiscoverySwipeDirection.pass;
     return DiscoverySwipeDirection.none;
   }
 
   double _progressFor(DiscoverySwipeDirection direction) {
     return switch (direction) {
-      DiscoverySwipeDirection.like => (dragOffset.dx / threshold).clamp(
-        0.0,
-        1.0,
-      ),
-      DiscoverySwipeDirection.pass => (-dragOffset.dx / threshold).clamp(
-        0.0,
-        1.0,
-      ),
+      DiscoverySwipeDirection.like => (dragOffset.dx / threshold).clamp(0, 1),
+      DiscoverySwipeDirection.pass => (-dragOffset.dx / threshold).clamp(0, 1),
       DiscoverySwipeDirection.superLike => (-dragOffset.dy / threshold).clamp(
-        0.0,
-        1.0,
+        0,
+        1,
       ),
       DiscoverySwipeDirection.none => 0,
     };

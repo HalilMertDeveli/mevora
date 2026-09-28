@@ -9,7 +9,7 @@ import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
 import 'package:mevora/features/picks/presentation/controllers/mevora_picks_controller.dart';
 import 'package:mevora/features/picks/presentation/widgets/pick_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
@@ -92,7 +92,7 @@ class _PicksViewState extends State<PicksView> {
         PicksPhase.initial || PicksPhase.loading => MevoraLoading.page(
           key: const ValueKey('picks-loading'),
           message: l10n.picksLoading,
-          asset: MevoraRiveAssets.loading,
+          art: MevoraArt.searching,
         ),
         PicksPhase.error => MevoraErrorView(
           key: const ValueKey('picks-error'),
@@ -169,7 +169,7 @@ class _PicksViewState extends State<PicksView> {
     final l10n = AppLocalizations.of(context);
     if (batch.emptyReason == PicksEmptyReason.discoveryDisabled) {
       return MevoraEmptyState(
-        icon: Icons.visibility_off_outlined,
+        art: MevoraArt.generic,
         title: l10n.picksDiscoveryOffTitle,
         message: l10n.picksDiscoveryOffMessage,
         actionLabel: widget.onOpenSettings == null ? null : l10n.settings,
@@ -177,8 +177,7 @@ class _PicksViewState extends State<PicksView> {
       );
     }
     return MevoraEmptyState(
-      icon: Icons.auto_awesome_outlined,
-      riveAsset: MevoraRiveAssets.emptyProfiles,
+      art: MevoraArt.emptyProfiles,
       title: batch.emptyReason == PicksEmptyReason.allDecided
           ? l10n.picksEmptyDoneTitle
           : l10n.picksEmptyPreparingTitle,

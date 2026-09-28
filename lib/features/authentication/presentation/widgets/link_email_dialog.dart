@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/errors/result.dart';
@@ -68,7 +69,7 @@ class _LinkEmailDialogState extends State<_LinkEmailDialog> {
                 hint: l10n.emailHint,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                prefixIcon: Icons.mail_outline_rounded,
+                prefixIcon: MevoraIcons.email,
                 errorText: _emailError,
                 enabled: !_submitting,
                 autocorrect: false,
@@ -87,7 +88,7 @@ class _LinkEmailDialogState extends State<_LinkEmailDialog> {
                 label: l10n.password,
                 obscureText: _obscurePassword,
                 textInputAction: TextInputAction.next,
-                prefixIcon: Icons.lock_outline_rounded,
+                prefixIcon: MevoraIcons.lock,
                 errorText: _passwordError,
                 enabled: !_submitting,
                 autocorrect: false,
@@ -101,9 +102,7 @@ class _LinkEmailDialogState extends State<_LinkEmailDialog> {
                     setState(() => _obscurePassword = !_obscurePassword);
                   },
                   icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
+                    _obscurePassword ? MevoraIcons.visible : MevoraIcons.hidden,
                   ),
                 ),
                 onChanged: (_) {
@@ -119,7 +118,7 @@ class _LinkEmailDialogState extends State<_LinkEmailDialog> {
                 label: l10n.confirmPassword,
                 obscureText: _obscurePassword,
                 textInputAction: TextInputAction.done,
-                prefixIcon: Icons.lock_outline_rounded,
+                prefixIcon: MevoraIcons.lock,
                 errorText: _confirmError,
                 enabled: !_submitting,
                 autocorrect: false,

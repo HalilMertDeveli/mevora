@@ -2,12 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
+import 'package:mevora/shared/widgets/mevora_icon_button.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:video_player/video_player.dart';
 
@@ -694,7 +699,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
     return KeyedSubtree(
       key: ValueKey(content.contentId),
       child: ColoredBox(
-        color: Colors.black,
+        color: AppColors.scrim,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -722,9 +727,12 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
               Positioned(
                 right: AppSpacing.md,
                 top: AppSpacing.md,
-                child: IconButton.filledTonal(
+                child: MevoraIconButton(
+                  icon: _muted ? MevoraIcons.volumeOff : MevoraIcons.volumeOn,
+                  tooltip: _muted ? l10n.unmute : l10n.mute,
+                  variant: MevoraIconButtonVariant.onMedia,
+                  size: 44,
                   onPressed: () => unawaited(_toggleMute()),
-                  icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
                 ),
               ),
           ],
@@ -764,7 +772,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
       fit: StackFit.expand,
       children: [
         ?poster,
-        const Center(child: CircularProgressIndicator()),
+        const Center(child: MevoraOrbitLoader(size: 40, onMedia: true)),
         if (caption != null) _CaptionOverlay(text: caption),
       ],
     );
@@ -807,7 +815,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
           ColoredBox(color: theme.colorScheme.scrim.withValues(alpha: 0.6)),
         ],
         _MediaFallback(
-          icon: Icons.videocam_off_outlined,
+          icon: MevoraIcons.videoOff,
           message: l10n.humorVideoLoadFailed,
           caption: _caption,
           onRetry: _canRetryManually
@@ -860,7 +868,7 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
           children: [
             if (!shown) ...[
               ?poster,
-              const Center(child: CircularProgressIndicator()),
+              const Center(child: MevoraOrbitLoader(size: 40, onMedia: true)),
             ],
             child,
             if (caption != null) _CaptionOverlay(text: caption),
@@ -1000,24 +1008,10 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.scrim.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-        child: Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onInverseSurface,
-          ),
-        ),
-      ),
+    return MevoraPill(
+      label: label,
+      icon: MevoraIcons.humor,
+      tone: MevoraTone.onMedia,
     );
   }
 }
@@ -1035,41 +1029,12 @@ class _AttributionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = theme.colorScheme.onInverseSurface.withValues(alpha: 0.9);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.scrim.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: 2,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                attribution.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(color: color),
-              ),
-            ),
-            if (attribution.verified) ...[
-              const SizedBox(width: 2),
-              Icon(
-                Icons.verified,
-                size: 12,
-                color: color,
-                semanticLabel: verifiedLabel,
-              ),
-            ],
-          ],
-        ),
-      ),
+    return MevoraPill(
+      label: attribution.label,
+      icon: attribution.verified ? MevoraIcons.verified : null,
+      tone: MevoraTone.onMedia,
+      dense: true,
+      iconSemanticLabel: attribution.verified ? verifiedLabel : null,
     );
   }
 }
@@ -1086,7 +1051,7 @@ class _FallbackAction {
 class _MediaFallback extends StatelessWidget {
   const _MediaFallback({
     required this.message,
-    this.icon = Icons.hide_image_outlined,
+    this.icon = MevoraIcons.photoBroken,
     this.caption,
     this.onRetry,
     this.onNext,
@@ -1148,13 +1113,13 @@ class _MediaFallback extends StatelessWidget {
                         foregroundColor: color,
                         side: BorderSide(color: color.withValues(alpha: 0.6)),
                       ),
-                      icon: const Icon(Icons.refresh_rounded),
+                      icon: const Icon(MevoraIcons.refresh),
                       label: Text(retry.label),
                     ),
                   if (next != null)
                     FilledButton.icon(
                       onPressed: next.onPressed,
-                      icon: const Icon(Icons.skip_next_rounded),
+                      icon: const Icon(MevoraIcons.skip),
                       label: Text(next.label),
                     ),
                 ],
@@ -1212,7 +1177,7 @@ class _TextCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.format_quote_rounded,
+                      MevoraIcons.quote,
                       size: 36,
                       color: scheme.primary.withValues(alpha: 0.35),
                     ),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 
@@ -10,10 +11,7 @@ import 'package:mevora/shared/images/mevora_network_images.dart';
 /// Opened via [open] with a [Navigator] push so the underlying chat route
 /// stays mounted and keeps its scroll offset.
 class ChatFullscreenImageViewer extends StatefulWidget {
-  const ChatFullscreenImageViewer({
-    super.key,
-    required this.imageProvider,
-  });
+  const ChatFullscreenImageViewer({super.key, required this.imageProvider});
 
   final ImageProvider imageProvider;
 
@@ -48,10 +46,7 @@ class ChatFullscreenImageViewer extends StatefulWidget {
   }
 
   /// Same resolution rules as chat thumbnails ([MevoraNetworkImages] / memory).
-  static ImageProvider? resolveProvider({
-    String? url,
-    List<int>? bytes,
-  }) {
+  static ImageProvider? resolveProvider({String? url, List<int>? bytes}) {
     final local = bytes;
     if (local != null && local.isNotEmpty) {
       return MemoryImage(Uint8List.fromList(local));
@@ -161,7 +156,7 @@ class _ChatFullscreenImageViewerState extends State<ChatFullscreenImageViewer> {
               child: IconButton(
                 tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                 onPressed: _close,
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: const Icon(MevoraIcons.close, color: Colors.white),
               ),
             ),
           ],
@@ -191,14 +186,14 @@ class _ErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.broken_image_outlined, color: Colors.white70, size: 48),
+          const Icon(MevoraIcons.photoBroken, color: Colors.white70, size: 48),
           const SizedBox(height: 16),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white70,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
           ),
           const SizedBox(height: 20),
           Row(
@@ -206,7 +201,10 @@ class _ErrorBody extends StatelessWidget {
             children: [
               TextButton(
                 onPressed: onRetry,
-                child: Text(retryLabel, style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  retryLabel,
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
               TextButton(
                 onPressed: onClose,

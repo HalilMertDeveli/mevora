@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/services/profile/profile_update_notifier.dart';
 import 'package:mevora/core/config/auth_scope.dart';
@@ -41,7 +42,7 @@ import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
 import 'package:mevora/shared/animations/mevora_match_celebration.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
@@ -276,9 +277,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     final controller = _controller;
     final l10n = AppLocalizations.of(context);
     if (controller == null) {
-      return const Scaffold(
-        body: MevoraLoading.page(asset: MevoraRiveAssets.loading),
-      );
+      return const Scaffold(body: MevoraLoading.page());
     }
     final state = controller.state;
     final relationship = RelationshipScope.controllerOf(context);
@@ -299,6 +298,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         child: body,
       );
     }
+    final theme = Theme.of(context);
     final (title, subtitle) = _showingPicks
         ? (l10n.picksTitle, l10n.picksSubtitle)
         : _inDiscoverMore
@@ -314,25 +314,33 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       },
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 64,
           leading: _inDiscoverMore
               ? IconButton(
                   tooltip: l10n.picksBackToPicks,
                   onPressed: _backToPicks,
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: const Icon(MevoraIcons.back),
                 )
               : null,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                // Discover More is a sub-mode with a back button; a sans title
+                // fits where the display face would truncate.
+                style: _inDiscoverMore
+                    ? theme.textTheme.titleLarge
+                    : theme.textTheme.headlineMedium,
+              ),
               Text(
                 subtitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                style: theme.textTheme.bodySmall,
               ),
             ],
           ),
@@ -344,17 +352,13 @@ class _DiscoveryPageState extends State<DiscoveryPage>
                 onPressed: state.isLoading
                     ? null
                     : () => _openFilters(controller),
-                icon: const Icon(Icons.tune_rounded),
+                icon: const Icon(MevoraIcons.filters),
               ),
             BoostButton(
               isActive: state.activeBoost != null,
               onPressed: () => unawaited(_openBoost(controller)),
             ),
-            IconButton(
-              tooltip: l10n.settings,
-              onPressed: () => context.push(AppRoutes.settings),
-              icon: const Icon(Icons.settings_outlined),
-            ),
+            const SizedBox(width: AppSpacing.xs),
           ],
         ),
         body: body,
@@ -408,8 +412,10 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         candidate: match,
         breakdown: breakdown,
       );
+      final me = AuthScope.maybeOf(context)?.user;
       return MevoraMatchCelebration(
-        leftName: l10n.you,
+        leftName: me?.displayName ?? l10n.you,
+        leftImage: MevoraNetworkImages.provider(me?.photoUrl),
         rightName: match.displayName,
         rightImage: MevoraNetworkImages.provider(match.photoUrl),
         compatibilitySection: WhyYouMatchPanel(
@@ -446,7 +452,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
 
     if (state.phase == LocationPromptPhase.permanentlyDenied) {
       return MevoraEmptyState(
-        icon: Icons.lock_outline,
+        art: MevoraArt.location,
         title: l10n.locationSettingsTitle,
         message: l10n.locationSettingsMessage,
         actionLabel: l10n.openSettings,
@@ -456,7 +462,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
 
     if (state.phase == LocationPromptPhase.gpsDisabled) {
       return MevoraEmptyState(
-        icon: Icons.location_off_outlined,
+        art: MevoraArt.location,
         title: l10n.gpsDisabledTitle,
         message: l10n.gpsDisabledMessage,
         actionLabel: l10n.continueWithoutLocation,
@@ -486,6 +492,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
 
     if (state.phase == LocationPromptPhase.error && state.current == null) {
       return MevoraErrorView(
+        art: MevoraArt.location,
         title: l10n.locationUnavailableTitle,
         message: state.errorMessage == null
             ? l10n.locationTimeoutMessage
@@ -495,7 +502,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      padding: EdgeInsets.zero,
       // An empty or seen-everyone deck is exactly when there is time for Humor
       // Lab, so its entry stays reachable there too.
       child: state.current == null && !state.isLoading
@@ -507,16 +514,16 @@ class _DiscoveryPageState extends State<DiscoveryPage>
   Widget _withHumorEntry(Widget empty) {
     return Column(
       children: [
+        Expanded(child: empty),
         const Padding(
           padding: EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.md,
+            AppSpacing.screenPadding,
             0,
+            AppSpacing.screenPadding,
+            AppSpacing.md,
           ),
           child: HumorLabDiscoverEntry(),
         ),
-        Expanded(child: empty),
       ],
     );
   }
@@ -526,15 +533,14 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     if (state.isLoading && state.current == null) {
       return MevoraLoading.page(
         message: l10n.discoveryLoading,
-        asset: MevoraRiveAssets.loading,
+        art: MevoraArt.searching,
       );
     }
     final current = state.current;
     if (current == null) {
       if (state.hasSeenEveryone) {
         return MevoraEmptyState(
-          icon: Icons.explore_outlined,
-          riveAsset: MevoraRiveAssets.emptyProfiles,
+          art: MevoraArt.emptyProfiles,
           title: l10n.discoverySeenEveryoneTitle,
           message: l10n.discoverySeenEveryoneMessage,
           actionLabel: state.isMockMode ? l10n.restartDemo : l10n.exploreAgain,
@@ -548,8 +554,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         );
       }
       return MevoraEmptyState(
-        icon: Icons.insights_outlined,
-        riveAsset: MevoraRiveAssets.emptyProfiles,
+        art: MevoraArt.searching,
         title: l10n.discoveryEmptyTitle,
         message: l10n.discoveryEmptyMessage,
         actionLabel: l10n.retry,
@@ -560,14 +565,28 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     final busy = controller.isProcessingAction || _animateOut;
 
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
       child: Column(
         children: [
-          const HumorLabDiscoverEntry(),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.xs,
+                bottom: AppSpacing.s12,
+              ),
+              child: HumorLabDiscoverEntry(compact: true),
+            ),
+          ),
           if (state.hiddenCompatibility != null &&
               !state.hiddenCompatibilityDismissed)
             Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: const EdgeInsets.only(bottom: AppSpacing.s12),
               child: HiddenCompatibilityCard(
                 insight: state.hiddenCompatibility!,
                 onDiscover: controller.focusHiddenCompatibility,
@@ -592,7 +611,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
                   : null,
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
           DiscoveryActionButtons(
             enabled: !busy,
             onPass: () =>
@@ -676,14 +695,24 @@ class _DiscoveryPageState extends State<DiscoveryPage>
 
   Future<void> _openProfileDetails(DiscoveryCandidate candidate) async {
     _pulseRelationshipActivity();
-    await Navigator.of(context).push<void>(
-      MevoraPageTransitions.route<void>(
+    final decision = await Navigator.of(context).push<DiscoveryDecision>(
+      MevoraPageTransitions.route<DiscoveryDecision>(
         builder: (_) => DiscoveryProfileDetailsPage(
           candidate: candidate,
           controller: _controller,
+          showActions: true,
         ),
       ),
     );
+    final controller = _controller;
+    // Act only if the person is still the one on top of the deck.
+    if (!mounted ||
+        decision == null ||
+        controller == null ||
+        controller.state.current?.uid != candidate.uid) {
+      return;
+    }
+    await _triggerAction(controller, decision);
   }
 
   Future<void> _triggerAction(

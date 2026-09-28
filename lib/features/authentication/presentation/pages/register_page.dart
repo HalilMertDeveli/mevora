@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
@@ -15,6 +16,7 @@ import 'package:mevora/features/authentication/presentation/widgets/social_auth_
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
+
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -61,7 +63,7 @@ class _RegisterPageState extends State<RegisterPage> {
               hint: l10n.emailHint,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              prefixIcon: Icons.mail_outline_rounded,
+              prefixIcon: MevoraIcons.email,
               errorText: _emailError,
               enabled: !auth.isBusy,
               autocorrect: false,
@@ -81,7 +83,7 @@ class _RegisterPageState extends State<RegisterPage> {
               helperText: l10n.passwordMinLength(8),
               obscureText: _obscurePassword,
               textInputAction: TextInputAction.next,
-              prefixIcon: Icons.lock_outline_rounded,
+              prefixIcon: MevoraIcons.lock,
               errorText: _passwordError,
               enabled: !auth.isBusy,
               autocorrect: false,
@@ -95,9 +97,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   setState(() => _obscurePassword = !_obscurePassword);
                 },
                 icon: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
+                  _obscurePassword ? MevoraIcons.visible : MevoraIcons.hidden,
                 ),
               ),
               onChanged: (_) {
@@ -113,7 +113,7 @@ class _RegisterPageState extends State<RegisterPage> {
               label: l10n.confirmPassword,
               obscureText: _obscurePassword,
               textInputAction: TextInputAction.done,
-              prefixIcon: Icons.lock_outline_rounded,
+              prefixIcon: MevoraIcons.lock,
               errorText: _confirmError,
               enabled: !auth.isBusy,
               autocorrect: false,

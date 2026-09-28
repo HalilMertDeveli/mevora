@@ -1612,7 +1612,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boostVerifying => 'Confirming your purchase...';
 
   @override
-  String get boostSuccessTitle => 'Boost is on! 🚀';
+  String get boostSuccessTitle => 'Boost is on';
 
   @override
   String get boostSuccessMessage =>
@@ -2128,10 +2128,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get musicTitle => 'Music';
 
   @override
-  String get musicConnectCta => '🎵 Connect Spotify';
+  String get musicConnectCta => 'Connect Spotify';
 
   @override
-  String get musicConnected => '✓ Spotify connected';
+  String get musicConnected => 'Spotify connected';
 
   @override
   String get musicUnconnectedCopy =>
@@ -2312,7 +2312,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get likesYouSeeWhy => 'See why you match';
 
   @override
-  String get likesYouLockedTitle => 'People who may fit you';
+  String get likesYouLockedTitle => 'See who\'s already interested';
 
   @override
   String likesYouLockedCount(int count) {
@@ -2327,7 +2327,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get likesYouUnlockCta => 'Unlock with Premium';
 
   @override
-  String get likesYouBlurredHint => 'People who may fit you';
+  String get likesYouBlurredHint =>
+      'Each tile is a real person. Premium shows who, and why you fit.';
 
   @override
   String get likesYouHiddenName => 'Hidden profile';
@@ -2745,7 +2746,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get compatReasonCommunication => 'You communicate in similar ways';
 
   @override
-  String get hiddenCompatTitle => 'Someone is thinking like you 👀';
+  String get hiddenCompatTitle => 'Someone is thinking like you';
 
   @override
   String hiddenCompatMessage(int count) {
@@ -3312,7 +3313,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String musicMatchTitle(int percent) {
-    return '🎵 Music Match — $percent%';
+    return 'Music match · $percent%';
   }
 
   @override
@@ -3327,32 +3328,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String musicInsightSharedTracks(int count) {
-    return '🎵 You have $count shared songs.';
+    return 'You have $count shared songs.';
   }
 
   @override
   String musicInsightSharedArtists(int count) {
-    return '🎤 You have $count shared artists.';
+    return 'You have $count shared artists.';
   }
 
   @override
   String musicInsightSharedPlaylistTracks(int count) {
-    return '🎧 Your playlists share $count songs.';
+    return 'Your playlists share $count songs.';
   }
 
   @override
   String musicInsightSharedRecentTracks(int count) {
-    return '🎵 You recently listened to $count of the same songs.';
+    return 'You recently listened to $count of the same songs.';
   }
 
   @override
   String musicInsightTopSharedArtist(String name) {
-    return '🎵 You both listen to $name a lot.';
+    return 'You both listen to $name a lot.';
   }
 
   @override
   String musicInsightTopSharedGenres(String genres) {
-    return '🎶 Your tastes overlap most in $genres.';
+    return 'Your tastes overlap most in $genres.';
   }
 
   @override
@@ -3363,13 +3364,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get musicSpotifyNotConnected => 'Spotify not connected';
 
   @override
-  String get musicSharedTracksHeading => '🎵 Songs you both like';
+  String get musicSharedTracksHeading => 'Songs you both like';
 
   @override
-  String get musicSharedArtistsHeading => '🎤 Artists you both like';
+  String get musicSharedArtistsHeading => 'Artists you both like';
 
   @override
-  String get musicSharedGenresHeading => '🎶 Shared genres';
+  String get musicSharedGenresHeading => 'Shared genres';
 
   @override
   String musicViewAllShared(int count) {
@@ -3705,13 +3706,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicMatchTeaser =>
-      '🎵 Your music tastes may align — unlock full insights with Premium';
+      'Your music tastes may align — unlock full insights with Premium';
 
   @override
   String get musicPremiumUnlock => 'Unlock';
 
   @override
-  String get musicNoCommonTracks => 'No shared songs yet 🎵';
+  String get musicNoCommonTracks => 'No shared songs yet';
 
   @override
   String get musicRecentlyPlayedHeading => 'Recently played';
@@ -3962,7 +3963,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Counts can lag a little behind live activity.';
 
   @override
-  String get onboardingMusicTitle => 'Does music matter to you? 🎧';
+  String get onboardingMusicTitle => 'Does music matter to you?';
 
   @override
   String get onboardingMusicBody =>
@@ -3983,7 +3984,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Spotify connection was cancelled. You can try again or skip.';
 
   @override
-  String get publicMusicTitle => 'We picked up your Spotify taste 🎧';
+  String get publicMusicTitle => 'We picked up your Spotify taste';
 
   @override
   String get publicMusicSubtitle =>
@@ -4035,7 +4036,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicMusicEditCta => 'Edit my Music Taste';
 
   @override
-  String get profileMusicTasteHeading => 'Music Taste 🎧';
+  String get profileMusicTasteHeading => 'Music taste';
 
   @override
   String get profileMusicOpenInSpotify => 'Open in Spotify';
@@ -4255,4 +4256,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicSectionEmpty => 'Nothing here yet.';
+
+  @override
+  String get profileSectionSignals => 'Your compatibility signals';
+
+  @override
+  String get profileSectionTrust => 'Trust & visibility';
+
+  @override
+  String get premiumBenefitsHeading => 'What Premium adds';
+
+  @override
+  String get premiumBenefitLikesTitle => 'See who liked you';
+
+  @override
+  String get premiumBenefitLikesBody =>
+      'Everyone who liked you in one list — and why you might fit.';
+
+  @override
+  String get premiumBenefitMusicTitle => 'Your full music match';
+
+  @override
+  String get premiumBenefitMusicBody =>
+      'The songs, artists and genres you share with each match.';
+
+  @override
+  String get premiumPlansHeading => 'Choose a plan';
+
+  @override
+  String get chatPreviewEncrypted => 'Encrypted message';
 }

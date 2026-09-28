@@ -1,15 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 
 /// A short, non-looping heart that scales in then fades. Used on Like.
 class MevoraLikeBurst extends StatefulWidget {
-  const MevoraLikeBurst({
-    super.key,
-    required this.play,
-    this.color,
-  });
+  const MevoraLikeBurst({super.key, required this.play, this.color});
 
   final bool play;
   final Color? color;
@@ -27,10 +25,7 @@ class _MevoraLikeBurstState extends State<MevoraLikeBurst>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: AppDurations.like,
-    );
+    _controller = AnimationController(vsync: this, duration: AppDurations.like);
     _scale = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.6, end: 1.15), weight: 55),
       TweenSequenceItem(tween: Tween(begin: 1.15, end: 1), weight: 45),
@@ -60,7 +55,7 @@ class _MevoraLikeBurstState extends State<MevoraLikeBurst>
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.color ?? Theme.of(context).colorScheme.secondary;
+    final color = widget.color ?? context.palette.like;
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _controller,
@@ -70,7 +65,7 @@ class _MevoraLikeBurstState extends State<MevoraLikeBurst>
             child: Transform.scale(scale: _scale.value, child: child),
           );
         },
-        child: Icon(Icons.favorite_rounded, size: 72, color: color),
+        child: Icon(MevoraIcons.liked, size: 72, color: color),
       ),
     );
   }

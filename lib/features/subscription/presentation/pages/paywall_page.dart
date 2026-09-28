@@ -1,14 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
-import 'package:mevora/features/subscription/domain/entities/premium_plan.dart';
 import 'package:mevora/features/subscription/domain/repositories/premium_billing_repository.dart';
 import 'package:mevora/features/subscription/presentation/controllers/premium_purchase_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
+import 'package:mevora/shared/widgets/mevora_banner.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
+import 'package:mevora/shared/widgets/mevora_section_header.dart';
+import 'package:mevora/shared/widgets/mevora_selectable_tile.dart';
 
 /// Where Premium is sold.
 ///
@@ -45,20 +54,29 @@ class _PaywallPageState extends State<PaywallPage> {
     final isPremium = SubscriptionScope.isPremiumOf(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.premiumTitle)),
+      appBar: AppBar(),
       body: SafeArea(
+        top: false,
         child: AnimatedBuilder(
           animation: widget.controller,
           builder: (context, _) {
             return ListView(
-              padding: const EdgeInsets.all(AppSpacing.screenPadding),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                0,
+                AppSpacing.screenPadding,
+                AppSpacing.xl,
+              ),
               children: [
                 _Hero(isPremium: isPremium),
                 const SizedBox(height: AppSpacing.lg),
                 if (isPremium)
                   _AlreadyPremium(l10n: l10n)
-                else
+                else ...[
+                  const _Benefits(),
+                  const SizedBox(height: AppSpacing.lg),
                   ..._sellingBody(context, l10n),
+                ],
               ],
             );
           },
@@ -69,7 +87,6 @@ class _PaywallPageState extends State<PaywallPage> {
 
   List<Widget> _sellingBody(BuildContext context, AppLocalizations l10n) {
     final controller = widget.controller;
-    final theme = Theme.of(context);
 
     switch (controller.stage) {
       case PremiumPurchaseStage.idle:
@@ -91,22 +108,20 @@ class _PaywallPageState extends State<PaywallPage> {
         // the scope flips the screen over as soon as it lands.
         return [
           _Notice(
-            icon: Icons.check_circle_outline,
+            success: true,
             title: l10n.premiumPurchasedTitle,
             body: l10n.premiumPurchasedBody,
-            tone: theme.colorScheme.primary,
           ),
         ];
 
       case PremiumPurchaseStage.unavailable:
         return [
           _Notice(
-            icon: Icons.storefront_outlined,
+            art: MevoraArt.offline,
             title: l10n.premiumUnavailableTitle,
             body: controller.failure == PremiumPurchaseFailure.storeUnavailable
                 ? l10n.premiumStoreUnavailable
                 : l10n.premiumUnavailableBody,
-            tone: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: AppSpacing.md),
           MevoraButton(
@@ -133,9 +148,14 @@ class _PaywallPageState extends State<PaywallPage> {
   List<Widget> _plansAndCta(BuildContext context, AppLocalizations l10n) {
     final controller = widget.controller;
     return [
+      MevoraSectionHeader(title: l10n.premiumPlansHeading),
+      const SizedBox(height: AppSpacing.s12),
       for (final plan in controller.plans) ...[
-        _PlanTile(
-          plan: plan,
+        MevoraSelectableTile(
+          title: plan.title,
+          subtitle: plan.description,
+          // The store's own formatted price, shown verbatim.
+          trailing: plan.formattedPrice,
           selected: controller.selected?.planKey == plan.planKey,
           onTap: () => controller.select(plan),
         ),
@@ -144,6 +164,7 @@ class _PaywallPageState extends State<PaywallPage> {
       const SizedBox(height: AppSpacing.md),
       MevoraButton(
         label: l10n.premiumSubscribeCta,
+        size: MevoraButtonSize.large,
         onPressed: controller.selected == null ? null : controller.buySelected,
       ),
       const SizedBox(height: AppSpacing.sm),
@@ -164,8 +185,7 @@ class _PaywallPageState extends State<PaywallPage> {
     return switch (controller.failure) {
       PremiumPurchaseFailure.cancelled => l10n.premiumCancelled,
       PremiumPurchaseFailure.storeUnavailable => l10n.premiumStoreUnavailable,
-      PremiumPurchaseFailure.productsUnavailable =>
-        l10n.premiumUnavailableBody,
+      PremiumPurchaseFailure.productsUnavailable => l10n.premiumUnavailableBody,
       // Deliberately not echoing the backend's reason string. "owned_by_other"
       // would tell one user something about another user's account.
       PremiumPurchaseFailure.verificationRejected =>
@@ -178,6 +198,8 @@ class _PaywallPageState extends State<PaywallPage> {
   }
 }
 
+/// Premium's promise, on the ink surface with a single brass accent — the
+/// one place in Mevora that is allowed to feel a little formal.
 class _Hero extends StatelessWidget {
   const _Hero({required this.isPremium});
 
@@ -186,25 +208,103 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final p = context.palette;
     final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xl,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
+      decoration: BoxDecoration(
+        color: p.premiumSurface,
+        borderRadius: BorderRadius.circular(AppRadii.card),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: p.premium, width: 1.5),
+            ),
+            child: Icon(
+              isPremium ? MevoraIcons.premiumActive : MevoraIcons.premium,
+              color: p.premium,
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Semantics(
+            header: true,
+            child: Text(
+              l10n.premiumTitle,
+              style: theme.textTheme.displaySmall?.copyWith(
+                color: p.onPremiumSurface,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.premiumSubtitle,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: p.onPremiumSurface.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What Premium actually unlocks — only features the backend gates.
+class _Benefits extends StatelessWidget {
+  const _Benefits();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    Widget benefit(IconData icon, MevoraTone tone, String title, String body) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              MevoraIconBadge(icon: icon, tone: tone, size: 44),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(body, style: theme.textTheme.bodyMedium),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          isPremium ? Icons.workspace_premium : Icons.workspace_premium_outlined,
-          size: 56,
-          color: theme.colorScheme.primary,
+        MevoraSectionHeader(title: l10n.premiumBenefitsHeading),
+        const SizedBox(height: AppSpacing.md),
+        benefit(
+          MevoraIcons.liked,
+          MevoraTone.match,
+          l10n.premiumBenefitLikesTitle,
+          l10n.premiumBenefitLikesBody,
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          l10n.premiumTitle,
-          style: theme.textTheme.headlineSmall,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          l10n.premiumSubtitle,
-          style: theme.textTheme.bodyMedium,
-          textAlign: TextAlign.center,
+        benefit(
+          MevoraIcons.musicActive,
+          MevoraTone.music,
+          l10n.premiumBenefitMusicTitle,
+          l10n.premiumBenefitMusicBody,
         ),
       ],
     );
@@ -219,50 +319,9 @@ class _AlreadyPremium extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Notice(
-      icon: Icons.verified_outlined,
+      success: true,
       title: l10n.premiumAlreadyActive,
       body: l10n.premiumRenewsLabel,
-      tone: Theme.of(context).colorScheme.primary,
-    );
-  }
-}
-
-class _PlanTile extends StatelessWidget {
-  const _PlanTile({
-    required this.plan,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final PremiumPlan plan;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: selected
-              ? theme.colorScheme.primary
-              : theme.colorScheme.outlineVariant,
-          width: selected ? 2 : 1,
-        ),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        selected: selected,
-        title: Text(plan.title),
-        subtitle: plan.description.isEmpty ? null : Text(plan.description),
-        // The store's own formatted price, shown verbatim.
-        trailing: Text(
-          plan.formattedPrice,
-          style: theme.textTheme.titleMedium,
-        ),
-      ),
     );
   }
 }
@@ -290,44 +349,58 @@ class _Busy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const MevoraLoading(),
-        const SizedBox(height: AppSpacing.sm),
-        Text(message, textAlign: TextAlign.center),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      child: MevoraLoading(message: message),
     );
   }
 }
 
+/// A resolved state: a success mark for "you are Premium", a spot
+/// illustration for everything else.
 class _Notice extends StatelessWidget {
   const _Notice({
-    required this.icon,
     required this.title,
     required this.body,
-    required this.tone,
+    this.art = MevoraArt.premium,
+    this.success = false,
   });
 
-  final IconData icon;
   final String title;
   final String body;
-  final Color tone;
+  final MevoraArt art;
+  final bool success;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        Icon(icon, size: 40, color: tone),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          title,
-          style: theme.textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(body, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
-      ],
+    if (!success) {
+      return MevoraEmptyState(
+        art: art,
+        compact: true,
+        title: title,
+        message: body,
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      child: Column(
+        children: [
+          MevoraSuccessMark(size: 96, color: context.palette.premium),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            title,
+            style: theme.textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            body,
+            style: theme.textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -339,19 +412,6 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onErrorContainer,
-        ),
-      ),
-    );
+    return MevoraBanner(message: text, tone: MevoraTone.error);
   }
 }

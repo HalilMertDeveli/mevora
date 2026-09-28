@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/localization/locale_casing.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -133,7 +134,10 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
                 child: Column(
                   children: [
                     Text(
-                      l10n.itsAMatchHeadline.toUpperCase(),
+                      LocaleCasing.upper(
+                        l10n.itsAMatchHeadline,
+                        Localizations.localeOf(context),
+                      ),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: context.palette.match,

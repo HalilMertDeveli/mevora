@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/localization/locale_casing.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 
 /// Heads a section of a page: title, optional supporting line, optional
@@ -45,7 +46,10 @@ class MevoraSectionHeader extends StatelessWidget {
                 children: [
                   if (eyebrow != null) ...[
                     Text(
-                      eyebrow!.toUpperCase(),
+                      LocaleCasing.upper(
+                        eyebrow!,
+                        Localizations.localeOf(context),
+                      ),
                       style: theme.textTheme.labelSmall?.copyWith(
                         letterSpacing: 1.1,
                         color: iconColor ?? p.textTertiary,

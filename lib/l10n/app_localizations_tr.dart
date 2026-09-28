@@ -3926,4 +3926,28 @@ class AppLocalizationsTr extends AppLocalizations {
   String musicTasteStable(int count) {
     return 'Aylardır bırakmadığı $count sanatçı.';
   }
+
+  @override
+  String get musicFollowedArtistsTitle => 'Takip ettiğin sanatçılar';
+
+  @override
+  String get musicTopArtistsTitle => 'En çok dinlediğin sanatçılar';
+
+  @override
+  String get musicTopTracksTitle => 'En çok dinlediğin parçalar';
+
+  @override
+  String get musicPlaylistsTitle => 'Playlistlerin';
+
+  @override
+  String get musicFollowedArtistsReconnect =>
+      'Takip ettiğin sanatçıları göstermek için Spotify\'ı yeniden bağla.';
+
+  @override
+  String musicPlaylistTrackCount(int count) {
+    return '$count parça';
+  }
+
+  @override
+  String get musicSectionEmpty => 'Burada henüz bir şey yok.';
 }

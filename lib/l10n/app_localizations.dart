@@ -6389,7 +6389,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorLabSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Watch short clips and memes, then rate how funny they are.'**
+  /// **'Tell us how funny each joke, clip or meme is.'**
   String get humorLabSubtitle;
 
   /// No description provided for @humorLabDiscoverCta.

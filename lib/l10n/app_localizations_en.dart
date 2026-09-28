@@ -3490,7 +3490,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorLabSubtitle =>
-      'Watch short clips and memes, then rate how funny they are.';
+      'Tell us how funny each joke, clip or meme is.';
 
   @override
   String get humorLabDiscoverCta => 'Open Humor Lab';

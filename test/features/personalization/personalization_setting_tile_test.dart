@@ -40,7 +40,7 @@ class _NoStorage implements StorageRepository {
 
 class _NoReauth implements ReauthPort {
   @override
-  dynamic noSuchMethod(Invocation invocation) => Future.value();
+  dynamic noSuchMethod(Invocation invocation) => Future<void>.value();
 }
 
 AuthController _auth() {

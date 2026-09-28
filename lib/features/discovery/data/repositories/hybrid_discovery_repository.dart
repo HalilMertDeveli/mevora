@@ -4,12 +4,13 @@ import 'package:mevora/features/discovery/data/repositories/mock_discovery_repos
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
+import 'package:mevora/features/picks/domain/repositories/mevora_picks_repository.dart';
 
 /// Development discovery: real Firestore/Functions candidates first, then
 /// local demo profiles so the deck is never empty. Demo users are never
 /// written to production Firebase.
 class HybridDiscoveryRepository
-    implements DiscoveryRepository, DemoDiscoverySupport {
+    implements DiscoveryRepository, DemoDiscoverySupport, MevoraPicksCapable {
   HybridDiscoveryRepository({
     required DiscoveryRepository remote,
     required MockDiscoveryRepository local,
@@ -23,6 +24,16 @@ class HybridDiscoveryRepository
   final MockDiscoveryRepository _local;
   final bool allowDemoFallback;
   final String Function() _currentUid;
+
+  /// Picks come from the real backend only. Demo profiles pad the Discover
+  /// deck in development, but a curated recommendation is never invented.
+  @override
+  MevoraPicksRepository? get picksRepository {
+    final remote = _remote;
+    return remote is MevoraPicksCapable
+        ? (remote as MevoraPicksCapable).picksRepository
+        : null;
+  }
 
   @override
   bool get supportsDemoRestart => allowDemoFallback;

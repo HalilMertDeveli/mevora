@@ -2,6 +2,8 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentSnapshot, type Transaction} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {bumpFunnel, pickConversationMilestones, type FunnelStep} from "./picks/funnel.js";
+import type {PickType} from "./picks/types.js";
 import {SIGNAL_STRENGTHS, type StrongSignalType} from "./personalization/config.js";
 import {
   advanceConversationState,
@@ -244,8 +246,10 @@ export async function applyMessageSideEffects(input: {
   lastMessage: string;
 }): Promise<void> {
   const matchRef = db.doc(`matches/${input.matchId}`);
+  let reached: {step: FunnelStep; pickTypes: PickType[]} | null = null;
   let milestones: {reached: StrongSignalType[]; userIds: string[]} | null = null;
   await db.runTransaction(async (tx) => {
+    reached = null;
     milestones = null;
     const matchSnap = await tx.get(matchRef);
     const data = matchSnap.data();
@@ -270,6 +274,17 @@ export async function applyMessageSideEffects(input: {
     if (willAward) {
       updates.interactionBonusAwarded = true;
     }
+    // Pick-introduced matches: note when the conversation starts and when it
+    // is still going a day later. Written with the message, counted after.
+    const milestone = pickConversationMilestones({
+      match: data,
+      messagedUserIds: [...messaged],
+      nowMs: Date.now(),
+    });
+    Object.assign(updates, milestone.updates);
+    if (milestone.step) {
+      reached = {step: milestone.step, pickTypes: milestone.pickTypes};
+    }
     // Adaptive personalization: who wrote and when, never what. Recorded
     // with the message, learned from after the transaction commits.
     const conversation = advanceConversationState({
@@ -290,11 +305,15 @@ export async function applyMessageSideEffects(input: {
       }
     }
   });
-  const reached = milestones as {reached: StrongSignalType[]; userIds: string[]} | null;
-  if (reached && reached.userIds.length === 2) {
-    const [a, b] = reached.userIds;
+  const milestone = reached as {step: FunnelStep; pickTypes: PickType[]} | null;
+  if (milestone) {
+    await bumpFunnel(db, milestone.step, milestone.pickTypes);
+  }
+  const learned = milestones as {reached: StrongSignalType[]; userIds: string[]} | null;
+  if (learned && learned.userIds.length === 2) {
+    const [a, b] = learned.userIds;
     await Promise.all(
-      reached.reached.flatMap((type) => [
+      learned.reached.flatMap((type) => [
         recordLearningEventSafely(db, {
           actorUid: a, otherUid: b, type, key: input.matchId, strength: SIGNAL_STRENGTHS[type],
         }),

@@ -10,43 +10,36 @@ import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/ht
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onObjectFinalized} from "firebase-functions/v2/storage";
 import {logger} from "firebase-functions";
-import {blockId, canonicalMatchId} from "./ids.js";
+import {canonicalMatchId} from "./ids.js";
 import {
   consumeDistanceQuota,
   coarseDistanceLabel,
   distanceDisclosureDecision,
 } from "./geo/coarseDistance.js";
+import {isAccountEligible} from "./profileSafety.js";
 import {
-  isAccountEligible,
-  discoveryProfileProjection,
-  resolveProfileAge,
-} from "./profileSafety.js";
-import {
-  discoveryProfileRejectReason,
   loadActiveMatchPartnerIds,
-  loadPreferencesByUid,
   passesDiscoveryProfileFilters,
   passesGenderPreferences,
 } from "./discoveryMatching.js";
-import {loadActiveBoostSessions, effectiveRadiusKm, isBoostedCandidate, sortByBoostVisibility} from "./boost/ranking.js";
+import {sortByBoostVisibility} from "./boost/ranking.js";
 import {attributeBoostEvent, recordBoostImpressions} from "./boost/measurement.js";
 import {
-  classifyDiscoveryDistance,
   fillFromDistanceTiers,
-  isWithinDiscoveryRadius,
   resolveDiscoveryRadiusKm,
   type DiscoveryDistanceTier,
 } from "./discoveryFallback.js";
 import {userLanguage} from "./language.js";
-import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
-import {musicRankingBonus} from "./musicCompatibility.js";
 import {ensureMatchScore, preservedMatchScoreFields} from "./matchScore.js";
-import {musicScoreForPair} from "./spotifyMusic.js";
-import {relationshipScoreForPair} from "./relationshipMatch.js";
+import {
+  haversineKm,
+  isBlocked as isBlockedPair,
+  loadDiscoveryViewerContext,
+  scanDiscoveryPool,
+} from "./discoveryPool.js";
+import {attributePickMatch, recordPickDecision} from "./picks/service.js";
 import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
-import {calculateCompatibility} from "./compatibility/compatibilityEngine.js";
 import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
-import {passesSmokeDiscoveryIsolation} from "./smoke/smokeTestUsers.js";
 import {
   cleanupOldCalls,
   cleanupOldNotifications,
@@ -72,59 +65,12 @@ function requireUid(request: CallableRequest): string {
   return uid;
 }
 
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const sLat = Math.sin(dLat / 2);
-  const sLng = Math.sin(dLng / 2);
-  const h =
-    sLat * sLat + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * sLng * sLng;
-  return 2 * 6371 * Math.asin(Math.sqrt(Math.min(1, Math.max(0, h))));
-}
-
 // Distance disclosure now goes through geo/coarseDistance.ts. The old
 // 1 km-resolution formatter is gone: every emitted distance is quantised so a
 // caller who moves their own userLocation cannot trilaterate a target.
 
-async function isBlocked(a: string, b: string): Promise<boolean> {
-  const [subA, subB, topA, topB] = await Promise.all([
-    db.doc(`users/${a}/blockedUsers/${b}`).get(),
-    db.doc(`users/${b}/blockedUsers/${a}`).get(),
-    db.doc(`blocks/${blockId(a, b)}`).get(),
-    db.doc(`blocks/${blockId(b, a)}`).get(),
-  ]);
-  return subA.exists || subB.exists || topA.exists || topB.exists;
-}
-
-async function loadUserAccounts(uids: string[]): Promise<Map<string, DocumentData>> {
-  const unique = [...new Set(uids.filter(Boolean))];
-  const entries = await Promise.all(
-    unique.map(async (uid) => {
-      const snap = await db.doc(`users/${uid}`).get();
-      return [uid, snap.data()] as const;
-    }),
-  );
-  return new Map(entries.filter(([, data]) => data != null) as Array<[string, DocumentData]>);
-}
-
-async function loadBlockedUserIds(uid: string): Promise<Set<string>> {
-  const [subSnap, blockedSnap, blockerSnap] = await Promise.all([
-    db.collection(`users/${uid}/blockedUsers`).get(),
-    db.collection("blocks").where("blockerId", "==", uid).get(),
-    db.collection("blocks").where("blockedUserId", "==", uid).get(),
-  ]);
-  const blocked = new Set<string>();
-  subSnap.docs.forEach((doc) => blocked.add(doc.id));
-  blockedSnap.docs.forEach((doc) => {
-    const other = String(doc.get("blockedUserId") ?? "");
-    if (other) blocked.add(other);
-  });
-  blockerSnap.docs.forEach((doc) => {
-    const other = String(doc.get("blockerId") ?? "");
-    if (other) blocked.add(other);
-  });
-  return blocked;
+function isBlocked(a: string, b: string): Promise<boolean> {
+  return isBlockedPair(db, a, b);
 }
 
 function parsePendingPhotoPath(name: string): {uid: string; imageId: string} | null {
@@ -138,28 +84,6 @@ function parsePendingPhotoPath(name: string): {uid: string; imageId: string} | n
     return null;
   }
   return {uid, imageId};
-}
-
-async function loadUserLocations(
-  uids: string[],
-): Promise<Map<string, {latitude: number; longitude: number}>> {
-  const out = new Map<string, {latitude: number; longitude: number}>();
-  const unique = [...new Set(uids)].filter((id) => id.length > 0);
-  for (let i = 0; i < unique.length; i += 30) {
-    const chunk = unique.slice(i, i + 30);
-    const snaps = await Promise.all(chunk.map((id) => db.doc(`userLocation/${id}`).get()));
-    snaps.forEach((snap, index) => {
-      const data = snap.data();
-      if (data?.latitude == null || data?.longitude == null) {
-        return;
-      }
-      out.set(chunk[index], {
-        latitude: Number(data.latitude),
-        longitude: Number(data.longitude),
-      });
-    });
-  }
-  return out;
 }
 
 export const getDiscoveryCandidates = onCall(callableOptions, async (request) => {
@@ -180,250 +104,30 @@ export const getDiscoveryCandidates = onCall(callableOptions, async (request) =>
   const cursor = String(request.data?.cursor ?? "");
   // Client may ask for soft distance expansion when a preferred radius is empty.
   const expandDistance = request.data?.expandDistance === true;
-  const [prefsSnap, viewerProfileSnap, locationSnap, blocked, likesSnap, passedSnap, boostSessions, activeMatches] =
-    await Promise.all([
-    db.doc(`userPreferences/${uid}`).get(),
-    db.doc(`profiles/${uid}`).get(),
-    db.doc(`userLocation/${uid}`).get(),
-    loadBlockedUserIds(uid),
-    db.collection("likes").where("fromUserId", "==", uid).get(),
-    db.collection(`users/${uid}/passedUsers`).get(),
-    loadActiveBoostSessions(db),
-    loadActiveMatchPartnerIds(db, uid),
-  ]);
-  // Ranking needs only the uids; measurement needs the sessions behind them.
-  const boosted = new Set(boostSessions.keys());
-  const seen = new Set(likesSnap.docs.map((doc) => String(doc.get("toUserId") ?? "")));
-  for (const doc of passedSnap.docs) seen.add(doc.id);
-  for (const partner of activeMatches) seen.add(partner);
-  seen.add(uid);
-  const prefs = prefsSnap.data() ?? {};
-  if (prefs.discoveryEnabled === false) {
+  const {viewer, boostSessions} = await loadDiscoveryViewerContext(db, uid, callerAccount.data());
+  const boosted = viewer.boosted;
+  if (viewer.prefs.discoveryEnabled === false) {
     return {items: [], nextCursor: null, fallbackLevel: "empty"};
   }
-  const viewerProfile = viewerProfileSnap.data() ?? {};
-  const lang = await userLanguage(uid);
-  const minAge = Number(prefs.minAge ?? 18);
-  const maxAge = Number(prefs.maxAge ?? 99);
-  const origin = locationSnap.data();
-  const hasViewerLocation = origin?.latitude != null && origin?.longitude != null;
+  const includeDebug = request.data?.includeDebug === true;
 
   // Scan multiple profile pages when nearby is sparse so far/no-location
   // candidates can still fill the deck without a full collection download.
-  const pageSize = 40;
-  const maxPages = expandDistance ? 4 : 3;
-  let pageCursor = cursor;
-  let lastUid: string | null = null;
-  let scannedFullPage = false;
-  const buckets: Record<DiscoveryDistanceTier, Array<Record<string, unknown>>> = {
-    nearby: [],
-    extended: [],
-    far: [],
-    no_location: [],
-  };
-  const rejectionReasons: Record<string, number> = {};
-  const bumpReject = (reason: string) => {
-    rejectionReasons[reason] = (rejectionReasons[reason] ?? 0) + 1;
-  };
-  const includeDebug = request.data?.includeDebug === true;
-
-  for (let page = 0; page < maxPages; page++) {
-    let query = db
-      .collection("profiles")
-      .where("isDiscoverable", "==", true)
-      .where("profileCompleted", "==", true)
-      .orderBy("updatedAt", "desc")
-      .limit(pageSize);
-    if (pageCursor) {
-      const cursorSnap = await db.doc(`profiles/${pageCursor}`).get();
-      if (cursorSnap.exists) {
-        query = query.startAfter(cursorSnap);
-      }
-    }
-    const profiles = await query.get();
-    scannedFullPage = profiles.size === pageSize;
-    if (profiles.empty) {
-      break;
-    }
-    const candidateUids = profiles.docs.map((doc) => doc.id);
-    const [lastActiveByUid, accountsByUid, preferencesByUid, locationsByUid] = await Promise.all([
-      loadLastActiveAt(db, candidateUids),
-      loadUserAccounts(candidateUids),
-      loadPreferencesByUid(db, candidateUids),
-      hasViewerLocation ? loadUserLocations(candidateUids) : Promise.resolve(new Map()),
-    ]);
-
-    for (const doc of profiles.docs) {
-      lastUid = doc.id;
-      if (seen.has(doc.id) || blocked.has(doc.id)) {
-        bumpReject(seen.has(doc.id) ? "already_seen_or_matched" : "blocked");
-        continue;
-      }
-      if (!passesSmokeDiscoveryIsolation(callerAccount.data(), accountsByUid.get(doc.id))) {
-        bumpReject("smoke_isolation");
-        continue;
-      }
-      if (!isActiveForDiscovery(lastActiveByUid.get(doc.id))) {
-        bumpReject("inactive");
-        continue;
-      }
-      if (await isBlocked(uid, doc.id)) {
-        bumpReject("blocked");
-        continue;
-      }
-      const data = doc.data();
-      const profileReject = discoveryProfileRejectReason({
-        candidateProfile: data,
-        candidateAccount: accountsByUid.get(doc.id),
-        minAge,
-        maxAge,
-      });
-      if (profileReject) {
-        bumpReject(profileReject);
-        continue;
-      }
-      if (
-        !passesGenderPreferences({
-          viewerPrefs: prefs,
-          viewerProfile,
-          candidatePrefs: preferencesByUid.get(doc.id) ?? {},
-          candidateProfile: data,
-        })
-      ) {
-        bumpReject("gender_preference");
-        continue;
-      }
-      const age = resolveProfileAge(data);
-      if (age === null) {
-        bumpReject("age_unresolved");
-        continue;
-      }
-      const candidateBoosted = isBoostedCandidate(doc.id, boosted);
-      let distanceKm: number | null = null;
-      let label: string | null = null;
-      let tier: DiscoveryDistanceTier = "no_location";
-      if (hasViewerLocation) {
-        const other = locationsByUid.get(doc.id);
-        if (other) {
-          const exactKm = haversineKm(
-            Number(origin.latitude),
-            Number(origin.longitude),
-            other.latitude,
-            other.longitude,
-          );
-          // HARD GATE. Beyond the resolved radius the candidate is dropped,
-          // not demoted to a lower tier: the tiers below only order the
-          // people who got through here.
-          //
-          // Deliberately the exact haversine, and deliberately ahead of the
-          // disclosure step further down — that step floors the value into
-          // 5 km bands and flattens everything at or beyond 100 km to
-          // exactly 100, so gating on the disclosed figure would wave
-          // through a candidate on the far side of the planet.
-          //
-          // Ahead of the music/relationship scoring below as well, so a
-          // rejected candidate costs no extra reads.
-          if (!isWithinDiscoveryRadius(exactKm, gateKm)) {
-            bumpReject("distance_over_radius");
-            continue;
-          }
-          const maxNearbyKm = effectiveRadiusKm(radiusKm, candidateBoosted);
-          tier = classifyDiscoveryDistance(
-            exactKm,
-            radiusKm,
-            candidateBoosted,
-            maxNearbyKm,
-          );
-          // Tier classification above used the exact value. What leaves the
-          // backend is quantised: a 0.1 km figure for a candidate the caller
-          // can pick out of the deck is a sharper trilateration oracle than
-          // getDistanceLabel ever was.
-          const disclosed = coarseDistanceLabel(exactKm, lang);
-          distanceKm = disclosed.bucketKm;
-          label = disclosed.label;
-        } else {
-          tier = "no_location";
-        }
-      } else {
-        // Viewer has no location → location-independent discovery.
-        tier = "no_location";
-      }
-      const music = await musicScoreForPair(uid, doc.id);
-      const relationship = await relationshipScoreForPair(uid, doc.id);
-      const compat = calculateCompatibility({
-        viewerProfile,
-        candidateProfile: data,
-        relationship: relationship
-          ? {
-              score: relationship.score,
-              alignedCount: relationship.alignedCount,
-              sharedQuestionCount: relationship.sharedQuestionCount,
-              topTopics: relationship.topTopics ?? [],
-            }
-          : null,
-        musicScore: music?.score ?? null,
-      });
-      buckets[tier].push({
-        uid: doc.id,
-        profile: {
-          ...discoveryProfileProjection({...data, uid: doc.id}),
-          isVerified: accountsByUid.get(doc.id)?.isVerified === true,
-        },
-        distanceLabel: label,
-        distanceKm,
-        compatibilityScore: compat.overallScore,
-        compatibilityBreakdown: {
-          overallScore: compat.overallScore,
-          relationshipScore: compat.relationshipScore,
-          interestScore: compat.interestScore,
-          lifestyleScore: compat.lifestyleScore,
-          questionScore: compat.questionScore,
-          musicScore: compat.musicScore,
-          communicationScore: compat.communicationScore,
-        },
-        musicCompatibilityScore: music?.score ?? null,
-        musicRankingBonus: music ? musicRankingBonus(music.score) : 0,
-        sharedMusicArtists: music?.sharedArtistNames?.slice(0, 5)
-          ?? music?.sharedArtists.slice(0, 5)
-          ?? [],
-        sharedMusicTracks: music?.sharedTrackNames?.slice(0, 5)
-          ?? music?.sharedTracks.slice(0, 5)
-          ?? [],
-        sharedMusicGenres: music?.sharedGenres.slice(0, 3) ?? [],
-        sharedMusicArtistCount: music?.sharedArtists.length ?? 0,
-        sharedMusicTrackCount: music?.sharedTracks.length ?? 0,
-        sharedMusicGenreCount: music?.sharedGenres.length ?? 0,
-        sharedMusicPlaylistTrackCount: music?.sharedPlaylistTracks.length ?? 0,
-        sharedMusicRecentTrackCount: music?.sharedRecentTracks.length ?? 0,
-        musicInsights: music?.insights ?? [],
-        musicBreakdown: music?.breakdown ?? null,
-        relationshipCompatibilityScore: relationship?.score ?? null,
-        relationshipSharedViewCount: relationship?.sharedQuestionCount ?? null,
-        relationshipAlignedCount: relationship?.alignedCount ?? null,
-        relationshipSummaryTopics: relationship?.topTopics ?? [],
-        sharedInterests: compat.sharedInterests,
-        compatibilityReasons: compat.reasons,
-        isBoosted: candidateBoosted,
-        discoveryTier: tier,
-      });
-    }
-
-    const nearbyCount = buckets.nearby.length;
-    const totalEligible =
-      nearbyCount +
-      buckets.extended.length +
-      buckets.far.length +
-      buckets.no_location.length;
+  const scan = await scanDiscoveryPool(db, viewer, {
+    cursor,
+    radiusKm,
+    gateKm,
+    pageSize: 40,
+    maxPages: expandDistance ? 4 : 3,
     // Enough nearby — stop scanning. Otherwise keep scanning for fallback tiers.
-    if (nearbyCount >= limit || totalEligible >= limit * 2) {
-      pageCursor = lastUid ?? "";
-      break;
-    }
-    if (!scannedFullPage) {
-      break;
-    }
-    pageCursor = lastUid ?? "";
-  }
+    shouldStop: (pool) => {
+      const nearbyCount = pool.nearby.length;
+      const totalEligible =
+        nearbyCount + pool.extended.length + pool.far.length + pool.no_location.length;
+      return nearbyCount >= limit || totalEligible >= limit * 2;
+    },
+  });
+  const {buckets, rejectionReasons, lastUid, scannedFullPage, hasViewerLocation} = scan;
 
   // Rank each tier with the existing boost/compat ranking (no engine rewrite).
   for (const key of Object.keys(buckets) as DiscoveryDistanceTier[]) {
@@ -539,6 +243,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
       action: "pass",
       createdAt: FieldValue.serverTimestamp(),
     });
+    await recordPickDecision({db, viewerUid: uid, candidateUid, decision: "passed"});
     return {matched: false};
   }
   await db.doc(`likes/${uid}_${candidateUid}`).set({
@@ -550,6 +255,8 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   // Counted once per (viewer, Boost session), and only when a reach row shows
   // this viewer was actually served the boosted profile while it was running.
   await attributeBoostEvent({db, viewerUid: uid, boostedUid: candidateUid, kind: "like"});
+  // Whatever screen the like came from, a liked Pick leaves the active set.
+  await recordPickDecision({db, viewerUid: uid, candidateUid, decision: "liked"});
 
   const reverse = await db.doc(`likes/${candidateUid}_${uid}`).get();
   const reverseAction = reverse.data()?.action as string | undefined;
@@ -600,6 +307,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
     if (Object.keys(fields).length > 0) {
       await matchRef.set(fields, {merge: true});
     }
+    await attributePickMatch({db, matchRef, uidA: uid, uidB: candidateUid});
   }
   return {matched: true, matchId};
 });

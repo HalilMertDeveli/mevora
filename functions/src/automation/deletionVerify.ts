@@ -32,6 +32,8 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   // can re-create these after the sweep, so they are checked, not assumed.
   `users/${uid}/humor/summary`,
   `users/${uid}/humor/calibration`,
+  // Their own Mevora Picks batch: who they were shown, and why.
+  `users/${uid}/mevoraPicks/current`,
 ];
 
 /** Storage prefixes `deleteUserAccount` clears. */
@@ -73,6 +75,16 @@ export async function verifyAccountDeletion(
   }
   if (!likesTo.empty) {
     issues.push("likes_to_remnant");
+  }
+
+  // Another member's Picks still recommending (or cooling down) this account.
+  const inboundPicks = await db
+    .collectionGroup("mevoraPicks")
+    .where("candidateUids", "array-contains", uid)
+    .limit(1)
+    .get();
+  if (!inboundPicks.empty) {
+    issues.push("inbound_picks_remnant");
   }
 
   const [humorInteractions, humorReports, humorQueuePointer] = await Promise.all([

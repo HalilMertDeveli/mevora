@@ -19,6 +19,7 @@ import {
 } from "./matchScore.js";
 import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
 import {enforceMessageRateLimit} from "./messageRateLimit.js";
+import {attributePickMatch, recordPickDecision} from "./picks/service.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
 import {SIGNAL_STRENGTHS} from "./personalization/config.js";
 import {recordLearningEventSafely} from "./personalization/store.js";
@@ -268,12 +269,25 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
         Promise.all([profilePreview(uid), profilePreview(targetUserId)]),
     }),
   ).then(async (result) => {
+    // A decision taken outside Picks still moves a Pick out of the active set.
+    await recordPickDecision({
+      db,
+      viewerUid: uid,
+      candidateUid: targetUserId,
+      decision: action === "pass" ? "passed" : "liked",
+    });
     if (result && "matched" in result && result.matched === true &&
         "_needsCompatibilitySnapshot" in result && result._needsCompatibilitySnapshot) {
       const fields = await buildMatchCompatibilityFields(uid, targetUserId);
       if (Object.keys(fields).length > 0) {
         await db.doc(`matches/${matchId}`).set(fields, {merge: true});
       }
+      await attributePickMatch({
+        db,
+        matchRef: db.doc(`matches/${matchId}`),
+        uidA: uid,
+        uidB: targetUserId,
+      });
       const { _needsCompatibilitySnapshot: _, ...clean } = result as {
         matched: true;
         matchId: string;

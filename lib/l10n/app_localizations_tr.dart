@@ -37,6 +37,227 @@ class AppLocalizationsTr extends AppLocalizations {
   String get discoveryActionPriorityIntro => 'Öncelikli tanışma';
 
   @override
+  String get picksTitle => 'Mevora Picks';
+
+  @override
+  String get picksSubtitle => 'Sana özel seçtiklerimiz';
+
+  @override
+  String get picksHeadline => 'Bugünün Mevora Picks\'i';
+
+  @override
+  String picksIntroCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sana uygun olabileceğini düşündüğümüz $count kişi.',
+      one: 'Sana uygun olabileceğini düşündüğümüz 1 kişi.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get picksIntroNote =>
+      'Rastgele değil, uyumuna göre seçildi. Her gün yenilenir.';
+
+  @override
+  String picksLowSupplyNote(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Bugün senin için $count güçlü eşleşme bulduk. Çıtayı düşürmek yerine daha azını gösteriyoruz.',
+      one:
+          'Bugün senin için 1 güçlü eşleşme bulduk. Çıtayı düşürmek yerine daha azını gösteriyoruz.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get picksLoading => 'Senin için kişileri seçiyoruz…';
+
+  @override
+  String get picksLoadErrorTitle => 'Picks\'ini yükleyemedik.';
+
+  @override
+  String get picksEmptyPreparingTitle => 'Yeni önerilerin hazırlanıyor.';
+
+  @override
+  String get picksEmptyPreparingMessage =>
+      'Sana rastgele profiller göstermek yerine daha anlamlı eşleşmeler buluyoruz.';
+
+  @override
+  String get picksEmptyDoneTitle => 'Bugünkü seçkini tamamladın.';
+
+  @override
+  String get picksDiscoveryOffTitle => 'Keşif kapalı';
+
+  @override
+  String get picksDiscoveryOffMessage =>
+      'Picks alabilmek için ayarlardan keşfi aç.';
+
+  @override
+  String get picksDiscoverMore => 'Daha fazlasını keşfet';
+
+  @override
+  String get picksDiscoverMoreHint => 'Picks dışındaki kişilere de göz at.';
+
+  @override
+  String get picksBackToPicks => 'Mevora Picks\'e dön';
+
+  @override
+  String get discoverMoreSubtitle => 'Bugünkü Picks dışındaki kişiler';
+
+  @override
+  String get picksLike => 'Beğen';
+
+  @override
+  String get picksPass => 'Geç';
+
+  @override
+  String picksLikeSemantics(String name) {
+    return '$name kişisini beğen';
+  }
+
+  @override
+  String picksPassSemantics(String name) {
+    return '$name kişisini geç';
+  }
+
+  @override
+  String picksOpenProfileSemantics(String name) {
+    return '$name profilini aç';
+  }
+
+  @override
+  String get picksActionFailed => 'İşlem tamamlanamadı. Tekrar dene.';
+
+  @override
+  String picksMatchScore(int score) {
+    return 'Mevora uyumu %$score';
+  }
+
+  @override
+  String get pickTypeBestOverall => 'En iyi uyum';
+
+  @override
+  String get pickTypeValuesMatch => 'Değerler uyumu';
+
+  @override
+  String get pickTypeHumorMatch => 'Mizah uyumu';
+
+  @override
+  String get pickTypeMusicMatch => 'Müzik uyumu';
+
+  @override
+  String get pickTypeNearbyMatch => 'Yakınında';
+
+  @override
+  String get pickTypeUnexpectedMatch => 'Beklenmedik eşleşme';
+
+  @override
+  String get pickHeadlineBestOverallStrong => 'Genel uyumunuz çok yüksek.';
+
+  @override
+  String get pickHeadlineBestOverall => 'Genel uyumunuz güçlü.';
+
+  @override
+  String get pickHeadlineValues =>
+      'İlişki beklentileriniz ve temel değerleriniz güçlü şekilde örtüşüyor.';
+
+  @override
+  String pickHeadlineHumorScore(int score) {
+    return 'Mizah profiliniz %$score uyumlu.';
+  }
+
+  @override
+  String pickHeadlineMusicArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ortak sanatçınız var.',
+      one: 'Sevdiğiniz ortak bir sanatçı var.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pickHeadlineMusic => 'Müzik zevkinizde güçlü bir örtüşme var.';
+
+  @override
+  String get pickHeadlineNearby => 'Hem yakınında hem de güçlü bir eşleşme.';
+
+  @override
+  String get pickHeadlineUnexpected => 'Normalde gözden kaçırabileceğin biri.';
+
+  @override
+  String get pickDetailUnexpected =>
+      'Ortak ilgi alanlarınız çok benzer olmayabilir ama ilişki beklentileri ve iletişim tarzınız güçlü şekilde uyuşuyor.';
+
+  @override
+  String pickWhyTitle(String name) {
+    return 'Neden $name?';
+  }
+
+  @override
+  String pickReasonOverall(int score) {
+    return 'Mevora genel uyumunuz %$score.';
+  }
+
+  @override
+  String get pickReasonRelationship =>
+      'İkiniz de aynı türde bir ilişki arıyorsunuz.';
+
+  @override
+  String pickReasonViews(int aligned, int shared) {
+    return '$shared ilişki sorusunun $aligned tanesinde aynı cevabı verdiniz.';
+  }
+
+  @override
+  String get pickReasonCommunication =>
+      'İletişim tarzlarınız uyumlu görünüyor.';
+
+  @override
+  String get pickReasonLifestyle => 'Yaşam tarzı tercihleriniz uyumlu.';
+
+  @override
+  String pickReasonHumorTraits(String traits) {
+    return 'Ortak mizah tarzlarınız: $traits.';
+  }
+
+  @override
+  String pickReasonMusicArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Müzik profilinizde $count ortak sanatçı var.',
+      one: 'Müzik profilinizde ortak bir sanatçı var.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pickReasonMusicScore(int score) {
+    return 'Müzik uyumunuz %$score.';
+  }
+
+  @override
+  String pickReasonDistance(String distance) {
+    return '$distance — buluşmak için yeterince yakın.';
+  }
+
+  @override
+  String pickReasonInterests(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ortak ilgi alanınız var.',
+      one: 'Ortak bir ilgi alanınız var.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get compatScoreHeading => 'Uyumluluk';
 
   @override

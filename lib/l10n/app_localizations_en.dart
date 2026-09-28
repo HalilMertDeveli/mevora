@@ -3933,4 +3933,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String musicTasteStable(int count) {
     return '$count artists that have stayed with them for months.';
   }
+
+  @override
+  String get humorSaved => 'Saved';
+
+  @override
+  String get premiumTitle => 'Mevora Premium';
+
+  @override
+  String get premiumSubtitle => 'See who likes you, and more.';
+
+  @override
+  String get premiumSubscribeCta => 'Subscribe';
+
+  @override
+  String get premiumRestoreCta => 'Restore purchases';
+
+  @override
+  String get premiumLoadingPlans => 'Loading plans…';
+
+  @override
+  String get premiumUnavailableTitle => 'Premium is not available right now';
+
+  @override
+  String get premiumUnavailableBody =>
+      'Plans could not be loaded from the store. Check your connection and try again.';
+
+  @override
+  String get premiumPurchasing => 'Waiting for the store…';
+
+  @override
+  String get premiumVerifying => 'Checking your purchase…';
+
+  @override
+  String get premiumRestoring => 'Restoring…';
+
+  @override
+  String get premiumPurchasedTitle => 'You are Premium';
+
+  @override
+  String get premiumPurchasedBody => 'Your subscription is active. Enjoy.';
+
+  @override
+  String get premiumCancelled => 'Purchase cancelled.';
+
+  @override
+  String get premiumFailed => 'The purchase could not be completed.';
+
+  @override
+  String get premiumRejected => 'We could not confirm this purchase.';
+
+  @override
+  String get premiumNothingToRestore =>
+      'No previous purchase was found for this store account.';
+
+  @override
+  String get premiumStoreUnavailable =>
+      'The store is unavailable on this device.';
+
+  @override
+  String get premiumAlreadyActive => 'You already have Premium.';
+
+  @override
+  String get premiumRetry => 'Try again';
+
+  @override
+  String get premiumRenewsLabel =>
+      'Renews automatically. Cancel anytime in the store.';
 }

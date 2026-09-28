@@ -134,6 +134,8 @@ Future<void> bootstrap(AppEnvironment environment) async {
   final subscriptionServices = createSubscriptionServices(
     uidSource: uidSource,
     premiumEnabled: config.featureFlags.premiumEnabled,
+    analytics: analytics,
+    logger: logger,
   );
   final languageController = LanguageController(
     repository: LanguageRepository(

@@ -56,7 +56,11 @@ class CompatibilityRevealSection extends StatelessWidget {
       breakdown,
       limit: compact ? 3 : 5,
     );
-    final strongest = compatibilityStrongestLabel(l10n, breakdown);
+    // The strongest dimension in words, and only when it really is strong;
+    // otherwise the overall tier carries the sentence.
+    final strongest =
+        CompatibilityL10n.strongest(l10n, breakdown) ??
+        CompatibilityL10n.tier(l10n, breakdown.overallScore);
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,10 +85,10 @@ class CompatibilityRevealSection extends StatelessWidget {
                           : theme.textTheme.titleMedium,
                     ),
                   ),
-                  if (strongest != null) ...[
+                  ...[
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
-                      l10n.matchStrongestConnectionLabel(strongest),
+                      strongest,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: p.onCompatibilityContainer,
                         fontSize: 14,

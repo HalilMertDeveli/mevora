@@ -304,7 +304,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('What do you think about relationships?'), findsOneWidget);
+    expect(find.text('Help Mevora get to know you'), findsOneWidget);
     expect(find.text('1 / 3'), findsOneWidget);
     expect(find.text(question.answers[0].labelEn), findsOneWidget);
   });
@@ -373,7 +373,7 @@ void main() {
         ),
       ),
     );
-    expect(find.textContaining('Relationship Test'), findsOneWidget);
+    expect(find.textContaining('Similar answers'), findsOneWidget);
   });
 
   testWidgets('host timer shows the offer without swiping', (tester) async {

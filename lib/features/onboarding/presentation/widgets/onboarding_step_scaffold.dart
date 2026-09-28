@@ -5,6 +5,7 @@ import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
+import 'package:mevora/features/onboarding/presentation/onboarding_error_l10n.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_banner.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
@@ -130,7 +131,10 @@ class OnboardingStepScaffold extends StatelessWidget {
         Expanded(child: child),
         if (errorMessage != null) ...[
           const SizedBox(height: AppSpacing.sm),
-          MevoraBanner(message: errorMessage!, tone: MevoraTone.error),
+          MevoraBanner(
+            message: OnboardingErrorL10n.message(l10n, errorMessage!),
+            tone: MevoraTone.error,
+          ),
           const SizedBox(height: AppSpacing.sm),
         ],
         if (showContinue) ...[

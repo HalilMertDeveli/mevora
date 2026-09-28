@@ -90,7 +90,7 @@ Analytics may include `languageCode` only. No extra PII.
 
 ## Notifications
 
-`functions/src/notifications.ts` picks TR/EN bodies from `userSettings.languageCode`, e.g. TR `Yeni bir eşleşmen var!` / EN `You have a new match!`.
+`functions/src/notifications.ts` picks TR/EN bodies from `userSettings.languageCode`, e.g. TR `Biriyle birbirinizi seçtiniz. Artık konuşabilirsiniz.` / EN `You and someone chose each other. You can start talking now.` Wording rules live in `docs/product-language.md`.
 
 ## Security
 

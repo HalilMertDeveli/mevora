@@ -166,7 +166,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
     return OnboardingStepScaffold(
       step: OnboardingStep.music,
-      title: l10n.onboardingMusicTitle,
+      // The step body leads with the benefit headline; keep the title short.
+      title: l10n.musicTitle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.canGoBack ? _controller.goBack : null,
@@ -326,6 +327,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return OnboardingStepScaffold(
       step: OnboardingStep.relationshipGoal,
       title: l10n.onboardingRelationshipGoal,
+      subtitle: l10n.onboardingWhyRelationshipGoal,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
@@ -345,6 +347,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return OnboardingStepScaffold(
       step: OnboardingStep.lifestyle,
       title: l10n.onboardingLifestyle,
+      subtitle: l10n.onboardingWhyLifestyle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
@@ -363,6 +366,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return OnboardingStepScaffold(
       step: OnboardingStep.bio,
       title: l10n.onboardingBio,
+      subtitle: l10n.onboardingWhyBio,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,

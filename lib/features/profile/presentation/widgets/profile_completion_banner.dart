@@ -32,9 +32,17 @@ class ProfileCompletionBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Why first; the percentage is progress detail, not the reason.
           Text(
-            l10n.profileCompletionTitle(result.percent),
+            l10n.profileCompletionHeadline,
             style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.profileCompletionBody,
+            style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onPrimaryContainer,
             ),
           ),
@@ -42,6 +50,13 @@ class ProfileCompletionBanner extends StatelessWidget {
           MevoraMeter(
             value: result.percent / 100,
             trackColor: context.palette.surface,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.profileCompletionTitle(result.percent),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
           ),
           if (missingLabels.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.s12),

@@ -10,6 +10,7 @@ import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart'
 import 'package:mevora/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/onboarding/domain/onboarding_messages.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
 
@@ -227,11 +228,7 @@ class OnboardingController extends ChangeNotifier {
     }
     if (photoDrafts.where((draft) => draft.hasImage).length >=
         OnboardingConfig.maxPhotos) {
-      return Err(
-        ValidationFailure(
-          'You can add up to ${OnboardingConfig.maxPhotos} photos',
-        ),
-      );
+      return Err(ValidationFailure(OnboardingMessages.photosTooMany));
     }
     final picked = fromCamera
         ? await _photoPicker.pickFromCamera()
@@ -268,11 +265,7 @@ class OnboardingController extends ChangeNotifier {
         OnboardingConfig.maxPhotos -
         photoDrafts.where((draft) => draft.hasImage).length;
     if (remaining <= 0) {
-      return Err(
-        ValidationFailure(
-          'You can add up to ${OnboardingConfig.maxPhotos} photos',
-        ),
-      );
+      return Err(ValidationFailure(OnboardingMessages.photosTooMany));
     }
 
     final picked = await _photoPicker.pickMultipleFromGallery(
@@ -281,7 +274,7 @@ class OnboardingController extends ChangeNotifier {
     switch (picked) {
       case Success(:final value):
         if (value.isEmpty) {
-          return const Err(ValidationFailure('No photo selected'));
+          return const Err(ValidationFailure(PhotoUploadMessages.noneSelected));
         }
         final ids = <String>[];
         final added = <OnboardingPhotoDraft>[];
@@ -300,6 +293,8 @@ class OnboardingController extends ChangeNotifier {
           );
         }
         photoDrafts = [...photoDrafts, ...added];
+        // A new pick supersedes an earlier cancelled one.
+        errorMessage = null;
         _notify();
 
         // Upload sequentially; one failure must not discard the others.

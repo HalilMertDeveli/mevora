@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:mevora/core/errors/failure.dart';
+import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.dart';
 import 'package:mevora/features/profile/data/services/profile_image_pipeline.dart';
@@ -43,7 +44,7 @@ class ImagePickerProfilePhotoPicker implements ProfilePhotoPicker {
         imageQuality: 85,
       );
       if (files.isEmpty) {
-        return const Err(ValidationFailure('No photo selected'));
+        return const Err(ValidationFailure(PhotoUploadMessages.noneSelected));
       }
       final picked = <PickedProfilePhoto>[];
       for (final file in files.take(limit)) {
@@ -84,7 +85,7 @@ class ImagePickerProfilePhotoPicker implements ProfilePhotoPicker {
         imageQuality: 85,
       );
       if (file == null) {
-        return const Err(ValidationFailure('No photo selected'));
+        return const Err(ValidationFailure(PhotoUploadMessages.noneSelected));
       }
       final bytes = await file.readAsBytes();
       final contentType = _contentTypeForPath(file.path);

@@ -154,7 +154,7 @@ class _PhotoTile extends StatelessWidget {
                   color: AppColors.scrim.withValues(alpha: 0.5),
                   child: Center(
                     child: Text(
-                      '$percent%',
+                      AppLocalizations.of(context).percentValue(percent),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: AppColors.onMedia,
                       ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/localization/locale_casing.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/art/mevora_motion.dart';
@@ -50,6 +52,11 @@ class DiscoveryCompatibilityScore extends StatelessWidget {
       return Text(l10n.compatUnavailable, style: theme.textTheme.bodyMedium);
     }
 
+    // A human line always leads: the strongest real reason when there is one,
+    // otherwise the overall tier. The ring carries the number.
+    final sentence = (reason != null && reason!.isNotEmpty)
+        ? reason!
+        : CompatibilityL10n.tier(l10n, score);
     final body = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -59,16 +66,19 @@ class DiscoveryCompatibilityScore extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                l10n.whyYouMatch.toUpperCase(),
+                LocaleCasing.upper(
+                  l10n.whyYouMatch,
+                  Localizations.localeOf(context),
+                ),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: p.compatibility,
                   letterSpacing: 1,
                 ),
               ),
-              if (reason != null && reason!.isNotEmpty) ...[
+              ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  reason!,
+                  sentence,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyLarge?.copyWith(
@@ -128,7 +138,8 @@ class CompatibilityDiscoverBadge extends StatelessWidget {
     final label = switch (status) {
       CompatibilityDisplayStatus.calculating => l10n.compatCalculating,
       CompatibilityDisplayStatus.unavailable => l10n.compatUnavailable,
-      CompatibilityDisplayStatus.ready => l10n.compatDiscoverBadge(score),
+      CompatibilityDisplayStatus.ready =>
+        CompatibilityL10n.tierWithPercent(l10n, score),
     };
     final pill = MevoraPill(
       label: label,

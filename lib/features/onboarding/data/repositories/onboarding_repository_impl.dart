@@ -6,6 +6,7 @@ import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
+import 'package:mevora/features/onboarding/domain/onboarding_messages.dart';
 import 'package:mevora/features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'package:mevora/features/onboarding/domain/validators/onboarding_validators.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
@@ -128,33 +129,33 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       case 'failed-precondition':
         final details = error.message ?? '';
         if (details.contains('photos-required')) {
-          return 'Add at least 3 photos to finish onboarding.';
+          return OnboardingMessages.serverPhotosRequired;
         }
         if (details.contains('photos-not-approved')) {
-          return 'Photos are still under review. Please try again shortly.';
+          return OnboardingMessages.serverPhotosInReview;
         }
         if (details.contains('interests-required')) {
-          return 'Pick at least 3 interests to continue.';
+          return OnboardingMessages.serverInterestsRequired;
         }
         if (details.contains('underage')) {
-          return 'You must be 18 or older to use Mevora.';
+          return OnboardingMessages.underage;
         }
         if (details.contains('smoking-required') ||
             details.contains('drinking-required') ||
             details.contains('exercise-required') ||
             details.contains('pets-required')) {
-          return 'Complete lifestyle answers to finish onboarding.';
+          return OnboardingMessages.serverLifestyleRequired;
         }
         if (details.contains('profile-missing')) {
-          return 'Profile is incomplete. Please go back and fill required fields.';
+          return OnboardingMessages.serverProfileMissing;
         }
         return kDebugMode
             ? 'Could not complete onboarding (${error.message}).'
             : 'Could not complete onboarding.';
       case 'unauthenticated':
-        return 'Please sign in again to finish onboarding.';
+        return OnboardingMessages.serverSignInAgain;
       case 'permission-denied':
-        return 'This account cannot complete onboarding.';
+        return OnboardingMessages.serverNotAllowed;
       default:
         return kDebugMode
             ? 'Could not complete onboarding (${error.code}: ${error.message}).'

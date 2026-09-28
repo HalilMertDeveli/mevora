@@ -11,7 +11,9 @@ import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/theme/app_shadows.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
+import 'package:mevora/features/discovery/domain/compatibility/compatibility_engine.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
@@ -20,6 +22,7 @@ import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_b
 import 'package:mevora/features/discovery/presentation/widgets/discovery_category_bar.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
 import 'package:mevora/features/music/presentation/widgets/public_music_taste_section.dart';
+import 'package:mevora/features/onboarding/presentation/onboarding_labels.dart';
 import 'package:mevora/features/personalization/data/profile_engagement_reporter.dart';
 import 'package:mevora/features/personalization/domain/profile_engagement_tracker.dart';
 import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
@@ -318,7 +321,7 @@ class _DiscoveryProfileDetailsPageState
                               ),
                             ])
                               MevoraChip(
-                                label: interest,
+                                label: OnboardingLabels.interest(l10n, interest),
                                 selected: shared.contains(interest),
                                 compact: true,
                               ),
@@ -462,14 +465,12 @@ class _DiscoveryProfileDetailsPageState
       c.sharedInterests.isNotEmpty ||
       c.relationshipCompatibilityScore != null;
 
-  String _relationshipLabel(AppLocalizations l10n, String goal) {
-    return switch (goal) {
-      'longTerm' => l10n.relationshipGoalLongTerm,
-      'casual' => l10n.relationshipGoalCasual,
-      'figuringOut' => l10n.relationshipGoalFiguringOut,
-      _ => goal,
-    };
-  }
+  // Stored goals are onboarding ids ('long_term'); older data used camelCase.
+  String _relationshipLabel(AppLocalizations l10n, String goal) =>
+      OnboardingLabels.relationshipGoal(
+        l10n,
+        CompatibilityScoring.normalizeRelationshipGoal(goal),
+      );
 }
 
 /// "Why you're seeing this": score ring, the signals, and the concrete
@@ -485,6 +486,12 @@ class _WhyYouFitCard extends StatelessWidget {
     final theme = Theme.of(context);
     final p = context.palette;
     final signals = discoverySignals(candidate, limit: 4);
+    // Backend reasons are fixed English codes; unknown ones are not shown.
+    final reasons = CompatibilityL10n.serverReasons(
+      l10n,
+      candidate.compatibilityReasons,
+      relationshipGoal: candidate.relationshipGoal,
+    );
     final relationshipTopics = relationshipTopicsFromNames(
       candidate.relationshipSummaryTopics,
     );
@@ -509,9 +516,19 @@ class _WhyYouFitCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l10n.whyYoureSeeingThis,
+                      l10n.compatWhyThisPerson(candidate.displayName),
                       style: theme.textTheme.titleMedium,
                     ),
+                    if (candidate.hasCompatibilityScore)
+                      Text(
+                        CompatibilityL10n.tier(
+                          l10n,
+                          candidate.compatibilityScore,
+                        ),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: p.compatibility,
+                        ),
+                      ),
                     if (candidate.compatibilityStatus ==
                         CompatibilityDisplayStatus.calculating)
                       Text(
@@ -527,9 +544,9 @@ class _WhyYouFitCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             CompatibilitySignalPills(signals: signals),
           ],
-          if (candidate.compatibilityReasons.isNotEmpty) ...[
+          if (reasons.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
-            for (final reason in candidate.compatibilityReasons.take(4))
+            for (final reason in reasons.take(4))
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: Row(

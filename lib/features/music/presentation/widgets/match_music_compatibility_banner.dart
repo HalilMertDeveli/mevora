@@ -7,6 +7,7 @@ import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
+import 'package:mevora/features/music/domain/services/music_insight_localizer.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/features/music/presentation/widgets/music_ui.dart';
@@ -109,10 +110,11 @@ class _MatchMusicCompatibilityBannerState
     return MevoraContextRow(
       icon: MevoraIcons.track,
       tone: MevoraTone.music,
-      title: l10n.musicMatchTitle(score),
+      // What the score means first; the number and shared songs as detail.
+      title: MusicInsightLocalizer.headline(l10n, score),
       subtitle: data.sharedTrackCount > 0
-          ? l10n.musicInsightSharedTracks(data.sharedTrackCount)
-          : null,
+          ? '${l10n.musicMatchTitle(score)} · ${l10n.musicInsightSharedTracks(data.sharedTrackCount)}'
+          : l10n.musicMatchTitle(score),
       trailing: data.sharedTracks.isEmpty
           ? null
           : MusicPortraitStack(

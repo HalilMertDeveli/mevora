@@ -7,6 +7,7 @@ import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/theme/app_shadows.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_discover_badge.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
@@ -51,8 +52,15 @@ class DiscoveryProfileCard extends StatelessWidget {
         candidate.compatibilityStatus ==
             CompatibilityDisplayStatus.unavailable ||
         candidate.hasCompatibilityScore;
-    final reason = candidate.compatibilityReasons.isNotEmpty
-        ? candidate.compatibilityReasons.first
+    // Backend reasons are fixed English codes: localize them, and drop any
+    // this build does not know rather than show raw English.
+    final localizedReasons = CompatibilityL10n.serverReasons(
+      l10n,
+      candidate.compatibilityReasons,
+      relationshipGoal: candidate.relationshipGoal,
+    );
+    final reason = localizedReasons.isNotEmpty
+        ? localizedReasons.first
         : candidate.sharedInterests.isNotEmpty
         ? l10n.sharedHobbiesCount(candidate.sharedInterests.length)
         : null;

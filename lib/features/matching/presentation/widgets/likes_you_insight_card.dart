@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_category_bars.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
@@ -62,6 +63,13 @@ class LikesYouInsightCard extends StatelessWidget {
                     Text(item.displayName, style: theme.textTheme.titleMedium),
                     if (meta.isNotEmpty)
                       Text(meta, style: theme.textTheme.bodySmall),
+                    if (breakdown != null)
+                      Text(
+                        CompatibilityL10n.tier(l10n, breakdown!.overallScore),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: context.palette.compatibility,
+                        ),
+                      ),
                   ],
                 ),
               ),

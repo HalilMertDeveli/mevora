@@ -38,7 +38,8 @@ void main() {
       compatibilityScore: 88,
       compatibilityStatus: CompatibilityDisplayStatus.ready,
       interests: ['art', 'coffee'],
-      compatibilityReasons: ['Shared interest in coffee culture'],
+      // Backend reasons arrive as fixed English codes.
+      compatibilityReasons: ['Shared interests'],
     );
 
     await tester.pumpWidget(
@@ -47,7 +48,8 @@ void main() {
     expect(find.text('Elif, 26'), findsOneWidget);
     expect(find.text('Istanbul'), findsOneWidget);
     // Why-you-fit strip: the reason in words, the score as a quiet ring.
-    expect(find.text('Shared interest in coffee culture'), findsOneWidget);
+    expect(find.text(_en.compatReasonSomeSharedInterests), findsOneWidget);
+    expect(find.text('Shared interests'), findsNothing);
     expect(find.byType(CompatibilityRing), findsOneWidget);
     expect(find.text('88'), findsOneWidget);
   });
@@ -111,11 +113,16 @@ void main() {
     await tester.pumpAndSettle();
     // Photo PageView is above the details ListView — scroll the list only.
     await tester.scrollUntilVisible(
-      find.text(_en.whyYoureSeeingThis),
+      find.text(_en.compatWhyThisPerson(candidate.displayName)),
       120,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text(_en.whyYoureSeeingThis), findsOneWidget);
+    expect(
+      find.text(_en.compatWhyThisPerson(candidate.displayName)),
+      findsOneWidget,
+    );
+    // Free-text reasons the backend never sends are not shown raw.
+    expect(find.text('Both love specialty coffee'), findsNothing);
     // The score is a quiet ring inside the why-you-fit card, not a badge.
     expect(find.byType(CompatibilityRing), findsWidgets);
   });

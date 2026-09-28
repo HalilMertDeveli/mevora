@@ -135,7 +135,7 @@ class _UnconnectedMusicView extends StatelessWidget {
         Semantics(
           header: true,
           child: Text(
-            l10n.profileMusicTasteHeading,
+            l10n.musicUnconnectedHeadline,
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineMedium,
           ),

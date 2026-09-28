@@ -86,9 +86,9 @@ void main() {
     await tester.pump();
     await tester.pump(AppDurations.match);
     expect(find.byType(MevoraMark), findsOneWidget);
-    expect(find.text('You found a strong connection.'), findsOneWidget);
-    expect(find.text('STRONG CONNECTION'), findsOneWidget);
-    expect(find.text('Keep exploring'), findsOneWidget);
+    expect(find.text('You chose each other'), findsOneWidget);
+    expect(find.text('NEW MATCH'), findsOneWidget);
+    expect(find.text('Back to your picks'), findsOneWidget);
   });
 
   testWidgets('like burst plays once without looping', (tester) async {

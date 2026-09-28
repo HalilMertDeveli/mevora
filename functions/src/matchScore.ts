@@ -2,6 +2,8 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentSnapshot, type Transaction} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {bumpFunnel, pickConversationMilestones, type FunnelStep} from "./picks/funnel.js";
+import type {PickType} from "./picks/types.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -237,7 +239,9 @@ export async function applyMessageSideEffects(input: {
   lastMessage: string;
 }): Promise<void> {
   const matchRef = db.doc(`matches/${input.matchId}`);
+  let reached: {step: FunnelStep; pickTypes: PickType[]} | null = null;
   await db.runTransaction(async (tx) => {
+    reached = null;
     const matchSnap = await tx.get(matchRef);
     const data = matchSnap.data();
     if (!matchSnap.exists || !data) {
@@ -261,6 +265,17 @@ export async function applyMessageSideEffects(input: {
     if (willAward) {
       updates.interactionBonusAwarded = true;
     }
+    // Pick-introduced matches: note when the conversation starts and when it
+    // is still going a day later. Written with the message, counted after.
+    const milestone = pickConversationMilestones({
+      match: data,
+      messagedUserIds: [...messaged],
+      nowMs: Date.now(),
+    });
+    Object.assign(updates, milestone.updates);
+    if (milestone.step) {
+      reached = {step: milestone.step, pickTypes: milestone.pickTypes};
+    }
     tx.update(matchRef, updates);
     if (willAward) {
       for (let i = 0; i < userIds.length; i += 1) {
@@ -268,6 +283,10 @@ export async function applyMessageSideEffects(input: {
       }
     }
   });
+  const milestone = reached as {step: FunnelStep; pickTypes: PickType[]} | null;
+  if (milestone) {
+    await bumpFunnel(db, milestone.step, milestone.pickTypes);
+  }
 }
 
 export async function queuePostMatchFeedback(input: {

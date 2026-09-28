@@ -7,6 +7,7 @@ import {logger} from "firebase-functions";
 import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
 import {requestIdentityProviderErasure} from "./identity/identityErasure.js";
 import {safeLogMeta} from "./security/logHygiene.js";
+import {scrubDeletedMemberFromPicks} from "./picks/service.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -177,6 +178,7 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/verification`),
       deleteCollectionDocs(`users/${uid}/photoModeration`),
       deleteCollectionDocs(`users/${uid}/rateLimits`),
+      deleteCollectionDocs(`users/${uid}/mevoraPicks`),
     ]);
 
     await deleteQuery("notifications", "userId", uid);
@@ -232,6 +234,9 @@ export const deleteUserAccount = onCall(
       ...failedNotifs.docs.map((d) => d.ref),
       db.doc(`adminReviewQueue/${uid}`),
     ]);
+
+    // Other members' Picks that mention this account, active or cooling down.
+    await scrubDeletedMemberFromPicks(db, uid);
 
     await deletePrefix(`users/${uid}/`);
     await deletePrefix(`profiles/${uid}/`);

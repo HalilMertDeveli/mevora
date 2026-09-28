@@ -168,6 +168,37 @@ export function calculateCompatibility(input: {
   };
 }
 
+/**
+ * Which of the profile-based dimensions above rest on real data from both
+ * sides, rather than on the neutral 50 the engine substitutes when either
+ * person left that part of their profile empty.
+ *
+ * The scores stay what they are; this only says which of them count as
+ * evidence. A feature that explains a recommendation must not cite a
+ * dimension that was never measured.
+ */
+export interface CompatibilityEvidence {
+  relationshipGoal: boolean;
+  interests: boolean;
+  lifestyle: boolean;
+}
+
+export function compatibilityEvidence(
+  viewer: DocumentData,
+  candidate: DocumentData,
+): CompatibilityEvidence {
+  const goal = (data: DocumentData) => String(data.relationshipGoal ?? "").trim().length > 0;
+  const lifestyleTags = (data: DocumentData) =>
+    normTags((data.lifestyle as string[]) ?? lifestyleTagsFromProfile(data));
+  return {
+    relationshipGoal: goal(viewer) && goal(candidate),
+    interests:
+      normTags(viewer.interests as string[]).size > 0 &&
+      normTags(candidate.interests as string[]).size > 0,
+    lifestyle: lifestyleTags(viewer).size > 0 && lifestyleTags(candidate).size > 0,
+  };
+}
+
 /** Legacy ranking helper — keeps old additive formula for tests if needed. */
 export function legacyCompatibilityScore(viewer: DocumentData, candidate: DocumentData) {
   const viewerInterests = new Set<string>((viewer.interests as string[]) ?? []);

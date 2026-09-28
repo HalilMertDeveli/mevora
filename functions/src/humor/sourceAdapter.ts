@@ -2,6 +2,8 @@
  * Provider-agnostic humor content source.
  * MVP provider: Giphy (licensed API). No Instagram/TikTok/YouTube scraping.
  */
+import type {HumorCategory} from "./categories.js";
+import type {HumorAttribution} from "./types.js";
 
 export type HumorSourceKind = "internal" | "licensed_api";
 
@@ -20,9 +22,31 @@ export interface HumorSourceItem {
   sourceUrl?: string | null;
   type: "image" | "video" | "meme" | "text";
   language: string;
+  /** Cleaned provider title (never invented); null when it said nothing. */
   title?: string | null;
   media: HumorSourceMedia;
   tags?: string[];
+  /** Provider content rating as sent (e.g. "g", "pg", "pg-13"). */
+  rating?: string | null;
+  /** Raw provider text the relevance filter reads; never shown to users. */
+  slug?: string | null;
+  altText?: string | null;
+  rawTitle?: string | null;
+  /** Transparent sticker rather than a scene. */
+  isSticker?: boolean;
+  /** Who made it — stored as the K1 attribution. */
+  attribution?: HumorAttribution | null;
+  /** The query that found it and the humor category that query probes. */
+  query?: string | null;
+  queryCategory?: HumorCategory | null;
+  /** "gif" or "clip" — which provider endpoint produced it. */
+  origin?: "gif" | "clip";
+  /**
+   * GIF items only: `<id>/<file>` of each of the GIF's own MP4 renditions.
+   * Never stored; ingest uses it solely to recognise a catalogue doc written
+   * when GIFs were still ingested as MP4 video (see ingest.ts).
+   */
+  legacyVideoKeys?: string[];
 }
 
 export interface HumorSourcePage {

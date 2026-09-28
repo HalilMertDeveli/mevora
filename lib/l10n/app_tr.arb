@@ -1492,7 +1492,7 @@
   "musicNoCommonTracks": "Henüz ortak dinlediğiniz bir şarkı yok 🎵",
   "musicRecentlyPlayedHeading": "Son dinlenenler",
   "humorLabTitle": "Mizah Labı",
-  "humorLabSubtitle": "Kısa klipleri ve memeleri izle, ne kadar komik olduğunu değerlendir.",
+  "humorLabSubtitle": "Her espriye, klibe ya da memeye ne kadar güldüğünü söyle.",
   "humorLabDiscoverCta": "Mizah Labı'nı aç",
   "humorLoadingFeed": "İçerikler hazırlanıyor…",
   "humorRatingVeryFunny": "Çok komik",
@@ -1500,16 +1500,15 @@
   "humorRatingNeutral": "Nötr",
   "humorRatingNotFunny": "Komik değil",
   "humorRatingNotAtAll": "Hiç komik değil",
-  "humorProfileBuilding": "Mizah vibesın hâlâ öğreniliyor…",
+  "humorProfileBuilding": "Mizah tarzın hâlâ öğreniliyor…",
   "humorProfileTitle": "Mizah profilin",
   "humorEmptyFeed": "Şimdilik gösterecek yeni bir içerik yok.",
   "humorFeedError": "İçerik yüklenemedi. Tekrar dene.",
   "humorTryAgain": "Tekrar dene",
-  "humorUndoRating": "Puanı geri al",
+  "humorUndoRating": "Önceki içeriğe dön",
   "humorCompatibilityTitle": "Mizah uyumu",
-  "humorChatStarter": "Beni güldüren bir şey…",
-  "humorTopVibes": "Öne çıkan vibes",
-  "humorSaved": "Kaydedildi",
+  "humorChatStarter": "Mizah anlayışlarımız benziyor gibi — bugün seni ne güldürdü?",
+  "humorTopVibes": "Öne çıkan tarzların",
   "humorReport": "Şikayet et",
   "humorReportSuccess": "Teşekkürler — bu içeriği inceleyeceğiz.",
   "humorHowFunny": "Ne kadar komik?",
@@ -1602,7 +1601,7 @@
   "profileMusicOpenInSpotify": "Spotify'da aç",
   "musicLimitedData": "Spotify bağlı, ancak henüz fazla dinleme geçmişi yok.",
   "humorCalibrationIntroTitle": "Mizahını keşfedelim",
-  "humorCalibrationIntroBody": "Birkaç kısa içeriğe tepki ver. Neye güldüğünü öğrenelim ve bunu sana daha anlamlı kişiler göstermek için kullanalım.",
+  "humorCalibrationIntroBody": "Birkaç kısa içeriğe tepki ver. Neye güldüğünü öğrenelim; Mizah Labı'nı sana göre şekillendirelim ve eşleşmelerinle ortak mizahınızı gösterelim.",
   "humorCalibrationIntroMeta": "15 kısa içerik · yaklaşık 1 dakika",
   "humorCalibrationStart": "Başla",
   "humorCalibrationSkip": "Şimdilik geç",
@@ -1693,5 +1692,52 @@
   "premiumStoreUnavailable": "Mağaza bu cihazda kullanılamıyor.",
   "premiumAlreadyActive": "Zaten Premium üyesin.",
   "premiumRetry": "Tekrar dene",
-  "premiumRenewsLabel": "Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin."
+  "premiumRenewsLabel": "Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.",
+  "humorChatStarterSarcasm": "İkimiz de ironiyi seviyoruz galiba — bugün seni ne güldürdü?",
+  "humorChatStarterAbsurd": "Absürt mizah ikimize de hitap ediyor gibi — son gördüğün en absürt şey neydi?",
+  "humorChatStarterSilly": "Saçma sapan şeylere ikimiz de gülüyoruz galiba — en son neye kahkaha attın?",
+  "humorChatStarterRomantic": "Romantik mizah ikimize de hitap ediyor gibi — en sevdiğin romantik komedi hangisi?",
+  "humorChatStarterDark": "Kara mizahta anlaşıyoruz galiba — seni en son hangi espri yakaladı?",
+  "humorChatStarterMeme": "İkimiz de meme insanıyız galiba — şu an en sevdiğin meme hangisi?",
+  "humorChatStarterDry": "Kuru mizah ikimizin de tarzı gibi — bildiğin en iyi tek satırlık espri ne?",
+  "humorChatStarterWordplay": "Kelime oyunlarına ikimiz de bayılıyoruz galiba — en sevdiğin kelime oyunu hangisi?",
+  "humorChatStarterSituational": "Gündelik hayatın komik anları ikimizi de güldürüyor gibi — son zamanlarda başına gelen en komik şey neydi?",
+  "humorChatStarterCringe": "Cringe içerikler ikimizi de güldürüyor galiba — son gördüğün en cringe şey neydi?",
+  "humorChatStarterTeasing": "Tatlı tatlı takılmayı ikimiz de seviyoruz galiba — ilk laf benden mi, senden mi?",
+  "humorCompatibilityLevelHigh": "Mizah uyumunuz yüksek",
+  "humorCompatibilityLevelMedium": "Mizah uyumunuz orta",
+  "humorCompatibilityLevelLow": "Mizah uyumunuz düşük",
+  "humorCompatibilityBuilding": "Mizah uyumunuzu görmek için ikinizin de mizah profilini tamamlaması gerekiyor.",
+  "humorCompatibilitySharedStyles": "Ortak mizah tarzlarınız",
+  "humorCompatibilityNote": "Bu, ikinizin mizah içeriklerine verdiği tepkilerden çıkan hafif bir işaret; ilişkiniz hakkında kesin bir şey söylemez.",
+  "humorSkipContent": "Geç",
+  "humorMediaUnavailable": "Bu içerik şu anda gösterilemiyor.",
+  "humorVideoLoadFailed": "Video yüklenemedi",
+  "humorMediaNext": "Sonraki",
+  "humorAttributionVerified": "Doğrulanmış içerik üreticisi",
+  "musicTasteGeneralHeading": "Genel olarak dinlediği",
+  "musicTasteDominant": "Ağırlıklı olarak {genres} çevresinde.",
+  "@musicTasteDominant": {
+    "placeholders": {
+      "genres": {
+        "type": "String"
+      }
+    }
+  },
+  "musicTasteSignature": "Dönüp dolaşıp {artists} dinliyor.",
+  "@musicTasteSignature": {
+    "placeholders": {
+      "artists": {
+        "type": "String"
+      }
+    }
+  },
+  "musicTasteStable": "Aylardır bırakmadığı {count} sanatçı.",
+  "@musicTasteStable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

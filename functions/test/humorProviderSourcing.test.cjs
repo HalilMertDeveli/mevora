@@ -162,13 +162,62 @@ test("missing or malformed input is refused before host checks", () => {
   assert.equal(validateHumorSourceItem(item("not-a-url")).reason, "invalid-url");
 });
 
-test("the internal seed hosts still validate", () => {
-  // Whatever the allowlist does, it must not lock out our own curated media.
+test("every curated seed clip passes the media allowlist as it stands", () => {
+  // Curated content is hand-picked GIPHY clips: GIPHY's CDN is the only host
+  // the allowlist has to admit on its behalf — no stock-media host.
   const {CALIBRATION_SEED} = require("../lib/humor/calibrationSeed.js");
+  assert.ok(CALIBRATION_SEED.length > 0);
   for (const seed of CALIBRATION_SEED) {
+    const result = validateHumorSourceItem({
+      sourceId: seed.sourceId,
+      type: seed.type,
+      language: seed.language,
+      media: seed.media,
+    });
+    assert.equal(result.ok, true, `${seed.contentId}: ${result.reason}`);
     for (const url of [seed.media.downloadUrl, seed.media.thumbUrl]) {
-      const result = validateHumorSourceItem(item(url));
-      assert.equal(result.ok, true, `${seed.contentId} ${url}: ${result.reason}`);
+      const host = new URL(url).hostname;
+      assert.ok(host === "giphy.com" || host.endsWith(".giphy.com"), `${seed.contentId}: ${host}`);
     }
+  }
+});
+
+test("retired stock-media hosts are refused, and so is the old bucket host", () => {
+  for (const url of [
+    // The backdrops the curated seed used to borrow — now gone for good.
+    "https://test-videos.co.uk/vids/sintel/mp4/h264/360/Sintel_360_10s_1MB.mp4",
+    "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    "https://picsum.photos/seed/mevora-tr-15/1080/1920",
+    "https://images.unsplash.com/photo-1",
+    // Fronts every public Cloud Storage bucket, not just the dead samples.
+    "https://commondatastorage.googleapis.com/x.mp4",
+  ]) {
+    const result = validateHumorSourceItem(item(url));
+    assert.equal(result.ok, false, `${url} was accepted`);
+    assert.equal(result.reason, "host-not-allowed");
+  }
+  // Our own Storage bucket stays allowed.
+  const own = validateHumorSourceItem(
+    item("https://firebasestorage.googleapis.com/v0/b/x/o/clip.mp4"),
+  );
+  assert.equal(own.ok, true, own.reason);
+});
+
+test("a poster is held to the same https + host rule as the media", () => {
+  const ok = validateHumorSourceItem(
+    item("https://media.giphy.com/media/a/giphy.mp4", {}),
+  );
+  assert.equal(ok.ok, true);
+  for (const thumbUrl of [
+    "http://media.giphy.com/media/a/200_s.gif",
+    "https://picsum.photos/seed/x/540/960",
+    "not-a-url",
+  ]) {
+    const result = validateHumorSourceItem({
+      ...item("https://media.giphy.com/media/a/giphy.mp4"),
+      media: {downloadUrl: "https://media.giphy.com/media/a/giphy.mp4", thumbUrl},
+    });
+    assert.equal(result.ok, false, `${thumbUrl} was accepted as a poster`);
+    assert.equal(result.reason, "poster-not-allowed");
   }
 });

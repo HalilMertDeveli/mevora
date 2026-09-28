@@ -14,15 +14,18 @@ import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
 import {CALIBRATION_SEED} from "./calibrationSeed.js";
 import {classifyHumorSafety, emptySafetyFlags} from "./moderation.js";
 import {resolveHumorSourceAdapter} from "./sourceAdapter.js";
-import type {
-  HumorCalibrationMeta,
-  HumorCalibrationStage,
-  HumorContentDoc,
-  HumorContentType,
-  HumorFeedItem,
-  HumorMedia,
-  HumorSafetyFlags,
-  HumorSafetyStatus,
+import {
+  HUMOR_SOURCE_TRUST_TIERS,
+  type HumorAttribution,
+  type HumorCalibrationMeta,
+  type HumorCalibrationStage,
+  type HumorContentDoc,
+  type HumorContentType,
+  type HumorFeedItem,
+  type HumorMedia,
+  type HumorSafetyFlags,
+  type HumorSafetyStatus,
+  type HumorSourceTrust,
 } from "./types.js";
 
 export const HUMOR_CONTENT_COLLECTION = "humorContent";
@@ -49,11 +52,91 @@ export function toFeedSafeContent(
     calibrationStage,
     media: {
       downloadUrl: doc.media?.downloadUrl ?? null,
+      // The poster: a real still of this same item, or null.
       thumbUrl: doc.media?.thumbUrl ?? null,
       durationMs: doc.media?.durationMs ?? null,
       aspectRatio: doc.media?.aspectRatio ?? null,
       textBody: doc.media?.textBody ?? null,
     },
+    // Contract K1. Mevora-authored content never carries a third-party credit.
+    attribution: doc.source?.type === "internal" ? null : (doc.attribution ?? null),
+  };
+}
+
+const HUMOR_MEDIA_KEYS = [
+  "storagePath",
+  "downloadUrl",
+  "thumbUrl",
+  "durationMs",
+  "aspectRatio",
+  "textBody",
+] as const;
+
+/**
+ * The media map as it is written: every key present, `null` when unset.
+ *
+ * Content is written with `set(..., {merge: true})`, and a merge *deep-merges*
+ * maps — a key missing from the new media map keeps whatever an older write
+ * left there. That is how a re-seeded text joke could keep the stock photo
+ * and clip it used to be glued to. Writing each key explicitly makes every
+ * upsert replace the whole media map.
+ *
+ * A text card carries no media at all: its URLs, duration and aspect ratio
+ * are forced to null whatever the input says.
+ */
+export function normalizeMediaForWrite(
+  type: HumorContentType,
+  media: HumorMedia | null | undefined,
+): Required<{[K in (typeof HUMOR_MEDIA_KEYS)[number]]: string | number | null}> {
+  const source = (media ?? {}) as Record<string, unknown>;
+  const out = {} as Record<(typeof HUMOR_MEDIA_KEYS)[number], string | number | null>;
+  for (const key of HUMOR_MEDIA_KEYS) {
+    const value = source[key];
+    out[key] =
+      typeof value === "string" ? (value.trim() ? value : null)
+      : typeof value === "number" && Number.isFinite(value) ? value
+      : null;
+  }
+  if (type === "text") {
+    out.storagePath = null;
+    out.downloadUrl = null;
+    out.thumbUrl = null;
+    out.durationMs = null;
+    out.aspectRatio = null;
+  }
+  return out;
+}
+
+function parseSourceTrust(data: DocumentData, sourceType: "internal" | "licensed_api"): HumorSourceTrust {
+  const raw = data.sourceTrust;
+  if (typeof raw === "string" && (HUMOR_SOURCE_TRUST_TIERS as readonly string[]).includes(raw)) {
+    return raw as HumorSourceTrust;
+  }
+  // Written before trust tiers existed: infer from the source type.
+  return sourceType === "internal" ? "curated" : "provider";
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/** Stored attribution, re-validated on read so a malformed doc cannot leak junk. */
+export function parseAttribution(raw: unknown): HumorAttribution | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return null;
+  }
+  const value = raw as Record<string, unknown>;
+  const provider = stringOrNull(value.provider);
+  if (!provider) {
+    return null;
+  }
+  const sourceUrl = stringOrNull(value.sourceUrl);
+  return {
+    provider,
+    displayName: stringOrNull(value.displayName),
+    username: stringOrNull(value.username),
+    sourceUrl: sourceUrl && sourceUrl.startsWith("https://") ? sourceUrl : null,
+    verified: value.verified === true,
   };
 }
 
@@ -86,6 +169,7 @@ export function parseHumorContent(
   }
   const type = String(data.type ?? "text");
   const safetyStatus = String(data.safetyStatus ?? "pending") as HumorSafetyStatus;
+  const sourceType = data.source?.type === "licensed_api" ? "licensed_api" : "internal";
   return {
     contentId,
     type: (["image", "video", "text", "meme"].includes(type)
@@ -101,10 +185,12 @@ export function parseHumorContent(
     safetyStatus,
     safetyFlags: emptySafetyFlags(data.safetyFlags ?? {}),
     source: {
-      type: data.source?.type === "licensed_api" ? "licensed_api" : "internal",
+      type: sourceType,
       provider: data.source?.provider ?? "mevora-internal",
       licenseRef: data.source?.licenseRef ?? null,
     },
+    sourceTrust: parseSourceTrust(data, sourceType),
+    attribution: sourceType === "internal" ? null : parseAttribution(data.attribution),
     calibration: parseCalibrationMeta(data),
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
@@ -187,10 +273,19 @@ export async function listCalibrationPool(
   }
 }
 
-/** Opaque scan position inside the humor catalog. */
+/**
+ * Opaque scan position inside the humor catalog.
+ *
+ * `createdAt` is kept at full Firestore precision. Positions used to be epoch
+ * millis, and rebuilding a cursor from truncated millis placed it *below* the
+ * boundary document's real (microsecond) timestamp: every document sharing
+ * that millisecond and sorting after the boundary id was skipped for good.
+ */
 export type HumorScanPosition = {
-  /** `createdAt` of the last scanned document, as epoch millis. */
-  createdAtMs: number;
+  /** `createdAt` seconds of the document at this position. */
+  seconds: number;
+  /** `createdAt` nanoseconds within `seconds`. */
+  nanos: number;
   /** Document id, breaking ties on identical timestamps. */
   contentId: string;
 };
@@ -209,18 +304,42 @@ export type HumorCandidateEntry = {
 
 export type HumorCandidatePage = {
   entries: HumorCandidateEntry[];
+  /** Position of the first document looked at, or null for an empty page. */
+  firstScanned: HumorScanPosition | null;
   /** Position after the last document *looked at*, to continue scanning. */
   scannedTo: HumorScanPosition | null;
-  /** True when this page reached the end of the catalog. */
+  /** True when this page reached the end of the catalog (or of `before`). */
   exhausted: boolean;
 };
 
-function toMillis(value: unknown): number {
-  const candidate = value as {toMillis?: () => number} | null | undefined;
-  if (candidate && typeof candidate.toMillis === "function") {
-    return candidate.toMillis();
+function positionOf(value: unknown, contentId: string): HumorScanPosition {
+  const candidate = value as
+    | {seconds?: unknown; nanoseconds?: unknown; toMillis?: () => number}
+    | null
+    | undefined;
+  if (
+    candidate &&
+    typeof candidate.seconds === "number" &&
+    typeof candidate.nanoseconds === "number"
+  ) {
+    return {seconds: candidate.seconds, nanos: candidate.nanoseconds, contentId};
   }
-  return 0;
+  if (candidate && typeof candidate.toMillis === "function") {
+    const ms = candidate.toMillis();
+    const seconds = Math.floor(ms / 1000);
+    return {seconds, nanos: (ms - seconds * 1000) * 1_000_000, contentId};
+  }
+  return {seconds: 0, nanos: 0, contentId};
+}
+
+function cursorValuesOf(
+  db: Firestore,
+  position: HumorScanPosition,
+): [Timestamp, FirebaseFirestore.DocumentReference] {
+  return [
+    new Timestamp(position.seconds, position.nanos),
+    db.collection(HUMOR_CONTENT_COLLECTION).doc(position.contentId),
+  ];
 }
 
 /**
@@ -235,6 +354,9 @@ function toMillis(value: unknown): number {
  * Ordering by `createdAt` means a document missing that field is invisible to
  * the feed. `upsertHumorContentDoc` always stamps it on create and a test pins
  * that invariant, so the ordering key is safe to rely on.
+ *
+ * `before` bounds the page to documents strictly *newer* than that position
+ * (earlier in this newest-first order); reaching it counts as the end.
  */
 export async function listHumorContentPage(
   db: Firestore,
@@ -242,6 +364,7 @@ export async function listHumorContentPage(
     languages: string[];
     pageSize: number;
     after?: HumorScanPosition | null;
+    before?: HumorScanPosition | null;
   },
 ): Promise<HumorCandidatePage> {
   const languages = input.languages.map((l) => l.toLowerCase()).filter(Boolean);
@@ -261,10 +384,10 @@ export async function listHumorContentPage(
   query = query.orderBy("createdAt", "desc").orderBy("__name__", "desc");
 
   if (input.after) {
-    query = query.startAfter(
-      Timestamp.fromMillis(input.after.createdAtMs),
-      db.collection(HUMOR_CONTENT_COLLECTION).doc(input.after.contentId),
-    );
+    query = query.startAfter(...cursorValuesOf(db, input.after));
+  }
+  if (input.before) {
+    query = query.endBefore(...cursorValuesOf(db, input.before));
   }
 
   const snap = await query.limit(pageSize).get();
@@ -272,22 +395,16 @@ export async function listHumorContentPage(
   // `scannedTo` advances past every document we *looked at*, not just the ones
   // that survived filtering — otherwise a page of wrong-language content would
   // make the scan stall on the same spot forever.
+  const firstDoc = snap.docs[0];
   const lastDoc = snap.docs[snap.docs.length - 1];
   const exhausted = snap.docs.length < pageSize || !lastDoc;
-  const scannedTo = exhausted
-    ? null
-    : {
-        createdAtMs: toMillis(lastDoc!.get("createdAt")),
-        contentId: lastDoc!.id,
-      };
+  const scannedTo = exhausted ? null : positionOf(lastDoc!.get("createdAt"), lastDoc!.id);
+  const firstScanned = firstDoc ? positionOf(firstDoc.get("createdAt"), firstDoc.id) : null;
 
   const entries = snap.docs
     .map((doc) => ({
       content: parseHumorContent(doc.id, doc.data()),
-      position: {
-        createdAtMs: toMillis(doc.get("createdAt")),
-        contentId: doc.id,
-      },
+      position: positionOf(doc.get("createdAt"), doc.id),
     }))
     .filter((entry): entry is HumorCandidateEntry => {
       const item = entry.content;
@@ -299,7 +416,7 @@ export async function listHumorContentPage(
       return true;
     });
 
-  return {entries, scannedTo, exhausted};
+  return {entries, firstScanned, scannedTo, exhausted};
 }
 
 export type UpsertHumorContentInput = {
@@ -318,6 +435,19 @@ export type UpsertHumorContentInput = {
   licenseRef?: string | null;
   /** Explicit calibration curation. Absent means "not calibration content". */
   calibration?: {eligible: boolean; slot?: string | null; version?: number};
+  /** Defaults: internal → "curated", licensed_api → "provider". */
+  sourceTrust?: HumorSourceTrust;
+  /**
+   * Set only by the curated-catalogue seeder (`calibrationCatalog.ts`): this
+   * provider item was hand-picked by Mevora, so it may keep the "curated"
+   * tier. Provider sync and the admin upsert callable never set it.
+   */
+  curatedCatalogEntry?: boolean;
+  /** Provider credit (K1). Always stored as null for internal content. */
+  attribution?: HumorAttribution | null;
+  /** Provider identity, for provider content only. */
+  sourceId?: string | null;
+  sourceUrl?: string | null;
 };
 
 export async function upsertHumorContentDoc(
@@ -339,6 +469,19 @@ export async function upsertHumorContentDoc(
     calibrationEligible && isAnchorSlotId(input.calibration?.slot)
       ? String(input.calibration?.slot)
       : null;
+  const internal = adapter.kind === "internal";
+  // "curated" means Mevora chose it: internal content is curated unless it is
+  // explicitly a QA fixture, and provider content only when it comes from the
+  // curated GIPHY catalogue — a sync or a bare claim is downgraded.
+  const requestedTrust =
+    input.sourceTrust && (HUMOR_SOURCE_TRUST_TIERS as readonly string[]).includes(input.sourceTrust)
+      ? input.sourceTrust
+      : null;
+  const sourceTrust: HumorSourceTrust = internal
+    ? (requestedTrust === "qa_fixture" ? "qa_fixture" : "curated")
+    : requestedTrust === "curated"
+      ? (input.curatedCatalogEntry === true ? "curated" : "provider")
+      : (requestedTrust ?? "provider");
   const doc = {
     contentId: input.contentId,
     type: input.type,
@@ -346,7 +489,7 @@ export async function upsertHumorContentDoc(
     category: input.category,
     humorTags: (input.humorTags ?? []).map((t) => t.trim()).filter(Boolean),
     humorVector: normalizeHumorVector(input.humorVector, 0),
-    media: input.media ?? {},
+    media: normalizeMediaForWrite(input.type, input.media),
     safetyStatus,
     safetyFlags: classified.flags,
     source: {
@@ -354,6 +497,10 @@ export async function upsertHumorContentDoc(
       provider: adapter.provider,
       licenseRef: input.licenseRef ?? null,
     },
+    sourceTrust,
+    attribution: internal ? null : parseAttribution(input.attribution),
+    ...(input.sourceId !== undefined ? {sourceId: input.sourceId} : {}),
+    ...(input.sourceUrl !== undefined ? {sourceUrl: input.sourceUrl} : {}),
     [CALIBRATION_ELIGIBLE_FIELD]: calibrationEligible,
     [CALIBRATION_SLOT_FIELD]: calibrationSlot,
     [CALIBRATION_VERSION_FIELD]: calibrationEligible
@@ -382,24 +529,13 @@ export async function upsertHumorContentDoc(
 }
 
 /**
- * Curated calibration catalog, re-exported under its historical name.
+ * Curated calibration catalogue, re-exported under its historical name.
  *
- * The content itself now lives in `calibrationSeed.ts`, which keeps curation
- * — what measures what, which slot it fills, how deep each pool is — separate
- * from persistence. `seedInternalHumorContent` is unchanged and still writes
- * exactly this list.
+ * The content lives in `calibrationSeed.ts` (curation: what measures what,
+ * which slot it fills, how deep each pool is), separate from persistence. It
+ * is now the curated GIPHY catalogue — licensed provider GIFs Mevora picked
+ * by hand — not internal text; `seedInternalHumorContent` writes exactly this
+ * list (and retires the text cards it replaced).
  */
 export const INTERNAL_HUMOR_SEED: Array<Omit<UpsertHumorContentInput, "safetyStatus">> =
-  CALIBRATION_SEED.map((item) => ({
-    contentId: item.contentId,
-    type: item.type,
-    language: item.language,
-    category: item.category,
-    humorTags: item.humorTags,
-    humorVector: item.humorVector,
-    media: item.media,
-    active: item.active,
-    sourceType: item.sourceType,
-    provider: item.provider,
-    calibration: item.calibration,
-  }));
+  CALIBRATION_SEED.map(({safetyStatus: _safetyStatus, ...item}) => item);

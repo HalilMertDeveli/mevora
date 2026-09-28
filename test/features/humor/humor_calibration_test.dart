@@ -208,6 +208,36 @@ void main() {
       expect(payload.containsKey('stage'), isFalse);
       expect(payload.containsKey('completedCount'), isFalse);
       expect(firestoreInt(payload['dwellMs'], -1), 0);
+      // `saved` is written server-side only when explicitly sent, and there
+      // is no saved-items feature to send it.
+      expect(payload.containsKey('saved'), isFalse);
+      expect(payload.containsKey('skipped'), isFalse);
+    });
+
+    test('a skip sends no rating', () async {
+      final backend = _FakeBackend({
+        'submitHumorFeedback': {
+          'ok': true,
+          'profileBuilding': true,
+          'interactionCount': 3,
+          'confidence': 0.07,
+          'calibration': {
+            'version': 1,
+            'stage': 'anchor',
+            'completedCount': 3,
+            'totalCount': 15,
+            'complete': false,
+          },
+        },
+      });
+      final source = FunctionsHumorDataSource(backend: backend);
+
+      final result = await source.skipContent(contentId: 'c4');
+
+      expect(backend.calls, ['submitHumorFeedback']);
+      expect(backend.payloads.single, {'contentId': 'c4', 'skipped': true});
+      expect(result.calibration.completedCount, 3);
+      expect(result.interactionCount, 3);
     });
   });
 
@@ -262,6 +292,9 @@ void main() {
       final atCompletion = controller.state.profile;
       expect(controller.state.calibration.complete, isTrue);
 
+      // Finishing calibration hands off to the result screen without
+      // fetching a page it would throw away; continuing loads the next one.
+      await controller.loadMore();
       await controller.rate(HumorRating.veryFunny);
 
       expect(

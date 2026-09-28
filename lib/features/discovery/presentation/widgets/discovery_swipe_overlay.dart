@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_colors.dart';
-import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
 
-/// Subtle directional hint while dragging a discovery card.
+/// Subtle directional hint while dragging a discovery card: a round icon
+/// that fades in and grows with the drag, matching the action buttons.
 class DiscoverySwipeOverlay extends StatelessWidget {
   const DiscoverySwipeOverlay({
     super.key,
@@ -15,6 +13,10 @@ class DiscoverySwipeOverlay extends StatelessWidget {
   final Offset dragOffset;
   final double threshold;
 
+  static const _passColor = Color(0xFFFF4458);
+  static const _superLikeColor = Color(0xFF1EA7FD);
+  static const _likeColor = Color(0xFF2BD68A);
+
   @override
   Widget build(BuildContext context) {
     final direction = _resolveDirection();
@@ -22,57 +24,38 @@ class DiscoverySwipeOverlay extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final l10n = AppLocalizations.of(context);
     final progress = _progressFor(direction);
-    final label = switch (direction) {
-      DiscoverySwipeDirection.like => l10n.discoveryActionConnect,
-      DiscoverySwipeDirection.pass => l10n.pass,
-      DiscoverySwipeDirection.superLike => l10n.discoveryActionPriorityIntro,
-      DiscoverySwipeDirection.none => '',
-    };
-
-    final color = switch (direction) {
-      DiscoverySwipeDirection.like => AppColors.amber,
-      DiscoverySwipeDirection.pass => AppColors.error,
-      DiscoverySwipeDirection.superLike => AppColors.midnight,
-      DiscoverySwipeDirection.none => AppColors.mutedInk,
-    };
-
-    final alignment = switch (direction) {
-      DiscoverySwipeDirection.like => Alignment.bottomCenter,
-      DiscoverySwipeDirection.pass => Alignment.topRight,
-      DiscoverySwipeDirection.superLike => Alignment.topCenter,
-      DiscoverySwipeDirection.none => Alignment.center,
+    final (icon, color) = switch (direction) {
+      DiscoverySwipeDirection.like => (Icons.favorite_rounded, _likeColor),
+      DiscoverySwipeDirection.pass => (Icons.close_rounded, _passColor),
+      DiscoverySwipeDirection.superLike => (
+        Icons.star_rounded,
+        _superLikeColor,
+      ),
+      DiscoverySwipeDirection.none => (Icons.circle, Colors.transparent),
     };
 
     return IgnorePointer(
-      child: Align(
-        alignment: alignment,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Opacity(
-            opacity: (0.25 + progress * 0.55).clamp(0.0, 0.8),
+      child: Center(
+        child: Opacity(
+          opacity: (0.2 + progress * 0.8).clamp(0.0, 1.0),
+          child: Transform.scale(
+            scale: 0.7 + progress * 0.3,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: color.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.9),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.35),
+                    blurRadius: 24,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                padding: const EdgeInsets.all(18),
+                child: Icon(icon, color: color, size: 56),
               ),
             ),
           ),

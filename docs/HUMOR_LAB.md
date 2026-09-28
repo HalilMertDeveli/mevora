@@ -12,22 +12,111 @@ rate “how funny?”, and build a **UserHumorProfile**.
 ## Content pipeline
 
 ```text
-Giphy (licensed API, lang=tr) ──┐
-Internal Turkish media seed ────┼─► validate → moderate → tag → humorContent
-                                │
+Giphy (licensed API, lang=tr) ─► map → relevance filter → dedup ─┐
+Curated Mevora text jokes ───────────────────────────────────────┼─► validate → moderate → tag → humorContent
+                                                                 │
 Flutter vertical feed ◄── getHumorFeed ◄── Firestore
         │
  submitHumorFeedback → users/{uid}/humorInteractions + humor/summary
 ```
 
-**No** Instagram / TikTok / YouTube scraping.
+**No** Instagram / TikTok / YouTube scraping, and no server-side media download.
+
+### Content policy: one coherent item per card
+
+Every card is one thing whose parts were made for each other. We never attach
+our own text to someone else's media, and never put a picture behind a joke
+that was not made for it.
+
+- **Curated (Mevora-authored)**: text-only joke cards — `type: "text"`,
+  `media.textBody` = the joke, `downloadUrl` / `thumbUrl` = `null`,
+  `attribution: null`, `sourceTrust: "curated"`. The calibration catalogue in
+  `calibrationSeed.ts` is exactly this. (It used to glue captions onto random
+  picsum stills and four stock clips — a grocery joke over a seascape, a fridge
+  joke under a sword fight. That is gone, and so are those hosts.)
+- **Provider (GIPHY)**: the item's own animated image (a Clip: its own MP4),
+  its own still frame as poster, and its own title as caption (cleaned of "GIF", "GIF by …", "by <user>"). An empty,
+  generic or uploader-only title becomes `textBody: null` — never invented text.
+  Credit is stored as `attribution` and sent to the client (contract K1).
+
+Re-seeding is safe on old data: `upsertHumorContentDoc` writes every media key
+explicitly (null when unset) and forces a text card's media to null, so a merge
+over a document that still carries old stock media clears it.
+
+Media host allowlist (`contentValidation.ts`): `giphy.com` (suffix match covers
+`media*.giphy.com`, `i.giphy.com`) and `firebasestorage.googleapis.com`. HTTPS
+only; posters are checked like media.
 
 ### Provider
 
-- Adapter: `functions/src/humor/sourceAdapter.ts` + `giphySource.ts`
+- Adapter: `functions/src/humor/sourceAdapter.ts` + `giphySource.ts`;
+  relevance: `providerRelevance.ts`; pipeline: `ingest.ts`
 - Config: `GIPHY_API_KEY` via `firebase functions:secrets:set GIPHY_API_KEY`
-- Admin sync: `syncHumorFromProvider` (requires admin claim + key)
-- Without key: Turkish-first **internal seed** with real HTTPS MP4/images still works
+  (emulator: `functions/.secret.local`, added by the owner)
+- Admin sync: `syncHumorFromProvider { language, limit, clips? }` (admin claim + key)
+- Without key: the curated text catalogue still works; nothing else changes
+
+**Queries.** Intentional families, Turkish first — `komik tepki`, `komik sahne`,
+`dizi komik`, `film komik`, `komedi`, `kahkaha`, `şaşkınlık`, `sarkazm`, `ironi`,
+`türk meme`, `sitcom` — then English fallback (`funny reaction`, `comedy
+reaction`, `sitcom reaction`, `funny tv`, `comedy scene`, `movie reaction`,
+`sarcastic reaction`, `awkward reaction`, `absurd comedy`, `dry humor`,
+`laughing reaction`). Each family carries the humor category it probes, which is
+the primary category signal (weight ≤ 0.6; a keyword in the item's own text adds
+a secondary dimension at 0.35). Rotation is deterministic: the UTC day number
+picks the starting family and page.
+
+**Renditions.** A GIF is a silent short loop — an image, not a video — so it is
+stored as `type: "meme"` with an animated image the client shows through
+Flutter's own image pipeline (which decodes and loops animated WebP/GIF):
+`original.webp` when `webp_size` ≤ 1.5 MB, else `downsized_medium` (animated
+GIF), else the wider of `fixed_width.webp` / `fixed_height.webp`, else the
+smallest known WebP; `aspectRatio` comes from the chosen rendition. Only a GIF
+with no animated-image rendition falls back to its MP4 (the highest-resolution
+one ≤ 2.5 MB among `original_mp4`, `fixed_height.mp4`, `downsized_small.mp4`)
+as `type: "video"`. Why: on an Android 16 emulator (media3 1.9.2) ExoPlayer
+often never received a byte for GIPHY's small MP4s — 12 s init timeouts, two
+attempts, "Video yüklenemedi" — while the posters from the same CDN loaded at
+once through the image stack. Clips (`/v1/clips/search`, needs GIPHY approval;
+opt in with `clips: true` or `GIPHY_CLIPS_ENABLED=true`) are real video with
+sound and stay MP4 `video`: `480p`, else `360p`, else `720p`, never 1080p/4k;
+401/403/404 fall back to GIF search silently. Poster: `fixed_height_still`,
+else `original_still`. Docs ingested earlier as GIF MP4 video are switched by
+the sync when the same GIF is fetched again — `type` and
+`media.downloadUrl`/`aspectRatio` only, and only while the doc is approved and
+active; rejected or inactive docs and Clips are never touched. (Restarting the
+emulator wipes its data, which also re-ingests with the new rendition.)
+
+**Relevance (deterministic, no LLM).** Accept only items whose title / slug /
+alt text / tags carry a TR+EN humour, reaction or comedy marker, or that come
+from a verified entertainment account through a comedy query. Reject the
+stop-list (wallpaper, landscape, nature, background, scenery, loop pattern,
+abstract, aesthetic, logos, greeting cards such as "happy birthday" /
+"günaydın", transparent stickers), any rating other than g / pg / pg-13, and
+items without usable HTTPS media. Fewer items beat filler.
+
+**Trust tiers** (`sourceTrust` on the doc): `curated`, `verified_provider`
+(GIPHY `is_verified` or a known studio/network account), `provider`,
+`qa_fixture`. Verified content gets +0.08 on the humor feed's 0.55 quality prior
+(at most +0.008 on the total score; real ratings replace the prior by 20
+ratings). Discover ranking and the compatibility engine do not read it.
+
+**Dedup.** Stable id `ext_giphy_<sourceId>`; within a batch also by media URL and
+by normalized title + uploader. An existing document is never rewritten.
+Provider content is never calibration-eligible.
+
+**Diagnostics.** `syncHumorFromProvider` returns `{requested, fetched, accepted,
+rejected: {reason: n}, duplicates, errors, clipsAvailable}` and logs one
+counts-only line (never the key or a URL).
+
+### Feed and feedback contracts
+
+- **K1** — every feed card carries `attribution: {provider, displayName,
+  username, sourceUrl, verified} | null` (null for curated content).
+  `media.thumbUrl` stays the poster.
+- **K3** — `submitHumorFeedback` accepts `skipReason: "user" | "media_failed"`
+  only with `skipped: true` (anything else becomes `"user"`), stored on the skip
+  marker. A skip still never counts toward calibration or the profile.
 
 ### Feed language
 
@@ -109,8 +198,10 @@ not "the profile stopped learning".
 
 ## Flutter media
 
-- `video_player` for MP4 autoplay / mute / loop / pause when off-screen
-- Images/memes via `MevoraNetworkImages`
+- `video_player` for MP4 autoplay / mute / loop / pause when off-screen (Clips)
+- Images/memes (GIPHY GIFs as animated WebP/GIF included) via
+  `MevoraNetworkImages`: poster + spinner until the first frame, bounded by
+  `imageLoadTimeout` (15 s); failure → "Tekrar dene" (once) / "Sonraki"
 - Vertical `PageView` + 5-level rating bar + undo
 
 ## Setup
@@ -126,9 +217,75 @@ firebase functions:secrets:set GIPHY_API_KEY
 # syncHumorFromProvider { language: "tr", limit: 24 }
 ```
 
-Client mock (default `USE_MOCK_HUMOR=true`) uses the same Turkish media URLs for local QA.
-Pass `--dart-define=USE_MOCK_HUMOR=false` to hit Cloud Functions.
+Humor always uses the real backend (`FunctionsHumorDataSource` → Cloud Functions,
+or the Functions emulator with `USE_EMULATORS=true`) unless a **debug/profile
+development** build passes `--dart-define=USE_MOCK_HUMOR=true`. Only that exact
+opt-in selects the in-memory client mock (same Turkish media URLs, no server
+state, nothing persists); staging, production and release builds ignore it
+(`resolveUseMockHumor` in `lib/core/di/humor_services_factory.dart`).
 
 ## Compatibility
 
 MVP does **not** change `calculateCompatibility` / Discover ranking.
+
+## Local emulator QA (F5)
+
+Cloud Billing is disabled on `mevora-d6ed0`, so every deployed callable fails.
+The Firebase Emulator Suite is the working backend for Humor Lab QA.
+
+**One click.** In VS Code, press F5 on **Mevora (development · full emulator
+suite)**, the first (default) configuration. Its preLaunchTask runs
+`tool/ensure_emulators.ps1`, then the usual `Flutter: Prepare Run`:
+
+1. Rebuilds `functions/lib` when any `functions/src` file is newer, running
+   `npm ci` first when `functions/node_modules` is missing.
+2. Reuses a running suite, or starts
+   `firebase emulators:start --config firebase.qa.json --project mevora-d6ed0 --only auth,firestore,functions,storage`
+   in a minimized **Mevora Firebase Emulator Suite** window that keeps running
+   after the launch (Ctrl+C there stops it). It waits up to 180 s for the hub
+   to report all four emulators and for the functions to load.
+3. Seeds the QA users `qa_user_a…d@mevora.test` (only missing ones, so
+   existing matches and chats survive) and the curated humor catalogue (36
+   text joke cards, four candidates per anchor slot). Re-seeding is idempotent,
+   never resets anyone's calibration progress, and converts documents an older
+   seed left with stock media into text cards. Then the provider top-up: when
+   `functions/.secret.local` declares `GIPHY_API_KEY` (the script checks the
+   name only), it calls `syncHumorFromProvider` on the Functions emulator as a
+   throwaway emulator admin and prints the counts; otherwise it prints
+   `Provider content skipped: GIPHY key unavailable (billing disabled; add
+   functions/.secret.local to enable)`. A provider failure never fails F5.
+4. Prints `ensure_emulators: READY | …`, or fails with the reason and VS Code
+   does not launch the app.
+
+Nothing targets the cloud: nothing is deployed, and the seed scripts refuse to
+run unless `FIRESTORE_EMULATOR_HOST` is a loopback address. A suite already
+running from another worktree is reused, with a warning that its callables run
+that worktree's functions code.
+
+**Fresh AVD.** Android 16+ needs `ACCESS_LOCAL_NETWORK` to reach `10.0.2.2`,
+and `Flutter: Prepare Run` can only grant it to an app that is already
+installed, so the very first launch cannot reach the emulators. After that
+install, run
+`adb shell pm grant com.mevora.app android.permission.ACCESS_LOCAL_NETWORK`
+and restart the app; every later F5 grants it automatically.
+
+**Manual fallback** (PowerShell, repo root):
+
+```powershell
+npm --prefix functions run build
+firebase emulators:start --config firebase.qa.json --project mevora-d6ed0 --only auth,firestore,functions,storage
+
+# in a second terminal
+$env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
+$env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"
+node tool/seedEmulatorQaUsers.cjs --if-missing  # without the flag: resets every QA user
+node tool/seedEmulatorHumorCatalog.cjs          # catalogue + anchor-slot pool report
+# optional licensed top-up (needs functions/.secret.local with GIPHY_API_KEY):
+node tool/seedEmulatorHumorCatalog.cjs --provider-topup --functions-host 127.0.0.1:5001
+node tool/humorCalibrationQa.cjs --emulator     # optional end-to-end calibration check
+```
+
+Or run the whole sequence without the app:
+`powershell -NoProfile -ExecutionPolicy Bypass -File tool/ensure_emulators.ps1`.
+The calibration check creates and removes scratch users, but its ratings stay
+in the catalogue's `stats`.

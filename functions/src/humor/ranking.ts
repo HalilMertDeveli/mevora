@@ -5,7 +5,7 @@ import {
   type HumorCategory,
 } from "./categories.js";
 import {affinityScore} from "./profile.js";
-import type {HumorContentDoc, UserHumorProfileDoc} from "./types.js";
+import type {HumorContentDoc, HumorSourceTrust, UserHumorProfileDoc} from "./types.js";
 
 const W_AFFINITY = 0.55;
 const W_NOVELTY = 0.15;
@@ -26,13 +26,31 @@ export type HumorCandidateScore = {
   language: number;
 };
 
-function qualityScore(content: HumorContentDoc): number {
+/**
+ * Small prior bump by source trust tier, humor feed only (Discover ranking and
+ * the compatibility engine never read it).
+ *
+ * A verified entertainment account (studio/network, or GIPHY `is_verified`)
+ * starts slightly above an anonymous upload: +0.08 on the 0.55 quality prior,
+ * i.e. at most +0.008 on the total score through W_QUALITY. It only shapes the
+ * prior — as real ratings accumulate (full weight at 20) they replace it, so
+ * trust can never outrank what users actually found funny.
+ */
+export const TRUST_QUALITY_PRIOR_BOOST: Readonly<Record<HumorSourceTrust, number>> = {
+  curated: 0,
+  verified_provider: 0.08,
+  provider: 0,
+  qa_fixture: 0,
+};
+
+export function qualityScore(content: HumorContentDoc): number {
   const stats = content.stats ?? {viewCount: 0, ratingCount: 0, avgRating: 0};
   const count = Math.max(0, stats.ratingCount ?? 0);
   const avg = typeof stats.avgRating === "number" ? stats.avgRating : 0;
   // avgRating expected roughly -1..1 or 0..1; normalize softly.
   const normalizedAvg = Math.min(1, Math.max(0, (avg + 1) / 2));
-  const prior = 0.55;
+  const boost = content.sourceTrust ? (TRUST_QUALITY_PRIOR_BOOST[content.sourceTrust] ?? 0) : 0;
+  const prior = 0.55 + boost;
   const weight = Math.min(1, count / 20);
   return prior * (1 - weight) + normalizedAvg * weight;
 }

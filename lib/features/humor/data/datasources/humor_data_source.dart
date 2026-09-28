@@ -11,15 +11,25 @@ abstract class HumorDataSource {
     String? cursor,
   });
 
+  /// Rate [contentId]. Rating the same content again replaces the earlier
+  /// rating server-side instead of adding a second step.
   Future<HumorFeedbackResult> submitFeedback({
     required String contentId,
     required HumorRating rating,
     int dwellMs = 0,
     int replayCount = 0,
-    bool skipped = false,
-    bool saved = false,
     bool? swipeUp,
     bool? swipeDown,
+  });
+
+  /// Move past [contentId] without rating it. Never changes the profile,
+  /// the interaction count or calibration progress; it only keeps the content
+  /// out of the user's feed.
+  ///
+  /// [skipReason] (see `HumorSkipReason`) says why; `null` sends none.
+  Future<HumorFeedbackResult> skipContent({
+    required String contentId,
+    String? skipReason,
   });
 
   Future<UserHumorProfile> getProfile({bool detailed = false});

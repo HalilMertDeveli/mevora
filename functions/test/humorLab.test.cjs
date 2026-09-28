@@ -116,8 +116,102 @@ test("rating weights and EMA feedback move profile toward content", () => {
   assert.ok(next.confidence > 0);
   assert.ok(next.vector.meme > 50);
   assert.ok(next.exploredCategories.includes("meme"));
-  assert.ok(learningRate(0) > learningRate(1));
+  // Flat, large step through the initial calibration; decaying afterwards,
+  // but never to zero — learning continues for mature profiles.
+  assert.equal(learningRate(1), learningRate(15));
+  assert.ok(learningRate(16) < learningRate(15));
+  assert.ok(learningRate(40) < learningRate(16));
+  assert.ok(learningRate(10000) > 0);
+  assert.equal(learningRate(10000), learningRate(20000), "floored, not vanishing");
   assert.ok(confidenceFromInteractions(40) > confidenceFromInteractions(5));
+});
+
+test("a rating moves only the dimensions the content carries, unrounded", () => {
+  const start = defaultUserHumorProfile();
+  const next = applyFeedbackToProfile({
+    profile: start,
+    contentVector: {sarcasm: 0.9, dry: 0.3},
+    category: "sarcasm",
+    rating: "very_funny",
+  });
+  // Dimensions without mass are untouched — a sarcasm clip says nothing about
+  // romantic humor and must not drag it anywhere.
+  for (const dim of HUMOR_CATEGORIES) {
+    if (dim !== "sarcasm" && dim !== "dry") {
+      assert.equal(next.vector[dim], 50, dim);
+    }
+  }
+  // Mass scales the step: the focus dimension moves further than the tag.
+  assert.ok(next.vector.sarcasm - 50 > next.vector.dry - 50);
+  assert.ok(next.vector.dry > 50);
+  // Stored at full precision (0.45 × 0.9 × 50 = 20.25).
+  assert.equal(next.vector.sarcasm, 70.25);
+
+  // A dislike moves toward 0, a neutral rating toward 50.
+  const disliked = applyFeedbackToProfile({
+    profile: start,
+    contentVector: {silly: 1},
+    rating: "not_at_all",
+  });
+  assert.equal(disliked.vector.silly, 27.5);
+  const neutral = applyFeedbackToProfile({
+    profile: next,
+    contentVector: {sarcasm: 1},
+    rating: "neutral",
+  });
+  assert.ok(neutral.vector.sarcasm < next.vector.sarcasm);
+  assert.ok(neutral.vector.sarcasm > 50);
+
+  // Vector-less content still teaches its declared category.
+  const bare = applyFeedbackToProfile({
+    profile: start,
+    contentVector: {},
+    category: "dark",
+    rating: "funny",
+  });
+  assert.ok(bare.vector.dark > 50);
+  assert.equal(bare.vector.sarcasm, 50);
+});
+
+test("a changed rating replaces the earlier one instead of stacking", () => {
+  const {applyRatingToProfile} = require("../lib/humor/profile.js");
+  const base = {
+    ...defaultUserHumorProfile(),
+    vector: {...emptyHumorVector(50), sarcasm: 63.2, dry: 41.7},
+    interactionCount: 4,
+  };
+  const content = {sarcasm: 0.88, dry: 0.55, teasing: 0.4};
+
+  const first = applyRatingToProfile({
+    profile: base,
+    contentVector: content,
+    rating: "very_funny",
+  });
+  const changed = applyRatingToProfile({
+    profile: first.profile,
+    contentVector: content,
+    rating: "not_at_all",
+    mode: "replace",
+    previousDelta: first.appliedDelta,
+  });
+  const single = applyRatingToProfile({
+    profile: base,
+    contentVector: content,
+    rating: "not_at_all",
+  });
+  for (const dim of HUMOR_CATEGORIES) {
+    assert.ok(
+      Math.abs(changed.profile.vector[dim] - single.profile.vector[dim]) < 1e-9,
+      `${dim}: ${changed.profile.vector[dim]} vs ${single.profile.vector[dim]}`,
+    );
+  }
+  assert.equal(changed.profile.interactionCount, single.profile.interactionCount);
+  assert.equal(changed.profile.interactionCount, 5, "a re-rate is not a new interaction");
+  assert.deepEqual(
+    Object.keys(changed.appliedDelta).sort(),
+    ["dry", "sarcasm", "teasing"],
+    "the stored delta covers exactly the carried dimensions",
+  );
 });
 
 test("affinity and cosine are deterministic", () => {
@@ -253,36 +347,43 @@ test("AI tagging is metadata-only and never used for user scoring", () => {
   assert.ok(fallback.humorVector.silly >= 0.7);
 });
 
-test("internal seed is Turkish-first with real media URLs", () => {
-  // Lower bound rather than an exact count: the seed grew when calibration
-  // added a second candidate per anchor slot, and it must stay large enough to
+test("the curated seed is credited, caption-less GIPHY cards", () => {
+  // Lower bound rather than an exact count: it must stay large enough to
   // carry a full 15-item calibration.
   assert.ok(
     INTERNAL_HUMOR_SEED.length >= 15,
     `seed must cover a full calibration, got ${INTERNAL_HUMOR_SEED.length}`,
   );
-  const tr = INTERNAL_HUMOR_SEED.filter((item) => item.language === "tr");
-  assert.ok(tr.length >= 8);
+  assert.ok(INTERNAL_HUMOR_SEED.some((item) => item.language === "tr"), "no Turkish clip");
   for (const item of INTERNAL_HUMOR_SEED) {
-    assert.ok(item.media?.downloadUrl, "seed must include media URL");
-    assert.ok(String(item.media.downloadUrl).startsWith("https://"));
+    // The clip is the item: its own animated rendition and still, no caption.
+    assert.equal(item.type, "meme", item.contentId);
+    assert.match(item.media.downloadUrl, /^https:\/\/media\d?\.giphy\.com\//, item.contentId);
+    assert.match(item.media.thumbUrl, /^https:\/\/media\d?\.giphy\.com\//, item.contentId);
+    assert.equal(item.media.textBody, null, item.contentId);
+    assert.equal(item.attribution.provider, "giphy", item.contentId);
   }
-  const parsed = parseHumorContent(INTERNAL_HUMOR_SEED[0].contentId, {
-    ...INTERNAL_HUMOR_SEED[0],
+  const first = INTERNAL_HUMOR_SEED[0];
+  const parsed = parseHumorContent(first.contentId, {
+    ...first,
     safetyStatus: "approved",
     safetyFlags: emptySafetyFlags(),
-    source: {type: "internal", provider: "mevora-internal"},
+    source: {type: "licensed_api", provider: "giphy", licenseRef: first.licenseRef},
     stats: {viewCount: 0, ratingCount: 0, avgRating: 0},
   });
   assert.ok(parsed);
   const safe = toFeedSafeContent(parsed);
-  assert.equal(safe.contentId, INTERNAL_HUMOR_SEED[0].contentId);
-  assert.ok(safe.media.downloadUrl);
+  assert.equal(safe.contentId, first.contentId);
+  assert.equal(safe.type, "meme");
+  assert.equal(safe.media.downloadUrl, first.media.downloadUrl);
+  assert.equal(safe.media.thumbUrl, first.media.thumbUrl);
+  assert.equal(safe.media.textBody, null, "no caption: the joke is in the clip");
+  assert.deepEqual(safe.attribution, first.attribution, "the card credits GIPHY's uploader");
   assert.equal("humorVector" in safe, false);
   assert.equal("safetyFlags" in safe, false);
 });
 
-test("content validation rejects empty and accepts sample video hosts", () => {
+test("content validation rejects empty and accepts provider CDN hosts", () => {
   const {validateHumorSourceItem} = require("../lib/humor/contentValidation.js");
   assert.equal(
     validateHumorSourceItem({
@@ -298,10 +399,7 @@ test("content validation rejects empty and accepts sample video hosts", () => {
       sourceId: "x",
       type: "video",
       language: "tr",
-      media: {
-        downloadUrl:
-          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      },
+      media: {downloadUrl: "https://media2.giphy.com/media/abc123/giphy.mp4"},
     }).ok,
     true,
   );

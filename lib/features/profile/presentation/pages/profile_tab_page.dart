@@ -391,7 +391,9 @@ class _HumorProfileTileState extends State<_HumorProfileTile> {
     if (!mounted) {
       return;
     }
-    setState(() => _calibration = result.valueOrNull?.calibration);
+    setState(
+      () => _calibration = result.valueOrNull?.calibration ?? _calibration,
+    );
   }
 
   @override
@@ -417,11 +419,17 @@ class _HumorProfileTileState extends State<_HumorProfileTile> {
       subtitle: subtitle,
       // An unfinished calibration resumes through the invitation screen so the
       // user sees where they are before being dropped back into content.
-      onTap: () => context.push(
-        calibration?.complete == true
-            ? AppRoutes.humorLab
-            : AppRoutes.humorCalibration,
-      ),
+      onTap: () => unawaited(_open(calibration?.complete == true)),
     );
+  }
+
+  Future<void> _open(bool complete) async {
+    await context.push(
+      complete ? AppRoutes.humorLab : AppRoutes.humorCalibration,
+    );
+    if (mounted) {
+      // The profile tab stays alive underneath: show the progress made.
+      await _load();
+    }
   }
 }

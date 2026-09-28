@@ -51,6 +51,14 @@ if (Test-Path $adb) {
         $installed = & $adb -s $serial shell pm list packages com.mevora.app
         if ($installed) {
             & $adb -s $serial shell pm grant com.mevora.app android.permission.ACCESS_LOCAL_NETWORK 2>&1 | Out-Null
+        } else {
+            # This task runs before flutter installs the APK, so a fresh AVD
+            # has nothing to grant yet and this launch cannot reach 10.0.2.2.
+            Write-Warning ("com.mevora.app is not installed on $serial yet, so ACCESS_LOCAL_NETWORK " +
+                "cannot be granted before this launch; it will be granted on the next launch. " +
+                "To reach the emulators right after this install, run: " +
+                "adb -s $serial shell pm grant com.mevora.app android.permission.ACCESS_LOCAL_NETWORK " +
+                "and restart the app.")
         }
     }
 }

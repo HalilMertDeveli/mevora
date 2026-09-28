@@ -1,3 +1,7 @@
+import 'package:cloud_functions/cloud_functions.dart'
+    show FirebaseFunctionsException;
+import 'package:flutter/foundation.dart';
+import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/humor/data/datasources/humor_data_source.dart';
@@ -18,18 +22,15 @@ class HumorRepositoryImpl implements HumorRepository {
     List<String>? languages,
     int? limit,
     String? cursor,
-  }) async {
-    try {
-      return Success(
-        await _dataSource.getFeed(
-          languages: languages,
-          limit: limit,
-          cursor: cursor,
-        ),
-      );
-    } on Object catch (error) {
-      return Err(FailureMapper.from(error));
-    }
+  }) {
+    return _guard(
+      'getHumorFeed',
+      () => _dataSource.getFeed(
+        languages: languages,
+        limit: limit,
+        cursor: cursor,
+      ),
+    );
   }
 
   @override
@@ -38,47 +39,48 @@ class HumorRepositoryImpl implements HumorRepository {
     required HumorRating rating,
     int dwellMs = 0,
     int replayCount = 0,
-    bool skipped = false,
-    bool saved = false,
     bool? swipeUp,
     bool? swipeDown,
-  }) async {
-    try {
-      return Success(
-        await _dataSource.submitFeedback(
-          contentId: contentId,
-          rating: rating,
-          dwellMs: dwellMs,
-          replayCount: replayCount,
-          skipped: skipped,
-          saved: saved,
-          swipeUp: swipeUp,
-          swipeDown: swipeDown,
-        ),
-      );
-    } on Object catch (error) {
-      return Err(FailureMapper.from(error));
-    }
+  }) {
+    return _guard(
+      'submitHumorFeedback',
+      () => _dataSource.submitFeedback(
+        contentId: contentId,
+        rating: rating,
+        dwellMs: dwellMs,
+        replayCount: replayCount,
+        swipeUp: swipeUp,
+        swipeDown: swipeDown,
+      ),
+    );
   }
 
   @override
-  Future<Result<UserHumorProfile>> getProfile({bool detailed = false}) async {
-    try {
-      return Success(await _dataSource.getProfile(detailed: detailed));
-    } on Object catch (error) {
-      return Err(FailureMapper.from(error));
-    }
+  Future<Result<HumorFeedbackResult>> skipContent({
+    required String contentId,
+    String? skipReason,
+  }) {
+    return _guard(
+      'submitHumorFeedback',
+      () =>
+          _dataSource.skipContent(contentId: contentId, skipReason: skipReason),
+    );
   }
 
   @override
-  Future<Result<HumorCompatibility>> getMatchCompatibility(
-    String matchId,
-  ) async {
-    try {
-      return Success(await _dataSource.getMatchCompatibility(matchId));
-    } on Object catch (error) {
-      return Err(FailureMapper.from(error));
-    }
+  Future<Result<UserHumorProfile>> getProfile({bool detailed = false}) {
+    return _guard(
+      'getHumorProfile',
+      () => _dataSource.getProfile(detailed: detailed),
+    );
+  }
+
+  @override
+  Future<Result<HumorCompatibility>> getMatchCompatibility(String matchId) {
+    return _guard(
+      'getMatchHumorCompatibility',
+      () => _dataSource.getMatchCompatibility(matchId),
+    );
   }
 
   @override
@@ -86,16 +88,67 @@ class HumorRepositoryImpl implements HumorRepository {
     required String contentId,
     String reason = 'other',
     String details = '',
-  }) async {
-    try {
-      await _dataSource.reportContent(
+  }) {
+    return _guard(
+      'reportHumorContent',
+      () => _dataSource.reportContent(
         contentId: contentId,
         reason: reason,
         details: details,
-      );
-      return const Success(null);
+      ),
+    );
+  }
+
+  /// Runs one humor call and turns whatever it throws into a [Failure].
+  ///
+  /// Callable errors keep their meaning here instead of all collapsing into
+  /// "something went wrong": an offline device, an expired session and a
+  /// backend fault need different words, and QA needs to see which one
+  /// happened. The shared callable wrapper is left alone on purpose — other
+  /// features catch the raw exception type.
+  Future<Result<T>> _guard<T>(
+    String callable,
+    Future<T> Function() action,
+  ) async {
+    try {
+      return Success(await action());
+    } on FirebaseFunctionsException catch (error) {
+      _debug(callable, error.code, error.message);
+      return Err(_mapHumorCallableError(error.code, error.message));
     } on Object catch (error) {
+      _debug(callable, error.runtimeType.toString(), null);
       return Err(FailureMapper.from(error));
     }
+  }
+
+  void _debug(String callable, String code, String? message) {
+    if (kReleaseMode) {
+      return;
+    }
+    debugPrint(
+      '[HUMOR] $callable failed: $code${message == null ? '' : ' ($message)'}',
+    );
+  }
+}
+
+/// Maps a Cloud Functions error code onto the app's existing [Failure] types.
+Failure _mapHumorCallableError(String code, [String? message]) {
+  final detail = message == null || message.isEmpty ? code : '$code: $message';
+  switch (code) {
+    case 'unavailable':
+    case 'deadline-exceeded':
+      return NetworkFailure(detail);
+    case 'unauthenticated':
+      return AuthFailure(
+        detail,
+        kind: AuthErrorKind.sessionExpired,
+        code: code,
+      );
+    case 'permission-denied':
+      return AuthzFailure(detail);
+    case 'not-found':
+      return NotFoundFailure(detail);
+    default:
+      return UnexpectedFailure(detail);
   }
 }

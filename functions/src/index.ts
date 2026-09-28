@@ -45,6 +45,7 @@ export {
   getHumorCalibrationPoolReport,
   seedInternalHumorContent,
   syncHumorFromProvider,
+  searchHumorProviderCandidates,
 } from "./humor/index.js";
 
 // Automation job processors. `deleteUserAccount` enqueues an

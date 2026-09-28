@@ -926,6 +926,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discoveryPreferences => 'Discovery preferences';
 
   @override
+  String get settingsPersonalizeRecommendations =>
+      'Personalize my recommendations based on my interactions';
+
+  @override
+  String get settingsPersonalizeRecommendationsSubtitle =>
+      'We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.';
+
+  @override
   String get minAge => 'Minimum age';
 
   @override

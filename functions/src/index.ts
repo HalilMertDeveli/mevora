@@ -47,6 +47,12 @@ export {
   syncHumorFromProvider,
   searchHumorProviderCandidates,
 } from "./humor/index.js";
+export {
+  personalizationOnDecision,
+  personalizationOnMatchCreated,
+  recordProfileEngagement,
+  debugPersonalizationRanking,
+} from "./personalization/functions.js";
 
 // Automation job processors. `deleteUserAccount` enqueues an
 // `accountDeletionVerify` job (plus a Cloud Task); without these exports the

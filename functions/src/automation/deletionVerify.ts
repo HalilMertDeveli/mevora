@@ -25,6 +25,9 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   `spotifySecrets/${uid}`,
   `users/${uid}/verification/identity`,
   `users/${uid}/verification/sumsub`,
+  // Learned recommendation preferences. A late like/match trigger could
+  // re-create it after the sweep, so it is checked, not assumed.
+  `users/${uid}/personalization/profile`,
   // Humor state is an inferred personality profile. An in-flight humor call
   // can re-create these after the sweep, so they are checked, not assumed.
   `users/${uid}/humor/summary`,

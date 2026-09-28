@@ -367,6 +367,8 @@
   "communityGuidelines": "Topluluk Kuralları",
   "blockedUsers": "Engellenenler",
   "discoveryPreferences": "Keşif tercihleri",
+  "settingsPersonalizeRecommendations": "Önerilerimi etkileşimlerime göre kişiselleştir",
+  "settingsPersonalizeRecommendationsSubtitle": "Beğeniler, eşleşmeler ve konuşma etkinliği gibi sinyalleri kullanarak önerilerini zamanla sana göre ayarlarız. Mesajlarının içeriğini analiz etmeyiz.",
   "minAge": "En düşük yaş",
   "maxAge": "En yüksek yaş",
   "maxDistance": "En fazla mesafe",

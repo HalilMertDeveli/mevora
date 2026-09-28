@@ -2,6 +2,13 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentSnapshot, type Transaction} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {SIGNAL_STRENGTHS, type StrongSignalType} from "./personalization/config.js";
+import {
+  advanceConversationState,
+  parseConversationState,
+  serializeConversationState,
+} from "./personalization/signals.js";
+import {recordLearningEventSafely} from "./personalization/store.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -237,7 +244,9 @@ export async function applyMessageSideEffects(input: {
   lastMessage: string;
 }): Promise<void> {
   const matchRef = db.doc(`matches/${input.matchId}`);
+  let milestones: {reached: StrongSignalType[]; userIds: string[]} | null = null;
   await db.runTransaction(async (tx) => {
+    milestones = null;
     const matchSnap = await tx.get(matchRef);
     const data = matchSnap.data();
     if (!matchSnap.exists || !data) {
@@ -261,6 +270,19 @@ export async function applyMessageSideEffects(input: {
     if (willAward) {
       updates.interactionBonusAwarded = true;
     }
+    // Adaptive personalization: who wrote and when, never what. Recorded
+    // with the message, learned from after the transaction commits.
+    const conversation = advanceConversationState({
+      state: parseConversationState(data.personalizationSignals),
+      userIds,
+      messagedUserIds: [...messaged],
+      senderId: input.senderId,
+      nowMs: Date.now(),
+    });
+    updates.personalizationSignals = serializeConversationState(conversation.state);
+    if (conversation.reached.length > 0) {
+      milestones = {reached: conversation.reached, userIds};
+    }
     tx.update(matchRef, updates);
     if (willAward) {
       for (let i = 0; i < userIds.length; i += 1) {
@@ -268,6 +290,20 @@ export async function applyMessageSideEffects(input: {
       }
     }
   });
+  const reached = milestones as {reached: StrongSignalType[]; userIds: string[]} | null;
+  if (reached && reached.userIds.length === 2) {
+    const [a, b] = reached.userIds;
+    await Promise.all(
+      reached.reached.flatMap((type) => [
+        recordLearningEventSafely(db, {
+          actorUid: a, otherUid: b, type, key: input.matchId, strength: SIGNAL_STRENGTHS[type],
+        }),
+        recordLearningEventSafely(db, {
+          actorUid: b, otherUid: a, type, key: input.matchId, strength: SIGNAL_STRENGTHS[type],
+        }),
+      ]),
+    );
+  }
 }
 
 export async function queuePostMatchFeedback(input: {

@@ -1808,6 +1808,18 @@ abstract class AppLocalizations {
   /// **'Discovery preferences'**
   String get discoveryPreferences;
 
+  /// No description provided for @settingsPersonalizeRecommendations.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalize my recommendations based on my interactions'**
+  String get settingsPersonalizeRecommendations;
+
+  /// No description provided for @settingsPersonalizeRecommendationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.'**
+  String get settingsPersonalizeRecommendationsSubtitle;
+
   /// No description provided for @minAge.
   ///
   /// In en, this message translates to:

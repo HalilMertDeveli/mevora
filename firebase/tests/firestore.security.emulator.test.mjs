@@ -1379,6 +1379,79 @@ describe("preferences and privacy", () => {
   });
 });
 
+describe("adaptive personalization — learned weights are server-owned", () => {
+  const profilePath = (uid) => `users/${uid}/personalization/profile`;
+  const learned = {
+    algorithmVersion: 1,
+    dimensions: {humor: {adjustment: 1.08, evidence: 4, positive: 4, negative: 0}},
+    eventCount: 3,
+  };
+
+  beforeEach(async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(profilePath(UID.A)).set(learned);
+      await ctx.firestore().doc(`users/${UID.A}/personalizationEvents/like_x`).set({type: "like"});
+    });
+  });
+
+  it("the owner may read their own learned profile", async () => {
+    await allow(who.userA.db().doc(profilePath(UID.A)).get());
+  });
+
+  it("a client can never forge learned adjustments — create, update or delete", async () => {
+    const forged = {
+      algorithmVersion: 1,
+      dimensions: {humor: {adjustment: 1.3}, music: {adjustment: 1.3}},
+    };
+    await deny(who.userA.db().doc(profilePath(UID.A)).set(forged));
+    await deny(who.userA.db().doc(profilePath(UID.A)).set({humorAdjustment: 1.3}, {merge: true}));
+    await deny(who.userA.db().doc(profilePath(UID.A)).update({"dimensions.humor.adjustment": 1.3}));
+    await deny(who.userA.db().doc(profilePath(UID.A)).delete());
+    await deny(who.userB.db().doc(profilePath(UID.B)).set(forged));
+  });
+
+  it("nobody reads or writes another member's personalization", async () => {
+    await deny(who.userB.db().doc(profilePath(UID.A)).get());
+    await deny(who.userC.db().doc(profilePath(UID.A)).get());
+    await deny(who.anon.db().doc(profilePath(UID.A)).get());
+    await deny(who.userB.db().doc(profilePath(UID.A)).set(learned));
+  });
+
+  it("the idempotency ledger is invisible and unwritable, even to its owner", async () => {
+    await deny(who.userA.db().doc(`users/${UID.A}/personalizationEvents/like_x`).get());
+    await deny(who.userA.db().collection(`users/${UID.A}/personalizationEvents`).get());
+    await deny(who.userA.db().doc(`users/${UID.A}/personalizationEvents/like_y`).set({type: "like"}));
+  });
+
+  it("the member's on/off switch is a legitimate owner write", async () => {
+    await allow(
+      who.userA.db().doc(`userSettings/${UID.A}`).set({personalizeRecommendations: false}, {merge: true}),
+    );
+    await allow(
+      who.userA.db().doc(`userSettings/${UID.A}`).set({personalizeRecommendations: true}, {merge: true}),
+    );
+    await allow(who.userA.db().doc(`userSettings/${UID.A}`).get());
+  });
+
+  it("the switch must be a boolean and only its owner may flip it", async () => {
+    await deny(
+      who.userA.db().doc(`userSettings/${UID.A}`).set({personalizeRecommendations: "off"}, {merge: true}),
+    );
+    await deny(
+      who.userB.db().doc(`userSettings/${UID.A}`).set({personalizeRecommendations: false}, {merge: true}),
+    );
+    await deny(who.userB.db().doc(`userSettings/${UID.A}`).get());
+  });
+
+  it("conversation signals on the match are not client-writable", async () => {
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}`).update({
+        personalizationSignals: {startedAtMs: 1, survivedAtMs: 2, secondSessionAtMs: 3, mutualDays: 9},
+      }),
+    );
+  });
+});
+
 describe("humor calibration state", () => {
   beforeEach(async () => {
     await seed(env, async (ctx) => {

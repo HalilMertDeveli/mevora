@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import 'package:mevora/features/discovery/presentation/controllers/discovery_con
 import 'package:mevora/features/safety/presentation/widgets/discovery_safety_sheet.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_boost_badge.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_network_image.dart';
+import 'package:mevora/features/personalization/data/profile_engagement_reporter.dart';
+import 'package:mevora/features/personalization/domain/profile_engagement_tracker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
@@ -22,10 +25,15 @@ class DiscoveryProfileDetailsPage extends StatefulWidget {
     super.key,
     required this.candidate,
     this.controller,
+    this.engagementReporter,
   });
 
   final DiscoveryCandidate candidate;
   final DiscoveryController? controller;
+
+  /// Where this visit's weak engagement goes when the page closes. Defaults to
+  /// the backend when Firebase is available.
+  final ProfileEngagementReporter? engagementReporter;
 
   @override
   State<DiscoveryProfileDetailsPage> createState() =>
@@ -33,13 +41,62 @@ class DiscoveryProfileDetailsPage extends StatefulWidget {
 }
 
 class _DiscoveryProfileDetailsPageState
-    extends State<DiscoveryProfileDetailsPage> {
+    extends State<DiscoveryProfileDetailsPage>
+    with WidgetsBindingObserver {
+  late final ProfileEngagementTracker _engagement = ProfileEngagementTracker(
+    candidateUid: widget.candidate.uid,
+  );
+  final ScrollController _scroll = ScrollController();
+  final GlobalKey _musicSectionKey = GlobalKey();
+  final GlobalKey _whySectionKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
     for (final url in widget.candidate.photos.take(4)) {
       DiscoveryNetworkImage.prefetch(url);
     }
+    WidgetsBinding.instance.addObserver(this);
+    _engagement.start();
+    _scroll.addListener(_noteVisibleSections);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _noteVisibleSections());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _engagement.resume();
+    } else {
+      _engagement.pause();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _scroll.dispose();
+    final payload = _engagement.finish();
+    if (payload != null) {
+      final reporter =
+          widget.engagementReporter ?? ProfileEngagementReporter.resolve();
+      unawaited(reporter.report(payload));
+    }
+    super.dispose();
+  }
+
+  /// A section counts as seen once any of it is on screen.
+  void _noteVisibleSections() {
+    if (!mounted) return;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    bool onScreen(GlobalKey key) {
+      final box = key.currentContext?.findRenderObject();
+      if (box is! RenderBox || !box.attached) return false;
+      final top = box.localToGlobal(Offset.zero).dy;
+      return top < screenHeight && top + box.size.height > 0;
+    }
+
+    if (onScreen(_musicSectionKey)) _engagement.spotifySectionSeen();
+    if (onScreen(_whySectionKey)) _engagement.whyThisPersonSeen();
   }
 
   @override
@@ -82,10 +139,14 @@ class _DiscoveryProfileDetailsPageState
                 AppSpacing.md,
                 0,
               ),
-              child: _DiscoveryPhotoCarousel(photos: candidate.photos),
+              child: _DiscoveryPhotoCarousel(
+                photos: candidate.photos,
+                onPhotoViewed: _engagement.photoViewed,
+              ),
             ),
             Expanded(
               child: ListView(
+                controller: _scroll,
                 padding: const EdgeInsets.all(AppSpacing.md),
                 children: [
                   Text(
@@ -146,8 +207,11 @@ class _DiscoveryProfileDetailsPageState
                   // selection and left it visible.
                   if (candidate.publicMusic.hasContent) ...[
                     const SizedBox(height: AppSpacing.md),
-                    PublicMusicTasteSection(
-                      profile: candidate.publicMusic,
+                    KeyedSubtree(
+                      key: _musicSectionKey,
+                      child: PublicMusicTasteSection(
+                        profile: candidate.publicMusic,
+                      ),
                     ),
                   ],
                   if (candidate.interests.isNotEmpty) ...[
@@ -167,6 +231,7 @@ class _DiscoveryProfileDetailsPageState
                   const SizedBox(height: AppSpacing.lg),
                   Text(
                     l10n.whyYoureSeeingThis,
+                    key: _whySectionKey,
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -272,9 +337,10 @@ class _DiscoveryProfileDetailsPageState
 /// Isolated carousel so photo index updates do not rebuild the details list
 /// (match watchers / answer streams).
 class _DiscoveryPhotoCarousel extends StatefulWidget {
-  const _DiscoveryPhotoCarousel({required this.photos});
+  const _DiscoveryPhotoCarousel({required this.photos, this.onPhotoViewed});
 
   final List<String> photos;
+  final ValueChanged<int>? onPhotoViewed;
 
   @override
   State<_DiscoveryPhotoCarousel> createState() =>
@@ -312,6 +378,7 @@ class _DiscoveryPhotoCarouselState extends State<_DiscoveryPhotoCarousel> {
       // Ignore.
     }
     // #endregion
+    widget.onPhotoViewed?.call(index);
     setState(() => _photoIndex = index);
     final photos = widget.photos;
     final dpr = MediaQuery.devicePixelRatioOf(context);

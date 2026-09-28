@@ -922,6 +922,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get discoveryPreferences => 'Keşif tercihleri';
 
   @override
+  String get settingsPersonalizeRecommendations =>
+      'Önerilerimi etkileşimlerime göre kişiselleştir';
+
+  @override
+  String get settingsPersonalizeRecommendationsSubtitle =>
+      'Beğeniler, eşleşmeler ve konuşma etkinliği gibi sinyalleri kullanarak önerilerini zamanla sana göre ayarlarız. Mesajlarının içeriğini analiz etmeyiz.';
+
+  @override
   String get minAge => 'En düşük yaş';
 
   @override

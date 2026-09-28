@@ -20,6 +20,8 @@ import {
 import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
 import {enforceMessageRateLimit} from "./messageRateLimit.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
+import {SIGNAL_STRENGTHS} from "./personalization/config.js";
+import {recordLearningEventSafely} from "./personalization/store.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -292,6 +294,7 @@ export const unmatchUser = onCall(socialCallable, async (request) => {
     throw new HttpsError("permission-denied", "not-matched");
   }
   const userIds = (snap.data()?.userIds as string[]) ?? [];
+  const wasActive = snap.data()?.isActive !== false;
   await ref.update({
     isActive: false,
     unmatchedBy: uid,
@@ -305,6 +308,14 @@ export const unmatchUser = onCall(socialCallable, async (request) => {
     userIds,
   });
   await endActiveCallsForMatch(matchId);
+  // Only the person who ended it learns from it. Blocks and reports never do:
+  // they are safety events, not preferences.
+  const otherUid = userIds.find((id) => id !== uid);
+  if (wasActive && otherUid) {
+    await recordLearningEventSafely(db, {
+      actorUid: uid, otherUid, type: "unmatch", key: matchId, strength: SIGNAL_STRENGTHS.unmatch,
+    });
+  }
   return {ok: true};
 });
 

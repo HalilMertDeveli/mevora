@@ -696,6 +696,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     music,
     verification,
     questionAnswers,
+    personalization,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -716,6 +717,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     db.doc(`users/${uid}/music/summary`).get(),
     db.doc(`users/${uid}/verification/identity`).get(),
     db.collection(`users/${uid}/questionAnswers`).limit(100).get(),
+    db.doc(`users/${uid}/personalization/profile`).get(),
   ]);
 
   // Never include exact GPS, Spotify secrets, private keys, or message ciphertext bodies.
@@ -735,6 +737,9 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     settings: settings.data() ?? null,
     privacy: privacy.data() ?? null,
     notificationSettings: notifSettings.data() ?? null,
+    // Learned recommendation weights: per-dimension adjustments and evidence
+    // totals only. They contain no other member's data.
+    recommendationPersonalization: personalization.data() ?? null,
     location: loc
       ? {
         present: true,

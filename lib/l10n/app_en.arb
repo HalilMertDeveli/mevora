@@ -367,6 +367,8 @@
   "communityGuidelines": "Community Guidelines",
   "blockedUsers": "Blocked users",
   "discoveryPreferences": "Discovery preferences",
+  "settingsPersonalizeRecommendations": "Personalize my recommendations based on my interactions",
+  "settingsPersonalizeRecommendationsSubtitle": "We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.",
   "minAge": "Minimum age",
   "maxAge": "Maximum age",
   "maxDistance": "Maximum distance",

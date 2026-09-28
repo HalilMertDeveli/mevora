@@ -6,12 +6,15 @@ import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
+import 'package:mevora/core/errors/failure.dart';
+import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 import 'package:mevora/features/humor/domain/services/humor_profile_display.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 
 /// What the user gets for finishing calibration.
@@ -32,6 +35,10 @@ class HumorCalibrationResultPage extends StatefulWidget {
 class _HumorCalibrationResultPageState
     extends State<HumorCalibrationResultPage> {
   UserHumorProfile? _profile;
+  Failure? _failure;
+
+  /// No humor backend is wired in at all — nothing to retry, only a way on.
+  var _unavailable = false;
   var _requested = false;
 
   @override
@@ -41,13 +48,22 @@ class _HumorCalibrationResultPageState
       return;
     }
     _requested = true;
+    if (HumorScope.maybeOf(context) == null) {
+      // Not an endless spinner: say so and offer the way on.
+      _unavailable = true;
+      return;
+    }
     unawaited(_load());
   }
 
   Future<void> _load() async {
     final repository = HumorScope.maybeOf(context);
     if (repository == null) {
+      setState(() => _unavailable = true);
       return;
+    }
+    if (_failure != null) {
+      setState(() => _failure = null);
     }
     // Detailed: the result screen is the one place the owner sees their own
     // dimensions. It is still only ever their own.
@@ -55,7 +71,13 @@ class _HumorCalibrationResultPageState
     if (!mounted) {
       return;
     }
-    setState(() => _profile = result.valueOrNull ?? UserHumorProfile.empty);
+    final profile = result.valueOrNull;
+    if (profile == null) {
+      // Never dress a failed load up as a finished, empty profile.
+      setState(() => _failure = result.failureOrNull);
+      return;
+    }
+    setState(() => _profile = profile);
     final analytics = BoostScope.maybeOf(context)?.analytics;
     unawaited(
       analytics?.logEvent(
@@ -71,9 +93,15 @@ class _HumorCalibrationResultPageState
       onDone();
       return;
     }
-    if (context.mounted) {
-      context.go(AppRoutes.discovery);
+    if (!context.mounted) {
+      return;
     }
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      unawaited(Navigator.of(context).maybePop());
+      return;
+    }
+    router.go(AppRoutes.discovery);
   }
 
   @override
@@ -82,10 +110,44 @@ class _HumorCalibrationResultPageState
     final theme = Theme.of(context);
     final profile = _profile;
 
+    if (_unavailable) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.humorProfileTitle)),
+        body: MevoraErrorView(onRetry: _done, retryLabel: l10n.humorResultDone),
+      );
+    }
+
+    final failure = _failure;
+    if (failure != null) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.humorProfileTitle)),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: MevoraErrorView(
+                  message: L10nErrors.failure(l10n, failure),
+                  onRetry: () => unawaited(_load()),
+                  retryLabel: l10n.humorTryAgain,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.screenPadding),
+                child: TextButton(
+                  onPressed: _done,
+                  child: Text(l10n.humorResultDone),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (profile == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(l10n.humorResultTitle)),
-        body: MevoraLoading.page(message: l10n.humorResultTitle),
+        appBar: AppBar(title: Text(l10n.humorProfileTitle)),
+        body: MevoraLoading.page(message: l10n.humorProfileTitle),
       );
     }
 
@@ -179,11 +241,15 @@ class _VibeBar extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-            child: LinearProgressIndicator(
-              value: (vibe.value / 100).clamp(0.0, 1.0),
-              minHeight: 8,
+          // The bar is decoration; its own semantics would read the raw
+          // 0-100 value aloud. The strength word above is the announcement.
+          ExcludeSemantics(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              child: LinearProgressIndicator(
+                value: (vibe.value / 100).clamp(0.0, 1.0),
+                minHeight: 8,
+              ),
             ),
           ),
         ],

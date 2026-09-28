@@ -1,27 +1,36 @@
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
-import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
 import {isHumorCategory} from "./categories.js";
 import {giphyApiKey} from "./humorApiConfig.js";
-import {humorScoreForPair} from "./compatibility.js";
 import {
-  INTERNAL_HUMOR_SEED,
+  humorScoreForPair,
+  isHumorCalibrationReady,
+  isValidMatchId,
+  unavailableHumorCompatibility,
+} from "./compatibility.js";
+import {
   upsertHumorContentDoc,
   type UpsertHumorContentInput,
 } from "./contentRepository.js";
 import {buildHumorFeed, loadUserHumorProfile} from "./feed.js";
 import {
   getHumorProfileView,
-  isValidHumorRating,
+  parseSubmitHumorFeedbackInput,
   submitHumorFeedbackTx,
 } from "./feedback.js";
-import {classifyHumorSafety, emptySafetyFlags} from "./moderation.js";
+import {isHumorSafetyStatus} from "./moderation.js";
 import {applyHumorAiTagging} from "./aiTagging.js";
+import {
+  applyHumorModerationDecision,
+  parseHumorContentId,
+  submitHumorReport,
+} from "./reports.js";
 import {safeLogMeta} from "../security/logHygiene.js";
-import type {HumorContentType, HumorSafetyStatus} from "./types.js";
+import type {HumorContentType} from "./types.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -54,9 +63,18 @@ export const getHumorFeed = onCall(callableOptions, async (request) => {
     const feed = await buildHumorFeed({
       db,
       uid,
-      languages: Array.isArray(data.languages) ? data.languages.map(String) : undefined,
+      // Bounded before any work: ≤ 5 language codes of ≤ 8 characters, and a
+      // cursor no longer than a real one can be. Oversized input degrades to
+      // the defaults instead of costing CPU.
+      languages: Array.isArray(data.languages)
+        ? data.languages
+            .slice(0, 5)
+            .map(String)
+            .filter((l) => l.length > 0 && l.length <= 8)
+        : undefined,
       limit: typeof data.limit === "number" ? data.limit : undefined,
-      cursor: typeof data.cursor === "string" ? data.cursor : null,
+      cursor:
+        typeof data.cursor === "string" && data.cursor.length <= 512 ? data.cursor : null,
     });
     return feed;
   } catch (error) {
@@ -67,29 +85,14 @@ export const getHumorFeed = onCall(callableOptions, async (request) => {
 
 export const submitHumorFeedback = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
-  const data = (request.data ?? {}) as Record<string, unknown>;
-  const contentId = String(data.contentId ?? "").trim();
-  if (!contentId || contentId.length > 128) {
-    throw new HttpsError("invalid-argument", "contentId");
-  }
-  if (!isValidHumorRating(data.rating)) {
-    throw new HttpsError("invalid-argument", "rating");
+  // `rating` may be omitted only for a skip; `saved` is forwarded only when it
+  // is an explicit boolean; `gestureHints` is reduced to two booleans.
+  const parsed = parseSubmitHumorFeedbackInput(request.data);
+  if (!parsed.ok) {
+    throw new HttpsError("invalid-argument", parsed.field);
   }
   try {
-    return await submitHumorFeedbackTx({
-      db,
-      uid,
-      contentId,
-      rating: data.rating,
-      dwellMs: typeof data.dwellMs === "number" ? data.dwellMs : 0,
-      replayCount: typeof data.replayCount === "number" ? data.replayCount : 0,
-      skipped: data.skipped === true,
-      saved: data.saved === true,
-      gestureHints:
-        data.gestureHints && typeof data.gestureHints === "object"
-          ? (data.gestureHints as {swipeUp?: boolean; swipeDown?: boolean})
-          : null,
-    });
+    return await submitHumorFeedbackTx({db, uid, ...parsed.value});
   } catch (error) {
     const message = String(error);
     if (message.includes("content-unavailable")) {
@@ -110,75 +113,63 @@ export const getHumorProfile = onCall(callableOptions, async (request) => {
 /**
  * Match humor compatibility. MVP: available as standalone callable.
  * Does NOT feed Discover / calculateCompatibility.
+ *
+ * Payload is exactly {available, score, strongestShared, reason}. Available
+ * only when both members finished their initial calibration and both profiles
+ * carry signal.
  */
 export const getMatchHumorCompatibility = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
-  const matchId = String(request.data?.matchId ?? "").trim();
-  if (!matchId) {
+  const rawMatchId = request.data?.matchId;
+  const matchId = typeof rawMatchId === "string" ? rawMatchId.trim() : "";
+  // A `/` would let the lookup resolve to a nested document a participant can
+  // write (e.g. matches/{m}/messages/{x}) and forge `userIds` on.
+  if (!isValidMatchId(matchId)) {
     throw new HttpsError("invalid-argument", "matchId");
   }
-  const matchSnap = await db.doc(`matches/${matchId}`).get();
+  const matchSnap = await db.collection("matches").doc(matchId).get();
   if (!matchSnap.exists) {
     throw new HttpsError("not-found", "match");
   }
-  const userIds = (matchSnap.data()?.userIds ?? []) as string[];
-  if (!userIds.includes(uid) || matchSnap.data()?.isActive === false) {
+  const match = matchSnap.data() ?? {};
+  const userIds: unknown[] = Array.isArray(match.userIds) ? match.userIds : [];
+  if (!userIds.includes(uid) || match.isActive !== true) {
     throw new HttpsError("permission-denied", "match");
   }
   const otherUid = userIds.find((id) => id !== uid);
-  if (!otherUid) {
-    return {available: false, score: null, reason: "invalid-match"};
+  if (
+    userIds.length !== 2 ||
+    typeof otherUid !== "string" ||
+    !otherUid ||
+    otherUid.includes("/")
+  ) {
+    return unavailableHumorCompatibility("invalid-match");
   }
-  const [a, b] = await Promise.all([
+  const [profileA, profileB, calibrationA, calibrationB] = await Promise.all([
     loadUserHumorProfile(db, uid),
     loadUserHumorProfile(db, otherUid),
+    db.doc(`users/${uid}/humor/calibration`).get(),
+    db.doc(`users/${otherUid}/humor/calibration`).get(),
   ]);
-  return humorScoreForPair(a, b);
+  return humorScoreForPair(profileA, profileB, {
+    readyA: isHumorCalibrationReady(calibrationA.data(), profileA),
+    readyB: isHumorCalibrationReady(calibrationB.data(), profileB),
+  });
 });
 
 export const reportHumorContent = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const data = (request.data ?? {}) as Record<string, unknown>;
-  const contentId = String(data.contentId ?? "").trim();
-  if (!contentId) {
-    throw new HttpsError("invalid-argument", "contentId");
-  }
-  const reason = String(data.reason ?? "other").slice(0, 64);
-  const details = String(data.details ?? "").slice(0, 500);
-  const reportId = `${uid}_${contentId}`;
-  await db.doc(`humorReports/${reportId}`).set(
-    {
-      reportId,
-      reporterId: uid,
-      contentId,
-      reason,
-      details,
-      status: "open",
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    {merge: true},
-  );
-  await db.doc(`humorModerationQueue/${contentId}`).set(
-    {
-      contentId,
-      status: "needs_review",
-      source: "user_report",
-      lastReporterId: uid,
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    {merge: true},
-  );
-  return {ok: true};
+  return submitHumorReport(db, uid, data);
 });
 
 export const upsertHumorContent = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
   const data = (request.data ?? {}) as Record<string, unknown>;
-  const contentId = String(data.contentId ?? "").trim();
-  if (!contentId) {
-    throw new HttpsError("invalid-argument", "contentId");
+  const contentId = parseHumorContentId(data.contentId);
+  if (data.safetyStatus != null && !isHumorSafetyStatus(data.safetyStatus)) {
+    throw new HttpsError("invalid-argument", "safetyStatus");
   }
   const category = String(data.category ?? "");
   if (!isHumorCategory(category)) {
@@ -204,10 +195,9 @@ export const upsertHumorContent = onCall(callableOptions, async (request) => {
     humorVector: tagged.humorVector,
     media: (data.media as UpsertHumorContentInput["media"]) ?? {},
     safetyFlags: tagged.safetyFlags,
-    safetyStatus:
-      typeof data.safetyStatus === "string"
-        ? (data.safetyStatus as HumorSafetyStatus)
-        : tagged.safetyStatus,
+    safetyStatus: isHumorSafetyStatus(data.safetyStatus)
+      ? data.safetyStatus
+      : tagged.safetyStatus,
     active: data.active === true,
     sourceType: data.sourceType === "licensed_api" ? "licensed_api" : "internal",
     provider: typeof data.provider === "string" ? data.provider : undefined,
@@ -256,62 +246,55 @@ export const runHumorModeration = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
   const data = (request.data ?? {}) as Record<string, unknown>;
-  const contentId = String(data.contentId ?? "").trim();
-  if (!contentId) {
-    throw new HttpsError("invalid-argument", "contentId");
-  }
-  const ref = db.doc(`humorContent/${contentId}`);
-  const snap = await ref.get();
-  if (!snap.exists) {
-    throw new HttpsError("not-found", "content");
-  }
-  const classified = classifyHumorSafety(
-    emptySafetyFlags(
-      (data.safetyFlags as Parameters<typeof emptySafetyFlags>[0]) ??
-        snap.data()?.safetyFlags,
-    ),
-  );
-  const safetyStatus = (data.forceStatus as HumorSafetyStatus | undefined) ?? classified.status;
-  const active =
-    safetyStatus === "approved" && snap.data()?.active !== false
-      ? safetyStatus === "approved"
-      : safetyStatus === "approved";
-  await ref.set(
-    {
-      safetyFlags: classified.flags,
-      safetyStatus,
-      active: safetyStatus === "approved" ? active : false,
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    {merge: true},
-  );
-  await db.doc(`humorModerationQueue/${contentId}`).set(
-    {
-      contentId,
-      status: safetyStatus,
-      updatedAt: FieldValue.serverTimestamp(),
-      moderatedBy: uid,
-    },
-    {merge: true},
-  );
-  return {ok: true, contentId, safetyStatus, active: safetyStatus === "approved"};
+  return applyHumorModerationDecision(db, uid, data);
 });
 
-/** Admin-only: seed internal repository (no scraping). */
+/**
+ * Admin-only: seed the active curated calibration catalogue (no scraping) and
+ * retire the documents it replaced. Same code path as the emulator seeder.
+ */
 export const seedInternalHumorContent = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
-  let count = 0;
-  for (const item of INTERNAL_HUMOR_SEED) {
-    await upsertHumorContentDoc(db, {
-      ...item,
-      safetyStatus: "approved",
-      active: true,
-    });
-    count += 1;
-  }
-  return {ok: true, seeded: count};
+  const {seedCalibrationCatalog} = await import("./calibrationCatalog.js");
+  const result = await seedCalibrationCatalog(db);
+  return {ok: true, seeded: result.written, retired: result.retired, catalog: result.kind};
 });
+
+/**
+ * Admin-only, EMULATOR-ONLY curator tool: search GIPHY and return candidate
+ * items (own title, credit, rating, renditions with sizes, still, relevance
+ * verdict) for a human to pick the curated catalogue from. Writes nothing.
+ *
+ * Inert when deployed: it refuses before reading auth or input unless it runs
+ * inside the Functions emulator. The emulator is also where the GIPHY key
+ * lives for development (functions/.secret.local); the key never leaves this
+ * process — results carry media URLs only, errors a status code only.
+ */
+export const searchHumorProviderCandidates = onCall(
+  {...callableOptions, secrets: [giphyApiKey]},
+  async (request) => {
+    if (process.env.FUNCTIONS_EMULATOR !== "true") {
+      throw new HttpsError("failed-precondition", "emulator-only");
+    }
+    const uid = requireUid(request);
+    await requireAdmin(uid);
+    const {parseProviderCandidateSearchInput, searchProviderCandidates} = await import(
+      "./providerCandidates.js"
+    );
+    const parsed = parseProviderCandidateSearchInput(request.data);
+    if (!parsed.ok) {
+      throw new HttpsError("invalid-argument", parsed.field);
+    }
+    const {GiphyHumorSource} = await import("./giphySource.js");
+    const source = GiphyHumorSource.tryCreate({rating: parsed.value.rating});
+    if (!source) {
+      return {ok: false, configured: false};
+    }
+    const result = await searchProviderCandidates(source, parsed.value);
+    return {ok: true, configured: true, ...result};
+  },
+);
 
 /**
  * Admin: pull licensed Giphy content (lang=tr preferred) into humorContent.
@@ -331,7 +314,7 @@ export const syncHumorFromProvider = onCall(
   async (request) => {
     const uid = requireUid(request);
     await requireAdmin(uid);
-    const data = (request.data ?? {}) as {language?: string; limit?: number};
+    const data = (request.data ?? {}) as {language?: unknown; limit?: unknown; clips?: unknown};
     const {syncHumorFromGiphy} = await import("./ingest.js");
     const {isGiphyConfigured} = await import("./humorApiConfig.js");
     if (!isGiphyConfigured()) {
@@ -341,11 +324,14 @@ export const syncHumorFromProvider = onCall(
         message: "Set GIPHY_API_KEY (firebase functions:secrets:set GIPHY_API_KEY).",
       };
     }
+    // Clips needs GIPHY approval: opt in per call or with GIPHY_CLIPS_ENABLED.
+    // Without access the source falls back to GIF search on its own.
     const result = await syncHumorFromGiphy({
       db,
-      language: data.language ?? "tr",
+      language: typeof data.language === "string" ? data.language : "tr",
       limit: typeof data.limit === "number" ? data.limit : 24,
       probe: true,
+      clipsEnabled: data.clips === true || process.env.GIPHY_CLIPS_ENABLED === "true",
     });
     return {ok: true, ...result};
   },

@@ -3,9 +3,21 @@ import 'package:mevora/core/data/firestore_codec.dart';
 /// Hard limits on what a dating profile may show. The backend enforces the
 /// same numbers; these exist so the picker can disable a fourth tap instead of
 /// letting the member make a selection the server will reject.
-const int maxPublicMusicArtists = 3;
-const int maxPublicMusicTracks = 3;
-const int maxPublicMusicGenres = 3;
+/// Ten, not three: three was too little to describe anyone. The selection pool
+/// is unchanged, so this is a wider choice from the same imported data. They
+/// are ceilings, never targets — publishing one artist is a fine answer.
+const int maxPublicMusicArtists = 10;
+const int maxPublicMusicTracks = 10;
+
+/// Genres describe the member's general taste, not just their chosen artists.
+/// Mirrors MAX_PUBLIC_GENRES in functions/src/spotifyMusicProfile.ts.
+const int maxPublicMusicGenres = 5;
+
+/// The general-taste summary names the few artists the member keeps returning
+/// to. It stays short whatever the publishing limit is: it reads as a
+/// sentence, not a list. Mirrors MAX_SIGNATURE_ARTISTS in
+/// functions/src/musicTasteAnalysis.ts.
+const int maxSignatureArtists = 3;
 
 /// An artist the member chose to show. Every field is resolved server-side
 /// from their own Spotify import — the client never supplies metadata.
@@ -89,6 +101,7 @@ class PublicMusicProfile {
     this.artists = const [],
     this.tracks = const [],
     this.genres = const [],
+    this.taste = PublicMusicTaste.none,
   });
 
   final bool enabled;
@@ -96,12 +109,21 @@ class PublicMusicProfile {
   final List<PublicMusicTrack> tracks;
   final List<String> genres;
 
+  /// What this member generally listens to, derived on the server from months
+  /// of listening rather than from the last few days.
+  final PublicMusicTaste taste;
+
   static const hidden = PublicMusicProfile();
 
   /// True when there is something worth rendering. A profile with the section
   /// enabled but nothing selected must not draw an empty card.
   bool get hasContent =>
       enabled && (artists.isNotEmpty || tracks.isNotEmpty);
+
+  /// True when the member has picked something, whether or not it is currently
+  /// on show. Visibility asks this, not [hasContent] — a hidden card still has
+  /// a selection to turn back on.
+  bool get hasSelection => artists.isNotEmpty || tracks.isNotEmpty;
 
   List<String> get artistIds => artists.map((artist) => artist.id).toList();
 
@@ -112,12 +134,14 @@ class PublicMusicProfile {
     List<PublicMusicArtist>? artists,
     List<PublicMusicTrack>? tracks,
     List<String>? genres,
+    PublicMusicTaste? taste,
   }) {
     return PublicMusicProfile(
       enabled: enabled ?? this.enabled,
       artists: artists ?? this.artists,
       tracks: tracks ?? this.tracks,
       genres: genres ?? this.genres,
+      taste: taste ?? this.taste,
     );
   }
 
@@ -151,6 +175,61 @@ class PublicMusicProfile {
       genres: firestoreStringList(
         map['genres'],
       ).take(maxPublicMusicGenres).toList(),
+      taste: PublicMusicTaste.parse(map['taste']),
+    );
+  }
+}
+
+/// A short, factual description of what someone generally listens to.
+///
+/// Every field is a count or a name the backend derived from the member's own
+/// top artists and tracks over months. There is nothing here about the person,
+/// only about the music: no inferred mood, no personality, and nothing from
+/// what they happened to play recently.
+class PublicMusicTaste {
+  const PublicMusicTaste({
+    this.dominantGenre,
+    this.secondaryGenres = const [],
+    this.signatureArtists = const [],
+    this.stableArtistCount = 0,
+    this.artistBreadth = 0,
+  });
+
+  final String? dominantGenre;
+  final List<String> secondaryGenres;
+
+  /// Artists that keep recurring across time windows.
+  final List<String> signatureArtists;
+
+  /// How many artists appear in both the medium- and long-term windows.
+  final int stableArtistCount;
+
+  /// How many distinct artists the summary was drawn from.
+  final int artistBreadth;
+
+  static const none = PublicMusicTaste();
+
+  /// True when there is at least one thing worth saying.
+  bool get hasContent =>
+      (dominantGenre != null && dominantGenre!.isNotEmpty) ||
+      signatureArtists.isNotEmpty;
+
+  static PublicMusicTaste parse(Object? raw) {
+    if (raw is! Map) {
+      return none;
+    }
+    final map = Map<String, dynamic>.from(raw);
+    final dominant = _nonEmpty(map['dominantGenre']);
+    return PublicMusicTaste(
+      dominantGenre: dominant,
+      secondaryGenres: firestoreStringList(map['secondaryGenres'])
+          .take(2)
+          .toList(),
+      signatureArtists: firestoreStringList(map['signatureArtists'])
+          .take(maxSignatureArtists)
+          .toList(),
+      stableArtistCount: firestoreInt(map['stableArtistCount'], 0),
+      artistBreadth: firestoreInt(map['artistBreadth'], 0),
     );
   }
 }

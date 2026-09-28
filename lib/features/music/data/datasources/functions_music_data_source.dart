@@ -157,12 +157,49 @@ class FunctionsMusicDataSource implements MusicDataSource {
       topTracks: _parseTracks(data['topTracks']),
       topArtists: _parseArtists(data['topArtists']),
       recentlyPlayed: _parseTracks(data['recentlyPlayed']),
+      followedArtists: _parseArtists(data['followedArtists']),
+      // A connection made before the capped lists existed has none stored, so
+      // fall back to the head of the full ones and the Music Profile still
+      // renders rather than showing empty sections.
+      profileTopArtists: data['profileTopArtists'] != null
+          ? _parseArtists(data['profileTopArtists'])
+          : _parseArtists(data['topArtists']).take(profileTopItemLimit).toList(),
+      profileTopTracks: data['profileTopTracks'] != null
+          ? _parseTracks(data['profileTopTracks'])
+          : _parseTracks(data['topTracks']).take(profileTopItemLimit).toList(),
+      playlists: _parsePlaylists(data['playlists']),
+      followScopeGranted: data['followScopeGranted'] == true,
       genres: _parseGenres(data['musicProfile'] ?? data['genres']),
       taste: _parseTaste(data['musicProfile'] is Map ? data['musicProfile'] : data),
       publicProfile: PublicMusicProfile.parse(data['publicMusic']),
       lastSyncedAt: firestoreDate(data['lastSyncedAt']),
       connectedAt: firestoreDate(data['connectedAt']),
     );
+  }
+
+  List<MusicPlaylist> _parsePlaylists(Object? raw) {
+    if (raw is! List) {
+      return const [];
+    }
+    final playlists = <MusicPlaylist>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final map = Map<String, dynamic>.from(item);
+      final id = map['id'] as String?;
+      final name = map['name'] as String?;
+      if (id == null || id.isEmpty || name == null || name.isEmpty) {
+        continue;
+      }
+      playlists.add(
+        MusicPlaylist(
+          id: id,
+          name: name,
+          trackCount: firestoreInt(map['trackCount'], 0),
+        ),
+      );
+      if (playlists.length >= followedArtistLimit) break;
+    }
+    return playlists;
   }
 
   MusicTasteSnapshot _parseTaste(Object? raw) {

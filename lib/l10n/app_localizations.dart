@@ -6389,7 +6389,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorLabSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Watch short clips and memes, then rate how funny they are.'**
+  /// **'Tell us how funny each joke, clip or meme is.'**
   String get humorLabSubtitle;
 
   /// No description provided for @humorLabDiscoverCta.
@@ -6467,7 +6467,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorUndoRating.
   ///
   /// In en, this message translates to:
-  /// **'Undo rating'**
+  /// **'Previous item'**
   String get humorUndoRating;
 
   /// No description provided for @humorCompatibilityTitle.
@@ -6479,7 +6479,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorChatStarter.
   ///
   /// In en, this message translates to:
-  /// **'Something that made me laugh…'**
+  /// **'Seems our humor lines up — what made you laugh today?'**
   String get humorChatStarter;
 
   /// No description provided for @humorTopVibes.
@@ -6487,12 +6487,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Top vibes'**
   String get humorTopVibes;
-
-  /// No description provided for @humorSaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved'**
-  String get humorSaved;
 
   /// No description provided for @humorReport.
   ///
@@ -6803,7 +6797,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorCalibrationIntroBody.
   ///
   /// In en, this message translates to:
-  /// **'React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.'**
+  /// **'React to a few short pieces. We will learn what makes you laugh, shape Humor Lab around you and show you the humor you share with your matches.'**
   String get humorCalibrationIntroBody;
 
   /// No description provided for @humorCalibrationIntroMeta.
@@ -7087,6 +7081,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Renews automatically. Cancel anytime in the store.'**
   String get premiumRenewsLabel;
+
+  /// No description provided for @humorChatStarterSarcasm.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we both enjoy a bit of irony — what made you laugh today?'**
+  String get humorChatStarterSarcasm;
+
+  /// No description provided for @humorChatStarterAbsurd.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems we both love absurd humor — what\'s the most absurd thing you\'ve seen lately?'**
+  String get humorChatStarterAbsurd;
+
+  /// No description provided for @humorChatStarterSilly.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we both laugh at silly stuff — what cracked you up last?'**
+  String get humorChatStarterSilly;
+
+  /// No description provided for @humorChatStarterRomantic.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems romantic humor works on both of us — what\'s your favorite rom-com?'**
+  String get humorChatStarterRomantic;
+
+  /// No description provided for @humorChatStarterDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we\'re both into dark humor — what\'s the last joke that got you?'**
+  String get humorChatStarterDark;
+
+  /// No description provided for @humorChatStarterMeme.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we\'re both meme people — what\'s your favorite meme right now?'**
+  String get humorChatStarterMeme;
+
+  /// No description provided for @humorChatStarterDry.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems we both like dry humor — what\'s the best deadpan line you know?'**
+  String get humorChatStarterDry;
+
+  /// No description provided for @humorChatStarterWordplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like we both love wordplay — got a favorite pun?'**
+  String get humorChatStarterWordplay;
+
+  /// No description provided for @humorChatStarterSituational.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems everyday mishaps make us both laugh — what\'s the funniest thing that happened to you lately?'**
+  String get humorChatStarterSituational;
+
+  /// No description provided for @humorChatStarterCringe.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like cringe content gets us both — what\'s the most cringe thing you\'ve seen lately?'**
+  String get humorChatStarterCringe;
+
+  /// No description provided for @humorChatStarterTeasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Seems we both enjoy a bit of playful teasing — should I start, or will you?'**
+  String get humorChatStarterTeasing;
+
+  /// No description provided for @humorCompatibilityLevelHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor match is high'**
+  String get humorCompatibilityLevelHigh;
+
+  /// No description provided for @humorCompatibilityLevelMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor match is moderate'**
+  String get humorCompatibilityLevelMedium;
+
+  /// No description provided for @humorCompatibilityLevelLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor match is low'**
+  String get humorCompatibilityLevelLow;
+
+  /// No description provided for @humorCompatibilityBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll both need to finish your humor profiles to see your humor match.'**
+  String get humorCompatibilityBuilding;
+
+  /// No description provided for @humorCompatibilitySharedStyles.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor styles you share'**
+  String get humorCompatibilitySharedStyles;
+
+  /// No description provided for @humorCompatibilityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A light signal from how you each reacted to humor content — not a verdict on the two of you.'**
+  String get humorCompatibilityNote;
+
+  /// No description provided for @humorSkipContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get humorSkipContent;
+
+  /// No description provided for @humorMediaUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This content can\'t be shown right now.'**
+  String get humorMediaUnavailable;
+
+  /// No description provided for @humorVideoLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Video couldn\'t load'**
+  String get humorVideoLoadFailed;
+
+  /// No description provided for @humorMediaNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get humorMediaNext;
+
+  /// No description provided for @humorAttributionVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified creator'**
+  String get humorAttributionVerified;
+
+  /// No description provided for @musicTasteGeneralHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Generally listens to'**
+  String get musicTasteGeneralHeading;
+
+  /// No description provided for @musicTasteDominant.
+  ///
+  /// In en, this message translates to:
+  /// **'Mostly around {genres}.'**
+  String musicTasteDominant(String genres);
+
+  /// No description provided for @musicTasteSignature.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps coming back to {artists}.'**
+  String musicTasteSignature(String artists);
+
+  /// No description provided for @musicTasteStable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} artists that have stayed with them for months.'**
+  String musicTasteStable(int count);
+
+  /// No description provided for @musicFollowedArtistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Artists you follow'**
+  String get musicFollowedArtistsTitle;
+
+  /// No description provided for @musicTopArtistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top artists'**
+  String get musicTopArtistsTitle;
+
+  /// No description provided for @musicTopTracksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your top tracks'**
+  String get musicTopTracksTitle;
+
+  /// No description provided for @musicPlaylistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your playlists'**
+  String get musicPlaylistsTitle;
+
+  /// No description provided for @musicFollowedArtistsReconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect Spotify to show the artists you follow.'**
+  String get musicFollowedArtistsReconnect;
+
+  /// No description provided for @musicPlaylistTrackCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tracks'**
+  String musicPlaylistTrackCount(int count);
+
+  /// No description provided for @musicSectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet.'**
+  String get musicSectionEmpty;
 }
 
 class _AppLocalizationsDelegate

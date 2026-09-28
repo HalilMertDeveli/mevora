@@ -52,7 +52,10 @@ _Harness _serviceWithPending({
   String state = 'state-1',
   Map<String, dynamic> response = const <String, dynamic>{},
   Object? error,
+  DateTime? expiresAt,
+  DateTime Function()? now,
 }) {
+  final clock = now ?? DateTime.now;
   final store = MemorySpotifyPendingStore();
   unawaited(
     store.save(
@@ -61,6 +64,8 @@ _Harness _serviceWithPending({
         verifier: 'verifier-on-device',
         linkToCurrentUser: purpose == SpotifyOAuthPurpose.musicLink,
         purpose: purpose,
+        expiresAt:
+            expiresAt ?? clock().toUtc().add(SpotifyAuthService.oauthTimeout),
       ),
     ),
   );
@@ -70,6 +75,7 @@ _Harness _serviceWithPending({
     callbackLinks: links.stream,
     exchange: exchange.call,
     pendingStore: store,
+    now: clock,
     launch: (uri, {mode = LaunchMode.platformDefault}) async => true,
   );
   return (service: service, exchange: exchange, store: store);
@@ -113,7 +119,8 @@ void main() {
     );
     expect(
       SpotifyAuthService.musicScopes,
-      'user-top-read user-read-recently-played playlist-read-private',
+      'user-top-read user-read-recently-played playlist-read-private '
+          'user-follow-read',
     );
     expect(SpotifyAuthService.musicScopes.contains('streaming'), isFalse);
     expect(SpotifyAuthService.loginScopes.contains('streaming'), isFalse);
@@ -122,16 +129,30 @@ void main() {
   test('pending PKCE store round-trips without a client secret', () async {
     final store = MemorySpotifyPendingStore();
     await store.save(
-      const SpotifyPendingAuth(
+      SpotifyPendingAuth(
         state: 'state-1',
         verifier: 'verifier-on-device',
         linkToCurrentUser: false,
+        expiresAt: DateTime.utc(2026, 1, 1, 0, 5),
       ),
     );
     final pending = await store.read();
     expect(pending?.verifier, 'verifier-on-device');
     await store.clear();
     expect(await store.read(), isNull);
+  });
+
+  test('a stored authorization expires with the caller that started it', () {
+    final pending = SpotifyPendingAuth(
+      state: 'state-1',
+      verifier: 'verifier-on-device',
+      linkToCurrentUser: false,
+      expiresAt: DateTime.utc(2026, 1, 1, 0, 5),
+    );
+    expect(pending.hasExpired(DateTime.utc(2026, 1, 1, 0, 4, 59)), isFalse);
+    // The expiry instant itself is already too late.
+    expect(pending.hasExpired(DateTime.utc(2026, 1, 1, 0, 5)), isTrue);
+    expect(pending.hasExpired(DateTime.utc(2026, 1, 1, 0, 6)), isTrue);
   });
 
   group('OAuth scopes stay least-privilege', () {
@@ -196,6 +217,69 @@ void main() {
       final harness = _serviceWithPending(
         links: links,
         purpose: SpotifyOAuthPurpose.musicLink,
+      );
+      addTearDown(harness.service.dispose);
+
+      links.add(Uri.parse('mevora://auth/spotify?code=code-1&state=state-1'));
+      await _settle();
+
+      expect(harness.exchange.names, ['spotifyLinkMusic']);
+    });
+
+    test('a callback that arrives after the timeout exchanges nothing', () async {
+      final links = StreamController<Uri>();
+      addTearDown(links.close);
+      // The caller gave up five minutes ago; the browser comes back now.
+      final harness = _serviceWithPending(
+        links: links,
+        purpose: SpotifyOAuthPurpose.login,
+        expiresAt: DateTime.utc(2026, 1, 1, 0, 5),
+        now: () => DateTime.utc(2026, 1, 1, 0, 5, 1),
+        response: const {'customToken': 'token', 'alreadyLinked': false},
+      );
+      addTearDown(harness.service.dispose);
+
+      links.add(Uri.parse('mevora://auth/spotify?code=code-1&state=state-1'));
+      await _settle();
+
+      expect(
+        harness.exchange.names,
+        isEmpty,
+        reason: 'a late callback must not sign anyone in behind their back',
+      );
+      expect(
+        await harness.store.read(),
+        isNull,
+        reason: 'the expired verifier and state must not survive the attempt',
+      );
+    });
+
+    test('a late music callback links no account', () async {
+      final links = StreamController<Uri>();
+      addTearDown(links.close);
+      final harness = _serviceWithPending(
+        links: links,
+        purpose: SpotifyOAuthPurpose.musicLink,
+        expiresAt: DateTime.utc(2026, 1, 1, 0, 5),
+        now: () => DateTime.utc(2026, 1, 1, 0, 30),
+      );
+      addTearDown(harness.service.dispose);
+
+      links.add(Uri.parse('mevora://auth/spotify?code=code-1&state=state-1'));
+      await _settle();
+
+      expect(harness.exchange.names, isEmpty);
+      expect(await harness.store.read(), isNull);
+    });
+
+    test('a callback inside the window still exchanges', () async {
+      final links = StreamController<Uri>();
+      addTearDown(links.close);
+      final harness = _serviceWithPending(
+        links: links,
+        purpose: SpotifyOAuthPurpose.musicLink,
+        expiresAt: DateTime.utc(2026, 1, 1, 0, 5),
+        now: () => DateTime.utc(2026, 1, 1, 0, 4, 59),
       );
       addTearDown(harness.service.dispose);
 

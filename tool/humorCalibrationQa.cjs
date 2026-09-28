@@ -1,8 +1,9 @@
 /**
- * Seed the curated humor calibration catalog into a cloud project and verify
- * the calibration engine end to end against it.
+ * Seed the curated humor calibration catalog into a cloud project — or the
+ * local Firestore emulator — and verify the calibration engine end to end
+ * against it.
  *
- * Runs the real server code paths — `upsertHumorContentDoc`, `buildHumorFeed`,
+ * Runs the real server code paths — `seedCalibrationCatalog`, `buildHumorFeed`,
  * `submitHumorFeedbackTx` — against real Firestore. The unit suite proves the
  * policy with an in-memory double and `functions/test/emulator/*` proves it on
  * the emulator; this is the layer that proves the deployed composite indexes,
@@ -12,15 +13,26 @@
  * documents and the verification creates (then deletes) throwaway user state,
  * neither of which belongs in a live database.
  *
- * Usage, from the repo root:
+ * The target is always explicit and printed before any write:
  *
- *   node tool/humorCalibrationQa.cjs --project mevora-d6ed0
- *   node tool/humorCalibrationQa.cjs --project mevora-d6ed0 --verify-only
+ *   Cloud — FIRESTORE_EMULATOR_HOST must be unset:
+ *     node tool/humorCalibrationQa.cjs --project mevora-d6ed0
+ *     node tool/humorCalibrationQa.cjs --project mevora-d6ed0 --verify-only
  *
- * Credentials, in order of preference:
+ *   Emulator — FIRESTORE_EMULATOR_HOST must be a loopback address; no
+ *   credentials are looked up and --project defaults to the .firebaserc
+ *   default (mevora-d6ed0, the project the app's emulator launch uses):
+ *     $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
+ *     node tool/humorCalibrationQa.cjs --emulator [--verify-only]
+ *
+ *   To only seed the emulator catalogue, without the verification's scratch
+ *   users, use tool/seedEmulatorHumorCatalog.cjs instead.
+ *
+ * Cloud credentials, in order of preference:
  *   1. GOOGLE_APPLICATION_CREDENTIALS / application default credentials
  *   2. `gcloud auth print-access-token` (picked up automatically)
  */
+const fs = require("node:fs");
 const path = require("node:path");
 const {execSync} = require("node:child_process");
 const {createRequire} = require("node:module");
@@ -33,11 +45,50 @@ const fromFunctions = createRequire(path.join(FUNCTIONS_DIR, "package.json"));
 // --------------------------------------------------------------------------
 
 const argv = process.argv.slice(2);
-const projectId = argv[argv.indexOf("--project") + 1];
 const verifyOnly = argv.includes("--verify-only");
+const emulatorMode = argv.includes("--emulator");
+const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
+const LOOPBACK_HOST = /^(?:127(?:\.\d{1,3}){3}|localhost|\[::1\]):\d{1,5}$/i;
+
+/** The emulator talks to whatever project the suite was started with. */
+function firebasercDefault() {
+  try {
+    const rc = JSON.parse(fs.readFileSync(path.join(__dirname, "..", ".firebaserc"), "utf8"));
+    return rc.projects && rc.projects.default;
+  } catch (_) {
+    return undefined;
+  }
+}
+
+const projectId = argv.includes("--project")
+  ? argv[argv.indexOf("--project") + 1]
+  : emulatorMode
+    ? firebasercDefault()
+    : undefined;
 
 if (!projectId || projectId.startsWith("--")) {
-  console.error("usage: node tool/humorCalibrationQa.cjs --project <projectId> [--verify-only]");
+  console.error(
+    "usage: node tool/humorCalibrationQa.cjs --project <projectId> [--verify-only]\n" +
+      "       node tool/humorCalibrationQa.cjs --emulator [--project <projectId>] [--verify-only]",
+  );
+  process.exit(2);
+}
+
+// The Firestore client silently follows FIRESTORE_EMULATOR_HOST, so the
+// variable alone must never decide where 36 documents land.
+if (emulatorMode) {
+  if (!emulatorHost || !LOOPBACK_HOST.test(emulatorHost)) {
+    console.error(
+      "--emulator needs FIRESTORE_EMULATOR_HOST on a loopback address " +
+        `(e.g. 127.0.0.1:8080); got "${emulatorHost ?? ""}"`,
+    );
+    process.exit(2);
+  }
+} else if (emulatorHost) {
+  console.error(
+    `FIRESTORE_EMULATOR_HOST is set ("${emulatorHost}"). Pass --emulator to ` +
+      "target that emulator, or unset it to target the cloud project.",
+  );
   process.exit(2);
 }
 
@@ -93,6 +144,11 @@ function openFirestore() {
     "@google-cloud/firestore",
     "npm --prefix functions ci",
   );
+  if (emulatorMode) {
+    // The client reads FIRESTORE_EMULATOR_HOST itself and sends no real
+    // credentials to it, so there is nothing to look up.
+    return new Firestore({projectId});
+  }
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     return new Firestore({projectId});
   }
@@ -121,9 +177,9 @@ const db = openFirestore();
 
 const {
   INTERNAL_HUMOR_SEED,
-  upsertHumorContentDoc,
   listCalibrationPool,
 } = requireCompiled("lib/humor/contentRepository.js");
+const {seedCalibrationCatalog} = requireCompiled("lib/humor/calibrationCatalog.js");
 const {
   ANCHOR_SLOTS,
   CALIBRATION_TOTAL,
@@ -171,18 +227,19 @@ async function wipeAll() {
 // --------------------------------------------------------------------------
 
 (async () => {
-  console.log(`project: ${projectId}${verifyOnly ? " (verify only)" : ""}\n`);
+  const target = emulatorMode
+    ? `Firestore EMULATOR at ${emulatorHost}`
+    : "CLOUD Firestore";
+  console.log(
+    `target: ${target} · project: ${projectId}${verifyOnly ? " (verify only)" : ""}\n`,
+  );
 
   if (!verifyOnly) {
     await step("seed the curated calibration catalog", async () => {
-      for (const item of INTERNAL_HUMOR_SEED) {
-        await upsertHumorContentDoc(db, {
-          ...item,
-          safetyStatus: "approved",
-          active: true,
-        });
-      }
-      return `${INTERNAL_HUMOR_SEED.length} curated documents upserted`;
+      // Same path as the seedInternalHumorContent callable: writes the active
+      // catalogue and retires what it replaced (the old text cards).
+      const seeded = await seedCalibrationCatalog(db);
+      return `${seeded.written} curated documents upserted (${seeded.kind}), ${seeded.retired} retired`;
     });
   }
 
@@ -213,15 +270,22 @@ async function wipeAll() {
     const feed = await buildHumorFeed({db, uid: UID, languages: ["tr", "en"], limit: 15});
     assert(!feed.calibration.complete, "fresh user already complete");
     assert(feed.calibration.insufficientPool === false, "pool reported insufficient");
-    assert(
-      feed.items.length === CALIBRATION_TOTAL,
-      `got ${feed.items.length} items, expected ${CALIBRATION_TOTAL}`,
-    );
     const stages = feed.items.map((i) => i.calibrationStage);
     const count = (s) => stages.filter((x) => x === s).length;
-    assert(count("anchor") === 6, `anchor=${count("anchor")}`);
-    assert(count("adaptive") === 6, `adaptive=${count("adaptive")}`);
-    assert(count("exploration") === 3, `exploration=${count("exploration")}`);
+    // A page is either the whole 6/6/3 run or, where pages are bounded to the
+    // current stage, only the six anchors.
+    const stageBounded = feed.items.length === ANCHOR_SLOTS.length;
+    if (stageBounded) {
+      assert(count("anchor") === 6, `stage-bounded page has anchor=${count("anchor")}`);
+    } else {
+      assert(
+        feed.items.length === CALIBRATION_TOTAL,
+        `got ${feed.items.length} items, expected ${CALIBRATION_TOTAL}`,
+      );
+      assert(count("anchor") === 6, `anchor=${count("anchor")}`);
+      assert(count("adaptive") === 6, `adaptive=${count("adaptive")}`);
+      assert(count("exploration") === 3, `exploration=${count("exploration")}`);
+    }
     const ids = feed.items.map((i) => i.contentId);
     assert(new Set(ids).size === ids.length, "duplicate content in calibration");
     for (const item of feed.items) {
@@ -229,7 +293,9 @@ async function wipeAll() {
       assert(!("calibrationSlot" in item), "feed leaked the anchor slot");
       assert(!("safetyFlags" in item), "feed leaked safetyFlags");
     }
-    return "6 anchor, 6 adaptive, 3 exploration, no duplicates, no leaks";
+    return stageBounded
+      ? "6 anchors (stage-bounded page), no duplicates, no leaks"
+      : "6 anchor, 6 adaptive, 3 exploration, no duplicates, no leaks";
   });
 
   await step("rating all 15 completes calibration", async () => {
@@ -271,8 +337,13 @@ async function wipeAll() {
       resumed.calibration.completedCount === 4,
       `resumed at ${resumed.calibration.completedCount}`,
     );
+    // The whole remaining run, or only the remaining anchors on a
+    // stage-bounded page.
+    const remainingAnchors =
+      resumed.items.length === ANCHOR_SLOTS.length - 4 &&
+      resumed.items.every((i) => i.calibrationStage === "anchor");
     assert(
-      resumed.items.length === CALIBRATION_TOTAL - 4,
+      resumed.items.length === CALIBRATION_TOTAL - 4 || remainingAnchors,
       `got ${resumed.items.length} remaining`,
     );
     const state = await loadUserHumorCalibration(db, uid);

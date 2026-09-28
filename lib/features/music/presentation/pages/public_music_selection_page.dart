@@ -144,7 +144,11 @@ class _PublicMusicSelectionPageState extends State<PublicMusicSelectionPage> {
               MevoraButton(
                 label: l10n.publicMusicSave,
                 isLoading: state.isSaving,
-                onPressed: state.hasSelection ? _save : null,
+                // Publishing nothing is a real choice, and the sheet opened
+                // from the Music tab offers no Skip to fall back on. An empty
+                // selection saves as a hidden card instead of stranding the
+                // member with a dead button.
+                onPressed: state.isSaving ? null : _save,
               ),
             if (widget.onSkip != null) ...[
               const SizedBox(height: AppSpacing.xs),

@@ -35,3 +35,20 @@ class GenreShare {
   final String name;
   final int percent;
 }
+
+/// A Spotify playlist, as the Music Profile shows it.
+///
+/// Only what the screen needs: no track contents, and nothing that would say
+/// what is inside a private playlist. The names stay on the owner's own Music
+/// page and never reach another member's profile.
+class MusicPlaylist {
+  const MusicPlaylist({
+    required this.id,
+    required this.name,
+    this.trackCount = 0,
+  });
+
+  final String id;
+  final String name;
+  final int trackCount;
+}

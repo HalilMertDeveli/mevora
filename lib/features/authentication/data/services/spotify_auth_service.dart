@@ -61,10 +61,12 @@ class SpotifyAuthService {
     SpotifyExchange? exchange,
     Future<bool> Function(Uri uri, {LaunchMode mode})? launch,
     SpotifyPendingStore? pendingStore,
+    DateTime Function()? now,
   }) : _injectedAuth = firebaseAuth,
        _injectedFunctions = functions,
        _injectedExchange = exchange,
        _launch = launch ?? launchUrl,
+       _now = now ?? DateTime.now,
        _pendingStore = pendingStore ?? StaticSpotifyPendingStore() {
     // app_links is the single owner of the OAuth callback. uriLinkStream
     // already delivers the cold-start link, so there is no second
@@ -82,6 +84,7 @@ class SpotifyAuthService {
   final SpotifyExchange? _injectedExchange;
   final Future<bool> Function(Uri uri, {LaunchMode mode}) _launch;
   final SpotifyPendingStore _pendingStore;
+  final DateTime Function() _now;
 
   // Resolved lazily so a test that never reaches Firebase does not have to
   // stand up a Firebase app just to construct the service.
@@ -102,8 +105,20 @@ class SpotifyAuthService {
   static const loginScopes = 'user-read-private';
 
   /// Taste analysis only. No streaming, playback, or playlist modification.
+  ///
+  /// `user-follow-read` is here for the artists a member follows: following is
+  /// a deliberate choice rather than a play count, so it says something the
+  /// top lists cannot. `user-read-recently-played` stays — it no longer
+  /// appears anywhere on a profile, but the private compatibility model still
+  /// reads it.
   static const musicScopes =
-      'user-top-read user-read-recently-played playlist-read-private';
+      'user-top-read user-read-recently-played playlist-read-private '
+      'user-follow-read';
+
+  /// How long a started authorization stays honourable. The caller gives up
+  /// after this, and the persisted record expires with it so a callback that
+  /// arrives later cannot be exchanged behind the user's back.
+  static const oauthTimeout = Duration(minutes: 5);
 
   Future<AuthSession> signIn({required bool linkToCurrentUser}) async {
     final completer = Completer<AuthSession>();
@@ -115,7 +130,7 @@ class SpotifyAuthService {
     );
     try {
       return await completer.future.timeout(
-        const Duration(minutes: 5),
+        oauthTimeout,
         onTimeout: () {
           throw const AuthException(
             AuthMessages.cancelled,
@@ -127,6 +142,7 @@ class SpotifyAuthService {
     } finally {
       if (_pending?.loginCompleter == completer) {
         _pending = null;
+        await _pendingStore.clear();
       }
     }
   }
@@ -148,7 +164,7 @@ class SpotifyAuthService {
     );
     try {
       return await completer.future.timeout(
-        const Duration(minutes: 5),
+        oauthTimeout,
         onTimeout: () {
           throw const AuthException(
             AuthMessages.cancelled,
@@ -160,6 +176,7 @@ class SpotifyAuthService {
     } finally {
       if (_pending?.musicCompleter == completer) {
         _pending = null;
+        await _pendingStore.clear();
       }
     }
   }
@@ -175,6 +192,20 @@ class SpotifyAuthService {
       throw const AuthException(
         AuthMessages.notConfigured,
         kind: AuthErrorKind.notConfigured,
+      );
+    }
+
+    // Starting a second authorization abandons the first. Fail its waiter now
+    // rather than leaving it to hang until its own timeout.
+    final superseded = _pending;
+    if (superseded != null && superseded.isOpen) {
+      await _failPending(
+        superseded,
+        const AuthException(
+          AuthMessages.cancelled,
+          kind: AuthErrorKind.cancelled,
+          isCancelled: true,
+        ),
       );
     }
 
@@ -195,6 +226,7 @@ class SpotifyAuthService {
         verifier: pkce.verifier,
         linkToCurrentUser: linkToCurrentUser,
         purpose: purpose,
+        expiresAt: _now().toUtc().add(oauthTimeout),
       ),
     );
 
@@ -302,6 +334,13 @@ class SpotifyAuthService {
     }
     final stored = await _pendingStore.read();
     if (stored == null) {
+      return null;
+    }
+    // A record whose caller has already given up must not be revived: the
+    // exchange would sign the user in, or link their account, with nothing
+    // on screen to say so.
+    if (stored.hasExpired(_now())) {
+      await _pendingStore.clear();
       return null;
     }
     return _PendingSpotifyAuth(

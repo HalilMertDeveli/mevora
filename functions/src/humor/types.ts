@@ -57,6 +57,40 @@ export type HumorSource = {
 };
 
 /**
+ * How much we trust where an item came from.
+ *
+ * - `curated`: Mevora-authored (the internal seed, admin upserts).
+ * - `verified_provider`: licensed provider item from a verified account or a
+ *   known entertainment studio/network (see `providerRelevance.ts`).
+ * - `provider`: any other licensed provider item that passed the filters.
+ * - `qa_fixture`: test/QA-only fixtures; never produced by a seeder or callable.
+ */
+export type HumorSourceTrust = "curated" | "verified_provider" | "provider" | "qa_fixture";
+
+export const HUMOR_SOURCE_TRUST_TIERS: readonly HumorSourceTrust[] = [
+  "curated",
+  "verified_provider",
+  "provider",
+  "qa_fixture",
+] as const;
+
+/**
+ * Who made a provider item — contract K1. `null` for Mevora-authored content.
+ * Every field is the provider's own data; nothing here is invented.
+ */
+export type HumorAttribution = {
+  provider: string;
+  displayName: string | null;
+  username: string | null;
+  /** The provider's page for this item (https, allowed host) or null. */
+  sourceUrl: string | null;
+  verified: boolean;
+};
+
+/** Why a card was skipped — contract K3. */
+export type HumorSkipReason = "user" | "media_failed";
+
+/**
  * Calibration curation for a content item.
  *
  * Defaults are deliberately closed: content that says nothing about
@@ -90,6 +124,10 @@ export type HumorContentDoc = {
   safetyStatus: HumorSafetyStatus;
   safetyFlags: HumorSafetyFlags;
   source: HumorSource;
+  /** Absent on documents written before trust tiers existed; parsed to a default. */
+  sourceTrust?: HumorSourceTrust;
+  /** Provider attribution; always null for internal (Mevora-authored) content. */
+  attribution?: HumorAttribution | null;
   calibration: HumorCalibrationMeta;
   createdAt?: unknown;
   updatedAt?: unknown;
@@ -106,14 +144,30 @@ export type UserHumorProfileDoc = {
   version: number;
 };
 
+/**
+ * `users/{uid}/humorInteractions/{contentId}`. Any document here — rated,
+ * skipped or reported — keeps the item out of the user's feed. Only a valid
+ * `rating` makes it count as rated; a skip or report marker carries none, so a
+ * later real rating is still that item's first.
+ */
 export type HumorInteractionDoc = {
   contentId: string;
-  rating: HumorRating;
-  dwellMs: number;
-  replayCount: number;
+  rating: HumorRating | null;
+  /**
+   * Per-dimension change this rating applied to the profile vector, so a
+   * changed rating can replace its contribution instead of stacking on it.
+   */
+  appliedDelta?: Partial<Record<HumorCategory, number>>;
+  dwellMs?: number;
+  replayCount?: number;
   skipped: boolean;
-  saved: boolean;
-  gestureHints?: {swipeUp?: boolean; swipeDown?: boolean} | null;
+  /** On a skip marker only: "user" (swiped past) or "media_failed" (did not play). */
+  skipReason?: HumorSkipReason;
+  /** Written only when the client explicitly sends it. */
+  saved?: boolean;
+  /** Set by `reportHumorContent`. */
+  reported?: boolean;
+  gestureHints?: {swipeUp: boolean; swipeDown: boolean} | null;
   createdAt?: unknown;
   updatedAt?: unknown;
 };
@@ -132,6 +186,11 @@ export type HumorFeedItem = {
   category: HumorCategory;
   humorTags: string[];
   media: HumorMedia;
+  /**
+   * Contract K1: who made this item, for on-card credit. `null` for
+   * Mevora-authored (curated) content.
+   */
+  attribution: HumorAttribution | null;
   calibrationStage?: HumorCalibrationStage | null;
 };
 
@@ -156,9 +215,12 @@ export type UserHumorCalibrationDoc = {
   /** Humor dimensions measured so far; drives adaptive + exploration picks. */
   coveredDimensions: string[];
   /**
-   * Positions that had to be filled with ordinary feed content because the
-   * curated pool was short. Calibration still completes — a dead calibration
-   * state would be worse — but the degradation is recorded rather than hidden.
+   * Positions filled below the designed measurement quality: uncurated
+   * content (adaptive/exploration, or an anchor position once the curated
+   * pool is exhausted for this user), or an anchor position that measured no
+   * new slot. Calibration still completes — a dead calibration state would be
+   * worse — but the degradation is recorded, and surfaced as the view's
+   * `degraded` flag, rather than hidden.
    */
   degradedCount: number;
   startedAt?: unknown;
@@ -166,13 +228,20 @@ export type UserHumorCalibrationDoc = {
   updatedAt?: unknown;
 };
 
+export type HumorCompatibilityUnavailableReason =
+  | "building"
+  | "no-signal"
+  | "invalid-match";
+
+/**
+ * `getMatchHumorCompatibility` payload — exactly these four keys. It never
+ * carries the peer's vector values, confidence or interaction count.
+ */
 export type HumorCompatibilityResult = {
   available: boolean;
   score: number | null;
   strongestShared: HumorCategory[];
-  differences: Array<{dim: HumorCategory; a: number; b: number}>;
-  confidence: number;
-  reason?: string;
+  reason: HumorCompatibilityUnavailableReason | null;
 };
 
 export const HUMOR_PROFILE_VERSION = 1;

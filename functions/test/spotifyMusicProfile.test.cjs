@@ -8,10 +8,14 @@ const {
   MAX_PUBLIC_GENRES,
   MAX_PUBLIC_TRACKS,
   normalizeSelectionIds,
+  profileFromSelection,
   PublicMusicValidationError,
+  publishedCardFor,
+  readPublicMusicSelection,
   reconcilePublicMusicProfile,
   selectableArtists,
   selectableTracks,
+  selectionFromProfile,
   toPublicMusicCard,
 } = require("../lib/spotifyMusicProfile.js");
 const {disconnectPlan} = require("../lib/spotifyMusic.js");
@@ -307,11 +311,19 @@ describe("public card projection", () => {
   });
 
   it("enforces the display limits even on a tampered stored document", () => {
+    // Sized off the limits themselves, so this keeps testing the clamp if the
+    // product settles on a different number again.
     const card = toPublicMusicCard({
       enabled: true,
-      artists: Array.from({length: 9}, (_, i) => ({id: `x${i}`, name: `X${i}`})),
-      tracks: Array.from({length: 9}, (_, i) => ({id: `y${i}`, name: `Y${i}`})),
-      genres: ["g1", "g2", "g3", "g4", "g5", "g6"],
+      artists: Array.from({length: MAX_PUBLIC_ARTISTS + 4}, (_, i) => ({
+        id: `x${i}`,
+        name: `X${i}`,
+      })),
+      tracks: Array.from({length: MAX_PUBLIC_TRACKS + 4}, (_, i) => ({
+        id: `y${i}`,
+        name: `Y${i}`,
+      })),
+      genres: Array.from({length: MAX_PUBLIC_GENRES + 3}, (_, i) => `g${i}`),
     });
     assert.equal(card.artists.length, MAX_PUBLIC_ARTISTS);
     assert.equal(card.tracks.length, MAX_PUBLIC_TRACKS);
@@ -463,5 +475,208 @@ describe("disconnect clears the public card", () => {
       "users/uid-a/music/summary",
       "musicSpotifyIndex/legacy-id",
     ]);
+  });
+});
+
+describe("a hidden card leaves nothing on the profile document", () => {
+  const built = buildPublicMusicProfile({
+    enabled: false,
+    artistIds: ["a1", "a2"],
+    trackIds: ["t1"],
+    summary: summary(),
+  });
+
+  it("keeps the member's picks in the value the owner is handed", () => {
+    assert.equal(built.enabled, false);
+    assert.deepEqual(built.artists.map((a) => a.id), ["a1", "a2"]);
+    assert.deepEqual(built.tracks.map((t) => t.id), ["t1"]);
+  });
+
+  it("publishes an empty card, so no viewer can read the hidden picks", () => {
+    // profiles/{uid} is readable by every signed-in member, so "hidden" has to
+    // mean absent, not merely flagged off.
+    const published = publishedCardFor(built);
+    // taste is deliberately present and null rather than omitted: the profile
+    // document is written with merge, and a merge on a nested map keeps keys
+    // the new value leaves out, so omitting it would leave the last visible
+    // summary readable on a hidden card.
+    assert.deepEqual(published, {...emptyPublicMusicProfile(), taste: null});
+    assert.equal(published.taste, null);
+    assert.equal(published.artists.length, 0);
+    assert.equal(published.tracks.length, 0);
+  });
+
+  it("publishes the real card once it is visible again", () => {
+    const visible = buildPublicMusicProfile({
+      enabled: true,
+      artistIds: ["a1", "a2"],
+      trackIds: ["t1"],
+      summary: summary(),
+    });
+    assert.deepEqual(publishedCardFor(visible), {...visible, taste: visible.taste ?? null});
+    assert.equal(publishedCardFor(visible).artists.length, 2);
+  });
+});
+
+describe("the private selection survives hiding", () => {
+  it("round-trips the ids the member chose", () => {
+    const built = buildPublicMusicProfile({
+      enabled: false,
+      artistIds: ["a1", "a3"],
+      trackIds: ["t1", "t2"],
+      summary: summary(),
+    });
+    const selection = selectionFromProfile(built, false);
+    assert.deepEqual(selection, {
+      enabled: false,
+      artistIds: ["a1", "a3"],
+      trackIds: ["t1", "t2"],
+    });
+
+    const restored = profileFromSelection(
+      {...selection, enabled: true},
+      summary(),
+    );
+    assert.equal(restored.enabled, true);
+    assert.deepEqual(restored.artists.map((a) => a.id), ["a1", "a3"]);
+    assert.deepEqual(restored.tracks.map((t) => t.id), ["t1", "t2"]);
+  });
+
+  it("reads the stored selection in preference to the published card", () => {
+    const selection = readPublicMusicSelection(
+      {publicSelection: {enabled: true, artistIds: ["a2"], trackIds: []}},
+      {enabled: false, artists: [{id: "a1"}], tracks: []},
+    );
+    assert.deepEqual(selection, {
+      enabled: true,
+      artistIds: ["a2"],
+      trackIds: [],
+    });
+  });
+
+  it("falls back to a card published before the selection moved", () => {
+    // Members who published under the old shape have no private record yet.
+    const selection = readPublicMusicSelection(
+      {spotifyConnected: true},
+      {enabled: true, artists: [{id: "a1"}, {id: "a2"}], tracks: [{id: "t1"}]},
+    );
+    assert.deepEqual(selection, {
+      enabled: true,
+      artistIds: ["a1", "a2"],
+      trackIds: ["t1"],
+    });
+  });
+
+  it("reads an absent record as nothing published", () => {
+    assert.deepEqual(readPublicMusicSelection(undefined, undefined), {
+      enabled: false,
+      artistIds: [],
+      trackIds: [],
+    });
+  });
+
+  it("drops ids the latest import no longer contains, without throwing", () => {
+    const restored = profileFromSelection(
+      {enabled: true, artistIds: ["a1", "gone"], trackIds: ["vanished"]},
+      summary(),
+    );
+    assert.deepEqual(restored.artists.map((a) => a.id), ["a1"]);
+    assert.deepEqual(restored.tracks, []);
+    assert.equal(restored.enabled, true);
+  });
+
+  it("turns the card off when nothing at all survived", () => {
+    const restored = profileFromSelection(
+      {enabled: true, artistIds: ["gone"], trackIds: ["vanished"]},
+      summary(),
+    );
+    assert.deepEqual(restored, emptyPublicMusicProfile());
+  });
+});
+
+describe("the public card describes general taste, not a recent week", () => {
+  const general = {
+    dominantGenre: "alternative",
+    secondaryGenres: ["indie", "r&b"],
+    genres: ["alternative", "indie", "r&b", "pop", "psychedelic"],
+    signatureArtists: [
+      {id: "a1", name: "Arctic Monkeys"},
+      {id: "a2", name: "The Weeknd"},
+    ],
+    stableArtistCount: 2,
+    stableTrackCount: 1,
+    artistBreadth: 9,
+  };
+
+  const built = buildPublicMusicProfile({
+    enabled: true,
+    artistIds: ["a1", "a2"],
+    trackIds: ["t1"],
+    summary: {...summary(), generalTaste: general},
+  });
+
+  it("takes its genres from the general taste, not from three artists", () => {
+    assert.deepEqual(built.genres, general.genres);
+    assert.equal(built.genres.length, 5);
+  });
+
+  it("carries a summary a profile can render", () => {
+    assert.equal(built.taste.dominantGenre, "alternative");
+    assert.deepEqual(built.taste.signatureArtists, [
+      "Arctic Monkeys",
+      "The Weeknd",
+    ]);
+    assert.equal(built.taste.stableArtistCount, 2);
+  });
+
+  it("publishes no ids with the summary", () => {
+    assert.ok(!JSON.stringify(built.taste).includes("a1"));
+  });
+
+  it("falls back to the selection's genres when no sync has run yet", () => {
+    const legacy = buildPublicMusicProfile({
+      enabled: true,
+      artistIds: ["a1", "a2"],
+      trackIds: [],
+      summary: summary(),
+    });
+    assert.ok(legacy.genres.length > 0);
+    assert.equal(legacy.taste, undefined);
+  });
+
+  it("carries nothing at all once the card is hidden", () => {
+    const hidden = buildPublicMusicProfile({
+      enabled: false,
+      artistIds: ["a1"],
+      trackIds: [],
+      summary: {...summary(), generalTaste: general},
+    });
+    assert.deepEqual(hidden.genres, []);
+    assert.equal(hidden.taste, undefined);
+  });
+
+  it("re-projects a tampered stored summary instead of trusting it", () => {
+    const card = toPublicMusicCard({
+      enabled: true,
+      artists: [{id: "a1", name: "Arctic Monkeys"}],
+      tracks: [],
+      genres: ["indie"],
+      taste: {
+        dominantGenre: "indie",
+        signatureArtists: ["Real"],
+        stableArtistCount: 3,
+        playedAt: "2026-09-28T10:00:00Z",
+        secretField: "should not travel",
+      },
+    });
+    assert.deepEqual(Object.keys(card.taste).sort(), [
+      "artistBreadth",
+      "dominantGenre",
+      "secondaryGenres",
+      "signatureArtists",
+      "stableArtistCount",
+    ]);
+    assert.ok(!JSON.stringify(card.taste).includes("secretField"));
+    assert.ok(!JSON.stringify(card.taste).includes("playedAt"));
   });
 });

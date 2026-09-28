@@ -3490,7 +3490,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorLabSubtitle =>
-      'Watch short clips and memes, then rate how funny they are.';
+      'Tell us how funny each joke, clip or meme is.';
 
   @override
   String get humorLabDiscoverCta => 'Open Humor Lab';
@@ -3529,19 +3529,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorTryAgain => 'Try again';
 
   @override
-  String get humorUndoRating => 'Undo rating';
+  String get humorUndoRating => 'Previous item';
 
   @override
   String get humorCompatibilityTitle => 'Humor match';
 
   @override
-  String get humorChatStarter => 'Something that made me laugh…';
+  String get humorChatStarter =>
+      'Seems our humor lines up — what made you laugh today?';
 
   @override
   String get humorTopVibes => 'Top vibes';
-
-  @override
-  String get humorSaved => 'Saved';
 
   @override
   String get humorReport => 'Report';
@@ -3741,7 +3739,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get humorCalibrationIntroBody =>
-      'React to a few short pieces. We will learn what makes you laugh and use it to show you more meaningful people.';
+      'React to a few short pieces. We will learn what makes you laugh, shape Humor Lab around you and show you the humor you share with your matches.';
 
   @override
   String get humorCalibrationIntroMeta => '15 short pieces · about a minute';
@@ -3902,4 +3900,125 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get premiumRenewsLabel =>
       'Renews automatically. Cancel anytime in the store.';
+
+  @override
+  String get humorChatStarterSarcasm =>
+      'Looks like we both enjoy a bit of irony — what made you laugh today?';
+
+  @override
+  String get humorChatStarterAbsurd =>
+      'Seems we both love absurd humor — what\'s the most absurd thing you\'ve seen lately?';
+
+  @override
+  String get humorChatStarterSilly =>
+      'Looks like we both laugh at silly stuff — what cracked you up last?';
+
+  @override
+  String get humorChatStarterRomantic =>
+      'Seems romantic humor works on both of us — what\'s your favorite rom-com?';
+
+  @override
+  String get humorChatStarterDark =>
+      'Looks like we\'re both into dark humor — what\'s the last joke that got you?';
+
+  @override
+  String get humorChatStarterMeme =>
+      'Looks like we\'re both meme people — what\'s your favorite meme right now?';
+
+  @override
+  String get humorChatStarterDry =>
+      'Seems we both like dry humor — what\'s the best deadpan line you know?';
+
+  @override
+  String get humorChatStarterWordplay =>
+      'Looks like we both love wordplay — got a favorite pun?';
+
+  @override
+  String get humorChatStarterSituational =>
+      'Seems everyday mishaps make us both laugh — what\'s the funniest thing that happened to you lately?';
+
+  @override
+  String get humorChatStarterCringe =>
+      'Looks like cringe content gets us both — what\'s the most cringe thing you\'ve seen lately?';
+
+  @override
+  String get humorChatStarterTeasing =>
+      'Seems we both enjoy a bit of playful teasing — should I start, or will you?';
+
+  @override
+  String get humorCompatibilityLevelHigh => 'Your humor match is high';
+
+  @override
+  String get humorCompatibilityLevelMedium => 'Your humor match is moderate';
+
+  @override
+  String get humorCompatibilityLevelLow => 'Your humor match is low';
+
+  @override
+  String get humorCompatibilityBuilding =>
+      'You\'ll both need to finish your humor profiles to see your humor match.';
+
+  @override
+  String get humorCompatibilitySharedStyles => 'Humor styles you share';
+
+  @override
+  String get humorCompatibilityNote =>
+      'A light signal from how you each reacted to humor content — not a verdict on the two of you.';
+
+  @override
+  String get humorSkipContent => 'Skip';
+
+  @override
+  String get humorMediaUnavailable => 'This content can\'t be shown right now.';
+
+  @override
+  String get humorVideoLoadFailed => 'Video couldn\'t load';
+
+  @override
+  String get humorMediaNext => 'Next';
+
+  @override
+  String get humorAttributionVerified => 'Verified creator';
+
+  @override
+  String get musicTasteGeneralHeading => 'Generally listens to';
+
+  @override
+  String musicTasteDominant(String genres) {
+    return 'Mostly around $genres.';
+  }
+
+  @override
+  String musicTasteSignature(String artists) {
+    return 'Keeps coming back to $artists.';
+  }
+
+  @override
+  String musicTasteStable(int count) {
+    return '$count artists that have stayed with them for months.';
+  }
+
+  @override
+  String get musicFollowedArtistsTitle => 'Artists you follow';
+
+  @override
+  String get musicTopArtistsTitle => 'Your top artists';
+
+  @override
+  String get musicTopTracksTitle => 'Your top tracks';
+
+  @override
+  String get musicPlaylistsTitle => 'Your playlists';
+
+  @override
+  String get musicFollowedArtistsReconnect =>
+      'Reconnect Spotify to show the artists you follow.';
+
+  @override
+  String musicPlaylistTrackCount(int count) {
+    return '$count tracks';
+  }
+
+  @override
+  String get musicSectionEmpty => 'Nothing here yet.';
 }

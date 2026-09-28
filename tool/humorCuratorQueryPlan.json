@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "notes": "Query plan for harvesting curated GIPHY candidates (tool/humorCuratorSearch.cjs). One group per humour dimension and language; TV / sitcom / movie reaction queries first. Every query is at most 50 characters. Ratings stay within g / pg / pg-13.",
+  "perQuery": 25,
+  "rating": "pg-13",
+  "groups": [
+    {"dimension": "sarcasm", "lang": "en", "queries": ["sarcastic reaction tv", "oh really sarcastic sitcom", "sarcastic slow clap"]},
+    {"dimension": "sarcasm", "lang": "tr", "queries": ["sarkastik tepki", "ironik bakış dizi", "yok artık tepki"]},
+
+    {"dimension": "absurd", "lang": "en", "queries": ["absurd comedy scene", "surreal funny tv", "what is happening reaction"]},
+    {"dimension": "absurd", "lang": "tr", "queries": ["absürt komedi", "saçma sahne dizi", "ne oluyor tepki"]},
+
+    {"dimension": "situational", "lang": "en", "queries": ["relatable sitcom moment", "when plans fail sitcom", "office life reaction"]},
+    {"dimension": "situational", "lang": "tr", "queries": ["dizi komik sahne", "tam da bu an dizi", "gündelik hayat komik"]},
+
+    {"dimension": "meme", "lang": "en", "queries": ["classic reaction meme", "movie reaction meme", "tv show meme reaction"]},
+    {"dimension": "meme", "lang": "tr", "queries": ["türk meme", "efsane tepki", "dizi meme"]},
+
+    {"dimension": "wordplay", "lang": "en", "queries": ["bad pun reaction", "dad joke reaction tv", "pun intended sitcom"]},
+    {"dimension": "wordplay", "lang": "tr", "queries": ["kelime oyunu espri", "espri tepkisi", "soğuk espri"]},
+
+    {"dimension": "cringe", "lang": "en", "queries": ["cringe reaction tv", "awkward sitcom moment", "secondhand embarrassment"]},
+    {"dimension": "cringe", "lang": "tr", "queries": ["utanç tepki dizi", "rezil oldum", "garip an dizi"]},
+
+    {"dimension": "silly", "lang": "en", "queries": ["goofy comedy scene", "silly dance sitcom", "laughing sitcom"]},
+    {"dimension": "silly", "lang": "tr", "queries": ["komik dans dizi", "kahkaha dizi", "komik tepki"]},
+
+    {"dimension": "dry", "lang": "en", "queries": ["deadpan reaction", "dry humor tv", "unimpressed stare sitcom"]},
+    {"dimension": "dry", "lang": "tr", "queries": ["kuru espri", "ifadesiz bakış dizi", "umursamaz tepki"]},
+
+    {"dimension": "teasing", "lang": "en", "queries": ["teasing friends sitcom", "playful roast tv", "you wish reaction"]},
+    {"dimension": "teasing", "lang": "tr", "queries": ["dalga geçmek dizi", "takılmak komik", "laf sokmak tepki"]},
+
+    {"dimension": "romantic", "lang": "en", "queries": ["flirty wink tv", "romantic comedy scene", "cute flirting sitcom"]},
+    {"dimension": "romantic", "lang": "tr", "queries": ["romantik komedi", "flört komik dizi", "aşk komik sahne"]},
+
+    {"dimension": "dark", "lang": "en", "queries": ["dark humor tv", "this is fine", "everything is fine reaction"]},
+    {"dimension": "dark", "lang": "tr", "queries": ["kara mizah", "her şey yolunda", "kara mizah dizi"]}
+  ]
+}

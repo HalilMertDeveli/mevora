@@ -885,13 +885,14 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    // Humor Lab catalog — clients may read approved/active cards for offline
-    // cache; all writes are Admin SDK / Cloud Functions only.
+    // Humor Lab catalog — admin read only; all writes are Admin SDK / Cloud
+    // Functions only. Clients get cards exclusively through getHumorFeed,
+    // which strips humorVector, safetyFlags and calibration slots. A direct
+    // read would let a user enumerate the anchor pools and each item's vector
+    // and steer their own calibration.
     // Peers never read raw humor vectors.
     match /humorContent/{contentId} {
-      allow read: if isAuthenticated()
-        && resource.data.get('active', false) == true
-        && resource.data.get('safetyStatus', '') == 'approved';
+      allow read: if isAdmin();
       allow create, update, delete: if false;
     }
 

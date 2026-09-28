@@ -256,20 +256,30 @@ class _ConnectedMusicView extends StatelessWidget {
           Text(l10n.musicSameTasteEmpty, style: theme.textTheme.bodyMedium)
         else
           ...profile.genres.map((genre) => _GenreBar(genre: genre)),
-        if (profile.topArtists.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: profile.topArtists
-                .take(6)
-                .map(
-                  (artist) =>
-                      _TasteChip(label: artist.name, image: artist.image),
-                )
-                .toList(),
-          ),
-        ],
+        // The four collections the Music Profile is built from. Each is
+        // already capped by the backend; the screen only lays them out.
+        ..._artistSection(
+          context,
+          title: l10n.musicTopArtistsTitle,
+          artists: profile.profileTopArtists,
+        ),
+        ..._artistSection(
+          context,
+          title: l10n.musicFollowedArtistsTitle,
+          artists: profile.followedArtists,
+          // An older connection has no permission to read follows. Say so
+          // and offer the way out, rather than an empty list that reads as
+          // "you follow nobody".
+          note: profile.canReconnectForFollowedArtists
+              ? l10n.musicFollowedArtistsReconnect
+              : null,
+        ),
+        ..._trackSection(
+          context,
+          title: l10n.musicTopTracksTitle,
+          tracks: profile.profileTopTracks,
+        ),
+        ..._playlistSection(context, playlists: profile.playlists),
         const SizedBox(height: AppSpacing.xl),
         Text(l10n.musicSameTasteTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AppSpacing.sm),
@@ -297,24 +307,114 @@ class _ConnectedMusicView extends StatelessWidget {
               },
             ),
           ),
-        const SizedBox(height: AppSpacing.xl),
-        Text(l10n.musicWeeklyTitle, style: theme.textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.sm),
-        if (state.weekly.isEmpty)
-          Text(l10n.musicWeeklyEmpty, style: theme.textTheme.bodyMedium)
-        else
-          ...state.weekly.tracks.map(
-            (item) => ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: _Cover(url: item.track.albumImage),
-              title: Text(item.track.name),
-              subtitle: Text(item.track.artist),
-              trailing: Text('${item.playCount}'),
-            ),
-          ),
+        // "This week's music" used to close this page. It is a community chart
+        // of the last seven days, and putting it here let a passing week read
+        // as the member's musical identity. What represents them is the
+        // published Music Taste and the general summary above it. The weekly
+        // aggregate stays in the backend for whatever wants a chart, rather
+        // than on the page that describes a person.
       ],
     );
   }
+}
+
+/// One titled row of artist chips, or nothing when there is nothing to show.
+///
+/// A note replaces the list when Mevora cannot read the data yet — an empty
+/// section would otherwise claim the member follows nobody.
+List<Widget> _artistSection(
+  BuildContext context, {
+  required String title,
+  required List<MusicArtist> artists,
+  String? note,
+}) {
+  final theme = Theme.of(context);
+  if (artists.isEmpty && note == null) {
+    return const [];
+  }
+  return [
+    const SizedBox(height: AppSpacing.lg),
+    Text(title, style: theme.textTheme.titleMedium),
+    const SizedBox(height: AppSpacing.sm),
+    if (artists.isEmpty)
+      Text(
+        note!,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      )
+    else ...[
+      Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: artists
+            .map((artist) => _TasteChip(label: artist.name, image: artist.image))
+            .toList(),
+      ),
+      if (note != null) ...[
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          note,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    ],
+  ];
+}
+
+/// One titled row of track chips, each labelled with its artist.
+List<Widget> _trackSection(
+  BuildContext context, {
+  required String title,
+  required List<MusicTrack> tracks,
+}) {
+  final theme = Theme.of(context);
+  if (tracks.isEmpty) {
+    return const [];
+  }
+  return [
+    const SizedBox(height: AppSpacing.lg),
+    Text(title, style: theme.textTheme.titleMedium),
+    const SizedBox(height: AppSpacing.sm),
+    ...tracks.map(
+      (track) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: _Cover(url: track.albumImage),
+        title: Text(track.name),
+        subtitle: track.artist.isEmpty ? null : Text(track.artist),
+      ),
+    ),
+  ];
+}
+
+/// The member's own playlists. Names stay on this screen: they are the
+/// owner's, and nothing here reaches another member's profile.
+List<Widget> _playlistSection(
+  BuildContext context, {
+  required List<MusicPlaylist> playlists,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final theme = Theme.of(context);
+  if (playlists.isEmpty) {
+    return const [];
+  }
+  return [
+    const SizedBox(height: AppSpacing.lg),
+    Text(l10n.musicPlaylistsTitle, style: theme.textTheme.titleMedium),
+    const SizedBox(height: AppSpacing.sm),
+    ...playlists.map(
+      (playlist) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.queue_music_outlined),
+        title: Text(playlist.name),
+        subtitle: playlist.trackCount > 0
+            ? Text(l10n.musicPlaylistTrackCount(playlist.trackCount))
+            : null,
+      ),
+    ),
+  ];
 }
 
 class _GenreBar extends StatelessWidget {

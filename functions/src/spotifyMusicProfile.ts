@@ -1,6 +1,8 @@
 import {
   type PublicGeneralTaste,
+  publicGeneralTasteHasContent,
   readGeneralMusicTaste,
+  readPublicGeneralTaste,
   toPublicGeneralTaste,
 } from "./musicTasteAnalysis.js";
 
@@ -58,10 +60,10 @@ export type PublicMusicProfile = {
   genres: string[];
   /**
    * The general taste summary, derived on the server from months of listening.
-   * Present only when a sync has produced one; a card published before this
-   * existed simply has none.
+   * Absent on a card built before this existed; explicitly null on a hidden
+   * card, so a merge write clears the last visible one.
    */
-  taste?: PublicGeneralTaste;
+  taste?: PublicGeneralTaste | null;
 };
 
 /** What a member with no public music looks like. Never `undefined`. */
@@ -164,8 +166,13 @@ export function profileFromSelection(
  */
 export function publishedCardFor(
   profile: PublicMusicProfile,
-): PublicMusicProfile {
-  return profile.enabled ? profile : emptyPublicMusicProfile();
+): PublicMusicProfile & {taste: PublicGeneralTaste | null} {
+  const card = profile.enabled ? profile : emptyPublicMusicProfile();
+  // `taste` is always present, never merely absent. The profile document is
+  // written with merge, and a merge on a nested map keeps keys the new value
+  // leaves out — so omitting this would leave the last visible summary
+  // readable on a hidden card.
+  return {...card, taste: card.taste ?? null};
 }
 
 export class PublicMusicValidationError extends Error {
@@ -467,9 +474,11 @@ export function toPublicMusicCard(
       .filter((genre): genre is string => typeof genre === "string")
       .slice(0, MAX_PUBLIC_GENRES),
     // Re-projected rather than passed through, so nothing a tampered stored
-    // document carries can reach a viewer's payload unchecked.
-    ...(data.taste ?
-      {taste: toPublicGeneralTaste(readGeneralMusicTaste(data.taste))} :
+    // document carries can reach a viewer's payload unchecked. Read with the
+    // public reader: the stored card holds the flattened shape, and the
+    // private reader would drop every signature artist on the floor.
+    ...(publicGeneralTasteHasContent(readPublicGeneralTaste(data.taste)) ?
+      {taste: readPublicGeneralTaste(data.taste)} :
       {}),
   };
 }

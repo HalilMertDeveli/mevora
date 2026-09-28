@@ -232,6 +232,60 @@ export function toPublicGeneralTaste(
   };
 }
 
+/**
+ * Reads a summary back in its *published* shape.
+ *
+ * The public projection flattens `signatureArtists` to names, so the private
+ * reader — which expects `{id, name}` — silently drops every one of them. They
+ * are different shapes and need different readers.
+ */
+export function readPublicGeneralTaste(value: unknown): PublicGeneralTaste {
+  const empty: PublicGeneralTaste = {
+    dominantGenre: null,
+    secondaryGenres: [],
+    signatureArtists: [],
+    stableArtistCount: 0,
+    artistBreadth: 0,
+  };
+  if (value === null || typeof value !== "object") {
+    return empty;
+  }
+  const record = value as Record<string, unknown>;
+  const names = (raw: unknown): string[] =>
+    Array.isArray(raw) ?
+      raw.filter(
+        (item): item is string => typeof item === "string" && item.length > 0,
+      ) :
+      [];
+  const count = (raw: unknown): number =>
+    typeof raw === "number" && Number.isFinite(raw) && raw >= 0 ?
+      Math.floor(raw) :
+      0;
+  return {
+    dominantGenre:
+      typeof record.dominantGenre === "string" && record.dominantGenre.length > 0 ?
+        record.dominantGenre :
+        null,
+    secondaryGenres: names(record.secondaryGenres).slice(0, 2),
+    signatureArtists: names(record.signatureArtists).slice(
+      0,
+      MAX_SIGNATURE_ARTISTS,
+    ),
+    stableArtistCount: count(record.stableArtistCount),
+    artistBreadth: count(record.artistBreadth),
+  };
+}
+
+/** True when a published summary has anything worth rendering. */
+export function publicGeneralTasteHasContent(
+  taste: PublicGeneralTaste,
+): boolean {
+  return (
+    (taste.dominantGenre !== null && taste.dominantGenre.length > 0) ||
+    taste.signatureArtists.length > 0
+  );
+}
+
 /** Reads a stored summary back, tolerating anything malformed. */
 export function readGeneralMusicTaste(value: unknown): GeneralMusicTaste {
   if (value === null || typeof value !== "object") {

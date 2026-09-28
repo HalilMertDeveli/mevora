@@ -279,6 +279,38 @@ async function exchangeAuthorizationCode(input: {
   };
 }
 
+/**
+ * Tells a dead grant apart from everything else that can go wrong at the
+ * token endpoint.
+ *
+ * Only `invalid_grant` means this member's refresh token is finished — they
+ * removed Mevora from their Spotify account, or changed their password. The
+ * other 400s (`invalid_client`, `invalid_request`) and a 401 are our own
+ * configuration being wrong, and must never be read as the member revoking
+ * anything: one mistyped client secret would otherwise disconnect everybody.
+ * Anything else is Spotify having a bad day, and the stored grant survives.
+ */
+export function refreshFailureKind(
+  status: number,
+  errorCode: unknown,
+): "revoked" | "misconfigured" | "transient" {
+  if (status === 400 && errorCode === "invalid_grant") {
+    return "revoked";
+  }
+  if (status === 400 || status === 401) {
+    return "misconfigured";
+  }
+  return "transient";
+}
+
+/** A refresh that failed because the member's grant is gone for good. */
+export class SpotifyGrantRevokedError extends Error {
+  constructor() {
+    super("spotify-grant-revoked");
+    this.name = "SpotifyGrantRevokedError";
+  }
+}
+
 async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenSet> {
   const {clientId, clientSecret} = credentials();
   const body = new URLSearchParams({
@@ -295,7 +327,20 @@ async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenSet
     body,
   });
   if (!response.ok) {
-    throw new HttpsError("unauthenticated", "token-expired");
+    let errorCode: unknown = null;
+    try {
+      errorCode = ((await response.json()) as {error?: unknown}).error;
+    } catch {
+      // A body that is not JSON tells us nothing; judge on status alone.
+    }
+    switch (refreshFailureKind(response.status, errorCode)) {
+    case "revoked":
+      throw new SpotifyGrantRevokedError();
+    case "misconfigured":
+      throw new HttpsError("failed-precondition", "not-configured");
+    default:
+      throw new HttpsError("unavailable", "spotify-unavailable");
+    }
   }
   const json = await response.json() as {
     access_token?: string;
@@ -486,7 +531,19 @@ async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
     return tokens;
   }
   const sent = tokens.refreshToken as string;
-  const refreshed = await refreshAccessToken(sent);
+  let refreshed: SpotifyTokenSet;
+  try {
+    refreshed = await refreshAccessToken(sent);
+  } catch (error) {
+    if (error instanceof SpotifyGrantRevokedError) {
+      // The member took Mevora's access away at Spotify. Stop advertising a
+      // connection that no longer exists, rather than serving stale taste
+      // and a phantom "connected" badge for ever.
+      await applyRevokedGrant(uid);
+      throw new HttpsError("failed-precondition", "spotify-revoked");
+    }
+    throw error;
+  }
   const merged = mergeRefreshedTokens(tokens, refreshed);
 
   // The Spotify call stays outside the transaction: a retried transaction
@@ -751,6 +808,37 @@ export function disconnectPlan(
       publicMusic: emptyPublicMusicProfile(),
     },
   };
+}
+
+/**
+ * What a revoked grant leaves behind.
+ *
+ * Unlike a disconnect this is not something the member asked for, so their
+ * imported taste is kept: reconnecting should not cost them their selection.
+ * What must stop is everything that claims the connection still works —
+ * the dead tokens, the `spotifyConnected` flags that make compatibility and
+ * the same-taste query keep scoring from stale data, and the public card.
+ */
+export function revokedGrantPlan(uid: string) {
+  return {
+    deletes: [`spotifySecrets/${uid}`],
+    summaryPath: `users/${uid}/music/summary`,
+    summaryData: {spotifyConnected: false},
+    profilePath: `profiles/${uid}`,
+    profileData: {
+      spotifyConnected: false,
+      publicMusic: emptyPublicMusicProfile(),
+    },
+  };
+}
+
+async function applyRevokedGrant(uid: string): Promise<void> {
+  const plan = revokedGrantPlan(uid);
+  await Promise.all([
+    ...plan.deletes.map((path) => db.doc(path).delete()),
+    db.doc(plan.summaryPath).set(plan.summaryData, {merge: true}),
+    db.doc(plan.profilePath).set(plan.profileData, {merge: true}),
+  ]);
 }
 
 /** Spotify is rate limited and the taste barely moves — throttle re-syncs. */

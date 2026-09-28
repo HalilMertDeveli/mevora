@@ -12,7 +12,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'Mevora';
 
   @override
-  String get tagline => 'Not more people. Better matches for you.';
+  String get tagline =>
+      'Instead of showing you hundreds of people, Mevora tries to pick the ones you might actually click with.';
 
   @override
   String get connectTagline => 'Connect with people who match you.';
@@ -2001,13 +2002,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discoveryChangePreferences => 'Change your preferences';
 
   @override
-  String get itsAMatchHeadline => 'Now you can start talking.';
+  String get itsAMatchHeadline => 'New match';
 
   @override
   String get matchCelebrationLead => 'You chose each other';
 
   @override
-  String get matchCelebrationInsight => 'Here\'s what you have in common.';
+  String get matchCelebrationInsight =>
+      'You can start talking now. Here\'s what you have in common.';
 
   @override
   String get demoProfileBadge => 'Sample';

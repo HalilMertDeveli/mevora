@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
   "appName": "Mevora",
-  "tagline": "Not more people. Better matches for you.",
+  "tagline": "Instead of showing you hundreds of people, Mevora tries to pick the ones you might actually click with.",
   "connectTagline": "Connect with people who match you.",
   "loginSlogan": "Not more people. Better matches for you.",
   "@loginSlogan": {
@@ -864,9 +864,9 @@
   "discoveryLoadErrorTitle": "Couldn't load your picks",
   "discoveryLoadErrorMessage": "Check your connection and try again.",
   "discoveryChangePreferences": "Change your preferences",
-  "itsAMatchHeadline": "Now you can start talking.",
+  "itsAMatchHeadline": "New match",
   "matchCelebrationLead": "You chose each other",
-  "matchCelebrationInsight": "Here's what you have in common.",
+  "matchCelebrationInsight": "You can start talking now. Here's what you have in common.",
   "demoProfileBadge": "Sample",
   "sharedHobbiesCount": "{count} shared interests",
   "@sharedHobbiesCount": {

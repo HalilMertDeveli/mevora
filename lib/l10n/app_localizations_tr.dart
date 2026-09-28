@@ -12,7 +12,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get appName => 'Mevora';
 
   @override
-  String get tagline => 'Daha fazla insan değil. Sana daha uygun insanlar.';
+  String get tagline =>
+      'Mevora sana yüzlerce insan göstermek yerine, gerçekten uyum sağlayabileceğin kişileri seçmeye çalışır.';
 
   @override
   String get connectTagline => 'Sana uyan insanlarla tanış.';
@@ -1998,13 +1999,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get discoveryChangePreferences => 'Tercihlerini değiştir';
 
   @override
-  String get itsAMatchHeadline => 'Artık konuşmaya başlayabilirsiniz.';
+  String get itsAMatchHeadline => 'Yeni eşleşme';
 
   @override
   String get matchCelebrationLead => 'Birbirinizi seçtiniz';
 
   @override
-  String get matchCelebrationInsight => 'İşte sizi yakınlaştıran şeyler.';
+  String get matchCelebrationInsight =>
+      'Artık konuşmaya başlayabilirsiniz. İşte sizi yakınlaştıran şeyler.';
 
   @override
   String get demoProfileBadge => 'Örnek';

@@ -80,7 +80,7 @@ void main() {
       await tester.pump();
       await tester.pump(AppDurations.match);
       expect(find.text('You chose each other'), findsOneWidget);
-      expect(find.text('Now you can start talking.'), findsOneWidget);
+      expect(find.text('New match'), findsOneWidget);
       expect(find.text('Back to your picks'), findsOneWidget);
     },
   );

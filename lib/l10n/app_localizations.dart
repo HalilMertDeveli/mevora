@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @tagline.
   ///
   /// In en, this message translates to:
-  /// **'Not more people. Better matches for you.'**
+  /// **'Instead of showing you hundreds of people, Mevora tries to pick the ones you might actually click with.'**
   String get tagline;
 
   /// No description provided for @connectTagline.
@@ -3767,7 +3767,7 @@ abstract class AppLocalizations {
   /// No description provided for @itsAMatchHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Now you can start talking.'**
+  /// **'New match'**
   String get itsAMatchHeadline;
 
   /// No description provided for @matchCelebrationLead.
@@ -3779,7 +3779,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchCelebrationInsight.
   ///
   /// In en, this message translates to:
-  /// **'Here\'s what you have in common.'**
+  /// **'You can start talking now. Here\'s what you have in common.'**
   String get matchCelebrationInsight;
 
   /// No description provided for @demoProfileBadge.

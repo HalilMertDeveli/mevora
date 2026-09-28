@@ -26,8 +26,10 @@ Only the second one ships.
 | TR | **Daha fazla insan değil. Sana daha uygun insanlar.** |
 | EN | **Not more people. Better matches for you.** |
 
-Use the promise where Mevora introduces itself (splash, sign-in). Do not stack it
-with other slogans on the same screen. Supporting lines, used sparingly:
+Use the promise where Mevora introduces itself: `loginSlogan` is the promise,
+`tagline` is the one supporting sentence under it (sign-in, splash). Never give
+both keys the same text, and do not stack further slogans on the same screen.
+Supporting lines, used sparingly:
 
 - *Daha fazla profile bakman gerekmiyor. Doğru profillere bakman gerekiyor.*
 - *Daha az profil. Daha anlamlı eşleşmeler.*

@@ -1,7 +1,7 @@
 {
   "@@locale": "tr",
   "appName": "Mevora",
-  "tagline": "Daha fazla insan değil. Sana daha uygun insanlar.",
+  "tagline": "Mevora sana yüzlerce insan göstermek yerine, gerçekten uyum sağlayabileceğin kişileri seçmeye çalışır.",
   "connectTagline": "Sana uyan insanlarla tanış.",
   "loginSlogan": "Daha fazla insan değil. Sana daha uygun insanlar.",
   "discoverBestMatchesTitle": "Senin İçin",
@@ -850,9 +850,9 @@
   "discoveryLoadErrorTitle": "Seçimlerin yüklenemedi",
   "discoveryLoadErrorMessage": "Bağlantını kontrol et ve tekrar dene.",
   "discoveryChangePreferences": "Tercihlerini değiştir",
-  "itsAMatchHeadline": "Artık konuşmaya başlayabilirsiniz.",
+  "itsAMatchHeadline": "Yeni eşleşme",
   "matchCelebrationLead": "Birbirinizi seçtiniz",
-  "matchCelebrationInsight": "İşte sizi yakınlaştıran şeyler.",
+  "matchCelebrationInsight": "Artık konuşmaya başlayabilirsiniz. İşte sizi yakınlaştıran şeyler.",
   "demoProfileBadge": "Örnek",
   "sharedHobbiesCount": "{count} ortak ilgi alanı",
   "@sharedHobbiesCount": {

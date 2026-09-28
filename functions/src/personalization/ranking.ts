@@ -13,12 +13,16 @@ import {centredScore, type Adjustments, type DimensionVector} from "./learner.js
  * Ranking side of adaptive personalization. Pure and deterministic.
  *
  * The canonical engine stays the only source of compatibility. Personalization
- * re-weights how far each measured dimension sits from neutral:
+ * re-weights how far each measured dimension sits from neutral, by how much
+ * MORE (or less) that dimension appears to matter than the member's others:
  *
- *   term_d = pointsPerUnit × (adjustment_d − 1) × (score_d − 50) / 50
+ *   relative_d = adjustment_d − mean(adjustments)
+ *   term_d     = pointsPerUnit × relative_d × (score_d − 50) / 50
  *
- * This is dimension-level re-weighting centred on neutral: with every
- * adjustment at 1.00 every term is 0 and ranking is exactly the canonical
+ * This is dimension-level re-weighting followed by normalization: scaling
+ * every adjustment by the same amount changes nothing, exactly as a weighted
+ * average is unchanged when all weights grow together. With every adjustment
+ * equal (1.00 included) every term is 0 and ranking is exactly the canonical
  * order. A dimension that was not measured for both people contributes
  * nothing. Each term and the total are capped, so no single dimension can
  * outweigh the rest of the profile, and the result is a RANKING term only:
@@ -46,14 +50,19 @@ export function personalRankingPoints(
   adjustments: Adjustments,
 ): {points: number; contributions: DimensionContribution[]} {
   const contributions: DimensionContribution[] = [];
+  const adjustmentOf = (dimension: PersonalizationDimension) =>
+    adjustments[dimension] ?? ADJUSTMENT_BOUNDS.neutral;
+  const mean =
+    PERSONALIZATION_DIMENSIONS.reduce((sum, dimension) => sum + adjustmentOf(dimension), 0) /
+    PERSONALIZATION_DIMENSIONS.length;
   let total = 0;
   for (const dimension of PERSONALIZATION_DIMENSIONS) {
     const score = vector[dimension];
     const base = typeof score === "number" && Number.isFinite(score) ? score : null;
-    const adjustment = adjustments[dimension] ?? ADJUSTMENT_BOUNDS.neutral;
+    const adjustment = adjustmentOf(dimension);
     const raw = base === null
       ? 0
-      : RANKING.pointsPerUnit * (adjustment - ADJUSTMENT_BOUNDS.neutral) * centredScore(base);
+      : RANKING.pointsPerUnit * (adjustment - mean) * centredScore(base);
     const points = Math.max(-RANKING.maxDimensionPoints, Math.min(RANKING.maxDimensionPoints, raw));
     total += points;
     contributions.push({dimension, base, adjustment, points: round2(points)});
@@ -76,12 +85,18 @@ export function explainPersonalRanking(
   };
 }
 
-/** True once at least one dimension has moved meaningfully away from neutral. */
+/**
+ * True once the member has a learned pattern: at least one dimension matters
+ * meaningfully more or less than their others. Equal adjustments (1.00 or
+ * not) rank exactly like canonical order, so there is nothing to explore
+ * away from.
+ */
 export function isPersonalizationActive(adjustments: Adjustments): boolean {
-  return PERSONALIZATION_DIMENSIONS.some(
-    (dimension) =>
-      Math.abs((adjustments[dimension] ?? 1) - ADJUSTMENT_BOUNDS.neutral) >= RANKING.activeThreshold,
+  const values = PERSONALIZATION_DIMENSIONS.map(
+    (dimension) => adjustments[dimension] ?? ADJUSTMENT_BOUNDS.neutral,
   );
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return values.some((value) => Math.abs(value - mean) >= RANKING.activeThreshold);
 }
 
 /** How many of `slots` go to exploration. Zero until personalization is active. */

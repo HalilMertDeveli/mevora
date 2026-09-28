@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/compatibility/domain/services/compatibility_score_resolver.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
+import 'package:mevora/features/music/domain/entities/public_music_profile.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 
 void main() {
@@ -259,5 +260,56 @@ void main() {
     expect(resolved.categoryRelationshipScore, greaterThan(0));
     expect(resolved.categoryLifestyleScore, greaterThan(0));
     expect(resolved.compatibilityScore, 87);
+  });
+
+  group('a resolved candidate keeps what the server published', () {
+    const published = PublicMusicProfile(
+      enabled: true,
+      artists: [
+        PublicMusicArtist(id: 'a1', name: 'The Weeknd'),
+        PublicMusicArtist(id: 'a2', name: 'Arctic Monkeys'),
+      ],
+      tracks: [PublicMusicTrack(id: 't1', name: 'Blinding Lights')],
+      genres: ['r&b', 'indie'],
+    );
+
+    test('resolving compatibility does not erase the Music Taste card', () {
+      // Discover copies every candidate to attach its score. The copy used to
+      // drop publicMusic, so a published card never reached the profile page.
+      final resolved = CompatibilityScoreResolver.resolve(
+        viewer: viewer,
+        candidate: candidateFrom(candidateProfile).copyWith(
+          publicMusic: published,
+        ),
+      );
+
+      expect(resolved.publicMusic.hasContent, isTrue);
+      expect(resolved.publicMusic.artists, hasLength(2));
+      expect(resolved.publicMusic.tracks, hasLength(1));
+      expect(resolved.publicMusic.genres, ['r&b', 'indie']);
+    });
+
+    test('copyWith carries the card through an unrelated change', () {
+      final candidate = candidateFrom(candidateProfile).copyWith(
+        publicMusic: published,
+      );
+      final touched = candidate.copyWith(compatibilityScore: 91);
+
+      expect(touched.compatibilityScore, 91);
+      expect(
+        touched.publicMusic.artists.map((a) => a.id),
+        ['a1', 'a2'],
+        reason: 'an unrelated copy must not reset the published selection',
+      );
+    });
+
+    test('a member who published nothing still copies as hidden', () {
+      final resolved = CompatibilityScoreResolver.resolve(
+        viewer: viewer,
+        candidate: candidateFrom(candidateProfile),
+      );
+      expect(resolved.publicMusic.hasContent, isFalse);
+      expect(resolved.publicMusic.enabled, isFalse);
+    });
   });
 }

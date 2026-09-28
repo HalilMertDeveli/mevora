@@ -178,6 +178,7 @@ class DiscoveryCandidate {
     int? categoryQuestionScore,
     int? categoryMusicScore,
     int? categoryCommunicationScore,
+    PublicMusicProfile? publicMusic,
   }) {
     return DiscoveryCandidate(
       uid: uid ?? this.uid,
@@ -237,6 +238,11 @@ class DiscoveryCandidate {
       categoryMusicScore: categoryMusicScore ?? this.categoryMusicScore,
       categoryCommunicationScore:
           categoryCommunicationScore ?? this.categoryCommunicationScore,
+      // Omitting this silently reset every copied candidate to a hidden card,
+      // because the field defaults to hidden. Discover copies each candidate
+      // to attach its compatibility score, so a member's published Music
+      // Taste never survived as far as the profile page.
+      publicMusic: publicMusic ?? this.publicMusic,
     );
   }
 }

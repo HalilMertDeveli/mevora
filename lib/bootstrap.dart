@@ -53,6 +53,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
     environment: environment,
     featureFlags: FeatureFlags(
       humorLabEnabled: resolveHumorLabEnabled(environment),
+      premiumEnabled: resolvePremiumEnabled(environment),
     ),
   );
   final logger = AppLogger(environment: environment);
@@ -129,11 +130,15 @@ Future<void> bootstrap(AppEnvironment environment) async {
   final boostServices = createBoostServices(
     uidSource: FirebaseAuthUidSource(),
     logger: logger,
+    useEmulatorStore: config.useEmulators,
   );
   final verificationServices = createVerificationServices();
   final subscriptionServices = createSubscriptionServices(
     uidSource: uidSource,
     premiumEnabled: config.featureFlags.premiumEnabled,
+    analytics: analytics,
+    logger: logger,
+    useEmulatorStore: config.useEmulators,
   );
   final languageController = LanguageController(
     repository: LanguageRepository(
@@ -181,6 +186,23 @@ Future<void> bootstrap(AppEnvironment environment) async {
 /// - otherwise: ON in debug development builds (manual device QA), OFF elsewhere
 bool resolveHumorLabEnabled(AppEnvironment environment) {
   const forced = String.fromEnvironment('HUMOR_LAB_ENABLED', defaultValue: '');
+  if (forced == 'true') {
+    return true;
+  }
+  if (forced == 'false') {
+    return false;
+  }
+  return environment.isDevelopment && kDebugMode;
+}
+
+/// Premium flag resolution, the same shape as Humor Lab's:
+/// - `--dart-define=PREMIUM_ENABLED=true|false` forces the value
+/// - otherwise: ON in debug development builds (manual device QA), OFF elsewhere
+///
+/// This switches the Premium *surface* on — the paywall and its entry point.
+/// It grants nobody anything: entitlement is still whatever the server wrote.
+bool resolvePremiumEnabled(AppEnvironment environment) {
+  const forced = String.fromEnvironment('PREMIUM_ENABLED', defaultValue: '');
   if (forced == 'true') {
     return true;
   }

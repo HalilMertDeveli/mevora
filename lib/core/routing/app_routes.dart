@@ -7,6 +7,9 @@ abstract final class AppRoutes {
   /// the router redirects it to [login] otherwise, so the path exists but is
   /// not navigable in a production build.
   static const String qaLogin = '/qa-login';
+
+  /// Where Premium is sold.
+  static const String premium = '/premium';
   static const String register = '/register';
   static const String passwordReset = '/password-reset';
   static const String onboarding = '/onboarding';

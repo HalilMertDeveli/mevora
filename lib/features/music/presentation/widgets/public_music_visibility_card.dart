@@ -38,6 +38,9 @@ class PublicMusicVisibilityCard extends StatefulWidget {
 class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
   bool _busy = false;
 
+  /// Why the last visibility change did not stick, if it did not.
+  String? _lastError;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -58,7 +61,11 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
               ),
               Switch(
                 value: published.enabled,
-                onChanged: _busy || !published.hasContent && !published.enabled
+                // A hidden card has no content by definition, so asking
+                // hasContent here left the switch dead exactly where it was
+                // needed. What matters is whether there is a selection to
+                // show at all.
+                onChanged: _busy || !published.hasSelection
                     ? null
                     : (value) => unawaited(_setEnabled(value)),
               ),
@@ -74,12 +81,20 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
           if (published.hasContent) ...[
             const SizedBox(height: AppSpacing.md),
             PublicMusicTasteSection(profile: published),
-          ] else if (published.enabled == false &&
-              published.artists.isNotEmpty) ...[
+          ] else if (published.hasSelection) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
               l10n.publicMusicHiddenNotice,
               style: theme.textTheme.bodySmall,
+            ),
+          ],
+          if (_lastError != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _lastError!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
             ),
           ],
           const SizedBox(height: AppSpacing.md),
@@ -96,9 +111,12 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
   /// Flips visibility without reopening the picker: the published selection is
   /// re-sent unchanged, so the server keeps it and only the flag moves.
   Future<void> _setEnabled(bool enabled) async {
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _lastError = null;
+    });
     final published = widget.profile.publicProfile;
-    await widget.repository.updatePublicMusicProfile(
+    final result = await widget.repository.updatePublicMusicProfile(
       enabled: enabled,
       artistIds: published.artistIds,
       trackIds: published.trackIds,
@@ -106,8 +124,16 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
     if (!mounted) {
       return;
     }
-    setState(() => _busy = false);
-    widget.onChanged?.call();
+    final failure = result.failureOrNull;
+    setState(() {
+      _busy = false;
+      _lastError = failure?.message;
+    });
+    // A failed write must not look like a successful one: the switch snapping
+    // back with no explanation is how the old version behaved.
+    if (failure == null) {
+      widget.onChanged?.call();
+    }
   }
 
   Future<void> _edit(BuildContext context) async {

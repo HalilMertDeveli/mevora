@@ -1,3 +1,4 @@
+import {consumeRateLimit} from "./callableRateLimit.js";
 import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
@@ -29,8 +30,11 @@ import {
   MAX_PUBLIC_ARTISTS,
   MAX_PUBLIC_TRACKS,
   normalizeSelectionIds,
+  profileFromSelection,
   PublicMusicValidationError,
-  reconcilePublicMusicProfile,
+  publishedCardFor,
+  readPublicMusicSelection,
+  selectionFromProfile,
   toPublicMusicCard,
 } from "./spotifyMusicProfile.js";
 
@@ -80,6 +84,19 @@ function requireString(value: unknown, field: string): string {
     throw new HttpsError("invalid-argument", field);
   }
   return value.trim();
+}
+
+/** Firestore document id shape accepted for a match id. No `/`, ever. */
+const MATCH_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+
+function requireMatchId(value: unknown): string {
+  const matchId = typeof value === "string" ? value.trim() : "";
+  // A `/` would let the lookup resolve to a nested document a participant can
+  // write (e.g. matches/{m}/messages/{x}) and forge `userIds` on.
+  if (!MATCH_ID_PATTERN.test(matchId)) {
+    throw new HttpsError("invalid-argument", "matchId");
+  }
+  return matchId;
 }
 
 function credentials(): {clientId: string; clientSecret: string} {
@@ -263,6 +280,38 @@ async function exchangeAuthorizationCode(input: {
   };
 }
 
+/**
+ * Tells a dead grant apart from everything else that can go wrong at the
+ * token endpoint.
+ *
+ * Only `invalid_grant` means this member's refresh token is finished — they
+ * removed Mevora from their Spotify account, or changed their password. The
+ * other 400s (`invalid_client`, `invalid_request`) and a 401 are our own
+ * configuration being wrong, and must never be read as the member revoking
+ * anything: one mistyped client secret would otherwise disconnect everybody.
+ * Anything else is Spotify having a bad day, and the stored grant survives.
+ */
+export function refreshFailureKind(
+  status: number,
+  errorCode: unknown,
+): "revoked" | "misconfigured" | "transient" {
+  if (status === 400 && errorCode === "invalid_grant") {
+    return "revoked";
+  }
+  if (status === 400 || status === 401) {
+    return "misconfigured";
+  }
+  return "transient";
+}
+
+/** A refresh that failed because the member's grant is gone for good. */
+export class SpotifyGrantRevokedError extends Error {
+  constructor() {
+    super("spotify-grant-revoked");
+    this.name = "SpotifyGrantRevokedError";
+  }
+}
+
 async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenSet> {
   const {clientId, clientSecret} = credentials();
   const body = new URLSearchParams({
@@ -279,7 +328,20 @@ async function refreshAccessToken(refreshToken: string): Promise<SpotifyTokenSet
     body,
   });
   if (!response.ok) {
-    throw new HttpsError("unauthenticated", "token-expired");
+    let errorCode: unknown = null;
+    try {
+      errorCode = ((await response.json()) as {error?: unknown}).error;
+    } catch {
+      // A body that is not JSON tells us nothing; judge on status alone.
+    }
+    switch (refreshFailureKind(response.status, errorCode)) {
+    case "revoked":
+      throw new SpotifyGrantRevokedError();
+    case "misconfigured":
+      throw new HttpsError("failed-precondition", "not-configured");
+    default:
+      throw new HttpsError("unavailable", "spotify-unavailable");
+    }
   }
   const json = await response.json() as {
     access_token?: string;
@@ -327,22 +389,63 @@ async function spotifyGet<T>(accessToken: string, path: string): Promise<T> {
   return await response.json() as T;
 }
 
-async function loadSecrets(uid: string): Promise<SpotifyTokenSet | null> {
-  const snap = await db.doc(`spotifySecrets/${uid}`).get();
-  if (!snap.exists) return null;
-  const data = snap.data() ?? {};
-  if (typeof data.accessToken !== "string") return null;
+/**
+ * Maps a stored spotifySecrets document to a token set.
+ *
+ * spotifyAccountId and indexKeys are part of the account's identity, not of
+ * the token grant, and they are read here so a read-modify-write of this
+ * document cannot silently drop them. disconnectMusicAccount builds its
+ * delete plan from indexKeys, so losing it strands ownership records.
+ */
+export function readTokenSet(
+  data: DocumentData | undefined,
+): SpotifyTokenSet | null {
+  const raw = data ?? {};
+  if (typeof raw.accessToken !== "string") return null;
   return {
-    accessToken: data.accessToken,
-    refreshToken: typeof data.refreshToken === "string" ? data.refreshToken : undefined,
-    expiresAt: typeof data.expiresAt === "number" ? data.expiresAt : 0,
-    scope: typeof data.scope === "string" ? data.scope : undefined,
-    spotifyUserId: typeof data.spotifyUserId === "string" ? data.spotifyUserId : undefined,
+    accessToken: raw.accessToken,
+    refreshToken: typeof raw.refreshToken === "string" ? raw.refreshToken : undefined,
+    expiresAt: typeof raw.expiresAt === "number" ? raw.expiresAt : 0,
+    scope: typeof raw.scope === "string" ? raw.scope : undefined,
+    spotifyUserId: typeof raw.spotifyUserId === "string" ? raw.spotifyUserId : undefined,
+    spotifyAccountId:
+      typeof raw.spotifyAccountId === "string" ? raw.spotifyAccountId : undefined,
+    indexKeys: Array.isArray(raw.indexKeys)
+      ? raw.indexKeys.filter((key: unknown): key is string => typeof key === "string")
+      : undefined,
   };
 }
 
-async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> {
-  await db.doc(`spotifySecrets/${uid}`).set({
+/**
+ * Applies a refresh response to the tokens already on file.
+ *
+ * Spotify's refresh grant returns a token pair and nothing about the account,
+ * so the identity fields have to be carried over from the previous set. The
+ * refresh token itself only moves when Spotify rotates it.
+ */
+export function mergeRefreshedTokens(
+  previous: SpotifyTokenSet,
+  refreshed: SpotifyTokenSet,
+): SpotifyTokenSet {
+  return {
+    ...refreshed,
+    refreshToken: refreshed.refreshToken ?? previous.refreshToken,
+    scope: refreshed.scope ?? previous.scope,
+    spotifyUserId: previous.spotifyUserId,
+    spotifyAccountId: previous.spotifyAccountId,
+    indexKeys: previous.indexKeys,
+  };
+}
+
+async function loadSecrets(uid: string): Promise<SpotifyTokenSet | null> {
+  const snap = await db.doc(`spotifySecrets/${uid}`).get();
+  if (!snap.exists) return null;
+  return readTokenSet(snap.data());
+}
+
+/** The stored shape, shared by the plain write and the transactional one. */
+function secretsDocument(tokens: SpotifyTokenSet): DocumentData {
+  return {
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken ?? null,
     expiresAt: tokens.expiresAt,
@@ -351,7 +454,11 @@ async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> 
     spotifyAccountId: tokens.spotifyAccountId ?? null,
     indexKeys: tokens.indexKeys ?? null,
     updatedAt: FieldValue.serverTimestamp(),
-  });
+  };
+}
+
+async function saveSecrets(uid: string, tokens: SpotifyTokenSet): Promise<void> {
+  await db.doc(`spotifySecrets/${uid}`).set(secretsDocument(tokens));
 }
 
 /** Refresh a little before the real expiry so an in-flight call survives. */
@@ -380,6 +487,37 @@ export function planTokenUse(
   return "refresh";
 }
 
+export type RefreshWrite =
+  | {action: "store"; tokens: SpotifyTokenSet}
+  | {action: "keep-stored"; tokens: SpotifyTokenSet}
+  | {action: "abandon"};
+
+/**
+ * Decides what to persist after a refresh, given what the document holds now.
+ *
+ * Concurrency this resolves, all for the same member:
+ *
+ *   - two syncs refresh the same token. Spotify rotates it, so only one of
+ *     them holds a live pair. The one whose token is no longer on file lost
+ *     the race and must use the stored pair instead of overwriting it with a
+ *     superseded one.
+ *   - a disconnect lands mid-refresh and deletes the document. Writing then
+ *     would resurrect tokens for an account the member just unlinked, so the
+ *     refresh is abandoned.
+ */
+export function resolveRefreshWrite(
+  sentRefreshToken: string,
+  current: SpotifyTokenSet | null,
+  merged: SpotifyTokenSet,
+): RefreshWrite {
+  if (!current) {
+    return {action: "abandon"};
+  }
+  if (current.refreshToken && current.refreshToken !== sentRefreshToken) {
+    return {action: "keep-stored", tokens: current};
+  }
+  return {action: "store", tokens: merged};
+}
 async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
   const existing = await loadSecrets(uid);
   const action = planTokenUse(existing);
@@ -393,13 +531,42 @@ async function validAccessToken(uid: string): Promise<SpotifyTokenSet> {
   if (action === "use") {
     return tokens;
   }
-  const refreshed = await refreshAccessToken(tokens.refreshToken as string);
-  const next = {
-    ...refreshed,
-    spotifyUserId: tokens.spotifyUserId,
-  };
-  await saveSecrets(uid, next);
-  return next;
+  const sent = tokens.refreshToken as string;
+  let refreshed: SpotifyTokenSet;
+  try {
+    refreshed = await refreshAccessToken(sent);
+  } catch (error) {
+    if (error instanceof SpotifyGrantRevokedError) {
+      // The member took Mevora's access away at Spotify. Stop advertising a
+      // connection that no longer exists, rather than serving stale taste
+      // and a phantom "connected" badge for ever.
+      await applyRevokedGrant(uid);
+      throw new HttpsError("failed-precondition", "spotify-revoked");
+    }
+    throw error;
+  }
+  const merged = mergeRefreshedTokens(tokens, refreshed);
+
+  // The Spotify call stays outside the transaction: a retried transaction
+  // body would spend another one-time refresh grant.
+  const ref = db.doc(`spotifySecrets/${uid}`);
+  const resolved = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const outcome = resolveRefreshWrite(
+      sent,
+      snap.exists ? readTokenSet(snap.data()) : null,
+      merged,
+    );
+    if (outcome.action === "store") {
+      tx.set(ref, secretsDocument(outcome.tokens));
+    }
+    return outcome;
+  });
+
+  if (resolved.action === "abandon") {
+    throw new HttpsError("failed-precondition", "not-connected");
+  }
+  return resolved.tokens;
 }
 
 export function summarizeTracks(items: Array<DocumentData>, limit = 20): NamedItem[] {
@@ -531,14 +698,29 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
   // longer returns drops out because nothing can vouch for it.
   const profileRef = db.doc(`profiles/${uid}`);
   const profileSnap = await profileRef.get();
-  const publicMusic = reconcilePublicMusicProfile(
+  const freshSummary = {
+    topArtists: artists,
+    topTracks: tracks,
+    musicProfile,
+  };
+  const selection = readPublicMusicSelection(
+    existing.data(),
     profileSnap.data()?.publicMusic,
-    {topArtists: artists, topTracks: tracks, musicProfile},
+  );
+  const publicMusic = profileFromSelection(selection, freshSummary);
+  // The surviving ids are written back privately, so the choice keeps its own
+  // record even while the card is hidden.
+  await summaryRef.set(
+    {publicSelection: selectionFromProfile(publicMusic, selection.enabled)},
+    {merge: true},
   );
   await profileRef.set(
     {
       spotifyConnected: true,
-      publicMusic: {...publicMusic, updatedAt: FieldValue.serverTimestamp()},
+      publicMusic: {
+        ...publishedCardFor(publicMusic),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
     },
     {merge: true},
   );
@@ -629,6 +811,37 @@ export function disconnectPlan(
   };
 }
 
+/**
+ * What a revoked grant leaves behind.
+ *
+ * Unlike a disconnect this is not something the member asked for, so their
+ * imported taste is kept: reconnecting should not cost them their selection.
+ * What must stop is everything that claims the connection still works —
+ * the dead tokens, the `spotifyConnected` flags that make compatibility and
+ * the same-taste query keep scoring from stale data, and the public card.
+ */
+export function revokedGrantPlan(uid: string) {
+  return {
+    deletes: [`spotifySecrets/${uid}`],
+    summaryPath: `users/${uid}/music/summary`,
+    summaryData: {spotifyConnected: false},
+    profilePath: `profiles/${uid}`,
+    profileData: {
+      spotifyConnected: false,
+      publicMusic: emptyPublicMusicProfile(),
+    },
+  };
+}
+
+async function applyRevokedGrant(uid: string): Promise<void> {
+  const plan = revokedGrantPlan(uid);
+  await Promise.all([
+    ...plan.deletes.map((path) => db.doc(path).delete()),
+    db.doc(plan.summaryPath).set(plan.summaryData, {merge: true}),
+    db.doc(plan.profilePath).set(plan.profileData, {merge: true}),
+  ]);
+}
+
 /** Spotify is rate limited and the taste barely moves — throttle re-syncs. */
 export function isSyncThrottled(
   lastSyncedAt: Date | null,
@@ -645,6 +858,9 @@ export const spotifyLinkMusic = onCall(callableOptions, async (request) => {
   const code = requireString(request.data?.code, "code");
   const codeVerifier = requireString(request.data?.codeVerifier, "codeVerifier");
   const redirectUri = requireString(request.data?.redirectUri, "redirectUri");
+  // The login half of the same OAuth flow has always been metered. This half
+  // reaches the same Spotify token endpoint, so it gets the same budget.
+  await consumeRateLimit(`spotify_link_${uid}`);
   const tokens = await exchangeAuthorizationCode({code, codeVerifier, redirectUri});
   const me = await spotifyGet<{id?: string; account_id?: string}>(
     tokens.accessToken,
@@ -687,19 +903,23 @@ export const getMusicAccount = onCall(
       db.doc(`profiles/${uid}`).get(),
     ]);
     const account = toClientProfile(snap.data());
-    // Owners see their own selection so the Music tab can pre-tick it.
+    // Owners see their own selection so the Music tab can pre-tick it and the
+    // visibility switch has something to turn back on. While the card is
+    // hidden the profile document holds nothing, so the selection is rebuilt
+    // from the private record instead.
     const stored = profileSnap.data()?.publicMusic;
-    return {
-      ...account,
-      publicMusic: stored
-        ? {
-          enabled: stored.enabled === true,
-          artists: Array.isArray(stored.artists) ? stored.artists : [],
-          tracks: Array.isArray(stored.tracks) ? stored.tracks : [],
-          genres: Array.isArray(stored.genres) ? stored.genres : [],
-        }
-        : emptyPublicMusicProfile(),
-    };
+    const publicMusic = stored?.enabled === true ?
+      {
+        enabled: true,
+        artists: Array.isArray(stored.artists) ? stored.artists : [],
+        tracks: Array.isArray(stored.tracks) ? stored.tracks : [],
+        genres: Array.isArray(stored.genres) ? stored.genres : [],
+      } :
+      profileFromSelection(
+        readPublicMusicSelection(snap.data(), stored),
+        snap.data(),
+      );
+    return {...account, publicMusic};
   },
 );
 
@@ -763,7 +983,9 @@ export const updatePublicMusicProfile = onCall(
     let profile;
     try {
       profile = buildPublicMusicProfile({
-        enabled: request.data?.enabled !== false,
+        // Publishing to a dating profile is opt-in: only an explicit `true`
+        // turns the card on. A missing or malformed field means "no".
+        enabled: request.data?.enabled === true,
         artistIds: normalizeSelectionIds(
           request.data?.artistIds,
           MAX_PUBLIC_ARTISTS,
@@ -785,10 +1007,26 @@ export const updatePublicMusicProfile = onCall(
       throw error;
     }
 
-    await db.doc(`profiles/${uid}`).set(
-      {publicMusic: {...profile, updatedAt: FieldValue.serverTimestamp()}},
-      {merge: true},
-    );
+    // The choice is the member's own, so it is kept under their private music
+    // summary. The profile document — readable by every signed-in member —
+    // carries the card only while it is actually visible.
+    await Promise.all([
+      db.doc(`users/${uid}/music/summary`).set(
+        {publicSelection: selectionFromProfile(profile, profile.enabled)},
+        {merge: true},
+      ),
+      db.doc(`profiles/${uid}`).set(
+        {
+          publicMusic: {
+            ...publishedCardFor(profile),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+        },
+        {merge: true},
+      ),
+    ]);
+    // The owner gets their full selection back so the Music tab keeps its
+    // ticks and can turn the card on again.
     return {publicMusic: profile};
   },
 );
@@ -957,8 +1195,8 @@ export const getMatchMusicCompatibility = onCall(
   {enforceAppCheck, region: "europe-west1"},
   async (request) => {
     const uid = requireUid(request);
-    const matchId = requireString(request.data?.matchId, "matchId");
-    const matchSnap = await db.doc(`matches/${matchId}`).get();
+    const matchId = requireMatchId(request.data?.matchId);
+    const matchSnap = await db.collection("matches").doc(matchId).get();
     if (!matchSnap.exists || matchSnap.data()?.isActive !== true) {
       return {available: false, reason: "no_match"};
     }

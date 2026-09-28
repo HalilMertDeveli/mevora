@@ -1,11 +1,17 @@
 enum SpotifyOAuthPurpose { login, musicLink }
 
 /// Persists the Spotify PKCE verifier so auth can survive the OAuth callback.
+///
+/// The record carries its own expiry. This store outlives the screen that
+/// started the flow, so without one a verifier and state abandoned at the
+/// timeout would stay honourable for the rest of the process and let a late
+/// callback finish an exchange nobody is waiting for any more.
 class SpotifyPendingAuth {
   const SpotifyPendingAuth({
     required this.state,
     required this.verifier,
     required this.linkToCurrentUser,
+    required this.expiresAt,
     this.purpose = SpotifyOAuthPurpose.login,
   });
 
@@ -13,6 +19,11 @@ class SpotifyPendingAuth {
   final String verifier;
   final bool linkToCurrentUser;
   final SpotifyOAuthPurpose purpose;
+
+  /// UTC instant from which this record must no longer be honoured.
+  final DateTime expiresAt;
+
+  bool hasExpired(DateTime now) => !now.toUtc().isBefore(expiresAt);
 }
 
 abstract class SpotifyPendingStore {

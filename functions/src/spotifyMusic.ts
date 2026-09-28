@@ -29,8 +29,11 @@ import {
   MAX_PUBLIC_ARTISTS,
   MAX_PUBLIC_TRACKS,
   normalizeSelectionIds,
+  profileFromSelection,
   PublicMusicValidationError,
-  reconcilePublicMusicProfile,
+  publishedCardFor,
+  readPublicMusicSelection,
+  selectionFromProfile,
   toPublicMusicCard,
 } from "./spotifyMusicProfile.js";
 
@@ -637,14 +640,29 @@ async function fetchAndStoreTaste(uid: string, tokens: SpotifyTokenSet): Promise
   // longer returns drops out because nothing can vouch for it.
   const profileRef = db.doc(`profiles/${uid}`);
   const profileSnap = await profileRef.get();
-  const publicMusic = reconcilePublicMusicProfile(
+  const freshSummary = {
+    topArtists: artists,
+    topTracks: tracks,
+    musicProfile,
+  };
+  const selection = readPublicMusicSelection(
+    existing.data(),
     profileSnap.data()?.publicMusic,
-    {topArtists: artists, topTracks: tracks, musicProfile},
+  );
+  const publicMusic = profileFromSelection(selection, freshSummary);
+  // The surviving ids are written back privately, so the choice keeps its own
+  // record even while the card is hidden.
+  await summaryRef.set(
+    {publicSelection: selectionFromProfile(publicMusic, selection.enabled)},
+    {merge: true},
   );
   await profileRef.set(
     {
       spotifyConnected: true,
-      publicMusic: {...publicMusic, updatedAt: FieldValue.serverTimestamp()},
+      publicMusic: {
+        ...publishedCardFor(publicMusic),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
     },
     {merge: true},
   );
@@ -793,19 +811,23 @@ export const getMusicAccount = onCall(
       db.doc(`profiles/${uid}`).get(),
     ]);
     const account = toClientProfile(snap.data());
-    // Owners see their own selection so the Music tab can pre-tick it.
+    // Owners see their own selection so the Music tab can pre-tick it and the
+    // visibility switch has something to turn back on. While the card is
+    // hidden the profile document holds nothing, so the selection is rebuilt
+    // from the private record instead.
     const stored = profileSnap.data()?.publicMusic;
-    return {
-      ...account,
-      publicMusic: stored
-        ? {
-          enabled: stored.enabled === true,
-          artists: Array.isArray(stored.artists) ? stored.artists : [],
-          tracks: Array.isArray(stored.tracks) ? stored.tracks : [],
-          genres: Array.isArray(stored.genres) ? stored.genres : [],
-        }
-        : emptyPublicMusicProfile(),
-    };
+    const publicMusic = stored?.enabled === true ?
+      {
+        enabled: true,
+        artists: Array.isArray(stored.artists) ? stored.artists : [],
+        tracks: Array.isArray(stored.tracks) ? stored.tracks : [],
+        genres: Array.isArray(stored.genres) ? stored.genres : [],
+      } :
+      profileFromSelection(
+        readPublicMusicSelection(snap.data(), stored),
+        snap.data(),
+      );
+    return {...account, publicMusic};
   },
 );
 
@@ -891,10 +913,26 @@ export const updatePublicMusicProfile = onCall(
       throw error;
     }
 
-    await db.doc(`profiles/${uid}`).set(
-      {publicMusic: {...profile, updatedAt: FieldValue.serverTimestamp()}},
-      {merge: true},
-    );
+    // The choice is the member's own, so it is kept under their private music
+    // summary. The profile document — readable by every signed-in member —
+    // carries the card only while it is actually visible.
+    await Promise.all([
+      db.doc(`users/${uid}/music/summary`).set(
+        {publicSelection: selectionFromProfile(profile, profile.enabled)},
+        {merge: true},
+      ),
+      db.doc(`profiles/${uid}`).set(
+        {
+          publicMusic: {
+            ...publishedCardFor(profile),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+        },
+        {merge: true},
+      ),
+    ]);
+    // The owner gets their full selection back so the Music tab keeps its
+    // ticks and can turn the card on again.
     return {publicMusic: profile};
   },
 );

@@ -8,10 +8,14 @@ const {
   MAX_PUBLIC_GENRES,
   MAX_PUBLIC_TRACKS,
   normalizeSelectionIds,
+  profileFromSelection,
   PublicMusicValidationError,
+  publishedCardFor,
+  readPublicMusicSelection,
   reconcilePublicMusicProfile,
   selectableArtists,
   selectableTracks,
+  selectionFromProfile,
   toPublicMusicCard,
 } = require("../lib/spotifyMusicProfile.js");
 const {disconnectPlan} = require("../lib/spotifyMusic.js");
@@ -463,5 +467,116 @@ describe("disconnect clears the public card", () => {
       "users/uid-a/music/summary",
       "musicSpotifyIndex/legacy-id",
     ]);
+  });
+});
+
+describe("a hidden card leaves nothing on the profile document", () => {
+  const built = buildPublicMusicProfile({
+    enabled: false,
+    artistIds: ["a1", "a2"],
+    trackIds: ["t1"],
+    summary: summary(),
+  });
+
+  it("keeps the member's picks in the value the owner is handed", () => {
+    assert.equal(built.enabled, false);
+    assert.deepEqual(built.artists.map((a) => a.id), ["a1", "a2"]);
+    assert.deepEqual(built.tracks.map((t) => t.id), ["t1"]);
+  });
+
+  it("publishes an empty card, so no viewer can read the hidden picks", () => {
+    // profiles/{uid} is readable by every signed-in member, so "hidden" has to
+    // mean absent, not merely flagged off.
+    const published = publishedCardFor(built);
+    assert.deepEqual(published, emptyPublicMusicProfile());
+    assert.equal(published.artists.length, 0);
+    assert.equal(published.tracks.length, 0);
+  });
+
+  it("publishes the real card once it is visible again", () => {
+    const visible = buildPublicMusicProfile({
+      enabled: true,
+      artistIds: ["a1", "a2"],
+      trackIds: ["t1"],
+      summary: summary(),
+    });
+    assert.deepEqual(publishedCardFor(visible), visible);
+    assert.equal(publishedCardFor(visible).artists.length, 2);
+  });
+});
+
+describe("the private selection survives hiding", () => {
+  it("round-trips the ids the member chose", () => {
+    const built = buildPublicMusicProfile({
+      enabled: false,
+      artistIds: ["a1", "a3"],
+      trackIds: ["t1", "t2"],
+      summary: summary(),
+    });
+    const selection = selectionFromProfile(built, false);
+    assert.deepEqual(selection, {
+      enabled: false,
+      artistIds: ["a1", "a3"],
+      trackIds: ["t1", "t2"],
+    });
+
+    const restored = profileFromSelection(
+      {...selection, enabled: true},
+      summary(),
+    );
+    assert.equal(restored.enabled, true);
+    assert.deepEqual(restored.artists.map((a) => a.id), ["a1", "a3"]);
+    assert.deepEqual(restored.tracks.map((t) => t.id), ["t1", "t2"]);
+  });
+
+  it("reads the stored selection in preference to the published card", () => {
+    const selection = readPublicMusicSelection(
+      {publicSelection: {enabled: true, artistIds: ["a2"], trackIds: []}},
+      {enabled: false, artists: [{id: "a1"}], tracks: []},
+    );
+    assert.deepEqual(selection, {
+      enabled: true,
+      artistIds: ["a2"],
+      trackIds: [],
+    });
+  });
+
+  it("falls back to a card published before the selection moved", () => {
+    // Members who published under the old shape have no private record yet.
+    const selection = readPublicMusicSelection(
+      {spotifyConnected: true},
+      {enabled: true, artists: [{id: "a1"}, {id: "a2"}], tracks: [{id: "t1"}]},
+    );
+    assert.deepEqual(selection, {
+      enabled: true,
+      artistIds: ["a1", "a2"],
+      trackIds: ["t1"],
+    });
+  });
+
+  it("reads an absent record as nothing published", () => {
+    assert.deepEqual(readPublicMusicSelection(undefined, undefined), {
+      enabled: false,
+      artistIds: [],
+      trackIds: [],
+    });
+  });
+
+  it("drops ids the latest import no longer contains, without throwing", () => {
+    const restored = profileFromSelection(
+      {enabled: true, artistIds: ["a1", "gone"], trackIds: ["vanished"]},
+      summary(),
+    );
+    assert.deepEqual(restored.artists.map((a) => a.id), ["a1"]);
+    assert.deepEqual(restored.tracks, []);
+    assert.equal(restored.enabled, true);
+  });
+
+  it("turns the card off when nothing at all survived", () => {
+    const restored = profileFromSelection(
+      {enabled: true, artistIds: ["gone"], trackIds: ["vanished"]},
+      summary(),
+    );
+    assert.deepEqual(restored, emptyPublicMusicProfile());
   });
 });

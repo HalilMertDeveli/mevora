@@ -51,6 +51,105 @@ export function emptyPublicMusicProfile(): PublicMusicProfile {
   return {enabled: false, artists: [], tracks: [], genres: []};
 }
 
+/**
+ * The member's choice, kept beside their private taste rather than on the
+ * profile card.
+ *
+ * `profiles/{uid}` is readable by every signed-in member, so a hidden card
+ * whose artists and tracks still sat there was only hidden in the UI. The
+ * selection lives here instead, under the owner-only music summary, and the
+ * profile document carries the rendered card only while it is visible.
+ */
+export type PublicMusicSelection = {
+  enabled: boolean;
+  artistIds: string[];
+  trackIds: string[];
+};
+
+export function emptyPublicMusicSelection(): PublicMusicSelection {
+  return {enabled: false, artistIds: [], trackIds: []};
+}
+
+/** The ids behind a built card, for storing privately. */
+export function selectionFromProfile(
+  profile: PublicMusicProfile,
+  enabled: boolean,
+): PublicMusicSelection {
+  return {
+    enabled,
+    artistIds: profile.artists.map((artist) => artist.id),
+    trackIds: profile.tracks.map((track) => track.id),
+  };
+}
+
+function idsFrom(value: unknown): string[] {
+  return Array.isArray(value) ?
+    value.filter((id): id is string => typeof id === "string" && id !== "") :
+    [];
+}
+
+/**
+ * Reads the stored selection, falling back to the ids embedded in a card
+ * published before the selection moved off the profile document.
+ */
+export function readPublicMusicSelection(
+  summary: unknown,
+  publishedCard?: unknown,
+): PublicMusicSelection {
+  const stored = (summary ?? {}) as Record<string, unknown>;
+  const selection = stored.publicSelection;
+  if (selection && typeof selection === "object") {
+    const record = selection as Record<string, unknown>;
+    return {
+      enabled: record.enabled === true,
+      artistIds: idsFrom(record.artistIds),
+      trackIds: idsFrom(record.trackIds),
+    };
+  }
+  const card = (publishedCard ?? {}) as Record<string, unknown>;
+  const entryIds = (value: unknown) =>
+    Array.isArray(value) ?
+      value
+        .map((e) => (e && typeof e === "object" ? (e as {id?: unknown}).id : null))
+        .filter((id): id is string => typeof id === "string") :
+      [];
+  return {
+    enabled: card.enabled === true,
+    artistIds: entryIds(card.artists),
+    trackIds: entryIds(card.tracks),
+  };
+}
+
+/**
+ * Rebuilds the card a selection describes, dropping ids the latest import no
+ * longer contains. Unlike {@link buildPublicMusicProfile} this never throws:
+ * the ids are the member's own, already validated when they chose them, and a
+ * re-sync legitimately removes some.
+ */
+export function profileFromSelection(
+  selection: PublicMusicSelection,
+  summary: unknown,
+): PublicMusicProfile {
+  const artistCatalog = selectableArtists(summary);
+  const trackCatalog = selectableTracks(summary);
+  return buildPublicMusicProfile({
+    enabled: selection.enabled,
+    artistIds: selection.artistIds.filter((id) => artistCatalog.has(id)),
+    trackIds: selection.trackIds.filter((id) => trackCatalog.has(id)),
+    summary,
+  });
+}
+
+/**
+ * What belongs on `profiles/{uid}`: the rendered card while it is visible,
+ * and nothing at all once it is hidden.
+ */
+export function publishedCardFor(
+  profile: PublicMusicProfile,
+): PublicMusicProfile {
+  return profile.enabled ? profile : emptyPublicMusicProfile();
+}
+
 export class PublicMusicValidationError extends Error {
   constructor(readonly reason: string) {
     super(reason);

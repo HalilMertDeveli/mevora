@@ -488,7 +488,12 @@ describe("a hidden card leaves nothing on the profile document", () => {
     // profiles/{uid} is readable by every signed-in member, so "hidden" has to
     // mean absent, not merely flagged off.
     const published = publishedCardFor(built);
-    assert.deepEqual(published, emptyPublicMusicProfile());
+    // taste is deliberately present and null rather than omitted: the profile
+    // document is written with merge, and a merge on a nested map keeps keys
+    // the new value leaves out, so omitting it would leave the last visible
+    // summary readable on a hidden card.
+    assert.deepEqual(published, {...emptyPublicMusicProfile(), taste: null});
+    assert.equal(published.taste, null);
     assert.equal(published.artists.length, 0);
     assert.equal(published.tracks.length, 0);
   });
@@ -500,7 +505,7 @@ describe("a hidden card leaves nothing on the profile document", () => {
       trackIds: ["t1"],
       summary: summary(),
     });
-    assert.deepEqual(publishedCardFor(visible), visible);
+    assert.deepEqual(publishedCardFor(visible), {...visible, taste: visible.taste ?? null});
     assert.equal(publishedCardFor(visible).artists.length, 2);
   });
 });

@@ -5,7 +5,9 @@ const {
   emptyGeneralMusicTaste,
   MAX_SIGNATURE_ARTISTS,
   MAX_TASTE_GENRES,
+  publicGeneralTasteHasContent,
   readGeneralMusicTaste,
+  readPublicGeneralTaste,
   toPublicGeneralTaste,
 } = require("../lib/musicTasteAnalysis.js");
 
@@ -205,5 +207,64 @@ describe("reading a stored summary back", () => {
     });
     const back = readGeneralMusicTaste(JSON.parse(JSON.stringify(taste)));
     assert.deepEqual(back, taste);
+  });
+});
+
+describe("reading a summary back in its published shape", () => {
+  // The published shape flattens signatureArtists to names. Reading it with
+  // the private reader silently dropped every one of them, so a viewer got a
+  // summary with no artists in it.
+  const published = {
+    dominantGenre: "alternative",
+    secondaryGenres: ["indie", "r&b"],
+    signatureArtists: ["Arctic Monkeys", "The Weeknd"],
+    stableArtistCount: 2,
+    artistBreadth: 9,
+  };
+
+  it("keeps the artist names", () => {
+    assert.deepEqual(readPublicGeneralTaste(published).signatureArtists, [
+      "Arctic Monkeys",
+      "The Weeknd",
+    ]);
+  });
+
+  it("is not the private reader", () => {
+    assert.deepEqual(
+      readGeneralMusicTaste(published).signatureArtists,
+      [],
+      "the private reader wants {id, name} — that is the whole point",
+    );
+  });
+
+  it("drops anything of the wrong shape", () => {
+    const taste = readPublicGeneralTaste({
+      dominantGenre: 7,
+      secondaryGenres: "indie",
+      signatureArtists: ["Real", 42, ""],
+      stableArtistCount: -1,
+      artistBreadth: "many",
+    });
+    assert.equal(taste.dominantGenre, null);
+    assert.deepEqual(taste.secondaryGenres, []);
+    assert.deepEqual(taste.signatureArtists, ["Real"]);
+    assert.equal(taste.stableArtistCount, 0);
+    assert.equal(taste.artistBreadth, 0);
+  });
+
+  it("treats an absent summary as nothing to show", () => {
+    assert.equal(publicGeneralTasteHasContent(readPublicGeneralTaste(null)), false);
+    assert.equal(publicGeneralTasteHasContent(readPublicGeneralTaste({})), false);
+    assert.equal(publicGeneralTasteHasContent(readPublicGeneralTaste(published)), true);
+  });
+
+  it("round-trips what toPublicGeneralTaste produced", () => {
+    const derived = toPublicGeneralTaste(
+      deriveGeneralMusicTaste({
+        longTermArtists: [artist("a1", "Arctic Monkeys", ["indie"])],
+        mediumTermArtists: [artist("a1", "Arctic Monkeys", ["indie"])],
+      }),
+    );
+    assert.deepEqual(readPublicGeneralTaste(derived), derived);
   });
 });

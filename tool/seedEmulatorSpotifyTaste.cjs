@@ -142,7 +142,7 @@ function generalTasteFor(artists, tracks) {
   };
 }
 
-function summaryFor(uid, artists, tracks, recent) {
+function summaryFor(uid, artists, tracks, recent, followed = []) {
   const genres = genreShares(artists);
   return {
     spotifyConnected: true,
@@ -155,7 +155,11 @@ function summaryFor(uid, artists, tracks, recent) {
       ...track,
       playedAt: new Date(Date.now() - (i + 1) * 3600_000).toISOString(),
     })),
-    playlists: [{name: "QA mix", trackCount: 12}],
+    playlists: Array.from({length: 10}, (_, i) => ({
+      id: `pl_${uid}_${i}`,
+      name: `QA playlist ${i + 1}`,
+      trackCount: 8 + i,
+    })),
     musicProfile: {
       genres,
       genreNames: genres.map((g) => g.name),
@@ -173,6 +177,13 @@ function summaryFor(uid, artists, tracks, recent) {
       },
     },
     musicProfileVersion: 2,
+    // The four collections the Music Profile is built from. Followed
+    // artists deliberately overlap the top list only partly, so QA can
+    // see that publishing a followed artist is possible.
+    followedArtists: followed,
+    followScopeGranted: true,
+    profileTopArtists: artists.slice(0, 5),
+    profileTopTracks: tracks.slice(0, 5),
     generalTaste: generalTasteFor(artists, tracks),
     lastSyncedAt: FieldValue.serverTimestamp(),
     connectedAt: FieldValue.serverTimestamp(),
@@ -181,11 +192,13 @@ function summaryFor(uid, artists, tracks, recent) {
 
 const PLAN = {
   qa_user_a: {
+    followed: [ARTISTS.weeknd, ARTISTS.sza, ARTISTS.radiohead],
     artists: [ARTISTS.weeknd, ARTISTS.arctic, ARTISTS.lana, ARTISTS.tame, ARTISTS.radiohead],
     tracks: [TRACKS.blinding, TRACKS.doiwanna, TRACKS.summertime, TRACKS.letit, TRACKS.creep],
     recent: [TRACKS.blinding, TRACKS.letit],
   },
   qa_user_b: {
+    followed: [ARTISTS.arctic, ARTISTS.tame],
     artists: [ARTISTS.weeknd, ARTISTS.arctic, ARTISTS.sza],
     tracks: [TRACKS.blinding, TRACKS.doiwanna, TRACKS.kill],
     recent: [TRACKS.doiwanna],
@@ -220,7 +233,7 @@ async function seed() {
     }
     await db
       .doc(`users/${uid}/music/summary`)
-      .set(summaryFor(uid, plan.artists, plan.tracks, plan.recent), {merge: true});
+      .set(summaryFor(uid, plan.artists, plan.tracks, plan.recent, plan.followed ?? []), {merge: true});
 
     const profileUpdate = {spotifyConnected: true};
     if (PUBLISHED && uid === "qa_user_a") {

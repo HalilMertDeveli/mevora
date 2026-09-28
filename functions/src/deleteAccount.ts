@@ -125,6 +125,16 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/rateLimits`),
     ]);
 
+    // Releases this account claim on any store purchase token it owns.
+    //
+    // Deleting a Mevora account does not cancel the store subscription, so the
+    // person may still be paying. Leaving the claim behind would mean their
+    // next account cannot restore what they bought — the ledger would report
+    // the token as owned by someone else, that someone being a uid that no
+    // longer exists. It would also leave RTDN writing entitlement documents
+    // for a deleted user. Releasing it is safe: a token is only obtainable
+    // from the store account that bought the subscription.
+    await deleteQuery("subscriptionPurchases", "userId", uid);
     await deleteQuery("notifications", "userId", uid);
     await deleteQuery("likes", "fromUserId", uid);
     await deleteQuery("likes", "toUserId", uid);

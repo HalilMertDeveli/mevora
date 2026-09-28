@@ -594,6 +594,23 @@ describe("server-only entitlement surface", () => {
     ]);
   });
 
+  it("account deletion releases the purchase tokens that account owned", () => {
+    // Deleting a Mevora account does not cancel the store subscription, so the
+    // person may still be paying for it. If the ownership claim outlived the
+    // account, their next account could not restore what they bought — the
+    // ledger would report the token as owned by a uid that no longer exists —
+    // and RTDN would keep writing entitlement documents for a deleted user.
+    const code = src("deleteAccount.ts");
+    assert.ok(
+      code.includes('deleteQuery("subscriptionPurchases", "userId", uid)'),
+      "deletion must release this account's purchase ownership records",
+    );
+    assert.ok(
+      code.includes('deleteCollectionDocs(`users/${uid}/subscription`)'),
+      "deletion must still remove the entitlement document itself",
+    );
+  });
+
   it("resolves premium through the canonical model only", () => {
     const premium = src("premium.ts");
     assert.equal(premium.includes("resolvePremiumAccess"), true);

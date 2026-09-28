@@ -1673,5 +1673,37 @@
   "humorResultEvolvesNote": "Your profile keeps evolving as you react to new content.",
   "humorResultStrengthHigh": "Strong",
   "humorResultStrengthMedium": "Clear",
-  "humorResultStrengthLow": "Slight"
+  "humorResultStrengthLow": "Slight",
+  "premiumTitle": "Mevora Premium",
+  "premiumSubtitle": "See who likes you, and more.",
+  "@premiumSubtitle": {
+    "description": "Paywall hero subtitle."
+  },
+  "premiumSubscribeCta": "Subscribe",
+  "premiumRestoreCta": "Restore purchases",
+  "premiumLoadingPlans": "Loading plans…",
+  "premiumUnavailableTitle": "Premium is not available right now",
+  "premiumUnavailableBody": "Plans could not be loaded from the store. Check your connection and try again.",
+  "@premiumUnavailableBody": {
+    "description": "Shown when the store returned no purchasable plans."
+  },
+  "premiumPurchasing": "Waiting for the store…",
+  "premiumVerifying": "Checking your purchase…",
+  "premiumRestoring": "Restoring…",
+  "premiumPurchasedTitle": "You are Premium",
+  "premiumPurchasedBody": "Your subscription is active. Enjoy.",
+  "premiumCancelled": "Purchase cancelled.",
+  "premiumFailed": "The purchase could not be completed.",
+  "premiumRejected": "We could not confirm this purchase.",
+  "@premiumRejected": {
+    "description": "Backend verified the purchase and did not grant Premium. Deliberately vague."
+  },
+  "premiumNothingToRestore": "No previous purchase was found for this store account.",
+  "premiumStoreUnavailable": "The store is unavailable on this device.",
+  "premiumAlreadyActive": "You already have Premium.",
+  "premiumRetry": "Try again",
+  "premiumRenewsLabel": "Renews automatically. Cancel anytime in the store.",
+  "@premiumRenewsLabel": {
+    "description": "Auto-renew disclosure required by both stores."
+  }
 }

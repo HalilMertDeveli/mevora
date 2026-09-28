@@ -6967,6 +6967,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Slight'**
   String get humorResultStrengthLow;
+
+  /// No description provided for @premiumTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora Premium'**
+  String get premiumTitle;
+
+  /// Paywall hero subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See who likes you, and more.'**
+  String get premiumSubtitle;
+
+  /// No description provided for @premiumSubscribeCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe'**
+  String get premiumSubscribeCta;
+
+  /// No description provided for @premiumRestoreCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get premiumRestoreCta;
+
+  /// No description provided for @premiumLoadingPlans.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading plans…'**
+  String get premiumLoadingPlans;
+
+  /// No description provided for @premiumUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is not available right now'**
+  String get premiumUnavailableTitle;
+
+  /// Shown when the store returned no purchasable plans.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans could not be loaded from the store. Check your connection and try again.'**
+  String get premiumUnavailableBody;
+
+  /// No description provided for @premiumPurchasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the store…'**
+  String get premiumPurchasing;
+
+  /// No description provided for @premiumVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your purchase…'**
+  String get premiumVerifying;
+
+  /// No description provided for @premiumRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring…'**
+  String get premiumRestoring;
+
+  /// No description provided for @premiumPurchasedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You are Premium'**
+  String get premiumPurchasedTitle;
+
+  /// No description provided for @premiumPurchasedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription is active. Enjoy.'**
+  String get premiumPurchasedBody;
+
+  /// No description provided for @premiumCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase cancelled.'**
+  String get premiumCancelled;
+
+  /// No description provided for @premiumFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The purchase could not be completed.'**
+  String get premiumFailed;
+
+  /// Backend verified the purchase and did not grant Premium. Deliberately vague.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not confirm this purchase.'**
+  String get premiumRejected;
+
+  /// No description provided for @premiumNothingToRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'No previous purchase was found for this store account.'**
+  String get premiumNothingToRestore;
+
+  /// No description provided for @premiumStoreUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The store is unavailable on this device.'**
+  String get premiumStoreUnavailable;
+
+  /// No description provided for @premiumAlreadyActive.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have Premium.'**
+  String get premiumAlreadyActive;
+
+  /// No description provided for @premiumRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get premiumRetry;
+
+  /// Auto-renew disclosure required by both stores.
+  ///
+  /// In en, this message translates to:
+  /// **'Renews automatically. Cancel anytime in the store.'**
+  String get premiumRenewsLabel;
 }
 
 class _AppLocalizationsDelegate

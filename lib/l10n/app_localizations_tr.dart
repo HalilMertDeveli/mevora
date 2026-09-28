@@ -3831,4 +3831,67 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get humorResultStrengthLow => 'Hafif';
+
+  @override
+  String get premiumTitle => 'Mevora Premium';
+
+  @override
+  String get premiumSubtitle => 'Seni kimlerin beğendiğini gör, dahası da var.';
+
+  @override
+  String get premiumSubscribeCta => 'Abone ol';
+
+  @override
+  String get premiumRestoreCta => 'Satın alımları geri yükle';
+
+  @override
+  String get premiumLoadingPlans => 'Planlar yükleniyor…';
+
+  @override
+  String get premiumUnavailableTitle => 'Premium şu anda kullanılamıyor';
+
+  @override
+  String get premiumUnavailableBody =>
+      'Planlar mağazadan yüklenemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get premiumPurchasing => 'Mağaza bekleniyor…';
+
+  @override
+  String get premiumVerifying => 'Satın alman kontrol ediliyor…';
+
+  @override
+  String get premiumRestoring => 'Geri yükleniyor…';
+
+  @override
+  String get premiumPurchasedTitle => 'Premium oldun';
+
+  @override
+  String get premiumPurchasedBody => 'Aboneliğin aktif. İyi kullanımlar.';
+
+  @override
+  String get premiumCancelled => 'Satın alma iptal edildi.';
+
+  @override
+  String get premiumFailed => 'Satın alma tamamlanamadı.';
+
+  @override
+  String get premiumRejected => 'Bu satın almayı doğrulayamadık.';
+
+  @override
+  String get premiumNothingToRestore =>
+      'Bu mağaza hesabı için önceki bir satın alma bulunamadı.';
+
+  @override
+  String get premiumStoreUnavailable => 'Mağaza bu cihazda kullanılamıyor.';
+
+  @override
+  String get premiumAlreadyActive => 'Zaten Premium üyesin.';
+
+  @override
+  String get premiumRetry => 'Tekrar dene';
+
+  @override
+  String get premiumRenewsLabel =>
+      'Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.';
 }

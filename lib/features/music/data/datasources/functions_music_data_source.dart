@@ -149,8 +149,7 @@ class FunctionsMusicDataSource implements MusicDataSource {
   }
 
   MusicProfile _parseProfile(Map<String, dynamic> data) {
-    final connected =
-        data['spotifyConnected'] == true || data['connected'] == true;
+    final connected = data['spotifyConnected'] == true || data['connected'] == true;
     return MusicProfile(
       connected: connected,
       displayName: data['displayName'] as String?,
@@ -164,18 +163,14 @@ class FunctionsMusicDataSource implements MusicDataSource {
       // renders rather than showing empty sections.
       profileTopArtists: data['profileTopArtists'] != null
           ? _parseArtists(data['profileTopArtists'])
-          : _parseArtists(
-              data['topArtists'],
-            ).take(profileTopItemLimit).toList(),
+          : _parseArtists(data['topArtists']).take(profileTopItemLimit).toList(),
       profileTopTracks: data['profileTopTracks'] != null
           ? _parseTracks(data['profileTopTracks'])
           : _parseTracks(data['topTracks']).take(profileTopItemLimit).toList(),
       playlists: _parsePlaylists(data['playlists']),
       followScopeGranted: data['followScopeGranted'] == true,
       genres: _parseGenres(data['musicProfile'] ?? data['genres']),
-      taste: _parseTaste(
-        data['musicProfile'] is Map ? data['musicProfile'] : data,
-      ),
+      taste: _parseTaste(data['musicProfile'] is Map ? data['musicProfile'] : data),
       publicProfile: PublicMusicProfile.parse(data['publicMusic']),
       lastSyncedAt: firestoreDate(data['lastSyncedAt']),
       connectedAt: firestoreDate(data['connectedAt']),
@@ -230,8 +225,7 @@ class FunctionsMusicDataSource implements MusicDataSource {
           continue;
         }
         final map = Map<String, dynamic>.from(item);
-        final name =
-            (map['name'] as String?) ?? (map['genre'] as String?) ?? '';
+        final name = (map['name'] as String?) ?? (map['genre'] as String?) ?? '';
         if (name.isEmpty) {
           continue;
         }

@@ -31,7 +31,9 @@ class LocationUpdatePolicy {
 }
 
 class LocationSyncCoordinator {
-  LocationSyncCoordinator({this.policy = const LocationUpdatePolicy()});
+  LocationSyncCoordinator({
+    this.policy = const LocationUpdatePolicy(),
+  });
 
   final LocationUpdatePolicy policy;
   GeoPosition? lastPersisted;

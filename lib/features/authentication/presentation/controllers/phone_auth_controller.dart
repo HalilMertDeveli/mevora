@@ -49,7 +49,8 @@ class PhoneAuthController extends ChangeNotifier {
   String get nationalNumber => _nationalNumber;
   int get resendSeconds => _resendSeconds;
   bool get hasActiveChallenge => _challengeOf(_state) != null;
-  bool get canResend => _resendSeconds == 0 && hasActiveChallenge && !_isBusy;
+  bool get canResend =>
+      _resendSeconds == 0 && hasActiveChallenge && !_isBusy;
   bool get _isBusy => _state is SendingOtp || _state is VerifyingOtp;
 
   void _debugPrint(String message) {
@@ -167,24 +168,18 @@ class PhoneAuthController extends ChangeNotifier {
       case Err<AuthUser>(:final failure):
         await _analytics.otpVerificationFailed();
         final code = failure is AuthFailure ? failure.code : null;
-        _debugPrint(
-          '[PHONE_AUTH] VERIFICATION_FAILED otp code=$code message=${failure.message}',
-        );
+        _debugPrint('[PHONE_AUTH] VERIFICATION_FAILED otp code=$code message=${failure.message}');
         if (_isTooMany(failure)) {
           _state = TooManyAttempts(
             failure.message,
-            kind: failure is AuthFailure
-                ? failure.kind
-                : AuthErrorKind.tooManyAttempts,
+            kind: failure is AuthFailure ? failure.kind : AuthErrorKind.tooManyAttempts,
             firebaseCode: code,
           );
         } else {
           _state = OtpError(
             challenge: challenge,
             message: failure.message,
-            kind: failure is AuthFailure
-                ? failure.kind
-                : AuthErrorKind.invalidOtp,
+            kind: failure is AuthFailure ? failure.kind : AuthErrorKind.invalidOtp,
             firebaseCode: code,
           );
         }
@@ -229,13 +224,9 @@ class PhoneAuthController extends ChangeNotifier {
   }
 
   bool _failSend(Failure failure) {
-    final kind = failure is AuthFailure
-        ? failure.kind
-        : AuthErrorKind.smsFailed;
+    final kind = failure is AuthFailure ? failure.kind : AuthErrorKind.smsFailed;
     final code = failure is AuthFailure ? failure.code : null;
-    _debugPrint(
-      '[PHONE_AUTH] VERIFICATION_FAILED send code=$code kind=$kind message=${failure.message}',
-    );
+    _debugPrint('[PHONE_AUTH] VERIFICATION_FAILED send code=$code kind=$kind message=${failure.message}');
     _logger.warning(
       'phone_auth send failed kind=$kind code=$code',
       error: failure.message,
@@ -249,7 +240,11 @@ class PhoneAuthController extends ChangeNotifier {
                 : AuthErrorKind.tooManyAttempts,
             firebaseCode: code,
           )
-        : SmsSendError(failure.message, kind: kind, firebaseCode: code);
+        : SmsSendError(
+            failure.message,
+            kind: kind,
+            firebaseCode: code,
+          );
     notifyListeners();
     return false;
   }

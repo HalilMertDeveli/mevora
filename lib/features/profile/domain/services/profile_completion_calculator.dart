@@ -71,38 +71,25 @@ abstract final class ProfileCompletionCalculator {
     );
     check('languages', profile.languages.isNotEmpty);
     check('heightCm', HeightCatalog.isValid(profile.heightCm));
-    check(
-      'bio',
-      (profile.bio ?? '').trim().length >= OnboardingConfig.minBioLength,
-    );
-    check(
-      'education',
-      profile.education != null && profile.education!.isNotEmpty,
-    );
-    check(
-      'occupation',
-      profile.occupation != null && profile.occupation!.trim().isNotEmpty,
-    );
+    check('bio', (profile.bio ?? '').trim().length >= OnboardingConfig.minBioLength);
+    check('education', profile.education != null && profile.education!.isNotEmpty);
+    check('occupation', profile.occupation != null && profile.occupation!.trim().isNotEmpty);
     check('hobbies', profile.hobbies.isNotEmpty);
 
     final lifestyle = profile.lifestyleProfile;
-    final habitsFilled =
-        lifestyle.smoking != null &&
+    final habitsFilled = lifestyle.smoking != null &&
         lifestyle.drinking != null &&
         lifestyle.exercise != null &&
         lifestyle.pets != null;
     check('lifestyleHabits', habitsFilled);
 
-    final valuesFilled =
-        lifestyle.childrenPreference != null &&
+    final valuesFilled = lifestyle.childrenPreference != null &&
         lifestyle.partnerSmokingPref != null &&
         lifestyle.partnerDrinkingPref != null;
     check('lifestyleValues', valuesFilled);
 
     final total = _weights.values.fold<int>(0, (sum, weight) => sum + weight);
-    final percent = total == 0
-        ? 0
-        : ((earned / total) * 100).round().clamp(0, 100);
+    final percent = total == 0 ? 0 : ((earned / total) * 100).round().clamp(0, 100);
     return ProfileCompletionResult(percent: percent, missingFieldKeys: missing);
   }
 }

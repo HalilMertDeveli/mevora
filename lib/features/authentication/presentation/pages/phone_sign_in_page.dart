@@ -35,7 +35,9 @@ class _PhoneSignInPageState extends State<PhoneSignInPage> {
     final auth = AuthScope.of(context);
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.phoneTitle)),
+      appBar: AppBar(
+        title: Text(l10n.phoneTitle),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.screenPadding),

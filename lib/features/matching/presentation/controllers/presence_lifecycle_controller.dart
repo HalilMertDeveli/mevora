@@ -31,14 +31,11 @@ class PresenceLifecycleController with WidgetsBindingObserver {
     _observing = true;
     _foreground =
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
-    _uidSub = _uidSource.watchUid().listen(
-      (uid) {
-        unawaited(_syncUser(uid));
-      },
-      onError: (_) {
-        unawaited(_syncUser(_uidSource.currentUid));
-      },
-    );
+    _uidSub = _uidSource.watchUid().listen((uid) {
+      unawaited(_syncUser(uid));
+    }, onError: (_) {
+      unawaited(_syncUser(_uidSource.currentUid));
+    });
     unawaited(_syncUser(_uidSource.currentUid));
   }
 

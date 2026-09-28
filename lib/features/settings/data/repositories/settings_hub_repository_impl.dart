@@ -26,12 +26,10 @@ class SettingsHubRepositoryImpl implements SettingsHubRepository {
   Future<UserProfile?> loadProfile(String uid) => _profileDataSource.fetch(uid);
 
   @override
-  Stream<UserProfile?> watchProfile(String uid) =>
-      _profileDataSource.watch(uid);
+  Stream<UserProfile?> watchProfile(String uid) => _profileDataSource.watch(uid);
 
   @override
-  Future<void> saveProfile(UserProfile profile) =>
-      _profileDataSource.save(profile);
+  Future<void> saveProfile(UserProfile profile) => _profileDataSource.save(profile);
 
   @override
   Future<UserPreferences> loadDiscoveryPreferences(String uid) {
@@ -84,9 +82,7 @@ class SettingsHubRepositoryImpl implements SettingsHubRepository {
   @override
   Stream<List<BlockedUserEntry>> watchBlockedUsers(String uid) {
     return _firestore
-        .collection(
-          '${FirestorePaths.users}/$uid/${FirestorePaths.blockedUsers}',
-        )
+        .collection('${FirestorePaths.users}/$uid/${FirestorePaths.blockedUsers}')
         .snapshots()
         .asyncMap((snap) async {
           final entries = <BlockedUserEntry>[];
@@ -97,12 +93,11 @@ class SettingsHubRepositoryImpl implements SettingsHubRepository {
               BlockedUserEntry(
                 userId: blockedId,
                 displayName: profile?.displayName ?? blockedId,
-                photoUrl:
-                    profile?.photos
-                        .where((p) => p.isPrimary)
-                        .map((p) => p.downloadUrl ?? p.thumbUrl)
-                        .whereType<String>()
-                        .firstOrNull ??
+                photoUrl: profile?.photos
+                    .where((p) => p.isPrimary)
+                    .map((p) => p.downloadUrl ?? p.thumbUrl)
+                    .whereType<String>()
+                    .firstOrNull ??
                     profile?.photos
                         .map((p) => p.downloadUrl ?? p.thumbUrl)
                         .whereType<String>()
@@ -126,9 +121,7 @@ class SettingsHubRepositoryImpl implements SettingsHubRepository {
     required String blockedUserId,
   }) async {
     final batch = _firestore.batch();
-    batch.delete(
-      _firestore.doc(FirestorePaths.blockedUser(uid, blockedUserId)),
-    );
+    batch.delete(_firestore.doc(FirestorePaths.blockedUser(uid, blockedUserId)));
     batch.delete(
       _firestore.doc(
         FirestorePaths.block(

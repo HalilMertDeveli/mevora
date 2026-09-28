@@ -32,7 +32,9 @@ class AuthController extends ChangeNotifier {
     phoneAuth = PhoneAuthController(
       sendPhoneVerificationCode: SendPhoneVerificationCode(_authRepository),
       verifyPhoneCode: VerifyPhoneCode(_authRepository),
-      resendPhoneVerificationCode: ResendPhoneVerificationCode(_authRepository),
+      resendPhoneVerificationCode: ResendPhoneVerificationCode(
+        _authRepository,
+      ),
       authRepository: _authRepository,
       logger: _logger,
       analytics: _analytics,
@@ -61,7 +63,9 @@ class AuthController extends ChangeNotifier {
   int resendSeconds = 0;
 
   bool get isBusy =>
-      _actionInFlight || status is AuthInitializing || status is Authenticating;
+      _actionInFlight ||
+      status is AuthInitializing ||
+      status is Authenticating;
 
   bool get isReady => status is! AuthInitializing;
 
@@ -127,7 +131,8 @@ class AuthController extends ChangeNotifier {
             }
             // Do not leave Authenticating forever (login buttons stay disabled).
             user = null;
-            errorMessage = 'Oturum doğrulanamadı. Lütfen tekrar giriş yapın.';
+            errorMessage =
+                'Oturum doğrulanamadı. Lütfen tekrar giriş yapın.';
             status = AuthenticationError(errorMessage!);
             notifyListeners();
             unawaited(_authRepository.signOut());
@@ -174,7 +179,10 @@ class AuthController extends ChangeNotifier {
     required String password,
   }) {
     return _run(
-      () => _authRepository.registerWithEmail(email: email, password: password),
+      () => _authRepository.registerWithEmail(
+        email: email,
+        password: password,
+      ),
       provider: 'email',
       onSuccess: _applyAuthenticatedUser,
     );
@@ -373,9 +381,7 @@ class AuthController extends ChangeNotifier {
       },
       err: (failure) {
         status = PhoneVerificationRequired(challenge);
-        errorKind = failure is AuthFailure
-            ? failure.kind
-            : AuthErrorKind.invalidOtp;
+        errorKind = failure is AuthFailure ? failure.kind : AuthErrorKind.invalidOtp;
         errorMessage = failure.message;
         notifyListeners();
         return Err(failure);
@@ -526,7 +532,10 @@ class AuthController extends ChangeNotifier {
       return;
     }
     _applyAuthenticatedUser(
-      current.copyWith(profileCompleted: true, onboardingCompleted: true),
+      current.copyWith(
+        profileCompleted: true,
+        onboardingCompleted: true,
+      ),
     );
   }
 

@@ -85,9 +85,7 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
   Future<AuthUser> upsertFromSession(AuthSession session) {
     final uid = session.uid;
     // Coalesce concurrent upserts for the same uid (e.g. sign-in + auth snapshot).
-    return _upsertInFlight[uid] ??= _runUpsert(
-      session,
-    ); // ignore: unawaited_futures
+    return _upsertInFlight[uid] ??= _runUpsert(session); // ignore: unawaited_futures
   }
 
   Future<AuthUser> _runUpsert(AuthSession session) async {
@@ -135,8 +133,7 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
 
       if (!profileSnap.exists) {
         batch.set(profileRef, _newProfileStub(session, now));
-      } else if (session.persistDisplayName &&
-          _isPresent(session.displayName)) {
+      } else if (session.persistDisplayName && _isPresent(session.displayName)) {
         final profile = profileSnap.data() ?? const <String, dynamic>{};
         if (!_isPresent(profile['displayName'])) {
           batch.update(profileRef, {

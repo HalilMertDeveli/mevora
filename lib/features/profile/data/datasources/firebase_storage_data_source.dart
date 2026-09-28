@@ -49,11 +49,7 @@ class FirebaseStorageDataSource implements StorageRepository {
       );
       return const Err(ValidationFailure(PhotoUploadMessages.failed));
     }
-    if (!_isAllowedUpload(
-      path: path,
-      contentType: contentType,
-      size: bytes.length,
-    )) {
+    if (!_isAllowedUpload(path: path, contentType: contentType, size: bytes.length)) {
       _logError(
         'rejected contentType=$contentType size=${bytes.length}',
         code: 'invalid-argument',
@@ -91,18 +87,11 @@ class FirebaseStorageDataSource implements StorageRepository {
       final url = await ref.getDownloadURL().timeout(
         const Duration(seconds: 15),
       );
-      _log(
-        'Upload Completed downloadUrlHost=${Uri.tryParse(url)?.host}',
-        path: path,
-      );
+      _log('Upload Completed downloadUrlHost=${Uri.tryParse(url)?.host}', path: path);
       return Success(Uri.parse(url));
     } on TimeoutException {
       await _cancel(task);
-      _logError(
-        'timeout after ${_uploadTimeout.inSeconds}s',
-        code: 'timeout',
-        path: path,
-      );
+      _logError('timeout after ${_uploadTimeout.inSeconds}s', code: 'timeout', path: path);
       return const Err(NetworkFailure(PhotoUploadMessages.timeout));
     } on FirebaseException catch (error) {
       _logError(error.message ?? error.code, code: error.code, path: path);
@@ -274,13 +263,20 @@ class FirebaseStorageDataSource implements StorageRepository {
     developer.log(message, name: name);
   }
 
-  void _logError(String message, {required String code, String path = ''}) {
+  void _logError(
+    String message, {
+    required String code,
+    String path = '',
+  }) {
     if (!kDebugMode) {
       return;
     }
     final name = path.contains('/chat/')
         ? 'CHAT_UPLOAD_ERROR'
         : 'PHOTO_UPLOAD_ERROR';
-    developer.log('Code: $code Message: $message', name: name);
+    developer.log(
+      'Code: $code Message: $message',
+      name: name,
+    );
   }
 }

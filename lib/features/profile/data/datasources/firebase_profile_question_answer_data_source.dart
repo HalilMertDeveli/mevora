@@ -32,14 +32,8 @@ class FirebaseProfileQuestionAnswerDataSource
     return query.snapshots().map((snap) {
       final items = snap.docs.map(_fromDoc).toList(growable: false);
       items.sort((a, b) {
-        final aTime =
-            a.updatedAt ??
-            a.createdAt ??
-            DateTime.fromMillisecondsSinceEpoch(0);
-        final bTime =
-            b.updatedAt ??
-            b.createdAt ??
-            DateTime.fromMillisecondsSinceEpoch(0);
+        final aTime = a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bTime.compareTo(aTime);
       });
       return items;
@@ -62,9 +56,7 @@ class FirebaseProfileQuestionAnswerDataSource
     });
   }
 
-  ProfileQuestionAnswer _fromDoc(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+  ProfileQuestionAnswer _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     return ProfileQuestionAnswer(
       questionId: data['questionId'] as String? ?? doc.id,

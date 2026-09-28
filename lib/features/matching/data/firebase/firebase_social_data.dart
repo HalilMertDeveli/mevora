@@ -39,8 +39,7 @@ Match _matchFrom(DocumentSnapshot<Map<String, dynamic>> snap) {
   return Match(
     id: snap.id,
     userIds: userIds,
-    createdAt:
-        _time(data['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+    createdAt: _time(data['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
     isActive: data['isActive'] as bool? ?? false,
     lastMessage: data['lastMessage'] as String?,
     lastMessageAt: _time(data['lastMessageAt']),
@@ -60,9 +59,7 @@ Match _matchFrom(DocumentSnapshot<Map<String, dynamic>> snap) {
 
 Map<String, int> _stringIntMap(Object? value) {
   if (value is Map) {
-    return value.map(
-      (key, item) => MapEntry(key.toString(), (item as num?)?.toInt() ?? 0),
-    );
+    return value.map((key, item) => MapEntry(key.toString(), (item as num?)?.toInt() ?? 0));
   }
   return const {};
 }
@@ -81,8 +78,7 @@ Map<String, String> _stringStringMap(Object? value) {
   return const {};
 }
 
-class FirebaseMatchRepository
-    implements MatchRepository, LikeRepository, DiscoveryExclusionSource {
+class FirebaseMatchRepository implements MatchRepository, LikeRepository, DiscoveryExclusionSource {
   FirebaseMatchRepository({
     required this.callable,
     required this.uidSource,
@@ -102,20 +98,18 @@ class FirebaseMatchRepository
         .orderBy('lastMessageAt', descending: true)
         .snapshots()
         .map((snap) {
-          return snap.docs
-              .map((doc) {
-                final match = _matchFrom(doc);
-                final otherId = match.otherUserId(uid);
-                return MatchListItem(
-                  match: match,
-                  otherUserId: otherId,
-                  name: match.otherName(uid),
-                  photoUrl: match.otherPhoto(uid),
-                  isVerified: match.otherIsVerified(uid),
-                  compatibility: match.compatibilityFor(uid),
-                );
-              })
-              .toList(growable: false);
+          return snap.docs.map((doc) {
+            final match = _matchFrom(doc);
+            final otherId = match.otherUserId(uid);
+            return MatchListItem(
+              match: match,
+              otherUserId: otherId,
+              name: match.otherName(uid),
+              photoUrl: match.otherPhoto(uid),
+              isVerified: match.otherIsVerified(uid),
+              compatibility: match.compatibilityFor(uid),
+            );
+          }).toList(growable: false);
         });
   }
 
@@ -192,9 +186,10 @@ class FirebaseChatRepository implements ChatRepository {
            firestore: firestore,
          ),
          storage: storage ?? FirebaseStorageDataSource(),
-         e2ee:
-             e2ee ??
-             E2eeChatService(storage: storage ?? FirebaseStorageDataSource()),
+         e2ee: e2ee ??
+             E2eeChatService(
+               storage: storage ?? FirebaseStorageDataSource(),
+             ),
          uidSource: uidSource,
        );
 
@@ -339,20 +334,8 @@ class FirebaseSafetyRepository implements SafetyRepository {
       return false;
     }
     final docs = await Future.wait([
-      _db
-          .doc(
-            FirestorePaths.block(
-              SafetyPolicy.blockId(blockerId: uidA, blockedUserId: uidB),
-            ),
-          )
-          .get(),
-      _db
-          .doc(
-            FirestorePaths.block(
-              SafetyPolicy.blockId(blockerId: uidB, blockedUserId: uidA),
-            ),
-          )
-          .get(),
+      _db.doc(FirestorePaths.block(SafetyPolicy.blockId(blockerId: uidA, blockedUserId: uidB))).get(),
+      _db.doc(FirestorePaths.block(SafetyPolicy.blockId(blockerId: uidB, blockedUserId: uidA))).get(),
       _db.doc(FirestorePaths.blockedUser(uidA, uidB)).get(),
       _db.doc(FirestorePaths.blockedUser(uidB, uidA)).get(),
     ]);
@@ -385,10 +368,7 @@ class FirebaseCallRepository implements CallRepository {
   final AuthUidSource uidSource;
   final FirebaseFirestore _db;
 
-  CallSession _from(
-    DocumentSnapshot<Map<String, dynamic>> snap, {
-    Map<String, dynamic>? extra,
-  }) {
+  CallSession _from(DocumentSnapshot<Map<String, dynamic>> snap, {Map<String, dynamic>? extra}) {
     final data = {...?snap.data(), ...?extra};
     return CallSession(
       id: snap.id,
@@ -396,8 +376,7 @@ class FirebaseCallRepository implements CallRepository {
       callerId: data['callerId'] as String? ?? '',
       receiverId: data['receiverId'] as String? ?? '',
       lifecycle: _lifecycle(data['status'] as String?),
-      createdAt:
-          _time(data['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+      createdAt: _time(data['createdAt']) ?? DateTime.fromMillisecondsSinceEpoch(0),
       livekitUrl: data['url'] as String?,
       token: data['token'] as String?,
       roomName: data['roomName'] as String?,
@@ -547,8 +526,8 @@ class FirebaseNotificationRepository implements NotificationRepository {
     FirebaseFirestore? firestore,
     FirebaseMessagingDataSource? messaging,
   }) : _db = firestore ?? FirebaseFirestore.instance,
-       _messaging =
-           messaging ?? FirebaseMessagingDataSource(firestore: firestore);
+       _messaging = messaging ??
+           FirebaseMessagingDataSource(firestore: firestore);
 
   final FirebaseFirestore _db;
   final FirebaseMessagingDataSource _messaging;
@@ -563,10 +542,9 @@ class FirebaseNotificationRepository implements NotificationRepository {
 
   @override
   Stream<NotificationPrefs> watchPrefs(String uid) {
-    return _db
-        .doc(FirestorePaths.notificationSettings(uid))
-        .snapshots()
-        .map((snap) => _prefs(snap.data()));
+    return _db.doc(FirestorePaths.notificationSettings(uid)).snapshots().map(
+      (snap) => _prefs(snap.data()),
+    );
   }
 
   @override

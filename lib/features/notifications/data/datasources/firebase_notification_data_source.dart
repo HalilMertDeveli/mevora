@@ -13,12 +13,8 @@ class FirebaseNotificationDataSource
     FirebaseMessaging? messaging,
     FirebaseMessagingDataSource? messagingDataSource,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-       _messaging =
-           messagingDataSource ??
-           FirebaseMessagingDataSource(
-             firestore: firestore,
-             messaging: messaging,
-           );
+       _messaging = messagingDataSource ??
+           FirebaseMessagingDataSource(firestore: firestore, messaging: messaging);
 
   final FirebaseFirestore _firestore;
   final FirebaseMessagingDataSource _messaging;

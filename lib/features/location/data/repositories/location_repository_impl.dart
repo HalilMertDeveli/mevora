@@ -129,7 +129,9 @@ class LocationRepositoryImpl implements LocationRepository {
     }
     final source = _locationDataSource;
     if (source == null) {
-      return Success(LocationFlags(uid: uid));
+      return Success(
+        LocationFlags(uid: uid),
+      );
     }
     try {
       return Success(await source.loadLocationFlags(uid));

@@ -87,8 +87,7 @@ class ProfileLifestyle {
         'partnerChildrenPref': partnerChildrenPref,
       if (socialRhythm != null) 'socialRhythm': socialRhythm,
       if (socialLevel != null) 'socialLevel': socialLevel,
-      if (weekendPreferences.isNotEmpty)
-        'weekendPreferences': weekendPreferences,
+      if (weekendPreferences.isNotEmpty) 'weekendPreferences': weekendPreferences,
       if (cohabitationPreference != null)
         'cohabitationPreference': cohabitationPreference,
     };

@@ -14,7 +14,10 @@ class FunctionsIncomingLikesRepository implements IncomingLikesRepository {
     final raw = await _callable.invoke('getIncomingLikes');
     final locked = raw['locked'] == true;
     final isPremium = raw['isPremium'] == true;
-    final count = firestoreInt(raw['incomingLikeCount'] ?? raw['count'], 0);
+    final count = firestoreInt(
+      raw['incomingLikeCount'] ?? raw['count'],
+      0,
+    );
     final itemsRaw = raw['items'];
     final items = <IncomingLikerPreview>[];
     if (!locked && itemsRaw is List) {

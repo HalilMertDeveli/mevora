@@ -30,6 +30,9 @@ class MatchRepositoryImpl implements MatchRepository, LikeRepository {
     required String targetUserId,
     required String action,
   }) {
-    return _dataSource.recordSwipe(targetUserId: targetUserId, action: action);
+    return _dataSource.recordSwipe(
+      targetUserId: targetUserId,
+      action: action,
+    );
   }
 }

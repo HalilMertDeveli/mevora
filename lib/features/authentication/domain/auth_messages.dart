@@ -40,7 +40,8 @@ abstract final class AuthMessages {
 
   static const String cancelled = 'Giriş iptal edildi.';
   static const String invalidPhone = 'Telefon numarası geçersiz.';
-  static const String smsFailed = 'SMS gönderilemedi. Lütfen tekrar dene.';
+  static const String smsFailed =
+      'SMS gönderilemedi. Lütfen tekrar dene.';
   static const String appVerification =
       'Uygulama doğrulaması tamamlanamadı. İnternet bağlantını kontrol et, gerçek bir cihazda dene ve birkaç saniye sonra yeniden dene.';
   static const String invalidOtp = 'Doğrulama kodu hatalı.';

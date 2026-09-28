@@ -30,7 +30,8 @@ abstract final class AuthErrorMapper {
   }
 
   static AuthException fromCode(String? code, {Object? cause}) {
-    if (_looksLikeBillingNotEnabled(cause) || _haystackContainsBilling(code)) {
+    if (_looksLikeBillingNotEnabled(cause) ||
+        _haystackContainsBilling(code)) {
       return AuthException(
         AuthMessages.billingNotEnabled,
         kind: AuthErrorKind.billingNotEnabled,
@@ -69,30 +70,37 @@ abstract final class AuthErrorMapper {
       'web-context-cancelled' ||
       'sign-in-canceled' ||
       'sign-in-cancelled' ||
-      'aborted' => AuthErrorKind.cancelled,
+      'aborted' =>
+        AuthErrorKind.cancelled,
       'invalid-phone-number' ||
       'missing-phone-number' ||
-      'invalid-phone' => AuthErrorKind.invalidPhone,
+      'invalid-phone' =>
+        AuthErrorKind.invalidPhone,
       'captcha-check-failed' ||
       'missing-client-identifier' ||
       'invalid-app-credential' ||
-      'app-not-authorized' => AuthErrorKind.appVerification,
+      'app-not-authorized' =>
+        AuthErrorKind.appVerification,
       'sms-region-restricted' ||
-      'sms-region-restriction' => AuthErrorKind.smsFailed,
+      'sms-region-restriction' =>
+        AuthErrorKind.smsFailed,
       'invalid-verification-code' ||
       'invalid-verification-id' ||
       'missing-verification-code' ||
-      'missing-verification-id' => AuthErrorKind.invalidOtp,
+      'missing-verification-id' =>
+        AuthErrorKind.invalidOtp,
       'code-expired' => AuthErrorKind.expiredOtp,
       'session-expired' => AuthErrorKind.expiredOtp,
       'quota-exceeded' => AuthErrorKind.smsQuota,
       'too-many-requests' ||
-      'resource-exhausted' => AuthErrorKind.tooManyAttempts,
+      'resource-exhausted' =>
+        AuthErrorKind.tooManyAttempts,
       'unavailable' ||
       'internal' ||
       'internal-error' ||
       'deadline-exceeded' ||
-      'data-loss' => AuthErrorKind.firebaseUnavailable,
+      'data-loss' =>
+        AuthErrorKind.firebaseUnavailable,
       'network-request-failed' || 'network' => AuthErrorKind.network,
       'user-disabled' || 'disabled' => AuthErrorKind.disabled,
       'user-banned' || 'banned' => AuthErrorKind.banned,
@@ -100,27 +108,31 @@ abstract final class AuthErrorMapper {
       'credential-already-in-use' ||
       'already-exists' ||
       'failed-precondition' ||
-      'provider-already-linked' => AuthErrorKind.accountExists,
+      'provider-already-linked' =>
+        AuthErrorKind.accountExists,
       'email-already-in-use' => AuthErrorKind.emailInUse,
       'linking-blocked' => AuthErrorKind.linkingBlocked,
       'user-mismatch' ||
       'no-such-provider' ||
       'oauth' ||
       'clientconfigurationerror' ||
-      'client-configuration-error' => AuthErrorKind.oauth,
+      'client-configuration-error' =>
+        AuthErrorKind.oauth,
       'token-expired' => AuthErrorKind.sessionExpired,
       'permission-denied' || 'api-denied' => AuthErrorKind.oauth,
       'billing-not-enabled' => AuthErrorKind.billingNotEnabled,
       'operation-not-allowed' ||
       'not-configured' ||
       'providerconfigurationerror' ||
-      'provider-configuration-error' => AuthErrorKind.notConfigured,
+      'provider-configuration-error' =>
+        AuthErrorKind.notConfigured,
       'invalid-email' => AuthErrorKind.invalidEmail,
       'weak-password' => AuthErrorKind.weakPassword,
       'user-not-found' => AuthErrorKind.userNotFound,
       'wrong-password' ||
       'invalid-credential' ||
-      'invalid-login-credentials' => AuthErrorKind.wrongPassword,
+      'invalid-login-credentials' =>
+        AuthErrorKind.wrongPassword,
       _ => AuthErrorKind.unknown,
     };
   }

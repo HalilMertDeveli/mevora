@@ -21,8 +21,7 @@ abstract final class CompatibilityBreakdownMapper {
       relationshipScore: candidate.categoryRelationshipScore!,
       interestScore: candidate.categoryInterestScore!,
       lifestyleScore: candidate.categoryLifestyleScore!,
-      questionScore:
-          candidate.categoryQuestionScore ??
+      questionScore: candidate.categoryQuestionScore ??
           candidate.relationshipCompatibilityScore,
       musicScore:
           candidate.categoryMusicScore ?? candidate.musicCompatibilityScore,

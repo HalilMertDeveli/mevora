@@ -132,9 +132,7 @@ enum IdentityVerificationReason {
 /// unrecognised degrades to [IdentityVerificationStatus.error] rather than to
 /// a status that could be read as progress — a provider that adds a value
 /// MEVORA has not reviewed must not move a user toward verified by accident.
-IdentityVerificationStatus identityVerificationStatusFromFirestore(
-  Object? raw,
-) {
+IdentityVerificationStatus identityVerificationStatusFromFirestore(Object? raw) {
   if (raw == null || raw == '') {
     return IdentityVerificationStatus.notStarted;
   }

@@ -83,6 +83,9 @@ class AnalyticsLocationAnalytics implements LocationAnalytics {
 
   @override
   Future<void> error({required String kind}) {
-    return _log(AnalyticsEvents.locationError, parameters: {'kind': kind});
+    return _log(
+      AnalyticsEvents.locationError,
+      parameters: {'kind': kind},
+    );
   }
 }

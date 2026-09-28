@@ -101,7 +101,8 @@ class MusicProfile {
   bool get hasLimitedData => connected && taste.isEmpty;
 
   /// True when the member could see followed artists by reconnecting.
-  bool get canReconnectForFollowedArtists => connected && !followScopeGranted;
+  bool get canReconnectForFollowedArtists =>
+      connected && !followScopeGranted;
 
   /// Artists the owner may publish: the ones they listen to most and the
   /// ones they chose to follow. Recently played is excluded — it is

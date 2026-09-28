@@ -322,10 +322,9 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
       LocationPermissionStatus.restricted => LocationScreenState.restricted,
       LocationPermissionStatus.error => LocationScreenState.error,
       LocationPermissionStatus.granted => LocationScreenState.prompt,
-      LocationPermissionStatus.denied =>
-        _nativePromptedThisSession
-            ? LocationScreenState.denied
-            : LocationScreenState.prompt,
+      LocationPermissionStatus.denied => _nativePromptedThisSession
+          ? LocationScreenState.denied
+          : LocationScreenState.prompt,
       _ => LocationScreenState.prompt,
     };
   }

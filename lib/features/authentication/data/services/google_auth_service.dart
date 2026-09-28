@@ -56,7 +56,9 @@ class GoogleAuthService {
     // #region agent log
     _logDebug(
       'google_initialize_start',
-      data: <String, Object?>{'serverClientIdEmpty': serverClientId.isEmpty},
+      data: <String, Object?>{
+        'serverClientIdEmpty': serverClientId.isEmpty,
+      },
     );
     // #endregion
     await _googleSignIn.initialize(
@@ -115,10 +117,7 @@ class GoogleAuthService {
       return _sessionFrom(result, account);
     } on AuthException {
       // #region agent log
-      _logDebug(
-        'google_auth_exception_passthrough',
-        hypothesisId: 'GAUTH_AUTH',
-      );
+      _logDebug('google_auth_exception_passthrough', hypothesisId: 'GAUTH_AUTH');
       // #endregion
       rethrow;
     } on GoogleSignInException catch (error) {
@@ -250,10 +249,16 @@ class GoogleAuthService {
     }
   }
 
-  AuthSession _sessionFrom(UserCredential result, GoogleSignInAccount account) {
+  AuthSession _sessionFrom(
+    UserCredential result,
+    GoogleSignInAccount account,
+  ) {
     final user = result.user;
     if (user == null) {
-      throw const AuthException(AuthMessages.oauth, kind: AuthErrorKind.oauth);
+      throw const AuthException(
+        AuthMessages.oauth,
+        kind: AuthErrorKind.oauth,
+      );
     }
     // Prefill identity hints for onboarding only — never auto-complete dating
     // profile fields (photos, interests, etc.).

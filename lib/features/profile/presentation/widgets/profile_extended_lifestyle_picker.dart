@@ -85,9 +85,8 @@ class ProfileExtendedLifestylePicker extends StatelessWidget {
               ProfileMultiSelectPicker(
                 options: WeekendPreference.values,
                 selected: profile.weekendPreferences.toSet(),
-                onChanged: (next) => onChanged(
-                  profile.copyWith(weekendPreferences: next.toList()),
-                ),
+                onChanged: (next) =>
+                    onChanged(profile.copyWith(weekendPreferences: next.toList())),
                 enabled: enabled,
                 maxSelection: 6,
                 labelFor: (id) => OnboardingLabels.weekendPreference(l10n, id),

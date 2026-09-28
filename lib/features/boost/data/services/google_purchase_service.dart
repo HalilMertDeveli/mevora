@@ -6,9 +6,11 @@ import 'package:mevora/core/services/app_logger.dart';
 /// Play Billing consume helper. Unconsumed purchases may be redelivered;
 /// verification is idempotent and keyed by Firebase UID.
 class GooglePurchaseService {
-  GooglePurchaseService({InAppPurchase? store, AppLogger? logger})
-    : _store = store ?? InAppPurchase.instance,
-      _logger = logger;
+  GooglePurchaseService({
+    InAppPurchase? store,
+    AppLogger? logger,
+  }) : _store = store ?? InAppPurchase.instance,
+       _logger = logger;
 
   final InAppPurchase _store;
   final AppLogger? _logger;

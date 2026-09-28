@@ -97,18 +97,14 @@ class OnboardingController extends ChangeNotifier {
     errorMessage = null;
     _notify();
     final existing = await _repository.loadDraft(user.id);
-    final draft =
-        (existing ??
-                UserProfile(
-                  uid: user.id,
-                  displayName: user.displayName?.trim() ?? '',
-                ))
-            .copyWith(
-              displayName: _prefillName(
-                existing?.displayName,
-                user.displayName,
-              ),
-            );
+    final draft = (existing ??
+            UserProfile(
+              uid: user.id,
+              displayName: user.displayName?.trim() ?? '',
+            ))
+        .copyWith(
+          displayName: _prefillName(existing?.displayName, user.displayName),
+        );
     profile = draft;
     step = draft.onboardingStep == OnboardingStep.complete
         ? OnboardingStep.basicInfo
@@ -279,7 +275,9 @@ class OnboardingController extends ChangeNotifier {
       );
     }
 
-    final picked = await _photoPicker.pickMultipleFromGallery(limit: remaining);
+    final picked = await _photoPicker.pickMultipleFromGallery(
+      limit: remaining,
+    );
     switch (picked) {
       case Success(:final value):
         if (value.isEmpty) {
@@ -460,7 +458,11 @@ class OnboardingController extends ChangeNotifier {
     photoDrafts = [
       for (final draft in photoDrafts)
         if (draft.id == id)
-          draft.copyWith(isUploading: false, progress: 0, error: message)
+          draft.copyWith(
+            isUploading: false,
+            progress: 0,
+            error: message,
+          )
         else
           draft,
     ];
@@ -485,7 +487,9 @@ class OnboardingController extends ChangeNotifier {
       if (remote == null) {
         continue;
       }
-      photos.add(remote.copyWith(order: i, isPrimary: i == 0));
+      photos.add(
+        remote.copyWith(order: i, isPrimary: i == 0),
+      );
     }
     return photos;
   }

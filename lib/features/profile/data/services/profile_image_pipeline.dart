@@ -55,7 +55,9 @@ class ProfileImagePipeline implements ImageCompressPipeline {
 
   Result<CompressedImage> _accept(List<int> bytes) {
     if (!isAllowedSize(bytes.length)) {
-      return const Err(ValidationFailure('Image must be 5 MB or smaller.'));
+      return const Err(
+        ValidationFailure('Image must be 5 MB or smaller.'),
+      );
     }
     return Success(
       CompressedImage(

@@ -211,13 +211,13 @@ class DiscoveryCandidate {
           sharedMusicArtistCount ?? this.sharedMusicArtistCount,
       sharedMusicGenreCount:
           sharedMusicGenreCount ?? this.sharedMusicGenreCount,
-      sharedMusicPlaylistTrackCount:
-          sharedMusicPlaylistTrackCount ?? this.sharedMusicPlaylistTrackCount,
+      sharedMusicPlaylistTrackCount: sharedMusicPlaylistTrackCount ??
+          this.sharedMusicPlaylistTrackCount,
       sharedMusicRecentTrackCount:
           sharedMusicRecentTrackCount ?? this.sharedMusicRecentTrackCount,
       musicInsights: musicInsights ?? this.musicInsights,
-      relationshipCompatibilityScore:
-          relationshipCompatibilityScore ?? this.relationshipCompatibilityScore,
+      relationshipCompatibilityScore: relationshipCompatibilityScore ??
+          this.relationshipCompatibilityScore,
       relationshipSharedViewCount:
           relationshipSharedViewCount ?? this.relationshipSharedViewCount,
       relationshipAlignedCount:

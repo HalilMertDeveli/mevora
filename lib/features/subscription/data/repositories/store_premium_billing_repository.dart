@@ -325,8 +325,7 @@ class StorePremiumBillingRepository implements PremiumBillingRepository {
   /// subscription-status endpoint accepts, so the transaction id is sent.
   String _evidenceFor(PurchaseDetails details) {
     return switch (_platform) {
-      PremiumPlatform.android =>
-        details.verificationData.serverVerificationData,
+      PremiumPlatform.android => details.verificationData.serverVerificationData,
       PremiumPlatform.ios => details.purchaseID ?? '',
     };
   }

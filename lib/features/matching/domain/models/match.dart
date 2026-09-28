@@ -60,7 +60,10 @@ class Match {
       compatibilitySnapshots[uid];
 
   String otherUserId(String uid) {
-    return userIds.firstWhere((id) => id != uid, orElse: () => userIds.last);
+    return userIds.firstWhere(
+      (id) => id != uid,
+      orElse: () => userIds.last,
+    );
   }
 
   String otherName(String uid) =>

@@ -62,7 +62,10 @@ class _ManualCityFormState extends State<_ManualCityForm> {
           onSubmitted: (_) => _submit(),
         ),
         const SizedBox(height: AppSpacing.md),
-        MevoraButton(label: l10n.continueAction, onPressed: _submit),
+        MevoraButton(
+          label: l10n.continueAction,
+          onPressed: _submit,
+        ),
       ],
     );
   }

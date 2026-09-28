@@ -205,15 +205,9 @@ String _cleanSubject(String raw) {
     return value;
   }
   // Turkish leftovers from prompt stripping.
-  value = value.replaceFirst(
-    RegExp(r'\s*senin için\s*$', caseSensitive: false),
-    '',
-  );
+  value = value.replaceFirst(RegExp(r'\s*senin için\s*$', caseSensitive: false), '');
   value = value.replaceFirst(RegExp(r'\s*seni\s*$', caseSensitive: false), '');
-  value = value.replaceFirst(
-    RegExp(r'\s*seninle\s*$', caseSensitive: false),
-    '',
-  );
+  value = value.replaceFirst(RegExp(r'\s*seninle\s*$', caseSensitive: false), '');
   // Collapse whitespace; keep Turkish letters intact (UTF-8).
   value = value.replaceAll(RegExp(r'\s+'), ' ').trim();
   // Drop trailing punctuation from statements.

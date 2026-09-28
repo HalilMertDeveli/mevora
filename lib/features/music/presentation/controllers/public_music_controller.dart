@@ -43,7 +43,8 @@ class PublicMusicState {
   bool get artistLimitReached =>
       selectedArtistIds.length >= maxPublicMusicArtists;
 
-  bool get trackLimitReached => selectedTrackIds.length >= maxPublicMusicTracks;
+  bool get trackLimitReached =>
+      selectedTrackIds.length >= maxPublicMusicTracks;
 
   bool get hasSelection =>
       selectedArtistIds.isNotEmpty || selectedTrackIds.isNotEmpty;
@@ -93,8 +94,7 @@ class PublicMusicController extends ChangeNotifier {
       // selection starts from it instead of from a blank sheet.
       selectedArtistIds: profile.publicProfile.artistIds.toSet(),
       selectedTrackIds: profile.publicProfile.trackIds.toSet(),
-      enabled:
-          profile.publicProfile.enabled || !profile.publicProfile.hasContent,
+      enabled: profile.publicProfile.enabled || !profile.publicProfile.hasContent,
     );
   }
 

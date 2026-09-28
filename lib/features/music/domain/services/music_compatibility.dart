@@ -18,7 +18,10 @@ enum MusicInsightCode {
 }
 
 class MusicInsight {
-  const MusicInsight({required this.code, this.params = const {}});
+  const MusicInsight({
+    required this.code,
+    this.params = const {},
+  });
 
   final MusicInsightCode code;
   final Map<String, Object> params;
@@ -246,7 +249,9 @@ abstract final class MusicCompatibilityCalculator {
     required int sharedPlaylistTrackCount,
     String? topArtistName,
   }) {
-    final insights = <MusicInsight>[MusicInsight(code: _bandCode(score))];
+    final insights = <MusicInsight>[
+      MusicInsight(code: _bandCode(score)),
+    ];
     if (sharedTrackCount > 0) {
       insights.add(
         MusicInsight(
@@ -302,7 +307,9 @@ abstract final class MusicCompatibilityCalculator {
         sharedGenreNames.isEmpty &&
         sharedPlaylistTrackCount == 0 &&
         sharedRecentTrackCount == 0) {
-      insights.add(const MusicInsight(code: MusicInsightCode.dataUnavailable));
+      insights.add(
+        const MusicInsight(code: MusicInsightCode.dataUnavailable),
+      );
     }
     return insights;
   }

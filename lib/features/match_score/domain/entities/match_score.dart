@@ -1,7 +1,10 @@
 enum MatchScoreHistoryType { newMatch, postMatchInteraction }
 
 class MatchScoreSnapshot {
-  const MatchScoreSnapshot({required this.score, this.matchCount = 0});
+  const MatchScoreSnapshot({
+    required this.score,
+    this.matchCount = 0,
+  });
 
   final int score;
   final int matchCount;

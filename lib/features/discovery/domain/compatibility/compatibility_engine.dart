@@ -87,11 +87,7 @@ abstract final class CompatibilityScoring {
     if (raw == null || raw.trim().isEmpty) {
       return null;
     }
-    final key = raw
-        .trim()
-        .toLowerCase()
-        .replaceAll('_', '')
-        .replaceAll('-', '');
+    final key = raw.trim().toLowerCase().replaceAll('_', '').replaceAll('-', '');
     return switch (key) {
       'longterm' => OnboardingRelationshipGoal.longTerm,
       'shortterm' => OnboardingRelationshipGoal.shortTerm,
@@ -118,15 +114,15 @@ abstract final class CompatibilityScoring {
     return switch (partnerPref) {
       PartnerPreference.noIssue => 1,
       PartnerPreference.prefer => switch (habitLevel) {
-        0 || 1 => 1,
-        2 => 0.55,
-        _ => 0.25,
-      },
+          0 || 1 => 1,
+          2 => 0.55,
+          _ => 0.25,
+        },
       PartnerPreference.preferNot => switch (habitLevel) {
-        0 => 1,
-        1 => 0.45,
-        _ => 0.1,
-      },
+          0 => 1,
+          1 => 0.45,
+          _ => 0.1,
+        },
       PartnerPreference.never => habitLevel == 0 ? 1 : 0,
       _ => 0.5,
     };
@@ -157,13 +153,13 @@ abstract final class CompatibilityScoring {
     return switch (partnerPref) {
       PartnerPreference.noIssue => 1,
       PartnerPreference.prefer => childrenAlignment(
-        ChildrenPreference.yes,
-        otherPref,
-      ),
+          ChildrenPreference.yes,
+          otherPref,
+        ),
       PartnerPreference.preferNot => childrenAlignment(
-        ChildrenPreference.no,
-        otherPref,
-      ),
+          ChildrenPreference.no,
+          otherPref,
+        ),
       PartnerPreference.never => otherPref == ChildrenPreference.no ? 1 : 0.1,
       _ => 0.5,
     };
@@ -190,9 +186,8 @@ class InterestStrategy implements CompatibilityStrategy {
   @override
   double score(CompatibilityContext context) {
     final viewer = CompatibilityScoring.normalizedSet(context.viewer.interests);
-    final candidate = CompatibilityScoring.normalizedSet(
-      context.candidate.interests,
-    );
+    final candidate =
+        CompatibilityScoring.normalizedSet(context.candidate.interests);
     return CompatibilityScoring.jaccard(viewer, candidate);
   }
 
@@ -200,10 +195,7 @@ class InterestStrategy implements CompatibilityStrategy {
   String? reason(CompatibilityContext context) {
     final viewer = CompatibilityScoring.normalizedSet(context.viewer.interests);
     final shared = context.candidate.interests
-        .where(
-          (interest) =>
-              viewer.contains(CompatibilityScoring.normalize(interest)),
-        )
+        .where((interest) => viewer.contains(CompatibilityScoring.normalize(interest)))
         .toList();
     if (shared.isEmpty) {
       return null;
@@ -230,9 +222,8 @@ class LanguageStrategy implements CompatibilityStrategy {
   @override
   double score(CompatibilityContext context) {
     final viewer = CompatibilityScoring.normalizedSet(context.viewer.languages);
-    final candidate = CompatibilityScoring.normalizedSet(
-      context.candidate.languages,
-    );
+    final candidate =
+        CompatibilityScoring.normalizedSet(context.candidate.languages);
     return CompatibilityScoring.jaccard(viewer, candidate);
   }
 
@@ -267,9 +258,8 @@ class HobbyStrategy implements CompatibilityStrategy {
   @override
   double score(CompatibilityContext context) {
     final viewer = CompatibilityScoring.normalizedSet(context.viewer.hobbies);
-    final candidate = CompatibilityScoring.normalizedSet(
-      context.candidate.hobbies,
-    );
+    final candidate =
+        CompatibilityScoring.normalizedSet(context.candidate.hobbies);
     return CompatibilityScoring.jaccard(viewer, candidate);
   }
 
@@ -277,9 +267,7 @@ class HobbyStrategy implements CompatibilityStrategy {
   String? reason(CompatibilityContext context) {
     final viewer = CompatibilityScoring.normalizedSet(context.viewer.hobbies);
     final shared = context.candidate.hobbies
-        .where(
-          (hobby) => viewer.contains(CompatibilityScoring.normalize(hobby)),
-        )
+        .where((hobby) => viewer.contains(CompatibilityScoring.normalize(hobby)))
         .toList();
     if (shared.isEmpty) {
       return null;
@@ -366,26 +354,10 @@ class ValuesStrategy implements CompatibilityStrategy {
 
   List<double> _pairScores(CompatibilityContext context) {
     final scores = <double>[];
-    _addHabitScores(
-      scores,
-      context.viewer.lifestyleProfile,
-      context.candidate.lifestyleProfile,
-    );
-    _addHabitScores(
-      scores,
-      context.candidate.lifestyleProfile,
-      context.viewer.lifestyleProfile,
-    );
-    _addChildrenScores(
-      scores,
-      context.viewer.lifestyleProfile,
-      context.candidate.lifestyleProfile,
-    );
-    _addChildrenScores(
-      scores,
-      context.candidate.lifestyleProfile,
-      context.viewer.lifestyleProfile,
-    );
+    _addHabitScores(scores, context.viewer.lifestyleProfile, context.candidate.lifestyleProfile);
+    _addHabitScores(scores, context.candidate.lifestyleProfile, context.viewer.lifestyleProfile);
+    _addChildrenScores(scores, context.viewer.lifestyleProfile, context.candidate.lifestyleProfile);
+    _addChildrenScores(scores, context.candidate.lifestyleProfile, context.viewer.lifestyleProfile);
     return scores;
   }
 
@@ -540,8 +512,7 @@ class LifestyleStrategy implements CompatibilityStrategy {
 
   @override
   bool applies(CompatibilityContext context) {
-    return _tags(context.viewer).isNotEmpty &&
-        _tags(context.candidate).isNotEmpty;
+    return _tags(context.viewer).isNotEmpty && _tags(context.candidate).isNotEmpty;
   }
 
   @override
@@ -557,9 +528,7 @@ class LifestyleStrategy implements CompatibilityStrategy {
   Set<String> _tags(UserProfile profile) {
     final tags = <String>{};
     tags.addAll(CompatibilityScoring.normalizedSet(profile.lifestyle));
-    tags.addAll(
-      CompatibilityScoring.normalizedSet(profile.lifestyleProfile.toTags()),
-    );
+    tags.addAll(CompatibilityScoring.normalizedSet(profile.lifestyleProfile.toTags()));
     return tags;
   }
 }
@@ -639,32 +608,17 @@ class CompatibilityEngine {
       }
     }
     final normalized = activeWeight == 0 ? 0.0 : weighted / activeWeight;
-    final viewerInterests = CompatibilityScoring.normalizedSet(
-      context.viewer.interests,
-    );
+    final viewerInterests = CompatibilityScoring.normalizedSet(context.viewer.interests);
     final sharedInterests = context.candidate.interests
-        .where(
-          (item) =>
-              viewerInterests.contains(CompatibilityScoring.normalize(item)),
-        )
+        .where((item) => viewerInterests.contains(CompatibilityScoring.normalize(item)))
         .toList();
-    final viewerLanguages = CompatibilityScoring.normalizedSet(
-      context.viewer.languages,
-    );
+    final viewerLanguages = CompatibilityScoring.normalizedSet(context.viewer.languages);
     final sharedLanguages = context.candidate.languages
-        .where(
-          (item) =>
-              viewerLanguages.contains(CompatibilityScoring.normalize(item)),
-        )
+        .where((item) => viewerLanguages.contains(CompatibilityScoring.normalize(item)))
         .toList();
-    final viewerHobbies = CompatibilityScoring.normalizedSet(
-      context.viewer.hobbies,
-    );
+    final viewerHobbies = CompatibilityScoring.normalizedSet(context.viewer.hobbies);
     final sharedHobbies = context.candidate.hobbies
-        .where(
-          (item) =>
-              viewerHobbies.contains(CompatibilityScoring.normalize(item)),
-        )
+        .where((item) => viewerHobbies.contains(CompatibilityScoring.normalize(item)))
         .toList();
     return CompatibilityResult(
       score: (normalized * 100).round().clamp(0, 100),

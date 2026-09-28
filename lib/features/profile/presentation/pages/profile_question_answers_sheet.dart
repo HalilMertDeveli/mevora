@@ -43,8 +43,7 @@ Future<void> showProfileQuestionAnswersSheet(
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: cards.length,
-                  separatorBuilder: (_, index) =>
-                      const SizedBox(height: AppSpacing.md),
+                  separatorBuilder: (_, index) => const SizedBox(height: AppSpacing.md),
                   itemBuilder: (context, index) {
                     final card = cards[index];
                     return Column(

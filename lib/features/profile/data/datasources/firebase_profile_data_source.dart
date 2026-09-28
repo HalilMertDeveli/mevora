@@ -41,9 +41,7 @@ class FirebaseProfileDataSource {
   }
 
   Future<void> save(UserProfile profile) {
-    return _profiles
-        .doc(profile.uid)
-        .set(_profileToMap(profile), SetOptions(merge: true));
+    return _profiles.doc(profile.uid).set(_profileToMap(profile), SetOptions(merge: true));
   }
 
   Future<UserPreferences> fetchPreferences(String uid) async {
@@ -88,7 +86,10 @@ class FirebaseProfileDataSource {
         }
       }
     }
-    return Page(items: items, nextCursor: data['nextCursor'] as String?);
+    return Page(
+      items: items,
+      nextCursor: data['nextCursor'] as String?,
+    );
   }
 
   UserProfile _profileFrom(String uid, Map<String, dynamic> data) {
@@ -121,8 +122,7 @@ class FirebaseProfileDataSource {
       onboardingStep: OnboardingStep.fromStorage(data['onboardingStep']),
       profileCompleted: firestoreFlag(data['profileCompleted']),
       onboardingCompleted: firestoreFlag(data['onboardingCompleted']),
-      isProfileComplete:
-          firestoreFlag(data['isProfileComplete']) ||
+      isProfileComplete: firestoreFlag(data['isProfileComplete']) ||
           firestoreFlag(data['profileCompleted']) ||
           firestoreFlag(data['onboardingCompleted']),
       isDiscoverable: firestoreFlag(data['isDiscoverable']),

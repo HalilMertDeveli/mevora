@@ -39,8 +39,7 @@ abstract final class RelationshipQuestionSets {
         final questions = [
           for (final id in ids) RelationshipQuestionCatalog.byId(id),
         ].whereType<RelationshipQuestion>().toList(growable: false);
-        if (questions.length ==
-            RelationshipQuestionConfig.questionsPerSession) {
+        if (questions.length == RelationshipQuestionConfig.questionsPerSession) {
           return questions;
         }
       }

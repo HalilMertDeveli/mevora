@@ -5,18 +5,13 @@ import 'package:mevora/features/discovery/domain/entities/discovery_candidate.da
 class CompatibilitySessionCache {
   final _cache = <String, CompatibilityBreakdown>{};
 
-  String _key(String viewerUid, String candidateUid) =>
-      '$viewerUid::$candidateUid';
+  String _key(String viewerUid, String candidateUid) => '$viewerUid::$candidateUid';
 
   CompatibilityBreakdown? get(String viewerUid, String candidateUid) {
     return _cache[_key(viewerUid, candidateUid)];
   }
 
-  void put(
-    String viewerUid,
-    String candidateUid,
-    CompatibilityBreakdown breakdown,
-  ) {
+  void put(String viewerUid, String candidateUid, CompatibilityBreakdown breakdown) {
     _cache[_key(viewerUid, candidateUid)] = breakdown;
   }
 

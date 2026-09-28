@@ -36,25 +36,22 @@ class FirebaseSettingsDataSource {
   }
 
   Future<void> saveSettings(UserSettings settings) {
-    return _firestore
-        .collection(FirestorePaths.userSettings)
-        .doc(settings.uid)
-        .set({
-          'languageCode': settings.languageCode,
-          'language': settings.languageCode,
-          'theme': settings.theme,
-          'notificationsEnabled': settings.notificationsEnabled,
-          'messageNotifications': settings.messageNotifications,
-          'matchNotifications': settings.matchNotifications,
-          'superLikeNotifications': settings.superLikeNotifications,
-          'callNotifications': settings.callNotifications,
-          'locationEnabled': settings.locationEnabled,
-          'locationOnboardingCompleted': settings.locationOnboardingCompleted,
-          if (settings.lastLocationUpdate case final lastLocationUpdate?)
-            'lastLocationUpdate': Timestamp.fromDate(lastLocationUpdate),
-          'showOnlineStatus': settings.showOnlineStatus,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+    return _firestore.collection(FirestorePaths.userSettings).doc(settings.uid).set({
+      'languageCode': settings.languageCode,
+      'language': settings.languageCode,
+      'theme': settings.theme,
+      'notificationsEnabled': settings.notificationsEnabled,
+      'messageNotifications': settings.messageNotifications,
+      'matchNotifications': settings.matchNotifications,
+      'superLikeNotifications': settings.superLikeNotifications,
+      'callNotifications': settings.callNotifications,
+      'locationEnabled': settings.locationEnabled,
+      'locationOnboardingCompleted': settings.locationOnboardingCompleted,
+      if (settings.lastLocationUpdate case final lastLocationUpdate?)
+        'lastLocationUpdate': Timestamp.fromDate(lastLocationUpdate),
+      'showOnlineStatus': settings.showOnlineStatus,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<UserPrivacy> loadPrivacy(String uid) async {
@@ -81,20 +78,17 @@ class FirebaseSettingsDataSource {
   }
 
   Future<void> savePrivacy(UserPrivacy privacy) {
-    return _firestore
-        .collection(FirestorePaths.userPrivacy)
-        .doc(privacy.uid)
-        .set({
-          'showOnlineStatus': privacy.showOnlineStatus,
-          'showLastSeen': privacy.showLastSeen,
-          'showTypingStatus': privacy.showTypingStatus,
-          'showDistance': privacy.showDistance,
-          'showAge': privacy.showAge,
-          'showActivity': privacy.showActivity,
-          'allowNotifications': privacy.allowNotifications,
-          'allowCalls': privacy.allowCalls,
-          'allowMessages': privacy.allowMessages,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+    return _firestore.collection(FirestorePaths.userPrivacy).doc(privacy.uid).set({
+      'showOnlineStatus': privacy.showOnlineStatus,
+      'showLastSeen': privacy.showLastSeen,
+      'showTypingStatus': privacy.showTypingStatus,
+      'showDistance': privacy.showDistance,
+      'showAge': privacy.showAge,
+      'showActivity': privacy.showActivity,
+      'allowNotifications': privacy.allowNotifications,
+      'allowCalls': privacy.allowCalls,
+      'allowMessages': privacy.allowMessages,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 }

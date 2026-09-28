@@ -10,8 +10,7 @@ import 'package:mevora/features/relationship/domain/repositories/relationship_re
 import 'package:mevora/features/relationship/domain/services/relationship_question_sets.dart';
 
 /// Discovery tab dwell time → offer if no normal matches → 3-question test.
-class RelationshipController extends ChangeNotifier
-    with WidgetsBindingObserver {
+class RelationshipController extends ChangeNotifier with WidgetsBindingObserver {
   RelationshipController({
     required RelationshipRepository repository,
     Duration? interval,
@@ -167,9 +166,7 @@ class RelationshipController extends ChangeNotifier
     }
     _normalMatchCount = count;
     _log('Active conversations: $count');
-    if (count > 0 &&
-        _enforceOfferGates &&
-        (_offerVisible || _continuePromptVisible)) {
+    if (count > 0 && _enforceOfferGates && (_offerVisible || _continuePromptVisible)) {
       _offerVisible = false;
       _continuePromptVisible = false;
       _sessionLocked = false;
@@ -222,9 +219,7 @@ class RelationshipController extends ChangeNotifier
 
   Future<void> acceptOffer() async {
     if (!_offerVisible || _submitting) {
-      _log(
-        'Start button ignored (offer=$_offerVisible submitting=$_submitting)',
-      );
+      _log('Start button ignored (offer=$_offerVisible submitting=$_submitting)');
       return;
     }
     if (!_answersReady) {
@@ -280,7 +275,8 @@ class RelationshipController extends ChangeNotifier
     if (result.isSuccess) {
       final snapshot = result.valueOrNull;
       _matchingPaused = snapshot?.matchingPaused ?? false;
-      _matchingEventCount = snapshot?.matchingEventCount ?? _matchingEventCount;
+      _matchingEventCount =
+          snapshot?.matchingEventCount ?? _matchingEventCount;
       _offerCooldownUntil = snapshot?.offerCooldownUntil;
     }
     _sessionLocked = true;
@@ -342,9 +338,7 @@ class RelationshipController extends ChangeNotifier
       _session = const [];
       _sessionIndex = 0;
       _log('Relationship pool query started');
-      final completed = await _repository.completeTest(
-        questionIds: questionIds,
-      );
+      final completed = await _repository.completeTest(questionIds: questionIds);
       _submitting = false;
       _elapsed = Duration.zero;
       _runningSince = null;

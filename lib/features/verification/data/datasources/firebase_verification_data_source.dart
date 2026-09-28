@@ -133,13 +133,8 @@ class FirebaseVerificationDataSource {
           data[LegacyVerificationFields.providerSessionId] as String?,
       updatedAt: firestoreDate(data[LegacyVerificationFields.updatedAt]),
       verifiedAt: firestoreDate(data[LegacyVerificationFields.verifiedAt]),
-      attemptCount: firestoreInt(
-        data[LegacyVerificationFields.attemptCount],
-        0,
-      ),
-      lastAttemptAt: firestoreDate(
-        data[LegacyVerificationFields.lastAttemptAt],
-      ),
+      attemptCount: firestoreInt(data[LegacyVerificationFields.attemptCount], 0),
+      lastAttemptAt: firestoreDate(data[LegacyVerificationFields.lastAttemptAt]),
     );
   }
 }

@@ -76,12 +76,12 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
       });
       final purchase = _mapOf(data['purchase']);
       final wallet = _mapOf(data['wallet']);
-      final purchaseId =
-          purchase?['purchaseId'] as String? ??
+      final purchaseId = purchase?['purchaseId'] as String? ??
           '${transaction.platform.name}_${transaction.transactionId}';
       return BoostCreditResult(
         purchaseId: purchaseId,
-        productId: purchase?['productId'] as String? ?? transaction.productId,
+        productId:
+            purchase?['productId'] as String? ?? transaction.productId,
         boostCount: _intOf(purchase?['boostCount'], fallback: 0),
         balance: _intOf(wallet?['balance']),
         alreadyProcessed: data['alreadyProcessed'] == true,
@@ -327,11 +327,7 @@ class FirebasePurchaseDataSource implements PurchaseRemoteDataSource {
     return _boostFromDoc(userId, boostId, data);
   }
 
-  Boost? _boostFromDoc(
-    String userId,
-    String boostId,
-    Map<String, dynamic> data,
-  ) {
+  Boost? _boostFromDoc(String userId, String boostId, Map<String, dynamic> data) {
     final status = _statusOf(data['status'] as String?);
     final createdAt = _dateOf(data['createdAt']) ?? _clock();
     return Boost(

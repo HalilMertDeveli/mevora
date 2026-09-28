@@ -63,7 +63,10 @@ class HumorProfileSheet extends StatelessWidget {
                 style: theme.textTheme.bodyMedium,
               ),
             ] else ...[
-              Text(l10n.humorTopVibes, style: theme.textTheme.titleMedium),
+              Text(
+                l10n.humorTopVibes,
+                style: theme.textTheme.titleMedium,
+              ),
               const SizedBox(height: AppSpacing.sm),
               if (vibes.isEmpty)
                 Text(

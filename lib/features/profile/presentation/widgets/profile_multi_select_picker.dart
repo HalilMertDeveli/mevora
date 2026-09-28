@@ -49,8 +49,7 @@ class ProfileMultiSelectPicker extends StatelessWidget {
                             return;
                           }
                           next.add(option);
-                        } else if (next.length > minSelection ||
-                            minSelection == 0) {
+                        } else if (next.length > minSelection || minSelection == 0) {
                           next.remove(option);
                         } else {
                           return;

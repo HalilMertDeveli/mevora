@@ -29,11 +29,7 @@ abstract final class MevoraCompatibilityEngine {
     );
     final engine = CompatibilityEngine.standard();
     final profileResult = engine.evaluate(context);
-    final categoryScores = _profileCategoryScores(
-      engine,
-      context,
-      profileResult,
-    );
+    final categoryScores = _profileCategoryScores(engine, context, profileResult);
 
     final questionScore = relationshipCompatibilityScore;
     final musicScore = musicCompatibilityScore;
@@ -45,12 +41,9 @@ abstract final class MevoraCompatibilityEngine {
 
     final weightedParts = <({double weight, int? score})>[
       (weight: CompatibilityWeights.profile, score: profileResult.score),
-      if (questionScore != null &&
-          relationshipSharedCount != null &&
-          relationshipSharedCount > 0)
+      if (questionScore != null && relationshipSharedCount != null && relationshipSharedCount > 0)
         (weight: CompatibilityWeights.questions, score: questionScore),
-      if (musicScore != null)
-        (weight: CompatibilityWeights.music, score: musicScore),
+      if (musicScore != null) (weight: CompatibilityWeights.music, score: musicScore),
     ];
 
     final activeWeight = weightedParts.fold<double>(
@@ -89,7 +82,8 @@ abstract final class MevoraCompatibilityEngine {
         CompatibilityCategory.lifeValues: categoryScores.values!,
       CompatibilityCategory.proximity: categoryScores.proximity,
       CompatibilityCategory.activity: categoryScores.activity,
-      if (questionScore != null) CompatibilityCategory.questions: questionScore,
+      if (questionScore != null)
+        CompatibilityCategory.questions: questionScore,
       if (musicScore != null) CompatibilityCategory.music: musicScore,
       if (communicationScore != null)
         CompatibilityCategory.communication: communicationScore,
@@ -126,9 +120,8 @@ abstract final class MevoraCompatibilityEngine {
     required DiscoveryCandidate candidate,
     DiscoveryPreferences preferences = const DiscoveryPreferences(),
   }) {
-    final serverMapped = CompatibilityBreakdownMapper.fromCandidateIfComplete(
-      candidate,
-    );
+    final serverMapped =
+        CompatibilityBreakdownMapper.fromCandidateIfComplete(candidate);
     if (serverMapped != null) {
       final overall = candidate.hasCompatibilityScore
           ? candidate.compatibilityScore
@@ -203,7 +196,10 @@ abstract final class MevoraCompatibilityEngine {
       final aligned = candidate.relationshipAlignedCount;
       final shared = candidate.relationshipSharedViewCount;
       final qScore = candidate.relationshipCompatibilityScore;
-      if (aligned == null || shared == null || qScore == null || shared <= 0) {
+      if (aligned == null ||
+          shared == null ||
+          qScore == null ||
+          shared <= 0) {
         continue;
       }
       if (aligned < CompatibilityWeights.hiddenCompatibilityMinAligned) {
@@ -267,8 +263,7 @@ abstract final class MevoraCompatibilityEngine {
     int? optionalScore(String id) => profileResult.categoryScores[id];
 
     return _CategoryScores(
-      relationship:
-          optionalScore('relationshipGoal') ?? scoreFor('relationshipGoal'),
+      relationship: optionalScore('relationshipGoal') ?? scoreFor('relationshipGoal'),
       interests: optionalScore('interests') ?? scoreFor('interests'),
       languages: optionalScore('languages'),
       hobbies: optionalScore('hobbies'),
@@ -301,10 +296,9 @@ abstract final class MevoraCompatibilityEngine {
       return null;
     }
     final entries = scores.entries.toList();
-    entries.sort(
-      (a, b) =>
-          highest ? b.value.compareTo(a.value) : a.value.compareTo(b.value),
-    );
+    entries.sort((a, b) => highest
+        ? b.value.compareTo(a.value)
+        : a.value.compareTo(b.value));
     return entries.first.key;
   }
 }

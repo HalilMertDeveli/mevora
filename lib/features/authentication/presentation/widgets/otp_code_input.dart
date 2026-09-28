@@ -51,65 +51,65 @@ class _OtpCodeInputState extends State<OtpCodeInput> {
         child: GestureDetector(
           onTap: () => _focusNode.requestFocus(),
           child: Stack(
-            children: [
-              Opacity(
-                opacity: 0,
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  enabled: widget.enabled,
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  autofillHints: const [AutofillHints.oneTimeCode],
-                  enableSuggestions: false,
-                  autocorrect: false,
-                  smartDashesType: SmartDashesType.disabled,
-                  smartQuotesType: SmartQuotesType.disabled,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(OtpValidator.length),
-                  ],
-                  onChanged: (value) {
-                    final next = OtpValidator.digitsOnly(value);
-                    widget.onChanged(next);
-                    setState(() {});
-                    if (OtpValidator.isComplete(next)) {
-                      widget.onCompleted?.call(next);
-                    }
-                  },
-                ),
+          children: [
+            Opacity(
+              opacity: 0,
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                enabled: widget.enabled,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.oneTimeCode],
+                enableSuggestions: false,
+                autocorrect: false,
+                smartDashesType: SmartDashesType.disabled,
+                smartQuotesType: SmartQuotesType.disabled,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(OtpValidator.length),
+                ],
+                onChanged: (value) {
+                  final next = OtpValidator.digitsOnly(value);
+                  widget.onChanged(next);
+                  setState(() {});
+                  if (OtpValidator.isComplete(next)) {
+                    widget.onCompleted?.call(next);
+                  }
+                },
               ),
-              Row(
-                children: List.generate(OtpValidator.length, (index) {
-                  final filled = index < digits.length;
-                  final char = filled ? digits[index] : '';
-                  final focused = index == digits.length && _focusNode.hasFocus;
-                  return Expanded(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      height: 56,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadii.md),
-                        border: Border.all(
-                          color: focused
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.outline,
-                          width: focused ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Text(
-                        char,
-                        style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            Row(
+              children: List.generate(OtpValidator.length, (index) {
+                final filled = index < digits.length;
+                final char = filled ? digits[index] : '';
+                final focused = index == digits.length && _focusNode.hasFocus;
+                return Expanded(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 56,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      border: Border.all(
+                        color: focused
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
+                        width: focused ? 1.5 : 1,
                       ),
                     ),
-                  );
-                }),
-              ),
-            ],
-          ),
+                    child: Text(
+                      char,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
         ),
+      ),
       ),
     );
   }

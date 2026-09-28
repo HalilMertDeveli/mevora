@@ -146,8 +146,7 @@ class HybridDiscoveryRepository
                 categoryLifestyleScore: candidate.categoryLifestyleScore,
                 categoryQuestionScore: candidate.categoryQuestionScore,
                 categoryMusicScore: candidate.categoryMusicScore,
-                categoryCommunicationScore:
-                    candidate.categoryCommunicationScore,
+                categoryCommunicationScore: candidate.categoryCommunicationScore,
               ),
             )
             .toList() ??

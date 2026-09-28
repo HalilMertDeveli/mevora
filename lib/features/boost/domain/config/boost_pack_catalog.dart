@@ -86,9 +86,10 @@ abstract final class BoostPackCatalog {
 
   static const Set<String> storefrontSkus = {week, month, year};
 
-  static List<BoostPack> get storefrontPacks =>
-      defaults.where((pack) => pack.storefront && pack.active).toList()
-        ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+  static List<BoostPack> get storefrontPacks => defaults
+      .where((pack) => pack.storefront && pack.active)
+      .toList()
+    ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
 
   static BoostPack? packFor(String productId, {List<BoostPack>? catalog}) {
     final source = catalog ?? defaults;
@@ -123,8 +124,7 @@ abstract final class BoostPackCatalog {
         continue;
       }
       final data = Map<Object?, Object?>.from(item);
-      final productId =
-          data['productId']?.toString() ?? data['sku']?.toString();
+      final productId = data['productId']?.toString() ?? data['sku']?.toString();
       if (productId == null || productId.isEmpty) {
         continue;
       }
@@ -159,7 +159,8 @@ abstract final class BoostPackCatalog {
     }
     final visible = parsed
         .where(
-          (pack) => pack.storefront && pack.active && pack.duration.inDays >= 7,
+          (pack) =>
+              pack.storefront && pack.active && pack.duration.inDays >= 7,
         )
         .toList();
     return visible.isEmpty ? List<BoostPack>.from(storefrontPacks) : visible;

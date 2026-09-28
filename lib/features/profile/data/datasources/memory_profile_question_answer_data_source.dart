@@ -6,8 +6,8 @@ import 'package:mevora/features/profile/domain/models/profile_question_answer.da
 class MemoryProfileQuestionAnswerDataSource
     implements ProfileQuestionAnswerDataSource {
   final Map<String, Map<String, ProfileQuestionAnswer>> _store = {};
-  final Map<String, StreamController<List<ProfileQuestionAnswer>>>
-  _controllers = {};
+  final Map<String, StreamController<List<ProfileQuestionAnswer>>> _controllers =
+      {};
 
   @override
   Stream<List<ProfileQuestionAnswer>> watchAnswers(
@@ -18,9 +18,7 @@ class MemoryProfileQuestionAnswerDataSource
       uid,
       () => StreamController<List<ProfileQuestionAnswer>>.broadcast(),
     );
-    scheduleMicrotask(
-      () => controller.add(_list(uid, visibleOnly: visibleOnly)),
-    );
+    scheduleMicrotask(() => controller.add(_list(uid, visibleOnly: visibleOnly)));
     return controller.stream;
   }
 
@@ -58,10 +56,8 @@ class MemoryProfileQuestionAnswerDataSource
         .where((item) => !visibleOnly || item.isVisible)
         .toList(growable: false);
     items.sort((a, b) {
-      final aTime =
-          a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bTime =
-          b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final aTime = a.updatedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.updatedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
     });
     return items;

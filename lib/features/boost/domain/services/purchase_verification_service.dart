@@ -11,7 +11,10 @@ enum VerificationOutcome {
 }
 
 class PurchaseVerificationDecision {
-  const PurchaseVerificationDecision({required this.outcome, this.purchaseId});
+  const PurchaseVerificationDecision({
+    required this.outcome,
+    this.purchaseId,
+  });
 
   final VerificationOutcome outcome;
   final String? purchaseId;

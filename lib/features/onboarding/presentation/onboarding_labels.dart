@@ -171,8 +171,7 @@ abstract final class OnboardingLabels {
       ChildrenPreference.no => l10n.childrenPrefNo,
       ChildrenPreference.maybe => l10n.childrenPrefMaybe,
       ChildrenPreference.undecided => l10n.childrenPrefUndecided,
-      ChildrenPreference.preferNotToSay =>
-        l10n.onboardingEducationPreferNotToSay,
+      ChildrenPreference.preferNotToSay => l10n.onboardingEducationPreferNotToSay,
       _ => value ?? '—',
     };
   }

@@ -50,9 +50,7 @@ class _DiscoveryPreferencesPageState extends State<DiscoveryPreferencesPage> {
       future: settings.settingsHub.loadDiscoveryPreferences(uid),
       builder: (context, snapshot) {
         final prefs = snapshot.data;
-        if (prefs != null &&
-            _minAgeController.text == '18' &&
-            prefs.minAge != 18) {
+        if (prefs != null && _minAgeController.text == '18' && prefs.minAge != 18) {
           _minAgeController.text = '${prefs.minAge}';
           _maxAgeController.text = '${prefs.maxAge}';
           _distanceController.text = '${prefs.maxDistance}';
@@ -102,11 +100,8 @@ class _DiscoveryPreferencesPageState extends State<DiscoveryPreferencesPage> {
                     labelText: l10n.filterRelationshipGoal,
                   ),
                   items: [
-                    for (final value in const [
-                      'longTerm',
-                      'casual',
-                      'figuringOut',
-                    ])
+                    for (final value
+                        in const ['longTerm', 'casual', 'figuringOut'])
                       DropdownMenuItem(
                         value: value,
                         child: Text(

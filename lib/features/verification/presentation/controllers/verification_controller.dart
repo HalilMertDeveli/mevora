@@ -53,24 +53,22 @@ class VerificationController extends ChangeNotifier {
       verification.retryEligibility().allowed;
 
   void attach() {
-    _subscription ??= _repository
-        .watchVerification(_uid)
-        .listen(
-          (value) {
-            verification = value;
-            // The backend has spoken; stop waiting for a return that has already
-            // been answered.
-            if (value.status.isTerminal) {
-              awaitingReturn = false;
-            }
-            notifyListeners();
-          },
-          onError: (_, _) {
-            // A read failure is not a verdict. Hold the last known state rather
-            // than inventing one in either direction.
-            notifyListeners();
-          },
-        );
+    _subscription ??= _repository.watchVerification(_uid).listen(
+      (value) {
+        verification = value;
+        // The backend has spoken; stop waiting for a return that has already
+        // been answered.
+        if (value.status.isTerminal) {
+          awaitingReturn = false;
+        }
+        notifyListeners();
+      },
+      onError: (_, _) {
+        // A read failure is not a verdict. Hold the last known state rather
+        // than inventing one in either direction.
+        notifyListeners();
+      },
+    );
 
     // The return link only ever triggers a re-read. It is never evidence.
     _returnSubscription ??= _launcher.returns.listen((_) {

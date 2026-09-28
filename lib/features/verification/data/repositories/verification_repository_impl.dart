@@ -16,21 +16,16 @@ class VerificationRepositoryImpl implements VerificationRepository {
 
   @override
   Stream<IdentityVerification> watchVerification(String uid) {
-    return _remote
-        .watchVerification(uid)
-        .transform(
-          StreamTransformer<
-            IdentityVerification,
-            IdentityVerification
-          >.fromHandlers(
-            handleData: (data, sink) => sink.add(data),
-            handleError: (error, stackTrace, sink) {
-              // A read failure is not a verdict. Falling back to notStarted keeps
-              // the UI usable and, critically, never invents a verified state.
-              sink.add(IdentityVerification.notStarted);
-            },
-          ),
-        );
+    return _remote.watchVerification(uid).transform(
+      StreamTransformer<IdentityVerification, IdentityVerification>.fromHandlers(
+        handleData: (data, sink) => sink.add(data),
+        handleError: (error, stackTrace, sink) {
+          // A read failure is not a verdict. Falling back to notStarted keeps
+          // the UI usable and, critically, never invents a verified state.
+          sink.add(IdentityVerification.notStarted);
+        },
+      ),
+    );
   }
 
   @override
@@ -38,9 +33,7 @@ class VerificationRepositoryImpl implements VerificationRepository {
     String? language,
   }) async {
     try {
-      return Success(
-        await _remote.startVerificationSession(language: language),
-      );
+      return Success(await _remote.startVerificationSession(language: language));
     } on Object catch (error) {
       return Err(_mapCallableError(error));
     }
@@ -70,10 +63,7 @@ class VerificationRepositoryImpl implements VerificationRepository {
       return const UnexpectedFailure('verification-unavailable');
     }
     if (message.contains('unauthenticated')) {
-      return const AuthFailure(
-        'Sign in required.',
-        kind: AuthErrorKind.unknown,
-      );
+      return const AuthFailure('Sign in required.', kind: AuthErrorKind.unknown);
     }
     return FailureMapper.from(error);
   }

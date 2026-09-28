@@ -63,7 +63,11 @@ class MockMusicDataSource implements MusicDataSource {
       name: 'Ada & the Bosphorus',
       genres: ['indie', 'jazz'],
     ),
-    MusicArtist(id: 'mock-artist-2', name: 'Nesrin Vale', genres: ['pop']),
+    MusicArtist(
+      id: 'mock-artist-2',
+      name: 'Nesrin Vale',
+      genres: ['pop'],
+    ),
   ];
 
   static final seedProfile = MusicProfile(

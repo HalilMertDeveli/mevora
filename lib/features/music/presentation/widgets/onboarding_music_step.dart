@@ -137,7 +137,8 @@ class _OnboardingMusicStepState extends State<OnboardingMusicStep> {
           // A cancelled authorization is not an error to apologise for — the
           // member simply backed out, and onboarding state is untouched.
           final cancelled =
-              failure is AuthFailure && failure.kind == AuthErrorKind.cancelled;
+              failure is AuthFailure &&
+              failure.kind == AuthErrorKind.cancelled;
           _cancelled = cancelled;
           _failure = cancelled ? null : failure;
         });

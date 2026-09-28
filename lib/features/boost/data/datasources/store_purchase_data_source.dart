@@ -6,7 +6,11 @@ import 'package:mevora/features/boost/domain/entities/store_transaction.dart';
 enum StorePurchaseStatus { pending, purchased, restored, cancelled, error }
 
 class StorePurchaseEvent {
-  const StorePurchaseEvent({required this.status, this.transaction, this.kind});
+  const StorePurchaseEvent({
+    required this.status,
+    this.transaction,
+    this.kind,
+  });
 
   final StorePurchaseStatus status;
   final StoreTransaction? transaction;

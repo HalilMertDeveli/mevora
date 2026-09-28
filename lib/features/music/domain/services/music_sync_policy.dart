@@ -2,7 +2,10 @@
 abstract final class MusicSyncPolicy {
   static const Duration minInterval = Duration(hours: 6);
 
-  static bool canSync({required DateTime now, DateTime? lastSyncedAt}) {
+  static bool canSync({
+    required DateTime now,
+    DateTime? lastSyncedAt,
+  }) {
     if (lastSyncedAt == null) {
       return true;
     }

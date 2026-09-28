@@ -24,8 +24,16 @@ meaningless rather than obviously broken.
 
 ## Host address
 
-`10.0.2.2` is unreachable from the app sandbox on API 37 — the adb *shell* user reaches it fine,
-so `nc` tests pass and mislead. Pass the host LAN IP instead:
+> Corrected 2026-09-28. This section used to say `10.0.2.2` is unreachable from the app
+> sandbox on API 37. The address was never the problem — the *permission* was. Android 16
+> put local-network access behind `ACCESS_LOCAL_NETWORK`, and without it the sandbox cannot
+> reach the suite on any address while the adb *shell* user still can, so `nc` tests pass and
+> mislead. The permission now ships in `android/app/src/debug/AndroidManifest.xml`, and
+> `10.0.2.2` works again on an Android emulator.
+
+On an Android **emulator** the default is correct and you need no host define: `10.0.2.2` is
+the emulator's alias for the host loopback (`app_config.dart`). On a **real phone** that
+address means nothing, so pass the host LAN IP:
 
 ```bash
 --dart-define=USE_EMULATORS=true \
@@ -35,6 +43,98 @@ so `nc` tests pass and mislead. Pass the host LAN IP instead:
 
 Both emulator defines are needed: `USE_EMULATORS` alone leaves Auth pointed at live
 `mevora-d6ed0`.
+
+## Real phones
+
+Two handsets on the same Wi-Fi as the host, both talking to the one Emulator Suite.
+
+**1. Open the firewall, once.** This is the step that silently sinks the whole setup:
+`firebase.qa.json` already binds every emulator to `0.0.0.0`, so the suite is listening, but
+Windows Firewall drops the inbound connection and the phone reports
+`firebase_auth/network-request-failed` — indistinguishable from a wrong address or a suite
+that is not running. Run once in an **elevated** PowerShell:
+
+```powershell
+New-NetFirewallRule -DisplayName 'Mevora Firebase Emulator Suite (LAN QA)' `
+  -Direction Inbound -Action Allow -Protocol TCP `
+  -LocalPort 9099,8080,5001,9199,4000 `
+  -Profile Private -RemoteAddress LocalSubnet
+```
+
+`-Profile Private -RemoteAddress LocalSubnet` keeps it off public networks and off the open
+internet. Remove it with
+`Remove-NetFirewallRule -DisplayName 'Mevora Firebase Emulator Suite (LAN QA)'`.
+
+**2. Pick the host address.** Do not read it off `Get-NetIPAddress` alone — that lists
+addresses configured on **a disconnected NIC** too, and a static address on an unplugged
+Ethernet port looks exactly as plausible as the live one. Check which interface is actually
+up and carrying the default route first:
+
+```powershell
+Get-NetAdapter | Select-Object Name, Status, LinkSpeed
+Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Select-Object InterfaceAlias, NextHop, RouteMetric
+Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' }
+```
+
+Then confirm the address answers before you build against it — from the host is enough to
+prove the binding, and it takes seconds:
+
+```powershell
+Invoke-WebRequest -Uri 'http://<host LAN IP>:4000' -TimeoutSec 5 -UseBasicParsing
+```
+
+Ignore `vEthernet (*)` addresses; those are Hyper-V/WSL switches the phones cannot reach.
+
+If the live interface is Wi-Fi its address is usually DHCP, so it can change and every
+installed APK then points at nothing. Give the host a DHCP reservation on the router, or
+rebuild after a change. This is why the VS Code config asks for the address instead of
+hardcoding it: the prompt is pre-filled but editable, so a new address costs one keystroke
+rather than a file edit.
+
+**3. Build the APK.** VS Code task **Flutter: Build two-phone QA APK (LAN)**, or:
+
+```bash
+flutter build apk --debug --flavor development \
+  --dart-define=USE_EMULATORS=true \
+  --dart-define=USE_AUTH_EMULATOR=true \
+  --dart-define=USE_MOCK_HUMOR=false \
+  --dart-define=FIREBASE_EMULATOR_HOST=<host LAN IP> \
+  --dart-define=DISCOVERY_NO_DEMO=true \
+  --dart-define=QA_EMAIL_A=qa_user_a@mevora.test \
+  --dart-define=QA_EMAIL_B=qa_user_b@mevora.test \
+  --dart-define=QA_PASSWORD=MevoraQa!2026
+```
+
+Output: `build/app/outputs/flutter-apk/app-development-debug.apk`.
+
+**`--debug` is load-bearing, not a convenience.** `ACCESS_LOCAL_NETWORK` and
+`usesCleartextTraffic` live in the *debug* source set only, so a `--profile` or `--release`
+APK cannot reach the suite at all — and it fails the same way a wrong address does.
+
+`DISCOVERY_NO_DEMO=true` matters whenever distance is under test: the hybrid repository pads a
+*successful* empty deck with demo profiles in development, so a correctly empty result looks
+like a broken filter.
+
+**4. Install on both phones.** `adb devices` first, then per phone:
+
+```bash
+adb -s <serial> install -r build/app/outputs/flutter-apk/app-development-debug.apk
+```
+
+Sign in as `qa_user_a@mevora.test` on one and `qa_user_b@mevora.test` on the other.
+
+**5. If a phone cannot connect**, check in this order — each rules out one layer:
+
+| Check | Command | Means |
+|---|---|---|
+| Suite is listening on the LAN | `curl http://<host LAN IP>:4000` from another machine | binding is fine |
+| Phone can reach the host | open `http://<host LAN IP>:4000` in the phone's browser | firewall and subnet are fine |
+| APK carries the permission | `adb shell dumpsys package <applicationId> | grep LOCAL_NETWORK` | you built `--debug` |
+| Router allows phone-to-phone/host traffic | same browser check from the *other* phone | Wi-Fi client isolation is off |
+| App is using the right host | app logs, or rebuild with the define echoed | the define reached the build |
+
+A phone browser that loads the Emulator UI while the app still fails means the build is the
+problem, not the network.
 
 ## Seeding the pair
 

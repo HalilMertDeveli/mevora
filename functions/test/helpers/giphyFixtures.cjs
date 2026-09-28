@@ -3,7 +3,9 @@
  *
  * The objects follow the documented GIF object (id, url, slug, title,
  * username, rating, alt_text, user{...}, images{original, original_mp4,
- * fixed_height, downsized_small, fixed_height_still, original_still}) and the
+ * downsized_medium, fixed_width, fixed_height, downsized_small,
+ * fixed_height_still, original_still} — with `webp`/`webp_size` where GIPHY
+ * sends them) and the
  * Clips object (video.assets keyed "360p".."4k", video.duration). Values are
  * invented but shaped like real responses — numbers arrive as strings, as
  * GIPHY sends them.
@@ -14,16 +16,26 @@
 
 const CDN = "https://media1.giphy.com/media";
 
-function renditions(id, {sizes = {}, dims = {}, http = false, host = null} = {}) {
+/**
+ * A GIF's `images` map. Every rendition GIPHY documents for a GIF result is
+ * present: GIF (`url`), MP4 (`mp4`) and animated WebP (`webp`) variants.
+ * `mp4Only: true` drops every animated-image rendition (no WebP, no
+ * downsized_medium) — an item whose only usable media is an MP4.
+ */
+function renditions(id, {sizes = {}, dims = {}, http = false, host = null, mp4Only = false} = {}) {
   const base = host ? `https://${host}/media` : http ? "http://media1.giphy.com/media" : CDN;
   const d = {
     original: [480, 270],
     fixed_height: [356, 200],
+    fixed_width: [200, 113],
     downsized_small: [240, 135],
+    downsized_medium: [480, 270],
     ...dims,
   };
   const size = (name, fallback) => (name in sizes ? sizes[name] : fallback);
   const strOrUndef = (v) => (v === null || v === undefined ? undefined : String(v));
+  const webp = (file, sizeName, fallback) =>
+    mp4Only ? {} : {webp: `${base}/${id}/${file}`, webp_size: strOrUndef(size(sizeName, fallback))};
   return {
     original: {
       url: `${CDN}/${id}/giphy.gif`,
@@ -31,18 +43,38 @@ function renditions(id, {sizes = {}, dims = {}, http = false, host = null} = {})
       height: String(d.original[1]),
       mp4: `${base}/${id}/giphy.mp4`,
       mp4_size: strOrUndef(size("original_mp4", 1_900_000)),
+      ...webp("giphy.webp", "original_webp", 1_200_000),
       size: "4800000",
     },
+    ...(mp4Only
+      ? {}
+      : {
+          downsized_medium: {
+            url: `${base}/${id}/giphy-downsized-medium.gif`,
+            width: String(d.downsized_medium[0]),
+            height: String(d.downsized_medium[1]),
+            size: strOrUndef(size("downsized_medium", 1_800_000)),
+          },
+        }),
     original_mp4: {
       mp4: `${base}/${id}/giphy.mp4`,
       mp4_size: strOrUndef(size("original_mp4", 1_900_000)),
       width: String(d.original[0]),
       height: String(d.original[1]),
     },
+    fixed_width: {
+      url: `${CDN}/${id}/200w.gif`,
+      mp4: `${base}/${id}/200w.mp4`,
+      mp4_size: strOrUndef(size("fixed_width", 300_000)),
+      ...webp("200w.webp", "fixed_width_webp", 250_000),
+      width: String(d.fixed_width[0]),
+      height: String(d.fixed_width[1]),
+    },
     fixed_height: {
       url: `${CDN}/${id}/200.gif`,
       mp4: `${base}/${id}/200.mp4`,
       mp4_size: strOrUndef(size("fixed_height", 600_000)),
+      ...webp("200.webp", "fixed_height_webp", 500_000),
       width: String(d.fixed_height[0]),
       height: String(d.fixed_height[1]),
     },

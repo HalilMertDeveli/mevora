@@ -41,6 +41,12 @@ export interface HumorSourceItem {
   queryCategory?: HumorCategory | null;
   /** "gif" or "clip" — which provider endpoint produced it. */
   origin?: "gif" | "clip";
+  /**
+   * GIF items only: `<id>/<file>` of each of the GIF's own MP4 renditions.
+   * Never stored; ingest uses it solely to recognise a catalogue doc written
+   * when GIFs were still ingested as MP4 video (see ingest.ts).
+   */
+  legacyVideoKeys?: string[];
 }
 
 export interface HumorSourcePage {

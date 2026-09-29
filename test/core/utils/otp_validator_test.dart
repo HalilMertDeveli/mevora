@@ -16,10 +16,20 @@ void main() {
   });
 
   test('resend copy matches the OTP screen spec', () {
-    expect(OtpValidator.resendSeconds, 30);
+    expect(OtpValidator.resendSeconds, 120);
     expect(
       AuthMessages.resendCountdown(42),
       'Yeni kodu 42 saniye sonra tekrar gönderebilirsin.',
+    );
+  });
+
+  test('verification window is the 2-minute SDK maximum, shared by resend', () {
+    // firebase_auth: "Maximum allowed value is 2 minutes" for the
+    // verifyPhoneNumber auto-retrieval timeout.
+    expect(OtpValidator.autoRetrievalTimeout, const Duration(minutes: 2));
+    expect(
+      OtpValidator.autoRetrievalTimeout.inSeconds,
+      OtpValidator.resendSeconds,
     );
   });
 }

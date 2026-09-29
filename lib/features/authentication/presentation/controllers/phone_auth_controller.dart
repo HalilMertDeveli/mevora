@@ -205,7 +205,23 @@ class PhoneAuthController extends ChangeNotifier {
         return true;
       case Err<PhoneChallenge>(:final failure):
         await _analytics.phoneAuthFailed();
-        return _failSend(failure);
+        if (_isTooMany(failure)) {
+          return _failSend(failure);
+        }
+        // The earlier SMS is still valid, so a failed resend must not
+        // strand the user on an OTP screen with no session to verify.
+        final code = failure is AuthFailure ? failure.code : null;
+        _debugPrint(
+          '[PHONE_AUTH] VERIFICATION_FAILED resend code=$code keptPreviousSession=true',
+        );
+        _state = OtpError(
+          challenge: challenge,
+          message: failure.message,
+          kind: failure is AuthFailure ? failure.kind : AuthErrorKind.smsFailed,
+          firebaseCode: code,
+        );
+        notifyListeners();
+        return false;
     }
   }
 

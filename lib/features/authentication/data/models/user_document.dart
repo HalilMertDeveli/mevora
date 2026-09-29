@@ -126,23 +126,44 @@ class UserDocument {
     );
   }
 
+  /// The member's own portrait: the approved photo marked as main, else the
+  /// first approved photo by the order they arranged, else the first in the
+  /// stored list. Array position alone is not the member's order.
   static String? _firstApprovedPhoto(Object? photos) {
     if (photos is! List || photos.isEmpty) {
       return null;
     }
-    for (final photo in photos) {
+    final approved = <({String url, bool primary, int order, int index})>[];
+    for (var i = 0; i < photos.length; i++) {
+      final photo = photos[i];
       if (photo is Map) {
         final status = photo['moderationStatus'];
         final url = photo['downloadUrl'] ?? photo['thumbUrl'];
         if (url is String &&
             url.isNotEmpty &&
             (status == null || status == 'approved')) {
-          return url;
+          final order = photo['order'];
+          approved.add((
+            url: url,
+            primary: photo['isPrimary'] == true,
+            order: order is num ? order.toInt() : i,
+            index: i,
+          ));
         }
       } else if (photo is String && photo.isNotEmpty) {
-        return photo;
+        approved.add((url: photo, primary: false, order: i, index: i));
       }
     }
-    return null;
+    if (approved.isEmpty) {
+      return null;
+    }
+    approved.sort((a, b) {
+      if (a.primary != b.primary) {
+        return a.primary ? -1 : 1;
+      }
+      final byOrder = a.order.compareTo(b.order);
+      return byOrder != 0 ? byOrder : a.index.compareTo(b.index);
+    });
+    return approved.first.url;
   }
 }

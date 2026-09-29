@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mevora/core/constants/firestore_paths.dart';
 import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/core/identity/account_status.dart';
@@ -36,16 +37,89 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
 
   @override
   Stream<UserDocument?> watchUser(String uid) {
-    return _users.doc(uid).snapshots().asyncMap((snap) async {
-      if (!snap.exists) {
-        return null;
+    return watchAccountAndProfile(
+      uid: uid,
+      account: _users
+          .doc(uid)
+          .snapshots()
+          .map((snap) => snap.exists ? (snap.data() ?? const {}) : null),
+      profile: _profiles
+          .doc(uid)
+          .snapshots()
+          .map((snap) => snap.data() ?? const <String, dynamic>{}),
+    );
+  }
+
+  /// Combines the private account and the public profile into one live
+  /// [UserDocument].
+  ///
+  /// Both documents are watched. The profile used to be read once per
+  /// account change, so anything that changes only there — photos being
+  /// approved after upload, a new main photo, a renamed profile — never
+  /// reached the signed-in user until something else touched the account
+  /// (the avatar kept showing initials over approved photos).
+  ///
+  /// A missing account emits null at once (the profile is still pending).
+  /// Otherwise nothing is emitted until both have been seen, and a change
+  /// that leaves the derived user identical is not re-emitted, so the many
+  /// profile writes during onboarding do not re-announce the same user.
+  @visibleForTesting
+  static Stream<UserDocument?> watchAccountAndProfile({
+    required String uid,
+    required Stream<Map<String, dynamic>?> account,
+    required Stream<Map<String, dynamic>> profile,
+  }) {
+    return Stream<UserDocument?>.multi((controller) {
+      Map<String, dynamic>? accountData;
+      Map<String, dynamic>? profileData;
+      var accountSeen = false;
+      var lastWasNull = false;
+      AuthUser? lastUser;
+
+      void emit() {
+        if (!accountSeen) {
+          return;
+        }
+        final currentAccount = accountData;
+        if (currentAccount == null) {
+          if (!lastWasNull) {
+            lastWasNull = true;
+            lastUser = null;
+            controller.add(null);
+          }
+          return;
+        }
+        final currentProfile = profileData;
+        if (currentProfile == null) {
+          return;
+        }
+        final doc = UserDocument.fromAccountAndProfile(
+          uid: uid,
+          account: currentAccount,
+          profile: currentProfile,
+        );
+        final user = doc.toEntity();
+        if (!lastWasNull && user == lastUser) {
+          return;
+        }
+        lastWasNull = false;
+        lastUser = user;
+        controller.add(doc);
       }
-      final profile = await _profiles.doc(uid).get();
-      return UserDocument.fromAccountAndProfile(
-        uid: uid,
-        account: snap.data() ?? const {},
-        profile: profile.data() ?? const {},
-      );
+
+      final accountSub = account.listen((data) {
+        accountData = data;
+        accountSeen = true;
+        emit();
+      }, onError: controller.addError);
+      final profileSub = profile.listen((data) {
+        profileData = data;
+        emit();
+      }, onError: controller.addError);
+      controller.onCancel = () async {
+        await accountSub.cancel();
+        await profileSub.cancel();
+      };
     });
   }
 

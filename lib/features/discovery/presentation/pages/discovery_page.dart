@@ -14,8 +14,7 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
-import 'package:mevora/core/di/relationship_scope.dart';
-import 'package:mevora/core/di/social_scope.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
@@ -37,7 +36,8 @@ import 'package:mevora/features/picks/domain/repositories/mevora_picks_repositor
 import 'package:mevora/features/picks/presentation/controllers/mevora_picks_controller.dart';
 import 'package:mevora/features/picks/presentation/widgets/picks_view.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
-import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
+import 'package:mevora/features/relationship_learning/domain/entities/relationship_learning.dart';
+import 'package:mevora/features/relationship_learning/presentation/pages/relationship_learning_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_discovery_card_motion.dart';
 import 'package:mevora/shared/animations/mevora_match_celebration.dart';
@@ -47,15 +47,6 @@ import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
-
-/// Which of the tab's two experiences is in front.
-enum DiscoveryMode {
-  /// Mevora Picks: a few people Mevora chose, each with its reasons. Default.
-  picks,
-
-  /// The open-ended Discover deck, one tap away from Picks.
-  discoverMore,
-}
 
 class DiscoveryPage extends StatefulWidget {
   const DiscoveryPage({super.key, this.controller, this.picksController});
@@ -74,7 +65,6 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     with WidgetsBindingObserver {
   DiscoveryController? _owned;
   MevoraPicksController? _ownedPicks;
-  DiscoveryMode _mode = DiscoveryMode.picks;
   bool _picksStarted = false;
   ProfileUpdateNotifier? _profileUpdates;
   Offset _drag = Offset.zero;
@@ -83,9 +73,10 @@ class _DiscoveryPageState extends State<DiscoveryPage>
 
   DiscoveryController? get _controller => widget.controller ?? _owned;
   MevoraPicksController? get _picks => widget.picksController ?? _ownedPicks;
-  bool get _showingPicks => _picks != null && _mode == DiscoveryMode.picks;
-  bool get _inDiscoverMore =>
-      _picks != null && _mode == DiscoveryMode.discoverMore;
+
+  /// Picks are the tab whenever the backend can serve them. The open-ended
+  /// deck remains only for demo and in-memory builds without a backend.
+  bool get _showingPicks => _picks != null;
 
   @override
   void initState() {
@@ -98,7 +89,6 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       if (!mounted) {
         return;
       }
-      RelationshipScope.controllerOf(context)?.recordDiscoveryActivity();
       _maybeStartPicks();
     });
   }
@@ -124,10 +114,6 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         controller.state.candidates.isEmpty) {
       unawaited(controller.refresh());
     }
-  }
-
-  void _pulseRelationshipActivity() {
-    RelationshipScope.controllerOf(context)?.recordDiscoveryActivity();
   }
 
   void _onProfileUpdated() {
@@ -170,7 +156,6 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       _ownedPicks?.dispose();
       _ownedPicks = null;
       _picksStarted = false;
-      _mode = DiscoveryMode.picks;
     }
 
     if (_owned == null) {
@@ -198,7 +183,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
             FakeLocationRepository(),
         discoveryRepository: discoveryRepository,
         purchaseRepository: BoostScope.maybeOf(context)?.repository,
-        // With Picks in front, the deck loads only when Discover More opens.
+        // With Picks as the tab, there is no deck to load.
         loadDeckOnStart: picksRepository == null,
         viewerProfileLoader: (viewerUid) async =>
             await settingsHub?.loadProfile(viewerUid),
@@ -237,16 +222,23 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     unawaited(picks.load());
   }
 
-  void _openDiscoverMore() {
-    _pulseRelationshipActivity();
-    _picks?.analytics.discoverMoreOpened();
-    setState(() => _mode = DiscoveryMode.discoverMore);
-    unawaited(_controller?.ensureDeckLoaded());
+  /// Relationship Learning, then a fresh look at today's Picks: finishing the
+  /// initial questions is what unlocks a new member's first set.
+  Future<void> _openLearning(LearningSummary summary) async {
+    await openRelationshipLearning(context, summary: summary, source: 'picks');
+    if (mounted && _picksStarted) {
+      unawaited(_picks?.load());
+    }
   }
 
-  void _backToPicks() {
-    setState(() => _mode = DiscoveryMode.picks);
-    if (_picksStarted) {
+  Future<void> _snoozeLearning() async {
+    final scope = RelationshipLearningScope.maybeOf(context);
+    if (scope == null) {
+      return;
+    }
+    scope.analytics.followUpSnoozed();
+    await scope.repository.snoozeFollowUp();
+    if (mounted && _picksStarted) {
       unawaited(_picks?.load());
     }
   }
@@ -280,89 +272,50 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       return const Scaffold(body: MevoraLoading.page());
     }
     final state = controller.state;
-    final relationship = RelationshipScope.controllerOf(context);
-    final matchCount =
-        SocialScope.maybeOf(
-          context,
-        )?.matchesController.activeConversationCount ??
-        0;
-    // LazyShellNavigator disables TickerMode for offstage tabs. Discover stays
-    // mounted after first visit — never report "visible" while offstage.
-    final discoveryVisible = TickerMode.valuesOf(context).enabled;
-    Widget body = SafeArea(child: _body(controller, state));
-    if (relationship != null) {
-      body = RelationshipPromptHost(
-        controller: relationship,
-        discoveryVisible: discoveryVisible,
-        normalMatchCount: matchCount,
-        child: body,
-      );
-    }
+    final body = SafeArea(child: _body(controller, state));
     final theme = Theme.of(context);
     final (title, subtitle) = _showingPicks
         ? (l10n.picksTitle, l10n.picksSubtitle)
-        : _inDiscoverMore
-        ? (l10n.picksDiscoverMore, l10n.discoverMoreSubtitle)
         : (l10n.discoverBestMatchesTitle, l10n.discoverBestMatchesSubtitle);
-    return PopScope(
-      // In Discover More, back returns to Picks instead of leaving the tab.
-      canPop: !_inDiscoverMore,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _inDiscoverMore) {
-          _backToPicks();
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          toolbarHeight: 64,
-          leading: _inDiscoverMore
-              ? IconButton(
-                  tooltip: l10n.picksBackToPicks,
-                  onPressed: _backToPicks,
-                  icon: const Icon(MevoraIcons.back),
-                )
-              : null,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                // Discover More is a sub-mode with a back button; a sans title
-                // fits where the display face would truncate.
-                style: _inDiscoverMore
-                    ? theme.textTheme.titleLarge
-                    : theme.textTheme.headlineMedium,
-              ),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-          ),
-          actions: [
-            // Filters shape the deck; Picks are chosen by compatibility.
-            if (!_showingPicks)
-              IconButton(
-                tooltip: l10n.discoveryFiltersTitle,
-                onPressed: state.isLoading
-                    ? null
-                    : () => _openFilters(controller),
-                icon: const Icon(MevoraIcons.filters),
-              ),
-            BoostButton(
-              isActive: state.activeBoost != null,
-              onPressed: () => unawaited(_openBoost(controller)),
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 64,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.headlineMedium,
             ),
-            const SizedBox(width: AppSpacing.xs),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall,
+            ),
           ],
         ),
-        body: body,
+        actions: [
+          // Filters shape the deck; Picks are chosen by compatibility.
+          if (!_showingPicks)
+            IconButton(
+              tooltip: l10n.discoveryFiltersTitle,
+              onPressed: state.isLoading
+                  ? null
+                  : () => _openFilters(controller),
+              icon: const Icon(MevoraIcons.filters),
+            ),
+          BoostButton(
+            isActive: state.activeBoost != null,
+            onPressed: () => unawaited(_openBoost(controller)),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
       ),
+      body: body,
     );
   }
 
@@ -474,7 +427,8 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       return PicksView(
         controller: _picks!,
         onOpenProfile: _openPickProfile,
-        onDiscoverMore: _openDiscoverMore,
+        onOpenLearning: (summary) => unawaited(_openLearning(summary)),
+        onSnoozeLearning: () => unawaited(_snoozeLearning()),
         onOpenSettings: () => context.push(AppRoutes.settings),
         footer: const HumorLabDiscoverEntry(),
       );
@@ -672,7 +626,6 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     if (picks == null) {
       return;
     }
-    _pulseRelationshipActivity();
     picks.recordProfileOpened(pick);
     final decision = await Navigator.of(context).push<DiscoveryDecision>(
       MevoraPageTransitions.route<DiscoveryDecision>(
@@ -694,7 +647,6 @@ class _DiscoveryPageState extends State<DiscoveryPage>
   }
 
   Future<void> _openProfileDetails(DiscoveryCandidate candidate) async {
-    _pulseRelationshipActivity();
     final decision = await Navigator.of(context).push<DiscoveryDecision>(
       MevoraPageTransitions.route<DiscoveryDecision>(
         builder: (_) => DiscoveryProfileDetailsPage(
@@ -723,7 +675,6 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     if (current == null || controller.isProcessingAction) {
       return;
     }
-    _pulseRelationshipActivity();
     final direction = switch (decision) {
       DiscoveryDecision.like => DiscoverySwipeDirection.like,
       DiscoveryDecision.pass => DiscoverySwipeDirection.pass,
@@ -772,7 +723,6 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       return;
     }
 
-    _pulseRelationshipActivity();
     final current = controller.state.current;
     if (current == null) {
       setState(() => _drag = Offset.zero);

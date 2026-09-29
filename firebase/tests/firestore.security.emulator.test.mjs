@@ -1452,6 +1452,64 @@ describe("adaptive personalization — learned weights are server-owned", () => 
   });
 });
 
+describe("relationship learning — answers are owner-private, derived state server-owned", () => {
+  const statePath = (uid) => `users/${uid}/relationshipLearning/state`;
+  const state = {
+    schemaVersion: 1,
+    required: true,
+    answers: {rl_pace: {answerId: "a", version: 1, source: "initial", answeredAtMs: 1}},
+    initialCompletedAtMs: null,
+  };
+
+  beforeEach(async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(statePath(UID.A)).set(state);
+      await ctx.firestore().doc(`users/${UID.A}/personalizationPartners/abc`).set({strengthSpent: 3});
+    });
+  });
+
+  it("the owner may read their own answers and progress", async () => {
+    await allow(who.userA.db().doc(statePath(UID.A)).get());
+  });
+
+  it("nobody reads another member's answers", async () => {
+    await deny(who.userB.db().doc(statePath(UID.A)).get());
+    await deny(who.userC.db().doc(statePath(UID.A)).get());
+    await deny(who.anon.db().doc(statePath(UID.A)).get());
+    await deny(who.userB.db().collection(`users/${UID.A}/relationshipLearning`).get());
+  });
+
+  it("no client writes answers or completion directly — only the validated callable", async () => {
+    await deny(who.userA.db().doc(statePath(UID.A)).set({...state, initialCompletedAtMs: 1}));
+    await deny(who.userA.db().doc(statePath(UID.A)).update({required: false}));
+    await deny(who.userA.db().doc(statePath(UID.A)).update({"answers.rl_evil": {answerId: "a"}}));
+    await deny(who.userA.db().doc(statePath(UID.A)).delete());
+    await deny(who.userB.db().doc(statePath(UID.A)).set(state));
+    await deny(who.userB.db().doc(statePath(UID.B)).set(state));
+  });
+
+  it("the learning mirror on the relationship summary is not client-writable", async () => {
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/relationshipMatch/summary`).set(
+        {learningAnswers: {rl_pace: "a"}},
+        {merge: true},
+      ),
+    );
+  });
+
+  it("per-person learning budgets are invisible and unwritable, even to their owner", async () => {
+    await deny(who.userA.db().doc(`users/${UID.A}/personalizationPartners/abc`).get());
+    await deny(who.userA.db().collection(`users/${UID.A}/personalizationPartners`).get());
+    await deny(who.userA.db().doc(`users/${UID.A}/personalizationPartners/abc`).set({strengthSpent: 0}));
+    await deny(who.userA.db().doc(`users/${UID.A}/personalizationPartners/abc`).delete());
+  });
+
+  it("daily Picks batches stay server-only", async () => {
+    await deny(who.userA.db().doc(`users/${UID.A}/mevoraPicks/current`).get());
+    await deny(who.userA.db().doc(`users/${UID.A}/mevoraPicks/current`).set({picks: []}));
+  });
+});
+
 describe("humor calibration state", () => {
   beforeEach(async () => {
     await seed(env, async (ctx) => {

@@ -149,6 +149,7 @@ export function learningSummary(state: LearningState, nowMs: number): Record<str
     initialCompleted: isInitialComplete(state),
     blocksPicks: isLearningBlockingPicks(state),
     progressiveDue: isProgressivePromptDue(state, nowMs),
+    followUpSize: PROGRESSIVE.batchSize,
   };
 }
 

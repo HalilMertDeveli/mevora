@@ -6,11 +6,13 @@ import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/models/presence_status.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
 import 'package:mevora/features/matching/domain/services/presence_subtitle.dart';
-import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
 import 'package:mevora/features/settings/domain/entities/user_settings.dart';
 import 'package:mevora/features/settings/domain/repositories/settings_hub_repository.dart';
 
 class MatchesController extends ChangeNotifier {
+  /// A message within this window counts as an active conversation.
+  static const Duration activeConversationWindow = Duration(minutes: 30);
+
   MatchesController({
     required MatchRepository matchRepository,
     required PresenceRepository presenceRepository,
@@ -47,7 +49,7 @@ class MatchesController extends ChangeNotifier {
       return 0;
     }
     final cutoff = DateTime.now().subtract(
-      RelationshipQuestionConfig.activeConversationWindow,
+      activeConversationWindow,
     );
     return items.where((item) {
       final match = item.match;

@@ -50,6 +50,7 @@ import 'package:mevora/features/support/presentation/pages/support_center_page.d
 import 'package:mevora/features/support/presentation/pages/support_ticket_detail_page.dart';
 import 'package:mevora/features/support/presentation/pages/support_ticket_form_page.dart';
 import 'package:mevora/features/support/presentation/pages/support_tickets_page.dart';
+import 'package:mevora/features/relationship_learning/presentation/pages/relationship_learning_page.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
 
 GoRouter createAppRouter({
@@ -304,6 +305,17 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const HumorCalibrationResultPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.relationshipLearning,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: RelationshipLearningPage(
+            mode: learningModeFromQuery(state.uri.queryParameters['mode']),
+            next: state.uri.queryParameters['next'],
+            source: state.uri.queryParameters['source'] ?? 'route',
+          ),
         ),
       ),
       GoRoute(

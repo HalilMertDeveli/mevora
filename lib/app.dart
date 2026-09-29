@@ -15,6 +15,7 @@ import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/support_scope.dart';
@@ -45,9 +46,8 @@ import 'package:mevora/features/humor/domain/repositories/humor_repository.dart'
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
-import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
-import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
+import 'package:mevora/features/relationship_learning/domain/repositories/relationship_learning_repository.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/repositories/verification_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -66,6 +66,7 @@ class MevoraApp extends StatefulWidget {
     this.matchScoreRepository,
     this.relationshipRepository,
     this.profileQuestionAnswerRepository,
+    this.relationshipLearningRepository,
     this.locationController,
     this.socialServices,
     this.purchaseRepository,
@@ -91,6 +92,7 @@ class MevoraApp extends StatefulWidget {
   final MatchScoreRepository? matchScoreRepository;
   final RelationshipRepository? relationshipRepository;
   final ProfileQuestionAnswerRepository? profileQuestionAnswerRepository;
+  final RelationshipLearningRepository? relationshipLearningRepository;
   final LocationController? locationController;
   final SocialServices? socialServices;
   final PurchaseRepository? purchaseRepository;
@@ -120,7 +122,6 @@ class _MevoraAppState extends State<MevoraApp> {
   bool _ownsPermissionController = false;
   late final OnboardingServices _onboardingServices;
   bool _ownsOnboardingServices = false;
-  RelationshipController? _relationshipController;
   PresenceLifecycleController? _presenceLifecycleController;
   E2eeBootstrapController? _e2eeBootstrapController;
   SessionRecoveryController? _sessionRecovery;
@@ -178,13 +179,6 @@ class _MevoraAppState extends State<MevoraApp> {
     } else {
       _onboardingServices = createOnboardingServices();
       _ownsOnboardingServices = true;
-    }
-    final relationship = widget.relationshipRepository;
-    if (relationship != null) {
-      _relationshipController = RelationshipController(
-        repository: relationship,
-        autoOfferEnabled: RelationshipQuestionConfig.autoOfferEnabled,
-      );
     }
     _router =
         widget.router ??
@@ -295,14 +289,19 @@ class _MevoraAppState extends State<MevoraApp> {
 
     final relationship = widget.relationshipRepository;
     final profileAnswers = widget.profileQuestionAnswerRepository;
-    final relationshipController = _relationshipController;
-    if (relationship != null &&
-        profileAnswers != null &&
-        relationshipController != null) {
+    if (relationship != null && profileAnswers != null) {
       child = RelationshipScope(
         repository: relationship,
         profileAnswers: profileAnswers,
-        controller: relationshipController,
+        child: child,
+      );
+    }
+
+    final learning = widget.relationshipLearningRepository;
+    if (learning != null) {
+      child = RelationshipLearningScope(
+        repository: learning,
+        analyticsProvider: widget.analytics,
         child: child,
       );
     }
@@ -372,7 +371,6 @@ class _MevoraAppState extends State<MevoraApp> {
     if (_ownsOnboardingServices) {
       _onboardingServices.controller.dispose();
     }
-    _relationshipController?.dispose();
     _presenceLifecycleController?.dispose();
     _e2eeBootstrapController?.dispose();
     _sessionRecovery?.dispose();

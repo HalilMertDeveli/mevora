@@ -9,7 +9,7 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
-import 'package:mevora/core/di/relationship_scope.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
@@ -21,6 +21,8 @@ import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.da
 import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
+import 'package:mevora/features/relationship_learning/presentation/controllers/relationship_learning_controller.dart';
+import 'package:mevora/features/relationship_learning/presentation/pages/relationship_learning_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
@@ -116,7 +118,7 @@ class ProfileTabPage extends StatelessWidget {
               // predates it entirely. Existing users are never pushed back
               // through onboarding — they start from here, voluntarily.
               if (humorEnabled) const _HumorProfileTile(),
-              const _ProfileRelationshipTile(),
+              const _ProfileLearningTile(),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -328,27 +330,31 @@ class _ProfilePremiumTile extends StatelessWidget {
   }
 }
 
-class _ProfileRelationshipTile extends StatelessWidget {
-  const _ProfileRelationshipTile();
+/// The permanent way back into Relationship Learning: the initial questions
+/// while they are unfinished, otherwise a short follow-up round.
+class _ProfileLearningTile extends StatelessWidget {
+  const _ProfileLearningTile();
 
   @override
   Widget build(BuildContext context) {
-    final controller = RelationshipScope.controllerOf(context);
-    if (controller == null) {
+    if (RelationshipLearningScope.maybeOf(context) == null) {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        return MevoraListRow(
-          icon: MevoraIcons.questions,
-          iconTone: MevoraTone.compatibility,
-          title: l10n.relationshipMatchesTitle,
-          subtitle: l10n.relationshipProfileSubtitle(controller.answeredCount),
-          onTap: () => context.go(AppRoutes.matches),
-        );
-      },
+    return MevoraListRow(
+      key: const Key('profileLearningTile'),
+      icon: MevoraIcons.questions,
+      iconTone: MevoraTone.compatibility,
+      title: l10n.learningProfileTitle,
+      subtitle: l10n.learningProfileSubtitle,
+      onTap: () => unawaited(
+        context.push<Object?>(
+          RelationshipLearningPage.location(
+            mode: LearningFlowMode.auto,
+            source: 'profile',
+          ),
+        ),
+      ),
     );
   }
 }

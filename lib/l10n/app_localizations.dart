@@ -221,7 +221,7 @@ abstract class AppLocalizations {
   /// No description provided for @picksEmptyPreparingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your new Picks are on their way.'**
+  /// **'We couldn\'t choose anyone for you today.'**
   String get picksEmptyPreparingTitle;
 
   /// No description provided for @picksEmptyPreparingMessage.
@@ -233,7 +233,7 @@ abstract class AppLocalizations {
   /// No description provided for @picksEmptyDoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve been through today\'s Picks.'**
+  /// **'You\'ve seen today\'s picks.'**
   String get picksEmptyDoneTitle;
 
   /// No description provided for @picksDiscoveryOffTitle.
@@ -247,30 +247,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn discovery on in settings to get Picks.'**
   String get picksDiscoveryOffMessage;
-
-  /// No description provided for @picksDiscoverMore.
-  ///
-  /// In en, this message translates to:
-  /// **'Beyond your picks'**
-  String get picksDiscoverMore;
-
-  /// No description provided for @picksDiscoverMoreHint.
-  ///
-  /// In en, this message translates to:
-  /// **'People outside your Picks who may still be a good fit.'**
-  String get picksDiscoverMoreHint;
-
-  /// No description provided for @picksBackToPicks.
-  ///
-  /// In en, this message translates to:
-  /// **'Back to Mevora Picks'**
-  String get picksBackToPicks;
-
-  /// No description provided for @discoverMoreSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'People outside today\'s Picks'**
-  String get discoverMoreSubtitle;
 
   /// No description provided for @picksLike.
   ///
@@ -313,6 +289,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mevora match {score}%'**
   String picksMatchScore(int score);
+
+  /// No description provided for @picksEmptyDoneMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora will choose new people for you tomorrow.'**
+  String get picksEmptyDoneMessage;
+
+  /// No description provided for @picksEmptyNoCandidatesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Rather than show you random profiles, we\'ll look again tomorrow.'**
+  String get picksEmptyNoCandidatesMessage;
+
+  /// No description provided for @learningCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let Mevora get to know you'**
+  String get learningCardTitle;
+
+  /// No description provided for @learningCardInitialStart.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} short questions help us choose people who fit you.'**
+  String learningCardInitialStart(int total);
+
+  /// No description provided for @learningCardInitialResume.
+  ///
+  /// In en, this message translates to:
+  /// **'{answered} of {total} answered. Pick up where you left off.'**
+  String learningCardInitialResume(int answered, int total);
+
+  /// No description provided for @learningCardFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} short questions to sharpen your Picks.'**
+  String learningCardFollowUp(int count);
+
+  /// No description provided for @learningCardStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get learningCardStart;
+
+  /// No description provided for @learningCardResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get learningCardResume;
+
+  /// No description provided for @learningCardNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get learningCardNotNow;
+
+  /// No description provided for @learningRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'First, let us get to know you'**
+  String get learningRequiredTitle;
+
+  /// No description provided for @learningRequiredBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Picks are chosen from your answers. {total} short questions, about two minutes.'**
+  String learningRequiredBody(int total);
+
+  /// No description provided for @learningIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let Mevora get to know you'**
+  String get learningIntroTitle;
+
+  /// No description provided for @learningIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We use your answers to choose people who fit you better.'**
+  String get learningIntroBody;
+
+  /// No description provided for @learningIntroMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} short questions · about two minutes'**
+  String learningIntroMeta(int count);
+
+  /// No description provided for @learningIntroStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s start'**
+  String get learningIntroStart;
+
+  /// No description provided for @learningProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total}'**
+  String learningProgress(int current, int total);
+
+  /// No description provided for @learningProgressSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {current} of {total}'**
+  String learningProgressSemantics(int current, int total);
+
+  /// No description provided for @learningPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get learningPrevious;
+
+  /// No description provided for @learningNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get learningNext;
+
+  /// No description provided for @learningSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t save your answer. Try again.'**
+  String get learningSaveFailed;
+
+  /// No description provided for @learningLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the questions.'**
+  String get learningLoadErrorTitle;
+
+  /// No description provided for @learningDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks, we know you a little better now.'**
+  String get learningDoneTitle;
+
+  /// No description provided for @learningDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'From now on, the people we choose for you follow your answers.'**
+  String get learningDoneBody;
+
+  /// No description provided for @learningDoneContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get learningDoneContinue;
+
+  /// No description provided for @learningFollowUpDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you!'**
+  String get learningFollowUpDoneTitle;
+
+  /// No description provided for @learningFollowUpDoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers will make your Picks fit you better.'**
+  String get learningFollowUpDoneBody;
+
+  /// No description provided for @learningNothingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No new questions for now'**
+  String get learningNothingTitle;
+
+  /// No description provided for @learningNothingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'When new questions are ready, you\'ll find them here.'**
+  String get learningNothingBody;
+
+  /// No description provided for @learningProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let Mevora get to know you'**
+  String get learningProfileTitle;
+
+  /// No description provided for @learningProfileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers help us choose people who fit you.'**
+  String get learningProfileSubtitle;
 
   /// No description provided for @pickTypeBestOverall.
   ///
@@ -2269,6 +2425,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.'**
   String get settingsPersonalizeRecommendationsSubtitle;
+
+  /// No description provided for @settingsResetLearned.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset what Mevora learned from me'**
+  String get settingsResetLearned;
+
+  /// No description provided for @settingsResetLearnedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clears what was learned from your interactions. Your answers stay.'**
+  String get settingsResetLearnedSubtitle;
+
+  /// No description provided for @settingsResetLearnedConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset what Mevora learned?'**
+  String get settingsResetLearnedConfirmTitle;
+
+  /// No description provided for @settingsResetLearnedConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora will forget what it learned from your likes, matches and conversation activity. Your answers and your profile don\'t change.'**
+  String get settingsResetLearnedConfirmBody;
+
+  /// No description provided for @settingsResetLearnedConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get settingsResetLearnedConfirm;
+
+  /// No description provided for @settingsResetLearnedDone.
+  ///
+  /// In en, this message translates to:
+  /// **'What Mevora learned has been reset.'**
+  String get settingsResetLearnedDone;
+
+  /// No description provided for @settingsResetLearnedFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reset. Try again.'**
+  String get settingsResetLearnedFailed;
 
   /// No description provided for @minAge.
   ///
@@ -4352,72 +4550,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t save that note. Try again.'**
   String get matchFeedbackFailed;
 
-  /// No description provided for @relationshipPromptTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Help Mevora get to know you'**
-  String get relationshipPromptTitle;
-
-  /// No description provided for @relationshipQuestionsPreparing.
-  ///
-  /// In en, this message translates to:
-  /// **'New questions are on the way. Try again in a little while.'**
-  String get relationshipQuestionsPreparing;
-
-  /// No description provided for @relationshipTestTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Help Mevora get to know you'**
-  String get relationshipTestTitle;
-
-  /// No description provided for @relationshipTestHeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'Help Mevora get to know you'**
-  String get relationshipTestHeadline;
-
-  /// No description provided for @relationshipTestMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'A few calm questions about what matters to you in a relationship. Your answers help us make more meaningful picks.'**
-  String get relationshipTestMessage;
-
-  /// No description provided for @relationshipTestStart.
-  ///
-  /// In en, this message translates to:
-  /// **'Let\'s start'**
-  String get relationshipTestStart;
-
-  /// No description provided for @relationshipTestLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Not now'**
-  String get relationshipTestLater;
-
-  /// No description provided for @relationshipContinueTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'A few more questions?'**
-  String get relationshipContinueTitle;
-
-  /// No description provided for @relationshipContinueMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Each answer helps us choose who to show you. Keep going now, or come back later.'**
-  String get relationshipContinueMessage;
-
-  /// No description provided for @relationshipContinueYes.
-  ///
-  /// In en, this message translates to:
-  /// **'Continue'**
-  String get relationshipContinueYes;
-
-  /// No description provided for @relationshipContinueNo.
-  ///
-  /// In en, this message translates to:
-  /// **'Not now'**
-  String get relationshipContinueNo;
-
   /// No description provided for @likesYouTitle.
   ///
   /// In en, this message translates to:
@@ -4508,59 +4640,11 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load likes. Please try again.'**
   String get likesYouLoadError;
 
-  /// No description provided for @relationshipTestDoneTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Thanks — now we know you a little better'**
-  String get relationshipTestDoneTitle;
-
-  /// No description provided for @relationshipTestFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Someone answered a lot like you.'**
-  String get relationshipTestFound;
-
-  /// No description provided for @relationshipTestAlign.
-  ///
-  /// In en, this message translates to:
-  /// **'Your answers overlap on shared topics.'**
-  String get relationshipTestAlign;
-
-  /// No description provided for @relationshipTestNearest.
-  ///
-  /// In en, this message translates to:
-  /// **'Closest to you:'**
-  String get relationshipTestNearest;
-
-  /// No description provided for @relationshipTestEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No one nearby has answered quite like you yet.'**
-  String get relationshipTestEmpty;
-
-  /// No description provided for @relationshipTestViewProfile.
-  ///
-  /// In en, this message translates to:
-  /// **'View profile'**
-  String get relationshipTestViewProfile;
-
-  /// No description provided for @relationshipTestOpenChat.
-  ///
-  /// In en, this message translates to:
-  /// **'Open chat'**
-  String get relationshipTestOpenChat;
-
   /// No description provided for @relationshipMatchBadge.
   ///
   /// In en, this message translates to:
   /// **'Similar answers'**
   String get relationshipMatchBadge;
-
-  /// No description provided for @relationshipPromptProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'{answered} / {total}'**
-  String relationshipPromptProgress(int answered, int total);
 
   /// No description provided for @relationshipCompatibilityPercent.
   ///
@@ -4592,23 +4676,11 @@ abstract class AppLocalizations {
   /// **'Your relationship views overlap.'**
   String get relationshipViewsAlign;
 
-  /// No description provided for @relationshipMatchesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Relationship matches'**
-  String get relationshipMatchesTitle;
-
   /// No description provided for @relationshipMatchesEmpty.
   ///
   /// In en, this message translates to:
   /// **'Answer a few relationship questions to find people who think like you — distance does not matter here.'**
   String get relationshipMatchesEmpty;
-
-  /// No description provided for @relationshipProfileSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'{answered} relationship questions answered'**
-  String relationshipProfileSubtitle(int answered);
 
   /// No description provided for @relationshipTopicJealousy.
   ///

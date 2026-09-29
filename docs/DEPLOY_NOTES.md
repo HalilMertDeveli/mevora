@@ -85,3 +85,30 @@ Three options, none urgent, one of which should eventually be chosen:
 
 Until then the risk is not the state itself — it is someone running the obvious
 command and not knowing what it removes.
+
+## Retired: Hourly Mevora ("Saatlik Mevora") and the timed relationship test
+
+Relationship Learning (`functions/src/relationshipLearning/`) replaced both
+question-driven matching concepts. Nothing in the app calls them any more, and
+nothing on a schedule drives questions or recommendations.
+
+| Deployed function | Status |
+|---|---|
+| `runMatchingGameRoundNow`, `joinMatchingGameRound`, `submitMatchingGameAnswers`, `getMatchingGameRound`, `getMatchingGameResult` | Hourly Mevora. Never on `main`; retired as a product concept. |
+| `matchingGameHourlyTick` | Hourly Mevora's **scheduled** job. Still firing in production until deleted. |
+| `dismissRelationshipTestOffer`, `completeRelationshipTest`, `getRelationshipMatches` | The timed 3-question test on Discover. Removed from `main` by `feat/adaptive-relationship-learning`. |
+
+Removing them is a production change, so the owner runs it, after this branch
+has landed on `main` and the new functions are deployed:
+
+```powershell
+npx.cmd firebase functions:delete runMatchingGameRoundNow joinMatchingGameRound submitMatchingGameAnswers getMatchingGameRound getMatchingGameResult matchingGameHourlyTick dismissRelationshipTestOffer completeRelationshipTest getRelationshipMatches --region europe-west1 --project mevora-d6ed0
+```
+
+Data they left behind is not deleted by this: matches created by the old test
+keep `source: "relationship_test"` and still render as matches, and the
+`relationshipMatch/summary` cooldown fields (`offerCooldownUntil`,
+`matchingEventCount`, `matchingPaused`) are simply no longer read. Any hourly
+round documents in production stay until someone decides to archive them.
+Rollback: redeploy the functions from `feature/hourly-global-matching-game` or
+from `main` before this branch.

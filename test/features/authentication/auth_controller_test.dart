@@ -183,6 +183,91 @@ void main() {
     expect(controller.user, isNull);
   });
 
+  group('after sign-out, a session started outside the controller', () {
+    const userA = AuthUser(
+      id: 'user-a',
+      onboardingCompleted: true,
+      profileCompleted: true,
+    );
+    const userB = AuthUser(
+      id: 'user-b',
+      onboardingCompleted: true,
+      profileCompleted: true,
+    );
+
+    Future<void> signedInAsA() async {
+      authRepository.user = userA;
+      documents.complete = true;
+      controller.start();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.status, isA<Authenticated>());
+    }
+
+    // The regression: the sign-out flag was never cleared, so a session that
+    // reached Firebase without the controller (the emulator QA shortcut, a
+    // custom token) was ignored and the app sat on the login page.
+    test('for a different account is accepted', () async {
+      await signedInAsA();
+      await controller.signOut();
+      expect(controller.status, isA<Unauthenticated>());
+
+      authRepository.emit(userB);
+      await Future<void>.delayed(Duration.zero);
+
+      final status = controller.status;
+      expect(status, isA<Authenticated>());
+      expect((status as Authenticated).user.id, 'user-b');
+      expect(controller.user?.id, 'user-b');
+    });
+
+    test(
+      'for a different account is accepted after account deletion',
+      () async {
+        await signedInAsA();
+        await controller.deleteAccount();
+
+        authRepository.emit(userB);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.user?.id, 'user-b');
+        expect(controller.status, isA<Authenticated>());
+      },
+    );
+
+    test(
+      'for the same account is accepted once a sign-in was started',
+      () async {
+        await signedInAsA();
+        await controller.signOut();
+
+        controller.beginExternalSignIn();
+        authRepository.emit(userA);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(controller.status, isA<Authenticated>());
+        expect(controller.user?.id, 'user-a');
+      },
+    );
+
+    test('still ignores a late echo of the account being signed out', () async {
+      await signedInAsA();
+      authRepository.signOutDelay = const Duration(milliseconds: 30);
+
+      final pending = controller.signOut();
+      // A users/{uid} snapshot of A landing while the sign-out runs.
+      authRepository.emit(userA);
+      await Future<void>.delayed(Duration.zero);
+      controller.beginExternalSignIn(); // ignored: a sign-out is in flight
+      await pending;
+      authRepository.emit(userA);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.status, isA<Unauthenticated>());
+      expect(controller.user, isNull);
+    });
+  });
+
   test('explicit linking records the provider and does not auto-merge', () async {
     authRepository.user = const AuthUser(
       id: 'user-1',

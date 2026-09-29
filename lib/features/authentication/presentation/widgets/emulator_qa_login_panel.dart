@@ -19,12 +19,17 @@ class EmulatorQaLoginPanel extends StatelessWidget {
   const EmulatorQaLoginPanel({
     super.key,
     required this.onUseAccount,
+    this.onSignInStarted,
     this.enabled = true,
   });
 
   /// Called with the seeded credentials so the host page can fill its own
   /// controllers and run its normal submit.
   final void Function(String email, String password) onUseAccount;
+
+  /// Called just before the shortcut signs in with Firebase directly, which
+  /// bypasses the auth controller — see `AuthController.beginExternalSignIn`.
+  final VoidCallback? onSignInStarted;
 
   final bool enabled;
 
@@ -92,6 +97,7 @@ class EmulatorQaLoginPanel extends StatelessWidget {
                           if (resolved == null) {
                             return;
                           }
+                          onSignInStarted?.call();
                           // Password sign-in runs a reCAPTCHA pre-flight
                           // through Play Services, which is broken on some
                           // emulator images. Try it first so the documented

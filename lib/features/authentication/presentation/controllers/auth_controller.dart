@@ -52,6 +52,11 @@ class AuthController extends ChangeNotifier {
   Timer? _resendTimer;
   bool _actionInFlight = false;
   bool _signingOut = false;
+
+  /// The account being signed out or deleted while [_signingOut] is set.
+  /// Only its snapshots are the late echoes that flag guards against; a
+  /// snapshot for any other account is a new session.
+  String? _closingUid;
   bool _disposed = false;
   int _generation = 0;
 
@@ -103,7 +108,7 @@ class AuthController extends ChangeNotifier {
         user = null;
         status = const Unauthenticated();
       case AuthProfilePending(:final uid):
-        if (_signingOut) {
+        if (_isClosingSessionEcho(uid)) {
           return;
         }
         if (_actionInFlight) {
@@ -140,7 +145,7 @@ class AuthController extends ChangeNotifier {
           }
         }
       case AuthProfileReady(:final user):
-        if (_signingOut) {
+        if (_isClosingSessionEcho(user.id)) {
           return;
         }
         if (user.isBanned || !user.isActive) {
@@ -159,6 +164,45 @@ class AuthController extends ChangeNotifier {
             : Authenticated(user);
     }
     notifyListeners();
+  }
+
+  /// Whether a profile snapshot for [uid] must be ignored as a late echo of
+  /// the account being signed out.
+  ///
+  /// A snapshot for a different account means someone signed in after the
+  /// sign-out, through a path that never went through [_run] (the emulator
+  /// QA shortcut, for one). That ends the guard, so the new session is not
+  /// ignored until the next provider sign-in.
+  bool _isClosingSessionEcho(String uid) {
+    if (!_signingOut) {
+      return false;
+    }
+    final closing = _closingUid;
+    if (closing == null || closing == uid) {
+      return true;
+    }
+    _endSignOutGuard();
+    return false;
+  }
+
+  void _endSignOutGuard() {
+    _signingOut = false;
+    _closingUid = null;
+  }
+
+  /// Call before a sign-in that bypasses this controller and talks to
+  /// Firebase directly (the emulator QA shortcut).
+  ///
+  /// Starting a sign-in is a deliberate new session, so the snapshots that
+  /// follow are that session and not late echoes of the account that just
+  /// signed out, even when it is the same account. Without this, signing
+  /// back in as the same user that way would be ignored until a restart.
+  /// Ignored while a sign-out is still running.
+  void beginExternalSignIn() {
+    if (_actionInFlight) {
+      return;
+    }
+    _endSignOutGuard();
   }
 
   Future<void> _handleBanned() async {
@@ -439,11 +483,12 @@ class AuthController extends ChangeNotifier {
     if (user == null && status is Unauthenticated) {
       return const Success<void>(null);
     }
+    _closingUid = user?.id;
     _signingOut = true;
     _generation += 1;
     final result = await _run(
       _authRepository.signOut,
-      afterSuccess: _resetToLoggedOut,
+      afterSuccess: _resetUnlessSessionReplaced,
     );
     if (result is Err<void>) {
       _signingOut = false;
@@ -455,11 +500,12 @@ class AuthController extends ChangeNotifier {
     if (_disposed || _actionInFlight) {
       return const Success<void>(null);
     }
+    _closingUid = user?.id;
     _signingOut = true;
     _generation += 1;
     final result = await _run(
       _authRepository.deleteAccount,
-      afterSuccess: _resetToLoggedOut,
+      afterSuccess: _resetUnlessSessionReplaced,
     );
     if (result is Err<void>) {
       _signingOut = false;
@@ -507,6 +553,14 @@ class AuthController extends ChangeNotifier {
 
   Future<void> reportLoginScreenViewed() {
     return _analytics.loginScreenViewed();
+  }
+
+  /// Settles a finished sign-out, unless another account's session was
+  /// already accepted while it ran (see [_isClosingSessionEcho]).
+  void _resetUnlessSessionReplaced() {
+    if (_signingOut) {
+      _resetToLoggedOut();
+    }
   }
 
   void _resetToLoggedOut() {

@@ -29,6 +29,7 @@ class OnboardingStepScaffold extends StatelessWidget {
     this.errorMessage,
     this.canContinue = true,
     this.showContinue = true,
+    this.scrollable = false,
     this.subtitle,
   });
 
@@ -45,6 +46,12 @@ class OnboardingStepScaffold extends StatelessWidget {
   /// A step that supplies its own primary actions - the optional Spotify
   /// stage offers Connect and Skip - hides the shared Continue button.
   final bool showContinue;
+
+  /// Scroll [child] inside the space between the header and Continue. Set it
+  /// for plain pickers (chips, groups) whose height grows with the labels and
+  /// text scale; leave it off for bodies that scroll themselves (ListView) or
+  /// lay out against the available height (Spacer).
+  final bool scrollable;
 
   /// Supporting line under the question.
   final String? subtitle;
@@ -128,7 +135,14 @@ class OnboardingStepScaffold extends StatelessWidget {
           ),
         ],
         const SizedBox(height: AppSpacing.lg),
-        Expanded(child: child),
+        Expanded(
+          child: scrollable
+              ? SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: child,
+                )
+              : child,
+        ),
         if (errorMessage != null) ...[
           const SizedBox(height: AppSpacing.sm),
           MevoraBanner(

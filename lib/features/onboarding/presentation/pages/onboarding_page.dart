@@ -293,6 +293,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
+      scrollable: true,
       child: ProfileInterestPicker(
         selected: selected,
         onChanged: (next) => _controller.updateDraft(
@@ -312,6 +313,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
+      scrollable: true,
       child: ProfileEducationPicker(
         value: education,
         onChanged: (next) => _controller.updateDraft(
@@ -332,6 +334,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
+      scrollable: true,
       child: ProfileRelationshipGoalPicker(
         value: goal,
         onChanged: (next) => _controller.updateDraft(
@@ -352,6 +355,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
+      scrollable: true,
       child: ProfileLifestylePicker(
         profile: lifestyle,
         onChanged: (next) => _controller.updateDraft(

@@ -1,5 +1,8 @@
 # Android Release Signing
 
+> **Before publishing:** check `docs/PUBLISH_BLOCKERS.md`. As of 2026-09-29, Cloud Billing on
+> `mevora-d6ed0` is closed, so phone SMS login and every Cloud Function fail.
+
 Production Android releases are signed with Mevora's own upload key. The
 build refuses to produce a `productionRelease` artifact unless that key is
 available — it will never fall back to the debug keystore.

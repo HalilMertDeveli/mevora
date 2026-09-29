@@ -224,22 +224,29 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     unawaited(picks.load());
   }
 
-  /// Relationship Learning, then a fresh look at today's Picks: finishing the
-  /// initial questions is what unlocks a new member's first set.
+  /// Today's relationship questions, then a fresh look at today's Picks:
+  /// finishing the first set is what unlocks a new member's first Picks.
   Future<void> _openLearning(LearningSummary summary) async {
-    await openRelationshipLearning(context, summary: summary, source: 'picks');
+    await openRelationshipLearning(context, source: 'picks');
     if (mounted && _picksStarted) {
       unawaited(_picks?.load());
     }
   }
 
-  Future<void> _snoozeLearning() async {
+  /// "Bugünlük geç" on the Picks card: today's set comes back tomorrow.
+  Future<void> _skipLearningToday(LearningSummary summary) async {
     final scope = RelationshipLearningScope.maybeOf(context);
     if (scope == null) {
       return;
     }
-    scope.analytics.followUpSnoozed();
-    await scope.repository.snoozeFollowUp();
+    final result = await scope.repository.skipToday();
+    if (result.isSuccess) {
+      scope.analytics.skipped(
+        questionSetId: summary.today.questionSetId ?? '',
+        source: 'picks',
+        answered: summary.today.answered,
+      );
+    }
     if (mounted && _picksStarted) {
       unawaited(_picks?.load());
     }
@@ -432,7 +439,8 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         controller: _picks!,
         onOpenProfile: _openPickProfile,
         onOpenLearning: (summary) => unawaited(_openLearning(summary)),
-        onSnoozeLearning: () => unawaited(_snoozeLearning()),
+        onSkipLearningToday: (summary) =>
+            unawaited(_skipLearningToday(summary)),
         onOpenSettings: () => context.push(AppRoutes.settings),
         footer: const HumorLabDiscoverEntry(),
       );

@@ -78,6 +78,7 @@ class HumorContentPlayer extends StatefulWidget {
     this.onSkipUnplayable,
     this.analytics,
     this.videoControllerFactory,
+    this.showCategory = true,
   });
 
   /// How long a video may take to initialise before it counts as broken.
@@ -121,6 +122,10 @@ class HumorContentPlayer extends StatefulWidget {
 
   /// Defaults to [VideoPlayerController.networkUrl].
   final HumorVideoControllerFactory? videoControllerFactory;
+
+  /// Show the humor category chip. The daily tour turns it off: a category
+  /// hint while rating would steer the answer.
+  final bool showCategory;
 
   /// Whether [content] is played as a clip (by type, or an .mp4 URL).
   static bool isVideoContent(HumorContent content) {
@@ -712,9 +717,11 @@ class _HumorContentPlayerState extends State<HumorContentPlayer>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _Chip(label: _categoryLabel(l10n, content.category)),
+                  if (widget.showCategory)
+                    _Chip(label: _categoryLabel(l10n, content.category)),
                   if (attribution != null) ...[
-                    const SizedBox(height: AppSpacing.xs),
+                    if (widget.showCategory)
+                      const SizedBox(height: AppSpacing.xs),
                     _AttributionLabel(
                       attribution: attribution,
                       verifiedLabel: l10n.humorAttributionVerified,

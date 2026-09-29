@@ -1,11 +1,15 @@
+import 'package:cloud_functions/cloud_functions.dart'
+    show FirebaseFunctionsException;
 import 'package:mevora/core/data/firestore_codec.dart';
+import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/features/relationship_learning/domain/entities/relationship_learning.dart';
 import 'package:mevora/features/relationship_learning/domain/repositories/relationship_learning_repository.dart';
 
-/// Calls the relationship-learning callables and `resetMyPersonalization`.
+/// Calls the daily relationship-question callables and
+/// `resetMyPersonalization`.
 class RelationshipLearningRepositoryImpl
     implements RelationshipLearningRepository {
   RelationshipLearningRepositoryImpl({required BackendCallable backend})
@@ -27,32 +31,67 @@ class RelationshipLearningRepositoryImpl
   }
 
   @override
-  Future<Result<LearningAnswerResult>> saveAnswer({
+  Future<Result<DailyAnswerResult>> saveDailyAnswer({
+    required String questionSetId,
     required String questionId,
+    required int questionVersion,
     required String answerId,
   }) async {
     try {
-      final data = await _backend.invoke('saveRelationshipLearningAnswer', {
+      final data = await _backend.invoke('saveDailyRelationshipAnswer', {
+        'questionSetId': questionSetId,
         'questionId': questionId,
+        'questionVersion': questionVersion,
         'answerId': answerId,
       });
       return Success(
-        LearningAnswerResult(
+        DailyAnswerResult(
           summary: RelationshipLearningParser.parseSummary(data),
-          completedInitialNow: data['completedInitialNow'] == true,
-          completedRoundNow: data['completedRoundNow'] == true,
+          completedTodayNow: data['completedTodayNow'] == true,
+          firstSetCompletedNow: data['firstSetCompletedNow'] == true,
         ),
       );
+    } on FirebaseFunctionsException catch (error) {
+      return Err(_answerFailure(error));
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  /// The day turned while the member was answering: the controller reloads
+  /// today's set instead of showing an error. Anything else is a plain
+  /// "could not save".
+  static Failure _answerFailure(FirebaseFunctionsException error) =>
+      error.message == learningStaleSetReason
+      ? const ValidationFailure(learningStaleSetReason)
+      : const UnexpectedFailure('');
+
+  @override
+  Future<Result<void>> updateAnswer({
+    required String questionId,
+    required int questionVersion,
+    required String answerId,
+  }) async {
+    try {
+      await _backend.invoke('updateRelationshipAnswer', {
+        'questionId': questionId,
+        'questionVersion': questionVersion,
+        'answerId': answerId,
+      });
+      return const Success(null);
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
     }
   }
 
   @override
-  Future<Result<void>> snoozeFollowUp() async {
+  Future<Result<LearningSummary>> skipToday() async {
     try {
-      await _backend.invoke('snoozeRelationshipLearningPrompt', const {});
-      return const Success(null);
+      final data = await _backend.invoke(
+        'skipTodayRelationshipQuestions',
+        const {},
+      );
+      return Success(RelationshipLearningParser.parseSummary(data));
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
     }
@@ -82,16 +121,35 @@ class RelationshipLearningRepositoryImpl
 /// Parses server payloads. Malformed questions are dropped, never guessed.
 abstract final class RelationshipLearningParser {
   static LearningSummary parseSummary(Map<String, dynamic> data) {
+    final today = data['today'];
+    final nextDay = data['nextDayStartsAtMs'];
     return LearningSummary(
       required: firestoreFlag(data['required']),
-      initialTotal: firestoreInt(data['initialTotal'], 15),
-      initialAnswered: firestoreInt(data['initialAnswered'], 0),
-      initialCompleted: firestoreFlag(data['initialCompleted']),
       blocksPicks: firestoreFlag(data['blocksPicks']),
-      progressiveDue: firestoreFlag(data['progressiveDue']),
-      followUpSize: firestoreInt(data['followUpSize'], 3),
+      firstSetCompleted: firestoreFlag(data['firstSetCompleted']),
       humorCalibrated: firestoreFlag(data['humorCalibrated']),
       journeyStage: JourneyStage.parse(data['journeyStage']),
+      today: today is Map
+          ? parseProgress(Map<String, dynamic>.from(today))
+          : const DailyProgress(),
+      nextDayStartsAt: nextDay is num && nextDay > 0
+          ? DateTime.fromMillisecondsSinceEpoch(nextDay.toInt())
+          : null,
+    );
+  }
+
+  static DailyProgress parseProgress(Map<String, dynamic> data) {
+    final total = firestoreInt(data['total'], 10);
+    return DailyProgress(
+      dateKey: data['dateKey'] is String ? data['dateKey'] as String : '',
+      questionSetId: data['questionSetId'] is String
+          ? data['questionSetId'] as String
+          : null,
+      total: total,
+      answered: firestoreInt(data['answered'], 0).clamp(0, total),
+      completed: firestoreFlag(data['completed']),
+      skipped: firestoreFlag(data['skipped']),
+      canSkip: data['canSkip'] != false,
     );
   }
 
@@ -104,16 +162,18 @@ abstract final class RelationshipLearningParser {
   }
 
   static RelationshipLearningState parseState(Map<String, dynamic> data) {
-    final initial = data['initial'];
-    final followUp = data['progressive'];
+    final summary = parseSummary(data);
+    final today = data['today'];
+    final questions = today is Map
+        ? parseQuestions(today['questions'])
+        : const <LearningQuestion>[];
     return RelationshipLearningState(
-      summary: parseSummary(data),
-      initialQuestions: initial is Map
-          ? parseQuestions(initial['questions'])
-          : const [],
-      followUpQuestions: followUp is Map
-          ? parseQuestions(followUp['questions'])
-          : const [],
+      summary: summary,
+      today: DailyQuestionSet(
+        dateKey: summary.today.dateKey,
+        questionSetId: summary.today.questionSetId ?? '',
+        questions: questions,
+      ),
       overview: parseOverview(data['overview']),
     );
   }
@@ -181,9 +241,6 @@ abstract final class RelationshipLearningParser {
         answered.add(
           AnsweredLearningQuestion(
             question: question,
-            category: map['category'] is String
-                ? map['category'] as String
-                : question.dimension,
             answeredAt: at is num && at > 0
                 ? DateTime.fromMillisecondsSinceEpoch(at.toInt())
                 : null,
@@ -191,9 +248,17 @@ abstract final class RelationshipLearningParser {
         );
       }
     }
+    final totals = data['totals'];
     return LearningOverview(
       overallProgress: _unit(data['overallProgress']),
       categories: categories,
+      totals: totals is Map
+          ? LearningTotals(
+              thisMonth: firestoreInt(totals['thisMonth'], 0),
+              total: firestoreInt(totals['total'], 0),
+              completedDays: firestoreInt(totals['completedDays'], 0),
+            )
+          : const LearningTotals(),
       highlights: highlights,
       answered: answered,
     );
@@ -253,11 +318,17 @@ abstract final class RelationshipLearningParser {
       return null;
     }
     final answer = raw['answerId'];
+    final dimension = raw['dimension'] is String
+        ? raw['dimension'] as String
+        : '';
     return LearningQuestion(
       id: id,
       version: firestoreInt(raw['version'], 1),
-      kind: LearningQuestionKind.parse(raw['kind']),
-      dimension: raw['dimension'] is String ? raw['dimension'] as String : '',
+      category: raw['category'] is String
+          ? raw['category'] as String
+          : dimension,
+      dimension: dimension,
+      answerType: raw['answerType'] == 'scale' ? 'scale' : 'choice',
       promptTr: promptTr,
       promptEn: promptEn,
       options: options,

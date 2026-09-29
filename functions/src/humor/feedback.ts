@@ -1,6 +1,7 @@
 import {
   FieldValue,
   type DocumentReference,
+  type DocumentSnapshot,
   type Firestore,
   type Transaction,
 } from "firebase-admin/firestore";
@@ -137,7 +138,7 @@ export function parseSubmitHumorFeedbackInput(
   };
 }
 
-type HumorFeedbackResult = {
+export type HumorFeedbackResult = {
   ok: true;
   profileBuilding: boolean;
   interactionCount: number;
@@ -309,6 +310,299 @@ async function countUncuratedAnchorIfPoolExhausted(input: {
   });
 }
 
+/** Everything a feedback write needs that is read or derived before the transaction. */
+export type PreparedHumorFeedback = {
+  uid: string;
+  contentId: string;
+  content: HumorContentDoc;
+  statsBefore: ContentStatsSnapshot;
+  skipped: boolean;
+  rating: HumorRating | null;
+  skipReason: unknown;
+  saved?: boolean;
+  details: {
+    dwellMs: number;
+    replayCount: number;
+    gestureHints: HumorGestureHints | null;
+  };
+  interactionRef: DocumentReference;
+  profileRef: DocumentReference;
+  calibrationRef: DocumentReference;
+};
+
+/** The three documents the feedback transaction reads, in its own transaction. */
+export type HumorFeedbackReads = {
+  interactionSnap: DocumentSnapshot;
+  profileSnap: DocumentSnapshot;
+  calibrationSnap: DocumentSnapshot;
+};
+
+/** What one feedback transaction decided; `finishHumorFeedback` acts on it. */
+export type HumorFeedbackTxResult = {
+  profile: UserHumorProfileDoc;
+  calibration: UserHumorCalibrationDoc;
+  anchorDeferred: boolean;
+  stats: StatsChange | null;
+};
+
+/**
+ * Validate a feedback request and read the content it is about.
+ *
+ * Throws `invalid-rating` or `content-unavailable`. Shared by the Humor Lab
+ * feed and the daily set, so both apply one set of rules.
+ */
+export async function prepareHumorFeedback(input: {
+  db: Firestore;
+  uid: string;
+  contentId: string;
+  rating?: HumorRating | null;
+  dwellMs?: number;
+  replayCount?: number;
+  skipped?: boolean;
+  skipReason?: unknown;
+  saved?: boolean;
+  gestureHints?: HumorGestureHints | null;
+}): Promise<PreparedHumorFeedback> {
+  const skipped = input.skipped === true;
+  const rating = skipped ? null : input.rating ?? null;
+  if (!skipped && !isValidHumorRating(rating)) {
+    throw new Error("invalid-rating");
+  }
+
+  // Read raw (rather than through loadHumorContent) so the stats update after
+  // commit can see `ratingSum`, which the parsed document does not carry.
+  const contentSnap = await input.db.doc(`humorContent/${input.contentId}`).get();
+  const contentData = contentSnap.exists
+    ? (contentSnap.data() as Record<string, unknown> | undefined)
+    : undefined;
+  const content = contentData ? parseHumorContent(contentSnap.id, contentData) : null;
+  // A skip only needs the item to exist — skipping something that was taken
+  // down meanwhile is legitimate. A rating needs it to be servable.
+  if (
+    !content ||
+    (!skipped &&
+      !canServeHumorContent({
+        active: content.active,
+        safetyStatus: content.safetyStatus,
+      }))
+  ) {
+    throw new Error("content-unavailable");
+  }
+
+  return {
+    uid: input.uid,
+    contentId: input.contentId,
+    content,
+    statsBefore: statsSnapshotOf(contentData),
+    skipped,
+    rating,
+    skipReason: input.skipReason,
+    ...(typeof input.saved === "boolean" ? {saved: input.saved} : {}),
+    details: {
+      dwellMs: boundedCount(input.dwellMs, MAX_DWELL_MS),
+      replayCount: boundedCount(input.replayCount, MAX_REPLAY_COUNT),
+      gestureHints: input.gestureHints
+        ? {
+            swipeUp: input.gestureHints.swipeUp === true,
+            swipeDown: input.gestureHints.swipeDown === true,
+          }
+        : null,
+    },
+    interactionRef: input.db.doc(`users/${input.uid}/humorInteractions/${input.contentId}`),
+    profileRef: input.db.doc(`users/${input.uid}/humor/summary`),
+    calibrationRef: input.db.doc(HUMOR_CALIBRATION_DOC(input.uid)),
+  };
+}
+
+export async function readHumorFeedbackState(
+  tx: Transaction,
+  prepared: PreparedHumorFeedback,
+): Promise<HumorFeedbackReads> {
+  const [interactionSnap, profileSnap, calibrationSnap] = await Promise.all([
+    tx.get(prepared.interactionRef),
+    tx.get(prepared.profileRef),
+    tx.get(prepared.calibrationRef),
+  ]);
+  return {interactionSnap, profileSnap, calibrationSnap};
+}
+
+/**
+ * The feedback decision and its writes, inside a caller's transaction whose
+ * reads (including [reads]) are already done. Semantics: see
+ * `submitHumorFeedbackTx`.
+ */
+export function applyHumorFeedbackInTx(
+  tx: Transaction,
+  prepared: PreparedHumorFeedback,
+  reads: HumorFeedbackReads,
+): HumorFeedbackTxResult {
+  const {interactionSnap, profileSnap, calibrationSnap} = reads;
+  const {interactionRef, profileRef, calibrationRef, content, rating, details} = prepared;
+  const explicitSaved = typeof prepared.saved === "boolean" ? {saved: prepared.saved} : {};
+  const profile = profileFromSnapshot(
+    profileSnap.data() as Record<string, unknown> | undefined,
+  );
+  const previousCalibration = parseCalibrationState(
+    calibrationSnap.data() as Record<string, unknown> | undefined,
+  );
+  const existing = interactionSnap.exists ? interactionSnap.data() ?? {} : null;
+  // A skip or report marker has no valid rating: it does not count as rated.
+  const existingRating = isValidHumorRating(existing?.rating)
+    ? existing?.rating as HumorRating
+    : null;
+  const unchanged: HumorFeedbackTxResult = {
+    profile,
+    calibration: previousCalibration,
+    anchorDeferred: false,
+    stats: null,
+  };
+  const now = FieldValue.serverTimestamp();
+
+  if (prepared.skipped || rating === null) {
+    if (!interactionSnap.exists) {
+      tx.set(interactionRef, {
+        contentId: prepared.contentId,
+        skipped: true,
+        skipReason: parseSkipReason(prepared.skipReason),
+        rating: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    return unchanged;
+  }
+
+  if (existingRating === rating) {
+    if (typeof prepared.saved === "boolean" && existing?.saved !== prepared.saved) {
+      tx.set(interactionRef, {saved: prepared.saved, updatedAt: now}, {merge: true});
+    }
+    return unchanged;
+  }
+
+  if (existingRating) {
+    const stats = {
+      countDelta: 0,
+      sumDelta: ratingWeight(rating) - ratingWeight(existingRating),
+    };
+    const recorded = existing?.appliedDelta;
+    if (!recorded || typeof recorded !== "object" || Array.isArray(recorded)) {
+      // Rated before contributions were recorded: the old contribution
+      // cannot be taken back, and stacking the new rating on top of it is
+      // exactly what replacement exists to prevent. Record the change, keep
+      // the profile as it is.
+      tx.set(
+        interactionRef,
+        {rating, skipped: false, ...details, ...explicitSaved, updatedAt: now},
+        {merge: true},
+      );
+      return {...unchanged, stats};
+    }
+    const replaced = applyRatingToProfile({
+      profile,
+      contentVector: content.humorVector,
+      category: content.category,
+      rating,
+      mode: "replace",
+      previousDelta: parseProfileDelta(recorded),
+      previousStep: typeof existing?.appliedStep === "number" ? existing.appliedStep : null,
+      calibrating: !previousCalibration.complete,
+    });
+    tx.set(
+      interactionRef,
+      {
+        rating,
+        appliedDelta: replaced.appliedDelta,
+        appliedStep: replaced.step,
+        skipped: false,
+        ...details,
+        ...explicitSaved,
+        updatedAt: now,
+      },
+      {merge: true},
+    );
+    tx.set(profileRef, {...replaced.profile, lastUpdatedAt: now}, {merge: true});
+    return {...unchanged, profile: replaced.profile, stats};
+  }
+
+  // First real rating of this item. While the initial calibration runs it
+  // learns at the young step even for a profile with earlier ratings.
+  const learned = applyRatingToProfile({
+    profile,
+    contentVector: content.humorVector,
+    category: content.category,
+    rating,
+    mode: "first",
+    calibrating: !previousCalibration.complete,
+  });
+  // Calibration advances only on a *first* rating, inside the same
+  // transaction as the profile update, so progression can never drift from
+  // the interactions that actually happened.
+  const calibration = advanceCalibration({state: previousCalibration, content});
+  writeCalibration(tx, calibrationRef, previousCalibration, calibration);
+  tx.set(
+    interactionRef,
+    {
+      contentId: prepared.contentId,
+      rating,
+      appliedDelta: learned.appliedDelta,
+      appliedStep: learned.step,
+      skipped: false,
+      ...details,
+      ...explicitSaved,
+      updatedAt: now,
+      ...(interactionSnap.exists ? {} : {createdAt: now}),
+    },
+    {merge: true},
+  );
+  tx.set(profileRef, {...learned.profile, lastUpdatedAt: now}, {merge: true});
+  return {
+    profile: learned.profile,
+    calibration,
+    anchorDeferred:
+      calibration === previousCalibration &&
+      !previousCalibration.complete &&
+      !isCalibrationCurated(content) &&
+      stageForCompletedCount(previousCalibration.completedCount) === "anchor" &&
+      !previousCalibration.ratedContentIds.includes(prepared.contentId),
+    stats: {countDelta: 1, sumDelta: ratingWeight(rating)},
+  };
+}
+
+/** After-commit work (content stats, the exhausted-anchor path) and the response. */
+export async function finishHumorFeedback(
+  db: Firestore,
+  prepared: PreparedHumorFeedback,
+  result: HumorFeedbackTxResult,
+): Promise<HumorFeedbackResult> {
+  const [calibration] = await Promise.all([
+    result.anchorDeferred
+      ? countUncuratedAnchorIfPoolExhausted({
+          db,
+          uid: prepared.uid,
+          content: prepared.content,
+          state: result.calibration,
+        })
+      : result.calibration,
+    result.stats
+      ? recordContentStats(db, prepared.contentId, prepared.statsBefore, result.stats)
+      : null,
+  ]);
+
+  return {
+    ok: true,
+    // Calibration is the authoritative "still building" signal once it has
+    // started; the interaction-count heuristic remains for pre-calibration
+    // profiles so existing clients keep behaving as before.
+    profileBuilding: calibration.complete
+      ? false
+      : calibration.completedCount > 0 ||
+        isProfileBuilding(result.profile.interactionCount),
+    interactionCount: result.profile.interactionCount,
+    confidence: result.profile.confidence,
+    calibration: toCalibrationView(calibration),
+  };
+}
+
 /**
  * Persist feedback and update the lifetime humor profile.
  *
@@ -343,212 +637,11 @@ export async function submitHumorFeedbackTx(input: {
   saved?: boolean;
   gestureHints?: HumorGestureHints | null;
 }): Promise<HumorFeedbackResult> {
-  const skipped = input.skipped === true;
-  const rating = skipped ? null : input.rating ?? null;
-  if (!skipped && !isValidHumorRating(rating)) {
-    throw new Error("invalid-rating");
-  }
-
-  // Read raw (rather than through loadHumorContent) so the stats update after
-  // commit can see `ratingSum`, which the parsed document does not carry.
-  const contentSnap = await input.db.doc(`humorContent/${input.contentId}`).get();
-  const contentData = contentSnap.exists
-    ? (contentSnap.data() as Record<string, unknown> | undefined)
-    : undefined;
-  const content = contentData ? parseHumorContent(contentSnap.id, contentData) : null;
-  const statsBefore = statsSnapshotOf(contentData);
-  // A skip only needs the item to exist — skipping something that was taken
-  // down meanwhile is legitimate. A rating needs it to be servable.
-  if (
-    !content ||
-    (!skipped &&
-      !canServeHumorContent({
-        active: content.active,
-        safetyStatus: content.safetyStatus,
-      }))
-  ) {
-    throw new Error("content-unavailable");
-  }
-
-  const interactionRef = input.db.doc(
-    `users/${input.uid}/humorInteractions/${input.contentId}`,
+  const prepared = await prepareHumorFeedback(input);
+  const result = await input.db.runTransaction(async (tx) =>
+    applyHumorFeedbackInTx(tx, prepared, await readHumorFeedbackState(tx, prepared)),
   );
-  const profileRef = input.db.doc(`users/${input.uid}/humor/summary`);
-  const calibrationRef = input.db.doc(HUMOR_CALIBRATION_DOC(input.uid));
-  const explicitSaved = typeof input.saved === "boolean" ? {saved: input.saved} : {};
-  const details = {
-    dwellMs: boundedCount(input.dwellMs, MAX_DWELL_MS),
-    replayCount: boundedCount(input.replayCount, MAX_REPLAY_COUNT),
-    gestureHints: input.gestureHints
-      ? {
-          swipeUp: input.gestureHints.swipeUp === true,
-          swipeDown: input.gestureHints.swipeDown === true,
-        }
-      : null,
-  };
-
-  const result = await input.db.runTransaction(async (tx) => {
-    const [interactionSnap, profileSnap, calibrationSnap] = await Promise.all([
-      tx.get(interactionRef),
-      tx.get(profileRef),
-      tx.get(calibrationRef),
-    ]);
-    const profile = profileFromSnapshot(
-      profileSnap.data() as Record<string, unknown> | undefined,
-    );
-    const previousCalibration = parseCalibrationState(
-      calibrationSnap.data() as Record<string, unknown> | undefined,
-    );
-    const existing = interactionSnap.exists ? interactionSnap.data() ?? {} : null;
-    // A skip or report marker has no valid rating: it does not count as rated.
-    const existingRating = isValidHumorRating(existing?.rating)
-      ? existing?.rating as HumorRating
-      : null;
-    const unchanged = {
-      profile,
-      calibration: previousCalibration,
-      anchorDeferred: false,
-      stats: null as StatsChange | null,
-    };
-    const now = FieldValue.serverTimestamp();
-
-    if (skipped || rating === null) {
-      if (!interactionSnap.exists) {
-        tx.set(interactionRef, {
-          contentId: input.contentId,
-          skipped: true,
-          skipReason: parseSkipReason(input.skipReason),
-          rating: null,
-          createdAt: now,
-          updatedAt: now,
-        });
-      }
-      return unchanged;
-    }
-
-    if (existingRating === rating) {
-      if (typeof input.saved === "boolean" && existing?.saved !== input.saved) {
-        tx.set(interactionRef, {saved: input.saved, updatedAt: now}, {merge: true});
-      }
-      return unchanged;
-    }
-
-    if (existingRating) {
-      const stats = {
-        countDelta: 0,
-        sumDelta: ratingWeight(rating) - ratingWeight(existingRating),
-      };
-      const recorded = existing?.appliedDelta;
-      if (!recorded || typeof recorded !== "object" || Array.isArray(recorded)) {
-        // Rated before contributions were recorded: the old contribution
-        // cannot be taken back, and stacking the new rating on top of it is
-        // exactly what replacement exists to prevent. Record the change, keep
-        // the profile as it is.
-        tx.set(
-          interactionRef,
-          {rating, skipped: false, ...details, ...explicitSaved, updatedAt: now},
-          {merge: true},
-        );
-        return {...unchanged, stats};
-      }
-      const replaced = applyRatingToProfile({
-        profile,
-        contentVector: content.humorVector,
-        category: content.category,
-        rating,
-        mode: "replace",
-        previousDelta: parseProfileDelta(recorded),
-        previousStep: typeof existing?.appliedStep === "number" ? existing.appliedStep : null,
-        calibrating: !previousCalibration.complete,
-      });
-      tx.set(
-        interactionRef,
-        {
-          rating,
-          appliedDelta: replaced.appliedDelta,
-          appliedStep: replaced.step,
-          skipped: false,
-          ...details,
-          ...explicitSaved,
-          updatedAt: now,
-        },
-        {merge: true},
-      );
-      tx.set(profileRef, {...replaced.profile, lastUpdatedAt: now}, {merge: true});
-      return {...unchanged, profile: replaced.profile, stats};
-    }
-
-    // First real rating of this item. While the initial calibration runs it
-    // learns at the young step even for a profile with earlier ratings.
-    const learned = applyRatingToProfile({
-      profile,
-      contentVector: content.humorVector,
-      category: content.category,
-      rating,
-      mode: "first",
-      calibrating: !previousCalibration.complete,
-    });
-    // Calibration advances only on a *first* rating, inside the same
-    // transaction as the profile update, so progression can never drift from
-    // the interactions that actually happened.
-    const calibration = advanceCalibration({state: previousCalibration, content});
-    writeCalibration(tx, calibrationRef, previousCalibration, calibration);
-    tx.set(
-      interactionRef,
-      {
-        contentId: input.contentId,
-        rating,
-        appliedDelta: learned.appliedDelta,
-        appliedStep: learned.step,
-        skipped: false,
-        ...details,
-        ...explicitSaved,
-        updatedAt: now,
-        ...(interactionSnap.exists ? {} : {createdAt: now}),
-      },
-      {merge: true},
-    );
-    tx.set(profileRef, {...learned.profile, lastUpdatedAt: now}, {merge: true});
-    return {
-      profile: learned.profile,
-      calibration,
-      anchorDeferred:
-        calibration === previousCalibration &&
-        !previousCalibration.complete &&
-        !isCalibrationCurated(content) &&
-        stageForCompletedCount(previousCalibration.completedCount) === "anchor" &&
-        !previousCalibration.ratedContentIds.includes(input.contentId),
-      stats: {countDelta: 1, sumDelta: ratingWeight(rating)},
-    };
-  });
-
-  const [calibration] = await Promise.all([
-    result.anchorDeferred
-      ? countUncuratedAnchorIfPoolExhausted({
-          db: input.db,
-          uid: input.uid,
-          content,
-          state: result.calibration,
-        })
-      : result.calibration,
-    result.stats
-      ? recordContentStats(input.db, input.contentId, statsBefore, result.stats)
-      : null,
-  ]);
-
-  return {
-    ok: true,
-    // Calibration is the authoritative "still building" signal once it has
-    // started; the interaction-count heuristic remains for pre-calibration
-    // profiles so existing clients keep behaving as before.
-    profileBuilding: calibration.complete
-      ? false
-      : calibration.completedCount > 0 ||
-        isProfileBuilding(result.profile.interactionCount),
-    interactionCount: result.profile.interactionCount,
-    confidence: result.profile.confidence,
-    calibration: toCalibrationView(calibration),
-  };
+  return finishHumorFeedback(input.db, prepared, result);
 }
 
 export async function getHumorProfileView(

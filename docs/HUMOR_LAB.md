@@ -192,6 +192,55 @@ the humor vector, `interactionCount`, `confidence` and explored categories
 indefinitely. `profileBuilding` now means "initial calibration still running",
 not "the profile stopped learning".
 
+## Daily set — "Bugünün Mizah Turu"
+
+After calibration, every eligible member gets the same ten moving items
+(videos, or provider GIFs shown as animated images) per canonical day, in the
+same order. Code: `functions/src/humor/daily.ts` (pure rules) and
+`dailyService.ts` (Firestore); callables `getDailyHumorSet`,
+`submitDailyHumorResponse`, admin `publishDailyHumorSet` /
+`repairDailyHumorSlot`.
+
+- **Canonical day**: one global day turning over at midnight Europe/Istanbul
+  (UTC+3, no DST) — the same boundary daily Picks use. The server clock picks
+  it; the client sends nothing that could choose a day.
+- **Manifest** `humorDailySets/{dayId}`: published once, by a transaction
+  (`create` on a missing document), on the first eligible request or by the
+  admin callable. Never reshuffled. Clients cannot read or write it.
+- **Selection**: deterministic from the day and the pool, not personalised.
+  Eligible = active, approved, moving media on an allowed https host, not a QA
+  fixture, signal on its own dimension. Breadth first across the eleven
+  dimensions, at most 2 per dimension, at least 5 dimensions; non-anchor items
+  preferred; items of the previous 2 published days kept out (relaxed a day at
+  a time only if the pool cannot otherwise fill a valid set). A day the pool
+  cannot fill is recorded `not_ready` and re-checked at most every 15 min —
+  never padded.
+- **Pacing**: first set the day after calibration completes
+  (`starts_tomorrow` until then); uncalibrated members are locked
+  (`calibration_incomplete`); existing calibrated members and legacy ready
+  profiles are eligible without redoing calibration. Missed days are missed —
+  no backlog.
+- **Answers** `users/{uid}/humorDaily/{dayId}` (owner-read, server-write):
+  each rating runs through the Humor Lab feedback transaction
+  (`applyHumorFeedbackInTx`) inside the same transaction as the progress
+  write, so the lifetime profile learns at most once per item, a changed
+  rating replaces the earlier contribution, and double taps are no-ops. The
+  only skip is `media_failed` (fills the slot, teaches nothing, never
+  overrides a rating). The last available slot completes the day.
+- **Taken-down items**: a published item that stops being servable drops out
+  of everyone's day (the day shrinks) — replacing it is an explicit,
+  versioned admin repair (`version` + `repairs[]`).
+- **Agreement helper** `dailyResponseAgreement(a, b)`: over content ids both
+  members rated only (missing ≠ neutral), `1 − |wA − wB| / 2` per item, mean
+  as 0–100, `null` below 3 shared items. Standalone — Discover ranking, the
+  compatibility engine and the `getMatchHumorCompatibility` payload (C5) do
+  not read it.
+- **Account deletion** removes `users/{uid}/humorDaily`; the global
+  manifests hold no member data and stay.
+- **Emulator clock**: `devClock/humorDaily {dayId}`, read only when
+  `FUNCTIONS_EMULATOR=true`; rules deny every client. Drive it with
+  `node tool/humorDailyDev.cjs status | publish | clock +1 | clock clear`.
+
 ## Feature flag
 
 `FeatureFlags.humorLabEnabled` (product default false). Debug+dev ON via `resolveHumorLabEnabled`.

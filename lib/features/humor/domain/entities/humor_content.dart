@@ -1,3 +1,4 @@
+import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 
@@ -63,6 +64,64 @@ class HumorContent {
   bool get hasMedia =>
       (downloadUrl != null && downloadUrl!.isNotEmpty) ||
       (thumbUrl != null && thumbUrl!.isNotEmpty);
+
+  /// Parses one feed item as `getHumorFeed` (and `getDailyHumorSet`) send
+  /// it. Returns `null` for anything without a content id.
+  static HumorContent? tryParseFeedItem(Object? raw) {
+    if (raw is! Map) {
+      return null;
+    }
+    final map = Map<String, dynamic>.from(raw);
+    final id = map['contentId'] as String?;
+    if (id == null || id.isEmpty) {
+      return null;
+    }
+    final media = map['media'] is Map
+        ? Map<String, dynamic>.from(map['media'] as Map)
+        : const <String, dynamic>{};
+    return HumorContent(
+      contentId: id,
+      type: HumorContent.parseType(map['type'] as String?),
+      language: (map['language'] as String?) ?? 'en',
+      category: HumorCategory.parse((map['category'] as String?) ?? 'meme'),
+      humorTags: firestoreStringList(map['humorTags']),
+      textBody: media['textBody'] as String?,
+      downloadUrl: media['downloadUrl'] as String?,
+      thumbUrl: media['thumbUrl'] as String?,
+      durationMs: media['durationMs'] == null
+          ? null
+          : firestoreInt(media['durationMs'], 0),
+      aspectRatio: media['aspectRatio'] == null
+          ? null
+          : _asDouble(media['aspectRatio']),
+      calibrationStage: map['calibrationStage'] == null
+          ? null
+          : HumorCalibration.parseStage(map['calibrationStage'] as String?),
+      attribution: HumorContentAttribution.tryParse(map['attribution']),
+    );
+  }
+
+  /// Parses a list of feed items, dropping malformed entries.
+  static List<HumorContent> listFromFeed(Object? raw) {
+    if (raw is! List) {
+      return const [];
+    }
+    final items = <HumorContent>[];
+    for (final item in raw) {
+      final parsed = tryParseFeedItem(item);
+      if (parsed != null) {
+        items.add(parsed);
+      }
+    }
+    return items;
+  }
+
+  static double _asDouble(Object? value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
 
   static HumorContentType parseType(String? raw) {
     switch (raw) {

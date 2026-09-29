@@ -119,10 +119,22 @@ void main() {
       expect(redirect(AppRoutes.matches, pending: true), isNull);
     });
 
-    test('existing members are never routed by the journey', () {
+    test('with today done or skipped, nobody is routed by the journey', () {
       expect(redirect(AppRoutes.discovery), isNull);
       expect(redirect(AppRoutes.profile), isNull);
       expect(redirect(AppRoutes.login), AppRoutes.discovery);
+    });
+
+    test("an existing member on a new day meets today's set first", () {
+      expect(
+        redirect(AppRoutes.splash, journeyRoute: learningRoute),
+        learningRoute,
+      );
+      expect(
+        redirect(AppRoutes.settings, journeyRoute: learningRoute),
+        isNull,
+        reason: 'the ways out stay open',
+      );
     });
   });
 
@@ -151,7 +163,7 @@ void main() {
       expect(journey.pending, isFalse);
       expect(journey.requiredRoute, AppRoutes.humorCalibration);
 
-      repository.journeyStage = JourneyStage.learning;
+      repository.journeyStage = JourneyStage.daily;
       await journey.refresh();
       expect(journey.requiredRoute, LearningJourneyController.learningRoute);
 
@@ -180,7 +192,7 @@ void main() {
       'a refresh that confirms the same stage does not wake the router',
       () async {
         final repository = FakeRelationshipLearningRepository(required: true)
-          ..journeyStage = JourneyStage.learning;
+          ..journeyStage = JourneyStage.daily;
         final journey = controllerFor(repository);
         await journey.refresh();
         var notifications = 0;
@@ -198,9 +210,45 @@ void main() {
       },
     );
 
+    test('an existing member owes today, and a skip releases them', () async {
+      final repository = FakeRelationshipLearningRepository(answered: 2);
+      final journey = controllerFor(repository);
+      await journey.refresh();
+      expect(journey.stage, JourneyStage.daily);
+      expect(journey.requiredRoute, LearningJourneyController.learningRoute);
+      await repository.skipToday();
+      await journey.refresh();
+      expect(journey.requiredRoute, isNull);
+    });
+
+    test('coming back after midnight brings the new day, not before', () async {
+      var now = DateTime.utc(2026, 9, 29, 20);
+      final repository = FakeRelationshipLearningRepository(answered: 10);
+      final journey = LearningJourneyController(
+        repository: repository,
+        humorEnabled: true,
+        now: () => now,
+      );
+      addTearDown(journey.dispose);
+      journey.startFor('member');
+      await Future<void>.delayed(Duration.zero);
+      expect(journey.stage, JourneyStage.done);
+      final loads = repository.loads;
+
+      await journey.refreshIfNewDay();
+      expect(repository.loads, loads, reason: 'same day: no extra read');
+
+      repository.newDay('2026-09-30');
+      now = DateTime.utc(2026, 9, 29, 21, 5);
+      await journey.refreshIfNewDay();
+      expect(repository.loads, loads + 1);
+      expect(journey.stage, JourneyStage.daily);
+      expect(journey.requiredRoute, LearningJourneyController.learningRoute);
+    });
+
     test('sign-out forgets the member', () async {
       final repository = FakeRelationshipLearningRepository(required: true)
-        ..journeyStage = JourneyStage.learning;
+        ..journeyStage = JourneyStage.daily;
       final journey = controllerFor(repository);
       await journey.refresh();
       journey.clear();
@@ -215,7 +263,7 @@ void main() {
       final journey = controllerFor(repository, analytics: analytics);
       await journey.refresh();
       await journey.refresh();
-      repository.journeyStage = JourneyStage.learning;
+      repository.journeyStage = JourneyStage.daily;
       await journey.refresh();
       expect(analytics.events, [
         AnalyticsEvents.humorOnboardingStarted,
@@ -256,7 +304,7 @@ void main() {
       await tester.tap(find.text(l10n.humorCalibrationSkip).last);
       await tester.pumpAndSettle();
       expect(repository.humorSkips, 1);
-      expect(journey.stage, JourneyStage.learning);
+      expect(journey.stage, JourneyStage.daily);
       expect(exited, isTrue);
     },
   );

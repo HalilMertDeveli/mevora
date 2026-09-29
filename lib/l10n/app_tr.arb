@@ -192,7 +192,7 @@
   "appleSignInUnavailable": "Apple ile giriş iPhone ve iPad'de kullanılabilir.",
   "phoneTitle": "Telefon Numarası ile Giriş Yap",
   "phoneSubtitle": "Ülke kodunu seçip telefon numaranı gir. Doğrulama için SMS ile 6 haneli bir kod göndereceğiz.",
-  "phoneHint": "0542 519 2119",
+  "phoneHint": "0532 123 4567",
   "sendCode": "Doğrulama kodu gönder",
   "countrySearchHint": "Ülke ara",
   "otpTitle": "Telefonunu doğrula",

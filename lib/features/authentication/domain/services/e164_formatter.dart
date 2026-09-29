@@ -59,7 +59,7 @@ abstract final class E164Formatter {
   /// Display grouping only. E.164 conversion still strips trunk `0`.
   static List<int> _groupsFor(CountryCode country, String digits) {
     return switch (country.isoCode) {
-      // 0542 519 2119 or 542 519 21 19
+      // 0532 123 4567 or 532 123 45 67
       'TR' => digits.startsWith('0') ? const [4, 3, 4] : const [3, 3, 2, 2],
       'US' || 'CA' => const [3, 3, 4],
       'GB' => const [4, 3, 3],

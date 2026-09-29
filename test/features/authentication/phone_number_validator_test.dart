@@ -48,23 +48,37 @@ void main() {
       expect(result.e164, '+905551112233');
     });
 
-    test('accepts 0542 519 2119 as +905425192119', () {
-      final result = PhoneNumberValidator.validate(
-        country: CountryCodes.turkey,
-        nationalNumber: '0542 519 2119',
-      );
-      expect(result.isValid, isTrue);
-      expect(result.e164, '+905425192119');
-    });
+    // Every way a Turkish user types the same mobile number must reach
+    // Firebase as one E.164 string: no trunk 0, no doubled 90, no spacing.
+    // The input field filters '+', so a pasted +90 arrives as a leading 90.
+    for (final typed in const [
+      '0532 123 4567',
+      '05321234567',
+      '532 123 4567',
+      '(532) 123 45 67',
+      '0 (532) 123-45-67',
+      '90 532 123 45 67',
+    ]) {
+      test('normalizes "$typed" to +905321234567', () {
+        final result = PhoneNumberValidator.validate(
+          country: CountryCodes.turkey,
+          nationalNumber: typed,
+        );
+        expect(result.isValid, isTrue);
+        expect(result.e164, '+905321234567');
+      });
+    }
 
-    test('accepts 05321234567 as +905321234567', () {
-      final result = PhoneNumberValidator.validate(
-        country: CountryCodes.turkey,
-        nationalNumber: '05321234567',
-      );
-      expect(result.isValid, isTrue);
-      expect(result.e164, '+905321234567');
-    });
+    for (final typed in const ['0532 123 456', '0532 123 45678', '532 12']) {
+      test('rejects "$typed" before any send', () {
+        final result = PhoneNumberValidator.validate(
+          country: CountryCodes.turkey,
+          nationalNumber: typed,
+        );
+        expect(result.isValid, isFalse);
+        expect(result.issue, PhoneValidationIssue.invalidLength);
+      });
+    }
   });
 
   group('E164Formatter', () {
@@ -74,8 +88,8 @@ void main() {
         '555 111 22 33',
       );
       expect(
-        E164Formatter.formatNational(CountryCodes.turkey, '05425192119'),
-        '0542 519 2119',
+        E164Formatter.formatNational(CountryCodes.turkey, '05321234567'),
+        '0532 123 4567',
       );
     });
 
@@ -83,8 +97,8 @@ void main() {
       const e164 = '+905551112233';
       expect(E164Formatter.toE164(CountryCodes.turkey, '5551112233'), e164);
       expect(
-        E164Formatter.toE164(CountryCodes.turkey, '0542 519 2119'),
-        '+905425192119',
+        E164Formatter.toE164(CountryCodes.turkey, '0532 123 4567'),
+        '+905321234567',
       );
       expect(E164Formatter.isValidE164(e164), isTrue);
       expect(E164Formatter.mask(e164), contains('••'));

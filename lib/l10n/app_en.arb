@@ -2045,5 +2045,6 @@
   "dietVegan": "Vegan",
   "dietPescatarian": "Pescatarian",
   "dietHalal": "Halal",
-  "dietGlutenFree": "Gluten-free"
+  "dietGlutenFree": "Gluten-free",
+  "onboardingAboutYouSubtitle": "Optional. Answer what you like; it sharpens who we pick for you."
 }

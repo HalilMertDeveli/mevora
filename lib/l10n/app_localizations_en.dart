@@ -4494,4 +4494,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dietGlutenFree => 'Gluten-free';
+
+  @override
+  String get onboardingAboutYouSubtitle =>
+      'Optional. Answer what you like; it sharpens who we pick for you.';
 }

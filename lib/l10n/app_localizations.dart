@@ -8017,6 +8017,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Gluten-free'**
   String get dietGlutenFree;
+
+  /// No description provided for @onboardingAboutYouSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Answer what you like; it sharpens who we pick for you.'**
+  String get onboardingAboutYouSubtitle;
 }
 
 class _AppLocalizationsDelegate

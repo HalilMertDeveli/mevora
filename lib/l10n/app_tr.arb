@@ -1904,5 +1904,6 @@
   "dietVegan": "Vegan",
   "dietPescatarian": "Pesketaryen",
   "dietHalal": "Helal",
-  "dietGlutenFree": "Glütensiz"
+  "dietGlutenFree": "Glütensiz",
+  "onboardingAboutYouSubtitle": "İsteğe bağlı. İstediklerini cevapla; sana seçtiklerimizi daha isabetli yapar."
 }

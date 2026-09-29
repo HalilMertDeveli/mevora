@@ -4492,4 +4492,8 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get dietGlutenFree => 'Glütensiz';
+
+  @override
+  String get onboardingAboutYouSubtitle =>
+      'İsteğe bağlı. İstediklerini cevapla; sana seçtiklerimizi daha isabetli yapar.';
 }

@@ -175,6 +175,9 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/music`),
       deleteCollectionDocs(`users/${uid}/humor`),
       deleteCollectionDocs(`users/${uid}/humorInteractions`),
+      // Their daily humor answers. The global humorDailySets manifests hold no
+      // member data and stay.
+      deleteCollectionDocs(`users/${uid}/humorDaily`),
       deleteCollectionDocs(`users/${uid}/personalization`),
       deleteCollectionDocs(`users/${uid}/personalizationEvents`),
       deleteCollectionDocs(`users/${uid}/personalizationPartners`),

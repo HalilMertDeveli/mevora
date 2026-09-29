@@ -558,6 +558,14 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      // Daily humor progress (answers, completion). Owner-read only; written
+      // by `submitDailyHumorResponse` alone, so a client cannot mark a day
+      // complete or plant answers that never went through the profile update.
+      match /humorDaily/{dayId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
       match /rateLimits/{docId} {
         allow read, write: if false;
       }
@@ -937,6 +945,18 @@ service cloud.firestore {
     match /humorModerationQueue/{contentId} {
       allow read: if isAdmin();
       allow create, update, delete: if false;
+    }
+
+    // Global daily humor manifests. Published once by Cloud Functions;
+    // members receive the set only through `getDailyHumorSet` (feed-safe).
+    match /humorDailySets/{dayId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // Emulator-only test clock for the daily humor day. Never client-accessible.
+    match /devClock/{docId} {
+      allow read, write: if false;
     }
 
     match /spotifySecrets/{userId} {

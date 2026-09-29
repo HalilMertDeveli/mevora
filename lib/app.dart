@@ -9,7 +9,6 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
-import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
@@ -41,7 +40,6 @@ import 'package:mevora/features/boost/domain/repositories/purchase_repository.da
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
-import 'package:mevora/features/match_score/domain/repositories/match_score_repository.dart';
 import 'package:mevora/features/chat/e2ee/services/e2ee_bootstrap_controller.dart';
 import 'package:mevora/features/matching/presentation/controllers/presence_lifecycle_controller.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
@@ -66,7 +64,6 @@ class MevoraApp extends StatefulWidget {
     this.discoveryRepository,
     this.musicRepository,
     this.humorRepository,
-    this.matchScoreRepository,
     this.relationshipRepository,
     this.profileQuestionAnswerRepository,
     this.relationshipLearningRepository,
@@ -93,7 +90,6 @@ class MevoraApp extends StatefulWidget {
   final DiscoveryRepository? discoveryRepository;
   final MusicRepository? musicRepository;
   final HumorRepository? humorRepository;
-  final MatchScoreRepository? matchScoreRepository;
   final RelationshipRepository? relationshipRepository;
   final ProfileQuestionAnswerRepository? profileQuestionAnswerRepository;
   final RelationshipLearningRepository? relationshipLearningRepository;
@@ -324,11 +320,6 @@ class _MevoraAppState extends State<MevoraApp> {
         analyticsProvider: widget.analytics,
         child: child,
       );
-    }
-
-    final matchScore = widget.matchScoreRepository;
-    if (matchScore != null) {
-      child = MatchScoreScope(repository: matchScore, child: child);
     }
 
     final location =

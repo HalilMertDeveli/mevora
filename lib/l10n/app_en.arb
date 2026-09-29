@@ -1185,27 +1185,6 @@
   "musicConnectError": "Couldn't connect Spotify. The rest of Mevora still works.",
   "settingsConnectSpotify": "Connect Spotify",
   "settingsSpotifySubtitle": "Let your music taste be part of your match. Mevora doesn't play music.",
-  "matchScoreTitle": "Match points",
-  "matchScoreSubtitle": "Your connection reputation",
-  "matchScoreValue": "{score} points",
-  "@matchScoreValue": {
-    "placeholders": {
-      "score": {
-        "type": "int"
-      }
-    }
-  },
-  "matchScoreHistoryTitle": "Point history",
-  "matchScoreHistoryEmpty": "New matches and conversations will add points here.",
-  "matchScoreHistoryMatch": "New match +1",
-  "matchScoreHistoryInteraction": "Conversation +1",
-  "matchFeedbackTitle": "How did this match go?",
-  "matchFeedbackMessage": "Optional. This note stays in your history — they will not see it, and it does not change anyone's points.",
-  "matchFeedbackHint": "A short private note",
-  "matchFeedbackSubmit": "Save note",
-  "matchFeedbackThanks": "Saved to your history.",
-  "matchFeedbackTooShort": "Write a short note, or skip.",
-  "matchFeedbackFailed": "Couldn't save that note. Try again.",
   "likesYouTitle": "People who liked you",
   "likesYouEntrySubtitle": "See why you might be a good match",
   "likesYouInsightSubtitle": "Tap to see what you have in common before you decide.",

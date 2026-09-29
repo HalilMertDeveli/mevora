@@ -13,7 +13,6 @@ import 'package:mevora/core/di/boost_services_factory.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/di/discovery_services_factory.dart';
 import 'package:mevora/core/di/location_services_factory.dart';
-import 'package:mevora/core/di/match_score_services_factory.dart';
 import 'package:mevora/core/di/music_services_factory.dart';
 import 'package:mevora/core/di/humor_services_factory.dart';
 import 'package:mevora/core/di/relationship_services_factory.dart';
@@ -112,10 +111,6 @@ Future<void> bootstrap(AppEnvironment environment) async {
   );
   final humorServices = createHumorServices(config: config);
   final relationshipServices = createRelationshipServices(config: config);
-  final matchScoreServices = createMatchScoreServices(
-    config: config,
-    uidSource: uidSource,
-  );
   final socialServices = createFirebaseSocialServices(
     uidSource: uidSource,
     demoHub: demoHub,
@@ -173,7 +168,6 @@ Future<void> bootstrap(AppEnvironment environment) async {
       relationshipRepository: relationshipServices.repository,
       profileQuestionAnswerRepository: relationshipServices.profileAnswers,
       relationshipLearningRepository: relationshipServices.learning,
-      matchScoreRepository: matchScoreServices.repository,
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,
       subscriptionServices: subscriptionServices,

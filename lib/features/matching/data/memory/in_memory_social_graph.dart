@@ -14,7 +14,6 @@ import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/models/swipe_action.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
-import 'package:mevora/features/match_score/data/datasources/memory_match_score_data_source.dart';
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
 import 'package:mevora/features/safety/domain/models/report_reason.dart';
 import 'package:mevora/features/safety/domain/safety_policy.dart';
@@ -22,13 +21,9 @@ import 'package:mevora/features/safety/domain/safety_policy.dart';
 /// Trusted-backend stand-in used by tests. Mirrors Cloud Function rules:
 /// clients never create matches directly.
 class InMemorySocialGraph {
-  InMemorySocialGraph({
-    this.now,
-    MemoryMatchScoreDataSource? matchScore,
-  }) : matchScore = matchScore ?? MemoryMatchScoreDataSource();
+  InMemorySocialGraph({this.now});
 
   DateTime Function()? now;
-  final MemoryMatchScoreDataSource matchScore;
 
   final Map<String, LikeRecord> likes = {};
   final Map<String, Match> matches = {};
@@ -54,7 +49,6 @@ class InMemorySocialGraph {
 
   void seedProfile(String uid, {required String name, String? photoUrl}) {
     profiles[uid] = _Profile(name: name, photoUrl: photoUrl);
-    matchScore.ensureUser(uid);
   }
 
   SwipeResultWrapper recordSwipe({
@@ -122,11 +116,6 @@ class InMemorySocialGraph {
       );
       matches[matchId] = created;
       messages[matchId] = [];
-      matchScore.recordMatchCreated(
-        matchId: matchId,
-        userIds: created.userIds,
-        matchedAt: created.createdAt,
-      );
       _emitMatches(actorUid);
       _emitMatches(targetUserId);
     }
@@ -313,11 +302,6 @@ class InMemorySocialGraph {
       participantPhotos: match.participantPhotos,
       source: match.source,
     );
-    matchScore.recordMessage(
-      matchId: match.id,
-      senderId: senderId,
-      now: at,
-    );
     _emitMessages(match.id);
     _emitMatches(match.userIds[0]);
     _emitMatches(match.userIds[1]);
@@ -433,12 +417,6 @@ class InMemorySocialGraph {
       participantNames: match.participantNames,
       participantPhotos: match.participantPhotos,
       source: match.source,
-    );
-    matchScore.recordMatchEnded(
-      matchId: matchId,
-      endedBy: actorUid,
-      reason: reason,
-      userIds: match.userIds,
     );
     _emitMatches(match.userIds[0]);
     _emitMatches(match.userIds[1]);

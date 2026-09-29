@@ -2470,52 +2470,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Let your music taste be part of your match. Mevora doesn\'t play music.';
 
   @override
-  String get matchScoreTitle => 'Match points';
-
-  @override
-  String get matchScoreSubtitle => 'Your connection reputation';
-
-  @override
-  String matchScoreValue(int score) {
-    return '$score points';
-  }
-
-  @override
-  String get matchScoreHistoryTitle => 'Point history';
-
-  @override
-  String get matchScoreHistoryEmpty =>
-      'New matches and conversations will add points here.';
-
-  @override
-  String get matchScoreHistoryMatch => 'New match +1';
-
-  @override
-  String get matchScoreHistoryInteraction => 'Conversation +1';
-
-  @override
-  String get matchFeedbackTitle => 'How did this match go?';
-
-  @override
-  String get matchFeedbackMessage =>
-      'Optional. This note stays in your history — they will not see it, and it does not change anyone\'s points.';
-
-  @override
-  String get matchFeedbackHint => 'A short private note';
-
-  @override
-  String get matchFeedbackSubmit => 'Save note';
-
-  @override
-  String get matchFeedbackThanks => 'Saved to your history.';
-
-  @override
-  String get matchFeedbackTooShort => 'Write a short note, or skip.';
-
-  @override
-  String get matchFeedbackFailed => 'Couldn\'t save that note. Try again.';
-
-  @override
   String get likesYouTitle => 'People who liked you';
 
   @override

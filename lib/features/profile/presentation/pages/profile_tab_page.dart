@@ -8,7 +8,6 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
-import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/verification_scope.dart';
@@ -18,7 +17,6 @@ import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
-import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship_learning/presentation/controllers/relationship_learning_controller.dart';
@@ -127,7 +125,6 @@ class ProfileTabPage extends StatelessWidget {
             children: const [
               _ProfileVerificationTile(),
               _ProfileBoostTile(),
-              _ProfileMatchScoreTile(),
             ],
           ),
         ],
@@ -190,20 +187,6 @@ class _ProfileVerificationTileState extends State<_ProfileVerificationTile> {
       status: _status,
       accountVerified: user?.isVerified ?? false,
     );
-  }
-}
-
-class _ProfileMatchScoreTile extends StatelessWidget {
-  const _ProfileMatchScoreTile();
-
-  @override
-  Widget build(BuildContext context) {
-    final uid = AuthScope.maybeOf(context)?.user?.id;
-    final repository = MatchScoreScope.maybeOf(context);
-    if (uid == null || repository == null) {
-      return const SizedBox.shrink();
-    }
-    return MatchScoreTile(uid: uid, repository: repository);
   }
 }
 

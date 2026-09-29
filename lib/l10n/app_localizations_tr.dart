@@ -2464,52 +2464,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Müzik zevkin de eşleşmenin bir parçası olsun. Mevora müzik çalmaz.';
 
   @override
-  String get matchScoreTitle => 'Eşleşme puanı';
-
-  @override
-  String get matchScoreSubtitle => 'Bağlantı itibarın';
-
-  @override
-  String matchScoreValue(int score) {
-    return '$score puan';
-  }
-
-  @override
-  String get matchScoreHistoryTitle => 'Puan geçmişi';
-
-  @override
-  String get matchScoreHistoryEmpty =>
-      'Yeni eşleşmeler ve sohbetler burada puan ekler.';
-
-  @override
-  String get matchScoreHistoryMatch => 'Yeni eşleşme +1';
-
-  @override
-  String get matchScoreHistoryInteraction => 'Sohbet +1';
-
-  @override
-  String get matchFeedbackTitle => 'Bu eşleşme nasıldı?';
-
-  @override
-  String get matchFeedbackMessage =>
-      'İsteğe bağlı. Bu not yalnızca senin geçmişinde kalır — karşı taraf görmez ve puanları değiştirmez.';
-
-  @override
-  String get matchFeedbackHint => 'Kısa bir özel not';
-
-  @override
-  String get matchFeedbackSubmit => 'Notu kaydet';
-
-  @override
-  String get matchFeedbackThanks => 'Geçmişine kaydedildi.';
-
-  @override
-  String get matchFeedbackTooShort => 'Kısa bir not yaz veya atla.';
-
-  @override
-  String get matchFeedbackFailed => 'Not kaydedilemedi. Tekrar dene.';
-
-  @override
   String get likesYouTitle => 'Seni beğenenler';
 
   @override

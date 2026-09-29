@@ -4449,4 +4449,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatPreviewEncrypted => 'Encrypted message';
+
+  @override
+  String get onboardingSmokingVapeOnly => 'Only e-cigarettes';
+
+  @override
+  String get onboardingSmokingQuitting => 'Trying to quit';
+
+  @override
+  String get onboardingAlcoholSober => 'I quit drinking';
+
+  @override
+  String get onboardingExerciseAthlete => 'Very active / athlete';
+
+  @override
+  String get onboardingLifestyleBird => 'Bird';
+
+  @override
+  String get onboardingLifestyleFish => 'Fish';
+
+  @override
+  String get onboardingPetsWant => 'None yet, but I\'d like one';
+
+  @override
+  String get onboardingPetsAllergic => 'I\'m allergic';
+
+  @override
+  String get onboardingDiet => 'Diet';
+
+  @override
+  String get dietOmnivore => 'I eat everything';
+
+  @override
+  String get dietVegetarian => 'Vegetarian';
+
+  @override
+  String get dietVegan => 'Vegan';
+
+  @override
+  String get dietPescatarian => 'Pescatarian';
+
+  @override
+  String get dietHalal => 'Halal';
+
+  @override
+  String get dietGlutenFree => 'Gluten-free';
 }

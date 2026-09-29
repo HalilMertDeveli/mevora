@@ -59,8 +59,37 @@ abstract final class OnboardingLifestyleOption {
   static const dog = 'dog';
   static const both = 'both';
   static const other = 'other';
+  static const vapeOnly = 'vape_only';
+  static const quitting = 'quitting';
+  static const sober = 'sober';
+  static const athlete = 'athlete';
+  static const bird = 'bird';
+  static const fish = 'fish';
+  static const wantPet = 'want_pet';
+  static const allergic = 'allergic';
 
+  /// The original shared frequency scale. Kept for stored values; each habit
+  /// now offers its own, longer list below.
   static const habitValues = [never, sometimes, regularly, daily, preferNotToSay];
+
+  static const smokingValues = [
+    never,
+    sometimes,
+    regularly,
+    daily,
+    vapeOnly,
+    quitting,
+    preferNotToSay,
+  ];
+
+  static const exerciseValues = [
+    never,
+    sometimes,
+    regularly,
+    daily,
+    athlete,
+    preferNotToSay,
+  ];
 
   // Alcohol options (drinking). Values are normalized strings stored in
   // `ProfileLifestyle.drinking`.
@@ -71,8 +100,44 @@ abstract final class OnboardingLifestyleOption {
     regularly, // Sosyal olarak
     alcoholSpecialOccasion, // Özel günlerde
     daily, // Sık sık
+    sober, // Alkolü bıraktım
+    preferNotToSay,
   ];
-  static const petValues = [none, cat, dog, both, other, preferNotToSay];
+  static const petValues = [
+    none,
+    cat,
+    dog,
+    both,
+    bird,
+    fish,
+    other,
+    wantPet,
+    allergic,
+    preferNotToSay,
+  ];
+}
+
+/// What someone eats. Optional; stored as `ProfileLifestyle.diet`.
+abstract final class DietPreference {
+  static const omnivore = 'omnivore';
+  static const vegetarian = 'vegetarian';
+  static const vegan = 'vegan';
+  static const pescatarian = 'pescatarian';
+  static const halal = 'halal';
+  static const glutenFree = 'gluten_free';
+  static const other = 'other';
+  static const preferNotToSay = 'prefer_not_to_say';
+
+  static const values = [
+    omnivore,
+    vegetarian,
+    vegan,
+    pescatarian,
+    halal,
+    glutenFree,
+    other,
+    preferNotToSay,
+  ];
 }
 
 abstract final class PartnerPreference {

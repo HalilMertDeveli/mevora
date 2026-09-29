@@ -1889,5 +1889,20 @@
   "premiumBenefitMusicTitle": "Müzik uyumunun tamamı",
   "premiumBenefitMusicBody": "Her eşleşmenle paylaştığın şarkılar, sanatçılar ve türler.",
   "premiumPlansHeading": "Planını seç",
-  "chatPreviewEncrypted": "Şifreli mesaj"
+  "chatPreviewEncrypted": "Şifreli mesaj",
+  "onboardingSmokingVapeOnly": "Sadece elektronik sigara",
+  "onboardingSmokingQuitting": "Bırakmaya çalışıyorum",
+  "onboardingAlcoholSober": "Alkolü bıraktım",
+  "onboardingExerciseAthlete": "Çok aktif / sporcu",
+  "onboardingLifestyleBird": "Kuş",
+  "onboardingLifestyleFish": "Balık",
+  "onboardingPetsWant": "Yok ama istiyorum",
+  "onboardingPetsAllergic": "Alerjim var",
+  "onboardingDiet": "Beslenme",
+  "dietOmnivore": "Her şeyi yerim",
+  "dietVegetarian": "Vejetaryen",
+  "dietVegan": "Vegan",
+  "dietPescatarian": "Pesketaryen",
+  "dietHalal": "Helal",
+  "dietGlutenFree": "Glütensiz"
 }

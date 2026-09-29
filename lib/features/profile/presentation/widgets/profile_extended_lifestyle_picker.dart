@@ -23,6 +23,8 @@ class ProfileExtendedLifestylePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Column(
+      // Without this each group centres to its own widest row.
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _singleGroup(
           context,

@@ -2030,5 +2030,20 @@
   "premiumBenefitMusicTitle": "Your full music match",
   "premiumBenefitMusicBody": "The songs, artists and genres you share with each match.",
   "premiumPlansHeading": "Choose a plan",
-  "chatPreviewEncrypted": "Encrypted message"
+  "chatPreviewEncrypted": "Encrypted message",
+  "onboardingSmokingVapeOnly": "Only e-cigarettes",
+  "onboardingSmokingQuitting": "Trying to quit",
+  "onboardingAlcoholSober": "I quit drinking",
+  "onboardingExerciseAthlete": "Very active / athlete",
+  "onboardingLifestyleBird": "Bird",
+  "onboardingLifestyleFish": "Fish",
+  "onboardingPetsWant": "None yet, but I'd like one",
+  "onboardingPetsAllergic": "I'm allergic",
+  "onboardingDiet": "Diet",
+  "dietOmnivore": "I eat everything",
+  "dietVegetarian": "Vegetarian",
+  "dietVegan": "Vegan",
+  "dietPescatarian": "Pescatarian",
+  "dietHalal": "Halal",
+  "dietGlutenFree": "Gluten-free"
 }

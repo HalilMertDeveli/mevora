@@ -7927,6 +7927,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Encrypted message'**
   String get chatPreviewEncrypted;
+
+  /// No description provided for @onboardingSmokingVapeOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only e-cigarettes'**
+  String get onboardingSmokingVapeOnly;
+
+  /// No description provided for @onboardingSmokingQuitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Trying to quit'**
+  String get onboardingSmokingQuitting;
+
+  /// No description provided for @onboardingAlcoholSober.
+  ///
+  /// In en, this message translates to:
+  /// **'I quit drinking'**
+  String get onboardingAlcoholSober;
+
+  /// No description provided for @onboardingExerciseAthlete.
+  ///
+  /// In en, this message translates to:
+  /// **'Very active / athlete'**
+  String get onboardingExerciseAthlete;
+
+  /// No description provided for @onboardingLifestyleBird.
+  ///
+  /// In en, this message translates to:
+  /// **'Bird'**
+  String get onboardingLifestyleBird;
+
+  /// No description provided for @onboardingLifestyleFish.
+  ///
+  /// In en, this message translates to:
+  /// **'Fish'**
+  String get onboardingLifestyleFish;
+
+  /// No description provided for @onboardingPetsWant.
+  ///
+  /// In en, this message translates to:
+  /// **'None yet, but I\'d like one'**
+  String get onboardingPetsWant;
+
+  /// No description provided for @onboardingPetsAllergic.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m allergic'**
+  String get onboardingPetsAllergic;
+
+  /// No description provided for @onboardingDiet.
+  ///
+  /// In en, this message translates to:
+  /// **'Diet'**
+  String get onboardingDiet;
+
+  /// No description provided for @dietOmnivore.
+  ///
+  /// In en, this message translates to:
+  /// **'I eat everything'**
+  String get dietOmnivore;
+
+  /// No description provided for @dietVegetarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Vegetarian'**
+  String get dietVegetarian;
+
+  /// No description provided for @dietVegan.
+  ///
+  /// In en, this message translates to:
+  /// **'Vegan'**
+  String get dietVegan;
+
+  /// No description provided for @dietPescatarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Pescatarian'**
+  String get dietPescatarian;
+
+  /// No description provided for @dietHalal.
+  ///
+  /// In en, this message translates to:
+  /// **'Halal'**
+  String get dietHalal;
+
+  /// No description provided for @dietGlutenFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Gluten-free'**
+  String get dietGlutenFree;
 }
 
 class _AppLocalizationsDelegate

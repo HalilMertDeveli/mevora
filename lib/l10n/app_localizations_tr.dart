@@ -4447,4 +4447,49 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get chatPreviewEncrypted => 'Şifreli mesaj';
+
+  @override
+  String get onboardingSmokingVapeOnly => 'Sadece elektronik sigara';
+
+  @override
+  String get onboardingSmokingQuitting => 'Bırakmaya çalışıyorum';
+
+  @override
+  String get onboardingAlcoholSober => 'Alkolü bıraktım';
+
+  @override
+  String get onboardingExerciseAthlete => 'Çok aktif / sporcu';
+
+  @override
+  String get onboardingLifestyleBird => 'Kuş';
+
+  @override
+  String get onboardingLifestyleFish => 'Balık';
+
+  @override
+  String get onboardingPetsWant => 'Yok ama istiyorum';
+
+  @override
+  String get onboardingPetsAllergic => 'Alerjim var';
+
+  @override
+  String get onboardingDiet => 'Beslenme';
+
+  @override
+  String get dietOmnivore => 'Her şeyi yerim';
+
+  @override
+  String get dietVegetarian => 'Vejetaryen';
+
+  @override
+  String get dietVegan => 'Vegan';
+
+  @override
+  String get dietPescatarian => 'Pesketaryen';
+
+  @override
+  String get dietHalal => 'Helal';
+
+  @override
+  String get dietGlutenFree => 'Glütensiz';
 }

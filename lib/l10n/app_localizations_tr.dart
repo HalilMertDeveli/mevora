@@ -516,7 +516,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Ülke kodunu seçip telefon numaranı gir. Doğrulama için SMS ile 6 haneli bir kod göndereceğiz.';
 
   @override
-  String get phoneHint => '0542 519 2119';
+  String get phoneHint => '0532 123 4567';
 
   @override
   String get sendCode => 'Doğrulama kodu gönder';

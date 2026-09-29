@@ -122,3 +122,32 @@ Unit tests: `auth_error_mapper` / `phone_auth_controller` çalıştırıldı.
 6. Logout + ikinci login.
 
 Tahmin yok: SMS gelmezse log’daki **tam Firebase code** bir sonraki kesin adımı belirler.
+
+---
+
+## 2026-09-29 incident — SMS gelmiyor (yeni kök neden: kapalı fatura hesabı)
+
+Yukarıdaki 2026-08-23 bulguları yalnızca geçmiş olarak kalıyor. Bu olay ayrı ele alındı ve her katman yeniden okundu:
+
+| Kontrol | 2026-09-29 durumu | Kaynak |
+| --- | --- | --- |
+| Phone provider | enabled | Identity Toolkit `admin/v2 .../config` |
+| SMS region policy | allowlist `TR` (değişmedi) | aynı |
+| Firebase Android app | `com.mevora.app` ↔ `1:821220262229:android:1a12a39a06a7516f702fdc`, `google-services.json` ve `firebase_options.dart` ile birebir | Firebase Management API |
+| Debug SHA-1 / SHA-256 | yerel `debug.keystore` ile Firebase kaydı birebir | `keytool` + Management API |
+| Android API key | uygulama kısıtı yok, `identitytoolkit` hedefli | API Keys API |
+| App Check (Identity Toolkit) | enforce edilmiyor | App Check API |
+| `MainActivity` | `FlutterFragmentActivity` | kaynak |
+| **Billing** | proje `billingAccounts/01F531-51FFB0-00D8AC` hesabına bağlı, **hesap `open: false`** | Cloud Billing API |
+
+Kesin kanıt: SMS gönderemeyen, uygulama doğrulama tokenı olmayan bir `+90` isteği `accounts:sendVerificationCode` üzerinden `BILLING_NOT_ENABLED` döndü. Aynı saatlerde Cloud Functions logları da `billing is disabled for this project` yazıyor. Bölge dışı bir numara `OPERATION_NOT_ALLOWED` (region) döndü, yani faturalandırma kontrolü TR numaraları için bölge kontrolünden sonra ve SMS'ten önce çalışıyor.
+
+**Aşama sınıfı: B.** `verifyPhoneNumber` çağrılıyor, Firebase `codeSent` olmadan `verificationFailed(billing-not-enabled)` veriyor. Flutter tarafında SMS'i engelleyen bir kusur yok.
+
+**Çözüm sahibi:** proje sahibi, Google Cloud console'da fatura hesabını yeniden açar ya da projeyi açık bir hesaba bağlar. Bu bir finansal işlem olduğu için hiçbir ajan tarafından yapılmadı.
+
+Bu olayda repo tarafında yapılanlar (`fix/phone-auth-real-sms`):
+
+- `AuthErrorMapper.fromCode`, faturalandırma ve uygulama doğrulama dallarında Firebase kodunu artık düşürmüyor. Debug `Firebase: <code>` satırı her iki yoldan da görünüyor.
+- Bölge politikası reddi (`OPERATION_NOT_ALLOWED : SMS unable to be sent until this region enabled…`) artık `sms-region-restricted` olarak raporlanıyor. Önceden "telefon girişi etkin değil" diye yanlış yönlendiriyordu.
+- Sahibin gerçek numarası Türkçe `phoneHint` ipucundan, testlerden ve dokümandan kaldırıldı. Yerine sentetik `0532 123 4567` kondu.

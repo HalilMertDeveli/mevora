@@ -244,10 +244,20 @@ function Start-Suite {
     # readable, and leaves a marker so this script can fail fast instead of
     # waiting out the whole timeout.
     $launcher = Join-Path $TmpDir "start_emulators.cmd"
+    # The Storage emulator keeps uploads in <os.tmpdir()>/firebase/storage/blobs
+    # and deletes that whole directory when it stops. With the machine-wide TMP,
+    # every suite on this host shares it, so another agent stopping its own
+    # suite wiped this one's blobs; the next upload hit ENOENT and took the
+    # whole suite down (exit code 2), leaving Firestore orphaned on 8080.
+    # A private temp directory per suite keeps them apart.
+    $suiteTmp = Join-Path $TmpDir "emulator-os-tmp"
+    New-Item -ItemType Directory -Force -Path $suiteTmp | Out-Null
     $lines = @(
         "@echo off",
         "title Mevora Firebase Emulator Suite ($ProjectId)",
         "cd /d `"$ProjectRoot`"",
+        "set `"TMP=$suiteTmp`"",
+        "set `"TEMP=$suiteTmp`"",
         "echo Mevora Firebase Emulator Suite. Press Ctrl+C here to stop it.",
         "call $cli emulators:start --config `"$Config`" --project $ProjectId --only auth,firestore,functions,storage",
         "> `"$ExitMarker`" echo %ERRORLEVEL%",

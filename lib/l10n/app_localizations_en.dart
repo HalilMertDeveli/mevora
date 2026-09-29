@@ -93,14 +93,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get picksLoadErrorTitle => 'We couldn\'t load your Picks.';
 
   @override
-  String get picksEmptyPreparingTitle => 'Your new Picks are on their way.';
+  String get picksEmptyPreparingTitle =>
+      'We couldn\'t choose anyone for you today.';
 
   @override
   String get picksEmptyPreparingMessage =>
       'Instead of showing you random profiles, we\'re finding more meaningful matches.';
 
   @override
-  String get picksEmptyDoneTitle => 'You\'ve been through today\'s Picks.';
+  String get picksEmptyDoneTitle => 'You\'ve seen today\'s picks.';
 
   @override
   String get picksDiscoveryOffTitle => 'Discovery is off';
@@ -108,19 +109,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get picksDiscoveryOffMessage =>
       'Turn discovery on in settings to get Picks.';
-
-  @override
-  String get picksDiscoverMore => 'Beyond your picks';
-
-  @override
-  String get picksDiscoverMoreHint =>
-      'People outside your Picks who may still be a good fit.';
-
-  @override
-  String get picksBackToPicks => 'Back to Mevora Picks';
-
-  @override
-  String get discoverMoreSubtitle => 'People outside today\'s Picks';
 
   @override
   String get picksLike => 'Like';
@@ -150,6 +138,117 @@ class AppLocalizationsEn extends AppLocalizations {
   String picksMatchScore(int score) {
     return 'Mevora match $score%';
   }
+
+  @override
+  String get picksEmptyDoneMessage =>
+      'Mevora will choose new people for you tomorrow.';
+
+  @override
+  String get picksEmptyNoCandidatesMessage =>
+      'Rather than show you random profiles, we\'ll look again tomorrow.';
+
+  @override
+  String get learningCardTitle => 'Let Mevora get to know you';
+
+  @override
+  String learningCardInitialStart(int total) {
+    return '$total short questions help us choose people who fit you.';
+  }
+
+  @override
+  String learningCardInitialResume(int answered, int total) {
+    return '$answered of $total answered. Pick up where you left off.';
+  }
+
+  @override
+  String learningCardFollowUp(int count) {
+    return '$count short questions to sharpen your Picks.';
+  }
+
+  @override
+  String get learningCardStart => 'Start';
+
+  @override
+  String get learningCardResume => 'Continue';
+
+  @override
+  String get learningCardNotNow => 'Not now';
+
+  @override
+  String get learningRequiredTitle => 'First, let us get to know you';
+
+  @override
+  String learningRequiredBody(int total) {
+    return 'Today\'s Picks are chosen from your answers. $total short questions, about two minutes.';
+  }
+
+  @override
+  String get learningIntroTitle => 'Let Mevora get to know you';
+
+  @override
+  String get learningIntroBody =>
+      'We use your answers to choose people who fit you better.';
+
+  @override
+  String learningIntroMeta(int count) {
+    return '$count short questions · about two minutes';
+  }
+
+  @override
+  String get learningIntroStart => 'Let\'s start';
+
+  @override
+  String learningProgress(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String learningProgressSemantics(int current, int total) {
+    return 'Question $current of $total';
+  }
+
+  @override
+  String get learningPrevious => 'Previous';
+
+  @override
+  String get learningNext => 'Next';
+
+  @override
+  String get learningSaveFailed => 'We couldn\'t save your answer. Try again.';
+
+  @override
+  String get learningLoadErrorTitle => 'We couldn\'t load the questions.';
+
+  @override
+  String get learningDoneTitle => 'Thanks, we know you a little better now.';
+
+  @override
+  String get learningDoneBody =>
+      'From now on, the people we choose for you follow your answers.';
+
+  @override
+  String get learningDoneContinue => 'Continue';
+
+  @override
+  String get learningFollowUpDoneTitle => 'Thank you!';
+
+  @override
+  String get learningFollowUpDoneBody =>
+      'Your answers will make your Picks fit you better.';
+
+  @override
+  String get learningNothingTitle => 'No new questions for now';
+
+  @override
+  String get learningNothingBody =>
+      'When new questions are ready, you\'ll find them here.';
+
+  @override
+  String get learningProfileTitle => 'Let Mevora get to know you';
+
+  @override
+  String get learningProfileSubtitle =>
+      'Your answers help us choose people who fit you.';
 
   @override
   String get pickTypeBestOverall => 'Best match';
@@ -1250,6 +1349,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsPersonalizeRecommendationsSubtitle =>
       'We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.';
+
+  @override
+  String get settingsResetLearned => 'Reset what Mevora learned from me';
+
+  @override
+  String get settingsResetLearnedSubtitle =>
+      'Clears what was learned from your interactions. Your answers stay.';
+
+  @override
+  String get settingsResetLearnedConfirmTitle => 'Reset what Mevora learned?';
+
+  @override
+  String get settingsResetLearnedConfirmBody =>
+      'Mevora will forget what it learned from your likes, matches and conversation activity. Your answers and your profile don\'t change.';
+
+  @override
+  String get settingsResetLearnedConfirm => 'Reset';
+
+  @override
+  String get settingsResetLearnedDone => 'What Mevora learned has been reset.';
+
+  @override
+  String get settingsResetLearnedFailed => 'Couldn\'t reset. Try again.';
 
   @override
   String get minAge => 'Minimum age';
@@ -2394,42 +2516,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchFeedbackFailed => 'Couldn\'t save that note. Try again.';
 
   @override
-  String get relationshipPromptTitle => 'Help Mevora get to know you';
-
-  @override
-  String get relationshipQuestionsPreparing =>
-      'New questions are on the way. Try again in a little while.';
-
-  @override
-  String get relationshipTestTitle => 'Help Mevora get to know you';
-
-  @override
-  String get relationshipTestHeadline => 'Help Mevora get to know you';
-
-  @override
-  String get relationshipTestMessage =>
-      'A few calm questions about what matters to you in a relationship. Your answers help us make more meaningful picks.';
-
-  @override
-  String get relationshipTestStart => 'Let\'s start';
-
-  @override
-  String get relationshipTestLater => 'Not now';
-
-  @override
-  String get relationshipContinueTitle => 'A few more questions?';
-
-  @override
-  String get relationshipContinueMessage =>
-      'Each answer helps us choose who to show you. Keep going now, or come back later.';
-
-  @override
-  String get relationshipContinueYes => 'Continue';
-
-  @override
-  String get relationshipContinueNo => 'Not now';
-
-  @override
   String get likesYouTitle => 'People who liked you';
 
   @override
@@ -2483,35 +2569,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get likesYouLoadError => 'Couldn\'t load likes. Please try again.';
 
   @override
-  String get relationshipTestDoneTitle =>
-      'Thanks — now we know you a little better';
-
-  @override
-  String get relationshipTestFound => 'Someone answered a lot like you.';
-
-  @override
-  String get relationshipTestAlign => 'Your answers overlap on shared topics.';
-
-  @override
-  String get relationshipTestNearest => 'Closest to you:';
-
-  @override
-  String get relationshipTestEmpty =>
-      'No one nearby has answered quite like you yet.';
-
-  @override
-  String get relationshipTestViewProfile => 'View profile';
-
-  @override
-  String get relationshipTestOpenChat => 'Open chat';
-
-  @override
   String get relationshipMatchBadge => 'Similar answers';
-
-  @override
-  String relationshipPromptProgress(int answered, int total) {
-    return '$answered / $total';
-  }
 
   @override
   String relationshipCompatibilityPercent(int percent) {
@@ -2536,16 +2594,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipViewsAlign => 'Your relationship views overlap.';
 
   @override
-  String get relationshipMatchesTitle => 'Relationship matches';
-
-  @override
   String get relationshipMatchesEmpty =>
       'Answer a few relationship questions to find people who think like you — distance does not matter here.';
-
-  @override
-  String relationshipProfileSubtitle(int answered) {
-    return '$answered relationship questions answered';
-  }
 
   @override
   String get relationshipTopicJealousy => 'You think similarly about jealousy.';

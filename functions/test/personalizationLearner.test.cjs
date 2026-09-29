@@ -9,10 +9,14 @@ const {
   PERSONALIZATION_DIMENSIONS,
   SIGNAL_STRENGTHS,
   WEAK_SIGNALS,
+  LEARNING,
 } = require("../lib/personalization/config.js");
 const {
   applyLearningEvent,
+  combineAdjustments,
   effectiveAdjustments,
+  isObservedConfident,
+  neutralAdjustments,
   neutralProfile,
   parseProfile,
   serializeProfile,
@@ -29,6 +33,7 @@ const {
 const T0 = Date.UTC(2026, 8, 1, 12, 0, 0);
 const MIN = 60_000;
 const HOUR = 60 * MIN;
+const DAY = 24 * HOUR;
 
 /** A candidate strong on humor and nothing else remarkable. */
 const HUMOR_HIGH = {relationship: 50, values: 50, lifestyle: 50, interests: 50, music: 50, humor: 95};
@@ -36,7 +41,7 @@ const HUMOR_HIGH = {relationship: 50, values: 50, lifestyle: 50, interests: 50, 
 function run(events, start = neutralProfile()) {
   let profile = start;
   events.forEach((event, i) => {
-    profile = applyLearningEvent(profile, event, T0 + i * MIN).profile;
+    profile = applyLearningEvent(profile, event, T0 + i * DAY).profile;
   });
   return profile;
 }
@@ -78,7 +83,7 @@ describe("personalization learner", () => {
       profile = applyLearningEvent(
         profile,
         {type: "conversationSurvived", strength: SIGNAL_STRENGTHS.conversationSurvived, vector: HUMOR_HIGH},
-        T0 + i * MIN,
+        T0 + i * DAY,
       ).profile;
       seen.push(adj(profile, "humor"));
     }
@@ -132,7 +137,7 @@ describe("personalization learner", () => {
     let profile = raised;
     const path = [];
     for (let i = 0; i < 40; i++) {
-      profile = applyLearningEvent(profile, negative, T0 + (100 + i) * MIN).profile;
+      profile = applyLearningEvent(profile, negative, T0 + (100 + i) * DAY).profile;
       path.push(adj(profile, "humor"));
     }
     assert.ok(path[0] < peak);
@@ -165,6 +170,7 @@ describe("personalization learner", () => {
 
   it("applies nothing and learns nothing while personalization is OFF", () => {
     const learned = run(repeat(30, {type: "secondSession", strength: 4.5, vector: HUMOR_HIGH}));
+    learned.partnerCount = LEARNING.minDistinctPartners;
     const off = effectiveAdjustments(learned, false);
     for (const d of PERSONALIZATION_DIMENSIONS) assert.equal(off[d], 1);
     const on = effectiveAdjustments(learned, true);
@@ -185,7 +191,7 @@ describe("personalization learner", () => {
     const later = applyLearningEvent(
       learned,
       {type: "like", strength: 1, vector: {music: 90}},
-      T0 + 240 * 24 * HOUR,
+      T0 + 260 * DAY,
     ).profile;
     assert.ok(later.dimensions.humor.evidence < learned.dimensions.humor.evidence / 3);
     assert.equal(later.dimensions.humor.adjustment, learned.dimensions.humor.adjustment);
@@ -369,5 +375,67 @@ describe("privacy: personalization never touches message content", () => {
       "countedDay", "day", "daySenders", "lateSenders", "mutualDays",
       "secondSessionAtMs", "startedAtMs", "survivedAtMs",
     ]);
+  });
+});
+
+describe("learning safeguards", () => {
+  const survived = {type: "conversationSurvived", strength: SIGNAL_STRENGTHS.conversationSurvived, vector: HUMOR_HIGH};
+
+  it("caps how far a dimension can move in one day, however many events land", () => {
+    let profile = neutralProfile();
+    for (let i = 0; i < 50; i++) {
+      profile = applyLearningEvent(profile, survived, T0 + i * MIN).profile;
+    }
+    const moved = adj(profile, "humor") - 1;
+    assert.ok(moved <= LEARNING.maxDailyMovePerDimension + 1e-9, `moved ${moved} in one day`);
+    assert.ok(moved > 0);
+    // The next day the budget is fresh again.
+    const nextDay = applyLearningEvent(profile, survived, T0 + DAY).profile;
+    assert.ok(adj(nextDay, "humor") > adj(profile, "humor"));
+  });
+
+  it("keeps the day budget per dimension and resets it on a new UTC day", () => {
+    const first = applyLearningEvent(neutralProfile(), survived, T0).profile;
+    assert.equal(first.dayKey, new Date(T0).toISOString().slice(0, 10));
+    assert.ok(first.dayMovement.humor > 0);
+    assert.equal(first.dayMovement.music, undefined);
+    const later = applyLearningEvent(first, {...survived, vector: {music: 95}}, T0 + DAY).profile;
+    assert.equal(later.dayMovement.humor, undefined, "yesterday's humor movement does not carry over");
+    assert.ok(later.dayMovement.music > 0);
+  });
+
+  it("does not apply observed adjustments until enough different people stand behind them", () => {
+    const learned = run(repeat(30, survived));
+    assert.ok(adj(learned, "humor") > 1.05);
+    for (let partners = 0; partners < LEARNING.minDistinctPartners; partners++) {
+      learned.partnerCount = partners;
+      assert.equal(isObservedConfident(learned), false);
+      assert.deepEqual(effectiveAdjustments(learned, true), neutralAdjustments());
+    }
+    learned.partnerCount = LEARNING.minDistinctPartners;
+    assert.equal(isObservedConfident(learned), true);
+    assert.ok(effectiveAdjustments(learned, true).humor > 1.05);
+  });
+
+  it("round-trips partner count and day budget through the stored form", () => {
+    const profile = applyLearningEvent(neutralProfile(), survived, T0).profile;
+    profile.partnerCount = 2;
+    const back = parseProfile(serializeProfile(profile));
+    assert.equal(back.partnerCount, 2);
+    assert.equal(back.dayKey, profile.dayKey);
+    assert.ok(Math.abs(back.dayMovement.humor - profile.dayMovement.humor) < 1e-4);
+  });
+
+  it("combines declared and observed weights inside the band, neutral when both are", () => {
+    const neutral = neutralAdjustments();
+    assert.deepEqual(combineAdjustments(neutral, neutral), neutral);
+    const declared = {...neutral, humor: 1.15, music: 0.88};
+    const observed = {...neutral, humor: 1.3, music: 0.7};
+    const combined = combineAdjustments(declared, observed);
+    assert.equal(combined.humor, ADJUSTMENT_BOUNDS.max);
+    assert.equal(combined.music, ADJUSTMENT_BOUNDS.min);
+    assert.equal(combined.values, 1);
+    const broken = combineAdjustments({...neutral, humor: NaN}, {...neutral, humor: Infinity});
+    assert.equal(broken.humor, 1);
   });
 });

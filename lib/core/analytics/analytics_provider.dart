@@ -67,12 +67,31 @@ abstract final class AnalyticsEvents {
   static const String pickLike = 'pick_like';
   static const String pickPass = 'pick_pass';
   static const String pickMutualMatch = 'pick_mutual_match';
-  static const String picksDiscoverMoreOpened = 'picks_discover_more_opened';
   // Daily streak. Only credited days are logged, never a same-day reopen.
   // Params: status, streak_length_bucket, personal_best — no uid or dates.
   static const String streakCheckIn = 'streak_check_in';
   static const String streakPersonalBest = 'streak_personal_best';
   static const String streakDetailsViewed = 'streak_details_viewed';
+  // Today's finite set ran out: {reason}. Never a uid.
+  static const String dailyPicksExhausted = 'daily_picks_exhausted';
+  // Relationship Learning. Params: {source}, {stage: initial|follow_up},
+  // {dimension}, {position}. Never an answer: what someone chose stays theirs.
+  static const String relationshipLearningStarted =
+      'relationship_learning_started';
+  static const String relationshipLearningQuestionAnswered =
+      'relationship_learning_question_answered';
+  static const String relationshipLearningInitialCompleted =
+      'relationship_learning_initial_completed';
+  static const String relationshipLearningFollowUpStarted =
+      'progressive_questions_started';
+  static const String relationshipLearningFollowUpCompleted =
+      'progressive_questions_completed';
+  static const String relationshipLearningFollowUpSnoozed =
+      'progressive_questions_snoozed';
+  // The interaction-learning switch and the reset. No parameters.
+  static const String personalizationEnabled = 'personalization_enabled';
+  static const String personalizationDisabled = 'personalization_disabled';
+  static const String personalizationReset = 'personalization_reset';
   static const String spotifyConnectStarted = 'spotify_connect_started';
   static const String spotifyConnectSuccess = 'spotify_connect_success';
   static const String spotifyConnectFailed = 'spotify_connect_failed';

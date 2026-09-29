@@ -172,6 +172,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       humorRepository: humorServices.repository,
       relationshipRepository: relationshipServices.repository,
       profileQuestionAnswerRepository: relationshipServices.profileAnswers,
+      relationshipLearningRepository: relationshipServices.learning,
       matchScoreRepository: matchScoreServices.repository,
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,

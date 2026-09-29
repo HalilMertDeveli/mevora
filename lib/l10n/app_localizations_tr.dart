@@ -93,14 +93,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get picksLoadErrorTitle => 'Picks\'ini yükleyemedik.';
 
   @override
-  String get picksEmptyPreparingTitle => 'Yeni önerilerin hazırlanıyor.';
+  String get picksEmptyPreparingTitle => 'Bugün sana uygun birini seçemedik.';
 
   @override
   String get picksEmptyPreparingMessage =>
       'Sana rastgele profiller göstermek yerine daha anlamlı eşleşmeler buluyoruz.';
 
   @override
-  String get picksEmptyDoneTitle => 'Bugünkü seçkini tamamladın.';
+  String get picksEmptyDoneTitle => 'Bugünkü seçimlerini gördün.';
 
   @override
   String get picksDiscoveryOffTitle => 'Keşif kapalı';
@@ -108,19 +108,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get picksDiscoveryOffMessage =>
       'Picks alabilmek için ayarlardan keşfi aç.';
-
-  @override
-  String get picksDiscoverMore => 'Seçimlerinin dışında';
-
-  @override
-  String get picksDiscoverMoreHint =>
-      'Picks dışında kalan ama yine de sana uygun olabilecek kişiler.';
-
-  @override
-  String get picksBackToPicks => 'Mevora Picks\'e dön';
-
-  @override
-  String get discoverMoreSubtitle => 'Bugünkü Picks dışındaki kişiler';
 
   @override
   String get picksLike => 'Beğen';
@@ -150,6 +137,117 @@ class AppLocalizationsTr extends AppLocalizations {
   String picksMatchScore(int score) {
     return 'Mevora uyumu %$score';
   }
+
+  @override
+  String get picksEmptyDoneMessage =>
+      'Mevora yarın senin için yeni kişiler seçecek.';
+
+  @override
+  String get picksEmptyNoCandidatesMessage =>
+      'Sana rastgele profiller göstermek yerine yarın yeniden bakacağız.';
+
+  @override
+  String get learningCardTitle => 'Mevora seni biraz daha tanısın';
+
+  @override
+  String learningCardInitialStart(int total) {
+    return '$total kısa soru, sana daha uygun kişileri seçmemize yardım eder.';
+  }
+
+  @override
+  String learningCardInitialResume(int answered, int total) {
+    return '$answered / $total tamamlandı. Kaldığın yerden devam et.';
+  }
+
+  @override
+  String learningCardFollowUp(int count) {
+    return '$count kısa soruyla önerilerini geliştirebilirsin.';
+  }
+
+  @override
+  String get learningCardStart => 'Başla';
+
+  @override
+  String get learningCardResume => 'Devam et';
+
+  @override
+  String get learningCardNotNow => 'Şimdi değil';
+
+  @override
+  String get learningRequiredTitle => 'Önce seni biraz tanıyalım';
+
+  @override
+  String learningRequiredBody(int total) {
+    return 'Bugünkü seçimlerini cevaplarına göre hazırlayacağız. $total kısa soru, yaklaşık iki dakika.';
+  }
+
+  @override
+  String get learningIntroTitle => 'Mevora seni biraz daha tanısın';
+
+  @override
+  String get learningIntroBody =>
+      'Verdiğin cevapları sana daha uygun insanları seçebilmek için kullanıyoruz.';
+
+  @override
+  String learningIntroMeta(int count) {
+    return '$count kısa soru · yaklaşık iki dakika';
+  }
+
+  @override
+  String get learningIntroStart => 'Başlayalım';
+
+  @override
+  String learningProgress(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String learningProgressSemantics(int current, int total) {
+    return 'Soru $current, toplam $total';
+  }
+
+  @override
+  String get learningPrevious => 'Önceki';
+
+  @override
+  String get learningNext => 'Sonraki';
+
+  @override
+  String get learningSaveFailed => 'Cevabın kaydedilemedi. Tekrar dene.';
+
+  @override
+  String get learningLoadErrorTitle => 'Sorular yüklenemedi.';
+
+  @override
+  String get learningDoneTitle => 'Teşekkürler, seni biraz daha tanıdık.';
+
+  @override
+  String get learningDoneBody =>
+      'Bundan sonra senin için seçtiğimiz kişiler cevaplarına göre belirlenecek.';
+
+  @override
+  String get learningDoneContinue => 'Devam et';
+
+  @override
+  String get learningFollowUpDoneTitle => 'Teşekkürler!';
+
+  @override
+  String get learningFollowUpDoneBody =>
+      'Cevapların, önerilerini sana daha uygun hale getirecek.';
+
+  @override
+  String get learningNothingTitle => 'Şimdilik yeni soru yok';
+
+  @override
+  String get learningNothingBody =>
+      'Yeni sorular hazır olduğunda burada göreceksin.';
+
+  @override
+  String get learningProfileTitle => 'Mevora seni tanısın';
+
+  @override
+  String get learningProfileSubtitle =>
+      'Cevapların, sana uygun kişileri seçmemize yardım eder.';
 
   @override
   String get pickTypeBestOverall => 'En iyi uyum';
@@ -1245,6 +1343,30 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get settingsPersonalizeRecommendationsSubtitle =>
       'Beğeniler, eşleşmeler ve konuşma etkinliği gibi sinyalleri kullanarak önerilerini zamanla sana göre ayarlarız. Mesajlarının içeriğini analiz etmeyiz.';
+
+  @override
+  String get settingsResetLearned =>
+      'Mevora\'nın benden öğrendiklerini sıfırla';
+
+  @override
+  String get settingsResetLearnedSubtitle =>
+      'Etkileşimlerinden öğrenilenler silinir. Verdiğin cevaplar kalır.';
+
+  @override
+  String get settingsResetLearnedConfirmTitle => 'Öğrenilenler sıfırlansın mı?';
+
+  @override
+  String get settingsResetLearnedConfirmBody =>
+      'Mevora beğenilerinden, eşleşmelerinden ve konuşma etkinliğinden öğrendiklerini unutacak. Cevapların ve profilin değişmez.';
+
+  @override
+  String get settingsResetLearnedConfirm => 'Sıfırla';
+
+  @override
+  String get settingsResetLearnedDone => 'Öğrenilenler sıfırlandı.';
+
+  @override
+  String get settingsResetLearnedFailed => 'Sıfırlanamadı. Tekrar dene.';
 
   @override
   String get minAge => 'En düşük yaş';
@@ -2388,42 +2510,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get matchFeedbackFailed => 'Not kaydedilemedi. Tekrar dene.';
 
   @override
-  String get relationshipPromptTitle => 'Mevora seni daha iyi tanısın';
-
-  @override
-  String get relationshipQuestionsPreparing =>
-      'Yeni sorular hazırlanıyor. Biraz sonra tekrar dene.';
-
-  @override
-  String get relationshipTestTitle => 'Mevora seni daha iyi tanısın';
-
-  @override
-  String get relationshipTestHeadline => 'Mevora seni daha iyi tanısın';
-
-  @override
-  String get relationshipTestMessage =>
-      'İlişkide sana neyin önemli geldiğine dair birkaç sakin soru. Cevapların, daha anlamlı seçimler yapmamıza yardımcı olur.';
-
-  @override
-  String get relationshipTestStart => 'Başlayalım';
-
-  @override
-  String get relationshipTestLater => 'Şimdi değil';
-
-  @override
-  String get relationshipContinueTitle => 'Birkaç soru daha?';
-
-  @override
-  String get relationshipContinueMessage =>
-      'Her cevap, sana kimi göstereceğimizi seçmemize yardımcı olur. İstersen şimdi devam et, istersen sonra.';
-
-  @override
-  String get relationshipContinueYes => 'Devam et';
-
-  @override
-  String get relationshipContinueNo => 'Şimdi değil';
-
-  @override
   String get likesYouTitle => 'Seni beğenenler';
 
   @override
@@ -2478,35 +2564,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get likesYouLoadError => 'Beğeniler yüklenemedi. Lütfen tekrar dene.';
 
   @override
-  String get relationshipTestDoneTitle =>
-      'Teşekkürler, seni artık biraz daha iyi tanıyoruz';
-
-  @override
-  String get relationshipTestFound => 'Seninle benzer cevaplar veren biri var.';
-
-  @override
-  String get relationshipTestAlign => 'Yanıtlarınız ortak konularda örtüşüyor.';
-
-  @override
-  String get relationshipTestNearest => 'Sana en yakın kişi:';
-
-  @override
-  String get relationshipTestEmpty =>
-      'Yakınında henüz seninle benzer cevaplar veren biri yok.';
-
-  @override
-  String get relationshipTestViewProfile => 'Profili gör';
-
-  @override
-  String get relationshipTestOpenChat => 'Sohbete git';
-
-  @override
   String get relationshipMatchBadge => 'Benzer cevaplar';
-
-  @override
-  String relationshipPromptProgress(int answered, int total) {
-    return '$answered / $total';
-  }
 
   @override
   String relationshipCompatibilityPercent(int percent) {
@@ -2532,16 +2590,8 @@ class AppLocalizationsTr extends AppLocalizations {
       'İlişki görüşleriniz birkaç konuda örtüşüyor.';
 
   @override
-  String get relationshipMatchesTitle => 'İlişki eşleşmeleri';
-
-  @override
   String get relationshipMatchesEmpty =>
       'Senin gibi düşünen insanları bulmak için birkaç ilişki sorusu yanıtla — burada mesafe önemli değil.';
-
-  @override
-  String relationshipProfileSubtitle(int answered) {
-    return '$answered ilişki sorusu yanıtlandı';
-  }
 
   @override
   String get relationshipTopicJealousy =>

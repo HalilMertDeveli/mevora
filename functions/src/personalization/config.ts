@@ -54,6 +54,20 @@ export const LEARNING = {
    * nothing about that dimension (centred magnitude below this is ignored).
    */
   minCentredMagnitude: 0.1,
+  /**
+   * Confidence gate: learned adjustments do not touch ranking until strong
+   * outcomes (a like or better) came from at least this many different
+   * people. One enthusiastic connection is an anecdote, not a pattern.
+   */
+  minDistinctPartners: 3,
+  /**
+   * Total |strength| one other person can ever contribute. A like, a match, a
+   * started and a surviving conversation already reach it, so a single
+   * connection can never dominate what is learned.
+   */
+  maxStrengthPerPartner: 10,
+  /** No dimension moves further than this in one UTC day, whatever happens. */
+  maxDailyMovePerDimension: 0.06,
 } as const;
 
 /**

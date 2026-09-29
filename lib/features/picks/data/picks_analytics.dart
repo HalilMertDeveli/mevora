@@ -13,6 +13,7 @@ class PicksAnalytics {
   final AnalyticsProvider? _analytics;
   final Set<String> _delivered = <String>{};
   final Set<String> _impressions = <String>{};
+  final Set<String> _exhausted = <String>{};
 
   static const String source = 'mevora_picks';
 
@@ -73,6 +74,15 @@ class PicksAnalytics {
   void mutualMatch(MevoraPick pick, int position) =>
       _log(AnalyticsEvents.pickMutualMatch, _params(pick, position));
 
-  void discoverMoreOpened() =>
-      _log(AnalyticsEvents.picksDiscoverMoreOpened, const {'source': source});
+  /// Once per reason per session: today's finite set has been seen through.
+  void exhausted(String reason) {
+    if (_exhausted.add(reason)) {
+      unawaited(
+        _log(AnalyticsEvents.dailyPicksExhausted, {
+          'reason': reason,
+          'source': source,
+        }),
+      );
+    }
+  }
 }

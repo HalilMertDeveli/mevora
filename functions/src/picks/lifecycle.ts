@@ -7,7 +7,8 @@ import type {ComposedPick, PickReason, PickType} from "./types.js";
  * The Picks batch lifecycle, as pure transitions over the stored document
  * `users/{uid}/mevoraPicks/current`.
  *
- * Rolling, not midnight: a batch lives `batchTtlMs` from when it was made.
+ * Daily: a batch lives until the next logical-day boundary (see
+ * `logicalDayUtcOffsetMinutes`), whenever in the day it was made.
  *
  *   active ──like──▶ liked      (never returns; canonical like state)
  *   active ──pass──▶ passed     (never returns; canonical pass state)
@@ -135,7 +136,7 @@ export function parseBatch(raw: unknown): PicksBatch | null {
     schemaVersion: PICKS_SCHEMA_VERSION,
     generationId: data.generationId,
     generatedAtMs,
-    refreshAtMs: finiteOr(data.refreshAtMs, generatedAtMs + PICKS_CONFIG.batchTtlMs),
+    refreshAtMs: finiteOr(data.refreshAtMs, nextLogicalDayStartMs(generatedAtMs)),
     lastScanAtMs: finiteOr(data.lastScanAtMs, generatedAtMs),
     deliveredCount: finiteOr(data.deliveredCount, picks.length),
     picks,
@@ -150,6 +151,21 @@ function candidateUidsOf(picks: StoredPick[], cooldowns: Record<string, number>)
 
 function withIndex(batch: PicksBatch): PicksBatch {
   return {...batch, candidateUids: candidateUidsOf(batch.picks, batch.cooldowns)};
+}
+
+const DAY_MS = 86_400_000;
+
+/** The logical day `nowMs` falls in, as YYYY-MM-DD at the Picks day offset. */
+export function logicalDayKey(nowMs: number): string {
+  const shifted = nowMs + PICKS_CONFIG.logicalDayUtcOffsetMinutes * 60_000;
+  return new Date(shifted).toISOString().slice(0, 10);
+}
+
+/** When the logical day containing `nowMs` ends: the next batch's earliest start. */
+export function nextLogicalDayStartMs(nowMs: number): number {
+  const offsetMs = PICKS_CONFIG.logicalDayUtcOffsetMinutes * 60_000;
+  const shifted = nowMs + offsetMs;
+  return Math.floor(shifted / DAY_MS) * DAY_MS + DAY_MS - offsetMs;
 }
 
 export function isBatchLive(batch: PicksBatch | null, nowMs: number): boolean {
@@ -230,7 +246,7 @@ export function newBatch(input: {
     schemaVersion: PICKS_SCHEMA_VERSION,
     generationId: input.generationId,
     generatedAtMs: input.nowMs,
-    refreshAtMs: input.nowMs + PICKS_CONFIG.batchTtlMs,
+    refreshAtMs: nextLogicalDayStartMs(input.nowMs),
     lastScanAtMs: input.nowMs,
     deliveredCount: input.picks.length,
     picks: input.picks,
@@ -255,12 +271,22 @@ export function markScanned(batch: PicksBatch, nowMs: number): PicksBatch {
 }
 
 /**
- * Whether a live batch may look for replacements now: it is short of its
- * target, has delivery budget left, and has not scanned recently.
+ * Picks that used up a slot of today's set: everything except the ones that
+ * stopped being eligible. A like, a pass or a match spends the slot for good,
+ * so deciding quickly never buys more people.
+ */
+export function slotsUsed(batch: PicksBatch): number {
+  return batch.picks.filter((pick) => pick.state !== "ineligible").length;
+}
+
+/**
+ * Whether a live batch may look for more people now: it has open slots (a
+ * short first batch, or a Pick that stopped being eligible), delivery budget
+ * left, and has not scanned recently.
  */
 export function needsTopUp(batch: PicksBatch, nowMs: number): boolean {
   return (
-    activePicks(batch).length < PICKS_CONFIG.targetCount &&
+    slotsUsed(batch) < PICKS_CONFIG.targetCount &&
     batch.deliveredCount < PICKS_CONFIG.maxDeliveredPerBatch &&
     nowMs - batch.lastScanAtMs >= PICKS_CONFIG.topUpMinIntervalMs
   );
@@ -268,7 +294,7 @@ export function needsTopUp(batch: PicksBatch, nowMs: number): boolean {
 
 /** How many replacements a top-up may add. */
 export function topUpSlots(batch: PicksBatch): number {
-  const byTarget = PICKS_CONFIG.targetCount - activePicks(batch).length;
+  const byTarget = PICKS_CONFIG.targetCount - slotsUsed(batch);
   const byBudget = PICKS_CONFIG.maxDeliveredPerBatch - batch.deliveredCount;
   return Math.max(0, Math.min(byTarget, byBudget));
 }

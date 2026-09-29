@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mevora/core/config/auth_scope.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/features/settings/domain/entities/user_settings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_dialog.dart';
 
 /// "Personalize my recommendations based on my interactions".
 ///
@@ -87,10 +90,84 @@ class _PersonalizationSettingTileState
       await services.settingsHub.saveSettings(
         settings.copyWith(personalizeRecommendations: value),
       );
+      if (mounted) {
+        RelationshipLearningScope.maybeOf(
+          context,
+        )?.analytics.personalizationSwitched(enabled: value);
+      }
     } finally {
       if (mounted) {
         setState(() => _pending = null);
       }
     }
+  }
+}
+
+/// "Reset what Mevora learned from me". Clears what was learned from the
+/// member's interactions, on the server; their own answers and the switch
+/// above stay as they are.
+class PersonalizationResetTile extends StatefulWidget {
+  const PersonalizationResetTile({super.key});
+
+  @override
+  State<PersonalizationResetTile> createState() =>
+      _PersonalizationResetTileState();
+}
+
+class _PersonalizationResetTileState extends State<PersonalizationResetTile> {
+  bool _busy = false;
+
+  Future<void> _confirmReset(RelationshipLearningScope scope) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await MevoraDialog.show(
+      context,
+      title: l10n.settingsResetLearnedConfirmTitle,
+      message: l10n.settingsResetLearnedConfirmBody,
+      confirmLabel: l10n.settingsResetLearnedConfirm,
+      confirmVariant: MevoraButtonVariant.destructive,
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    setState(() => _busy = true);
+    final result = await scope.repository.resetLearnedPreferences();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    if (result.isSuccess) {
+      scope.analytics.personalizationReset();
+    }
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(
+          result.isSuccess
+              ? l10n.settingsResetLearnedDone
+              : l10n.settingsResetLearnedFailed,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = RelationshipLearningScope.maybeOf(context);
+    if (scope == null) {
+      return const SizedBox.shrink();
+    }
+    final l10n = AppLocalizations.of(context);
+    return ListTile(
+      key: const Key('resetLearnedPersonalizationTile'),
+      title: Text(l10n.settingsResetLearned),
+      subtitle: Text(l10n.settingsResetLearnedSubtitle),
+      enabled: !_busy,
+      trailing: _busy
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : null,
+      onTap: _busy ? null : () => unawaited(_confirmReset(scope)),
+    );
   }
 }

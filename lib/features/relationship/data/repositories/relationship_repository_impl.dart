@@ -5,7 +5,6 @@ import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/relationship/data/datasources/relationship_data_source.dart';
-import 'package:mevora/features/relationship/domain/entities/relationship_match_suggestion.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 
 class RelationshipRepositoryImpl implements RelationshipRepository {
@@ -27,33 +26,6 @@ class RelationshipRepositoryImpl implements RelationshipRepository {
     return _guard(
       () => _dataSource.saveAnswer(questionId: questionId, answerId: answerId),
     );
-  }
-
-  @override
-  Future<Result<RelationshipAnswerSnapshot>> dismissOffer({
-    bool matchTaken = false,
-    bool pauseMatching = false,
-    bool continueMatching = false,
-  }) {
-    return _guard(
-      () => _dataSource.dismissOffer(
-        matchTaken: matchTaken,
-        pauseMatching: pauseMatching,
-        continueMatching: continueMatching,
-      ),
-    );
-  }
-
-  @override
-  Future<Result<List<RelationshipMatchSuggestion>>> completeTest({
-    required List<String> questionIds,
-  }) {
-    return _guard(() => _dataSource.completeTest(questionIds: questionIds));
-  }
-
-  @override
-  Future<Result<List<RelationshipMatchSuggestion>>> getSuggestions() {
-    return _guard(_dataSource.getSuggestions);
   }
 
   @override

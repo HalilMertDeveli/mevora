@@ -29,6 +29,8 @@ import 'package:mevora/shared/art/mevora_motion.dart';
 import 'package:mevora/shared/widgets/turkish_province_picker.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
+import 'package:mevora/features/relationship_learning/presentation/pages/relationship_learning_page.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -491,12 +493,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
     final humorEnabled =
         AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
+    final learningAvailable =
+        RelationshipLearningScope.maybeOf(context) != null;
     AuthScope.of(context).applyOnboardingComplete();
 
-    // Personalization comes *after* the core profile is viable, and is never a
-    // gate: onboarding is already complete at this point, so a user who skips
-    // — or who never sees this because the flag is off — lands on discovery
-    // exactly as before.
+    // Relationship Learning comes next: a new member's first Picks are chosen
+    // from these answers. It is resumable, never a trap — leaving it lands on
+    // the Picks screen, which offers the rest. Humor calibration follows when
+    // the lab is on.
+    if (learningAvailable && mounted) {
+      context.go(
+        RelationshipLearningPage.location(
+          next: humorEnabled ? AppRoutes.humorCalibration : AppRoutes.discovery,
+          source: 'onboarding',
+        ),
+      );
+      return;
+    }
     if (humorEnabled && mounted) {
       context.go(AppRoutes.humorCalibration);
     }

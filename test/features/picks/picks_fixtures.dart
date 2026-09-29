@@ -67,10 +67,12 @@ MevoraPicksBatch batchOf(
   List<Map<String, dynamic>> picks, {
   String status = 'ready',
   String? emptyReason,
+  Map<String, Object?>? learning,
 }) {
   return MevoraPicksParser.parseBatch({
     'status': status,
     'emptyReason': emptyReason,
+    'learning': ?learning,
     'generationId': 'gen1',
     'refreshAtMs': 1_900_000_000_000,
     'targetCount': 6,

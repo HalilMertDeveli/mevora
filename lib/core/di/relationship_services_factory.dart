@@ -9,15 +9,21 @@ import 'package:mevora/features/relationship/data/datasources/functions_relation
 import 'package:mevora/features/relationship/data/datasources/mock_relationship_data_source.dart';
 import 'package:mevora/features/relationship/data/repositories/relationship_repository_impl.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
+import 'package:mevora/features/relationship_learning/data/relationship_learning_repository_impl.dart';
+import 'package:mevora/features/relationship_learning/domain/repositories/relationship_learning_repository.dart';
 
 class RelationshipServices {
   const RelationshipServices({
     required this.repository,
     required this.profileAnswers,
+    this.learning,
   });
 
   final RelationshipRepository repository;
   final ProfileQuestionAnswerRepository profileAnswers;
+
+  /// Relationship Learning. Absent in mock-only builds, which have no backend.
+  final RelationshipLearningRepository? learning;
 }
 
 RelationshipServices createRelationshipServices({
@@ -55,5 +61,6 @@ RelationshipServices createRelationshipServices({
     profileAnswers: ProfileQuestionAnswerRepositoryImpl(
       dataSource: FirebaseProfileQuestionAnswerDataSource(backend: callable),
     ),
+    learning: RelationshipLearningRepositoryImpl(backend: callable),
   );
 }

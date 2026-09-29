@@ -130,6 +130,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => context.push(AppRoutes.discoveryPreferences),
                 ),
                 const PersonalizationSettingTile(),
+                const PersonalizationResetTile(),
               ],
             ),
             SettingsSection(

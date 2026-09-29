@@ -13,7 +13,6 @@ import 'package:mevora/features/profile/domain/models/profile_question_answer.da
 import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
-import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 import '../../helpers/fake_auth.dart';
@@ -76,10 +75,6 @@ void main() {
   ) async {
     final answers = _FakeProfileAnswers();
     addTearDown(answers.dispose);
-    final relationshipController = RelationshipController(
-      repository: _FakeRelationshipRepo(),
-    );
-    addTearDown(relationshipController.dispose);
     final auth = _auth();
     addTearDown(auth.dispose);
     final l10n = lookupAppLocalizations(const Locale('en'));
@@ -91,7 +86,6 @@ void main() {
           child: RelationshipScope(
             repository: _FakeRelationshipRepo(),
             profileAnswers: answers,
-            controller: relationshipController,
             child: const ProfileQuestionAnswersSection(
               uid: 'user-1',
               isOwner: true,
@@ -120,10 +114,6 @@ void main() {
   ) async {
     final answers = _FakeProfileAnswers();
     addTearDown(answers.dispose);
-    final relationshipController = RelationshipController(
-      repository: _FakeRelationshipRepo(),
-    );
-    addTearDown(relationshipController.dispose);
     final auth = _auth();
     addTearDown(auth.dispose);
 
@@ -134,7 +124,6 @@ void main() {
           child: RelationshipScope(
             repository: _FakeRelationshipRepo(),
             profileAnswers: answers,
-            controller: relationshipController,
             child: const ProfileQuestionAnswersSection(
               uid: 'user-1',
               isOwner: true,

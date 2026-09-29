@@ -177,6 +177,8 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/humorInteractions`),
       deleteCollectionDocs(`users/${uid}/personalization`),
       deleteCollectionDocs(`users/${uid}/personalizationEvents`),
+      deleteCollectionDocs(`users/${uid}/personalizationPartners`),
+      deleteCollectionDocs(`users/${uid}/relationshipLearning`),
       deleteCollectionDocs(`users/${uid}/verification`),
       deleteCollectionDocs(`users/${uid}/photoModeration`),
       deleteCollectionDocs(`users/${uid}/rateLimits`),

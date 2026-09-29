@@ -66,6 +66,11 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Pinned to the toolchain the team develops on. Unpinned `stable` jumped
+          # to 3.47, where material no longer re-exports Cupertino page
+          # transitions, and broke analyze on branches that build fine locally.
+          # Bump deliberately, together with the local SDK.
+          flutter-version: 3.41.9
           cache: true
       - run: flutter --version
       - name: flutter pub get

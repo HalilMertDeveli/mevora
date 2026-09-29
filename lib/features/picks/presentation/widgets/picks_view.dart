@@ -23,7 +23,7 @@ class PicksView extends StatefulWidget {
     required this.controller,
     required this.onOpenProfile,
     this.onOpenLearning,
-    this.onSnoozeLearning,
+    this.onSkipLearningToday,
     this.onOpenSettings,
     this.footer,
   });
@@ -31,11 +31,11 @@ class PicksView extends StatefulWidget {
   final MevoraPicksController controller;
   final void Function(MevoraPick pick) onOpenProfile;
 
-  /// Opens Relationship Learning. Without it no learning card is shown.
+  /// Opens today's relationship questions. Without it no card is shown.
   final void Function(LearningSummary summary)? onOpenLearning;
 
-  /// "Not now" on a follow-up round invitation.
-  final VoidCallback? onSnoozeLearning;
+  /// "Bugünlük geç" on today's questions card.
+  final void Function(LearningSummary summary)? onSkipLearningToday;
   final VoidCallback? onOpenSettings;
 
   /// Shown under the Picks (e.g. the Humor Lab entry, whose calibration is
@@ -131,7 +131,9 @@ class _PicksViewState extends State<PicksView> {
       child: LearningPromptCard(
         summary: batch.learning,
         onOpen: () => open(batch.learning),
-        onNotNow: widget.onSnoozeLearning,
+        onSkipToday: widget.onSkipLearningToday == null
+            ? null
+            : () => widget.onSkipLearningToday!(batch.learning),
       ),
     );
   }

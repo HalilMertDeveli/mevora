@@ -11,7 +11,6 @@ import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_lab_discover_entry.dart';
 import 'package:mevora/features/relationship_learning/domain/entities/relationship_learning.dart';
 import 'package:mevora/features/relationship_learning/domain/repositories/relationship_learning_repository.dart';
-import 'package:mevora/features/relationship_learning/presentation/controllers/relationship_learning_controller.dart';
 import 'package:mevora/features/relationship_learning/presentation/pages/relationship_learning_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_bottom_sheet.dart';
@@ -24,10 +23,10 @@ import 'package:mevora/shared/widgets/mevora_meter.dart';
 import 'package:mevora/shared/widgets/mevora_section_header.dart';
 import 'package:mevora/shared/widgets/mevora_selectable_tile.dart';
 
-/// "Mevora seni tanısın": the permanent place where a member sees what Mevora
-/// knows about what matters to them, continues in short rounds, and changes
-/// earlier answers. Every number comes from the server's real coverage; every
-/// sentence is one of the member's own answers read back.
+/// "Mevora Beni Tanısın": the permanent place where a member sees what Mevora
+/// knows about what matters to them, opens today's questions, and changes
+/// earlier answers. Every number comes from the server's real coverage and
+/// counts; every sentence is one of the member's own answers read back.
 class LearningDashboardPage extends StatefulWidget {
   const LearningDashboardPage({super.key, this.repository});
 
@@ -94,14 +93,11 @@ class _LearningDashboardPageState extends State<LearningDashboardPage> {
     }
   }
 
-  Future<void> _continue(LearningFlowMode mode) async {
+  Future<void> _openToday() async {
     _log(AnalyticsEvents.relationshipLearningContinueStarted, {
-      'stage': mode == LearningFlowMode.initial ? 'initial' : 'follow_up',
+      'answered': _state?.summary.today.answered ?? 0,
     });
-    final location = RelationshipLearningPage.location(
-      mode: mode,
-      source: 'dashboard',
-    );
+    final location = RelationshipLearningPage.location(source: 'dashboard');
     final router = GoRouter.maybeOf(context);
     if (router != null) {
       await router.push<Object?>(location);
@@ -109,7 +105,6 @@ class _LearningDashboardPageState extends State<LearningDashboardPage> {
       await Navigator.of(context).push<Object?>(
         MaterialPageRoute<Object?>(
           builder: (_) => RelationshipLearningPage(
-            mode: mode,
             source: 'dashboard',
             repository: _repository,
           ),
@@ -137,8 +132,9 @@ class _LearningDashboardPageState extends State<LearningDashboardPage> {
     if (chosen == null || chosen == question.answerId || !mounted) {
       return;
     }
-    final result = await repository.saveAnswer(
+    final result = await repository.updateAnswer(
       questionId: question.id,
+      questionVersion: question.version,
       answerId: chosen,
     );
     if (!mounted) {
@@ -146,7 +142,7 @@ class _LearningDashboardPageState extends State<LearningDashboardPage> {
     }
     if (result.isSuccess) {
       _log(AnalyticsEvents.relationshipLearningAnswerEdited, {
-        'dimension': question.dimension,
+        'category': question.category,
       });
       await _load();
     } else {
@@ -187,13 +183,7 @@ class _LearningDashboardPageState extends State<LearningDashboardPage> {
         children: [
           _Header(overview: overview),
           const SizedBox(height: AppSpacing.md),
-          _ContinueCard(
-            summary: state.summary,
-            followUpCount: state.followUpQuestions
-                .where((q) => !q.isAnswered)
-                .length,
-            onContinue: _continue,
-          ),
+          _TodayCard(summary: state.summary, onOpen: _openToday),
           const SizedBox(height: AppSpacing.xl),
           MevoraSectionHeader(title: l10n.learningDashboardCategoriesTitle),
           const SizedBox(height: AppSpacing.s12),
@@ -291,6 +281,21 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s12),
           Text(
+            l10n.learningDashboardThisMonth(overview.totals.thisMonth),
+            key: const Key('learningThisMonth'),
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            l10n.learningDashboardTotals(
+              overview.totals.total,
+              overview.totals.completedDays,
+            ),
+            key: const Key('learningTotals'),
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: AppSpacing.s12),
+          Text(
             l10n.learningDashboardBody,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: context.palette.textSecondary,
@@ -302,41 +307,27 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _ContinueCard extends StatelessWidget {
-  const _ContinueCard({
-    required this.summary,
-    required this.followUpCount,
-    required this.onContinue,
-  });
+class _TodayCard extends StatelessWidget {
+  const _TodayCard({required this.summary, required this.onOpen});
 
   final LearningSummary summary;
-  final int followUpCount;
-  final Future<void> Function(LearningFlowMode mode) onContinue;
+  final Future<void> Function() onOpen;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    if (!summary.initialCompleted) {
-      return MevoraButton(
-        key: const Key('learningDashboardContinue'),
-        label: l10n.learningDashboardResumeInitial(
-          summary.initialAnswered,
-          summary.initialTotal,
-        ),
-        onPressed: () => unawaited(onContinue(LearningFlowMode.initial)),
-      );
-    }
-    if (followUpCount == 0) {
+    final today = summary.today;
+    if (today.completed) {
       return Text(
-        l10n.learningDashboardAllAnswered,
-        key: const Key('learningDashboardAllAnswered'),
+        l10n.learningDashboardTodayDone,
+        key: const Key('learningDashboardTodayDone'),
         style: Theme.of(context).textTheme.bodyMedium,
       );
     }
     return MevoraButton(
-      key: const Key('learningDashboardContinue'),
-      label: l10n.learningDashboardContinue(followUpCount),
-      onPressed: () => unawaited(onContinue(LearningFlowMode.followUp)),
+      key: const Key('learningDashboardToday'),
+      label: l10n.learningDashboardToday(today.answered, today.total),
+      onPressed: () => unawaited(onOpen()),
     );
   }
 }

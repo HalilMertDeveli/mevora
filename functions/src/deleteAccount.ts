@@ -182,6 +182,7 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/personalizationEvents`),
       deleteCollectionDocs(`users/${uid}/personalizationPartners`),
       deleteCollectionDocs(`users/${uid}/relationshipLearning`),
+      deleteCollectionDocs(`users/${uid}/relationshipDaily`),
       deleteCollectionDocs(`users/${uid}/verification`),
       deleteCollectionDocs(`users/${uid}/photoModeration`),
       deleteCollectionDocs(`users/${uid}/rateLimits`),

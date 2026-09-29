@@ -74,20 +74,19 @@ abstract final class AnalyticsEvents {
   static const String streakDetailsViewed = 'streak_details_viewed';
   // Today's finite set ran out: {reason}. Never a uid.
   static const String dailyPicksExhausted = 'daily_picks_exhausted';
-  // Relationship Learning. Params: {source}, {stage: initial|follow_up},
-  // {dimension}, {position}. Never an answer: what someone chose stays theirs.
-  static const String relationshipLearningStarted =
-      'relationship_learning_started';
-  static const String relationshipLearningQuestionAnswered =
-      'relationship_learning_question_answered';
-  static const String relationshipLearningInitialCompleted =
-      'relationship_learning_initial_completed';
-  static const String relationshipLearningFollowUpStarted =
-      'progressive_questions_started';
-  static const String relationshipLearningFollowUpCompleted =
-      'progressive_questions_completed';
-  static const String relationshipLearningFollowUpSnoozed =
-      'progressive_questions_snoozed';
+  // Daily relationship questions. Params: {source}, {question_set_id},
+  // {category}, {position}, {first_set}. Never an answer: what someone chose
+  // stays theirs.
+  static const String dailyQuestionsShown =
+      'daily_relationship_questions_shown';
+  static const String dailyQuestionsAnswered =
+      'daily_relationship_questions_answered';
+  static const String dailyQuestionsResumed =
+      'daily_relationship_questions_resumed';
+  static const String dailyQuestionsCompleted =
+      'daily_relationship_questions_completed';
+  static const String dailyQuestionsSkipped =
+      'daily_relationship_questions_skipped';
   // The interaction-learning switch and the reset. No parameters.
   static const String personalizationEnabled = 'personalization_enabled';
   static const String personalizationDisabled = 'personalization_disabled';

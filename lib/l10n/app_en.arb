@@ -79,17 +79,17 @@
   },
   "picksEmptyDoneMessage": "Mevora will choose new people for you tomorrow.",
   "picksEmptyNoCandidatesMessage": "Rather than show you random profiles, we'll look again tomorrow.",
-  "learningCardTitle": "Let Mevora get to know you",
-  "learningCardInitialStart": "{total} short questions help us choose people who fit you.",
-  "@learningCardInitialStart": {
+  "learningCardTitle": "Today's questions are ready",
+  "learningCardTodayStart": "Today's {total} short questions help us choose people who fit you.",
+  "@learningCardTodayStart": {
     "placeholders": {
       "total": {
         "type": "int"
       }
     }
   },
-  "learningCardInitialResume": "{answered} of {total} answered. Pick up where you left off.",
-  "@learningCardInitialResume": {
+  "learningCardTodayResume": "{answered} of {total} answered. Pick up where you left off.",
+  "@learningCardTodayResume": {
     "placeholders": {
       "answered": {
         "type": "int"
@@ -99,17 +99,9 @@
       }
     }
   },
-  "learningCardFollowUp": "{count} short questions to sharpen your Picks.",
-  "@learningCardFollowUp": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "learningCardStart": "Start",
   "learningCardResume": "Continue",
-  "learningCardNotNow": "Not now",
+  "learningSkipToday": "Skip for today",
   "learningRequiredTitle": "First, let us get to know you",
   "learningRequiredBody": "Today's Picks are chosen from your answers. {total} short questions, about two minutes.",
   "@learningRequiredBody": {
@@ -119,8 +111,15 @@
       }
     }
   },
-  "learningIntroTitle": "Let Mevora get to know you",
-  "learningIntroBody": "We use your answers to choose people who fit you better.",
+  "learningIntroTitle": "Let Mevora get to know you a little more each day",
+  "learningIntroBody": "Today's {count} short questions help us choose people who fit you better.",
+  "@learningIntroBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "learningIntroMeta": "{count} short questions · about two minutes",
   "@learningIntroMeta": {
     "placeholders": {
@@ -156,17 +155,16 @@
   "learningNext": "Next",
   "learningSaveFailed": "We couldn't save your answer. Try again.",
   "learningLoadErrorTitle": "We couldn't load the questions.",
-  "learningDoneTitle": "Thanks, we know you a little better now.",
-  "learningDoneBody": "From now on, the people we choose for you follow your answers.",
+  "learningDoneTitle": "That's it for today.",
+  "learningDoneBody": "Mevora knows you a little better now.",
   "learningDoneContinue": "Continue",
-  "learningFollowUpDoneTitle": "Thank you!",
-  "learningFollowUpDoneBody": "Your answers will make your Picks fit you better.",
-  "learningNothingTitle": "No new questions for now",
-  "learningNothingBody": "When new questions are ready, you'll find them here.",
+  "learningDoneTomorrow": "New questions will be waiting tomorrow.",
+  "learningSkippedTitle": "Okay, see you tomorrow.",
+  "learningSkippedBody": "You can still answer today's questions from Let Mevora get to know me in your profile.",
   "learningProfileTitle": "Let Mevora get to know me",
   "learningProfileSubtitle": "Your answers help us choose people who fit you.",
   "learningAfterHumorTitle": "We know your humor a little now.",
-  "learningAfterHumorBody": "Now let's learn what matters to you in a relationship.",
+  "learningAfterHumorBody": "Now let's learn what matters to you in a relationship, with today's questions.",
   "learningDashboardHeadline": "How well does Mevora know you?",
   "learningDashboardPercent": "{percent}%",
   "@learningDashboardPercent": {
@@ -177,8 +175,27 @@
     }
   },
   "learningDashboardBody": "Your answers and your profile help us choose people who fit you.",
-  "learningDashboardResumeInitial": "Continue where you left off ({answered}/{total})",
-  "@learningDashboardResumeInitial": {
+  "learningDashboardThisMonth": "{count, plural, =0{No questions answered this month yet} =1{1 question answered this month} other{{count} questions answered this month}}",
+  "@learningDashboardThisMonth": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "learningDashboardTotals": "{total} answers in total · {days} days completed",
+  "@learningDashboardTotals": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "learningDashboardToday": "Today's questions ({answered}/{total})",
+  "@learningDashboardToday": {
     "placeholders": {
       "answered": {
         "type": "int"
@@ -188,15 +205,7 @@
       }
     }
   },
-  "learningDashboardContinue": "{count, plural, =1{Continue with 1 short question} other{Continue with {count} short questions}}",
-  "@learningDashboardContinue": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "learningDashboardAllAnswered": "You've answered every question for now. New ones will appear here.",
+  "learningDashboardTodayDone": "Done for today. New questions arrive tomorrow.",
   "learningDashboardCategoriesTitle": "Compatibility areas",
   "learningDashboardHighlightsTitle": "What we've learned so far",
   "learningDashboardHighlightsSubtitle": "From your own answers.",

@@ -326,7 +326,6 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: RelationshipLearningPage(
-            mode: learningModeFromQuery(state.uri.queryParameters['mode']),
             next: state.uri.queryParameters['next'],
             source: state.uri.queryParameters['source'] ?? 'route',
           ),

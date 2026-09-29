@@ -1,50 +1,32 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:mevora/features/relationship_learning/data/relationship_learning_analytics.dart';
 import 'package:mevora/features/relationship_learning/domain/entities/relationship_learning.dart';
 import 'package:mevora/features/relationship_learning/domain/repositories/relationship_learning_repository.dart';
 
-/// Which set of questions the flow is walking through.
-enum LearningFlowMode {
-  /// The initial questions every member answers once.
-  initial,
+enum LearningFlowPhase { loading, intro, question, done, skipped, error }
 
-  /// A short follow-up round, after the initial set.
-  followUp,
-
-  /// Whichever fits: the initial set while unfinished, else a follow-up round.
-  auto,
-}
-
-enum LearningFlowPhase { loading, intro, question, done, nothingToAsk, error }
-
-/// Drives one pass through relationship-learning questions.
+/// Drives today's 10 relationship questions.
 ///
-/// Every answer is saved the moment it is chosen, so leaving at question 8
-/// and coming back resumes at the first unanswered one. The server is the
-/// source of truth: progress and completion always come from its response.
+/// The set, its order and the day come from the server. Every answer is
+/// saved the moment it is chosen, so leaving at question 4 and coming back
+/// (even after a restart) resumes at the first unanswered one. Completion
+/// always comes from the server's response, never from local counting.
 class RelationshipLearningController extends ChangeNotifier {
   RelationshipLearningController({
     required RelationshipLearningRepository repository,
-    required LearningFlowMode mode,
     RelationshipLearningAnalytics? analytics,
     this.source = 'unknown',
   }) : _repository = repository,
-       _mode = mode,
        _analytics = analytics ?? const RelationshipLearningAnalytics(null);
 
   final RelationshipLearningRepository _repository;
   final RelationshipLearningAnalytics _analytics;
-  LearningFlowMode _mode;
-
-  /// The resolved mode ([LearningFlowMode.auto] is decided on load).
-  LearningFlowMode get mode => _mode;
 
   /// Where the flow was opened from, for analytics only.
   final String source;
 
   LearningFlowPhase _phase = LearningFlowPhase.loading;
+  DailyQuestionSet _set = DailyQuestionSet.empty;
   List<LearningQuestion> _questions = const [];
   int _index = 0;
   bool _saving = false;
@@ -52,17 +34,25 @@ class RelationshipLearningController extends ChangeNotifier {
   String? _loadError;
   String? _actionError;
   LearningSummary _summary = LearningSummary.unknown;
-  bool _completedInitialNow = false;
+  bool _completedNow = false;
 
   LearningFlowPhase get phase => _phase;
   List<LearningQuestion> get questions => _questions;
+  String get questionSetId => _set.questionSetId;
   int get index => _index;
   int get total => _questions.length;
   bool get saving => _saving;
   String? get loadError => _loadError;
   LearningSummary get summary => _summary;
-  bool get completedInitialNow => _completedInitialNow;
-  bool get isFollowUp => _mode == LearningFlowMode.followUp;
+
+  /// Today's set was finished in this session (not just found finished).
+  bool get completedNow => _completedNow;
+
+  /// "Bugünlük geç" is available: never for a new member's first set.
+  bool get canSkip =>
+      _summary.today.canSkip &&
+      (_phase == LearningFlowPhase.intro ||
+          _phase == LearningFlowPhase.question);
 
   LearningQuestion? get current =>
       _index >= 0 && _index < _questions.length ? _questions[_index] : null;
@@ -100,38 +90,31 @@ class RelationshipLearningController extends ChangeNotifier {
     result.when(
       success: (state) {
         _summary = state.summary;
-        if (_mode == LearningFlowMode.auto) {
-          _mode = state.summary.initialCompleted
-              ? LearningFlowMode.followUp
-              : LearningFlowMode.initial;
-        }
-        _questions = isFollowUp
-            ? state.followUpQuestions
-            : state.initialQuestions;
+        _set = state.today;
+        _questions = List.unmodifiable(state.today.questions);
         if (_questions.isEmpty) {
-          _phase = LearningFlowPhase.nothingToAsk;
+          _loadError = '';
+          _phase = LearningFlowPhase.error;
           return;
         }
-        if (!isFollowUp && state.summary.initialCompleted) {
+        if (state.summary.today.completed) {
+          // Answered once today already: the set is not shown again.
           _phase = LearningFlowPhase.done;
           return;
         }
         final firstOpen = _questions.indexWhere((q) => !q.isAnswered);
-        if (firstOpen < 0) {
-          // Every question answered but the round is not closed yet: show the
-          // last one so a single tap finishes it.
-          _index = _questions.length - 1;
-          _phase = LearningFlowPhase.question;
+        _index = firstOpen < 0 ? _questions.length - 1 : firstOpen;
+        if (answeredCount == 0) {
+          _phase = LearningFlowPhase.intro;
           return;
         }
-        _index = firstOpen;
-        // A fresh start gets the short introduction; a resume goes straight
-        // back to the question the member stopped at.
-        final fresh = answeredCount == 0 && !isFollowUp;
-        _phase = fresh ? LearningFlowPhase.intro : LearningFlowPhase.question;
-        if (!fresh) {
-          _analytics.started(followUp: isFollowUp, source: source);
-        }
+        // A resume goes straight back to the question the member stopped at.
+        _phase = LearningFlowPhase.question;
+        _analytics.resumed(
+          questionSetId: questionSetId,
+          source: source,
+          answered: answeredCount,
+        );
       },
       err: (failure) {
         _loadError = failure.message;
@@ -145,7 +128,7 @@ class RelationshipLearningController extends ChangeNotifier {
     if (_phase != LearningFlowPhase.intro) {
       return;
     }
-    _analytics.started(followUp: isFollowUp, source: source);
+    _analytics.shown(questionSetId: questionSetId, source: source);
     _phase = LearningFlowPhase.question;
     _notify();
   }
@@ -167,7 +150,8 @@ class RelationshipLearningController extends ChangeNotifier {
   }
 
   /// Saves the chosen option, then moves on. A failed save restores the
-  /// previous answer and leaves the member on the same question.
+  /// previous answer and leaves the member on the same question. If the day
+  /// turned while answering, today's new set is loaded instead.
   Future<void> choose(String answerId) async {
     final question = current;
     if (question == null || _saving || _phase != LearningFlowPhase.question) {
@@ -179,45 +163,80 @@ class RelationshipLearningController extends ChangeNotifier {
     _saving = true;
     _notify();
 
-    final result = await _repository.saveAnswer(
+    final result = await _repository.saveDailyAnswer(
+      questionSetId: questionSetId,
       questionId: question.id,
+      questionVersion: question.version,
       answerId: answerId,
     );
     if (_disposed) {
       return;
     }
     _saving = false;
+    var stale = false;
     result.when(
       success: (saved) {
         _summary = saved.summary;
         _analytics.answered(
-          followUp: isFollowUp,
-          dimension: question.dimension,
+          questionSetId: questionSetId,
+          category: question.category,
           position: position + 1,
         );
-        if (saved.completedInitialNow) {
-          _completedInitialNow = true;
-          _analytics.initialCompleted();
-        }
-        if (saved.completedRoundNow) {
-          _analytics.followUpCompleted();
+        if (saved.completedTodayNow) {
+          _completedNow = true;
+          _analytics.completed(
+            questionSetId: questionSetId,
+            firstSet: saved.firstSetCompletedNow,
+          );
         }
         _advanceFrom(position);
       },
       err: (failure) {
         _replace(position, question.withAnswer(previous));
-        _actionError = failure.message.isEmpty ? '' : failure.message;
+        stale = failure.message == learningStaleSetReason;
+        _actionError = stale ? null : failure.message;
       },
     );
     _notify();
+    if (stale) {
+      await load();
+    }
+  }
+
+  /// "Bugünlük geç": puts today's set away until tomorrow. Resolves true
+  /// when the server recorded it.
+  Future<bool> skipToday() async {
+    if (!canSkip || _saving) {
+      return false;
+    }
+    _saving = true;
+    _notify();
+    final result = await _repository.skipToday();
+    if (_disposed) {
+      return false;
+    }
+    _saving = false;
+    var ok = false;
+    result.when(
+      success: (summary) {
+        ok = true;
+        _analytics.skipped(
+          questionSetId: questionSetId,
+          source: source,
+          answered: answeredCount,
+        );
+        _summary = summary;
+        _phase = LearningFlowPhase.skipped;
+      },
+      err: (failure) => _actionError = failure.message,
+    );
+    _notify();
+    return ok;
   }
 
   void _advanceFrom(int position) {
     final nextOpen = _questions.indexWhere((q) => !q.isAnswered);
-    final finished = isFollowUp
-        ? nextOpen < 0
-        : _summary.initialCompleted || nextOpen < 0;
-    if (finished) {
+    if (_summary.today.completed || nextOpen < 0) {
       _phase = LearningFlowPhase.done;
       return;
     }
@@ -240,13 +259,4 @@ class RelationshipLearningController extends ChangeNotifier {
     _disposed = true;
     super.dispose();
   }
-}
-
-/// Unawaited helper for fire-and-forget snoozes from cards.
-Future<void> snoozeFollowUpQuietly(
-  RelationshipLearningRepository repository,
-  RelationshipLearningAnalytics analytics,
-) async {
-  analytics.followUpSnoozed();
-  await repository.snoozeFollowUp();
 }

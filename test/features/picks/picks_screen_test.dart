@@ -78,7 +78,7 @@ void main() {
     late FakeMevoraPicksRepository repository;
     late MevoraPicksController controller;
     final learningOpens = <LearningSummary>[];
-    var snoozes = 0;
+    var skips = 0;
     final opened = <String>[];
 
     Future<void> pumpView(
@@ -97,7 +97,7 @@ void main() {
               controller: controller,
               onOpenProfile: (pick) => opened.add(pick.uid),
               onOpenLearning: learningOpens.add,
-              onSnoozeLearning: () => snoozes++,
+              onSkipLearningToday: (_) => skips++,
             ),
           ),
           textScale: textScale,
@@ -109,7 +109,7 @@ void main() {
 
     setUp(() {
       learningOpens.clear();
-      snoozes = 0;
+      skips = 0;
       opened.clear();
       repository = FakeMevoraPicksRepository(batchOf(_mixedBatch()));
       controller = MevoraPicksController(
@@ -197,18 +197,16 @@ void main() {
         emptyReason: 'learningRequired',
         learning: {
           'required': true,
-          'initialTotal': 15,
-          'initialAnswered': 8,
-          'initialCompleted': false,
           'blocksPicks': true,
+          'today': {'total': 10, 'answered': 4, 'canSkip': false},
         },
       );
       await pumpView(tester);
       expect(find.byKey(const Key('learningGate')), findsOneWidget);
       expect(find.text(_en.learningRequiredTitle), findsOneWidget);
-      expect(find.text(_en.learningProgress(8, 15)), findsOneWidget);
+      expect(find.text(_en.learningProgress(4, 10)), findsOneWidget);
       await tester.tap(find.byKey(const Key('learningGateButton')));
-      expect(learningOpens.single.initialAnswered, 8);
+      expect(learningOpens.single.today.answered, 4);
     });
 
     testWidgets('an existing member is invited, not blocked', (tester) async {
@@ -216,43 +214,52 @@ void main() {
         _mixedBatch(),
         learning: {
           'required': false,
-          'initialTotal': 15,
-          'initialAnswered': 0,
-          'initialCompleted': false,
+          'firstSetCompleted': true,
+          'today': {'total': 10, 'answered': 0},
         },
       );
       await pumpView(tester);
       expect(find.text('Zeynep, 25'), findsOneWidget);
       expect(find.byKey(const Key('learningPromptCard')), findsOneWidget);
-      expect(find.text(_en.learningCardInitialStart(15)), findsOneWidget);
-      // The initial invitation has no "Not now": it goes once they answer.
-      expect(find.byKey(const Key('learningNotNowButton')), findsNothing);
+      expect(find.text(_en.learningCardTodayStart(10)), findsOneWidget);
       await tester.tap(find.byKey(const Key('learningOpenButton')));
       expect(learningOpens, hasLength(1));
     });
 
-    testWidgets('a due follow-up round can be put off', (tester) async {
-      repository.batch = batchOf(
-        _mixedBatch(),
-        learning: {
-          'initialCompleted': true,
-          'progressiveDue': true,
-          'followUpSize': 3,
-        },
-      );
-      await pumpView(tester);
-      expect(find.text(_en.learningCardFollowUp(3)), findsOneWidget);
-      await tester.tap(find.byKey(const Key('learningNotNowButton')));
-      expect(snoozes, 1);
-    });
-
-    testWidgets('a finished member with nothing due sees no card', (
+    testWidgets("today's card resumes, and can be put away for today", (
       tester,
     ) async {
       repository.batch = batchOf(
         _mixedBatch(),
-        learning: {'initialCompleted': true, 'progressiveDue': false},
+        learning: {
+          'firstSetCompleted': true,
+          'today': {'total': 10, 'answered': 3},
+        },
       );
+      await pumpView(tester);
+      expect(find.text(_en.learningCardTodayResume(3, 10)), findsOneWidget);
+      await tester.tap(find.byKey(const Key('learningSkipTodayCardButton')));
+      expect(skips, 1);
+    });
+
+    testWidgets('a finished or skipped day shows no card', (tester) async {
+      for (final today in [
+        {'completed': true, 'answered': 10},
+        {'skipped': true},
+      ]) {
+        repository.batch = batchOf(
+          _mixedBatch(),
+          learning: {'firstSetCompleted': true, 'today': today},
+        );
+        await pumpView(tester);
+        expect(find.byKey(const Key('learningPromptCard')), findsNothing);
+      }
+    });
+
+    testWidgets('a response without a learning block shows no card', (
+      tester,
+    ) async {
+      repository.batch = batchOf(_mixedBatch());
       await pumpView(tester);
       expect(find.byKey(const Key('learningPromptCard')), findsNothing);
     });

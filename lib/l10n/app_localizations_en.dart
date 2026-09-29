@@ -148,21 +148,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Rather than show you random profiles, we\'ll look again tomorrow.';
 
   @override
-  String get learningCardTitle => 'Let Mevora get to know you';
+  String get learningCardTitle => 'Today\'s questions are ready';
 
   @override
-  String learningCardInitialStart(int total) {
-    return '$total short questions help us choose people who fit you.';
+  String learningCardTodayStart(int total) {
+    return 'Today\'s $total short questions help us choose people who fit you.';
   }
 
   @override
-  String learningCardInitialResume(int answered, int total) {
+  String learningCardTodayResume(int answered, int total) {
     return '$answered of $total answered. Pick up where you left off.';
-  }
-
-  @override
-  String learningCardFollowUp(int count) {
-    return '$count short questions to sharpen your Picks.';
   }
 
   @override
@@ -172,7 +167,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get learningCardResume => 'Continue';
 
   @override
-  String get learningCardNotNow => 'Not now';
+  String get learningSkipToday => 'Skip for today';
 
   @override
   String get learningRequiredTitle => 'First, let us get to know you';
@@ -183,11 +178,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get learningIntroTitle => 'Let Mevora get to know you';
+  String get learningIntroTitle =>
+      'Let Mevora get to know you a little more each day';
 
   @override
-  String get learningIntroBody =>
-      'We use your answers to choose people who fit you better.';
+  String learningIntroBody(int count) {
+    return 'Today\'s $count short questions help us choose people who fit you better.';
+  }
 
   @override
   String learningIntroMeta(int count) {
@@ -220,28 +217,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get learningLoadErrorTitle => 'We couldn\'t load the questions.';
 
   @override
-  String get learningDoneTitle => 'Thanks, we know you a little better now.';
+  String get learningDoneTitle => 'That\'s it for today.';
 
   @override
-  String get learningDoneBody =>
-      'From now on, the people we choose for you follow your answers.';
+  String get learningDoneBody => 'Mevora knows you a little better now.';
 
   @override
   String get learningDoneContinue => 'Continue';
 
   @override
-  String get learningFollowUpDoneTitle => 'Thank you!';
+  String get learningDoneTomorrow => 'New questions will be waiting tomorrow.';
 
   @override
-  String get learningFollowUpDoneBody =>
-      'Your answers will make your Picks fit you better.';
+  String get learningSkippedTitle => 'Okay, see you tomorrow.';
 
   @override
-  String get learningNothingTitle => 'No new questions for now';
-
-  @override
-  String get learningNothingBody =>
-      'When new questions are ready, you\'ll find them here.';
+  String get learningSkippedBody =>
+      'You can still answer today\'s questions from Let Mevora get to know me in your profile.';
 
   @override
   String get learningProfileTitle => 'Let Mevora get to know me';
@@ -255,7 +247,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get learningAfterHumorBody =>
-      'Now let\'s learn what matters to you in a relationship.';
+      'Now let\'s learn what matters to you in a relationship, with today\'s questions.';
 
   @override
   String get learningDashboardHeadline => 'How well does Mevora know you?';
@@ -270,24 +262,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your answers and your profile help us choose people who fit you.';
 
   @override
-  String learningDashboardResumeInitial(int answered, int total) {
-    return 'Continue where you left off ($answered/$total)';
-  }
-
-  @override
-  String learningDashboardContinue(int count) {
+  String learningDashboardThisMonth(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Continue with $count short questions',
-      one: 'Continue with 1 short question',
+      other: '$count questions answered this month',
+      one: '1 question answered this month',
+      zero: 'No questions answered this month yet',
     );
     return '$_temp0';
   }
 
   @override
-  String get learningDashboardAllAnswered =>
-      'You\'ve answered every question for now. New ones will appear here.';
+  String learningDashboardTotals(int total, int days) {
+    return '$total answers in total · $days days completed';
+  }
+
+  @override
+  String learningDashboardToday(int answered, int total) {
+    return 'Today\'s questions ($answered/$total)';
+  }
+
+  @override
+  String get learningDashboardTodayDone =>
+      'Done for today. New questions arrive tomorrow.';
 
   @override
   String get learningDashboardCategoriesTitle => 'Compatibility areas';

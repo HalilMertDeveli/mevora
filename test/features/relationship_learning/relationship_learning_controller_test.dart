@@ -5,70 +5,92 @@ import 'learning_fakes.dart';
 
 void main() {
   RelationshipLearningController controllerFor(
-    FakeRelationshipLearningRepository repository, {
-    LearningFlowMode mode = LearningFlowMode.initial,
-  }) {
-    final controller = RelationshipLearningController(
-      repository: repository,
-      mode: mode,
-    );
+    FakeRelationshipLearningRepository repository,
+  ) {
+    final controller = RelationshipLearningController(repository: repository);
     addTearDown(controller.dispose);
     return controller;
   }
 
-  group('initial questions', () {
-    test(
-      'a fresh member starts with the introduction, then question 1',
-      () async {
-        final repository = FakeRelationshipLearningRepository();
-        final c = controllerFor(repository);
-        await c.load();
-        expect(c.phase, LearningFlowPhase.intro);
-        expect(c.total, 15);
-        c.begin();
-        expect(c.phase, LearningFlowPhase.question);
-        expect(c.index, 0);
-      },
-    );
+  group("today's questions", () {
+    test('a fresh day starts with the introduction, then question 1', () async {
+      final repository = FakeRelationshipLearningRepository();
+      final c = controllerFor(repository);
+      await c.load();
+      expect(c.phase, LearningFlowPhase.intro);
+      expect(c.total, 10);
+      expect(c.questionSetId, 'daily-2026-09-29-s1');
+      c.begin();
+      expect(c.phase, LearningFlowPhase.question);
+      expect(c.index, 0);
+    });
 
-    test('a restart after question 8 resumes at question 9', () async {
-      final repository = FakeRelationshipLearningRepository(answered: 8);
+    test('a restart after question 4 resumes at question 5', () async {
+      final repository = FakeRelationshipLearningRepository(answered: 4);
       final c = controllerFor(repository);
       await c.load();
       expect(c.phase, LearningFlowPhase.question);
-      expect(c.index, 8);
-      expect(c.answeredCount, 8);
+      expect(c.index, 4);
+      expect(c.answeredCount, 4);
     });
 
-    test('each answer is saved at once and moves on', () async {
+    test('each answer is saved at once, with set and version', () async {
       final repository = FakeRelationshipLearningRepository();
-      final c = controllerFor(repository)..begin();
+      final c = controllerFor(repository);
       await c.load();
       c.begin();
       await c.choose('b');
-      expect(repository.saves, [('rl_q1', 'b')]);
+      expect(repository.saves, [
+        ('daily-2026-09-29-s1', 'relationship_q1_v1', 1, 'b'),
+      ]);
       expect(c.index, 1);
       expect(c.questions.first.answerId, 'b');
     });
 
-    test('completes once, after the last question', () async {
-      final repository = FakeRelationshipLearningRepository(answered: 14);
+    test('completes once, after the tenth question', () async {
+      final repository = FakeRelationshipLearningRepository(answered: 9);
       final c = controllerFor(repository);
       await c.load();
-      expect(c.index, 14);
+      expect(c.index, 9);
       await c.choose('a');
       expect(c.phase, LearningFlowPhase.done);
-      expect(c.completedInitialNow, isTrue);
+      expect(c.completedNow, isTrue);
       expect(repository.completions, 1);
     });
 
-    test('a member who already finished is not asked again', () async {
-      final repository = FakeRelationshipLearningRepository(answered: 15);
+    test('a finished day is not asked again', () async {
+      final repository = FakeRelationshipLearningRepository(answered: 10);
       final c = controllerFor(repository);
       await c.load();
       expect(c.phase, LearningFlowPhase.done);
+      expect(c.completedNow, isFalse);
       expect(repository.saves, isEmpty);
     });
+
+    test('the next day brings a fresh set', () async {
+      final repository = FakeRelationshipLearningRepository(answered: 10)
+        ..newDay('2026-09-30');
+      final c = controllerFor(repository);
+      await c.load();
+      expect(c.phase, LearningFlowPhase.intro);
+      expect(c.questionSetId, 'daily-2026-09-30-s1');
+      expect(c.questions.first.id, 'relationship_q101_v1');
+    });
+
+    test(
+      'an answer sent after midnight reloads today instead of failing',
+      () async {
+        final repository = FakeRelationshipLearningRepository(answered: 3);
+        final c = controllerFor(repository);
+        await c.load();
+        repository.newDay('2026-09-30');
+        await c.choose('a');
+        expect(c.takeActionError(), isNull, reason: 'no error snackbar');
+        expect(c.questionSetId, 'daily-2026-09-30-s1');
+        expect(c.phase, LearningFlowPhase.intro);
+        expect(repository.saves, isEmpty);
+      },
+    );
 
     test(
       'a failed save keeps the member on the question with their old answer',
@@ -93,7 +115,7 @@ void main() {
       final first = c.choose('a');
       final second = c.choose('b');
       await Future.wait([first, second]);
-      expect(repository.saves, [('rl_q1', 'a')]);
+      expect(repository.saves.map((s) => s.$4), ['a']);
     });
 
     test('previous and next move through answered questions only', () async {
@@ -120,9 +142,9 @@ void main() {
           ..back();
         expect(c.index, 3);
         await c.choose('c');
-        expect(repository.saves, [('rl_q4', 'c')]);
+        expect(repository.saves.single.$2, 'relationship_q4_v1');
         expect(c.index, 4, reason: 'steps forward through answered questions');
-        expect(repository.answeredInitial, 5);
+        expect(repository.answeredToday, 5);
       },
     );
 
@@ -137,57 +159,36 @@ void main() {
     });
   });
 
-  group('follow-up rounds', () {
-    test('walks the round and finishes it', () async {
+  group('Bugünlük geç', () {
+    test('an existing member can put today away', () async {
+      final repository = FakeRelationshipLearningRepository(answered: 2);
+      final c = controllerFor(repository);
+      await c.load();
+      expect(c.canSkip, isTrue);
+      expect(await c.skipToday(), isTrue);
+      expect(c.phase, LearningFlowPhase.skipped);
+      expect(repository.skips, 1);
+      expect(repository.answeredToday, 2, reason: 'answers so far are kept');
+    });
+
+    test("a new member's first set cannot be skipped", () async {
+      final repository = FakeRelationshipLearningRepository(required: true);
+      final c = controllerFor(repository);
+      await c.load();
+      expect(c.canSkip, isFalse);
+      expect(await c.skipToday(), isFalse);
+      expect(repository.skips, 0);
+      expect(c.phase, LearningFlowPhase.intro);
+    });
+
+    test('after the first set, the next day can be skipped', () async {
       final repository = FakeRelationshipLearningRepository(
-        answered: 15,
-        followUp: [
-          learningQuestion(21, dimension: 'humor'),
-          learningQuestion(22, dimension: 'music'),
-          learningQuestion(23, dimension: 'values'),
-        ],
-      );
-      final c = controllerFor(repository, mode: LearningFlowMode.followUp);
+        required: true,
+        answered: 10,
+      )..newDay('2026-09-30');
+      final c = controllerFor(repository);
       await c.load();
-      expect(
-        c.phase,
-        LearningFlowPhase.question,
-        reason: 'no intro for a round',
-      );
-      expect(c.total, 3);
-      for (var i = 0; i < 3; i++) {
-        await c.choose('a');
-      }
-      expect(c.phase, LearningFlowPhase.done);
-      expect(repository.saves.map((s) => s.$1), ['rl_q21', 'rl_q22', 'rl_q23']);
-    });
-
-    test('says so when there is nothing new to ask', () async {
-      final repository = FakeRelationshipLearningRepository(answered: 15);
-      final c = controllerFor(repository, mode: LearningFlowMode.followUp);
-      await c.load();
-      expect(c.phase, LearningFlowPhase.nothingToAsk);
-    });
-
-    test('auto picks the initial set while unfinished, else a round', () async {
-      final unfinished = controllerFor(
-        FakeRelationshipLearningRepository(answered: 2),
-        mode: LearningFlowMode.auto,
-      );
-      await unfinished.load();
-      expect(unfinished.mode, LearningFlowMode.initial);
-      expect(unfinished.index, 2);
-
-      final finished = controllerFor(
-        FakeRelationshipLearningRepository(
-          answered: 15,
-          followUp: [learningQuestion(30)],
-        ),
-        mode: LearningFlowMode.auto,
-      );
-      await finished.load();
-      expect(finished.mode, LearningFlowMode.followUp);
-      expect(finished.total, 1);
+      expect(c.canSkip, isTrue);
     });
   });
 }

@@ -57,9 +57,10 @@ export {
 } from "./personalization/functions.js";
 export {
   getRelationshipLearningState,
-  saveRelationshipLearningAnswer,
-  snoozeRelationshipLearningPrompt,
+  saveDailyRelationshipAnswer,
   skipOnboardingHumor,
+  skipTodayRelationshipQuestions,
+  updateRelationshipAnswer,
 } from "./relationshipLearning/functions.js";
 
 // Automation job processors. `deleteUserAccount` enqueues an

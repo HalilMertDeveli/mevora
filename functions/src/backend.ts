@@ -408,6 +408,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     personalization,
     dailyStreak,
     relationshipLearning,
+    relationshipDaily,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -431,6 +432,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     db.doc(`users/${uid}/personalization/profile`).get(),
     db.doc(dailyStreakDocPath(uid)).get(),
     db.doc(`users/${uid}/relationshipLearning/state`).get(),
+    db.collection(`users/${uid}/relationshipDaily`).limit(400).get(),
   ]);
 
   // Never include exact GPS, Spotify secrets, private keys, or message ciphertext bodies.
@@ -457,6 +459,8 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     dailyStreak: streakExportView(dailyStreak.data()),
     // The member's own Relationship Learning answers and progress.
     relationshipLearning: relationshipLearning.data() ?? null,
+    // One record per daily question set they completed.
+    relationshipDailyCompletions: relationshipDaily.docs.map((d) => ({id: d.id, ...d.data()})),
     location: loc
       ? {
         present: true,

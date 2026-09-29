@@ -588,6 +588,13 @@ service cloud.firestore {
         allow create, update, delete: if false;
       }
 
+      // One record per completed daily question set; written only by
+      // saveDailyRelationshipAnswer.
+      match /relationshipDaily/{dateKey} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
       match /verification/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
@@ -925,6 +932,14 @@ service cloud.firestore {
     // Peers never read raw humor vectors.
     match /humorContent/{contentId} {
       allow read: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    // The global daily relationship question set: question ids, versions and
+    // order only — the same for every member that day. Created by the
+    // relationship-learning callables; no client ever writes it.
+    match /relationshipDailySets/{dateKey} {
+      allow read: if isAuthenticated();
       allow create, update, delete: if false;
     }
 

@@ -8317,6 +8317,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Languages'**
   String get sharedTraitLanguages;
+
+  /// No description provided for @humorDailyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Humor Round 🎭'**
+  String get humorDailyTitle;
+
+  /// No description provided for @humorDailyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day, a few short videos help us get to know you a little better.'**
+  String get humorDailyBody;
+
+  /// No description provided for @humorDailySecondary.
+  ///
+  /// In en, this message translates to:
+  /// **'The more we learn what makes you laugh, the better Mevora knows you.'**
+  String get humorDailySecondary;
+
+  /// No description provided for @humorDailyMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} short videos'**
+  String humorDailyMeta(int count);
+
+  /// No description provided for @humorDailyStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get humorDailyStart;
+
+  /// No description provided for @humorDailyResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue · {answered}/{total}'**
+  String humorDailyResume(int answered, int total);
+
+  /// No description provided for @humorDailyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done for today ✓'**
+  String get humorDailyDone;
+
+  /// No description provided for @humorDailyLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get humorDailyLater;
+
+  /// No description provided for @humorDailyStartsTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Your daily humor round starts tomorrow.'**
+  String get humorDailyStartsTomorrow;
+
+  /// No description provided for @humorDailyProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{position}/{total}'**
+  String humorDailyProgress(int position, int total);
+
+  /// No description provided for @humorDailyHintStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s humor round has begun.'**
+  String get humorDailyHintStart;
+
+  /// No description provided for @humorDailyHintMiddle.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting to know you a little more 👀'**
+  String get humorDailyHintMiddle;
+
+  /// No description provided for @humorDailyHintEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Just a few more videos.'**
+  String get humorDailyHintEnd;
+
+  /// No description provided for @humorDailyCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All done for today 🎭'**
+  String get humorDailyCompletedTitle;
+
+  /// No description provided for @humorDailyCompletedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile just got a little clearer.'**
+  String get humorDailyCompletedBody;
+
+  /// No description provided for @humorDailyNotReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s round is being prepared'**
+  String get humorDailyNotReadyTitle;
+
+  /// No description provided for @humorDailyNotReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back a little later.'**
+  String get humorDailyNotReadyBody;
+
+  /// No description provided for @humorDailyLockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The daily humor round begins once your humor profile is ready.'**
+  String get humorDailyLockedBody;
 }
 
 class _AppLocalizationsDelegate

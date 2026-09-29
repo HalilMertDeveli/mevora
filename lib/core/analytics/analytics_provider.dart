@@ -133,6 +133,15 @@ abstract final class AnalyticsEvents {
   static const String humorCompatibilityViewed = 'humor_compatibility_viewed';
   static const String humorChatStarterShown = 'humor_chat_starter_shown';
   static const String humorChatStarterUsed = 'humor_chat_starter_used';
+  // Daily humor tour. Positions and counts only — never ratings, content ids,
+  // URLs or any list of them.
+  static const String dailyHumorImpression = 'daily_humor_impression';
+  static const String dailyHumorStarted = 'daily_humor_started';
+  static const String dailyHumorDeferred = 'daily_humor_deferred';
+  static const String dailyHumorProgress = 'daily_humor_progress';
+  static const String dailyHumorCompleted = 'daily_humor_completed';
+  static const String dailyHumorResume = 'daily_humor_resume';
+  static const String dailyHumorPlaybackFailed = 'daily_humor_playback_failed';
 }
 
 abstract class AnalyticsProvider {

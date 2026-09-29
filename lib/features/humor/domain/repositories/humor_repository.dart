@@ -1,6 +1,7 @@
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
+import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 
@@ -48,5 +49,26 @@ abstract class HumorRepository {
     required String contentId,
     String reason = 'other',
     String details = '',
+  });
+
+  /// Today's "Bugünün Mizah Turu": ready, locked or not ready yet.
+  Future<Result<HumorDailySet>> getDailySet();
+
+  /// Rate one daily slot. A refusal because the day, slot or eligibility
+  /// changed arrives as [HumorDailyStale] (reload the set); a network or
+  /// other error as an `Err` (keep the item, allow a retry).
+  Future<Result<HumorDailySubmitOutcome>> submitDailyResponse({
+    required String dayId,
+    required String contentId,
+    required HumorRating rating,
+    int dwellMs = 0,
+    int replayCount = 0,
+  });
+
+  /// Pass one daily slot whose media could not be played (`media_failed`).
+  /// Same outcomes as [submitDailyResponse].
+  Future<Result<HumorDailySubmitOutcome>> skipDailyItem({
+    required String dayId,
+    required String contentId,
   });
 }

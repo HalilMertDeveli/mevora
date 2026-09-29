@@ -84,8 +84,29 @@ abstract final class OnboardingLabels {
       OnboardingLifestyleOption.dog => l10n.onboardingLifestyleDog,
       OnboardingLifestyleOption.both => l10n.onboardingLifestyleBoth,
       OnboardingLifestyleOption.other => l10n.onboardingLifestyleOther,
+      OnboardingLifestyleOption.vapeOnly => l10n.onboardingSmokingVapeOnly,
+      OnboardingLifestyleOption.quitting => l10n.onboardingSmokingQuitting,
+      OnboardingLifestyleOption.athlete => l10n.onboardingExerciseAthlete,
+      OnboardingLifestyleOption.bird => l10n.onboardingLifestyleBird,
+      OnboardingLifestyleOption.fish => l10n.onboardingLifestyleFish,
+      OnboardingLifestyleOption.wantPet => l10n.onboardingPetsWant,
+      OnboardingLifestyleOption.allergic => l10n.onboardingPetsAllergic,
       OnboardingLifestyleOption.preferNotToSay =>
         l10n.onboardingEducationPreferNotToSay,
+      _ => value ?? '—',
+    };
+  }
+
+  static String diet(AppLocalizations l10n, String? value) {
+    return switch (value) {
+      DietPreference.omnivore => l10n.dietOmnivore,
+      DietPreference.vegetarian => l10n.dietVegetarian,
+      DietPreference.vegan => l10n.dietVegan,
+      DietPreference.pescatarian => l10n.dietPescatarian,
+      DietPreference.halal => l10n.dietHalal,
+      DietPreference.glutenFree => l10n.dietGlutenFree,
+      DietPreference.other => l10n.onboardingLifestyleOther,
+      DietPreference.preferNotToSay => l10n.onboardingEducationPreferNotToSay,
       _ => value ?? '—',
     };
   }
@@ -102,6 +123,7 @@ abstract final class OnboardingLabels {
       OnboardingLifestyleOption.alcoholSpecialOccasion =>
         l10n.onboardingAlcoholSpecialOccasion,
       OnboardingLifestyleOption.daily => l10n.onboardingAlcoholFrequently,
+      OnboardingLifestyleOption.sober => l10n.onboardingAlcoholSober,
       // Backward compatibility: legacy value that previously existed for drinking.
       OnboardingLifestyleOption.preferNotToSay =>
         l10n.onboardingEducationPreferNotToSay,

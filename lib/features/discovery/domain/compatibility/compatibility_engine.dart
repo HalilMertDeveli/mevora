@@ -102,9 +102,12 @@ abstract final class CompatibilityScoring {
 
   static int? habitLevel(String? value) {
     return switch (value) {
-      OnboardingLifestyleOption.never => 0,
-      OnboardingLifestyleOption.sometimes => 1,
-      OnboardingLifestyleOption.regularly => 2,
+      OnboardingLifestyleOption.never || OnboardingLifestyleOption.sober => 0,
+      OnboardingLifestyleOption.sometimes ||
+      OnboardingLifestyleOption.quitting ||
+      OnboardingLifestyleOption.alcoholSpecialOccasion => 1,
+      OnboardingLifestyleOption.regularly ||
+      OnboardingLifestyleOption.vapeOnly => 2,
       OnboardingLifestyleOption.daily => 3,
       _ => null,
     };

@@ -21,6 +21,7 @@ import 'package:mevora/features/profile/presentation/widgets/profile_language_pi
 import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_gender_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_interest_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_extended_lifestyle_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_lifestyle_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_relationship_goal_picker.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -149,6 +150,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       OnboardingStep.education => _educationStep(l10n),
       OnboardingStep.relationshipGoal => _relationshipStep(l10n),
       OnboardingStep.lifestyle => _lifestyleStep(l10n),
+      OnboardingStep.aboutYou => _aboutYouStep(l10n),
       OnboardingStep.bio => _bioStep(l10n),
       OnboardingStep.photos => _photosStep(l10n),
       OnboardingStep.music => _musicStep(l10n),
@@ -359,6 +361,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
       onContinue: () => unawaited(_continue()),
       scrollable: true,
       child: ProfileLifestylePicker(
+        profile: lifestyle,
+        onChanged: (next) => _controller.updateDraft(
+          (current) => current.copyWith(lifestyleProfile: next),
+        ),
+        enabled: !_controller.isSaving,
+      ),
+    );
+  }
+
+  /// Optional: the same questions as Edit profile's "Get to know you".
+  Widget _aboutYouStep(AppLocalizations l10n) {
+    final lifestyle = _controller.profile!.lifestyleProfile;
+    return OnboardingStepScaffold(
+      step: OnboardingStep.aboutYou,
+      title: l10n.profileEditSectionExtended,
+      subtitle: l10n.onboardingAboutYouSubtitle,
+      isSaving: _controller.isSaving,
+      errorMessage: _controller.errorMessage,
+      onBack: _controller.goBack,
+      onContinue: () => unawaited(_continue()),
+      scrollable: true,
+      child: ProfileExtendedLifestylePicker(
         profile: lifestyle,
         onChanged: (next) => _controller.updateDraft(
           (current) => current.copyWith(lifestyleProfile: next),

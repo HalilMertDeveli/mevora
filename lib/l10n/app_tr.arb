@@ -1882,5 +1882,21 @@
   "streakRestartedBody": "Bugün yeniden 1. gündesin. En uzun serin kayıtlı kalıyor.",
   "streakPersonalBest": "Yeni kişisel rekor",
   "streakMilestone": "Dönüm noktası",
-  "streakCelebrationDismiss": "Devam et"
+  "streakCelebrationDismiss": "Devam et",
+  "onboardingSmokingVapeOnly": "Sadece elektronik sigara",
+  "onboardingSmokingQuitting": "Bırakmaya çalışıyorum",
+  "onboardingAlcoholSober": "Alkolü bıraktım",
+  "onboardingExerciseAthlete": "Çok aktif / sporcu",
+  "onboardingLifestyleBird": "Kuş",
+  "onboardingLifestyleFish": "Balık",
+  "onboardingPetsWant": "Yok ama istiyorum",
+  "onboardingPetsAllergic": "Alerjim var",
+  "onboardingDiet": "Beslenme",
+  "dietOmnivore": "Her şeyi yerim",
+  "dietVegetarian": "Vejetaryen",
+  "dietVegan": "Vegan",
+  "dietPescatarian": "Pesketaryen",
+  "dietHalal": "Helal",
+  "dietGlutenFree": "Glütensiz",
+  "onboardingAboutYouSubtitle": "İsteğe bağlı. İstediklerini cevapla; sana seçtiklerimizi daha isabetli yapar."
 }

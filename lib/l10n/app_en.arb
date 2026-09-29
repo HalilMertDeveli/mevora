@@ -2123,5 +2123,21 @@
   "streakRestartedBody": "Today is day 1 again. Your longest streak is still on record.",
   "streakPersonalBest": "New personal best",
   "streakMilestone": "Milestone",
-  "streakCelebrationDismiss": "Continue"
+  "streakCelebrationDismiss": "Continue",
+  "onboardingSmokingVapeOnly": "Only e-cigarettes",
+  "onboardingSmokingQuitting": "Trying to quit",
+  "onboardingAlcoholSober": "I quit drinking",
+  "onboardingExerciseAthlete": "Very active / athlete",
+  "onboardingLifestyleBird": "Bird",
+  "onboardingLifestyleFish": "Fish",
+  "onboardingPetsWant": "None yet, but I'd like one",
+  "onboardingPetsAllergic": "I'm allergic",
+  "onboardingDiet": "Diet",
+  "dietOmnivore": "I eat everything",
+  "dietVegetarian": "Vegetarian",
+  "dietVegan": "Vegan",
+  "dietPescatarian": "Pescatarian",
+  "dietHalal": "Halal",
+  "dietGlutenFree": "Gluten-free",
+  "onboardingAboutYouSubtitle": "Optional. Answer what you like; it sharpens who we pick for you."
 }

@@ -224,6 +224,7 @@ class _LoginPageState extends State<LoginPage>
                   ),
                   EmulatorQaLoginPanel(
                     enabled: !auth.isBusy,
+                    onSignInStarted: auth.beginExternalSignIn,
                     onUseAccount: (email, password) {
                       setState(() {
                         _showEmailForm = true;

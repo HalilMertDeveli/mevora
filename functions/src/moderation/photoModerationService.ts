@@ -30,12 +30,18 @@ function photosFrom(data: Record<string, unknown> | undefined): PhotoRecord[] {
 
 /**
  * profiles/{uid}.photos is an array of maps, and Firestore rejects a FieldValue
- * sentinel anywhere inside an array element. Resolve moderation timestamps to a
- * concrete server-clock Timestamp before they go into the array. The
- * document-level updatedAt is not inside an array and keeps its sentinel.
+ * sentinel anywhere inside an array element. Resolve every timestamp in the
+ * patch (moderatedAt, lastProcessingAttempt) to a concrete server-clock
+ * Timestamp before it goes into the array. The document-level updatedAt is not
+ * inside an array and keeps its sentinel.
  */
-function arraySafeModeratedAt(value: unknown): unknown {
-  return value instanceof FieldValue ? Timestamp.now() : value;
+function arraySafePatch(patch: Partial<PhotoRecord>): Partial<PhotoRecord> {
+  return Object.fromEntries(
+    Object.entries(patch).map(([key, value]) => [
+      key,
+      value instanceof FieldValue ? Timestamp.now() : value,
+    ]),
+  ) as Partial<PhotoRecord>;
 }
 
 /**
@@ -51,10 +57,7 @@ export function buildModeratedPhotos(
   const base: PhotoRecord = index >= 0
     ? existing[index]
     : {id: imageId, order: existing.length, isPrimary: existing.length === 0};
-  const nextPhoto: PhotoRecord = {...base, ...patch};
-  if (patch.moderatedAt !== undefined) {
-    nextPhoto.moderatedAt = arraySafeModeratedAt(patch.moderatedAt);
-  }
+  const nextPhoto: PhotoRecord = {...base, ...arraySafePatch(patch)};
   return index >= 0
     ? existing.map((photo, photoIndex) => (photoIndex === index ? nextPhoto : photo))
     : [...existing, nextPhoto];

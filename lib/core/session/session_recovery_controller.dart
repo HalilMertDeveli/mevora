@@ -105,11 +105,31 @@ class SessionRecoveryController with WidgetsBindingObserver {
         try {
           await user.getIdToken(true);
         } on Object catch (error, stackTrace) {
-          _logger?.warning(
-            'Auth token refresh failed on $reason',
-            error: error,
-            stackTrace: stackTrace,
-          );
+          if (isSessionRevoked(error)) {
+            // The account was deleted or disabled, or its refresh token was
+            // revoked. The cached user is dead: every later call fails while
+            // the UI waits, so sign out and let routing return to login.
+            _logger?.warning(
+              'Auth session revoked on $reason; signing out',
+              error: error,
+              stackTrace: stackTrace,
+            );
+            try {
+              await auth!.signOut();
+            } on Object catch (signOutError, signOutStack) {
+              _logger?.warning(
+                'Sign-out after revoked session failed',
+                error: signOutError,
+                stackTrace: signOutStack,
+              );
+            }
+          } else {
+            _logger?.warning(
+              'Auth token refresh failed on $reason',
+              error: error,
+              stackTrace: stackTrace,
+            );
+          }
         }
       }
       final firestore = _resolvedFirestore;
@@ -131,6 +151,34 @@ class SessionRecoveryController with WidgetsBindingObserver {
     } finally {
       _recovering = false;
     }
+  }
+
+  /// Whether a token refresh failed because the session can never recover,
+  /// as opposed to a transient failure such as no network.
+  ///
+  /// Android reports a revoked refresh token as `unknown` with the backend
+  /// code only in the message, so both the code and the message are checked.
+  static bool isSessionRevoked(Object error) {
+    const revokedCodes = {
+      'user-token-expired',
+      'user-not-found',
+      'user-disabled',
+      'invalid-user-token',
+    };
+    const revokedBackendCodes = [
+      'INVALID_REFRESH_TOKEN',
+      'TOKEN_EXPIRED',
+      'USER_NOT_FOUND',
+      'USER_DISABLED',
+    ];
+    if (error is! FirebaseAuthException) {
+      return false;
+    }
+    if (revokedCodes.contains(error.code)) {
+      return true;
+    }
+    final message = error.message ?? '';
+    return revokedBackendCodes.any(message.contains);
   }
 
   void dispose() {

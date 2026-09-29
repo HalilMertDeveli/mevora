@@ -152,9 +152,10 @@ class _PublicMusicSelectionPageState extends State<PublicMusicSelectionPage> {
               ),
             if (widget.onSkip != null) ...[
               const SizedBox(height: AppSpacing.xs),
-              TextButton(
+              MevoraButton(
+                label: widget.skipLabel ?? l10n.onboardingMusicSkip,
+                variant: MevoraButtonVariant.ghost,
                 onPressed: state.isSaving ? null : widget.onSkip,
-                child: Text(widget.skipLabel ?? l10n.onboardingMusicSkip),
               ),
             ],
           ],

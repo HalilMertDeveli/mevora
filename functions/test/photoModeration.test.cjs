@@ -111,6 +111,23 @@ describe("photos array write shape", () => {
     assert.equal(photos[2].id, "p2");
   });
 
+  // The upload trigger's first write marks the photo "processing" with
+  // lastProcessingAttempt: serverTimestamp(). That sentinel was not resolved,
+  // so every upload of a photo already listed in profiles.photos crashed the
+  // trigger and left the photo stuck in "processing" — and completeOnboarding
+  // then refused the profile with photos-required.
+  it("the processing mark survives write validation", () => {
+    const photos = buildModeratedPhotos(existing, "p0", {
+      moderationStatus: "processing",
+      processingAttempts: 1,
+      lastProcessingAttempt: FieldValue.serverTimestamp(),
+      processingError: null,
+    });
+    assertWritable(photos);
+    assert.equal(photos[0].moderationStatus, "processing");
+    assert.ok(!(photos[0].lastProcessingAttempt instanceof FieldValue));
+  });
+
   it("a concrete moderatedAt is passed through untouched", () => {
     const when = new Date(Date.UTC(2026, 8, 23));
     const photos = buildModeratedPhotos(existing, "p0", {moderatedAt: when});

@@ -172,6 +172,19 @@ class _PicksViewState extends State<PicksView> {
                 children: [
                   Expanded(child: _empty(context, batch)),
                   ?card,
+                  // An empty day is exactly when there is time for the
+                  // footer (Humor Lab and the daily humor tour), so it stays
+                  // reachable here as it does under a full list.
+                  if (widget.footer != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.screenPadding,
+                        0,
+                        AppSpacing.screenPadding,
+                        AppSpacing.md,
+                      ),
+                      child: widget.footer,
+                    ),
                 ],
               ),
             )

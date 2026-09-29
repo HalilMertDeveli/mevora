@@ -85,6 +85,7 @@ void main() {
       WidgetTester tester, {
       double textScale = 1.0,
       Size size = const Size(390, 844),
+      Widget? footer,
     }) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
@@ -98,6 +99,7 @@ void main() {
               onOpenProfile: (pick) => opened.add(pick.uid),
               onOpenLearning: learningOpens.add,
               onSnoozeLearning: () => snoozes++,
+              footer: footer,
             ),
           ),
           textScale: textScale,
@@ -186,6 +188,47 @@ void main() {
       // No button to reach more people until tomorrow.
       expect(find.byType(ElevatedButton), findsNothing);
       expect(find.byType(FilledButton), findsNothing);
+    });
+
+    testWidgets('an empty day keeps the footer (Humor Lab, daily tour) reachable', (
+      tester,
+    ) async {
+      repository.batch = batchOf(
+        const [],
+        status: 'empty',
+        emptyReason: 'allDecided',
+      );
+      await pumpView(tester, footer: const Text('humor-footer'));
+      expect(find.byKey(const Key('picksExhausted')), findsOneWidget);
+      expect(find.text('humor-footer'), findsOneWidget);
+    });
+
+    testWidgets('an empty day with a tall footer does not overflow a small phone', (
+      tester,
+    ) async {
+      repository.batch = batchOf(
+        const [],
+        status: 'empty',
+        emptyReason: 'noCandidates',
+        learning: {'initialCompleted': true, 'progressiveDue': true, 'dueCount': 3},
+      );
+      await pumpView(
+        tester,
+        size: const Size(320, 568),
+        textScale: 1.6,
+        footer: const SizedBox(height: 420, child: Text('humor-footer')),
+      );
+      expect(tester.takeException(), isNull);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -2000));
+      await tester.pumpAndSettle();
+      expect(find.text('humor-footer'), findsOneWidget);
+    });
+
+    testWidgets('a full day keeps the footer under the list', (tester) async {
+      await pumpView(tester, footer: const Text('humor-footer'));
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      expect(find.text('humor-footer'), findsOneWidget);
     });
 
     testWidgets('a new member sees the questions before their first Picks', (

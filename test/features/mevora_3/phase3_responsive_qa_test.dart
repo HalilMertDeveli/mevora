@@ -8,8 +8,6 @@ import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/presentation/widgets/likes_you_insight_card.dart';
 import 'package:mevora/features/matching/presentation/widgets/match_connection_tile.dart';
-import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
-import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_match_celebration.dart';
 
@@ -192,26 +190,4 @@ void main() {
     });
   });
 
-  group('Phase 3 — relationship question card', () {
-    testWidgets('question 360x640', (tester) async {
-      addTearDown(() => _resetViewport(tester));
-      await _configureViewport(tester, _devices.first);
-      final question = RelationshipQuestionCatalog.questions.first;
-      await tester.pumpWidget(
-        _withScale(
-          Scaffold(
-            body: RelationshipQuestionCard(
-              question: question,
-              answeredCount: 1,
-              totalCount: 3,
-              onAnswer: (_) {},
-            ),
-          ),
-          1.0,
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    });
-  });
 }

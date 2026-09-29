@@ -114,6 +114,33 @@ void main() {
     auth.dispose();
   });
 
+  testWidgets('otp screen counts down from 120 s before offering resend', (
+    tester,
+  ) async {
+    final auth = AuthController(
+      authRepository: FakeAuthRepository(sendResult: const Success(challenge)),
+      userDocumentRepository: FakeUserDocumentRepository(),
+      logger: const AppLogger(environment: AppEnvironment.development),
+    );
+    auth.phoneAuth.updateNationalNumber('5551112233');
+    await auth.phoneAuth.sendCode();
+
+    await tester.pumpWidget(_harness(auth, const OtpVerificationScreen()));
+    await tester.pump();
+
+    expect(find.text(_l10n.resendCountdown(120)), findsOneWidget);
+    expect(find.text(_l10n.resend), findsNothing);
+
+    await tester.pump(const Duration(seconds: 119));
+    expect(find.text(_l10n.resendCountdown(1)), findsOneWidget);
+    expect(find.text(_l10n.resend), findsNothing);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.textContaining('saniye sonra'), findsNothing);
+    expect(find.text(_l10n.resend), findsOneWidget);
+    auth.dispose();
+  });
+
   testWidgets('invalid phone shows a Turkish error, never firebase codes', (
     tester,
   ) async {

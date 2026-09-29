@@ -13,6 +13,7 @@ import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
 import 'package:mevora/features/picks/presentation/controllers/mevora_picks_controller.dart';
 import 'package:mevora/features/picks/presentation/widgets/picks_view.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/relationship_learning/domain/entities/relationship_learning.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 import 'picks_fixtures.dart';
@@ -76,7 +77,8 @@ void main() {
   group('PicksView', () {
     late FakeMevoraPicksRepository repository;
     late MevoraPicksController controller;
-    var discoverMoreTaps = 0;
+    final learningOpens = <LearningSummary>[];
+    var snoozes = 0;
     final opened = <String>[];
 
     Future<void> pumpView(
@@ -94,7 +96,8 @@ void main() {
             body: PicksView(
               controller: controller,
               onOpenProfile: (pick) => opened.add(pick.uid),
-              onDiscoverMore: () => discoverMoreTaps++,
+              onOpenLearning: learningOpens.add,
+              onSnoozeLearning: () => snoozes++,
             ),
           ),
           textScale: textScale,
@@ -105,7 +108,8 @@ void main() {
     }
 
     setUp(() {
-      discoverMoreTaps = 0;
+      learningOpens.clear();
+      snoozes = 0;
       opened.clear();
       repository = FakeMevoraPicksRepository(batchOf(_mixedBatch()));
       controller = MevoraPicksController(
@@ -161,14 +165,96 @@ void main() {
       expect(find.text(_en.picksIntroCount(2)), findsOneWidget);
     });
 
-    testWidgets('Discover More stays one tap away', (tester) async {
+    testWidgets('offers no endless deck under today\'s set', (tester) async {
       await pumpView(tester);
-      await tester.scrollUntilVisible(
-        find.text(_en.picksDiscoverMoreHint),
-        300,
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Discover more'), findsNothing);
+      expect(find.byKey(const Key('learningPromptCard')), findsNothing);
+    });
+
+    testWidgets('seeing every Pick ends the day intentionally', (tester) async {
+      repository.batch = batchOf(
+        const [],
+        status: 'empty',
+        emptyReason: 'allDecided',
       );
-      await tester.tap(find.text(_en.picksDiscoverMoreHint));
-      expect(discoverMoreTaps, 1);
+      await pumpView(tester);
+      expect(find.byKey(const Key('picksExhausted')), findsOneWidget);
+      expect(find.text(_en.picksEmptyDoneTitle), findsOneWidget);
+      expect(find.text(_en.picksEmptyDoneMessage), findsOneWidget);
+      // No button to reach more people until tomorrow.
+      expect(find.byType(ElevatedButton), findsNothing);
+      expect(find.byType(FilledButton), findsNothing);
+    });
+
+    testWidgets('a new member sees the questions before their first Picks', (
+      tester,
+    ) async {
+      repository.batch = batchOf(
+        const [],
+        status: 'empty',
+        emptyReason: 'learningRequired',
+        learning: {
+          'required': true,
+          'initialTotal': 15,
+          'initialAnswered': 8,
+          'initialCompleted': false,
+          'blocksPicks': true,
+        },
+      );
+      await pumpView(tester);
+      expect(find.byKey(const Key('learningGate')), findsOneWidget);
+      expect(find.text(_en.learningRequiredTitle), findsOneWidget);
+      expect(find.text(_en.learningProgress(8, 15)), findsOneWidget);
+      await tester.tap(find.byKey(const Key('learningGateButton')));
+      expect(learningOpens.single.initialAnswered, 8);
+    });
+
+    testWidgets('an existing member is invited, not blocked', (tester) async {
+      repository.batch = batchOf(
+        _mixedBatch(),
+        learning: {
+          'required': false,
+          'initialTotal': 15,
+          'initialAnswered': 0,
+          'initialCompleted': false,
+        },
+      );
+      await pumpView(tester);
+      expect(find.text('Zeynep, 25'), findsOneWidget);
+      expect(find.byKey(const Key('learningPromptCard')), findsOneWidget);
+      expect(find.text(_en.learningCardInitialStart(15)), findsOneWidget);
+      // The initial invitation has no "Not now": it goes once they answer.
+      expect(find.byKey(const Key('learningNotNowButton')), findsNothing);
+      await tester.tap(find.byKey(const Key('learningOpenButton')));
+      expect(learningOpens, hasLength(1));
+    });
+
+    testWidgets('a due follow-up round can be put off', (tester) async {
+      repository.batch = batchOf(
+        _mixedBatch(),
+        learning: {
+          'initialCompleted': true,
+          'progressiveDue': true,
+          'followUpSize': 3,
+        },
+      );
+      await pumpView(tester);
+      expect(find.text(_en.learningCardFollowUp(3)), findsOneWidget);
+      await tester.tap(find.byKey(const Key('learningNotNowButton')));
+      expect(snoozes, 1);
+    });
+
+    testWidgets('a finished member with nothing due sees no card', (
+      tester,
+    ) async {
+      repository.batch = batchOf(
+        _mixedBatch(),
+        learning: {'initialCompleted': true, 'progressiveDue': false},
+      );
+      await pumpView(tester);
+      expect(find.byKey(const Key('learningPromptCard')), findsNothing);
     });
 
     testWidgets('low supply says so instead of padding the list', (
@@ -189,9 +275,7 @@ void main() {
       );
       await pumpView(tester);
       expect(find.text(_en.picksEmptyPreparingTitle), findsOneWidget);
-      expect(find.text(_en.picksEmptyPreparingMessage), findsOneWidget);
-      await tester.tap(find.text(_en.picksDiscoverMore));
-      expect(discoverMoreTaps, 1);
+      expect(find.text(_en.picksEmptyNoCandidatesMessage), findsOneWidget);
     });
 
     testWidgets('long names and large text do not overflow on a small phone', (
@@ -213,9 +297,9 @@ void main() {
     });
   });
 
-  group('Discover tab modes', () {
+  group('Discover tab', () {
     testWidgets(
-      'opens on Picks; Discover More is a mode with its own way back',
+      'Picks are the whole tab; no deck is fetched behind them',
       (tester) async {
         final discovery = DiscoveryController(
           uid: 'viewer',
@@ -250,19 +334,13 @@ void main() {
         // The deck has not been fetched behind Picks.
         expect(discovery.state.candidates, isEmpty);
 
-        await tester.scrollUntilVisible(
-          find.text(_en.picksDiscoverMoreHint),
-          300,
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -3000),
         );
-        await tester.tap(find.text(_en.picksDiscoverMoreHint));
         await tester.pumpAndSettle();
-        expect(find.text(_en.discoverMoreSubtitle), findsOneWidget);
-        expect(find.text('Ada, 27'), findsOneWidget);
-
-        await tester.tap(find.byTooltip(_en.picksBackToPicks));
-        await tester.pumpAndSettle();
-        expect(find.text(_en.picksTitle), findsOneWidget);
-        expect(find.text('Zeynep, 25'), findsOneWidget);
+        expect(find.text('Ada, 27'), findsNothing);
+        expect(discovery.state.candidates, isEmpty);
       },
     );
 

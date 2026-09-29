@@ -43,6 +43,12 @@ export interface PersonalizationProfile {
   eventCount: number;
   /** When evidence was last decayed/updated. Null for a profile never updated. */
   updatedAtMs: number | null;
+  /** Different people strong outcomes came from (see LEARNING.minDistinctPartners). */
+  partnerCount: number;
+  /** UTC day `dayMovement` belongs to. */
+  dayKey: string | null;
+  /** How far each dimension already moved on `dayKey` (see maxDailyMovePerDimension). */
+  dayMovement: Partial<Record<PersonalizationDimension, number>>;
 }
 
 export interface LearningEvent {
@@ -83,7 +89,14 @@ export function neutralProfile(): PersonalizationProfile {
     dimensions,
     eventCount: 0,
     updatedAtMs: null,
+    partnerCount: 0,
+    dayKey: null,
+    dayMovement: {},
   };
+}
+
+function utcDay(nowMs: number): string {
+  return new Date(nowMs).toISOString().slice(0, 10);
 }
 
 export function clampAdjustment(value: number): number {
@@ -122,6 +135,13 @@ export function parseProfile(raw: unknown): PersonalizationProfile {
   profile.eventCount = Math.floor(finiteNonNegative(data.eventCount));
   const updated = Number(data.updatedAtMs);
   profile.updatedAtMs = Number.isFinite(updated) && updated > 0 ? updated : null;
+  profile.partnerCount = Math.floor(finiteNonNegative(data.partnerCount));
+  profile.dayKey = typeof data.dayKey === "string" ? data.dayKey : null;
+  const movement = (data.dayMovement ?? {}) as Record<string, unknown>;
+  for (const dimension of PERSONALIZATION_DIMENSIONS) {
+    const moved = finiteNonNegative(movement[dimension]);
+    if (moved > 0) profile.dayMovement[dimension] = moved;
+  }
   return profile;
 }
 
@@ -142,6 +162,11 @@ export function serializeProfile(profile: PersonalizationProfile): Record<string
     dimensions,
     eventCount: profile.eventCount,
     updatedAtMs: profile.updatedAtMs,
+    partnerCount: profile.partnerCount,
+    dayKey: profile.dayKey,
+    dayMovement: Object.fromEntries(
+      Object.entries(profile.dayMovement).map(([dimension, moved]) => [dimension, round(moved ?? 0, 4)]),
+    ),
   };
 }
 
@@ -173,11 +198,17 @@ export function applyLearningEvent(
   nowMs: number,
 ): {profile: PersonalizationProfile; trace: LearningTrace} {
   const factor = decayFactor(current.updatedAtMs, nowMs);
+  const today = utcDay(nowMs);
+  const movedToday: Partial<Record<PersonalizationDimension, number>> =
+    current.dayKey === today ? {...current.dayMovement} : {};
   const next: PersonalizationProfile = {
     algorithmVersion: PERSONALIZATION_ALGORITHM_VERSION,
     dimensions: {} as Record<PersonalizationDimension, DimensionState>,
     eventCount: current.eventCount + 1,
     updatedAtMs: Math.max(nowMs, current.updatedAtMs ?? 0),
+    partnerCount: current.partnerCount ?? 0,
+    dayKey: today,
+    dayMovement: movedToday,
   };
   const strength = Number.isFinite(event.strength) ? event.strength : 0;
   const traces: DimensionTrace[] = [];
@@ -200,12 +231,15 @@ export function applyLearningEvent(
       state.evidence += Math.abs(signal);
       const mean = (state.positive - state.negative) / (state.evidence + LEARNING.priorEvidence);
       const target = clampAdjustment(ADJUSTMENT_BOUNDS.neutral + LEARNING.gain * mean);
-      const delta = Math.max(
-        -LEARNING.maxStepPerEvent,
-        Math.min(LEARNING.maxStepPerEvent, target - state.adjustment),
-      );
+      // Per event and per day: however many events land at once, a dimension
+      // drifts, it never jumps.
+      const dayBudget = Math.max(0, LEARNING.maxDailyMovePerDimension - (movedToday[dimension] ?? 0));
+      const step = Math.min(LEARNING.maxStepPerEvent, dayBudget);
+      const delta = Math.max(-step, Math.min(step, target - state.adjustment));
       const before = state.adjustment;
       state.adjustment = clampAdjustment(before + delta);
+      const moved = Math.abs(state.adjustment - before);
+      if (moved > 0) movedToday[dimension] = (movedToday[dimension] ?? 0) + moved;
       traces.push({
         dimension,
         candidateScore: score as number,
@@ -232,18 +266,41 @@ export function neutralAdjustments(): Adjustments {
   return out;
 }
 
+/** Whether enough different people stand behind what was learned. */
+export function isObservedConfident(profile: PersonalizationProfile | null): boolean {
+  return !!profile && (profile.partnerCount ?? 0) >= LEARNING.minDistinctPartners;
+}
+
 /**
- * The adjustments ranking should use. Personalization OFF behaves exactly as
- * if nothing had ever been learned: every dimension is 1.00.
+ * The OBSERVED adjustments ranking should use. Personalization OFF behaves
+ * exactly as if nothing had ever been learned: every dimension is 1.00. So
+ * does a profile that has not yet cleared the confidence gate.
  */
 export function effectiveAdjustments(
   profile: PersonalizationProfile | null,
   enabled: boolean,
 ): Adjustments {
   const out = neutralAdjustments();
-  if (!enabled || !profile) return out;
+  if (!enabled || !profile || !isObservedConfident(profile)) return out;
   for (const dimension of PERSONALIZATION_DIMENSIONS) {
     out[dimension] = clampAdjustment(profile.dimensions[dimension]?.adjustment ?? 1);
+  }
+  return out;
+}
+
+/**
+ * Declared x observed, per dimension, clamped to the same band. What the
+ * member said matters sets the starting point; what their connections show
+ * nudges it. Neither can push a dimension outside 0.70-1.30, and ranking only
+ * ever uses the RELATIVE differences (ranking.ts), so the result stays
+ * normalized however the two combine.
+ */
+export function combineAdjustments(declared: Adjustments, observed: Adjustments): Adjustments {
+  const out = neutralAdjustments();
+  for (const dimension of PERSONALIZATION_DIMENSIONS) {
+    const d = Number.isFinite(declared[dimension]) ? declared[dimension] : ADJUSTMENT_BOUNDS.neutral;
+    const o = Number.isFinite(observed[dimension]) ? observed[dimension] : ADJUSTMENT_BOUNDS.neutral;
+    out[dimension] = clampAdjustment(d * o);
   }
   return out;
 }

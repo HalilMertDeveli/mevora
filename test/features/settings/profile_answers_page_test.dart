@@ -15,7 +15,6 @@ import 'package:mevora/features/profile/domain/repositories/profile_question_ans
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
 import 'package:mevora/features/relationship/data/datasources/firestore_relationship_answers_reader.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
-import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/features/settings/presentation/pages/profile_answers_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
@@ -119,10 +118,6 @@ Future<void> _pumpPage(
   required RelationshipRepository relationship,
   required _FakeProfileAnswers answers,
 }) async {
-  final relationshipController = RelationshipController(
-    repository: relationship,
-  );
-  addTearDown(relationshipController.dispose);
   final auth = _auth();
   addTearDown(auth.dispose);
 
@@ -133,7 +128,6 @@ Future<void> _pumpPage(
         child: RelationshipScope(
           repository: relationship,
           profileAnswers: answers,
-          controller: relationshipController,
           child: const ProfileAnswersPage(),
         ),
       ),

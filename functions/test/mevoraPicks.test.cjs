@@ -305,6 +305,8 @@ describe("Pick set composition", () => {
   });
 });
 
+const DAY_MS = 86_400_000;
+
 function storedBatch(nowMs, uids = ["a", "b", "c"]) {
   const composed = uids.map((uid, rank) => ({
     candidateUid: uid,
@@ -369,7 +371,7 @@ describe("Pick lifecycle", () => {
 
   it("an undecided Pick cools down when its batch expires; a decided one needs no cooldown", () => {
     const decided = lifecycle.applyDecision(storedBatch(now), "a", "liked", now).batch;
-    const expiry = now + PICKS_CONFIG.batchTtlMs;
+    const expiry = lifecycle.nextLogicalDayStartMs(now);
     assert.equal(lifecycle.isBatchLive(decided, expiry - 1), true);
     assert.equal(lifecycle.isBatchLive(decided, expiry), false);
     const cooldowns = lifecycle.cooldownsAfterExpiry(decided, expiry);
@@ -390,12 +392,40 @@ describe("Pick lifecycle", () => {
   it("tops up only with room, budget and after the scan interval", () => {
     const full = storedBatch(now, ["a", "b", "c", "d", "e", "f"]);
     assert.equal(lifecycle.needsTopUp(full, now + PICKS_CONFIG.topUpMinIntervalMs), false);
-    const decided = lifecycle.applyDecision(full, "a", "passed", now).batch;
-    assert.equal(lifecycle.needsTopUp(decided, now + 1), false);
-    assert.equal(lifecycle.needsTopUp(decided, now + PICKS_CONFIG.topUpMinIntervalMs), true);
-    assert.equal(lifecycle.topUpSlots(decided), 1);
-    const exhausted = {...decided, deliveredCount: PICKS_CONFIG.maxDeliveredPerBatch};
+    // A Pick that stopped being eligible frees its slot...
+    const blocked = lifecycle.applyRevalidation(full, new Map([["a", "ineligible"]]), now).batch;
+    assert.equal(lifecycle.needsTopUp(blocked, now + 1), false);
+    assert.equal(lifecycle.needsTopUp(blocked, now + PICKS_CONFIG.topUpMinIntervalMs), true);
+    assert.equal(lifecycle.topUpSlots(blocked), 1);
+    const exhausted = {...blocked, deliveredCount: PICKS_CONFIG.maxDeliveredPerBatch};
     assert.equal(lifecycle.needsTopUp(exhausted, now + PICKS_CONFIG.topUpMinIntervalMs), false);
+  });
+
+  it("never refills a slot spent on a like, a pass or a match", () => {
+    let batch = storedBatch(now, ["a", "b", "c", "d", "e", "f"]);
+    batch = lifecycle.applyDecision(batch, "a", "passed", now).batch;
+    batch = lifecycle.applyDecision(batch, "b", "liked", now).batch;
+    batch = lifecycle.applyDecision(batch, "c", "matched", now).batch;
+    assert.equal(lifecycle.slotsUsed(batch), 6);
+    assert.equal(lifecycle.needsTopUp(batch, now + PICKS_CONFIG.topUpMinIntervalMs), false);
+    assert.equal(lifecycle.topUpSlots(batch), 0);
+  });
+
+  it("lives until the next logical day, whenever in the day it was made", () => {
+    const offsetMs = PICKS_CONFIG.logicalDayUtcOffsetMinutes * 60_000;
+    // 23:59 and 00:01 Istanbul time on the same calendar boundary.
+    const lateEvening = Date.UTC(2026, 8, 29, 20, 59) ; // 23:59 at +03:00
+    const justAfter = Date.UTC(2026, 8, 29, 21, 1); // 00:01 at +03:00, next day
+    assert.equal(lifecycle.logicalDayKey(lateEvening), "2026-09-29");
+    assert.equal(lifecycle.logicalDayKey(justAfter), "2026-09-30");
+    assert.equal(lifecycle.nextLogicalDayStartMs(lateEvening), Date.UTC(2026, 8, 29, 21, 0));
+    assert.equal(lifecycle.nextLogicalDayStartMs(justAfter), Date.UTC(2026, 8, 30, 21, 0));
+    const made = storedBatch(lateEvening);
+    assert.equal(made.refreshAtMs, Date.UTC(2026, 8, 29, 21, 0));
+    assert.equal(lifecycle.isBatchLive(made, justAfter), false, "a new day brings a new set");
+    const morning = storedBatch(Date.UTC(2026, 8, 30, 5, 0));
+    assert.equal(lifecycle.isBatchLive(morning, Date.UTC(2026, 8, 30, 20, 59)), true, "same day stays");
+    assert.ok(offsetMs > 0);
   });
 
   it("reads old or foreign documents as no batch rather than trusting them", () => {
@@ -550,9 +580,34 @@ describe("Mevora Picks service", () => {
     assert.equal(uids.includes(liked), false);
     assert.equal(uids.includes(passed), false);
     // Even a brand-new batch a day later does not bring them back.
-    const nextDay = await serve(Date.now() + PICKS_CONFIG.batchTtlMs + 1);
+    const nextDay = await serve(Date.now() + DAY_MS + 1);
     assert.notEqual(nextDay.generationId, first.generationId);
     assert.equal(nextDay.picks.some((p) => p.uid === liked || p.uid === passed), false);
+  });
+
+  it("deciding does not buy more people: today's set stays finite", async () => {
+    const first = await serve(Date.now());
+    assert.equal(first.picks.length, 6);
+    assert.equal(first.dayKey, lifecycle.logicalDayKey(Date.now()));
+    for (const item of first.picks.slice(0, 3)) {
+      await db.doc(`users/${VIEWER}/passedUsers/${item.uid}`).set({toUserId: item.uid});
+      await recordPickDecision({db, viewerUid: VIEWER, candidateUid: item.uid, decision: "passed"});
+    }
+    // Well past the top-up interval, and two unused candidates remain in the pool.
+    const later = await serve(Date.now() + PICKS_CONFIG.topUpMinIntervalMs + 1);
+    assert.equal(later.generationId, first.generationId);
+    assert.equal(later.picks.length, 3);
+    assert.deepEqual(later.picks.map((p) => p.uid), first.picks.slice(3).map((p) => p.uid));
+  });
+
+  it("a Pick that stops being eligible is replaced from the same day's pool", async () => {
+    const first = await serve(Date.now());
+    const blocked = first.picks[0].uid;
+    await db.doc(`blocks/${VIEWER}_${blocked}`).set({blockerId: VIEWER, blockedUserId: blocked});
+    const later = await serve(Date.now() + PICKS_CONFIG.topUpMinIntervalMs + 1);
+    assert.equal(later.generationId, first.generationId);
+    assert.equal(later.picks.some((p) => p.uid === blocked), false);
+    assert.equal(later.picks.length, 6);
   });
 
   it("a blocked or deleted member disappears on the next request", async () => {
@@ -620,10 +675,10 @@ describe("Mevora Picks service", () => {
     seedWorld([["a1", {}], ["a2", {}]]);
     const first = await serve(Date.now());
     assert.equal(first.picks.length, 2);
-    const nextDay = await serve(Date.now() + PICKS_CONFIG.batchTtlMs + 1);
+    const nextDay = await serve(Date.now() + DAY_MS + 1);
     assert.equal(nextDay.picks.length, 0);
     const later = await serve(
-      Date.now() + PICKS_CONFIG.batchTtlMs * 2 + PICKS_CONFIG.expiredCooldownMs + 2,
+      Date.now() + DAY_MS * 2 + PICKS_CONFIG.expiredCooldownMs + 2,
     );
     assert.equal(later.picks.length, 2);
   });

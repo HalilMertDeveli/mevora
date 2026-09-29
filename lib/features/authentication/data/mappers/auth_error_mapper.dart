@@ -25,17 +25,32 @@ abstract final class AuthErrorMapper {
         code: _codeOf(error) ?? 'app-verification-failed',
       );
     }
+    // The backend answers a number outside the SMS region policy with
+    // OPERATION_NOT_ALLOWED, which on its own reads as "phone sign-in is
+    // disabled" and sends the diagnosis to the wrong place.
+    if (_haystackContainsSmsRegion(_messageOf(error))) {
+      return fromCode('sms-region-restricted', cause: error);
+    }
     final code = _codeOf(error);
     return fromCode(code, cause: error);
   }
 
   static AuthException fromCode(String? code, {Object? cause}) {
+    var normalized = (code ?? '').toLowerCase().replaceAll('_', '-');
+    for (final prefix in const ['firebase-auth/', 'auth/']) {
+      if (normalized.startsWith(prefix)) {
+        normalized = normalized.substring(prefix.length);
+      }
+    }
+    // Both branches below keep a code so the debug `Firebase: <code>` line
+    // still names the failure.
     if (_looksLikeBillingNotEnabled(cause) ||
         _haystackContainsBilling(code)) {
       return AuthException(
         AuthMessages.billingNotEnabled,
         kind: AuthErrorKind.billingNotEnabled,
         cause: cause,
+        code: 'billing-not-enabled',
       );
     }
     if (_looksLikeAppVerification(cause) ||
@@ -44,13 +59,8 @@ abstract final class AuthErrorMapper {
         AuthMessages.appVerification,
         kind: AuthErrorKind.appVerification,
         cause: cause,
+        code: normalized.isEmpty ? 'app-verification-failed' : normalized,
       );
-    }
-    var normalized = (code ?? '').toLowerCase().replaceAll('_', '-');
-    for (final prefix in const ['firebase-auth/', 'auth/']) {
-      if (normalized.startsWith(prefix)) {
-        normalized = normalized.substring(prefix.length);
-      }
     }
     final kind = kindFor(normalized);
     return AuthException(
@@ -194,6 +204,15 @@ abstract final class AuthErrorMapper {
     final haystack = value.toLowerCase().replaceAll('_', '-');
     return haystack.contains('billing-not-enabled') ||
         haystack.contains('17499');
+  }
+
+  static bool _haystackContainsSmsRegion(String? value) {
+    if (value == null || value.isEmpty) {
+      return false;
+    }
+    final haystack = value.toLowerCase().replaceAll('_', '-');
+    return haystack.contains('sms-region') ||
+        haystack.contains('region enabled by the app developer');
   }
 
   static bool _haystackContainsAppVerification(String? value) {

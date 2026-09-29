@@ -9,12 +9,12 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
-import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/di/onboarding_services_factory.dart';
 import 'package:mevora/core/di/permission_scope.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/support_scope.dart';
@@ -22,6 +22,8 @@ import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/subscription_services_factory.dart';
+import 'package:mevora/core/di/streak_scope.dart';
+import 'package:mevora/core/di/streak_services_factory.dart';
 import 'package:mevora/core/localization/language_controller.dart';
 import 'package:mevora/core/localization/language_repository.dart';
 import 'package:mevora/core/localization/language_scope.dart';
@@ -33,11 +35,12 @@ import 'package:mevora/core/services/permissions/permission_service.dart';
 import 'package:mevora/core/session/session_recovery_controller.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:mevora/features/streak/presentation/controllers/daily_streak_controller.dart';
+import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
 import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
-import 'package:mevora/features/match_score/domain/repositories/match_score_repository.dart';
 import 'package:mevora/features/chat/e2ee/services/e2ee_bootstrap_controller.dart';
 import 'package:mevora/features/matching/presentation/controllers/presence_lifecycle_controller.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
@@ -45,9 +48,9 @@ import 'package:mevora/features/humor/domain/repositories/humor_repository.dart'
 import 'package:mevora/features/notifications/data/fcm_push_binder.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
-import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
-import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
+import 'package:mevora/features/relationship_learning/domain/repositories/relationship_learning_repository.dart';
+import 'package:mevora/features/relationship_learning/presentation/controllers/learning_journey_controller.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/repositories/verification_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -63,9 +66,9 @@ class MevoraApp extends StatefulWidget {
     this.discoveryRepository,
     this.musicRepository,
     this.humorRepository,
-    this.matchScoreRepository,
     this.relationshipRepository,
     this.profileQuestionAnswerRepository,
+    this.relationshipLearningRepository,
     this.locationController,
     this.socialServices,
     this.purchaseRepository,
@@ -78,6 +81,7 @@ class MevoraApp extends StatefulWidget {
     this.onboardingServices,
     this.settingsServices,
     this.supportServices,
+    this.streakServices,
   });
 
   final AppConfig config;
@@ -88,9 +92,9 @@ class MevoraApp extends StatefulWidget {
   final DiscoveryRepository? discoveryRepository;
   final MusicRepository? musicRepository;
   final HumorRepository? humorRepository;
-  final MatchScoreRepository? matchScoreRepository;
   final RelationshipRepository? relationshipRepository;
   final ProfileQuestionAnswerRepository? profileQuestionAnswerRepository;
+  final RelationshipLearningRepository? relationshipLearningRepository;
   final LocationController? locationController;
   final SocialServices? socialServices;
   final PurchaseRepository? purchaseRepository;
@@ -103,6 +107,7 @@ class MevoraApp extends StatefulWidget {
   final SettingsServices? settingsServices;
   final SupportServices? supportServices;
   final OnboardingServices? onboardingServices;
+  final StreakServices? streakServices;
 
   @override
   State<MevoraApp> createState() => _MevoraAppState();
@@ -111,6 +116,7 @@ class MevoraApp extends StatefulWidget {
 class _MevoraAppState extends State<MevoraApp> {
   late final GoRouter _router;
   LocationController? _locationController;
+  LearningJourneyController? _journey;
   bool _ownsLocationController = false;
   FcmPushBinder? _pushBinder;
   late final LanguageController _languageController;
@@ -120,7 +126,6 @@ class _MevoraAppState extends State<MevoraApp> {
   bool _ownsPermissionController = false;
   late final OnboardingServices _onboardingServices;
   bool _ownsOnboardingServices = false;
-  RelationshipController? _relationshipController;
   PresenceLifecycleController? _presenceLifecycleController;
   E2eeBootstrapController? _e2eeBootstrapController;
   SessionRecoveryController? _sessionRecovery;
@@ -158,6 +163,11 @@ class _MevoraAppState extends State<MevoraApp> {
     widget.authController.addListener(_syncLanguageUser);
     _syncLocationGate();
     _syncLanguageUser();
+    // Daily streak: checks in when a member is in the app and on resume.
+    // Never awaited — the app does not wait on the streak for anything.
+    widget.streakServices?.controller.attachLifecycle();
+    widget.authController.addListener(_syncStreakUser);
+    _syncStreakUser();
     _permissionService =
         widget.permissionService ?? const PermissionHandlerPermissionService();
     final providedPermissions = widget.permissionController;
@@ -179,12 +189,17 @@ class _MevoraAppState extends State<MevoraApp> {
       _onboardingServices = createOnboardingServices();
       _ownsOnboardingServices = true;
     }
-    final relationship = widget.relationshipRepository;
-    if (relationship != null) {
-      _relationshipController = RelationshipController(
-        repository: relationship,
-        autoOfferEnabled: RelationshipQuestionConfig.autoOfferEnabled,
+    final learning = widget.relationshipLearningRepository;
+    if (learning != null) {
+      _journey = LearningJourneyController(
+        repository: learning,
+        humorEnabled: widget.config.featureFlags.humorLabEnabled,
+        analytics: widget.analytics,
       );
+      // Registered before the router's own listener, so the journey is
+      // already pending when the router first sees a signed-in member.
+      widget.authController.addListener(_syncJourney);
+      _syncJourney();
     }
     _router =
         widget.router ??
@@ -192,6 +207,7 @@ class _MevoraAppState extends State<MevoraApp> {
           config: widget.config,
           authController: widget.authController,
           locationController: _locationController,
+          journey: _journey,
         );
     final social = widget.socialServices;
     if (social != null) {
@@ -209,8 +225,34 @@ class _MevoraAppState extends State<MevoraApp> {
     }
   }
 
+  void _syncStreakUser() {
+    final controller = widget.streakServices?.controller;
+    if (controller == null) {
+      return;
+    }
+    controller.bindUser(
+      streakMemberUid(widget.authController.status, current: controller.uid),
+    );
+  }
+
   void _syncLocationGate() {
     unawaited(_locationController?.syncForUser(widget.authController.user?.id));
+  }
+
+  /// The first-run journey follows the signed-in member: read once their
+  /// basic profile is complete, forgotten on sign-out.
+  void _syncJourney() {
+    final journey = _journey;
+    if (journey == null) {
+      return;
+    }
+    final status = widget.authController.status;
+    if (status is Authenticated &&
+        (status.user.onboardingCompleted || status.user.profileCompleted)) {
+      journey.startFor(status.user.id);
+    } else if (status is Unauthenticated) {
+      journey.clear();
+    }
   }
 
   void _syncLanguageUser() {
@@ -295,21 +337,22 @@ class _MevoraAppState extends State<MevoraApp> {
 
     final relationship = widget.relationshipRepository;
     final profileAnswers = widget.profileQuestionAnswerRepository;
-    final relationshipController = _relationshipController;
-    if (relationship != null &&
-        profileAnswers != null &&
-        relationshipController != null) {
+    if (relationship != null && profileAnswers != null) {
       child = RelationshipScope(
         repository: relationship,
         profileAnswers: profileAnswers,
-        controller: relationshipController,
         child: child,
       );
     }
 
-    final matchScore = widget.matchScoreRepository;
-    if (matchScore != null) {
-      child = MatchScoreScope(repository: matchScore, child: child);
+    final learning = widget.relationshipLearningRepository;
+    if (learning != null) {
+      child = RelationshipLearningScope(
+        repository: learning,
+        analyticsProvider: widget.analytics,
+        journey: _journey,
+        child: child,
+      );
     }
 
     final location =
@@ -348,6 +391,11 @@ class _MevoraAppState extends State<MevoraApp> {
       );
     }
 
+    final streak = widget.streakServices;
+    if (streak != null) {
+      child = StreakScope(controller: streak.controller, child: child);
+    }
+
     return AppScope(
       config: widget.config,
       logger: widget.logger,
@@ -360,6 +408,10 @@ class _MevoraAppState extends State<MevoraApp> {
     _pushBinder?.dispose();
     widget.authController.removeListener(_syncLocationGate);
     widget.authController.removeListener(_syncLanguageUser);
+    widget.authController.removeListener(_syncStreakUser);
+    widget.streakServices?.controller.detachLifecycle();
+    widget.authController.removeListener(_syncJourney);
+    _journey?.dispose();
     if (_ownsLocationController) {
       _locationController?.dispose();
     }
@@ -372,7 +424,6 @@ class _MevoraAppState extends State<MevoraApp> {
     if (_ownsOnboardingServices) {
       _onboardingServices.controller.dispose();
     }
-    _relationshipController?.dispose();
     _presenceLifecycleController?.dispose();
     _e2eeBootstrapController?.dispose();
     _sessionRecovery?.dispose();

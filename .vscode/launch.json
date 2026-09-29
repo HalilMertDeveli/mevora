@@ -86,6 +86,10 @@
         "--dart-define=FIREBASE_APP_CHECK_DEBUG_TOKEN=${env:FIREBASE_APP_CHECK_DEBUG_TOKEN}"
       ]
     },
+    // Real carrier SMS through live mevora-d6ed0 Phone Auth. Needs an OPEN
+    // Cloud Billing account on the project: without one every send fails
+    // before codeSent with "Firebase: billing-not-enabled" and no SMS goes out
+    // (see PHONE_AUTH_IMPLEMENTATION.md).
     {
       "name": "Mevora (development · physical SMS)",
       "request": "launch",

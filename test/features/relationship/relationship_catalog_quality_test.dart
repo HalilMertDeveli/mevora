@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
 import 'package:mevora/features/relationship/domain/services/relationship_compatibility.dart';
-import 'package:mevora/features/relationship/domain/services/relationship_question_sets.dart';
 
 void main() {
   setUp(() {
@@ -66,15 +65,6 @@ void main() {
     expect(blocked.contains(tea.id), isTrue);
     final unanswered = RelationshipQuestionCatalog.unanswered({tea.id});
     expect(unanswered.any((q) => q.id == tea.id), isFalse);
-  });
-
-  test('session picker skips answered questions', () {
-    final firstSet = RelationshipQuestionSets.sets.first;
-    final next = RelationshipQuestionSets.nextUnanswered(firstSet.toSet());
-    expect(next, isNotNull);
-    for (final question in next!) {
-      expect(firstSet.contains(question.id), isFalse);
-    }
   });
 
   test('category mix exists across first 30 questions', () {

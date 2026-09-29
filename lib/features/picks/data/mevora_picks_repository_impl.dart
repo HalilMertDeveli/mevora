@@ -7,6 +7,7 @@ import 'package:mevora/features/discovery/domain/repositories/discovery_reposito
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
 import 'package:mevora/features/picks/domain/repositories/mevora_picks_repository.dart';
+import 'package:mevora/features/relationship_learning/data/relationship_learning_repository_impl.dart';
 
 /// Calls `getMevoraPicks` and the shared `recordDiscoveryDecision` callable.
 class MevoraPicksRepositoryImpl implements MevoraPicksRepository {
@@ -76,6 +77,7 @@ abstract final class MevoraPicksParser {
           : null,
       targetCount: firestoreInt(data['targetCount'], 6),
       picks: picks,
+      learning: RelationshipLearningParser.summaryOrUnknown(data['learning']),
     );
   }
 
@@ -184,6 +186,7 @@ abstract final class MevoraPicksParser {
       'allDecided' => PicksEmptyReason.allDecided,
       'noCandidates' => PicksEmptyReason.noCandidates,
       'discoveryDisabled' => PicksEmptyReason.discoveryDisabled,
+      'learningRequired' => PicksEmptyReason.learningRequired,
       _ => null,
     };
   }

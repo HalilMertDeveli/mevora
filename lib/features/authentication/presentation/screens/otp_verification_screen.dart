@@ -23,6 +23,10 @@ class OtpVerificationScreen extends StatefulWidget {
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   String _code = '';
 
+  /// The session the boxes were typed against. A resend issues a new one,
+  /// and digits from the old SMS must not be submitted against it.
+  String? _challengeId;
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +65,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           OtpError(:final challenge) => challenge,
           _ => null,
         };
+        final challengeId = challenge?.verificationId;
+        if (challengeId != null && challengeId != _challengeId) {
+          _challengeId = challengeId;
+          _code = '';
+        }
         final verifying = phone.state is VerifyingOtp;
         final error = localizePhoneError(l10n, phone.state);
         final success = phone.state is PhoneAuthenticated;
@@ -92,6 +101,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 Semantics(
                   label: l10n.otpFieldLabel,
                   child: OtpCodeInput(
+                    key: ValueKey(_challengeId),
                     enabled: !verifying,
                     onChanged: (code) => _code = code,
                     onCompleted: (code) => unawaited(phone.verify(code)),

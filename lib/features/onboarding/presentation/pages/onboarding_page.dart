@@ -21,6 +21,7 @@ import 'package:mevora/features/profile/presentation/widgets/profile_language_pi
 import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_gender_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_interest_picker.dart';
+import 'package:mevora/features/profile/presentation/widgets/profile_extended_lifestyle_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_lifestyle_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_relationship_goal_picker.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -29,6 +30,8 @@ import 'package:mevora/shared/art/mevora_motion.dart';
 import 'package:mevora/shared/widgets/turkish_province_picker.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
+import 'package:mevora/features/relationship_learning/presentation/pages/relationship_learning_page.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -147,6 +150,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       OnboardingStep.education => _educationStep(l10n),
       OnboardingStep.relationshipGoal => _relationshipStep(l10n),
       OnboardingStep.lifestyle => _lifestyleStep(l10n),
+      OnboardingStep.aboutYou => _aboutYouStep(l10n),
       OnboardingStep.bio => _bioStep(l10n),
       OnboardingStep.photos => _photosStep(l10n),
       OnboardingStep.music => _musicStep(l10n),
@@ -366,6 +370,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
+  /// Optional: the same questions as Edit profile's "Get to know you".
+  Widget _aboutYouStep(AppLocalizations l10n) {
+    final lifestyle = _controller.profile!.lifestyleProfile;
+    return OnboardingStepScaffold(
+      step: OnboardingStep.aboutYou,
+      title: l10n.profileEditSectionExtended,
+      subtitle: l10n.onboardingAboutYouSubtitle,
+      isSaving: _controller.isSaving,
+      errorMessage: _controller.errorMessage,
+      onBack: _controller.goBack,
+      onContinue: () => unawaited(_continue()),
+      scrollable: true,
+      child: ProfileExtendedLifestylePicker(
+        profile: lifestyle,
+        onChanged: (next) => _controller.updateDraft(
+          (current) => current.copyWith(lifestyleProfile: next),
+        ),
+        enabled: !_controller.isSaving,
+      ),
+    );
+  }
+
   Widget _bioStep(AppLocalizations l10n) {
     return OnboardingStepScaffold(
       step: OnboardingStep.bio,
@@ -491,12 +517,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
     final humorEnabled =
         AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
+    final journeyAvailable =
+        RelationshipLearningScope.maybeOf(context)?.journey != null;
     AuthScope.of(context).applyOnboardingComplete();
 
-    // Personalization comes *after* the core profile is viable, and is never a
-    // gate: onboarding is already complete at this point, so a user who skips
-    // — or who never sees this because the flag is off — lands on discovery
-    // exactly as before.
+    // The first-run journey takes it from here: Humor Lab, then Relationship
+    // Learning, then Picks. The server knows which step this member owes, so
+    // the router sends them there now and after any restart; nothing to
+    // navigate by hand.
+    if (journeyAvailable) {
+      return;
+    }
     if (humorEnabled && mounted) {
       context.go(AppRoutes.humorCalibration);
     }

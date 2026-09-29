@@ -5,6 +5,7 @@ class ProfileLifestyle {
     this.drinking,
     this.exercise,
     this.pets,
+    this.diet,
     this.partnerSmokingPref,
     this.partnerDrinkingPref,
     this.childrenPreference,
@@ -19,6 +20,7 @@ class ProfileLifestyle {
   final String? drinking;
   final String? exercise;
   final String? pets;
+  final String? diet;
   final String? partnerSmokingPref;
   final String? partnerDrinkingPref;
   final String? childrenPreference;
@@ -33,6 +35,7 @@ class ProfileLifestyle {
       (drinking == null || drinking!.isEmpty) &&
       (exercise == null || exercise!.isEmpty) &&
       (pets == null || pets!.isEmpty) &&
+      (diet == null || diet!.isEmpty) &&
       (partnerSmokingPref == null || partnerSmokingPref!.isEmpty) &&
       (partnerDrinkingPref == null || partnerDrinkingPref!.isEmpty) &&
       (childrenPreference == null || childrenPreference!.isEmpty) &&
@@ -47,6 +50,7 @@ class ProfileLifestyle {
     String? drinking,
     String? exercise,
     String? pets,
+    String? diet,
     String? partnerSmokingPref,
     String? partnerDrinkingPref,
     String? childrenPreference,
@@ -61,6 +65,7 @@ class ProfileLifestyle {
       drinking: drinking ?? this.drinking,
       exercise: exercise ?? this.exercise,
       pets: pets ?? this.pets,
+      diet: diet ?? this.diet,
       partnerSmokingPref: partnerSmokingPref ?? this.partnerSmokingPref,
       partnerDrinkingPref: partnerDrinkingPref ?? this.partnerDrinkingPref,
       childrenPreference: childrenPreference ?? this.childrenPreference,
@@ -79,6 +84,7 @@ class ProfileLifestyle {
       if (drinking != null) 'drinking': drinking,
       if (exercise != null) 'exercise': exercise,
       if (pets != null) 'pets': pets,
+      if (diet != null) 'diet': diet,
       if (partnerSmokingPref != null) 'partnerSmokingPref': partnerSmokingPref,
       if (partnerDrinkingPref != null)
         'partnerDrinkingPref': partnerDrinkingPref,
@@ -102,6 +108,7 @@ class ProfileLifestyle {
       drinking: value['drinking'] as String?,
       exercise: value['exercise'] as String?,
       pets: value['pets'] as String?,
+      diet: value['diet'] as String?,
       partnerSmokingPref: value['partnerSmokingPref'] as String?,
       partnerDrinkingPref: value['partnerDrinkingPref'] as String?,
       childrenPreference: value['childrenPreference'] as String?,
@@ -120,6 +127,7 @@ class ProfileLifestyle {
       if (drinking != null && drinking!.isNotEmpty) 'drinking:$drinking',
       if (exercise != null && exercise!.isNotEmpty) 'exercise:$exercise',
       if (pets != null && pets!.isNotEmpty) 'pets:$pets',
+      if (diet != null && diet!.isNotEmpty) 'diet:$diet',
       if (socialRhythm != null && socialRhythm!.isNotEmpty)
         'socialRhythm:$socialRhythm',
       if (socialLevel != null && socialLevel!.isNotEmpty)

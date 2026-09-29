@@ -112,6 +112,8 @@ abstract final class OnboardingValidators {
       OnboardingStep.relationshipGoal =>
         validateRelationshipGoal(profile.relationshipGoal),
       OnboardingStep.lifestyle => validateLifestyle(profile),
+      // Every question here is optional; the step only offers them.
+      OnboardingStep.aboutYou => const Success(null),
       OnboardingStep.bio => validateBio(profile.bio),
       OnboardingStep.photos => validatePhotos(profile.photos),
       // Spotify is optional: there is nothing to validate, and a member who

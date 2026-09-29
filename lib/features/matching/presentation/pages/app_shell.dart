@@ -4,15 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
-import 'package:mevora/core/di/relationship_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
-import 'package:mevora/features/match_score/presentation/widgets/match_feedback_prompt.dart';
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
-import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
-import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
+import 'package:mevora/features/streak/presentation/widgets/streak_celebration.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 class AppShell extends StatelessWidget {
@@ -26,20 +23,11 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final social = SocialScope.maybeOf(context);
     final l10n = AppLocalizations.of(context);
-    final relationship = RelationshipScope.controllerOf(context);
     final matches = social?.matchesController;
 
-    Widget body = IncomingCallNavigator(
-      child: MatchFeedbackHost(child: navigationShell),
+    final Widget body = IncomingCallNavigator(
+      child: StreakCelebrationHost(child: navigationShell),
     );
-    if (relationship != null) {
-      body = _ShellRelationshipBridge(
-        controller: relationship,
-        discoveryVisible: navigationShell.currentIndex == 0,
-        matchesController: matches,
-        child: body,
-      );
-    }
 
     return Scaffold(
       body: body,
@@ -105,47 +93,6 @@ class AppShell extends StatelessWidget {
     final toLabel = to >= 0 && to < _tabLabels.length ? _tabLabels[to] : '$to';
     // ignore: avoid_print
     print('[TAB] changed: $fromLabel → $toLabel | uid=${uid ?? 'none'}');
-  }
-}
-
-/// Keeps relationship dwell visibility in sync with the shell tab index.
-///
-/// Presence ticks only rebuild this thin bridge (via [AnimatedBuilder]), not
-/// the bottom [NavigationBar] or an unnecessary full-shell [setState].
-class _ShellRelationshipBridge extends StatelessWidget {
-  const _ShellRelationshipBridge({
-    required this.controller,
-    required this.discoveryVisible,
-    required this.child,
-    this.matchesController,
-  });
-
-  final RelationshipController controller;
-  final bool discoveryVisible;
-  final MatchesController? matchesController;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final matches = matchesController;
-    if (matches == null) {
-      return RelationshipDiscoverySync(
-        controller: controller,
-        discoveryVisible: discoveryVisible,
-        child: child,
-      );
-    }
-    return AnimatedBuilder(
-      animation: matches,
-      builder: (context, _) {
-        return RelationshipDiscoverySync(
-          controller: controller,
-          discoveryVisible: discoveryVisible,
-          normalMatchCount: matches.activeConversationCount,
-          child: child,
-        );
-      },
-    );
   }
 }
 

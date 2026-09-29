@@ -83,13 +83,18 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
               icon: MevoraIcons.visible,
               iconTone: MevoraTone.music,
               value: shown,
-              // A hidden card has no content by definition, so asking
-              // hasContent here left the switch dead exactly where it was
-              // needed. What matters is whether there is a selection to
-              // show at all.
-              onChanged: _busy || !published.hasSelection
+              // With nothing picked yet there is nothing to publish, but a
+              // switch that ignored the tap read as broken. Turning it on
+              // opens the picker instead; saving there publishes and shows.
+              onChanged: _busy
                   ? null
-                  : (value) => unawaited(_setEnabled(value)),
+                  : (value) {
+                      if (published.hasSelection) {
+                        unawaited(_setEnabled(value));
+                      } else if (value) {
+                        unawaited(_edit(context));
+                      }
+                    },
             ),
           ],
         ),

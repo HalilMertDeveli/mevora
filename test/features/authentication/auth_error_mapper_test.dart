@@ -133,5 +133,46 @@ void main() {
     );
     expect(byStatus.kind, AuthErrorKind.billingNotEnabled);
     expect(byStatus.message, AuthMessages.billingNotEnabled);
+    expect(byStatus.code, 'billing-not-enabled');
+  });
+
+  test('keeps the diagnostic code on billing and app-verification paths', () {
+    // The debug `Firebase: <code>` line is only drawn when a code survives.
+    expect(
+      AuthErrorMapper.fromCode('BILLING_NOT_ENABLED').code,
+      'billing-not-enabled',
+    );
+    expect(
+      AuthErrorMapper.fromCode('firebase_auth/invalid-app-credential').code,
+      'invalid-app-credential',
+    );
+    expect(
+      AuthErrorMapper.fromCode('missing-client-identifier').code,
+      'missing-client-identifier',
+    );
+  });
+
+  test('maps the SMS region policy rejection to sms-region-restricted', () {
+    // Exact backend wording for a number whose region is not allowlisted.
+    final regionBlocked = AuthErrorMapper.map(
+      _FakeFirebaseAuthException(
+        code: 'operation-not-allowed',
+        message:
+            'OPERATION_NOT_ALLOWED : SMS unable to be sent until this region '
+            'enabled by the app developer.',
+      ),
+    );
+    expect(regionBlocked.kind, AuthErrorKind.smsFailed);
+    expect(regionBlocked.code, 'sms-region-restricted');
+
+    // A provider that is genuinely disabled still reads as not configured.
+    final providerDisabled = AuthErrorMapper.map(
+      _FakeFirebaseAuthException(
+        code: 'operation-not-allowed',
+        message: 'This operation is not allowed.',
+      ),
+    );
+    expect(providerDisabled.kind, AuthErrorKind.notConfigured);
+    expect(providerDisabled.code, 'operation-not-allowed');
   });
 }

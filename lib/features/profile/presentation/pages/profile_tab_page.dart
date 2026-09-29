@@ -8,8 +8,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
-import 'package:mevora/core/di/match_score_scope.dart';
-import 'package:mevora/core/di/relationship_scope.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
@@ -18,7 +17,6 @@ import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
-import 'package:mevora/features/match_score/presentation/widgets/match_score_tile.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -116,7 +114,7 @@ class ProfileTabPage extends StatelessWidget {
               // predates it entirely. Existing users are never pushed back
               // through onboarding — they start from here, voluntarily.
               if (humorEnabled) const _HumorProfileTile(),
-              const _ProfileRelationshipTile(),
+              const _ProfileLearningTile(),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -125,7 +123,6 @@ class ProfileTabPage extends StatelessWidget {
             children: const [
               _ProfileVerificationTile(),
               _ProfileBoostTile(),
-              _ProfileMatchScoreTile(),
             ],
           ),
         ],
@@ -188,20 +185,6 @@ class _ProfileVerificationTileState extends State<_ProfileVerificationTile> {
       status: _status,
       accountVerified: user?.isVerified ?? false,
     );
-  }
-}
-
-class _ProfileMatchScoreTile extends StatelessWidget {
-  const _ProfileMatchScoreTile();
-
-  @override
-  Widget build(BuildContext context) {
-    final uid = AuthScope.maybeOf(context)?.user?.id;
-    final repository = MatchScoreScope.maybeOf(context);
-    if (uid == null || repository == null) {
-      return const SizedBox.shrink();
-    }
-    return MatchScoreTile(uid: uid, repository: repository);
   }
 }
 
@@ -328,27 +311,24 @@ class _ProfilePremiumTile extends StatelessWidget {
   }
 }
 
-class _ProfileRelationshipTile extends StatelessWidget {
-  const _ProfileRelationshipTile();
+/// The permanent way back into Relationship Learning: the "Mevora Beni
+/// Tanısın" dashboard, with real coverage, short rounds and answer editing.
+class _ProfileLearningTile extends StatelessWidget {
+  const _ProfileLearningTile();
 
   @override
   Widget build(BuildContext context) {
-    final controller = RelationshipScope.controllerOf(context);
-    if (controller == null) {
+    if (RelationshipLearningScope.maybeOf(context) == null) {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, _) {
-        return MevoraListRow(
-          icon: MevoraIcons.questions,
-          iconTone: MevoraTone.compatibility,
-          title: l10n.relationshipMatchesTitle,
-          subtitle: l10n.relationshipProfileSubtitle(controller.answeredCount),
-          onTap: () => context.go(AppRoutes.matches),
-        );
-      },
+    return MevoraListRow(
+      key: const Key('profileLearningTile'),
+      icon: MevoraIcons.questions,
+      iconTone: MevoraTone.compatibility,
+      title: l10n.learningProfileTitle,
+      subtitle: l10n.learningProfileSubtitle,
+      onTap: () => unawaited(context.push<Object?>(AppRoutes.learningDashboard)),
     );
   }
 }

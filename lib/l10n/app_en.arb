@@ -37,15 +37,11 @@
   },
   "picksLoading": "Choosing people for you…",
   "picksLoadErrorTitle": "We couldn't load your Picks.",
-  "picksEmptyPreparingTitle": "Your new Picks are on their way.",
+  "picksEmptyPreparingTitle": "We couldn't choose anyone for you today.",
   "picksEmptyPreparingMessage": "Instead of showing you random profiles, we're finding more meaningful matches.",
-  "picksEmptyDoneTitle": "You've been through today's Picks.",
+  "picksEmptyDoneTitle": "You've seen today's picks.",
   "picksDiscoveryOffTitle": "Discovery is off",
   "picksDiscoveryOffMessage": "Turn discovery on in settings to get Picks.",
-  "picksDiscoverMore": "Beyond your picks",
-  "picksDiscoverMoreHint": "People outside your Picks who may still be a good fit.",
-  "picksBackToPicks": "Back to Mevora Picks",
-  "discoverMoreSubtitle": "People outside today's Picks",
   "picksLike": "Like",
   "picksPass": "Pass",
   "picksLikeSemantics": "Like {name}",
@@ -81,6 +77,138 @@
       }
     }
   },
+  "picksEmptyDoneMessage": "Mevora will choose new people for you tomorrow.",
+  "picksEmptyNoCandidatesMessage": "Rather than show you random profiles, we'll look again tomorrow.",
+  "learningCardTitle": "Let Mevora get to know you",
+  "learningCardInitialStart": "{total} short questions help us choose people who fit you.",
+  "@learningCardInitialStart": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "learningCardInitialResume": "{answered} of {total} answered. Pick up where you left off.",
+  "@learningCardInitialResume": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "learningCardFollowUp": "{count} short questions to sharpen your Picks.",
+  "@learningCardFollowUp": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "learningCardStart": "Start",
+  "learningCardResume": "Continue",
+  "learningCardNotNow": "Not now",
+  "learningRequiredTitle": "First, let us get to know you",
+  "learningRequiredBody": "Today's Picks are chosen from your answers. {total} short questions, about two minutes.",
+  "@learningRequiredBody": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "learningIntroTitle": "Let Mevora get to know you",
+  "learningIntroBody": "We use your answers to choose people who fit you better.",
+  "learningIntroMeta": "{count} short questions · about two minutes",
+  "@learningIntroMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "learningIntroStart": "Let's start",
+  "learningProgress": "{current} / {total}",
+  "@learningProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "learningProgressSemantics": "Question {current} of {total}",
+  "@learningProgressSemantics": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "learningPrevious": "Previous",
+  "learningNext": "Next",
+  "learningSaveFailed": "We couldn't save your answer. Try again.",
+  "learningLoadErrorTitle": "We couldn't load the questions.",
+  "learningDoneTitle": "Thanks, we know you a little better now.",
+  "learningDoneBody": "From now on, the people we choose for you follow your answers.",
+  "learningDoneContinue": "Continue",
+  "learningFollowUpDoneTitle": "Thank you!",
+  "learningFollowUpDoneBody": "Your answers will make your Picks fit you better.",
+  "learningNothingTitle": "No new questions for now",
+  "learningNothingBody": "When new questions are ready, you'll find them here.",
+  "learningProfileTitle": "Let Mevora get to know me",
+  "learningProfileSubtitle": "Your answers help us choose people who fit you.",
+  "learningAfterHumorTitle": "We know your humor a little now.",
+  "learningAfterHumorBody": "Now let's learn what matters to you in a relationship.",
+  "learningDashboardHeadline": "How well does Mevora know you?",
+  "learningDashboardPercent": "{percent}%",
+  "@learningDashboardPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "learningDashboardBody": "Your answers and your profile help us choose people who fit you.",
+  "learningDashboardResumeInitial": "Continue where you left off ({answered}/{total})",
+  "@learningDashboardResumeInitial": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "learningDashboardContinue": "{count, plural, =1{Continue with 1 short question} other{Continue with {count} short questions}}",
+  "@learningDashboardContinue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "learningDashboardAllAnswered": "You've answered every question for now. New ones will appear here.",
+  "learningDashboardCategoriesTitle": "Compatibility areas",
+  "learningDashboardHighlightsTitle": "What we've learned so far",
+  "learningDashboardHighlightsSubtitle": "From your own answers.",
+  "learningDashboardAnswersTitle": "Your answers",
+  "learningDashboardAnswersFooter": "Changed your mind? Tap an answer to change it.",
+  "learningCategoryRelationship": "Relationship expectations",
+  "learningCategoryCommunication": "Communication",
+  "learningCategoryLifestyle": "Lifestyle",
+  "learningCategoryValues": "Values",
+  "learningCategoryHumor": "Humor",
+  "learningCategoryMusic": "Music",
+  "learningCategoryInterests": "Interests",
   "pickTypeBestOverall": "Best match",
   "pickTypeValuesMatch": "Values match",
   "pickTypeHumorMatch": "Humor match",
@@ -607,6 +735,13 @@
   "discoveryPreferences": "Match preferences",
   "settingsPersonalizeRecommendations": "Personalize my recommendations based on my interactions",
   "settingsPersonalizeRecommendationsSubtitle": "We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.",
+  "settingsResetLearned": "Reset what Mevora learned from me",
+  "settingsResetLearnedSubtitle": "Clears what was learned from your interactions. Your answers stay.",
+  "settingsResetLearnedConfirmTitle": "Reset what Mevora learned?",
+  "settingsResetLearnedConfirmBody": "Mevora will forget what it learned from your likes, matches and conversation activity. Your answers and your profile don't change.",
+  "settingsResetLearnedConfirm": "Reset",
+  "settingsResetLearnedDone": "What Mevora learned has been reset.",
+  "settingsResetLearnedFailed": "Couldn't reset. Try again.",
   "minAge": "Minimum age",
   "maxAge": "Maximum age",
   "maxDistance": "Maximum distance",
@@ -1094,38 +1229,6 @@
   "musicConnectError": "Couldn't connect Spotify. The rest of Mevora still works.",
   "settingsConnectSpotify": "Connect Spotify",
   "settingsSpotifySubtitle": "Let your music taste be part of your match. Mevora doesn't play music.",
-  "matchScoreTitle": "Match points",
-  "matchScoreSubtitle": "Your connection reputation",
-  "matchScoreValue": "{score} points",
-  "@matchScoreValue": {
-    "placeholders": {
-      "score": {
-        "type": "int"
-      }
-    }
-  },
-  "matchScoreHistoryTitle": "Point history",
-  "matchScoreHistoryEmpty": "New matches and conversations will add points here.",
-  "matchScoreHistoryMatch": "New match +1",
-  "matchScoreHistoryInteraction": "Conversation +1",
-  "matchFeedbackTitle": "How did this match go?",
-  "matchFeedbackMessage": "Optional. This note stays in your history — they will not see it, and it does not change anyone's points.",
-  "matchFeedbackHint": "A short private note",
-  "matchFeedbackSubmit": "Save note",
-  "matchFeedbackThanks": "Saved to your history.",
-  "matchFeedbackTooShort": "Write a short note, or skip.",
-  "matchFeedbackFailed": "Couldn't save that note. Try again.",
-  "relationshipPromptTitle": "Help Mevora get to know you",
-  "relationshipQuestionsPreparing": "New questions are on the way. Try again in a little while.",
-  "relationshipTestTitle": "Help Mevora get to know you",
-  "relationshipTestHeadline": "Help Mevora get to know you",
-  "relationshipTestMessage": "A few calm questions about what matters to you in a relationship. Your answers help us make more meaningful picks.",
-  "relationshipTestStart": "Let's start",
-  "relationshipTestLater": "Not now",
-  "relationshipContinueTitle": "A few more questions?",
-  "relationshipContinueMessage": "Each answer helps us choose who to show you. Keep going now, or come back later.",
-  "relationshipContinueYes": "Continue",
-  "relationshipContinueNo": "Not now",
   "likesYouTitle": "People who liked you",
   "likesYouEntrySubtitle": "See why you might be a good match",
   "likesYouInsightSubtitle": "Tap to see what you have in common before you decide.",
@@ -1155,25 +1258,7 @@
   "likesYouEmptyTitle": "No likes yet",
   "likesYouEmptyMessage": "When someone likes you, you'll see them here — with why you might fit.",
   "likesYouLoadError": "Couldn't load likes. Please try again.",
-  "relationshipTestDoneTitle": "Thanks — now we know you a little better",
-  "relationshipTestFound": "Someone answered a lot like you.",
-  "relationshipTestAlign": "Your answers overlap on shared topics.",
-  "relationshipTestNearest": "Closest to you:",
-  "relationshipTestEmpty": "No one nearby has answered quite like you yet.",
-  "relationshipTestViewProfile": "View profile",
-  "relationshipTestOpenChat": "Open chat",
   "relationshipMatchBadge": "Similar answers",
-  "relationshipPromptProgress": "{answered} / {total}",
-  "@relationshipPromptProgress": {
-    "placeholders": {
-      "answered": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "relationshipCompatibilityPercent": "Views overlap · {percent}%",
   "@relationshipCompatibilityPercent": {
     "placeholders": {
@@ -1200,16 +1285,7 @@
   },
   "relationshipSimilarThinker": "Someone who thinks similarly about relationships was found.",
   "relationshipViewsAlign": "Your relationship views overlap.",
-  "relationshipMatchesTitle": "Relationship matches",
   "relationshipMatchesEmpty": "Answer a few relationship questions to find people who think like you — distance does not matter here.",
-  "relationshipProfileSubtitle": "{answered} relationship questions answered",
-  "@relationshipProfileSubtitle": {
-    "placeholders": {
-      "answered": {
-        "type": "int"
-      }
-    }
-  },
   "relationshipTopicJealousy": "You think similarly about jealousy.",
   "relationshipTopicTrust": "You think similarly about trust.",
   "relationshipTopicLoyalty": "You think similarly about loyalty.",
@@ -2030,5 +2106,96 @@
   "premiumBenefitMusicTitle": "Your full music match",
   "premiumBenefitMusicBody": "The songs, artists and genres you share with each match.",
   "premiumPlansHeading": "Choose a plan",
-  "chatPreviewEncrypted": "Encrypted message"
+  "chatPreviewEncrypted": "Encrypted message",
+  "streakTitle": "Daily streak",
+  "streakIndicatorTooltip": "Your daily streak",
+  "streakIndicatorSemantics": "{count, plural, =1{Daily streak: 1 day} other{Daily streak: {count} days}}",
+  "@streakIndicatorSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakDays": "{count, plural, =1{1-day streak} other{{count}-day streak}}",
+  "@streakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakDetailsBody": "{count, plural, =1{You came to Mevora today. Come back tomorrow to keep it going.} other{You have come back to Mevora {count} days in a row.}}",
+  "@streakDetailsBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakLongest": "{count, plural, =1{Longest streak: 1 day} other{Longest streak: {count} days}}",
+  "@streakLongest": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakTotalDays": "{count, plural, =1{1 day on Mevora in total} other{{count} days on Mevora in total}}",
+  "@streakTotalDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakLastSevenDays": "Last 7 days",
+  "streakWeekSemantics": "{count, plural, =1{You came back on 1 of the last 7 days} other{You came back on {count} of the last 7 days}}",
+  "@streakWeekSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakHowItWorks": "Your streak grows by one on each day you come back to Mevora. Opening the app again on the same day does not add to it.",
+  "streakMissedDayNote": "Skip a day and a new streak begins. Your longest streak always stays on record.",
+  "streakStartedTitle": "Your streak has started",
+  "streakStartedBody": "You came to Mevora today. Come back tomorrow to keep it going.",
+  "streakContinuedBody": "You kept your streak going today.",
+  "streakRestartedTitle": "A new streak has started",
+  "streakRestartedBody": "Today is day 1 again. Your longest streak is still on record.",
+  "streakPersonalBest": "New personal best",
+  "streakMilestone": "Milestone",
+  "streakCelebrationDismiss": "Continue",
+  "onboardingSmokingVapeOnly": "Only e-cigarettes",
+  "onboardingSmokingQuitting": "Trying to quit",
+  "onboardingAlcoholSober": "I quit drinking",
+  "onboardingExerciseAthlete": "Very active / athlete",
+  "onboardingLifestyleBird": "Bird",
+  "onboardingLifestyleFish": "Fish",
+  "onboardingPetsWant": "None yet, but I'd like one",
+  "onboardingPetsAllergic": "I'm allergic",
+  "onboardingDiet": "Diet",
+  "dietOmnivore": "I eat everything",
+  "dietVegetarian": "Vegetarian",
+  "dietVegan": "Vegan",
+  "dietPescatarian": "Pescatarian",
+  "dietHalal": "Halal",
+  "dietGlutenFree": "Gluten-free",
+  "onboardingAboutYouSubtitle": "Optional. Answer what you like; it sharpens who we pick for you.",
+  "sharedTraitsTitle": "What you have in common",
+  "sharedTraitGoal": "Looking for",
+  "sharedTraitQuestions": "Relationship questions",
+  "sharedTraitQuestionsValue": "Same answer on {aligned} of {shared}",
+  "@sharedTraitQuestionsValue": {"placeholders":{"aligned":{"type":"int"},"shared":{"type":"int"}}},
+  "sharedTraitChildren": "Children",
+  "sharedTraitAge": "Age",
+  "sharedTraitAgeValue": "{mine} and {theirs}, close in age",
+  "@sharedTraitAgeValue": {"placeholders":{"mine":{"type":"int"},"theirs":{"type":"int"}}},
+  "sharedTraitExpectations": "Smoking and drinking expectations",
+  "sharedTraitExpectationsValue": "You each fit what the other hopes for",
+  "sharedTraitRhythm": "Daily rhythm",
+  "sharedTraitHobbies": "Hobbies",
+  "sharedTraitLanguages": "Languages"
 }

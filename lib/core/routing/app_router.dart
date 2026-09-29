@@ -50,16 +50,22 @@ import 'package:mevora/features/support/presentation/pages/support_center_page.d
 import 'package:mevora/features/support/presentation/pages/support_ticket_detail_page.dart';
 import 'package:mevora/features/support/presentation/pages/support_ticket_form_page.dart';
 import 'package:mevora/features/support/presentation/pages/support_tickets_page.dart';
+import 'package:mevora/features/relationship_learning/presentation/controllers/learning_journey_controller.dart';
+import 'package:mevora/features/relationship_learning/presentation/pages/learning_dashboard_page.dart';
+import 'package:mevora/features/relationship_learning/presentation/pages/relationship_learning_page.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
 
 GoRouter createAppRouter({
   required AppConfig config,
   required AuthController authController,
   LocationController? locationController,
+  LearningJourneyController? journey,
 }) {
-  final refresh = locationController == null
-      ? authController
-      : Listenable.merge(<Listenable>[authController, locationController]);
+  final refresh = Listenable.merge(<Listenable>[
+    authController,
+    ?locationController,
+    ?journey,
+  ]);
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refresh,
@@ -74,6 +80,8 @@ GoRouter createAppRouter({
             authController.phoneChallenge != null,
         needsLocationOnboarding: locationController?.onboardingNeeded ?? false,
         locationGateResolved: locationController?.isResolved ?? true,
+        journeyRoute: journey?.requiredRoute,
+        journeyPending: journey?.pending ?? false,
       );
     },
     routes: [
@@ -304,6 +312,24 @@ GoRouter createAppRouter({
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const HumorCalibrationResultPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.learningDashboard,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const LearningDashboardPage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.relationshipLearning,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: RelationshipLearningPage(
+            mode: learningModeFromQuery(state.uri.queryParameters['mode']),
+            next: state.uri.queryParameters['next'],
+            source: state.uri.queryParameters['source'] ?? 'route',
+          ),
         ),
       ),
       GoRoute(

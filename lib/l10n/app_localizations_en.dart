@@ -93,14 +93,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get picksLoadErrorTitle => 'We couldn\'t load your Picks.';
 
   @override
-  String get picksEmptyPreparingTitle => 'Your new Picks are on their way.';
+  String get picksEmptyPreparingTitle =>
+      'We couldn\'t choose anyone for you today.';
 
   @override
   String get picksEmptyPreparingMessage =>
       'Instead of showing you random profiles, we\'re finding more meaningful matches.';
 
   @override
-  String get picksEmptyDoneTitle => 'You\'ve been through today\'s Picks.';
+  String get picksEmptyDoneTitle => 'You\'ve seen today\'s picks.';
 
   @override
   String get picksDiscoveryOffTitle => 'Discovery is off';
@@ -108,19 +109,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get picksDiscoveryOffMessage =>
       'Turn discovery on in settings to get Picks.';
-
-  @override
-  String get picksDiscoverMore => 'Beyond your picks';
-
-  @override
-  String get picksDiscoverMoreHint =>
-      'People outside your Picks who may still be a good fit.';
-
-  @override
-  String get picksBackToPicks => 'Back to Mevora Picks';
-
-  @override
-  String get discoverMoreSubtitle => 'People outside today\'s Picks';
 
   @override
   String get picksLike => 'Like';
@@ -150,6 +138,193 @@ class AppLocalizationsEn extends AppLocalizations {
   String picksMatchScore(int score) {
     return 'Mevora match $score%';
   }
+
+  @override
+  String get picksEmptyDoneMessage =>
+      'Mevora will choose new people for you tomorrow.';
+
+  @override
+  String get picksEmptyNoCandidatesMessage =>
+      'Rather than show you random profiles, we\'ll look again tomorrow.';
+
+  @override
+  String get learningCardTitle => 'Let Mevora get to know you';
+
+  @override
+  String learningCardInitialStart(int total) {
+    return '$total short questions help us choose people who fit you.';
+  }
+
+  @override
+  String learningCardInitialResume(int answered, int total) {
+    return '$answered of $total answered. Pick up where you left off.';
+  }
+
+  @override
+  String learningCardFollowUp(int count) {
+    return '$count short questions to sharpen your Picks.';
+  }
+
+  @override
+  String get learningCardStart => 'Start';
+
+  @override
+  String get learningCardResume => 'Continue';
+
+  @override
+  String get learningCardNotNow => 'Not now';
+
+  @override
+  String get learningRequiredTitle => 'First, let us get to know you';
+
+  @override
+  String learningRequiredBody(int total) {
+    return 'Today\'s Picks are chosen from your answers. $total short questions, about two minutes.';
+  }
+
+  @override
+  String get learningIntroTitle => 'Let Mevora get to know you';
+
+  @override
+  String get learningIntroBody =>
+      'We use your answers to choose people who fit you better.';
+
+  @override
+  String learningIntroMeta(int count) {
+    return '$count short questions · about two minutes';
+  }
+
+  @override
+  String get learningIntroStart => 'Let\'s start';
+
+  @override
+  String learningProgress(int current, int total) {
+    return '$current / $total';
+  }
+
+  @override
+  String learningProgressSemantics(int current, int total) {
+    return 'Question $current of $total';
+  }
+
+  @override
+  String get learningPrevious => 'Previous';
+
+  @override
+  String get learningNext => 'Next';
+
+  @override
+  String get learningSaveFailed => 'We couldn\'t save your answer. Try again.';
+
+  @override
+  String get learningLoadErrorTitle => 'We couldn\'t load the questions.';
+
+  @override
+  String get learningDoneTitle => 'Thanks, we know you a little better now.';
+
+  @override
+  String get learningDoneBody =>
+      'From now on, the people we choose for you follow your answers.';
+
+  @override
+  String get learningDoneContinue => 'Continue';
+
+  @override
+  String get learningFollowUpDoneTitle => 'Thank you!';
+
+  @override
+  String get learningFollowUpDoneBody =>
+      'Your answers will make your Picks fit you better.';
+
+  @override
+  String get learningNothingTitle => 'No new questions for now';
+
+  @override
+  String get learningNothingBody =>
+      'When new questions are ready, you\'ll find them here.';
+
+  @override
+  String get learningProfileTitle => 'Let Mevora get to know me';
+
+  @override
+  String get learningProfileSubtitle =>
+      'Your answers help us choose people who fit you.';
+
+  @override
+  String get learningAfterHumorTitle => 'We know your humor a little now.';
+
+  @override
+  String get learningAfterHumorBody =>
+      'Now let\'s learn what matters to you in a relationship.';
+
+  @override
+  String get learningDashboardHeadline => 'How well does Mevora know you?';
+
+  @override
+  String learningDashboardPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get learningDashboardBody =>
+      'Your answers and your profile help us choose people who fit you.';
+
+  @override
+  String learningDashboardResumeInitial(int answered, int total) {
+    return 'Continue where you left off ($answered/$total)';
+  }
+
+  @override
+  String learningDashboardContinue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Continue with $count short questions',
+      one: 'Continue with 1 short question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get learningDashboardAllAnswered =>
+      'You\'ve answered every question for now. New ones will appear here.';
+
+  @override
+  String get learningDashboardCategoriesTitle => 'Compatibility areas';
+
+  @override
+  String get learningDashboardHighlightsTitle => 'What we\'ve learned so far';
+
+  @override
+  String get learningDashboardHighlightsSubtitle => 'From your own answers.';
+
+  @override
+  String get learningDashboardAnswersTitle => 'Your answers';
+
+  @override
+  String get learningDashboardAnswersFooter =>
+      'Changed your mind? Tap an answer to change it.';
+
+  @override
+  String get learningCategoryRelationship => 'Relationship expectations';
+
+  @override
+  String get learningCategoryCommunication => 'Communication';
+
+  @override
+  String get learningCategoryLifestyle => 'Lifestyle';
+
+  @override
+  String get learningCategoryValues => 'Values';
+
+  @override
+  String get learningCategoryHumor => 'Humor';
+
+  @override
+  String get learningCategoryMusic => 'Music';
+
+  @override
+  String get learningCategoryInterests => 'Interests';
 
   @override
   String get pickTypeBestOverall => 'Best match';
@@ -1252,6 +1427,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.';
 
   @override
+  String get settingsResetLearned => 'Reset what Mevora learned from me';
+
+  @override
+  String get settingsResetLearnedSubtitle =>
+      'Clears what was learned from your interactions. Your answers stay.';
+
+  @override
+  String get settingsResetLearnedConfirmTitle => 'Reset what Mevora learned?';
+
+  @override
+  String get settingsResetLearnedConfirmBody =>
+      'Mevora will forget what it learned from your likes, matches and conversation activity. Your answers and your profile don\'t change.';
+
+  @override
+  String get settingsResetLearnedConfirm => 'Reset';
+
+  @override
+  String get settingsResetLearnedDone => 'What Mevora learned has been reset.';
+
+  @override
+  String get settingsResetLearnedFailed => 'Couldn\'t reset. Try again.';
+
+  @override
   String get minAge => 'Minimum age';
 
   @override
@@ -2348,88 +2546,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Let your music taste be part of your match. Mevora doesn\'t play music.';
 
   @override
-  String get matchScoreTitle => 'Match points';
-
-  @override
-  String get matchScoreSubtitle => 'Your connection reputation';
-
-  @override
-  String matchScoreValue(int score) {
-    return '$score points';
-  }
-
-  @override
-  String get matchScoreHistoryTitle => 'Point history';
-
-  @override
-  String get matchScoreHistoryEmpty =>
-      'New matches and conversations will add points here.';
-
-  @override
-  String get matchScoreHistoryMatch => 'New match +1';
-
-  @override
-  String get matchScoreHistoryInteraction => 'Conversation +1';
-
-  @override
-  String get matchFeedbackTitle => 'How did this match go?';
-
-  @override
-  String get matchFeedbackMessage =>
-      'Optional. This note stays in your history — they will not see it, and it does not change anyone\'s points.';
-
-  @override
-  String get matchFeedbackHint => 'A short private note';
-
-  @override
-  String get matchFeedbackSubmit => 'Save note';
-
-  @override
-  String get matchFeedbackThanks => 'Saved to your history.';
-
-  @override
-  String get matchFeedbackTooShort => 'Write a short note, or skip.';
-
-  @override
-  String get matchFeedbackFailed => 'Couldn\'t save that note. Try again.';
-
-  @override
-  String get relationshipPromptTitle => 'Help Mevora get to know you';
-
-  @override
-  String get relationshipQuestionsPreparing =>
-      'New questions are on the way. Try again in a little while.';
-
-  @override
-  String get relationshipTestTitle => 'Help Mevora get to know you';
-
-  @override
-  String get relationshipTestHeadline => 'Help Mevora get to know you';
-
-  @override
-  String get relationshipTestMessage =>
-      'A few calm questions about what matters to you in a relationship. Your answers help us make more meaningful picks.';
-
-  @override
-  String get relationshipTestStart => 'Let\'s start';
-
-  @override
-  String get relationshipTestLater => 'Not now';
-
-  @override
-  String get relationshipContinueTitle => 'A few more questions?';
-
-  @override
-  String get relationshipContinueMessage =>
-      'Each answer helps us choose who to show you. Keep going now, or come back later.';
-
-  @override
-  String get relationshipContinueYes => 'Continue';
-
-  @override
-  String get relationshipContinueNo => 'Not now';
-
-  @override
   String get likesYouTitle => 'People who liked you';
 
   @override
@@ -2483,35 +2599,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get likesYouLoadError => 'Couldn\'t load likes. Please try again.';
 
   @override
-  String get relationshipTestDoneTitle =>
-      'Thanks — now we know you a little better';
-
-  @override
-  String get relationshipTestFound => 'Someone answered a lot like you.';
-
-  @override
-  String get relationshipTestAlign => 'Your answers overlap on shared topics.';
-
-  @override
-  String get relationshipTestNearest => 'Closest to you:';
-
-  @override
-  String get relationshipTestEmpty =>
-      'No one nearby has answered quite like you yet.';
-
-  @override
-  String get relationshipTestViewProfile => 'View profile';
-
-  @override
-  String get relationshipTestOpenChat => 'Open chat';
-
-  @override
   String get relationshipMatchBadge => 'Similar answers';
-
-  @override
-  String relationshipPromptProgress(int answered, int total) {
-    return '$answered / $total';
-  }
 
   @override
   String relationshipCompatibilityPercent(int percent) {
@@ -2536,16 +2624,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipViewsAlign => 'Your relationship views overlap.';
 
   @override
-  String get relationshipMatchesTitle => 'Relationship matches';
-
-  @override
   String get relationshipMatchesEmpty =>
       'Answer a few relationship questions to find people who think like you — distance does not matter here.';
-
-  @override
-  String relationshipProfileSubtitle(int answered) {
-    return '$answered relationship questions answered';
-  }
 
   @override
   String get relationshipTopicJealousy => 'You think similarly about jealousy.';
@@ -4449,4 +4529,203 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatPreviewEncrypted => 'Encrypted message';
+
+  @override
+  String get streakTitle => 'Daily streak';
+
+  @override
+  String get streakIndicatorTooltip => 'Your daily streak';
+
+  @override
+  String streakIndicatorSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Daily streak: $count days',
+      one: 'Daily streak: 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count-day streak',
+      one: '1-day streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakDetailsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You have come back to Mevora $count days in a row.',
+      one: 'You came to Mevora today. Come back tomorrow to keep it going.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakLongest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Longest streak: $count days',
+      one: 'Longest streak: 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakTotalDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days on Mevora in total',
+      one: '1 day on Mevora in total',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakLastSevenDays => 'Last 7 days';
+
+  @override
+  String streakWeekSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You came back on $count of the last 7 days',
+      one: 'You came back on 1 of the last 7 days',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakHowItWorks =>
+      'Your streak grows by one on each day you come back to Mevora. Opening the app again on the same day does not add to it.';
+
+  @override
+  String get streakMissedDayNote =>
+      'Skip a day and a new streak begins. Your longest streak always stays on record.';
+
+  @override
+  String get streakStartedTitle => 'Your streak has started';
+
+  @override
+  String get streakStartedBody =>
+      'You came to Mevora today. Come back tomorrow to keep it going.';
+
+  @override
+  String get streakContinuedBody => 'You kept your streak going today.';
+
+  @override
+  String get streakRestartedTitle => 'A new streak has started';
+
+  @override
+  String get streakRestartedBody =>
+      'Today is day 1 again. Your longest streak is still on record.';
+
+  @override
+  String get streakPersonalBest => 'New personal best';
+
+  @override
+  String get streakMilestone => 'Milestone';
+
+  @override
+  String get streakCelebrationDismiss => 'Continue';
+
+  @override
+  String get onboardingSmokingVapeOnly => 'Only e-cigarettes';
+
+  @override
+  String get onboardingSmokingQuitting => 'Trying to quit';
+
+  @override
+  String get onboardingAlcoholSober => 'I quit drinking';
+
+  @override
+  String get onboardingExerciseAthlete => 'Very active / athlete';
+
+  @override
+  String get onboardingLifestyleBird => 'Bird';
+
+  @override
+  String get onboardingLifestyleFish => 'Fish';
+
+  @override
+  String get onboardingPetsWant => 'None yet, but I\'d like one';
+
+  @override
+  String get onboardingPetsAllergic => 'I\'m allergic';
+
+  @override
+  String get onboardingDiet => 'Diet';
+
+  @override
+  String get dietOmnivore => 'I eat everything';
+
+  @override
+  String get dietVegetarian => 'Vegetarian';
+
+  @override
+  String get dietVegan => 'Vegan';
+
+  @override
+  String get dietPescatarian => 'Pescatarian';
+
+  @override
+  String get dietHalal => 'Halal';
+
+  @override
+  String get dietGlutenFree => 'Gluten-free';
+
+  @override
+  String get onboardingAboutYouSubtitle =>
+      'Optional. Answer what you like; it sharpens who we pick for you.';
+
+  @override
+  String get sharedTraitsTitle => 'What you have in common';
+
+  @override
+  String get sharedTraitGoal => 'Looking for';
+
+  @override
+  String get sharedTraitQuestions => 'Relationship questions';
+
+  @override
+  String sharedTraitQuestionsValue(int aligned, int shared) {
+    return 'Same answer on $aligned of $shared';
+  }
+
+  @override
+  String get sharedTraitChildren => 'Children';
+
+  @override
+  String get sharedTraitAge => 'Age';
+
+  @override
+  String sharedTraitAgeValue(int mine, int theirs) {
+    return '$mine and $theirs, close in age';
+  }
+
+  @override
+  String get sharedTraitExpectations => 'Smoking and drinking expectations';
+
+  @override
+  String get sharedTraitExpectationsValue =>
+      'You each fit what the other hopes for';
+
+  @override
+  String get sharedTraitRhythm => 'Daily rhythm';
+
+  @override
+  String get sharedTraitHobbies => 'Hobbies';
+
+  @override
+  String get sharedTraitLanguages => 'Languages';
 }

@@ -1,12 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/matching/domain/match_engine.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/swipe_action.dart';
-import 'package:mevora/features/relationship/domain/config/relationship_question_config.dart';
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
 import 'package:mevora/features/relationship/data/datasources/mock_relationship_data_source.dart';
-import 'package:mevora/features/relationship/data/repositories/relationship_repository_impl.dart';
 import 'package:mevora/features/relationship/domain/services/relationship_compatibility.dart';
 import 'package:mevora/features/relationship/domain/services/relationship_match_rules.dart';
 
@@ -46,7 +43,7 @@ void main() {
     expect(split.score, 0);
   });
 
-  test('relationship suggestion is not an automatic mutual match', () {
+  test('a like alone is not an automatic mutual match', () {
     expect(
       MatchEngine.shouldCreateMatch(
         forward: MatchEngine.buildLike(
@@ -81,115 +78,6 @@ void main() {
       ),
       isFalse,
     );
-  });
-
-  test('inactive relationship profiles are not suggested', () async {
-    final now = DateTime.utc(2026, 8, 21);
-    final source = MockRelationshipDataSource(
-      clock: () => now,
-      answers: const {'rq_001': 'a', 'rq_002': 'b', 'rq_003': 'c'},
-      lastActiveAtByUid: {
-        'rel-ada': now.subtract(const Duration(days: 100)),
-        'rel-leo': now,
-      },
-    );
-    final result = await source.completeTest(
-      questionIds: const ['rq_001', 'rq_002', 'rq_003'],
-    );
-    expect(result.map((item) => item.candidate.uid), ['rel-leo']);
-  });
-
-  test('partial answer overlap is not an exact relationship match', () async {
-    final source = MockRelationshipDataSource(
-      answers: const {'rq_001': 'a', 'rq_002': 'b', 'rq_003': 'c'},
-      peers: [
-        const MockRelationshipPeer(
-          candidate: DiscoveryCandidate(
-            uid: 'rel-mia',
-            displayName: 'Mia',
-            age: 26,
-            photos: [],
-            gender: 'woman',
-            isDemo: true,
-          ),
-          answers: {'rq_001': 'a', 'rq_002': 'b', 'rq_003': 'a'},
-        ),
-      ],
-    );
-    final result = await source.completeTest(
-      questionIds: const ['rq_001', 'rq_002', 'rq_003'],
-    );
-    expect(result, isEmpty);
-  });
-
-  test('no answers means an empty suggestion list, not a match', () async {
-    final repository = RelationshipRepositoryImpl(
-      dataSource: MockRelationshipDataSource(),
-    );
-    final result = await repository.getSuggestions();
-    expect(result.isSuccess, isTrue);
-    expect(result.valueOrNull, isEmpty);
-  });
-
-  test('completeTest matches only the nearest person within 100 km', () async {
-    final source = MockRelationshipDataSource(
-      answers: const {'rq_001': 'a', 'rq_002': 'b', 'rq_003': 'c'},
-    );
-    final result = await source.completeTest(
-      questionIds: const ['rq_001', 'rq_002', 'rq_003'],
-    );
-    expect(result.map((item) => item.candidate.uid), ['rel-ada']);
-    expect(result.first.candidate.distanceKm, 1.4);
-    expect(result.first.matchId, MatchEngine.matchId('self', 'rel-ada'));
-  });
-
-  test('candidates beyond 100 km are not matched', () async {
-    final source = MockRelationshipDataSource(
-      answers: const {'rq_001': 'a', 'rq_002': 'b', 'rq_003': 'c'},
-      peers: const [
-        MockRelationshipPeer(
-          candidate: DiscoveryCandidate(
-            uid: 'rel-far',
-            displayName: 'Far',
-            age: 28,
-            photos: [],
-            gender: 'woman',
-            distanceKm: 120,
-            isDemo: true,
-          ),
-          answers: {'rq_001': 'a', 'rq_002': 'b', 'rq_003': 'c'},
-        ),
-      ],
-    );
-    final result = await source.completeTest(
-      questionIds: const ['rq_001', 'rq_002', 'rq_003'],
-    );
-    expect(result, isEmpty);
-    expect(RelationshipQuestionConfig.maxDistanceKm, 100);
-  });
-
-  test('the same answer letters on a different set do not match', () async {
-    final source = MockRelationshipDataSource(
-      answers: const {'rq_001': 'a', 'rq_002': 'b', 'rq_003': 'c'},
-      peers: const [
-        MockRelationshipPeer(
-          candidate: DiscoveryCandidate(
-            uid: 'rel-set',
-            displayName: 'Set',
-            age: 26,
-            photos: [],
-            gender: 'woman',
-            distanceKm: 2,
-            isDemo: true,
-          ),
-          answers: {'rq_004': 'a', 'rq_005': 'b', 'rq_006': 'c'},
-        ),
-      ],
-    );
-    final result = await source.completeTest(
-      questionIds: const ['rq_001', 'rq_002', 'rq_003'],
-    );
-    expect(result, isEmpty);
   });
 
   test('legacy matches without source count as mutual likes', () {

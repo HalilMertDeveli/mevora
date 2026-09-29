@@ -575,6 +575,19 @@ service cloud.firestore {
         allow read, write: if false;
       }
 
+      // Per-person learning budgets (hashed ids). Server-only, never readable.
+      match /personalizationPartners/{partnerKey} {
+        allow read, write: if false;
+      }
+
+      // Relationship Learning: the member's answers, progress and follow-up
+      // rounds. Answers are validated against the server catalog, so every
+      // write goes through a callable; the owner may read their own.
+      match /relationshipLearning/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
       match /verification/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;

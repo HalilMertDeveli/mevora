@@ -1,5 +1,6 @@
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
+import 'package:mevora/features/relationship_learning/domain/entities/relationship_learning.dart';
 
 /// Why Mevora chose someone. Stable API identifiers; the UI localises them.
 enum PickType {
@@ -138,7 +139,14 @@ class MevoraPick {
 
 enum PicksStatus { ready, lowSupply, empty }
 
-enum PicksEmptyReason { allDecided, noCandidates, discoveryDisabled }
+enum PicksEmptyReason {
+  allDecided,
+  noCandidates,
+  discoveryDisabled,
+
+  /// A new member's first Picks wait for the initial learning questions.
+  learningRequired,
+}
 
 class MevoraPicksBatch {
   const MevoraPicksBatch({
@@ -148,6 +156,7 @@ class MevoraPicksBatch {
     this.refreshAt,
     this.targetCount = 6,
     this.picks = const [],
+    this.learning = LearningSummary.unknown,
   });
 
   static const MevoraPicksBatch empty = MevoraPicksBatch(
@@ -162,6 +171,9 @@ class MevoraPicksBatch {
   final int targetCount;
   final List<MevoraPick> picks;
 
+  /// Where the member stands with Relationship Learning.
+  final LearningSummary learning;
+
   MevoraPicksBatch copyWith({List<MevoraPick>? picks}) {
     final next = picks ?? this.picks;
     return MevoraPicksBatch(
@@ -173,6 +185,7 @@ class MevoraPicksBatch {
       refreshAt: refreshAt,
       targetCount: targetCount,
       picks: next,
+      learning: learning,
     );
   }
 }

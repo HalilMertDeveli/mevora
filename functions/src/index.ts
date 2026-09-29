@@ -22,9 +22,6 @@ export {
 export {
   saveRelationshipAnswer,
   getRelationshipAnswered,
-  getRelationshipMatches,
-  completeRelationshipTest,
-  dismissRelationshipTestOffer,
   syncProfileQuestionAnswers,
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
@@ -32,6 +29,7 @@ export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoo
 export {verifyPremiumPurchase} from "./subscription/verifyPremiumPurchase.js";
 export {onPlaySubscriptionNotification} from "./subscription/googleRtdnFunction.js";
 export {getMevoraPicks} from "./picks/index.js";
+export {recordDailyCheckIn} from "./streak/index.js";
 export {
   createIdentityVerificationSession,
   getIdentityVerificationState,
@@ -55,7 +53,14 @@ export {
   personalizationOnMatchCreated,
   recordProfileEngagement,
   debugPersonalizationRanking,
+  resetMyPersonalization,
 } from "./personalization/functions.js";
+export {
+  getRelationshipLearningState,
+  saveRelationshipLearningAnswer,
+  snoozeRelationshipLearningPrompt,
+  skipOnboardingHumor,
+} from "./relationshipLearning/functions.js";
 
 // Automation job processors. `deleteUserAccount` enqueues an
 // `accountDeletionVerify` job (plus a Cloud Task); without these exports the

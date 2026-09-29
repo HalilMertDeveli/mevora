@@ -4,37 +4,42 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
-import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
 import 'package:mevora/features/picks/presentation/controllers/mevora_picks_controller.dart';
 import 'package:mevora/features/picks/presentation/widgets/pick_card.dart';
+import 'package:mevora/features/relationship_learning/domain/entities/relationship_learning.dart';
+import 'package:mevora/features/relationship_learning/presentation/widgets/learning_prompt_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
-import 'package:mevora/shared/widgets/mevora_context_row.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
-import 'package:mevora/shared/widgets/mevora_pill.dart';
 
-/// The Mevora Picks screen body: a short, explained list of people Mevora
-/// chose, then a quiet way to browse more.
+/// The Mevora Picks screen body: today's short, explained, finite set of
+/// people Mevora chose. When it runs out, it runs out until tomorrow.
 class PicksView extends StatefulWidget {
   const PicksView({
     super.key,
     required this.controller,
     required this.onOpenProfile,
-    required this.onDiscoverMore,
+    this.onOpenLearning,
+    this.onSnoozeLearning,
     this.onOpenSettings,
     this.footer,
   });
 
   final MevoraPicksController controller;
   final void Function(MevoraPick pick) onOpenProfile;
-  final VoidCallback onDiscoverMore;
+
+  /// Opens Relationship Learning. Without it no learning card is shown.
+  final void Function(LearningSummary summary)? onOpenLearning;
+
+  /// "Not now" on a follow-up round invitation.
+  final VoidCallback? onSnoozeLearning;
   final VoidCallback? onOpenSettings;
 
-  /// Shown under the Picks, above Discover More (e.g. the Humor Lab entry,
-  /// whose calibration is what makes a Humor Match possible).
+  /// Shown under the Picks (e.g. the Humor Lab entry, whose calibration is
+  /// what makes a Humor Match possible).
   final Widget? footer;
 
   @override
@@ -111,8 +116,49 @@ class _PicksViewState extends State<PicksView> {
     );
   }
 
+  Widget? _learningCard(MevoraPicksBatch batch) {
+    final open = widget.onOpenLearning;
+    if (open == null || !learningPromptVisible(batch.learning)) {
+      return null;
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPadding,
+        0,
+        AppSpacing.screenPadding,
+        AppSpacing.lg,
+      ),
+      child: LearningPromptCard(
+        summary: batch.learning,
+        onOpen: () => open(batch.learning),
+        onNotNow: widget.onSnoozeLearning,
+      ),
+    );
+  }
+
   Widget _loaded(BuildContext context, MevoraPicksState state) {
     final batch = state.batch;
+    final open = widget.onOpenLearning;
+    if (batch.emptyReason == PicksEmptyReason.learningRequired &&
+        open != null) {
+      return RefreshIndicator(
+        key: const ValueKey('picks-learning-gate'),
+        onRefresh: widget.controller.load,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: LearningGate(
+                summary: batch.learning,
+                onOpen: () => open(batch.learning),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final card = _learningCard(batch);
     return RefreshIndicator(
       key: const ValueKey('picks-loaded'),
       onRefresh: widget.controller.load,
@@ -122,10 +168,16 @@ class _PicksViewState extends State<PicksView> {
           if (batch.picks.isEmpty)
             SliverFillRemaining(
               hasScrollBody: false,
-              child: _empty(context, batch),
+              child: Column(
+                children: [
+                  Expanded(child: _empty(context, batch)),
+                  ?card,
+                ],
+              ),
             )
           else ...[
             SliverToBoxAdapter(child: _PicksHeader(batch: batch)),
+            if (card != null) SliverToBoxAdapter(child: card),
             SliverPadding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenPadding,
@@ -162,9 +214,7 @@ class _PicksViewState extends State<PicksView> {
                 ),
                 sliver: SliverToBoxAdapter(child: widget.footer),
               ),
-            SliverToBoxAdapter(
-              child: _DiscoverMoreFooter(onTap: widget.onDiscoverMore),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
           ],
         ],
       ),
@@ -182,14 +232,16 @@ class _PicksViewState extends State<PicksView> {
         onAction: widget.onOpenSettings,
       );
     }
+    // Today's set is finite: an intentional ending, never a refill.
+    final done = batch.emptyReason == PicksEmptyReason.allDecided;
+    widget.controller.analytics.exhausted(done ? 'allDecided' : 'noCandidates');
     return MevoraEmptyState(
-      art: MevoraArt.emptyProfiles,
-      title: batch.emptyReason == PicksEmptyReason.allDecided
-          ? l10n.picksEmptyDoneTitle
-          : l10n.picksEmptyPreparingTitle,
-      message: l10n.picksEmptyPreparingMessage,
-      actionLabel: l10n.picksDiscoverMore,
-      onAction: widget.onDiscoverMore,
+      key: Key(done ? 'picksExhausted' : 'picksNoCandidates'),
+      art: done ? MevoraArt.success : MevoraArt.emptyProfiles,
+      title: done ? l10n.picksEmptyDoneTitle : l10n.picksEmptyPreparingTitle,
+      message: done
+          ? l10n.picksEmptyDoneMessage
+          : l10n.picksEmptyNoCandidatesMessage,
     );
   }
 }
@@ -297,32 +349,6 @@ class _PickEntryState extends State<_PickEntry> {
                 ),
               ),
             ),
-    );
-  }
-}
-
-class _DiscoverMoreFooter extends StatelessWidget {
-  const _DiscoverMoreFooter({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenPadding,
-        0,
-        AppSpacing.screenPadding,
-        AppSpacing.xl,
-      ),
-      child: MevoraContextRow(
-        icon: MevoraIcons.discover,
-        title: l10n.picksDiscoverMore,
-        subtitle: l10n.picksDiscoverMoreHint,
-        tone: MevoraTone.accent,
-        onTap: onTap,
-      ),
     );
   }
 }

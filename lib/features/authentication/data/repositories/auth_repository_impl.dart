@@ -346,12 +346,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AuthUser> _persistPhoneSession(AuthSession session) async {
     if (kDebugMode) {
       // ignore: avoid_print
-      print('[PHONE_AUTH] FIRESTORE_PROFILE_CHECK start');
+      print('[PHONE_AUTH] USER_DOC_SYNC start');
     }
     await _userRemoteDataSource.upsertFromSession(session);
     if (kDebugMode) {
       // ignore: avoid_print
-      print('[PHONE_AUTH] FIRESTORE_PROFILE_CHECK upserted');
+      print('[PHONE_AUTH] USER_DOC_SYNC upserted');
     }
     final sync = _accountSync;
     if (sync != null) {

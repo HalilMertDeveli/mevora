@@ -20,6 +20,7 @@ import {PICK_QUALITY, PICKS_CONFIG} from "./config.js";
 import {composePicks, evaluatePool} from "./selection.js";
 import {loadPersonalizationContext} from "../personalization/store.js";
 import {
+  logicalDayKey,
   activePicks,
   appendPicks,
   applyDecision,
@@ -279,7 +280,7 @@ function newGenerationId(): string {
 // ---------------------------------------------------------------------------
 
 export type PicksStatus = "ready" | "lowSupply" | "empty";
-export type PicksEmptyReason = "allDecided" | "noCandidates" | null;
+export type PicksEmptyReason = "allDecided" | "noCandidates" | "learningRequired" | null;
 
 function outcomeFor(
   viewer: DiscoveryViewerContext,
@@ -424,7 +425,9 @@ export async function servePicks(input: {
   let changed = revalidated.changed;
   batch = revalidated.batch;
 
-  // Top up when decided Picks left room and the batch still has budget.
+  // Fill open slots (a short first batch, or a Pick that stopped being
+  // eligible). Liked, passed and matched Picks keep their slot: today's set
+  // stays finite however fast the member decides.
   if (delivered.length === 0 && needsTopUp(batch, nowMs)) {
     const {composed, cards} = await selectFromPool({
       db,
@@ -489,8 +492,10 @@ export async function servePicks(input: {
   });
   const lowSupply = batch.deliveredCount < PICKS_CONFIG.targetCount;
   const status: PicksStatus = picks.length === 0 ? "empty" : lowSupply ? "lowSupply" : "ready";
+  const decidedAny = batch.picks.some((pick) =>
+    pick.state === "liked" || pick.state === "passed" || pick.state === "matched");
   const emptyReason: PicksEmptyReason =
-    picks.length > 0 ? null : batch.deliveredCount > 0 ? "allDecided" : "noCandidates";
+    picks.length > 0 ? null : decidedAny ? "allDecided" : "noCandidates";
   logger.info("mevora_picks_served", {
     status,
     visible: picks.length,
@@ -503,6 +508,7 @@ export async function servePicks(input: {
     emptyReason,
     generationId: batch.generationId,
     generatedAtMs: batch.generatedAtMs,
+    dayKey: logicalDayKey(batch.generatedAtMs),
     refreshAtMs: batch.refreshAtMs,
     targetCount: PICKS_CONFIG.targetCount,
     picks,

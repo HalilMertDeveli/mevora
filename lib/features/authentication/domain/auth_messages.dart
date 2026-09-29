@@ -14,7 +14,7 @@ abstract final class AuthMessages {
   static const String phoneTitle = 'Telefon Numarası ile Giriş Yap';
   static const String phoneSubtitle =
       'Ülke kodunu seçip telefon numaranı gir. Doğrulama için SMS ile 6 haneli bir kod göndereceğiz.';
-  static const String phoneHint = '0542 519 2119';
+  static const String phoneHint = '0532 123 4567';
   static const String sendCode = 'Doğrulama kodu gönder';
   static const String countrySearchHint = 'Ülke ara';
   static const String otpTitle = 'Doğrulama kodunu gir';

@@ -31,6 +31,8 @@ abstract final class AuthRedirector {
     bool phoneChallengeActive = false,
     bool needsLocationOnboarding = false,
     bool locationGateResolved = true,
+    String? journeyRoute,
+    bool journeyPending = false,
   }) {
     if (allowDesignSystem && location == AppRoutes.designSystem) {
       return null;
@@ -85,15 +87,36 @@ abstract final class AuthRedirector {
               ? null
               : AppRoutes.locationPermission;
         }
-        if (location == AppRoutes.splash ||
+        final entry =
+            location == AppRoutes.splash ||
             location == AppRoutes.onboarding ||
             location == AppRoutes.locationPermission ||
             _isSessionRoute(location, qaLoginEnabled) ||
-            location == AppRoutes.phoneOtp) {
+            location == AppRoutes.phoneOtp;
+        // A new member's first-run steps come before the rest of the app.
+        // Settings, legal pages and the steps themselves stay reachable, so
+        // nobody is ever cornered; everything else leads back to the step.
+        if (journeyRoute != null) {
+          return !entry && _journeyAllows(location) ? null : journeyRoute;
+        }
+        if (entry) {
+          // Hold briefly on the splash while the journey is first read, so a
+          // new member does not flash through Discover.
+          if (journeyPending) {
+            return location == AppRoutes.splash ? null : AppRoutes.splash;
+          }
           return AppRoutes.discovery;
         }
         return null;
     }
+  }
+
+  static bool _journeyAllows(String location) {
+    return location == AppRoutes.humorLab ||
+        location.startsWith('/humor/') ||
+        location == AppRoutes.relationshipLearning ||
+        location.startsWith(AppRoutes.settings) ||
+        _publicLegalRoutes.contains(location);
   }
 
   static String? _onboardingRedirect({

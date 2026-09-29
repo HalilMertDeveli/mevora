@@ -13,7 +13,6 @@ import 'package:mevora/core/di/boost_services_factory.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/di/discovery_services_factory.dart';
 import 'package:mevora/core/di/location_services_factory.dart';
-import 'package:mevora/core/di/match_score_services_factory.dart';
 import 'package:mevora/core/di/music_services_factory.dart';
 import 'package:mevora/core/di/humor_services_factory.dart';
 import 'package:mevora/core/di/relationship_services_factory.dart';
@@ -21,6 +20,7 @@ import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_services_factory.dart';
 import 'package:mevora/core/di/support_scope.dart';
 import 'package:mevora/core/di/subscription_services_factory.dart';
+import 'package:mevora/core/di/streak_services_factory.dart';
 import 'package:mevora/core/di/verification_services_factory.dart';
 import 'package:mevora/core/errors/error_handler.dart';
 import 'package:mevora/core/identity/firebase_auth_uid_source.dart';
@@ -111,10 +111,6 @@ Future<void> bootstrap(AppEnvironment environment) async {
   );
   final humorServices = createHumorServices(config: config);
   final relationshipServices = createRelationshipServices(config: config);
-  final matchScoreServices = createMatchScoreServices(
-    config: config,
-    uidSource: uidSource,
-  );
   final socialServices = createFirebaseSocialServices(
     uidSource: uidSource,
     demoHub: demoHub,
@@ -139,6 +135,10 @@ Future<void> bootstrap(AppEnvironment environment) async {
     analytics: analytics,
     logger: logger,
     useEmulatorStore: config.useEmulators,
+  );
+  final streakServices = createStreakServices(
+    analytics: analytics,
+    logger: logger,
   );
   final languageController = LanguageController(
     repository: LanguageRepository(
@@ -167,7 +167,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       humorRepository: humorServices.repository,
       relationshipRepository: relationshipServices.repository,
       profileQuestionAnswerRepository: relationshipServices.profileAnswers,
-      matchScoreRepository: matchScoreServices.repository,
+      relationshipLearningRepository: relationshipServices.learning,
       socialServices: socialServices,
       purchaseRepository: boostServices.purchaseRepository,
       subscriptionServices: subscriptionServices,
@@ -177,6 +177,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       permissionService: permissionService,
       settingsServices: settingsServices,
       supportServices: supportServices,
+      streakServices: streakServices,
     ),
   );
 }

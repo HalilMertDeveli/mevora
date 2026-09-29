@@ -34,7 +34,6 @@ abstract final class AppDurations {
 
   /// Signature success / celebration marks.
   static const Duration celebrate = Duration(milliseconds: 900);
-  static const Duration relationshipPrompt = Duration(minutes: 30);
 }
 
 /// Easing. Things entering decelerate; things leaving accelerate; things that

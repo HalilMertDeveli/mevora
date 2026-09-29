@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @tagline.
   ///
   /// In en, this message translates to:
-  /// **'Find compatible people, not just nearby people.'**
+  /// **'Instead of showing you hundreds of people, Mevora tries to pick the ones you might actually click with.'**
   String get tagline;
 
   /// No description provided for @connectTagline.
@@ -119,31 +119,49 @@ abstract class AppLocalizations {
   /// Welcome/login hero slogan.
   ///
   /// In en, this message translates to:
-  /// **'Meet someone who fits you.'**
+  /// **'Not more people. Better matches for you.'**
   String get loginSlogan;
 
   /// No description provided for @discoverBestMatchesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your best matches'**
+  /// **'For You'**
   String get discoverBestMatchesTitle;
 
   /// No description provided for @discoverBestMatchesSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Selected based on your compatibility'**
+  /// **'People who may be right for you'**
   String get discoverBestMatchesSubtitle;
 
   /// No description provided for @onboardingUnderstandingMessage.
   ///
   /// In en, this message translates to:
-  /// **'Your answers help us understand your compatibility.'**
+  /// **'We use your answers to choose people who may be a better fit for you.'**
   String get onboardingUnderstandingMessage;
+
+  /// No description provided for @onboardingWhyRelationshipGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'This helps us find people who want the same thing.'**
+  String get onboardingWhyRelationshipGoal;
+
+  /// No description provided for @onboardingWhyLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyday habits matter more over time than they seem.'**
+  String get onboardingWhyLifestyle;
+
+  /// No description provided for @onboardingWhyBio.
+  ///
+  /// In en, this message translates to:
+  /// **'Even a few lines give people somewhere to start.'**
+  String get onboardingWhyBio;
 
   /// No description provided for @discoveryActionConnect.
   ///
   /// In en, this message translates to:
-  /// **'Connect'**
+  /// **'Like'**
   String get discoveryActionConnect;
 
   /// No description provided for @discoveryActionPriorityIntro.
@@ -152,11 +170,335 @@ abstract class AppLocalizations {
   /// **'Priority intro'**
   String get discoveryActionPriorityIntro;
 
+  /// No description provided for @picksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora Picks'**
+  String get picksTitle;
+
+  /// No description provided for @picksSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen for you'**
+  String get picksSubtitle;
+
+  /// No description provided for @picksHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Mevora Picks'**
+  String get picksHeadline;
+
+  /// No description provided for @picksIntroCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One person we think could be right for you.} other{{count} people we think could be right for you.}}'**
+  String picksIntroCount(int count);
+
+  /// No description provided for @picksIntroNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen from your compatibility, not at random. Refreshed daily.'**
+  String get picksIntroNote;
+
+  /// No description provided for @picksLowSupplyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{We found one strong match today. Rather than lower the bar, we\'re showing fewer.} other{We found {count} strong matches today. Rather than lower the bar, we\'re showing fewer.}}'**
+  String picksLowSupplyNote(int count);
+
+  /// No description provided for @picksLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Choosing people for you…'**
+  String get picksLoading;
+
+  /// No description provided for @picksLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your Picks.'**
+  String get picksLoadErrorTitle;
+
+  /// No description provided for @picksEmptyPreparingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new Picks are on their way.'**
+  String get picksEmptyPreparingTitle;
+
+  /// No description provided for @picksEmptyPreparingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Instead of showing you random profiles, we\'re finding more meaningful matches.'**
+  String get picksEmptyPreparingMessage;
+
+  /// No description provided for @picksEmptyDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve been through today\'s Picks.'**
+  String get picksEmptyDoneTitle;
+
+  /// No description provided for @picksDiscoveryOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovery is off'**
+  String get picksDiscoveryOffTitle;
+
+  /// No description provided for @picksDiscoveryOffMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn discovery on in settings to get Picks.'**
+  String get picksDiscoveryOffMessage;
+
+  /// No description provided for @picksDiscoverMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Beyond your picks'**
+  String get picksDiscoverMore;
+
+  /// No description provided for @picksDiscoverMoreHint.
+  ///
+  /// In en, this message translates to:
+  /// **'People outside your Picks who may still be a good fit.'**
+  String get picksDiscoverMoreHint;
+
+  /// No description provided for @picksBackToPicks.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Mevora Picks'**
+  String get picksBackToPicks;
+
+  /// No description provided for @discoverMoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'People outside today\'s Picks'**
+  String get discoverMoreSubtitle;
+
+  /// No description provided for @picksLike.
+  ///
+  /// In en, this message translates to:
+  /// **'Like'**
+  String get picksLike;
+
+  /// No description provided for @picksPass.
+  ///
+  /// In en, this message translates to:
+  /// **'Pass'**
+  String get picksPass;
+
+  /// No description provided for @picksLikeSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Like {name}'**
+  String picksLikeSemantics(String name);
+
+  /// No description provided for @picksPassSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Pass on {name}'**
+  String picksPassSemantics(String name);
+
+  /// No description provided for @picksOpenProfileSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}\'s profile'**
+  String picksOpenProfileSemantics(String name);
+
+  /// No description provided for @picksActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t go through. Try again.'**
+  String get picksActionFailed;
+
+  /// No description provided for @picksMatchScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora match {score}%'**
+  String picksMatchScore(int score);
+
+  /// No description provided for @pickTypeBestOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Best match'**
+  String get pickTypeBestOverall;
+
+  /// No description provided for @pickTypeValuesMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Values match'**
+  String get pickTypeValuesMatch;
+
+  /// No description provided for @pickTypeHumorMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor match'**
+  String get pickTypeHumorMatch;
+
+  /// No description provided for @pickTypeMusicMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Music match'**
+  String get pickTypeMusicMatch;
+
+  /// No description provided for @pickTypeNearbyMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby match'**
+  String get pickTypeNearbyMatch;
+
+  /// No description provided for @pickTypeUnexpectedMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected match'**
+  String get pickTypeUnexpectedMatch;
+
+  /// No description provided for @pickHeadlineBestOverallStrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Your overall compatibility is very high.'**
+  String get pickHeadlineBestOverallStrong;
+
+  /// No description provided for @pickHeadlineBestOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Your overall compatibility is strong.'**
+  String get pickHeadlineBestOverall;
+
+  /// No description provided for @pickHeadlineValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Your relationship expectations and core values line up strongly.'**
+  String get pickHeadlineValues;
+
+  /// No description provided for @pickHeadlineHumorScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profiles are {score}% compatible.'**
+  String pickHeadlineHumorScore(int score);
+
+  /// No description provided for @pickHeadlineMusicArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You share an artist you both love.} other{You share {count} artists.}}'**
+  String pickHeadlineMusicArtists(int count);
+
+  /// No description provided for @pickHeadlineMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s a strong overlap in your music taste.'**
+  String get pickHeadlineMusic;
+
+  /// No description provided for @pickHeadlineNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Close by — and a strong match.'**
+  String get pickHeadlineNearby;
+
+  /// No description provided for @pickHeadlineUnexpected.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone you might otherwise overlook.'**
+  String get pickHeadlineUnexpected;
+
+  /// No description provided for @pickDetailUnexpected.
+  ///
+  /// In en, this message translates to:
+  /// **'Your interests may not look alike, but your relationship expectations and communication style line up strongly.'**
+  String get pickDetailUnexpected;
+
+  /// No description provided for @pickWhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why {name}?'**
+  String pickWhyTitle(String name);
+
+  /// No description provided for @pickReasonOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Your overall Mevora compatibility is {score}%.'**
+  String pickReasonOverall(int score);
+
+  /// No description provided for @pickReasonRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re looking for the same kind of relationship.'**
+  String get pickReasonRelationship;
+
+  /// No description provided for @pickReasonViews.
+  ///
+  /// In en, this message translates to:
+  /// **'You gave the same answer on {aligned} of {shared} relationship questions.'**
+  String pickReasonViews(int aligned, int shared);
+
+  /// No description provided for @pickReasonCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'Your communication styles look compatible.'**
+  String get pickReasonCommunication;
+
+  /// No description provided for @pickReasonLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lifestyle preferences fit together.'**
+  String get pickReasonLifestyle;
+
+  /// No description provided for @pickReasonHumorTraits.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor styles you share: {traits}.'**
+  String pickReasonHumorTraits(String traits);
+
+  /// No description provided for @pickReasonMusicArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Your music profiles share an artist.} other{Your music profiles share {count} artists.}}'**
+  String pickReasonMusicArtists(int count);
+
+  /// No description provided for @pickReasonMusicScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music compatibility is {score}%.'**
+  String pickReasonMusicScore(int score);
+
+  /// No description provided for @pickReasonDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} — close enough to meet easily.'**
+  String pickReasonDistance(String distance);
+
+  /// No description provided for @pickReasonInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You share an interest.} other{You share {count} interests.}}'**
+  String pickReasonInterests(int count);
+
   /// No description provided for @compatScoreHeading.
   ///
   /// In en, this message translates to:
   /// **'Compatibility'**
   String get compatScoreHeading;
+
+  /// Overall compatibility tier, score 80-100.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong match'**
+  String get compatTierStrong;
+
+  /// Overall compatibility tier, score 65-79.
+  ///
+  /// In en, this message translates to:
+  /// **'Close on a lot of things'**
+  String get compatTierClose;
+
+  /// Overall compatibility tier, score 50-64.
+  ///
+  /// In en, this message translates to:
+  /// **'Real things in common'**
+  String get compatTierNotable;
+
+  /// Overall compatibility tier, score 0-49. Never phrased as a negative.
+  ///
+  /// In en, this message translates to:
+  /// **'A few things in common'**
+  String get compatTierSome;
 
   /// No description provided for @continueWithEmail.
   ///
@@ -311,7 +653,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to keep discovering compatible people.'**
+  /// **'Sign in to see who we picked for you.'**
   String get loginSubtitle;
 
   /// No description provided for @createAccountTitle.
@@ -323,7 +665,7 @@ abstract class AppLocalizations {
   /// No description provided for @registerSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Join Mevora to meet people you are likely to connect with.'**
+  /// **'Join Mevora to meet people who may genuinely fit you.'**
   String get registerSubtitle;
 
   /// No description provided for @email.
@@ -863,13 +1205,13 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingTitle.
   ///
   /// In en, this message translates to:
-  /// **'A few more steps'**
+  /// **'Let\'s get to know you'**
   String get onboardingTitle;
 
   /// No description provided for @onboardingMessage.
   ///
   /// In en, this message translates to:
-  /// **'Complete your profile so Mevora can introduce compatible people.'**
+  /// **'The better we know you, the more carefully we can choose who to show you.'**
   String get onboardingMessage;
 
   /// No description provided for @onboardingFirstName.
@@ -944,6 +1286,108 @@ abstract class AppLocalizations {
   /// **'Step {current} of {total}'**
   String onboardingStepProgress(int current, int total);
 
+  /// No description provided for @onboardingErrorBirthday.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your birthday.'**
+  String get onboardingErrorBirthday;
+
+  /// No description provided for @onboardingErrorFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first name.'**
+  String get onboardingErrorFirstName;
+
+  /// No description provided for @onboardingErrorGender.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how you identify.'**
+  String get onboardingErrorGender;
+
+  /// No description provided for @onboardingErrorInterestedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose who you\'d like to meet.'**
+  String get onboardingErrorInterestedIn;
+
+  /// No description provided for @onboardingErrorCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your city.'**
+  String get onboardingErrorCity;
+
+  /// No description provided for @onboardingErrorEducation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your education.'**
+  String get onboardingErrorEducation;
+
+  /// No description provided for @onboardingErrorRelationshipGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what you\'re looking for.'**
+  String get onboardingErrorRelationshipGoal;
+
+  /// No description provided for @onboardingErrorLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer all of the lifestyle questions.'**
+  String get onboardingErrorLifestyle;
+
+  /// No description provided for @onboardingErrorInterestsMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose up to {max} interests.'**
+  String onboardingErrorInterestsMax(int max);
+
+  /// No description provided for @onboardingErrorBioShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Write at least {min} characters about yourself.'**
+  String onboardingErrorBioShort(int min);
+
+  /// No description provided for @onboardingErrorBioLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it to {max} characters or fewer.'**
+  String onboardingErrorBioLong(int max);
+
+  /// No description provided for @onboardingErrorPhotosMax.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add up to {max} photos.'**
+  String onboardingErrorPhotosMax(int max);
+
+  /// No description provided for @onboardingErrorPhotosInReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Your photos are still being reviewed. Try again shortly.'**
+  String get onboardingErrorPhotosInReview;
+
+  /// No description provided for @onboardingErrorProfileIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Some required details are missing. Go back and fill them in.'**
+  String get onboardingErrorProfileIncomplete;
+
+  /// No description provided for @onboardingErrorSignInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again to finish setting up your profile.'**
+  String get onboardingErrorSignInAgain;
+
+  /// No description provided for @onboardingErrorNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This account can\'t finish setup.'**
+  String get onboardingErrorNotAllowed;
+
+  /// No description provided for @onboardingErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t finish setting up your profile. Please try again.'**
+  String get onboardingErrorGeneric;
+
   /// No description provided for @onboardingBack.
   ///
   /// In en, this message translates to:
@@ -995,7 +1439,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingInterestsHint.
   ///
   /// In en, this message translates to:
-  /// **'Pick at least 3 interests so Mevora can find compatible people.'**
+  /// **'Pick at least 3. Shared interests help us find people you\'ll have something to talk about with.'**
   String get onboardingInterestsHint;
 
   /// No description provided for @onboardingBioHint.
@@ -1031,13 +1475,13 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingCompleteMessage.
   ///
   /// In en, this message translates to:
-  /// **'Your profile is ready. Mevora will start introducing compatible people.'**
+  /// **'Your profile is ready. The better we get to know you, the more meaningful the people we pick for you will be.'**
   String get onboardingCompleteMessage;
 
   /// No description provided for @onboardingStartDiscovering.
   ///
   /// In en, this message translates to:
-  /// **'Start discovering'**
+  /// **'See who we picked'**
   String get onboardingStartDiscovering;
 
   /// No description provided for @onboardingGenderMan.
@@ -1337,13 +1781,13 @@ abstract class AppLocalizations {
   /// No description provided for @locationPermissionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Discover people nearby'**
+  /// **'Find people near you'**
   String get locationPermissionTitle;
 
   /// No description provided for @locationPermissionMessage.
   ///
   /// In en, this message translates to:
-  /// **'Mevora uses your location to show more compatible matches around you.'**
+  /// **'Mevora uses your location to pick people who fit you and are close enough to actually meet.'**
   String get locationPermissionMessage;
 
   /// No description provided for @locationPermissionSub.
@@ -1367,7 +1811,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationSkipHint.
   ///
   /// In en, this message translates to:
-  /// **'Location is needed for matching and discovery. You can turn it on later in Settings.'**
+  /// **'Location helps us pick people near you. You can turn it on later in Settings.'**
   String get locationSkipHint;
 
   /// No description provided for @locationSettingsTitle.
@@ -1397,19 +1841,19 @@ abstract class AppLocalizations {
   /// No description provided for @gpsDisabledMessage.
   ///
   /// In en, this message translates to:
-  /// **'Turn on location services on your device so we can show nearby matches.'**
+  /// **'Turn on location services so we can pick people near you.'**
   String get gpsDisabledMessage;
 
   /// No description provided for @locationDeniedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Without location permission we cannot show matches near you.'**
+  /// **'Without location permission we can\'t pick people near you.'**
   String get locationDeniedMessage;
 
   /// No description provided for @locationSuccessTitle.
   ///
   /// In en, this message translates to:
-  /// **'Nice. We are ready to find matches nearby.'**
+  /// **'All set. We can now pick people near you.'**
   String get locationSuccessTitle;
 
   /// No description provided for @locationLocating.
@@ -1421,7 +1865,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationPreparingMatches.
   ///
   /// In en, this message translates to:
-  /// **'Preparing nearby matches...'**
+  /// **'Picking people near you...'**
   String get locationPreparingMatches;
 
   /// No description provided for @locationUnavailableTitle.
@@ -1463,43 +1907,43 @@ abstract class AppLocalizations {
   /// No description provided for @discoveryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your matches are next'**
+  /// **'Your picks are on the way'**
   String get discoveryTitle;
 
   /// No description provided for @discoveryMessage.
   ///
   /// In en, this message translates to:
-  /// **'Compatible people will appear here once discovery is ready.'**
+  /// **'People who may be right for you will appear here.'**
   String get discoveryMessage;
 
   /// No description provided for @discoveryEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No one new right now'**
+  /// **'That\'s everyone for now'**
   String get discoveryEmptyTitle;
 
   /// No description provided for @discoveryEmptyMessage.
   ///
   /// In en, this message translates to:
-  /// **'Widen your distance or check back a little later.'**
+  /// **'When we find new people who may be right for you, you\'ll see them here. You can also widen your distance.'**
   String get discoveryEmptyMessage;
 
   /// No description provided for @discoverySeenEveryoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve seen everyone for now'**
+  /// **'You\'ve seen everyone we picked for now'**
   String get discoverySeenEveryoneTitle;
 
   /// No description provided for @discoverySeenEveryoneMessage.
   ///
   /// In en, this message translates to:
-  /// **'Check back later for new people, or restart the demo to explore again.'**
+  /// **'New people who may be right for you will show up here as we find them.'**
   String get discoverySeenEveryoneMessage;
 
   /// No description provided for @exploreAgain.
   ///
   /// In en, this message translates to:
-  /// **'Explore again'**
+  /// **'Check again'**
   String get exploreAgain;
 
   /// No description provided for @restartDemo.
@@ -1511,7 +1955,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoveryFiltersTitle.
   ///
   /// In en, this message translates to:
-  /// **'Discovery filters'**
+  /// **'Your preferences'**
   String get discoveryFiltersTitle;
 
   /// No description provided for @discoveryFiltersHint.
@@ -1595,8 +2039,14 @@ abstract class AppLocalizations {
   /// No description provided for @whyYoureSeeingThis.
   ///
   /// In en, this message translates to:
-  /// **'Why this profile is shown'**
+  /// **'Why they could be right for you'**
   String get whyYoureSeeingThis;
+
+  /// Heading above the real reasons a person was picked.
+  ///
+  /// In en, this message translates to:
+  /// **'Why {name}?'**
+  String compatWhyThisPerson(String name);
 
   /// No description provided for @sharedInterests.
   ///
@@ -1619,7 +2069,7 @@ abstract class AppLocalizations {
   /// No description provided for @tabDiscovery.
   ///
   /// In en, this message translates to:
-  /// **'Discover'**
+  /// **'For You'**
   String get tabDiscovery;
 
   /// No description provided for @tabMatches.
@@ -1661,7 +2111,7 @@ abstract class AppLocalizations {
   /// No description provided for @compatibilityPercent.
   ///
   /// In en, this message translates to:
-  /// **'Suggested · {percent}% compatible'**
+  /// **'Picked for you · {percent}% match'**
   String compatibilityPercent(int percent);
 
   /// No description provided for @like.
@@ -1685,13 +2135,13 @@ abstract class AppLocalizations {
   /// No description provided for @itsAMatch.
   ///
   /// In en, this message translates to:
-  /// **'Strong connection'**
+  /// **'You chose each other'**
   String get itsAMatch;
 
   /// No description provided for @youLikedEachOther.
   ///
   /// In en, this message translates to:
-  /// **'You connected with someone who aligns with you.'**
+  /// **'You both said yes.'**
   String get youLikedEachOther;
 
   /// No description provided for @sendMessage.
@@ -1709,7 +2159,7 @@ abstract class AppLocalizations {
   /// No description provided for @keepSwiping.
   ///
   /// In en, this message translates to:
-  /// **'Keep exploring'**
+  /// **'Back to your picks'**
   String get keepSwiping;
 
   /// No description provided for @profile.
@@ -1805,8 +2255,20 @@ abstract class AppLocalizations {
   /// No description provided for @discoveryPreferences.
   ///
   /// In en, this message translates to:
-  /// **'Discovery preferences'**
+  /// **'Match preferences'**
   String get discoveryPreferences;
+
+  /// No description provided for @settingsPersonalizeRecommendations.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalize my recommendations based on my interactions'**
+  String get settingsPersonalizeRecommendations;
+
+  /// No description provided for @settingsPersonalizeRecommendationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We use signals such as likes, matches and conversation activity to gradually improve your recommendations. We never analyze the content of your messages for this.'**
+  String get settingsPersonalizeRecommendationsSubtitle;
 
   /// No description provided for @minAge.
   ///
@@ -1829,37 +2291,37 @@ abstract class AppLocalizations {
   /// No description provided for @matchesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your connections'**
+  /// **'Your matches'**
   String get matchesTitle;
 
   /// No description provided for @matchesSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'People you\'ve connected with — ranked by compatibility.'**
+  /// **'People who chose you back, best match first.'**
   String get matchesSubtitle;
 
   /// No description provided for @matchesEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your strongest connections will appear here'**
+  /// **'Your matches will show up here'**
   String get matchesEmptyTitle;
 
   /// No description provided for @matchesEmptyMessage.
   ///
   /// In en, this message translates to:
-  /// **'When you connect with someone, compatibility insights will show here.'**
+  /// **'When you and someone choose each other, you\'ll find them here — along with what you have in common.'**
   String get matchesEmptyMessage;
 
   /// No description provided for @newMatch.
   ///
   /// In en, this message translates to:
-  /// **'New connection'**
+  /// **'New match'**
   String get newMatch;
 
   /// No description provided for @connectionBadgeNew.
   ///
   /// In en, this message translates to:
-  /// **'New connection'**
+  /// **'New match'**
   String get connectionBadgeNew;
 
   /// No description provided for @connectionBadgeActive.
@@ -1873,6 +2335,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Strongest in {category}'**
   String matchStrongestConnectionLabel(String category);
+
+  /// No description provided for @compatStrongestRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'You want the same thing'**
+  String get compatStrongestRelationship;
+
+  /// No description provided for @compatStrongestValues.
+  ///
+  /// In en, this message translates to:
+  /// **'You see life in similar ways'**
+  String get compatStrongestValues;
+
+  /// No description provided for @compatStrongestQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'You answered a lot of questions alike'**
+  String get compatStrongestQuestions;
+
+  /// No description provided for @compatStrongestMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Your music tastes have a lot in common'**
+  String get compatStrongestMusic;
+
+  /// No description provided for @compatStrongestLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your lifestyles fit together'**
+  String get compatStrongestLifestyle;
+
+  /// No description provided for @compatStrongestInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'You enjoy similar things'**
+  String get compatStrongestInterests;
+
+  /// No description provided for @compatStrongestCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'You communicate in similar ways'**
+  String get compatStrongestCommunication;
+
+  /// No description provided for @compatStrongestLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'You share a language'**
+  String get compatStrongestLanguages;
 
   /// No description provided for @chatHint.
   ///
@@ -2339,7 +2849,7 @@ abstract class AppLocalizations {
   /// No description provided for @blockConfirmMessage.
   ///
   /// In en, this message translates to:
-  /// **'They will disappear from discovery, and you will not be able to message or call each other.'**
+  /// **'We won\'t show them to you again, and you won\'t be able to message or call each other.'**
   String get blockConfirmMessage;
 
   /// No description provided for @report.
@@ -2441,7 +2951,7 @@ abstract class AppLocalizations {
   /// No description provided for @hideProfileMessage.
   ///
   /// In en, this message translates to:
-  /// **'They will not appear in your discovery stack again.'**
+  /// **'We won\'t show them to you again.'**
   String get hideProfileMessage;
 
   /// No description provided for @linkedAccounts.
@@ -2591,7 +3101,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationNewMatch.
   ///
   /// In en, this message translates to:
-  /// **'You have a new match!'**
+  /// **'You have a new match'**
   String get notificationNewMatch;
 
   /// No description provided for @notificationNewMessage.
@@ -2615,7 +3125,7 @@ abstract class AppLocalizations {
   /// No description provided for @boostSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Not more random people — more people who actually fit you.'**
+  /// **'While it\'s on, your profile is shown earlier — and a little further out — to people you\'re well matched with.'**
   String get boostSubtitle;
 
   /// No description provided for @boostDuration.
@@ -2651,13 +3161,13 @@ abstract class AppLocalizations {
   /// No description provided for @boostSuccessTitle.
   ///
   /// In en, this message translates to:
-  /// **'Boost is on! 🚀'**
+  /// **'Boost is on'**
   String get boostSuccessTitle;
 
   /// No description provided for @boostSuccessMessage.
   ///
   /// In en, this message translates to:
-  /// **'Boost is on. While it lasts, your profile ranks higher among eligible Discover profiles.'**
+  /// **'Boost is on. While it lasts, your profile is shown earlier to people you\'re well matched with.'**
   String get boostSuccessMessage;
 
   /// No description provided for @boostAlreadyActive.
@@ -2717,7 +3227,7 @@ abstract class AppLocalizations {
   /// No description provided for @boostBackToDiscovery.
   ///
   /// In en, this message translates to:
-  /// **'Back to Discover'**
+  /// **'Back to For You'**
   String get boostBackToDiscovery;
 
   /// No description provided for @boostTooltip.
@@ -2924,6 +3434,12 @@ abstract class AppLocalizations {
   /// **'{km} km'**
   String radiusKm(int km);
 
+  /// A bare percentage. Turkish puts the sign first (%60).
+  ///
+  /// In en, this message translates to:
+  /// **'{value}%'**
+  String percentValue(int value);
+
   /// No description provided for @paymentTitle.
   ///
   /// In en, this message translates to:
@@ -3005,7 +3521,7 @@ abstract class AppLocalizations {
   /// No description provided for @permissionLocationDescription.
   ///
   /// In en, this message translates to:
-  /// **'Mevora uses your location to improve distance and nearby discovery.'**
+  /// **'Mevora uses your location to show distance and pick people near you.'**
   String get permissionLocationDescription;
 
   /// No description provided for @permissionNotificationsTitle.
@@ -3145,6 +3661,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo could not be uploaded. Please try again.'**
   String get photoUploadFailed;
+
+  /// No description provided for @photoNoneSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No photo selected.'**
+  String get photoNoneSelected;
+
+  /// No description provided for @photoNeedSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to upload a photo.'**
+  String get photoNeedSignIn;
+
+  /// No description provided for @photoInvalidFile.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo\'s type or size isn\'t supported.'**
+  String get photoInvalidFile;
 
   /// No description provided for @photoUploaded.
   ///
@@ -3521,43 +4055,43 @@ abstract class AppLocalizations {
   /// No description provided for @discoveryLoading.
   ///
   /// In en, this message translates to:
-  /// **'Discovering people for you...'**
+  /// **'Picking people for you...'**
   String get discoveryLoading;
 
   /// No description provided for @discoveryLoadErrorTitle.
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t load profiles'**
+  /// **'Couldn\'t load your picks'**
   String get discoveryLoadErrorTitle;
 
   /// No description provided for @discoveryLoadErrorMessage.
   ///
   /// In en, this message translates to:
-  /// **'Something went wrong while loading profiles.'**
+  /// **'Check your connection and try again.'**
   String get discoveryLoadErrorMessage;
 
   /// No description provided for @discoveryChangePreferences.
   ///
   /// In en, this message translates to:
-  /// **'Change discovery preferences'**
+  /// **'Change your preferences'**
   String get discoveryChangePreferences;
 
   /// No description provided for @itsAMatchHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Strong connection'**
+  /// **'New match'**
   String get itsAMatchHeadline;
 
   /// No description provided for @matchCelebrationLead.
   ///
   /// In en, this message translates to:
-  /// **'You found a strong connection.'**
+  /// **'You chose each other'**
   String get matchCelebrationLead;
 
   /// No description provided for @matchCelebrationInsight.
   ///
   /// In en, this message translates to:
-  /// **'See what aligns between you.'**
+  /// **'You can start talking now. Here\'s what you have in common.'**
   String get matchCelebrationInsight;
 
   /// No description provided for @demoProfileBadge.
@@ -3593,19 +4127,25 @@ abstract class AppLocalizations {
   /// No description provided for @musicConnectCta.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Connect Spotify'**
+  /// **'Connect Spotify'**
   String get musicConnectCta;
 
   /// No description provided for @musicConnected.
   ///
   /// In en, this message translates to:
-  /// **'✓ Spotify connected'**
+  /// **'Spotify connected'**
   String get musicConnected;
+
+  /// No description provided for @musicUnconnectedHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Let your music taste be part of your match'**
+  String get musicUnconnectedHeadline;
 
   /// No description provided for @musicUnconnectedCopy.
   ///
   /// In en, this message translates to:
-  /// **'Connect your Spotify account and discover people who fit your music taste.'**
+  /// **'Mevora looks at the artists and tracks you love to spot the taste you share with others. It\'s one part of your match — never the whole story.'**
   String get musicUnconnectedCopy;
 
   /// No description provided for @musicConnecting.
@@ -3725,7 +4265,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSpotifySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Music taste matching — no playback in Mevora.'**
+  /// **'Let your music taste be part of your match. Mevora doesn\'t play music.'**
   String get settingsSpotifySubtitle;
 
   /// No description provided for @matchScoreTitle.
@@ -3815,37 +4355,37 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipPromptTitle.
   ///
   /// In en, this message translates to:
-  /// **'What do you think about relationships?'**
+  /// **'Help Mevora get to know you'**
   String get relationshipPromptTitle;
 
   /// No description provided for @relationshipQuestionsPreparing.
   ///
   /// In en, this message translates to:
-  /// **'New questions are being prepared. Please try again in a bit.'**
+  /// **'New questions are on the way. Try again in a little while.'**
   String get relationshipQuestionsPreparing;
 
   /// No description provided for @relationshipTestTitle.
   ///
   /// In en, this message translates to:
-  /// **'Relationship Test'**
+  /// **'Help Mevora get to know you'**
   String get relationshipTestTitle;
 
   /// No description provided for @relationshipTestHeadline.
   ///
   /// In en, this message translates to:
-  /// **'Discover aligned perspectives'**
+  /// **'Help Mevora get to know you'**
   String get relationshipTestHeadline;
 
   /// No description provided for @relationshipTestMessage.
   ///
   /// In en, this message translates to:
-  /// **'Answer a few calm questions to see who may think similarly.'**
+  /// **'A few calm questions about what matters to you in a relationship. Your answers help us make more meaningful picks.'**
   String get relationshipTestMessage;
 
   /// No description provided for @relationshipTestStart.
   ///
   /// In en, this message translates to:
-  /// **'Start the Relationship Test'**
+  /// **'Let\'s start'**
   String get relationshipTestStart;
 
   /// No description provided for @relationshipTestLater.
@@ -3857,13 +4397,13 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipContinueTitle.
   ///
   /// In en, this message translates to:
-  /// **'Keep matching?'**
+  /// **'A few more questions?'**
   String get relationshipContinueTitle;
 
   /// No description provided for @relationshipContinueMessage.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve completed 5 matching rounds. Do you want to continue finding people who share your answers?'**
+  /// **'Each answer helps us choose who to show you. Keep going now, or come back later.'**
   String get relationshipContinueMessage;
 
   /// No description provided for @relationshipContinueYes.
@@ -3881,37 +4421,37 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouTitle.
   ///
   /// In en, this message translates to:
-  /// **'People who may fit you'**
+  /// **'People who liked you'**
   String get likesYouTitle;
 
   /// No description provided for @likesYouEntrySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Explore who may align with you'**
+  /// **'See why you might be a good match'**
   String get likesYouEntrySubtitle;
 
   /// No description provided for @likesYouInsightSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Tap to explore compatibility before you connect.'**
+  /// **'Tap to see what you have in common before you decide.'**
   String get likesYouInsightSubtitle;
 
   /// No description provided for @likesYouCompatibilityLabel.
   ///
   /// In en, this message translates to:
-  /// **'{score}% Compatibility'**
+  /// **'{score}% match'**
   String likesYouCompatibilityLabel(int score);
 
   /// No description provided for @likesYouSeeWhy.
   ///
   /// In en, this message translates to:
-  /// **'See why you match'**
+  /// **'Why this person?'**
   String get likesYouSeeWhy;
 
   /// No description provided for @likesYouLockedTitle.
   ///
   /// In en, this message translates to:
-  /// **'People who may fit you'**
+  /// **'See who\'s already interested'**
   String get likesYouLockedTitle;
 
   /// No description provided for @likesYouLockedCount.
@@ -3923,7 +4463,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouLockedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Upgrade to Premium to see who may align with you. Photos and names stay hidden until then.'**
+  /// **'Upgrade to Premium to see who liked you and why you might be a good match. Photos and names stay hidden until then.'**
   String get likesYouLockedMessage;
 
   /// No description provided for @likesYouUnlockCta.
@@ -3935,7 +4475,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouBlurredHint.
   ///
   /// In en, this message translates to:
-  /// **'People who may fit you'**
+  /// **'Each tile is a real person. Premium shows who, and why you fit.'**
   String get likesYouBlurredHint;
 
   /// No description provided for @likesYouHiddenName.
@@ -3947,19 +4487,19 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouHiddenSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Unlock to explore compatibility'**
+  /// **'Unlock to see what you have in common'**
   String get likesYouHiddenSubtitle;
 
   /// No description provided for @likesYouEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Keep exploring'**
+  /// **'No likes yet'**
   String get likesYouEmptyTitle;
 
   /// No description provided for @likesYouEmptyMessage.
   ///
   /// In en, this message translates to:
-  /// **'We\'ll surface people who may fit you here.'**
+  /// **'When someone likes you, you\'ll see them here — with why you might fit.'**
   String get likesYouEmptyMessage;
 
   /// No description provided for @likesYouLoadError.
@@ -3971,13 +4511,13 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipTestDoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your relationship test is complete'**
+  /// **'Thanks — now we know you a little better'**
   String get relationshipTestDoneTitle;
 
   /// No description provided for @relationshipTestFound.
   ///
   /// In en, this message translates to:
-  /// **'Someone answered in a similar way.'**
+  /// **'Someone answered a lot like you.'**
   String get relationshipTestFound;
 
   /// No description provided for @relationshipTestAlign.
@@ -3995,7 +4535,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipTestEmpty.
   ///
   /// In en, this message translates to:
-  /// **'There\'s no one nearby who thinks like you right now.'**
+  /// **'No one nearby has answered quite like you yet.'**
   String get relationshipTestEmpty;
 
   /// No description provided for @relationshipTestViewProfile.
@@ -4013,7 +4553,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipMatchBadge.
   ///
   /// In en, this message translates to:
-  /// **'Relationship Test'**
+  /// **'Similar answers'**
   String get relationshipMatchBadge;
 
   /// No description provided for @relationshipPromptProgress.
@@ -4307,7 +4847,7 @@ abstract class AppLocalizations {
   /// No description provided for @whyYouMatch.
   ///
   /// In en, this message translates to:
-  /// **'Why you match'**
+  /// **'Why they could be right for you'**
   String get whyYouMatch;
 
   /// No description provided for @compatWhyButton.
@@ -4319,7 +4859,7 @@ abstract class AppLocalizations {
   /// No description provided for @compatDiscoverBadge.
   ///
   /// In en, this message translates to:
-  /// **'{percent}% Compatible'**
+  /// **'{percent}% match'**
   String compatDiscoverBadge(int percent);
 
   /// No description provided for @compatCalculating.
@@ -4331,7 +4871,7 @@ abstract class AppLocalizations {
   /// No description provided for @compatUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Compatibility unavailable'**
+  /// **'Match not available yet'**
   String get compatUnavailable;
 
   /// No description provided for @profileEditSectionPhotos.
@@ -4457,7 +4997,7 @@ abstract class AppLocalizations {
   /// No description provided for @questionAnswersEmptyHint.
   ///
   /// In en, this message translates to:
-  /// **'Answer a few relationship questions to make your profile more personal. You can edit them anytime.'**
+  /// **'Answer a few relationship questions so people — and Mevora — can get to know you. You can edit them anytime.'**
   String get questionAnswersEmptyHint;
 
   /// No description provided for @questionAnswersSaveError.
@@ -4493,7 +5033,7 @@ abstract class AppLocalizations {
   /// No description provided for @questionAnswersMatchedSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Discover what you have in common.'**
+  /// **'See what you have in common.'**
   String get questionAnswersMatchedSubtitle;
 
   /// No description provided for @questionAnswersPremiumRequired.
@@ -4529,19 +5069,19 @@ abstract class AppLocalizations {
   /// No description provided for @compatOverallLabel.
   ///
   /// In en, this message translates to:
-  /// **'You\'re {percent}% compatible'**
+  /// **'{percent}% match'**
   String compatOverallLabel(int percent);
 
   /// No description provided for @compatNotEnoughData.
   ///
   /// In en, this message translates to:
-  /// **'Not enough data yet'**
+  /// **'Not enough to go on yet'**
   String get compatNotEnoughData;
 
   /// No description provided for @compatStrongestConnection.
   ///
   /// In en, this message translates to:
-  /// **'Strongest connection'**
+  /// **'What you share most'**
   String get compatStrongestConnection;
 
   /// No description provided for @compatPotentialDifference.
@@ -4607,19 +5147,49 @@ abstract class AppLocalizations {
   /// No description provided for @compatReasonSameRelationshipGoal.
   ///
   /// In en, this message translates to:
-  /// **'You both want a {goal} relationship'**
-  String compatReasonSameRelationshipGoal(String goal);
+  /// **'You want the same thing'**
+  String get compatReasonSameRelationshipGoal;
+
+  /// No description provided for @compatReasonGoalLongTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re both looking for a long-term relationship'**
+  String get compatReasonGoalLongTerm;
+
+  /// No description provided for @compatReasonGoalShortTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re both looking for something more casual'**
+  String get compatReasonGoalShortTerm;
+
+  /// No description provided for @compatReasonGoalFriendship.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re both here to make new friends'**
+  String get compatReasonGoalFriendship;
+
+  /// No description provided for @compatReasonGoalNotSure.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re both still figuring out what you want'**
+  String get compatReasonGoalNotSure;
 
   /// No description provided for @compatReasonSharedInterests.
   ///
   /// In en, this message translates to:
-  /// **'You both like {interests}'**
+  /// **'You\'re both into {interests}'**
   String compatReasonSharedInterests(String interests);
+
+  /// No description provided for @compatReasonSomeSharedInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'You share some interests'**
+  String get compatReasonSomeSharedInterests;
 
   /// No description provided for @compatReasonSimilarLifestyle.
   ///
   /// In en, this message translates to:
-  /// **'You have a similar lifestyle'**
+  /// **'Your lifestyles fit together'**
   String get compatReasonSimilarLifestyle;
 
   /// No description provided for @compatReasonSameAnswers.
@@ -4628,11 +5198,17 @@ abstract class AppLocalizations {
   /// **'You answered {aligned} of {shared} questions the same way'**
   String compatReasonSameAnswers(String aligned, String shared);
 
+  /// No description provided for @compatReasonSimilarViews.
+  ///
+  /// In en, this message translates to:
+  /// **'You answered relationship questions in similar ways'**
+  String get compatReasonSimilarViews;
+
   /// No description provided for @compatReasonSimilarMusic.
   ///
   /// In en, this message translates to:
-  /// **'Your music taste is {score}% aligned'**
-  String compatReasonSimilarMusic(String score);
+  /// **'Your music tastes have a lot in common'**
+  String get compatReasonSimilarMusic;
 
   /// No description provided for @compatReasonCommunication.
   ///
@@ -4643,25 +5219,25 @@ abstract class AppLocalizations {
   /// No description provided for @hiddenCompatTitle.
   ///
   /// In en, this message translates to:
-  /// **'Someone is thinking like you 👀'**
+  /// **'Someone here thinks a lot like you'**
   String get hiddenCompatTitle;
 
   /// No description provided for @hiddenCompatMessage.
   ///
   /// In en, this message translates to:
-  /// **'Someone answered {count} questions the same way you did.'**
+  /// **'They answered {count} questions the same way you did.'**
   String hiddenCompatMessage(int count);
 
   /// No description provided for @hiddenCompatCompatibility.
   ///
   /// In en, this message translates to:
-  /// **'{percent}% compatibility'**
+  /// **'{percent}% match'**
   String hiddenCompatCompatibility(int percent);
 
   /// No description provided for @hiddenCompatCta.
   ///
   /// In en, this message translates to:
-  /// **'Discover who'**
+  /// **'See who it is'**
   String get hiddenCompatCta;
 
   /// No description provided for @hiddenCompatDismiss.
@@ -4943,7 +5519,7 @@ abstract class AppLocalizations {
   /// No description provided for @faqHowMatchA.
   ///
   /// In en, this message translates to:
-  /// **'When you and another person both like each other in Discover, Mevora creates a mutual match. You can then chat from the Matches tab.'**
+  /// **'Mevora picks people who may be right for you. When you and someone like each other, you match and can chat from the Matches tab.'**
   String get faqHowMatchA;
 
   /// No description provided for @faqMatchPercentQ.
@@ -4955,7 +5531,7 @@ abstract class AppLocalizations {
   /// No description provided for @faqMatchPercentA.
   ///
   /// In en, this message translates to:
-  /// **'It is a compatibility estimate based on profile answers, interests, lifestyle, music taste, and other signals Mevora uses. It helps you understand why you might connect, but it is not a guarantee.'**
+  /// **'It\'s an estimate of how well you might fit, based on your answers, interests, lifestyle, music taste and other signals. It helps explain why Mevora picked someone for you — it\'s never a guarantee.'**
   String get faqMatchPercentA;
 
   /// No description provided for @faqCantMessageQ.
@@ -5633,61 +6209,61 @@ abstract class AppLocalizations {
   /// No description provided for @musicMatchTitle.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Music Match — {percent}%'**
+  /// **'Music match · {percent}%'**
   String musicMatchTitle(int percent);
 
   /// No description provided for @musicInsightBandHigh.
   ///
   /// In en, this message translates to:
-  /// **'Your music tastes are quite similar.'**
+  /// **'Your music tastes have a lot in common.'**
   String get musicInsightBandHigh;
 
   /// No description provided for @musicInsightBandMid.
   ///
   /// In en, this message translates to:
-  /// **'You share some strong music tastes.'**
+  /// **'Your music tastes share some clear common ground.'**
   String get musicInsightBandMid;
 
   /// No description provided for @musicInsightBandLow.
   ///
   /// In en, this message translates to:
-  /// **'Your music tastes differ, but you still share a few artists.'**
+  /// **'Your music tastes overlap in places.'**
   String get musicInsightBandLow;
 
   /// No description provided for @musicInsightSharedTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You have {count} shared songs.'**
+  /// **'You have {count} shared songs.'**
   String musicInsightSharedTracks(int count);
 
   /// No description provided for @musicInsightSharedArtists.
   ///
   /// In en, this message translates to:
-  /// **'🎤 You have {count} shared artists.'**
+  /// **'You have {count} shared artists.'**
   String musicInsightSharedArtists(int count);
 
   /// No description provided for @musicInsightSharedPlaylistTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎧 Your playlists share {count} songs.'**
+  /// **'Your playlists share {count} songs.'**
   String musicInsightSharedPlaylistTracks(int count);
 
   /// No description provided for @musicInsightSharedRecentTracks.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You recently listened to {count} of the same songs.'**
+  /// **'You recently listened to {count} of the same songs.'**
   String musicInsightSharedRecentTracks(int count);
 
   /// No description provided for @musicInsightTopSharedArtist.
   ///
   /// In en, this message translates to:
-  /// **'🎵 You both listen to {name} a lot.'**
+  /// **'You both listen to {name} a lot.'**
   String musicInsightTopSharedArtist(String name);
 
   /// No description provided for @musicInsightTopSharedGenres.
   ///
   /// In en, this message translates to:
-  /// **'🎶 Your tastes overlap most in {genres}.'**
+  /// **'Your tastes overlap most in {genres}.'**
   String musicInsightTopSharedGenres(String genres);
 
   /// No description provided for @musicInsightDataUnavailable.
@@ -5705,19 +6281,19 @@ abstract class AppLocalizations {
   /// No description provided for @musicSharedTracksHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Songs you both like'**
+  /// **'Songs you both like'**
   String get musicSharedTracksHeading;
 
   /// No description provided for @musicSharedArtistsHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎤 Artists you both like'**
+  /// **'Artists you both like'**
   String get musicSharedArtistsHeading;
 
   /// No description provided for @musicSharedGenresHeading.
   ///
   /// In en, this message translates to:
-  /// **'🎶 Shared genres'**
+  /// **'Shared genres'**
   String get musicSharedGenresHeading;
 
   /// No description provided for @musicViewAllShared.
@@ -5747,7 +6323,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileEditSectionExtended.
   ///
   /// In en, this message translates to:
-  /// **'Complete your profile'**
+  /// **'Help us get to know you'**
   String get profileEditSectionExtended;
 
   /// No description provided for @profileLanguagesHint.
@@ -5791,6 +6367,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your profile is {percent}% complete'**
   String profileCompletionTitle(int percent);
+
+  /// No description provided for @profileCompletionHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Help us get to know you'**
+  String get profileCompletionHeadline;
+
+  /// No description provided for @profileCompletionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'What you add to your profile helps us pick more meaningful people for you.'**
+  String get profileCompletionBody;
 
   /// No description provided for @profileCompletionMissing.
   ///
@@ -6359,7 +6947,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicMatchTeaser.
   ///
   /// In en, this message translates to:
-  /// **'🎵 Your music tastes may align — unlock full insights with Premium'**
+  /// **'Your music tastes may overlap. See the details with Premium.'**
   String get musicMatchTeaser;
 
   /// No description provided for @musicPremiumUnlock.
@@ -6371,7 +6959,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicNoCommonTracks.
   ///
   /// In en, this message translates to:
-  /// **'No shared songs yet 🎵'**
+  /// **'No shared songs yet'**
   String get musicNoCommonTracks;
 
   /// No description provided for @musicRecentlyPlayedHeading.
@@ -6389,7 +6977,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorLabSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Tell us how funny each joke, clip or meme is.'**
+  /// **'Keep showing us what makes you laugh.'**
   String get humorLabSubtitle;
 
   /// No description provided for @humorLabDiscoverCta.
@@ -6551,19 +7139,19 @@ abstract class AppLocalizations {
   /// No description provided for @humorCompatibilityLevelHigh.
   ///
   /// In en, this message translates to:
-  /// **'Your humor match is high'**
+  /// **'Your sense of humor is very close'**
   String get humorCompatibilityLevelHigh;
 
   /// No description provided for @humorCompatibilityLevelMedium.
   ///
   /// In en, this message translates to:
-  /// **'Your humor match is moderate'**
+  /// **'You laugh at a lot of the same things'**
   String get humorCompatibilityLevelMedium;
 
   /// No description provided for @humorCompatibilityLevelLow.
   ///
   /// In en, this message translates to:
-  /// **'Your humor match is low'**
+  /// **'Your humor overlaps in places'**
   String get humorCompatibilityLevelLow;
 
   /// No description provided for @humorCompatibilityBuilding.
@@ -6785,19 +7373,19 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingMusicTitle.
   ///
   /// In en, this message translates to:
-  /// **'Does music matter to you? 🎧'**
+  /// **'Let your music taste be part of your match'**
   String get onboardingMusicTitle;
 
   /// No description provided for @onboardingMusicBody.
   ///
   /// In en, this message translates to:
-  /// **'Connect Spotify and Mevora can find people who actually listen to what you listen to — and explain why you fit.'**
+  /// **'Connect Spotify and Mevora will also look at the artists and tracks you love, then show you the taste you share with someone. Music never decides a match on its own.'**
   String get onboardingMusicBody;
 
   /// No description provided for @onboardingMusicConnect.
   ///
   /// In en, this message translates to:
-  /// **'Connect my Spotify'**
+  /// **'Connect Spotify'**
   String get onboardingMusicConnect;
 
   /// No description provided for @onboardingMusicSkip.
@@ -6821,7 +7409,7 @@ abstract class AppLocalizations {
   /// No description provided for @publicMusicTitle.
   ///
   /// In en, this message translates to:
-  /// **'We picked up your Spotify taste 🎧'**
+  /// **'We picked up your Spotify taste'**
   String get publicMusicTitle;
 
   /// No description provided for @publicMusicSubtitle.
@@ -6905,7 +7493,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileMusicTasteHeading.
   ///
   /// In en, this message translates to:
-  /// **'Music Taste 🎧'**
+  /// **'Music taste'**
   String get profileMusicTasteHeading;
 
   /// No description provided for @profileMusicOpenInSpotify.
@@ -6923,13 +7511,13 @@ abstract class AppLocalizations {
   /// No description provided for @humorCalibrationIntroTitle.
   ///
   /// In en, this message translates to:
-  /// **'Let us find your humor'**
+  /// **'Let\'s learn what makes you laugh'**
   String get humorCalibrationIntroTitle;
 
   /// No description provided for @humorCalibrationIntroBody.
   ///
   /// In en, this message translates to:
-  /// **'React to a few short pieces. We will learn what makes you laugh, shape Humor Lab around you and show you the humor you share with your matches.'**
+  /// **'React to a few short pieces. Your reactions help us understand your sense of humor, so we can show you the humor you share with your matches.'**
   String get humorCalibrationIntroBody;
 
   /// No description provided for @humorCalibrationIntroMeta.
@@ -6995,7 +7583,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorProfileEntryNotStarted.
   ///
   /// In en, this message translates to:
-  /// **'Discover your humor'**
+  /// **'Let\'s learn what makes you laugh'**
   String get humorProfileEntryNotStarted;
 
   /// No description provided for @humorProfileEntryInProgress.
@@ -7118,6 +7706,132 @@ abstract class AppLocalizations {
   /// **'{count} artists that have stayed with them for months.'**
   String musicTasteStable(int count);
 
+  /// No description provided for @humorSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get humorSaved;
+
+  /// No description provided for @premiumTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora Premium'**
+  String get premiumTitle;
+
+  /// Paywall hero subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See who likes you, and more.'**
+  String get premiumSubtitle;
+
+  /// No description provided for @premiumSubscribeCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe'**
+  String get premiumSubscribeCta;
+
+  /// No description provided for @premiumRestoreCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get premiumRestoreCta;
+
+  /// No description provided for @premiumLoadingPlans.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading plans…'**
+  String get premiumLoadingPlans;
+
+  /// No description provided for @premiumUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is not available right now'**
+  String get premiumUnavailableTitle;
+
+  /// Shown when the store returned no purchasable plans.
+  ///
+  /// In en, this message translates to:
+  /// **'Plans could not be loaded from the store. Check your connection and try again.'**
+  String get premiumUnavailableBody;
+
+  /// No description provided for @premiumPurchasing.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the store…'**
+  String get premiumPurchasing;
+
+  /// No description provided for @premiumVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your purchase…'**
+  String get premiumVerifying;
+
+  /// No description provided for @premiumRestoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring…'**
+  String get premiumRestoring;
+
+  /// No description provided for @premiumPurchasedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You are Premium'**
+  String get premiumPurchasedTitle;
+
+  /// No description provided for @premiumPurchasedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription is active. Enjoy.'**
+  String get premiumPurchasedBody;
+
+  /// No description provided for @premiumCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase cancelled.'**
+  String get premiumCancelled;
+
+  /// No description provided for @premiumFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The purchase could not be completed.'**
+  String get premiumFailed;
+
+  /// Backend verified the purchase and did not grant Premium. Deliberately vague.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not confirm this purchase.'**
+  String get premiumRejected;
+
+  /// No description provided for @premiumNothingToRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'No previous purchase was found for this store account.'**
+  String get premiumNothingToRestore;
+
+  /// No description provided for @premiumStoreUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The store is unavailable on this device.'**
+  String get premiumStoreUnavailable;
+
+  /// No description provided for @premiumAlreadyActive.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have Premium.'**
+  String get premiumAlreadyActive;
+
+  /// No description provided for @premiumRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get premiumRetry;
+
+  /// Auto-renew disclosure required by both stores.
+  ///
+  /// In en, this message translates to:
+  /// **'Renews automatically. Cancel anytime in the store.'**
+  String get premiumRenewsLabel;
+
   /// No description provided for @musicFollowedArtistsTitle.
   ///
   /// In en, this message translates to:
@@ -7159,6 +7873,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing here yet.'**
   String get musicSectionEmpty;
+
+  /// No description provided for @profileSectionSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Your compatibility signals'**
+  String get profileSectionSignals;
+
+  /// No description provided for @profileSectionTrust.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust & visibility'**
+  String get profileSectionTrust;
+
+  /// No description provided for @premiumBenefitsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'What Premium adds'**
+  String get premiumBenefitsHeading;
+
+  /// No description provided for @premiumBenefitLikesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See who liked you'**
+  String get premiumBenefitLikesTitle;
+
+  /// No description provided for @premiumBenefitLikesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone who liked you in one list — and why you might fit.'**
+  String get premiumBenefitLikesBody;
+
+  /// No description provided for @premiumBenefitMusicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your full music match'**
+  String get premiumBenefitMusicTitle;
+
+  /// No description provided for @premiumBenefitMusicBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The songs, artists and genres you share with each match.'**
+  String get premiumBenefitMusicBody;
+
+  /// No description provided for @premiumPlansHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a plan'**
+  String get premiumPlansHeading;
+
+  /// No description provided for @chatPreviewEncrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted message'**
+  String get chatPreviewEncrypted;
 }
 
 class _AppLocalizationsDelegate

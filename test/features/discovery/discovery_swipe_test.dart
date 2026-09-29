@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
@@ -37,7 +38,8 @@ void main() {
       compatibilityScore: 88,
       compatibilityStatus: CompatibilityDisplayStatus.ready,
       interests: ['art', 'coffee'],
-      compatibilityReasons: ['Shared interest in coffee culture'],
+      // Backend reasons arrive as fixed English codes.
+      compatibilityReasons: ['Shared interests'],
     );
 
     await tester.pumpWidget(
@@ -45,9 +47,11 @@ void main() {
     );
     expect(find.text('Elif, 26'), findsOneWidget);
     expect(find.text('Istanbul'), findsOneWidget);
-    expect(find.text('88%'), findsOneWidget);
-    expect(find.text(_en.compatScoreHeading), findsOneWidget);
-    expect(find.text('Coffee lover'), findsOneWidget);
+    // Why-you-fit strip: the reason in words, the score as a quiet ring.
+    expect(find.text(_en.compatReasonSomeSharedInterests), findsOneWidget);
+    expect(find.text('Shared interests'), findsNothing);
+    expect(find.byType(CompatibilityRing), findsOneWidget);
+    expect(find.text('88'), findsOneWidget);
   });
 
   testWidgets('action buttons trigger controller methods', (tester) async {
@@ -109,12 +113,18 @@ void main() {
     await tester.pumpAndSettle();
     // Photo PageView is above the details ListView — scroll the list only.
     await tester.scrollUntilVisible(
-      find.text(_en.whyYoureSeeingThis),
+      find.text(_en.compatWhyThisPerson(candidate.displayName)),
       120,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text(_en.whyYoureSeeingThis), findsOneWidget);
-    expect(find.text(_en.compatDiscoverBadge(91)), findsWidgets);
+    expect(
+      find.text(_en.compatWhyThisPerson(candidate.displayName)),
+      findsOneWidget,
+    );
+    // Free-text reasons the backend never sends are not shown raw.
+    expect(find.text('Both love specialty coffee'), findsNothing);
+    // The score is a quiet ring inside the why-you-fit card, not a badge.
+    expect(find.byType(CompatibilityRing), findsWidgets);
   });
 
   testWidgets('profile photo carousel swipes to second photo', (tester) async {
@@ -135,19 +145,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text(_en.photoCounter(1, 3)), findsOneWidget);
+    expect(_photoCounter(_en.photoCounter(1, 3)), findsOneWidget);
 
     await tester.fling(find.byType(PageView), const Offset(-500, 0), 1200);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text(_en.photoCounter(2, 3)), findsOneWidget);
+    expect(_photoCounter(_en.photoCounter(2, 3)), findsOneWidget);
 
     await tester.fling(find.byType(PageView), const Offset(-500, 0), 1200);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text(_en.photoCounter(3, 3)), findsOneWidget);
+    expect(_photoCounter(_en.photoCounter(3, 3)), findsOneWidget);
   });
 
   testWidgets('discovery supports dark theme layout', (tester) async {
@@ -175,3 +185,7 @@ void main() {
     expect(find.text('Deniz, 29'), findsOneWidget);
   });
 }
+
+Finder _photoCounter(String label) => find.byWidgetPredicate(
+  (widget) => widget is Semantics && widget.properties.label == label,
+);

@@ -38,6 +38,19 @@ abstract final class AnalyticsEvents {
   static const String boostPurchaseSuccess = 'boost_purchase_success';
   static const String boostPurchaseCancelled = 'boost_purchase_cancelled';
   static const String boostPurchaseFailed = 'boost_purchase_failed';
+
+  // Premium. Deliberately carries no purchase token, receipt, JWS or price:
+  // the funnel is what these answer, and a token in an analytics payload is
+  // a credential leaving the device.
+  static const String premiumPaywallViewed = 'premium_paywall_viewed';
+  static const String premiumPurchaseStarted = 'premium_purchase_started';
+  static const String premiumPurchasePending = 'premium_purchase_pending';
+  static const String premiumPurchaseSuccess = 'premium_purchase_success';
+  static const String premiumPurchaseCancelled = 'premium_purchase_cancelled';
+  static const String premiumPurchaseFailed = 'premium_purchase_failed';
+  static const String premiumRestoreStarted = 'premium_restore_started';
+  static const String premiumRestoreSuccess = 'premium_restore_success';
+  static const String premiumEntitlementChanged = 'premium_entitlement_changed';
   static const String boostActivated = 'boost_activated';
   static const String boostExpired = 'boost_expired';
   static const String compatibilityViewed = 'compatibility_viewed';
@@ -45,6 +58,16 @@ abstract final class AnalyticsEvents {
   static const String hiddenCompatibilitySeen = 'hidden_compatibility_seen';
   static const String hiddenCompatibilityClicked = 'hidden_compatibility_clicked';
   static const String compatibilityMatchCreated = 'compatibility_match_created';
+  // Mevora Picks funnel. Params: pick_type, pick_id (opaque, never a uid),
+  // generation_id, position, score_bucket, source. Mutual match, conversation
+  // started and survived-24h are also counted server-side in pickFunnelDaily.
+  static const String pickDelivered = 'pick_delivered';
+  static const String pickImpression = 'pick_impression';
+  static const String pickProfileOpen = 'pick_profile_open';
+  static const String pickLike = 'pick_like';
+  static const String pickPass = 'pick_pass';
+  static const String pickMutualMatch = 'pick_mutual_match';
+  static const String picksDiscoverMoreOpened = 'picks_discover_more_opened';
   static const String spotifyConnectStarted = 'spotify_connect_started';
   static const String spotifyConnectSuccess = 'spotify_connect_success';
   static const String spotifyConnectFailed = 'spotify_connect_failed';

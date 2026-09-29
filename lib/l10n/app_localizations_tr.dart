@@ -12,32 +12,279 @@ class AppLocalizationsTr extends AppLocalizations {
   String get appName => 'Mevora';
 
   @override
-  String get tagline => 'Sadece yakındakileri değil, uyumlu insanları bul.';
+  String get tagline =>
+      'Mevora sana yüzlerce insan göstermek yerine, gerçekten uyum sağlayabileceğin kişileri seçmeye çalışır.';
 
   @override
   String get connectTagline => 'Sana uyan insanlarla tanış.';
 
   @override
-  String get loginSlogan => 'Sana uygun birini keşfet.';
+  String get loginSlogan => 'Daha fazla insan değil. Sana daha uygun insanlar.';
 
   @override
-  String get discoverBestMatchesTitle => 'En iyi eşleşmelerin';
+  String get discoverBestMatchesTitle => 'Senin İçin';
 
   @override
-  String get discoverBestMatchesSubtitle => 'Uyumluluğuna göre seçildi';
+  String get discoverBestMatchesSubtitle => 'Sana uygun olabilecek kişiler';
 
   @override
   String get onboardingUnderstandingMessage =>
-      'Cevapların uyumluluğunu anlamamıza yardımcı olur.';
+      'Verdiğin cevapları sana daha uygun insanları seçebilmek için kullanıyoruz.';
 
   @override
-  String get discoveryActionConnect => 'Bağlan';
+  String get onboardingWhyRelationshipGoal =>
+      'Aynı şeyi arayan insanları bulmamıza yardımcı olur.';
+
+  @override
+  String get onboardingWhyLifestyle =>
+      'Günlük alışkanlıklar, zamanla sandığından daha önemli hale gelir.';
+
+  @override
+  String get onboardingWhyBio =>
+      'Birkaç satır bile, seni tanımak isteyene nereden başlayacağını gösterir.';
+
+  @override
+  String get discoveryActionConnect => 'Beğen';
 
   @override
   String get discoveryActionPriorityIntro => 'Öncelikli tanışma';
 
   @override
-  String get compatScoreHeading => 'Uyumluluk';
+  String get picksTitle => 'Mevora Picks';
+
+  @override
+  String get picksSubtitle => 'Sana özel seçtiklerimiz';
+
+  @override
+  String get picksHeadline => 'Bugünün Mevora Picks\'i';
+
+  @override
+  String picksIntroCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sana uygun olabileceğini düşündüğümüz $count kişi.',
+      one: 'Sana uygun olabileceğini düşündüğümüz 1 kişi.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get picksIntroNote =>
+      'Rastgele değil, uyumuna göre seçildi. Her gün yenilenir.';
+
+  @override
+  String picksLowSupplyNote(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Bugün senin için $count güçlü eşleşme bulduk. Çıtayı düşürmek yerine daha azını gösteriyoruz.',
+      one:
+          'Bugün senin için 1 güçlü eşleşme bulduk. Çıtayı düşürmek yerine daha azını gösteriyoruz.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get picksLoading => 'Senin için kişileri seçiyoruz…';
+
+  @override
+  String get picksLoadErrorTitle => 'Picks\'ini yükleyemedik.';
+
+  @override
+  String get picksEmptyPreparingTitle => 'Yeni önerilerin hazırlanıyor.';
+
+  @override
+  String get picksEmptyPreparingMessage =>
+      'Sana rastgele profiller göstermek yerine daha anlamlı eşleşmeler buluyoruz.';
+
+  @override
+  String get picksEmptyDoneTitle => 'Bugünkü seçkini tamamladın.';
+
+  @override
+  String get picksDiscoveryOffTitle => 'Keşif kapalı';
+
+  @override
+  String get picksDiscoveryOffMessage =>
+      'Picks alabilmek için ayarlardan keşfi aç.';
+
+  @override
+  String get picksDiscoverMore => 'Seçimlerinin dışında';
+
+  @override
+  String get picksDiscoverMoreHint =>
+      'Picks dışında kalan ama yine de sana uygun olabilecek kişiler.';
+
+  @override
+  String get picksBackToPicks => 'Mevora Picks\'e dön';
+
+  @override
+  String get discoverMoreSubtitle => 'Bugünkü Picks dışındaki kişiler';
+
+  @override
+  String get picksLike => 'Beğen';
+
+  @override
+  String get picksPass => 'Geç';
+
+  @override
+  String picksLikeSemantics(String name) {
+    return '$name kişisini beğen';
+  }
+
+  @override
+  String picksPassSemantics(String name) {
+    return '$name kişisini geç';
+  }
+
+  @override
+  String picksOpenProfileSemantics(String name) {
+    return '$name profilini aç';
+  }
+
+  @override
+  String get picksActionFailed => 'İşlem tamamlanamadı. Tekrar dene.';
+
+  @override
+  String picksMatchScore(int score) {
+    return 'Mevora uyumu %$score';
+  }
+
+  @override
+  String get pickTypeBestOverall => 'En iyi uyum';
+
+  @override
+  String get pickTypeValuesMatch => 'Değerler uyumu';
+
+  @override
+  String get pickTypeHumorMatch => 'Mizah uyumu';
+
+  @override
+  String get pickTypeMusicMatch => 'Müzik uyumu';
+
+  @override
+  String get pickTypeNearbyMatch => 'Yakınında';
+
+  @override
+  String get pickTypeUnexpectedMatch => 'Beklenmedik eşleşme';
+
+  @override
+  String get pickHeadlineBestOverallStrong => 'Genel uyumunuz çok yüksek.';
+
+  @override
+  String get pickHeadlineBestOverall => 'Genel uyumunuz güçlü.';
+
+  @override
+  String get pickHeadlineValues =>
+      'İlişki beklentileriniz ve temel değerleriniz güçlü şekilde örtüşüyor.';
+
+  @override
+  String pickHeadlineHumorScore(int score) {
+    return 'Mizah profiliniz %$score uyumlu.';
+  }
+
+  @override
+  String pickHeadlineMusicArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ortak sanatçınız var.',
+      one: 'Sevdiğiniz ortak bir sanatçı var.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pickHeadlineMusic => 'Müzik zevkinizde güçlü bir örtüşme var.';
+
+  @override
+  String get pickHeadlineNearby => 'Hem yakınında hem de güçlü bir eşleşme.';
+
+  @override
+  String get pickHeadlineUnexpected => 'Normalde gözden kaçırabileceğin biri.';
+
+  @override
+  String get pickDetailUnexpected =>
+      'Ortak ilgi alanlarınız çok benzer olmayabilir ama ilişki beklentileri ve iletişim tarzınız güçlü şekilde uyuşuyor.';
+
+  @override
+  String pickWhyTitle(String name) {
+    return 'Neden $name?';
+  }
+
+  @override
+  String pickReasonOverall(int score) {
+    return 'Mevora genel uyumunuz %$score.';
+  }
+
+  @override
+  String get pickReasonRelationship =>
+      'İkiniz de aynı türde bir ilişki arıyorsunuz.';
+
+  @override
+  String pickReasonViews(int aligned, int shared) {
+    return '$shared ilişki sorusunun $aligned tanesinde aynı cevabı verdiniz.';
+  }
+
+  @override
+  String get pickReasonCommunication =>
+      'İletişim tarzlarınız uyumlu görünüyor.';
+
+  @override
+  String get pickReasonLifestyle => 'Yaşam tarzı tercihleriniz uyumlu.';
+
+  @override
+  String pickReasonHumorTraits(String traits) {
+    return 'Ortak mizah tarzlarınız: $traits.';
+  }
+
+  @override
+  String pickReasonMusicArtists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Müzik profilinizde $count ortak sanatçı var.',
+      one: 'Müzik profilinizde ortak bir sanatçı var.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pickReasonMusicScore(int score) {
+    return 'Müzik uyumunuz %$score.';
+  }
+
+  @override
+  String pickReasonDistance(String distance) {
+    return '$distance — buluşmak için yeterince yakın.';
+  }
+
+  @override
+  String pickReasonInterests(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ortak ilgi alanınız var.',
+      one: 'Ortak bir ilgi alanınız var.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get compatScoreHeading => 'Uyum';
+
+  @override
+  String get compatTierStrong => 'Güçlü eşleşme';
+
+  @override
+  String get compatTierClose => 'Birçok konuda yakınsınız';
+
+  @override
+  String get compatTierNotable => 'Dikkate değer ortak noktalarınız var';
+
+  @override
+  String get compatTierSome => 'Bazı ortak noktalarınız var';
 
   @override
   String get continueWithEmail => 'E-posta ile devam et';
@@ -116,14 +363,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get welcomeBack => 'Tekrar hoş geldin';
 
   @override
-  String get loginSubtitle => 'Keşfetmeye devam etmek için giriş yap.';
+  String get loginSubtitle =>
+      'Senin için seçtiklerimizi görmek için giriş yap.';
 
   @override
   String get createAccountTitle => 'Hesabını oluştur';
 
   @override
   String get registerSubtitle =>
-      'Bağ kurabileceğin insanlarla tanışmak için Mevora\'ya katıl.';
+      'Sana gerçekten uygun olabilecek insanlarla tanışmak için Mevora\'ya katıl.';
 
   @override
   String get email => 'E-posta';
@@ -334,7 +582,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authExpiredOtp =>
-      'Doğrulama kodunun süresi doldu. Yeni kod isteyin.';
+      'Doğrulama kodunun süresi doldu. Yeni bir kod iste.';
 
   @override
   String get authSessionExpired =>
@@ -342,11 +590,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authTooManyAttempts =>
-      'Çok fazla deneme yapıldı. Lütfen daha sonra tekrar deneyin.';
+      'Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar dene.';
 
   @override
   String get authSmsQuota =>
-      'SMS gönderim limiti aşıldı. Lütfen daha sonra tekrar deneyin.';
+      'SMS gönderim sınırına ulaşıldı. Lütfen daha sonra tekrar dene.';
 
   @override
   String get authFirebaseUnavailable =>
@@ -419,11 +667,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authAppleFailed => 'Apple ile giriş tamamlanamadı.';
 
   @override
-  String get onboardingTitle => 'Birkaç adım kaldı';
+  String get onboardingTitle => 'Seni biraz tanıyalım';
 
   @override
   String get onboardingMessage =>
-      'Mevora\'nın sana uyumlu insanları önerebilmesi için profilini tamamla.';
+      'Ne kadar iyi tanışırsak, sana gösterdiğimiz kişileri o kadar anlamlı seçebiliriz.';
 
   @override
   String get onboardingFirstName => 'Adın';
@@ -465,10 +713,74 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get onboardingErrorBirthday => 'Doğum tarihini ekle.';
+
+  @override
+  String get onboardingErrorFirstName => 'Adını ekle.';
+
+  @override
+  String get onboardingErrorGender => 'Kendini nasıl tanımladığını seç.';
+
+  @override
+  String get onboardingErrorInterestedIn => 'Kiminle tanışmak istediğini seç.';
+
+  @override
+  String get onboardingErrorCity => 'Şehrini seç.';
+
+  @override
+  String get onboardingErrorEducation => 'Eğitim durumunu seç.';
+
+  @override
+  String get onboardingErrorRelationshipGoal => 'Ne aradığını seç.';
+
+  @override
+  String get onboardingErrorLifestyle =>
+      'Yaşam tarzı sorularının hepsini cevapla.';
+
+  @override
+  String onboardingErrorInterestsMax(int max) {
+    return 'En fazla $max ilgi alanı seç.';
+  }
+
+  @override
+  String onboardingErrorBioShort(int min) {
+    return 'Kendinden en az $min karakterle bahset.';
+  }
+
+  @override
+  String onboardingErrorBioLong(int max) {
+    return 'En fazla $max karakter yazabilirsin.';
+  }
+
+  @override
+  String onboardingErrorPhotosMax(int max) {
+    return 'En fazla $max fotoğraf ekleyebilirsin.';
+  }
+
+  @override
+  String get onboardingErrorPhotosInReview =>
+      'Fotoğrafların hâlâ inceleniyor. Biraz sonra tekrar dene.';
+
+  @override
+  String get onboardingErrorProfileIncomplete =>
+      'Bazı zorunlu bilgiler eksik. Geri dönüp tamamla.';
+
+  @override
+  String get onboardingErrorSignInAgain =>
+      'Profilini tamamlamak için tekrar giriş yap.';
+
+  @override
+  String get onboardingErrorNotAllowed => 'Bu hesap kurulumu tamamlayamıyor.';
+
+  @override
+  String get onboardingErrorGeneric =>
+      'Profilin tamamlanamadı. Lütfen tekrar dene.';
+
+  @override
   String get onboardingBack => 'Geri';
 
   @override
-  String get onboardingContinue => 'Devam Et';
+  String get onboardingContinue => 'Devam et';
 
   @override
   String get onboardingEducation => 'Eğitim';
@@ -490,7 +802,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingInterestsHint =>
-      'Profilini tamamlamak için en az 3 ilgi alanı seç.';
+      'En az 3 tane seç. Ortak ilgi alanları, konuşacak bir şeyiniz olan insanları bulmamıza yardımcı olur.';
 
   @override
   String get onboardingBioHint => 'Kendinden biraz bahset.';
@@ -512,10 +824,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingCompleteMessage =>
-      'Profilin hazır. Mevora uyumlu kişilerle tanıştırmaya başlayacak.';
+      'Profilin hazır. Ne kadar iyi tanışırsak, sana gösterdiğimiz kişileri o kadar anlamlı seçebiliriz.';
 
   @override
-  String get onboardingStartDiscovering => 'Keşfetmeye başla';
+  String get onboardingStartDiscovering => 'Seçtiklerimizi gör';
 
   @override
   String get onboardingGenderMan => 'Erkek';
@@ -665,11 +977,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get interestCooking => 'Yemek yapma';
 
   @override
-  String get locationPermissionTitle => 'Yakınındaki insanları keşfet';
+  String get locationPermissionTitle => 'Sana yakın insanları bulalım';
 
   @override
   String get locationPermissionMessage =>
-      'Mevora, sana daha uygun eşleşmeler gösterebilmek için konumunu kullanır.';
+      'Mevora konumunu, sana uygun ve gerçekten buluşabileceğin kadar yakın kişileri seçmek için kullanır.';
 
   @override
   String get locationPermissionSub =>
@@ -683,7 +995,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get locationSkipHint =>
-      'Eşleşme ve keşif için konum gerekir. Daha sonra ayarlardan açabilirsin.';
+      'Konum, sana yakın kişileri seçmemize yardımcı olur. Daha sonra ayarlardan açabilirsin.';
 
   @override
   String get locationSettingsTitle => 'Konum izni kapalı';
@@ -700,21 +1012,21 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get gpsDisabledMessage =>
-      'Yakındaki eşleşmeleri gösterebilmemiz için cihazının konum hizmetlerini açman gerekiyor.';
+      'Sana yakın kişileri seçebilmemiz için cihazının konum hizmetlerini açman gerekiyor.';
 
   @override
   String get locationDeniedMessage =>
-      'Konum izni olmadan yakınındaki eşleşmeleri gösteremeyiz.';
+      'Konum izni olmadan sana yakın kişileri seçemeyiz.';
 
   @override
   String get locationSuccessTitle =>
-      'Harika! Yakınındaki eşleşmeleri bulmaya hazırız.';
+      'Harika. Artık sana yakın kişileri seçebiliriz.';
 
   @override
   String get locationLocating => 'Konumun belirleniyor...';
 
   @override
-  String get locationPreparingMatches => 'Yakındaki eşleşmeler hazırlanıyor...';
+  String get locationPreparingMatches => 'Sana yakın kişileri seçiyoruz...';
 
   @override
   String get locationUnavailableTitle => 'Konum alınamadı';
@@ -738,34 +1050,34 @@ class AppLocalizationsTr extends AppLocalizations {
   String get continueWithoutLocation => 'Konumsuz devam et';
 
   @override
-  String get discoveryTitle => 'Eşleşmelerine az kaldı';
+  String get discoveryTitle => 'Seçimlerin hazırlanıyor';
 
   @override
   String get discoveryMessage =>
-      'Keşif hazır olduğunda uyumlu insanlar burada görünecek.';
+      'Sana uygun olabilecek kişiler burada görünecek.';
 
   @override
-  String get discoveryEmptyTitle => 'Şu an yeni kimse yok';
+  String get discoveryEmptyTitle => 'Şimdilik seçimler bu kadar';
 
   @override
   String get discoveryEmptyMessage =>
-      'Mesafeyi genişlet veya biraz sonra tekrar bak.';
+      'Sana uygun olabilecek yeni kişiler bulduğumuzda burada göreceksin. İstersen mesafeni de genişletebilirsin.';
 
   @override
-  String get discoverySeenEveryoneTitle => 'Şimdilik burada herkes bu kadar.';
+  String get discoverySeenEveryoneTitle => 'Şimdilik seçtiğimiz herkese baktın';
 
   @override
   String get discoverySeenEveryoneMessage =>
-      'Yeni kişiler için daha sonra tekrar bak veya demoyu yeniden başlat.';
+      'Sana uygun olabilecek yeni kişiler bulduğumuzda burada göreceksin.';
 
   @override
-  String get exploreAgain => 'Tekrar keşfet';
+  String get exploreAgain => 'Tekrar bak';
 
   @override
   String get restartDemo => 'Demoyu yeniden başlat';
 
   @override
-  String get discoveryFiltersTitle => 'Keşif filtreleri';
+  String get discoveryFiltersTitle => 'Tercihlerin';
 
   @override
   String get discoveryFiltersHint =>
@@ -808,7 +1120,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get compatibilityReasonsHeading => 'Neden önerildi';
 
   @override
-  String get whyYoureSeeingThis => 'Bu profil neden gösteriliyor';
+  String get whyYoureSeeingThis => 'Neden sana uygun olabilir?';
+
+  @override
+  String compatWhyThisPerson(String name) {
+    return 'Neden $name?';
+  }
 
   @override
   String get sharedInterests => 'Ortak ilgi alanları';
@@ -822,7 +1139,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get tabDiscovery => 'Keşfet';
+  String get tabDiscovery => 'Senin İçin';
 
   @override
   String get tabMatches => 'Eşleşmeler';
@@ -846,7 +1163,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String compatibilityPercent(int percent) {
-    return 'Önerilen · %$percent uyum';
+    return 'Senin için seçildi · %$percent uyum';
   }
 
   @override
@@ -859,10 +1176,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get superLike => 'Süper Beğeni';
 
   @override
-  String get itsAMatch => 'Güçlü bağlantı';
+  String get itsAMatch => 'Birbirinizi seçtiniz';
 
   @override
-  String get youLikedEachOther => 'Sizinle uyumlu biriyle bağlantı kurdunuz.';
+  String get youLikedEachOther => 'İkiniz de evet dediniz.';
 
   @override
   String get sendMessage => 'Mesaj gönder';
@@ -871,7 +1188,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get startChat => 'Merhaba de';
 
   @override
-  String get keepSwiping => 'Keşfetmeye devam et';
+  String get keepSwiping => 'Seçimlerine dön';
 
   @override
   String get profile => 'Profil';
@@ -919,7 +1236,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get blockedUsers => 'Engellenenler';
 
   @override
-  String get discoveryPreferences => 'Keşif tercihleri';
+  String get discoveryPreferences => 'Eşleşme tercihleri';
+
+  @override
+  String get settingsPersonalizeRecommendations =>
+      'Önerilerimi etkileşimlerime göre kişiselleştir';
+
+  @override
+  String get settingsPersonalizeRecommendationsSubtitle =>
+      'Beğeniler, eşleşmeler ve konuşma etkinliği gibi sinyalleri kullanarak önerilerini zamanla sana göre ayarlarız. Mesajlarının içeriğini analiz etmeyiz.';
 
   @override
   String get minAge => 'En düşük yaş';
@@ -931,32 +1256,58 @@ class AppLocalizationsTr extends AppLocalizations {
   String get maxDistance => 'En fazla mesafe';
 
   @override
-  String get matchesTitle => 'Bağlantılarınız';
+  String get matchesTitle => 'Eşleşmelerin';
 
   @override
   String get matchesSubtitle =>
-      'Bağlantı kurduğunuz kişiler — uyumluluğa göre sıralı.';
+      'Birbirinizi seçtiğiniz kişiler, uyumunuza göre sıralı.';
 
   @override
-  String get matchesEmptyTitle => 'En güçlü bağlantılarınız burada görünecek';
+  String get matchesEmptyTitle => 'Eşleşmelerin burada görünecek';
 
   @override
   String get matchesEmptyMessage =>
-      'Biriyle bağlantı kurduğunuzda uyumluluk içgörüleri burada görünür.';
+      'Biriyle birbirinizi seçtiğinizde onu burada, ortak noktalarınızla birlikte bulacaksın.';
 
   @override
-  String get newMatch => 'Yeni bağlantı';
+  String get newMatch => 'Yeni eşleşme';
 
   @override
-  String get connectionBadgeNew => 'Yeni bağlantı';
+  String get connectionBadgeNew => 'Yeni eşleşme';
 
   @override
   String get connectionBadgeActive => 'Aktif sohbet';
 
   @override
   String matchStrongestConnectionLabel(String category) {
-    return 'En güçlü: $category';
+    return 'En güçlü olduğunuz alan: $category';
   }
+
+  @override
+  String get compatStrongestRelationship => 'Aynı şeyi arıyorsunuz';
+
+  @override
+  String get compatStrongestValues => 'Hayata bakışınız benzer';
+
+  @override
+  String get compatStrongestQuestions => 'Birçok soruya benzer cevap verdiniz';
+
+  @override
+  String get compatStrongestMusic =>
+      'Müzik zevkinizde güçlü ortak noktalar var';
+
+  @override
+  String get compatStrongestLifestyle => 'Yaşam tarzlarınız birbirine yakın';
+
+  @override
+  String get compatStrongestInterests => 'Benzer şeylerden keyif alıyorsunuz';
+
+  @override
+  String get compatStrongestCommunication =>
+      'Benzer şekilde iletişim kuruyorsunuz';
+
+  @override
+  String get compatStrongestLanguages => 'Ortak bir diliniz var';
 
   @override
   String get chatHint => 'Mesaj yaz...';
@@ -1018,7 +1369,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get chatE2eeSubtitle =>
-      'Mesajlarınızı yalnızca siz ve bu kişi okuyabilir.';
+      'Mesajlarınızı yalnızca sen ve bu kişi okuyabilir.';
 
   @override
   String get deleteMessage => 'Sil';
@@ -1206,11 +1557,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get block => 'Engelle';
 
   @override
-  String get blockConfirmTitle => 'Bu kişiyi engelle?';
+  String get blockConfirmTitle => 'Bu kişi engellensin mi?';
 
   @override
   String get blockConfirmMessage =>
-      'Engellenen kişi keşiften gizlenir, mesaj ve arama yapılamaz.';
+      'Bu kişiyi sana bir daha göstermeyiz; mesajlaşamaz ve birbirinizi arayamazsınız.';
 
   @override
   String get report => 'Şikayet et';
@@ -1262,7 +1613,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get hideProfileTitle => 'Bu profil gizlensin mi?';
 
   @override
-  String get hideProfileMessage => 'Keşif yığınında bir daha görünmez.';
+  String get hideProfileMessage => 'Bu kişiyi sana bir daha göstermeyiz.';
 
   @override
   String get linkedAccounts => 'Bağlı hesaplar';
@@ -1345,7 +1696,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get hideOnlineStatus => 'Çevrimiçi durumunu gizle';
 
   @override
-  String get notificationNewMatch => 'Yeni bir eşleşmen var!';
+  String get notificationNewMatch => 'Yeni bir eşleşmen var';
 
   @override
   String get notificationNewMessage => 'Yeni bir mesajın var';
@@ -1358,7 +1709,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get boostSubtitle =>
-      'Daha fazla rastgele kişiye değil — sana uygun daha fazla kişiye görün.';
+      'Boost aktifken profilin, seninle uyumu yüksek kişilere daha önce ve biraz daha geniş bir alanda gösterilir.';
 
   @override
   String get boostDuration => 'Profilini öne çıkar';
@@ -1376,11 +1727,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostVerifying => 'Satın alma doğrulanıyor...';
 
   @override
-  String get boostSuccessTitle => 'Boost aktif! 🚀';
+  String get boostSuccessTitle => 'Boost aktif';
 
   @override
   String get boostSuccessMessage =>
-      'Boost aktif. Süresi boyunca profilin uygun Discover profilleri arasında daha üst sırada çıkar.';
+      'Boost aktif. Süresi boyunca profilin, seninle uyumu yüksek kişilere daha önce gösterilir.';
 
   @override
   String get boostAlreadyActive =>
@@ -1416,7 +1767,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostLoadingProduct => 'Mağaza bilgileri yükleniyor...';
 
   @override
-  String get boostBackToDiscovery => 'Keşfe dön';
+  String get boostBackToDiscovery => 'Senin İçin\'e dön';
 
   @override
   String get boostTooltip => 'Boost';
@@ -1535,6 +1886,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String percentValue(int value) {
+    return '%$value';
+  }
+
+  @override
   String get paymentTitle => 'Ödeme';
 
   @override
@@ -1579,7 +1935,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get permissionLocationDescription =>
-      'Mevora, mesafe ve yakındaki keşfi iyileştirmek için konumunu kullanır.';
+      'Mevora konumunu, mesafeyi göstermek ve sana yakın kişileri seçmek için kullanır.';
 
   @override
   String get permissionNotificationsTitle => 'Bildirimler';
@@ -1655,8 +2011,16 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get photoUploadFailed =>
-      'Fotoğraf yüklenirken bir hata oluştu. Lütfen tekrar deneyin.';
+  String get photoUploadFailed => 'Fotoğraf yüklenemedi. Lütfen tekrar dene.';
+
+  @override
+  String get photoNoneSelected => 'Fotoğraf seçilmedi.';
+
+  @override
+  String get photoNeedSignIn => 'Fotoğraf yüklemek için giriş yapmalısın.';
+
+  @override
+  String get photoInvalidFile => 'Bu fotoğraf türü veya boyutu uygun değil.';
 
   @override
   String get photoUploaded => 'Fotoğraf yüklendi';
@@ -1798,7 +2162,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsPushNotifications => 'Anlık bildirimler';
 
   @override
-  String get settingsSuperLikeNotifications => 'Super Like bildirimleri';
+  String get settingsSuperLikeNotifications => 'Süper Beğeni bildirimleri';
 
   @override
   String get settingsSetPrimaryPhoto => 'Birincil yap';
@@ -1852,34 +2216,34 @@ class AppLocalizationsTr extends AppLocalizations {
   String get citySelectNone => 'İl bulunamadı';
 
   @override
-  String get discoveryLoading => 'Senin için kişiler keşfediliyor...';
+  String get discoveryLoading => 'Senin için kişileri seçiyoruz...';
 
   @override
-  String get discoveryLoadErrorTitle =>
-      'Profilleri yüklerken bir sorun oluştu.';
+  String get discoveryLoadErrorTitle => 'Seçimlerin yüklenemedi';
 
   @override
   String get discoveryLoadErrorMessage =>
       'Bağlantını kontrol et ve tekrar dene.';
 
   @override
-  String get discoveryChangePreferences => 'Keşfetme tercihlerini değiştir';
+  String get discoveryChangePreferences => 'Tercihlerini değiştir';
 
   @override
-  String get itsAMatchHeadline => 'Güçlü bağlantı';
+  String get itsAMatchHeadline => 'Yeni eşleşme';
 
   @override
-  String get matchCelebrationLead => 'Güçlü bir bağlantı buldunuz.';
+  String get matchCelebrationLead => 'Birbirinizi seçtiniz';
 
   @override
-  String get matchCelebrationInsight => 'Aranızda neyin uyumlu olduğunu görün.';
+  String get matchCelebrationInsight =>
+      'Artık konuşmaya başlayabilirsiniz. İşte sizi yakınlaştıran şeyler.';
 
   @override
   String get demoProfileBadge => 'Örnek';
 
   @override
   String sharedHobbiesCount(int count) {
-    return '$count ortak hobi';
+    return '$count ortak ilgi alanı';
   }
 
   @override
@@ -1892,14 +2256,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicTitle => 'Müzik';
 
   @override
-  String get musicConnectCta => '🎵 Spotify\'ı Bağla';
+  String get musicConnectCta => 'Spotify\'ı bağla';
 
   @override
-  String get musicConnected => '✓ Spotify Bağlandı';
+  String get musicConnected => 'Spotify bağlı';
+
+  @override
+  String get musicUnconnectedHeadline =>
+      'Müzik zevkin de eşleşmenin bir parçası olsun';
 
   @override
   String get musicUnconnectedCopy =>
-      'Spotify hesabını bağla ve müzik zevkine göre sana en uygun kişileri keşfet.';
+      'Mevora, sevdiğin sanatçılara ve parçalara bakarak başkalarıyla ortak müzik zevkini görür. Bu, uyumun yalnızca bir parçasıdır; tek başına belirlemez.';
 
   @override
   String get musicConnecting => 'Spotify bağlanıyor…';
@@ -1908,7 +2276,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicSyncing => 'Müzik zevkin yenileniyor…';
 
   @override
-  String get musicRefresh => 'Müzik Verilerini Yenile';
+  String get musicRefresh => 'Müzik verilerini yenile';
 
   @override
   String get musicRefreshCooldown => 'Daha sonra tekrar yenileyebilirsin.';
@@ -1917,14 +2285,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicProfileTitle => 'Müzik profilin';
 
   @override
-  String get musicSameTasteTitle => 'Seninle Aynı Müziği Dinleyenler';
+  String get musicSameTasteTitle => 'Seninle aynı müziği dinleyenler';
 
   @override
   String get musicSameTasteEmpty =>
       'Henüz örtüşen bir müzik zevki yok. Biraz dinledikten sonra yenile.';
 
   @override
-  String get musicWeeklyTitle => 'Bu Haftanın Müzikleri';
+  String get musicWeeklyTitle => 'Bu haftanın müzikleri';
 
   @override
   String get musicWeeklyEmpty =>
@@ -1967,11 +2335,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'Spotify bağlanamadı. Mevora\'nın geri kalanı çalışmaya devam eder.';
 
   @override
-  String get settingsConnectSpotify => 'Spotify\'ı Bağla';
+  String get settingsConnectSpotify => 'Spotify\'ı bağla';
 
   @override
   String get settingsSpotifySubtitle =>
-      'Müzik zevki eşleşmesi — Mevora içinde müzik çalmaz.';
+      'Müzik zevkin de eşleşmenin bir parçası olsun. Mevora müzik çalmaz.';
 
   @override
   String get matchScoreTitle => 'Eşleşme puanı';
@@ -2020,62 +2388,61 @@ class AppLocalizationsTr extends AppLocalizations {
   String get matchFeedbackFailed => 'Not kaydedilemedi. Tekrar dene.';
 
   @override
-  String get relationshipPromptTitle => 'İlişkiler hakkında ne düşünüyorsun?';
+  String get relationshipPromptTitle => 'Mevora seni daha iyi tanısın';
 
   @override
   String get relationshipQuestionsPreparing =>
-      'Yeni sorular hazırlanıyor. Lütfen biraz sonra tekrar deneyin.';
+      'Yeni sorular hazırlanıyor. Biraz sonra tekrar dene.';
 
   @override
-  String get relationshipTestTitle => 'İlişki Testi';
+  String get relationshipTestTitle => 'Mevora seni daha iyi tanısın';
 
   @override
-  String get relationshipTestHeadline => 'Uyumlu bakış açılarını keşfedin';
+  String get relationshipTestHeadline => 'Mevora seni daha iyi tanısın';
 
   @override
   String get relationshipTestMessage =>
-      'Benzer düşünen kişileri görmek için birkaç sakin soruyu yanıtlayın.';
+      'İlişkide sana neyin önemli geldiğine dair birkaç sakin soru. Cevapların, daha anlamlı seçimler yapmamıza yardımcı olur.';
 
   @override
-  String get relationshipTestStart => 'İlişki Testine Başla';
+  String get relationshipTestStart => 'Başlayalım';
 
   @override
-  String get relationshipTestLater => 'Daha Sonra';
+  String get relationshipTestLater => 'Şimdi değil';
 
   @override
-  String get relationshipContinueTitle => 'Eşleşmeye devam etmek ister misin?';
+  String get relationshipContinueTitle => 'Birkaç soru daha?';
 
   @override
   String get relationshipContinueMessage =>
-      '5 eşleşme turunu tamamladın. Aynı cevaplara sahip insanları bulmaya devam etmek ister misin?';
+      'Her cevap, sana kimi göstereceğimizi seçmemize yardımcı olur. İstersen şimdi devam et, istersen sonra.';
 
   @override
-  String get relationshipContinueYes => 'Devam Et';
+  String get relationshipContinueYes => 'Devam et';
 
   @override
-  String get relationshipContinueNo => 'Şimdi Değil';
+  String get relationshipContinueNo => 'Şimdi değil';
 
   @override
-  String get likesYouTitle => 'Size uyabilecek kişiler';
+  String get likesYouTitle => 'Seni beğenenler';
 
   @override
-  String get likesYouEntrySubtitle =>
-      'Kimlerle uyumlu olabileceğinizi keşfedin';
+  String get likesYouEntrySubtitle => 'Neden uyumlu olabileceğinize bak';
 
   @override
   String get likesYouInsightSubtitle =>
-      'Bağlanmadan önce uyumluluğu keşfetmek için dokunun.';
+      'Karar vermeden önce ortak noktalarınıza bakmak için dokun.';
 
   @override
   String likesYouCompatibilityLabel(int score) {
-    return '%$score Uyumluluk';
+    return '%$score uyum';
   }
 
   @override
-  String get likesYouSeeWhy => 'Neden uyumlusunuz?';
+  String get likesYouSeeWhy => 'Neden bu kişi?';
 
   @override
-  String get likesYouLockedTitle => 'Size uyabilecek kişiler';
+  String get likesYouLockedTitle => 'Seninle ilgilenenleri gör';
 
   @override
   String likesYouLockedCount(int count) {
@@ -2084,54 +2451,57 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get likesYouLockedMessage =>
-      'Size uyabilecek kişileri görmek için Premium\'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.';
+      'Seni kimlerin beğendiğini ve neden uyumlu olabileceğinizi görmek için Premium\'a geç. İsimler ve fotoğraflar o zamana kadar gizli kalır.';
 
   @override
   String get likesYouUnlockCta => 'Premium ile aç';
 
   @override
-  String get likesYouBlurredHint => 'Size uyabilecek kişiler';
+  String get likesYouBlurredHint =>
+      'Her kutu gerçek bir kişi. Premium kim olduğunu ve neden uyduğunuzu gösterir.';
 
   @override
   String get likesYouHiddenName => 'Gizli profil';
 
   @override
-  String get likesYouHiddenSubtitle => 'Uyumluluğu keşfetmek için kilidi aç';
+  String get likesYouHiddenSubtitle =>
+      'Ortak noktalarınızı görmek için kilidi aç';
 
   @override
-  String get likesYouEmptyTitle => 'Keşfetmeye devam edin';
+  String get likesYouEmptyTitle => 'Henüz beğeni yok';
 
   @override
   String get likesYouEmptyMessage =>
-      'Size uyabilecek kişileri burada göstereceğiz.';
+      'Biri seni beğendiğinde onu burada, neden uyumlu olabileceğinizle birlikte göreceksin.';
 
   @override
   String get likesYouLoadError => 'Beğeniler yüklenemedi. Lütfen tekrar dene.';
 
   @override
-  String get relationshipTestDoneTitle => 'İlişki Testin Tamamlandı';
+  String get relationshipTestDoneTitle =>
+      'Teşekkürler, seni artık biraz daha iyi tanıyoruz';
 
   @override
-  String get relationshipTestFound => 'Benzer yanıt veren biri var.';
+  String get relationshipTestFound => 'Seninle benzer cevaplar veren biri var.';
 
   @override
   String get relationshipTestAlign => 'Yanıtlarınız ortak konularda örtüşüyor.';
 
   @override
-  String get relationshipTestNearest => 'Size en yakın kişi:';
+  String get relationshipTestNearest => 'Sana en yakın kişi:';
 
   @override
   String get relationshipTestEmpty =>
-      'Şu an yakınında benzer düşünen kimse yok.';
+      'Yakınında henüz seninle benzer cevaplar veren biri yok.';
 
   @override
-  String get relationshipTestViewProfile => 'Profili Gör';
+  String get relationshipTestViewProfile => 'Profili gör';
 
   @override
   String get relationshipTestOpenChat => 'Sohbete git';
 
   @override
-  String get relationshipMatchBadge => 'İlişki Testi';
+  String get relationshipMatchBadge => 'Benzer cevaplar';
 
   @override
   String relationshipPromptProgress(int answered, int total) {
@@ -2264,11 +2634,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get verificationPrivacyNote =>
-      'Doğrulamanız güvenli bir doğrulama sağlayıcısı tarafından işlenir.';
+      'Doğrulaman, güvenli bir doğrulama sağlayıcısı tarafından yapılır.';
 
   @override
   String get followVerificationInstructions =>
-      'Kendinizi doğrulamak için talimatları izleyin.';
+      'Kendini doğrulamak için talimatları izle.';
 
   @override
   String get verificationNotConfigured =>
@@ -2276,11 +2646,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get verificationCooldown =>
-      'Tekrar denemeden önce birkaç dakika bekleyin.';
+      'Tekrar denemeden önce birkaç dakika bekle.';
 
   @override
   String get verificationAttemptLimit =>
-      'Bugünkü doğrulama limitine ulaştınız. Yarın tekrar deneyin.';
+      'Bugünkü doğrulama sınırına ulaştın. Yarın tekrar dene.';
 
   @override
   String get verificationProcessing =>
@@ -2318,21 +2688,21 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kimliğini taratıp selfie çekmen için doğrulama partnerimize yönlendirileceksin, sonra buraya döneceksin.';
 
   @override
-  String get whyYouMatch => 'Neden eşleşiyorsunuz?';
+  String get whyYouMatch => 'Neden sana uygun olabilir?';
 
   @override
   String get compatWhyButton => 'Neden?';
 
   @override
   String compatDiscoverBadge(int percent) {
-    return '%$percent Uyumlu';
+    return '%$percent uyum';
   }
 
   @override
   String get compatCalculating => 'Hesaplanıyor...';
 
   @override
-  String get compatUnavailable => 'Uyumluluk hesaplanamadı';
+  String get compatUnavailable => 'Uyum henüz hesaplanamadı';
 
   @override
   String get profileEditSectionPhotos => 'Fotoğraflar';
@@ -2398,7 +2768,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get questionAnswersEmptyHint =>
-      'Profilini daha kişisel hale getirmek için birkaç ilişki sorusu cevapla. İstediğin zaman düzenleyebilirsin.';
+      'Birkaç ilişki sorusu cevapla; hem insanlar hem Mevora seni daha iyi tanısın. İstediğin zaman düzenleyebilirsin.';
 
   @override
   String get questionAnswersSaveError =>
@@ -2421,7 +2791,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu kişinin cevaplarını görmek için eşleşmeniz gerekiyor.';
 
   @override
-  String get questionAnswersMatchedSubtitle => 'Ortak yönlerinizi keşfedin.';
+  String get questionAnswersMatchedSubtitle => 'Ortak yönlerinize bak.';
 
   @override
   String get questionAnswersPremiumRequired =>
@@ -2443,14 +2813,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String compatOverallLabel(int percent) {
-    return 'Uyumluluğunuz %$percent';
+    return '%$percent uyum';
   }
 
   @override
-  String get compatNotEnoughData => 'Henüz yeterli veri yok';
+  String get compatNotEnoughData => 'Henüz yeterli bilgi yok';
 
   @override
-  String get compatStrongestConnection => 'En güçlü bağ';
+  String get compatStrongestConnection => 'En çok ortak olduğunuz nokta';
 
   @override
   String get compatPotentialDifference => 'Potansiyel fark';
@@ -2483,9 +2853,23 @@ class AppLocalizationsTr extends AppLocalizations {
   String get compatCategoryActivity => 'Aktivite';
 
   @override
-  String compatReasonSameRelationshipGoal(String goal) {
-    return 'İkiniz de $goal ilişki istiyorsunuz';
-  }
+  String get compatReasonSameRelationshipGoal => 'Aynı şeyi arıyorsunuz';
+
+  @override
+  String get compatReasonGoalLongTerm =>
+      'İkiniz de uzun süreli bir ilişki arıyorsunuz';
+
+  @override
+  String get compatReasonGoalShortTerm =>
+      'İkiniz de daha rahat bir ilişki arıyorsunuz';
+
+  @override
+  String get compatReasonGoalFriendship =>
+      'İkiniz de yeni arkadaşlıklar arıyorsunuz';
+
+  @override
+  String get compatReasonGoalNotSure =>
+      'İkiniz de ne aradığınızı henüz netleştiriyorsunuz';
 
   @override
   String compatReasonSharedInterests(String interests) {
@@ -2493,7 +2877,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get compatReasonSimilarLifestyle => 'Benzer bir yaşam tarzınız var';
+  String get compatReasonSomeSharedInterests => 'Ortak ilgi alanlarınız var';
+
+  @override
+  String get compatReasonSimilarLifestyle =>
+      'Yaşam tarzlarınız birbirine yakın';
 
   @override
   String compatReasonSameAnswers(String aligned, String shared) {
@@ -2501,28 +2889,32 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String compatReasonSimilarMusic(String score) {
-    return 'Müzik zevkiniz %$score uyumlu';
-  }
+  String get compatReasonSimilarViews =>
+      'İlişki sorularına benzer cevaplar verdiniz';
 
   @override
-  String get compatReasonCommunication => 'Benzer iletişim tarzlarınız var';
+  String get compatReasonSimilarMusic =>
+      'Müzik zevkinizde güçlü ortak noktalar var';
 
   @override
-  String get hiddenCompatTitle => 'Biri senin gibi düşünüyor 👀';
+  String get compatReasonCommunication =>
+      'Benzer şekilde iletişim kuruyorsunuz';
+
+  @override
+  String get hiddenCompatTitle => 'Seninle benzer düşünen biri var';
 
   @override
   String hiddenCompatMessage(int count) {
-    return 'Biri seninle aynı şekilde $count soruya cevap verdi.';
+    return '$count soruya seninle aynı cevabı verdi.';
   }
 
   @override
   String hiddenCompatCompatibility(int percent) {
-    return '%$percent uyumluluk';
+    return '%$percent uyum';
   }
 
   @override
-  String get hiddenCompatCta => 'Uyumluluğunu keşfet';
+  String get hiddenCompatCta => 'Kim olduğuna bak';
 
   @override
   String get hiddenCompatDismiss => 'Şimdi değil';
@@ -2532,7 +2924,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get supportCenterSubtitle =>
-      'Yanıtları bulun, politikaları inceleyin veya ekibimize ulaşın.';
+      'Yanıtları bul, politikaları incele veya ekibimize ulaş.';
 
   @override
   String get supportHelpSection => 'Yardım';
@@ -2550,14 +2942,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get supportFaqSearchHint => 'Soru ara';
 
   @override
-  String get supportFaqEmpty => 'Aramanızla eşleşen soru bulunamadı.';
+  String get supportFaqEmpty => 'Aramanla eşleşen soru bulunamadı.';
 
   @override
   String get supportCreateTicket => 'Destek Talebi Oluştur';
 
   @override
   String get supportCreateTicketSubtitle =>
-      'Sorununuzu açıklayın ve isteğe bağlı ekran görüntüsü ekleyin';
+      'Sorununu anlat, istersen ekran görüntüsü ekle';
 
   @override
   String get supportMyTickets => 'Destek Taleplerim';
@@ -2567,7 +2959,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get supportTicketsEmptyMessage =>
-      'Destek ekibine yazdığınızda talepleriniz burada görünür.';
+      'Destek ekibine yazdığında taleplerin burada görünür.';
 
   @override
   String get supportTicketCategory => 'Kategori';
@@ -2589,10 +2981,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get supportTicketSubmit => 'Gönder';
 
   @override
-  String get supportTicketSubmitted => 'Destek talebiniz gönderildi.';
+  String get supportTicketSubmitted => 'Destek talebin gönderildi.';
 
   @override
-  String get supportTicketFailed => 'Talep gönderilemedi. Tekrar deneyin.';
+  String get supportTicketFailed => 'Talep gönderilemedi. Tekrar dene.';
 
   @override
   String get supportTicketValidation => 'Konu ve mesaj zorunludur.';
@@ -2605,7 +2997,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get supportTicketNotFoundMessage =>
-      'Bu destek talebi artık mevcut değil veya hesabınıza ait değil.';
+      'Bu destek talebi artık yok ya da hesabına ait değil.';
 
   @override
   String get supportTicketStatusLabel => 'Durum';
@@ -2651,70 +3043,70 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get faqDeleteAccountA =>
-      'Ayarlar → Hesap → Hesabı Sil yolunu izleyin. Onayladığınızda Mevora hesabınız ve ilişkili verileriniz kalıcı olarak silinir. Bu işlem geri alınamaz.';
+      'Ayarlar → Hesap → Hesabı Sil yolunu izle. Onayladığında Mevora hesabın ve ilişkili verilerin kalıcı olarak silinir. Bu işlem geri alınamaz.';
 
   @override
   String get faqChangePhotoQ => 'Profil fotoğrafımı nasıl değiştiririm?';
 
   @override
   String get faqChangePhotoA =>
-      'Ayarlar → Profili Düzenle\'ye gidin. Galeriden veya kameradan fotoğraf ekleyebilir, kaldırabilir veya değiştirebilirsiniz. Fotoğraflar yayınlanmadan önce incelenebilir.';
+      'Ayarlar → Profili Düzenle\'ye git. Galeriden veya kameradan fotoğraf ekleyebilir, kaldırabilir ya da değiştirebilirsin. Fotoğraflar başkalarına gösterilmeden önce incelenebilir.';
 
   @override
   String get faqCloseAccountQ => 'Hesabımı nasıl kapatırım?';
 
   @override
   String get faqCloseAccountA =>
-      'Hesap kapatma, hesap silme ile aynıdır. Ayarlar → Hesap → Hesabı Sil\'i kullanın. Yalnızca çıkış yapmak verilerinizi silmez.';
+      'Hesabı kapatmak, silmekle aynıdır. Ayarlar → Hesap → Hesabı Sil\'i kullan. Yalnızca çıkış yapmak verilerini silmez.';
 
   @override
-  String get faqHowMatchQ => 'Nasıl eşleşme yapılıyor?';
+  String get faqHowMatchQ => 'Eşleşme nasıl oluşuyor?';
 
   @override
   String get faqHowMatchA =>
-      'Keşfet\'te iki kullanıcı birbirini beğendiğinde karşılıklı eşleşme oluşur. Eşleşmeler sekmesinden mesajlaşabilirsiniz.';
+      'Mevora sana uygun olabilecek kişileri seçer. Biriyle birbirinizi beğendiğinizde eşleşirsiniz ve Eşleşmeler sekmesinden mesajlaşabilirsiniz.';
 
   @override
-  String get faqMatchPercentQ => 'Eşleşme yüzdesi ne anlama geliyor?';
+  String get faqMatchPercentQ => 'Uyum yüzdesi ne anlama geliyor?';
 
   @override
   String get faqMatchPercentA =>
-      'Profil cevapları, ilgi alanları, yaşam tarzı, müzik zevki ve diğer sinyallere dayalı bir uyumluluk tahminidir. Bağ kurma olasılığını anlamanıza yardımcı olur; garanti değildir.';
+      'Cevaplarına, ilgi alanlarına, yaşam tarzına, müzik zevkine ve diğer sinyallere dayanan bir uyum tahminidir. Mevora\'nın birini neden senin için seçtiğini anlamana yardımcı olur; asla bir garanti değildir.';
 
   @override
-  String get faqCantMessageQ => 'Mesaj gönderemiyorsam ne yapmalıyım?';
+  String get faqCantMessageQ => 'Neden mesaj gönderemiyorum?';
 
   @override
   String get faqCantMessageA =>
-      'Mesajlaşma yalnızca aktif karşılıklı eşleşmelerde kullanılabilir. Eşleşme sona erdiyse, engellendiyseniz veya sohbet kapandıysa mesaj gönderemezsiniz.';
+      'Mesajlaşma yalnızca aktif eşleşmelerde açıktır. Eşleşme sona erdiyse, biriniz diğerini engellediyse ya da sohbet kapandıysa mesaj gönderemezsin.';
 
   @override
   String get faqNotificationsQ => 'Bildirimleri nasıl yönetebilirim?';
 
   @override
   String get faqNotificationsA =>
-      'Ayarlar → Bildirimler\'den eşleşme, mesaj ve diğer uyarıları yönetin. Cihaz ayarlarından da bildirim izni vermeniz gerekebilir.';
+      'Eşleşme, mesaj ve diğer bildirimleri Ayarlar → Bildirimler\'den yönetebilirsin. Cihaz ayarlarından da bildirim izni vermen gerekebilir.';
 
   @override
-  String get faqBlockQ => 'Bir kullanıcıyı nasıl engellerim?';
+  String get faqBlockQ => 'Birini nasıl engellerim?';
 
   @override
   String get faqBlockA =>
-      'Sohbette Daha Fazla → Engelle. Profilde güvenlik menüsünden Engelle\'yi seçin. Engellenen kullanıcılar size mesaj gönderemez ve eşleşmelerinizde görünmez.';
+      'Sohbette Daha fazla → Engelle\'ye dokun. Profilde güvenlik menüsünden Engelle\'yi seç. Engellediğin kişiler sana mesaj gönderemez ve eşleşmelerinde görünmez.';
 
   @override
-  String get faqReportQ => 'Bir kullanıcıyı nasıl şikayet ederim?';
+  String get faqReportQ => 'Birini nasıl şikayet ederim?';
 
   @override
   String get faqReportA =>
-      'Profil veya sohbet güvenlik menüsünden Şikayet Et\'i seçin, neden belirtin ve isteğe bağlı açıklama ekleyin. Şikayetler ekibimiz tarafından incelenir.';
+      'Profil veya sohbetteki güvenlik menüsünden Şikayet et\'i seç, bir neden belirt ve istersen açıklama ekle. Şikayetler ekibimiz tarafından incelenir.';
 
   @override
-  String get faqStaySafeQ => 'Uygulamada güvenliğimi nasıl koruyabilirim?';
+  String get faqStaySafeQ => 'Mevora\'da güvenliğimi nasıl korurum?';
 
   @override
   String get faqStaySafeA =>
-      'Kalabalık yerlerde buluşun, güvenene kadar kişisel bilgilerinizi paylaşmayın, engelle ve şikayet araçlarını kullanın, Topluluk Kuralları\'nı okuyun.';
+      'İlk buluşmalarda kalabalık yerleri seç, güvenene kadar kişisel bilgilerini paylaşma, engelle ve şikayet araçlarını kullan, Topluluk Kuralları\'na göz at.';
 
   @override
   String get guidelinesIntro =>
@@ -3077,47 +3469,48 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String musicMatchTitle(int percent) {
-    return '🎵 Müzik Eşleşmesi — %$percent';
+    return 'Müzik uyumu · %$percent';
   }
 
   @override
-  String get musicInsightBandHigh => 'Müzik zevkiniz oldukça benzer.';
+  String get musicInsightBandHigh =>
+      'Müzik zevkinizde güçlü ortak noktalar var.';
 
   @override
-  String get musicInsightBandMid => 'Bazı güçlü ortak müzik zevkleriniz var.';
+  String get musicInsightBandMid =>
+      'Müzik zevkinizde belirgin ortak noktalar var.';
 
   @override
-  String get musicInsightBandLow =>
-      'Müzik zevkleriniz farklı olsa da birkaç ortak sanatçınız var.';
+  String get musicInsightBandLow => 'Müzik zevkiniz bazı noktalarda kesişiyor.';
 
   @override
   String musicInsightSharedTracks(int count) {
-    return '🎵 $count ortak şarkınız var.';
+    return '$count ortak şarkınız var.';
   }
 
   @override
   String musicInsightSharedArtists(int count) {
-    return '🎤 $count ortak sanatçınız var.';
+    return '$count ortak sanatçınız var.';
   }
 
   @override
   String musicInsightSharedPlaylistTracks(int count) {
-    return '🎧 Playlistlerinizde $count ortak şarkı var.';
+    return 'Playlistlerinizde $count ortak şarkı var.';
   }
 
   @override
   String musicInsightSharedRecentTracks(int count) {
-    return '🎵 Son dönemde $count aynı şarkıyı dinlemişsiniz.';
+    return 'Son dönemde $count aynı şarkıyı dinlemişsiniz.';
   }
 
   @override
   String musicInsightTopSharedArtist(String name) {
-    return '🎵 İkiniz de $name\'i sık dinliyorsunuz.';
+    return 'İkiniz de $name\'i sık dinliyorsunuz.';
   }
 
   @override
   String musicInsightTopSharedGenres(String genres) {
-    return '🎶 Müzik zevkinizin büyük kısmı $genres türlerinde kesişiyor.';
+    return 'Müzik zevkinizin büyük kısmı $genres türlerinde kesişiyor.';
   }
 
   @override
@@ -3128,13 +3521,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicSpotifyNotConnected => 'Spotify bağlı değil';
 
   @override
-  String get musicSharedTracksHeading => '🎵 Ortak şarkılarınız';
+  String get musicSharedTracksHeading => 'Ortak şarkılarınız';
 
   @override
-  String get musicSharedArtistsHeading => '🎤 Ortak sanatçılarınız';
+  String get musicSharedArtistsHeading => 'Ortak sanatçılarınız';
 
   @override
-  String get musicSharedGenresHeading => '🎶 Ortak türler';
+  String get musicSharedGenresHeading => 'Ortak türler';
 
   @override
   String musicViewAllShared(int count) {
@@ -3151,7 +3544,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileEditSectionHobbies => 'Hobiler';
 
   @override
-  String get profileEditSectionExtended => 'Profilini tamamla';
+  String get profileEditSectionExtended => 'Seni daha iyi tanıyalım';
 
   @override
   String get profileLanguagesHint => 'Konuştuğun dilleri seç.';
@@ -3177,6 +3570,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String profileCompletionTitle(int percent) {
     return 'Profilin %$percent tamamlandı';
   }
+
+  @override
+  String get profileCompletionHeadline =>
+      'Seni daha iyi tanımamıza yardımcı ol';
+
+  @override
+  String get profileCompletionBody =>
+      'Profilindeki bilgiler, sana daha anlamlı seçimler sunmamıza yardımcı olur.';
 
   @override
   String profileCompletionMissing(String fields) {
@@ -3451,12 +3852,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String compatReasonSharedHobbies(String hobbies) {
-    return 'İkiniz de $hobbies yapmayı seviyorsunuz';
+    return 'İkiniz de şunlardan keyif alıyorsunuz: $hobbies';
   }
 
   @override
   String get musicPrivacyNotice =>
-      'Spotify verilerin yalnızca müzik uyumluluğunu hesaplamak ve eşleşmelerinde ortak dinleme bilgilerini göstermek için kullanılır. Tokenlar sunucuda kalır — cihazında tutulmaz.';
+      'Spotify verilerin yalnızca müzik uyumunu hesaplamak ve eşleşmelerinde ortak dinleme bilgilerini göstermek için kullanılır. Tokenlar sunucuda kalır, cihazında tutulmaz.';
 
   @override
   String get musicDisconnectCta => 'Spotify bağlantısını kaldır';
@@ -3471,13 +3872,13 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get musicMatchTeaser =>
-      '🎵 Müzik zevkiniz uyumlu olabilir — detaylar Premium ile';
+      'Müzik zevkiniz örtüşüyor olabilir. Ayrıntıları Premium ile gör.';
 
   @override
   String get musicPremiumUnlock => 'Aç';
 
   @override
-  String get musicNoCommonTracks => 'Henüz ortak dinlediğiniz bir şarkı yok 🎵';
+  String get musicNoCommonTracks => 'Henüz ortak dinlediğiniz bir şarkı yok';
 
   @override
   String get musicRecentlyPlayedHeading => 'Son dinlenenler';
@@ -3486,8 +3887,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorLabTitle => 'Mizah Labı';
 
   @override
-  String get humorLabSubtitle =>
-      'Her espriye, klibe ya da memeye ne kadar güldüğünü söyle.';
+  String get humorLabSubtitle => 'Neye güldüğünü öğrenmeye devam edelim.';
 
   @override
   String get humorLabDiscoverCta => 'Mizah Labı\'nı aç';
@@ -3580,13 +3980,14 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tatlı tatlı takılmayı ikimiz de seviyoruz galiba — ilk laf benden mi, senden mi?';
 
   @override
-  String get humorCompatibilityLevelHigh => 'Mizah uyumunuz yüksek';
+  String get humorCompatibilityLevelHigh => 'Mizahınız çok yakın';
 
   @override
-  String get humorCompatibilityLevelMedium => 'Mizah uyumunuz orta';
+  String get humorCompatibilityLevelMedium => 'Benzer şeylere gülüyorsunuz';
 
   @override
-  String get humorCompatibilityLevelLow => 'Mizah uyumunuz düşük';
+  String get humorCompatibilityLevelLow =>
+      'Mizahınız bazı noktalarda buluşuyor';
 
   @override
   String get humorCompatibilityBuilding =>
@@ -3727,17 +4128,18 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sayılar canlı etkinliğin biraz gerisinde kalabilir.';
 
   @override
-  String get onboardingMusicTitle => 'Müzik senin için önemli mi? 🎧';
+  String get onboardingMusicTitle =>
+      'Müzik zevkin de eşleşmenin bir parçası olsun';
 
   @override
   String get onboardingMusicBody =>
-      'Spotify\'ını bağla, Mevora seninle aynı müzikleri dinleyen kişileri bulsun ve neden uyduğunuzu anlatsın.';
+      'Spotify\'ı bağlarsan Mevora sevdiğin sanatçılara ve parçalara da bakar, biriyle ortak müzik zevkinizi sana gösterir. Müzik, eşleşmeyi tek başına belirlemez.';
 
   @override
-  String get onboardingMusicConnect => 'Spotify\'ımı Bağla';
+  String get onboardingMusicConnect => 'Spotify\'ı bağla';
 
   @override
-  String get onboardingMusicSkip => 'Şimdilik Geç';
+  String get onboardingMusicSkip => 'Şimdilik geç';
 
   @override
   String get onboardingMusicSkipNote =>
@@ -3748,7 +4150,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Spotify bağlantısı iptal edildi. Tekrar deneyebilir veya geçebilirsin.';
 
   @override
-  String get publicMusicTitle => 'Spotify zevkini yakaladık 🎧';
+  String get publicMusicTitle => 'Spotify zevkini yakaladık';
 
   @override
   String get publicMusicSubtitle => 'Profilinde göstermek istediklerini seç.';
@@ -3774,7 +4176,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Üst sınıra ulaştın. Başkasını seçmek için birini kaldır.';
 
   @override
-  String get publicMusicSave => 'Profilime Ekle';
+  String get publicMusicSave => 'Profilime ekle';
 
   @override
   String get publicMusicSaveFailed =>
@@ -3798,7 +4200,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get publicMusicEditCta => 'Müzik Zevkimi düzenle';
 
   @override
-  String get profileMusicTasteHeading => 'Müzik Zevki 🎧';
+  String get profileMusicTasteHeading => 'Müzik zevki';
 
   @override
   String get profileMusicOpenInSpotify => 'Spotify\'da aç';
@@ -3808,11 +4210,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'Spotify bağlı, ancak henüz fazla dinleme geçmişi yok.';
 
   @override
-  String get humorCalibrationIntroTitle => 'Mizahını keşfedelim';
+  String get humorCalibrationIntroTitle => 'Neye güldüğünü öğrenelim';
 
   @override
   String get humorCalibrationIntroBody =>
-      'Birkaç kısa içeriğe tepki ver. Neye güldüğünü öğrenelim; Mizah Labı\'nı sana göre şekillendirelim ve eşleşmelerinle ortak mizahınızı gösterelim.';
+      'Birkaç kısa içeriğe tepki ver. Verdiğin tepkiler mizah zevkini anlamamıza yardımcı olur; böylece eşleşmelerinle ortak mizahınızı sana gösterebiliriz.';
 
   @override
   String get humorCalibrationIntroMeta => '15 kısa içerik · yaklaşık 1 dakika';
@@ -3848,7 +4250,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Şu an yeterli içerik yok. Daha sonra tekrar dene.';
 
   @override
-  String get humorProfileEntryNotStarted => 'Mizahını keşfet';
+  String get humorProfileEntryNotStarted => 'Neye güldüğünü öğrenelim';
 
   @override
   String humorProfileEntryInProgress(int completed, int total) {
@@ -3928,6 +4330,72 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get humorSaved => 'Kaydedildi';
+
+  @override
+  String get premiumTitle => 'Mevora Premium';
+
+  @override
+  String get premiumSubtitle => 'Seni kimlerin beğendiğini gör, dahası da var.';
+
+  @override
+  String get premiumSubscribeCta => 'Abone ol';
+
+  @override
+  String get premiumRestoreCta => 'Satın alımları geri yükle';
+
+  @override
+  String get premiumLoadingPlans => 'Planlar yükleniyor…';
+
+  @override
+  String get premiumUnavailableTitle => 'Premium şu anda kullanılamıyor';
+
+  @override
+  String get premiumUnavailableBody =>
+      'Planlar mağazadan yüklenemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get premiumPurchasing => 'Mağaza bekleniyor…';
+
+  @override
+  String get premiumVerifying => 'Satın alman kontrol ediliyor…';
+
+  @override
+  String get premiumRestoring => 'Geri yükleniyor…';
+
+  @override
+  String get premiumPurchasedTitle => 'Premium oldun';
+
+  @override
+  String get premiumPurchasedBody => 'Aboneliğin aktif. İyi kullanımlar.';
+
+  @override
+  String get premiumCancelled => 'Satın alma iptal edildi.';
+
+  @override
+  String get premiumFailed => 'Satın alma tamamlanamadı.';
+
+  @override
+  String get premiumRejected => 'Bu satın almayı doğrulayamadık.';
+
+  @override
+  String get premiumNothingToRestore =>
+      'Bu mağaza hesabı için önceki bir satın alma bulunamadı.';
+
+  @override
+  String get premiumStoreUnavailable => 'Mağaza bu cihazda kullanılamıyor.';
+
+  @override
+  String get premiumAlreadyActive => 'Zaten Premium üyesin.';
+
+  @override
+  String get premiumRetry => 'Tekrar dene';
+
+  @override
+  String get premiumRenewsLabel =>
+      'Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.';
+
+  @override
   String get musicFollowedArtistsTitle => 'Takip ettiğin sanatçılar';
 
   @override
@@ -3950,4 +4418,33 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get musicSectionEmpty => 'Burada henüz bir şey yok.';
+
+  @override
+  String get profileSectionSignals => 'Uyum sinyallerin';
+
+  @override
+  String get profileSectionTrust => 'Güven ve görünürlük';
+
+  @override
+  String get premiumBenefitsHeading => 'Premium ile neler açılır';
+
+  @override
+  String get premiumBenefitLikesTitle => 'Seni kimlerin beğendiğini gör';
+
+  @override
+  String get premiumBenefitLikesBody =>
+      'Seni beğenen herkes tek listede — ve neden uyumlu olabileceğiniz.';
+
+  @override
+  String get premiumBenefitMusicTitle => 'Müzik uyumunun tamamı';
+
+  @override
+  String get premiumBenefitMusicBody =>
+      'Her eşleşmenle paylaştığın şarkılar, sanatçılar ve türler.';
+
+  @override
+  String get premiumPlansHeading => 'Planını seç';
+
+  @override
+  String get chatPreviewEncrypted => 'Şifreli mesaj';
 }

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 
@@ -19,7 +19,7 @@ void main() {
     );
 
     expect(find.text('Verify your profile'), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.chevronRight), findsOneWidget);
   });
 
   testWidgets('verification entry shows badge when verified', (tester) async {
@@ -33,6 +33,6 @@ void main() {
     );
 
     expect(find.text('Profile verified'), findsOneWidget);
-    expect(find.byIcon(Icons.verified), findsWidgets);
+    expect(find.byIcon(MevoraIcons.verified), findsWidgets);
   });
 }

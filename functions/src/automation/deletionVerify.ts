@@ -25,10 +25,15 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   `spotifySecrets/${uid}`,
   `users/${uid}/verification/identity`,
   `users/${uid}/verification/sumsub`,
+  // Learned recommendation preferences. A late like/match trigger could
+  // re-create it after the sweep, so it is checked, not assumed.
+  `users/${uid}/personalization/profile`,
   // Humor state is an inferred personality profile. An in-flight humor call
   // can re-create these after the sweep, so they are checked, not assumed.
   `users/${uid}/humor/summary`,
   `users/${uid}/humor/calibration`,
+  // Their own Mevora Picks batch: who they were shown, and why.
+  `users/${uid}/mevoraPicks/current`,
 ];
 
 /** Storage prefixes `deleteUserAccount` clears. */
@@ -70,6 +75,16 @@ export async function verifyAccountDeletion(
   }
   if (!likesTo.empty) {
     issues.push("likes_to_remnant");
+  }
+
+  // Another member's Picks still recommending (or cooling down) this account.
+  const inboundPicks = await db
+    .collectionGroup("mevoraPicks")
+    .where("candidateUids", "array-contains", uid)
+    .limit(1)
+    .get();
+  if (!inboundPicks.empty) {
+    issues.push("inbound_picks_remnant");
   }
 
   const [humorInteractions, humorReports, humorQueuePointer] = await Promise.all([

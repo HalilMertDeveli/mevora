@@ -1,116 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 
-/// Mevora type scale — Manrope for UI, Fraunces for display/brand moments.
+/// Mevora type scale.
+///
+/// Fraunces (a soft, warm serif) carries the human, editorial moments —
+/// names, page headlines, the match moment. Manrope carries everything the
+/// user reads to operate the app. Both ship as full Latin-Extended files so
+/// Turkish glyphs (ğ ş İ) never fall back to a system font.
 abstract final class AppTypography {
   static const String fontFamily = 'Manrope';
   static const String displayFontFamily = 'Fraunces';
 
-  static TextTheme textTheme(Brightness brightness) {
-    final color = brightness == Brightness.dark
-        ? AppColors.primaryText
-        : AppColors.ink;
-    final muted = brightness == Brightness.dark
-        ? AppColors.secondaryText
-        : AppColors.mutedInk;
-    final subtle = brightness == Brightness.dark
-        ? AppColors.mutedText
-        : AppColors.subtleInk;
+  static TextTheme textTheme(MevoraPalette p) {
+    TextStyle serif(double size, double height, {double tracking = -0.2}) =>
+        TextStyle(
+          fontFamily: displayFontFamily,
+          fontSize: size,
+          height: height / size,
+          fontWeight: FontWeight.w600,
+          letterSpacing: tracking,
+          color: p.textPrimary,
+        );
+    TextStyle sans(
+      double size,
+      double height,
+      FontWeight weight, {
+      Color? color,
+      double tracking = 0,
+    }) => TextStyle(
+      fontFamily: fontFamily,
+      fontSize: size,
+      height: height / size,
+      fontWeight: weight,
+      letterSpacing: tracking,
+      color: color ?? p.textPrimary,
+    );
 
     return TextTheme(
-      displayLarge: TextStyle(
-        fontFamily: displayFontFamily,
-        fontSize: 40,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 2.4,
-        height: 1.1,
-        color: color,
-      ),
-      displayMedium: TextStyle(
-        fontFamily: displayFontFamily,
-        fontSize: 34,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.4,
-        height: 1.15,
-        color: color,
-      ),
-      headlineMedium: TextStyle(
-        fontFamily: displayFontFamily,
-        fontSize: 28,
-        fontWeight: FontWeight.w600,
-        letterSpacing: -0.2,
-        height: 1.2,
-        color: color,
-      ),
-      headlineSmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 22,
-        fontWeight: FontWeight.w600,
-        height: 1.25,
-        color: color,
-      ),
-      titleLarge: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        height: 1.3,
-        color: color,
-      ),
-      titleMedium: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        height: 1.35,
-        color: color,
-      ),
-      titleSmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        height: 1.35,
-        color: color,
-      ),
-      bodyLarge: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        height: 1.45,
-        color: color,
-      ),
-      bodyMedium: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 1.45,
-        color: muted,
-      ),
-      bodySmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
-        color: subtle,
-      ),
-      labelLarge: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 15,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.2,
-        color: color,
-      ),
-      labelMedium: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.4,
-        color: muted,
-      ),
-      labelSmall: TextStyle(
-        fontFamily: fontFamily,
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.6,
-        color: subtle,
+      displayLarge: serif(44, 50, tracking: -0.8),
+      displayMedium: serif(36, 42, tracking: -0.6),
+      displaySmall: serif(32, 38, tracking: -0.4),
+      headlineLarge: serif(30, 36, tracking: -0.4),
+      headlineMedium: serif(26, 32, tracking: -0.3),
+      headlineSmall: serif(22, 28),
+      titleLarge: sans(20, 26, FontWeight.w700, tracking: -0.2),
+      titleMedium: sans(17, 24, FontWeight.w600, tracking: -0.1),
+      titleSmall: sans(15, 20, FontWeight.w600),
+      bodyLarge: sans(16, 24, FontWeight.w400),
+      bodyMedium: sans(15, 22, FontWeight.w400, color: p.textSecondary),
+      bodySmall: sans(13, 18, FontWeight.w400, color: p.textTertiary),
+      labelLarge: sans(15, 20, FontWeight.w600, tracking: 0.1),
+      labelMedium: sans(13, 18, FontWeight.w600, color: p.textSecondary),
+      labelSmall: sans(
+        12,
+        16,
+        FontWeight.w600,
+        color: p.textTertiary,
+        tracking: 0.3,
       ),
     );
   }

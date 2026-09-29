@@ -83,14 +83,17 @@ class MusicCompatibilitySheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // What the score means first; the number under it.
               Text(
-                MusicInsightLocalizer.title(l10n, score),
+                MusicInsightLocalizer.headline(l10n, score),
                 style: theme.textTheme.headlineSmall,
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                MusicInsightLocalizer.headline(l10n, score),
-                style: theme.textTheme.bodyLarge,
+                MusicInsightLocalizer.title(l10n, score),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               if (bullets.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.md),

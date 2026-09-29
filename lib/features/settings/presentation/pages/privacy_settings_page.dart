@@ -7,6 +7,10 @@ import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/features/settings/domain/entities/user_settings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_loading.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/core/constants/app_spacings.dart';
 
 class PrivacySettingsPage extends StatefulWidget {
   const PrivacySettingsPage({super.key});
@@ -36,68 +40,76 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
         return Scaffold(
           appBar: AppBar(title: Text(l10n.settingsPrivacyControls)),
           body: privacy == null
-              ? const Center(child: CircularProgressIndicator())
+              ? const MevoraLoading.page()
               : ListView(
+                  padding: const EdgeInsets.all(AppSpacing.screenPadding),
                   children: [
-                    SwitchListTile(
-                      title: Text(l10n.settingsShowOnlineStatus),
-                      value: privacy.showOnlineStatus,
-                      onChanged: (value) => unawaited(
-                        _save(
-                          settings,
-                          privacy.copyWith(showOnlineStatus: value),
+                    MevoraListGroup(
+                      children: [
+                        MevoraSwitchRow(
+                          title: l10n.settingsShowOnlineStatus,
+                          icon: MevoraIcons.dot,
+                          value: privacy.showOnlineStatus,
+                          onChanged: (value) => unawaited(
+                            _save(
+                              settings,
+                              privacy.copyWith(showOnlineStatus: value),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    SwitchListTile(
-                      title: Text(l10n.settingsShowLastSeen),
-                      value: privacy.showLastSeen,
-                      onChanged: (value) => unawaited(
-                        _save(
-                          settings,
-                          privacy.copyWith(showLastSeen: value),
+                        MevoraSwitchRow(
+                          title: l10n.settingsShowLastSeen,
+                          icon: MevoraIcons.pending,
+                          value: privacy.showLastSeen,
+                          onChanged: (value) => unawaited(
+                            _save(
+                              settings,
+                              privacy.copyWith(showLastSeen: value),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    SwitchListTile(
-                      title: Text(l10n.settingsShowTypingStatus),
-                      value: privacy.showTypingStatus,
-                      onChanged: (value) => unawaited(
-                        _save(
-                          settings,
-                          privacy.copyWith(showTypingStatus: value),
+                        MevoraSwitchRow(
+                          title: l10n.settingsShowTypingStatus,
+                          icon: MevoraIcons.message,
+                          value: privacy.showTypingStatus,
+                          onChanged: (value) => unawaited(
+                            _save(
+                              settings,
+                              privacy.copyWith(showTypingStatus: value),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    SwitchListTile(
-                      title: Text(l10n.settingsShowDistance),
-                      value: privacy.showDistance,
-                      onChanged: (value) => unawaited(
-                        _save(
-                          settings,
-                          privacy.copyWith(showDistance: value),
+                        MevoraSwitchRow(
+                          title: l10n.settingsShowDistance,
+                          icon: MevoraIcons.location,
+                          value: privacy.showDistance,
+                          onChanged: (value) => unawaited(
+                            _save(
+                              settings,
+                              privacy.copyWith(showDistance: value),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    SwitchListTile(
-                      title: Text(l10n.settingsShowAge),
-                      value: privacy.showAge,
-                      onChanged: (value) => unawaited(
-                        _save(
-                          settings,
-                          privacy.copyWith(showAge: value),
+                        MevoraSwitchRow(
+                          title: l10n.settingsShowAge,
+                          icon: MevoraIcons.calendar,
+                          value: privacy.showAge,
+                          onChanged: (value) => unawaited(
+                            _save(settings, privacy.copyWith(showAge: value)),
+                          ),
                         ),
-                      ),
-                    ),
-                    SwitchListTile(
-                      title: Text(l10n.settingsShowActivity),
-                      value: privacy.showActivity,
-                      onChanged: (value) => unawaited(
-                        _save(
-                          settings,
-                          privacy.copyWith(showActivity: value),
+                        MevoraSwitchRow(
+                          title: l10n.settingsShowActivity,
+                          icon: MevoraIcons.waveform,
+                          value: privacy.showActivity,
+                          onChanged: (value) => unawaited(
+                            _save(
+                              settings,
+                              privacy.copyWith(showActivity: value),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),

@@ -32,6 +32,8 @@ class FirebaseSettingsDataSource {
           data['locationOnboardingCompleted'] as bool? ?? false,
       lastLocationUpdate: firestoreDate(data['lastLocationUpdate']),
       showOnlineStatus: data['showOnlineStatus'] as bool? ?? true,
+      personalizeRecommendations:
+          data['personalizeRecommendations'] as bool? ?? true,
     );
   }
 
@@ -50,6 +52,7 @@ class FirebaseSettingsDataSource {
       if (settings.lastLocationUpdate case final lastLocationUpdate?)
         'lastLocationUpdate': Timestamp.fromDate(lastLocationUpdate),
       'showOnlineStatus': settings.showOnlineStatus,
+      'personalizeRecommendations': settings.personalizeRecommendations,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }

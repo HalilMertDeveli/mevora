@@ -1,4 +1,6 @@
 import 'package:flutter/widgets.dart';
+import 'package:mevora/core/analytics/analytics_provider.dart';
+import 'package:mevora/features/subscription/domain/repositories/premium_billing_repository.dart';
 import 'package:mevora/features/subscription/domain/repositories/subscription_repository.dart';
 import 'package:mevora/features/subscription/presentation/controllers/subscription_controller.dart';
 
@@ -11,10 +13,18 @@ class SubscriptionScope extends InheritedNotifier<SubscriptionController> {
     super.key,
     required SubscriptionController controller,
     required this.repository,
+    this.billing,
+    this.analytics,
     required super.child,
   }) : super(notifier: controller);
 
   final SubscriptionRepository repository;
+
+  /// How Premium is bought. Null when Premium is switched off. Nothing on
+  /// this object can grant entitlement — it only opens the store.
+  final PremiumBillingRepository? billing;
+
+  final AnalyticsProvider? analytics;
 
   static SubscriptionScope of(BuildContext context) {
     final scope = context
@@ -29,6 +39,12 @@ class SubscriptionScope extends InheritedNotifier<SubscriptionController> {
 
   SubscriptionController get controller => notifier!;
 
+  /// Billing for the paywall, or null when Premium is off. A null here is
+  /// why the paywall is not offered rather than something to work around.
+  static PremiumBillingRepository? billingOf(BuildContext context) {
+    return maybeOf(context)?.billing;
+  }
+
   /// Effective entitlement for the signed-in user. Rebuilds the caller when it
   /// changes. Free is the safe answer when the scope is absent — a widget tree
   /// without the scope must never look premium.
@@ -41,6 +57,8 @@ class SubscriptionScope extends InheritedNotifier<SubscriptionController> {
   @override
   bool updateShouldNotify(SubscriptionScope oldWidget) {
     return repository != oldWidget.repository ||
+        billing != oldWidget.billing ||
+        analytics != oldWidget.analytics ||
         super.updateShouldNotify(oldWidget);
   }
 }

@@ -1,62 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_motion_size.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 
 enum MevoraLoadingStyle { inline, page }
 
+/// Waiting. The orbit loader by default; pass [art] when the wait has a
+/// subject worth naming (analysing music, finding people nearby).
 class MevoraLoading extends StatelessWidget {
   const MevoraLoading({
     super.key,
     this.message,
     this.style = MevoraLoadingStyle.inline,
     this.size,
-    this.asset,
+    this.art,
   });
 
-  const MevoraLoading.page({
-    super.key,
-    this.message,
-    this.size,
-    this.asset,
-  }) : style = MevoraLoadingStyle.page;
+  const MevoraLoading.page({super.key, this.message, this.size, this.art})
+    : style = MevoraLoadingStyle.page;
 
   final String? message;
   final MevoraLoadingStyle style;
   final double? size;
-  final String? asset;
+  final MevoraArt? art;
 
   @override
   Widget build(BuildContext context) {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
     final resolved = message ?? l10n?.loading ?? 'Loading';
-    final resolvedSize =
-        size ??
-        (style == MevoraLoadingStyle.page
-            ? MevoraMotionSize.loading(context)
-            : MevoraMotionSize.inline(context));
-    final fallbackSize = (resolvedSize * 0.42).clamp(20.0, 36.0);
+    final isPage = style == MevoraLoadingStyle.page;
+    final visual = art != null
+        ? MevoraSpot(
+            art: art!,
+            size: size ?? (isPage ? 112 : 72),
+            animate: true,
+          )
+        : MevoraOrbitLoader(size: size ?? (isPage ? 56 : 36));
+
     final indicator = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        MevoraRiveAnimation(
-          asset: asset ?? MevoraRiveAssets.loading,
-          width: resolvedSize,
-          height: resolvedSize,
-          semanticsLabel: resolved,
-          fallback: SizedBox(
-            width: fallbackSize,
-            height: fallbackSize,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
+        visual,
         if (message != null) ...[
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           Text(
             message!,
             textAlign: TextAlign.center,
@@ -66,13 +53,17 @@ class MevoraLoading extends StatelessWidget {
       ],
     );
 
-    if (style == MevoraLoadingStyle.page) {
-      return Semantics(
-        label: resolved,
-        child: Center(child: indicator),
-      );
-    }
-
-    return Semantics(label: resolved, child: indicator);
+    return Semantics(
+      label: resolved,
+      liveRegion: true,
+      child: isPage
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: indicator,
+              ),
+            )
+          : indicator,
+    );
   }
 }

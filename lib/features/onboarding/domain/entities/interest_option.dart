@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 
 class InterestOption {
   const InterestOption({
@@ -12,24 +13,24 @@ class InterestOption {
 
 abstract final class InterestCatalog {
   static const options = <InterestOption>[
-    InterestOption(id: 'music', icon: Icons.music_note_outlined),
-    InterestOption(id: 'travel', icon: Icons.flight_takeoff_outlined),
-    InterestOption(id: 'fitness', icon: Icons.fitness_center_outlined),
-    InterestOption(id: 'food', icon: Icons.restaurant_outlined),
-    InterestOption(id: 'art', icon: Icons.palette_outlined),
-    InterestOption(id: 'movies', icon: Icons.movie_outlined),
-    InterestOption(id: 'books', icon: Icons.menu_book_outlined),
-    InterestOption(id: 'gaming', icon: Icons.sports_esports_outlined),
-    InterestOption(id: 'nature', icon: Icons.park_outlined),
-    InterestOption(id: 'photography', icon: Icons.photo_camera_outlined),
-    InterestOption(id: 'coffee', icon: Icons.coffee_outlined),
-    InterestOption(id: 'dancing', icon: Icons.nightlife_outlined),
-    InterestOption(id: 'yoga', icon: Icons.self_improvement_outlined),
-    InterestOption(id: 'tech', icon: Icons.memory_outlined),
-    InterestOption(id: 'fashion', icon: Icons.checkroom_outlined),
-    InterestOption(id: 'pets', icon: Icons.pets_outlined),
-    InterestOption(id: 'sports', icon: Icons.sports_soccer_outlined),
-    InterestOption(id: 'cooking', icon: Icons.soup_kitchen_outlined),
+    InterestOption(id: 'music', icon: MevoraIcons.track),
+    InterestOption(id: 'travel', icon: MevoraIcons.travel),
+    InterestOption(id: 'fitness', icon: MevoraIcons.fitness),
+    InterestOption(id: 'food', icon: MevoraIcons.food),
+    InterestOption(id: 'art', icon: MevoraIcons.art),
+    InterestOption(id: 'movies', icon: MevoraIcons.film),
+    InterestOption(id: 'books', icon: MevoraIcons.books),
+    InterestOption(id: 'gaming', icon: MevoraIcons.gaming),
+    InterestOption(id: 'nature', icon: MevoraIcons.outdoors),
+    InterestOption(id: 'photography', icon: MevoraIcons.camera),
+    InterestOption(id: 'coffee', icon: MevoraIcons.coffee),
+    InterestOption(id: 'dancing', icon: MevoraIcons.nightlife),
+    InterestOption(id: 'yoga', icon: MevoraIcons.wellbeing),
+    InterestOption(id: 'tech', icon: MevoraIcons.tech),
+    InterestOption(id: 'fashion', icon: MevoraIcons.fashion),
+    InterestOption(id: 'pets', icon: MevoraIcons.pets),
+    InterestOption(id: 'sports', icon: MevoraIcons.sports),
+    InterestOption(id: 'cooking', icon: MevoraIcons.cooking),
   ];
 
   static InterestOption? find(String id) {

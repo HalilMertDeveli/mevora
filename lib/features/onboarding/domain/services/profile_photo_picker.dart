@@ -1,4 +1,5 @@
 import 'package:mevora/core/errors/failure.dart';
+import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 import 'package:mevora/core/errors/result.dart';
 
 class PickedProfilePhoto {
@@ -35,7 +36,7 @@ class StubProfilePhotoPicker implements ProfilePhotoPicker {
   @override
   Future<Result<PickedProfilePhoto>> pickFromCamera() async {
     if (next == null) {
-      return const Err(ValidationFailure('No photo selected'));
+      return const Err(ValidationFailure(PhotoUploadMessages.noneSelected));
     }
     return Success(next!);
   }
@@ -50,7 +51,7 @@ class StubProfilePhotoPicker implements ProfilePhotoPicker {
     required int limit,
   }) async {
     if (next == null) {
-      return const Err(ValidationFailure('No photo selected'));
+      return const Err(ValidationFailure(PhotoUploadMessages.noneSelected));
     }
     return Success([next!]);
   }

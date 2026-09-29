@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/errors/result.dart';
@@ -43,7 +45,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
       subtitle: l10n.resetPasswordMessage,
       child: _sent
           ? MevoraEmptyState(
-              icon: Icons.mark_email_read_outlined,
+              art: MevoraArt.success,
               title: l10n.resetEmailSentTitle,
               message: l10n.resetEmailSentMessage,
               actionLabel: l10n.backToSignIn,
@@ -59,7 +61,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     hint: l10n.emailHint,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
-                    prefixIcon: Icons.mail_outline_rounded,
+                    prefixIcon: MevoraIcons.email,
                     errorText: _emailError,
                     enabled: !auth.isBusy,
                     autocorrect: false,
@@ -81,9 +83,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                   MevoraButton(
                     label: l10n.sendResetLink,
                     isLoading: auth.isBusy,
-                    onPressed: auth.isBusy
-                        ? null
-                        : () => unawaited(_submit()),
+                    onPressed: auth.isBusy ? null : () => unawaited(_submit()),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   MevoraButton(

@@ -7,9 +7,7 @@ import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/features/location/domain/entities/location_screen_state.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_motion_size.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 import 'package:mevora/shared/widgets/turkish_province_picker.dart';
@@ -47,21 +45,21 @@ class LocationPermissionPage extends StatelessWidget {
     return switch (screen) {
       LocationScreenState.locating => _LoadingCopy(
         message: l10n.locationLocating,
-        riveAsset: MevoraRiveAssets.locationLocating,
+        art: MevoraArt.location,
       ),
       LocationScreenState.preparingMatches => _LoadingCopy(
         message: l10n.locationPreparingMatches,
       ),
       LocationScreenState.success ||
       LocationScreenState.reducedAccuracy => _StatusCopy(
-        icon: Icons.check_circle_outline_rounded,
+        art: MevoraArt.success,
         title: l10n.locationSuccessTitle,
         message: screen == LocationScreenState.reducedAccuracy
             ? l10n.locationPreciseOffMessage
             : l10n.locationPermissionSub,
       ),
       LocationScreenState.serviceDisabled => _ActionCopy(
-        icon: Icons.location_disabled_outlined,
+        art: MevoraArt.location,
         title: l10n.gpsDisabledTitle,
         message: l10n.gpsDisabledMessage,
         primaryLabel: l10n.openSettings,
@@ -75,7 +73,7 @@ class LocationPermissionPage extends StatelessWidget {
         hint: l10n.locationSkipHint,
       ),
       LocationScreenState.denied => _ActionCopy(
-        icon: Icons.location_off_outlined,
+        art: MevoraArt.location,
         title: l10n.locationPermissionTitle,
         message: l10n.locationDeniedMessage,
         primaryLabel: l10n.useMyLocation,
@@ -95,7 +93,7 @@ class LocationPermissionPage extends StatelessWidget {
       ),
       LocationScreenState.deniedForever ||
       LocationScreenState.restricted => _ActionCopy(
-        icon: Icons.lock_outline_rounded,
+        art: MevoraArt.location,
         title: l10n.locationSettingsTitle,
         message: l10n.locationSettingsMessage,
         primaryLabel: l10n.openSettings,
@@ -113,7 +111,7 @@ class LocationPermissionPage extends StatelessWidget {
         hint: l10n.locationSkipHint,
       ),
       LocationScreenState.error => _ActionCopy(
-        icon: Icons.error_outline_rounded,
+        art: MevoraArt.error,
         title: l10n.locationUnavailableTitle,
         // controller.errorMessage is a raw AppStrings constant from the data
         // layer, not UI copy. Localize it here or the body renders in a
@@ -133,7 +131,7 @@ class LocationPermissionPage extends StatelessWidget {
         isPrimaryLoading: controller.isBusy,
       ),
       LocationScreenState.prompt => _ActionCopy(
-        icon: Icons.explore_outlined,
+        art: MevoraArt.location,
         title: l10n.locationPermissionTitle,
         message: l10n.locationPermissionMessage,
         detail: l10n.locationPermissionSub,
@@ -161,65 +159,25 @@ class LocationPermissionPage extends StatelessWidget {
 }
 
 class _LoadingCopy extends StatelessWidget {
-  const _LoadingCopy({required this.message, this.riveAsset});
+  const _LoadingCopy({required this.message, this.art});
 
   final String message;
-  final String? riveAsset;
+  final MevoraArt? art;
 
   @override
   Widget build(BuildContext context) {
-    if (riveAsset == null) {
-      return MevoraLoading.page(message: message);
-    }
-
-    final size = MevoraMotionSize.loading(context);
-    return Semantics(
-      label: message,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IgnorePointer(
-              child: MevoraRiveAnimation(
-                asset: riveAsset!,
-                width: size,
-                height: size,
-                loop: true,
-                fit: BoxFit.contain,
-                semanticsLabel: message,
-                fallback: Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.4,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
-    );
+    return MevoraLoading.page(message: message, art: art);
   }
 }
 
 class _StatusCopy extends StatelessWidget {
   const _StatusCopy({
-    required this.icon,
+    required this.art,
     required this.title,
     required this.message,
   });
 
-  final IconData icon;
+  final MevoraArt art;
   final String title;
   final String message;
 
@@ -229,7 +187,7 @@ class _StatusCopy extends StatelessWidget {
     return Column(
       children: [
         const Spacer(),
-        Icon(icon, size: 56, color: theme.colorScheme.primary),
+        MevoraSpot(art: art),
         const SizedBox(height: AppSpacing.lg),
         Text(
           title,
@@ -250,7 +208,7 @@ class _StatusCopy extends StatelessWidget {
 
 class _ActionCopy extends StatelessWidget {
   const _ActionCopy({
-    required this.icon,
+    required this.art,
     required this.title,
     required this.message,
     required this.primaryLabel,
@@ -264,7 +222,7 @@ class _ActionCopy extends StatelessWidget {
     this.isPrimaryLoading = false,
   });
 
-  final IconData icon;
+  final MevoraArt art;
   final String title;
   final String message;
   final String? detail;
@@ -283,27 +241,20 @@ class _ActionCopy extends StatelessWidget {
     return Column(
       children: [
         const Spacer(),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer,
-            shape: BoxShape.circle,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Icon(icon, size: 40, color: theme.colorScheme.primary),
-          ),
-        ),
+        MevoraSpot(art: art),
         const SizedBox(height: AppSpacing.xl),
         Text(
           title,
           textAlign: TextAlign.center,
-          style: theme.textTheme.headlineSmall,
+          style: theme.textTheme.headlineMedium,
         ),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.s12),
         Text(
           message,
           textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
         if (detail != null) ...[
           const SizedBox(height: AppSpacing.md),
@@ -324,11 +275,13 @@ class _ActionCopy extends StatelessWidget {
           MevoraButton(
             label: secondaryLabel!,
             onPressed: onSecondary,
-            variant: MevoraButtonVariant.ghost,
+            variant: tertiaryLabel != null
+                ? MevoraButtonVariant.secondary
+                : MevoraButtonVariant.ghost,
           ),
         ],
         if (tertiaryLabel != null) ...[
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.xs),
           MevoraButton(
             label: tertiaryLabel!,
             onPressed: onTertiary,

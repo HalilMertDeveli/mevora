@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/support_scope.dart';
@@ -81,7 +82,7 @@ class _SupportTicketFormPageState extends State<SupportTicketFormPage> {
           const SizedBox(height: AppSpacing.md),
           OutlinedButton.icon(
             onPressed: _sending ? null : () => unawaited(_pickAttachment()),
-            icon: const Icon(Icons.attach_file),
+            icon: const Icon(MevoraIcons.attach),
             label: Text(
               _attachment == null
                   ? l10n.supportTicketAddScreenshot

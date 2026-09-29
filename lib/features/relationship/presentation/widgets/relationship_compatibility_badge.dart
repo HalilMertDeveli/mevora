@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
-import 'package:mevora/shared/widgets/mevora_chip.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
+/// Relationship-answers compatibility as a sage pill (heart glyph when the
+/// overlap is meaningful).
 class RelationshipCompatibilityBadge extends StatelessWidget {
   const RelationshipCompatibilityBadge({
     super.key,
@@ -17,39 +17,20 @@ class RelationshipCompatibilityBadge extends StatelessWidget {
   final int score;
   final bool compact;
 
-  /// Optional tiny Rive accent for result moments (never large).
+  /// Lead with the heart glyph for result moments.
   final bool showAccent;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final chip = MevoraChip(
+    final strong = score >= 40;
+    return MevoraPill(
       label: compact
           ? l10n.relationshipCompatibilityShort(score)
           : l10n.relationshipCompatibilityPercent(score),
-      selected: score >= 40,
-      compact: compact,
-    );
-    if (!showAccent || score < 40) {
-      return chip;
-    }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        MevoraRiveAnimation(
-          asset: MevoraRiveAssets.relationshipResult,
-          width: 28,
-          height: 28,
-          fit: BoxFit.contain,
-          fallback: Icon(
-            Icons.favorite_outline,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        chip,
-      ],
+      icon: showAccent && strong ? MevoraIcons.liked : MevoraIcons.questions,
+      tone: strong ? MevoraTone.compatibility : MevoraTone.neutral,
+      dense: compact,
     );
   }
 }

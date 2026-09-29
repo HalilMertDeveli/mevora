@@ -29,6 +29,9 @@ export {
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {verifyPremiumPurchase} from "./subscription/verifyPremiumPurchase.js";
+export {onPlaySubscriptionNotification} from "./subscription/googleRtdnFunction.js";
+export {getMevoraPicks} from "./picks/index.js";
 export {
   createIdentityVerificationSession,
   getIdentityVerificationState,
@@ -47,6 +50,12 @@ export {
   syncHumorFromProvider,
   searchHumorProviderCandidates,
 } from "./humor/index.js";
+export {
+  personalizationOnDecision,
+  personalizationOnMatchCreated,
+  recordProfileEngagement,
+  debugPersonalizationRanking,
+} from "./personalization/functions.js";
 
 // Automation job processors. `deleteUserAccount` enqueues an
 // `accountDeletionVerify` job (plus a Cloud Task); without these exports the

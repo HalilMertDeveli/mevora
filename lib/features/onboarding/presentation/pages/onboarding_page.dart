@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_durations.dart';
@@ -22,9 +24,8 @@ import 'package:mevora/features/profile/presentation/widgets/profile_interest_pi
 import 'package:mevora/features/profile/presentation/widgets/profile_lifestyle_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_relationship_goal_picker.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_motion_size.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
 import 'package:mevora/shared/widgets/turkish_province_picker.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
@@ -87,7 +88,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _birthDate = profile.birthDate;
     final birthLabel = _birthDate == null
         ? ''
-        : MaterialLocalizations.of(context).formatMediumDate(_birthDate!);
+        : L10nFormat.mediumDate(AppLocalizations.of(context), _birthDate!);
     if (_birthDateLabelController.text != birthLabel) {
       _birthDateLabelController.text = birthLabel;
     }
@@ -165,7 +166,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
     return OnboardingStepScaffold(
       step: OnboardingStep.music,
-      title: l10n.onboardingMusicTitle,
+      // The step body leads with the benefit headline; keep the title short.
+      title: l10n.musicTitle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.canGoBack ? _controller.goBack : null,
@@ -205,7 +207,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             label: l10n.onboardingBirthDate,
             controller: _birthDateLabelController,
             suffixIcon: IconButton(
-              icon: const Icon(Icons.calendar_today_outlined),
+              tooltip: l10n.onboardingBirthDate,
+              icon: const Icon(MevoraIcons.calendar),
               onPressed: _controller.isSaving ? null : _pickBirthDate,
             ),
           ),
@@ -273,7 +276,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             controller: _cityController,
             label: l10n.onboardingCity,
             readOnly: true,
-            suffixIcon: const Icon(Icons.arrow_drop_down),
+            suffixIcon: const Icon(MevoraIcons.dropdown),
             onTap: _controller.isSaving ? null : () => unawaited(_pickCity()),
           ),
         ],
@@ -290,6 +293,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
+      scrollable: true,
       child: ProfileInterestPicker(
         selected: selected,
         onChanged: (next) => _controller.updateDraft(
@@ -309,6 +313,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
+      scrollable: true,
       child: ProfileEducationPicker(
         value: education,
         onChanged: (next) => _controller.updateDraft(
@@ -324,10 +329,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return OnboardingStepScaffold(
       step: OnboardingStep.relationshipGoal,
       title: l10n.onboardingRelationshipGoal,
+      subtitle: l10n.onboardingWhyRelationshipGoal,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
+      scrollable: true,
       child: ProfileRelationshipGoalPicker(
         value: goal,
         onChanged: (next) => _controller.updateDraft(
@@ -343,10 +350,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return OnboardingStepScaffold(
       step: OnboardingStep.lifestyle,
       title: l10n.onboardingLifestyle,
+      subtitle: l10n.onboardingWhyLifestyle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
+      scrollable: true,
       child: ProfileLifestylePicker(
         profile: lifestyle,
         onChanged: (next) => _controller.updateDraft(
@@ -361,6 +370,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return OnboardingStepScaffold(
       step: OnboardingStep.bio,
       title: l10n.onboardingBio,
+      subtitle: l10n.onboardingWhyBio,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
       onBack: _controller.goBack,
@@ -420,27 +430,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
       onContinue: () => unawaited(_finish()),
       child: ListView(
         children: [
-          Center(
-            child: Builder(
-              builder: (context) {
-                final size = MevoraMotionSize.accent(context);
-                return MevoraRiveAnimation(
-                  asset: MevoraRiveAssets.onboardingComplete,
-                  width: size,
-                  height: size,
-                  fallback: Icon(
-                    Icons.auto_awesome_outlined,
-                    size: 32,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                );
-              },
-            ),
-          ),
+          const SizedBox(height: AppSpacing.lg),
+          const Center(child: MevoraSuccessMark(size: 112)),
           const SizedBox(height: AppSpacing.lg),
           Text(
             l10n.onboardingCompleteMessage,
-            style: Theme.of(context).textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: context.palette.textSecondary,
+            ),
           ),
         ],
       ),
@@ -468,8 +466,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
       return;
     }
     setState(() => _birthDate = picked);
-    _birthDateLabelController.text =
-        MaterialLocalizations.of(context).formatMediumDate(picked);
+    _birthDateLabelController.text = L10nFormat.mediumDate(
+      AppLocalizations.of(context),
+      picked,
+    );
     _controller.updateDraft((current) => current.copyWith(birthDate: picked));
   }
 

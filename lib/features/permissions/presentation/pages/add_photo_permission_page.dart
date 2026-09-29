@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
@@ -60,7 +62,7 @@ class _AddPhotoPermissionPageState extends State<AddPhotoPermissionPage> {
             MevoraButton(
               key: const Key('add_photo_camera'),
               label: l10n.addPhotoCamera,
-              icon: Icons.photo_camera_outlined,
+              icon: MevoraIcons.camera,
               onPressed: () => unawaited(_pick(PermissionType.camera)),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -68,13 +70,14 @@ class _AddPhotoPermissionPageState extends State<AddPhotoPermissionPage> {
               key: const Key('add_photo_gallery'),
               label: l10n.addPhotoGallery,
               variant: MevoraButtonVariant.secondary,
-              icon: Icons.photo_library_outlined,
+              icon: MevoraIcons.photos,
               onPressed: () => unawaited(_pick(PermissionType.photos)),
             ),
             const SizedBox(height: AppSpacing.xl),
             if (_error != null)
               MevoraEmptyState(
-                icon: Icons.error_outline,
+                art: MevoraArt.error,
+                compact: true,
                 title: l10n.somethingWentWrong,
                 message: l10n.permissionContinueWithout,
               )

@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
-import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
+import 'package:mevora/features/music/domain/services/music_insight_localizer.dart';
 import 'package:mevora/features/music/presentation/widgets/music_compatibility_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/images/mevora_network_images.dart';
+import 'package:mevora/features/music/presentation/widgets/music_ui.dart';
+import 'package:mevora/shared/widgets/mevora_context_row.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 /// Match-chat music strip. Renders nothing unless both sides have Spotify data.
 class MatchMusicCompatibilityBanner extends StatefulWidget {
@@ -83,23 +86,19 @@ class _MatchMusicCompatibilityBannerState
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
 
     if (data.showTeaser) {
-      return Material(
-        color: theme.colorScheme.surfaceContainerHighest,
-        child: ListTile(
+      return MevoraContextRow(
+        icon: MevoraIcons.track,
+        tone: MevoraTone.music,
+        title: l10n.musicMatchTeaser,
+        trailing: MevoraPill(
+          label: l10n.musicPremiumUnlock,
+          icon: MevoraIcons.premium,
+          tone: MevoraTone.premium,
           dense: true,
-          leading: const Icon(Icons.headphones_outlined),
-          title: Text(l10n.musicMatchTeaser),
-          trailing: Text(
-            l10n.musicPremiumUnlock,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          onTap: () => context.push(AppRoutes.boost),
         ),
+        onTap: () => context.push(AppRoutes.premium),
       );
     }
 
@@ -108,106 +107,37 @@ class _MatchMusicCompatibilityBannerState
     }
 
     final score = data.score!;
-    return Material(
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: InkWell(
-        onTap: () {
-          unawaited(
-            widget.analytics?.logEvent(AnalyticsEvents.commonTracksViewed),
-          );
-          unawaited(
-            MusicCompatibilitySheet.show(
-              context,
-              score: score,
-              insights: data.insights,
-              sharedTracks: data.sharedTracks.map((t) => t.name).toList(),
-              sharedArtists: data.sharedArtists.map((a) => a.name).toList(),
-              sharedGenres: data.sharedGenres,
-              sharedTrackCount: data.sharedTrackCount,
-              sharedArtistCount: data.sharedArtistCount,
+    return MevoraContextRow(
+      icon: MevoraIcons.track,
+      tone: MevoraTone.music,
+      // What the score means first; the number and shared songs as detail.
+      title: MusicInsightLocalizer.headline(l10n, score),
+      subtitle: data.sharedTrackCount > 0
+          ? '${l10n.musicMatchTitle(score)} · ${l10n.musicInsightSharedTracks(data.sharedTrackCount)}'
+          : l10n.musicMatchTitle(score),
+      trailing: data.sharedTracks.isEmpty
+          ? null
+          : MusicPortraitStack(
+              size: 30,
+              imageUrls: [for (final t in data.sharedTracks) t.albumImage],
             ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
+      onTap: () {
+        unawaited(
+          widget.analytics?.logEvent(AnalyticsEvents.commonTracksViewed),
+        );
+        unawaited(
+          MusicCompatibilitySheet.show(
+            context,
+            score: score,
+            insights: data.insights,
+            sharedTracks: data.sharedTracks.map((t) => t.name).toList(),
+            sharedArtists: data.sharedArtists.map((a) => a.name).toList(),
+            sharedGenres: data.sharedGenres,
+            sharedTrackCount: data.sharedTrackCount,
+            sharedArtistCount: data.sharedArtistCount,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.musicMatchTitle(score),
-                style: theme.textTheme.titleSmall,
-              ),
-              if (data.sharedTrackCount > 0) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  l10n.musicInsightSharedTracks(data.sharedTrackCount),
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-              if (data.sharedTracks.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.sm),
-                SizedBox(
-                  height: 56,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: data.sharedTracks.length.clamp(0, 5),
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(width: AppSpacing.sm),
-                    itemBuilder: (context, index) {
-                      final track = data.sharedTracks[index];
-                      final image = MevoraNetworkImages.provider(
-                        track.albumImage,
-                      );
-                      return Row(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: SizedBox(
-                              width: 44,
-                              height: 44,
-                              child: image == null
-                                  ? ColoredBox(
-                                      color: theme.colorScheme.primaryContainer,
-                                      child: const Icon(Icons.music_note),
-                                    )
-                                  : Image(image: image, fit: BoxFit.cover),
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          SizedBox(
-                            width: 120,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  track.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.labelLarge,
-                                ),
-                                Text(
-                                  track.artist,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
@@ -10,7 +11,7 @@ import 'package:mevora/features/profile/domain/repositories/profile_question_ans
 import 'package:mevora/features/relationship/data/catalog/relationship_questions.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/widgets/mevora_chip.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
@@ -72,41 +73,43 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
 
     unawaited(_profileSubscription?.cancel());
     if (profileAnswers != null) {
-      _profileSubscription = profileAnswers.watchAnswers(uid).listen(
-        (items) {
-          if (!mounted) {
-            return;
-          }
-          setState(() {
-            _profileAnswers = {
-              for (final item in items) item.questionId: item,
-            };
-            // Prefer live profile answers when the one-shot load was empty.
-            if (_answers.isEmpty && items.isNotEmpty) {
-              _answers = {
-                for (final item in items)
-                  if (item.answerId.trim().isNotEmpty)
-                    item.questionId: item.answerId,
-              };
-              _loading = false;
-              _error = null;
-            }
-          });
-        },
-        onError: (_) {
-          if (!mounted || !_loading) {
-            return;
-          }
-          setState(() {
-            _loading = false;
-            _error = AppLocalizations.of(context).questionAnswersLoadError;
-          });
-        },
-      );
+      _profileSubscription = profileAnswers
+          .watchAnswers(uid)
+          .listen(
+            (items) {
+              if (!mounted) {
+                return;
+              }
+              setState(() {
+                _profileAnswers = {
+                  for (final item in items) item.questionId: item,
+                };
+                // Prefer live profile answers when the one-shot load was empty.
+                if (_answers.isEmpty && items.isNotEmpty) {
+                  _answers = {
+                    for (final item in items)
+                      if (item.answerId.trim().isNotEmpty)
+                        item.questionId: item.answerId,
+                  };
+                  _loading = false;
+                  _error = null;
+                }
+              });
+            },
+            onError: (_) {
+              if (!mounted || !_loading) {
+                return;
+              }
+              setState(() {
+                _loading = false;
+                _error = AppLocalizations.of(context).questionAnswersLoadError;
+              });
+            },
+          );
       try {
-        await profileAnswers
-            .syncFromMatching()
-            .timeout(const Duration(seconds: 12));
+        await profileAnswers.syncFromMatching().timeout(
+          const Duration(seconds: 12),
+        );
       } on Object {
         // Continue with whatever Firestore already has.
       }
@@ -166,10 +169,7 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.profileAnswersTitle)),
       body: _loading
-          ? MevoraLoading.page(
-              message: l10n.loading,
-              asset: MevoraRiveAssets.loading,
-            )
+          ? MevoraLoading.page(message: l10n.loading)
           : _error != null && _answers.isEmpty
           ? MevoraErrorView(
               message: _error,
@@ -180,8 +180,7 @@ class _ProfileAnswersPageState extends State<ProfileAnswersPage> {
           : SafeArea(
               child: _answers.isEmpty
                   ? MevoraEmptyState(
-                      icon: Icons.chat_bubble_outline_rounded,
-                      riveAsset: MevoraRiveAssets.empty,
+                      art: MevoraArt.questions,
                       title: l10n.questionAnswersEmpty,
                       message: l10n.questionAnswersEmptyHint,
                     )

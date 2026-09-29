@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 
 import '../../helpers/pump_app.dart';
@@ -10,7 +10,7 @@ void main() {
       wrapWithApp(const MevoraLoading.page(message: 'Finding people')),
     );
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(MevoraOrbitLoader), findsOneWidget);
     expect(find.text('Finding people'), findsOneWidget);
   });
 }

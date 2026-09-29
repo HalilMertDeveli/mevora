@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
@@ -14,8 +15,7 @@ import 'package:mevora/features/calls/domain/models/call_session.dart';
 import 'package:mevora/features/calls/presentation/controllers/call_controller.dart';
 import 'package:mevora/features/calls/presentation/video_call_surface.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
@@ -370,20 +370,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const MevoraRiveAnimation(
-                            asset: MevoraRiveAssets.callConnecting,
-                            width: 48,
-                            height: 48,
-                            fit: BoxFit.contain,
-                            fallback: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.4,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
+                          const MevoraOrbitLoader(size: 44, onMedia: true),
                           const SizedBox(height: 8),
                           Text(
                             controller.lifecycle == CallLifecycle.reconnecting
@@ -406,15 +393,10 @@ class _VideoCallPageState extends State<VideoCallPage> {
                     right: 0,
                     child: Column(
                       children: [
-                        const MevoraRiveAnimation(
-                          asset: MevoraRiveAssets.success,
-                          width: 64,
-                          height: 64,
-                          fallback: Icon(
-                            Icons.call_end,
-                            color: Colors.white70,
-                            size: 32,
-                          ),
+                        const Icon(
+                          MevoraIcons.callEnd,
+                          color: Colors.white70,
+                          size: 40,
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -488,28 +470,28 @@ class CallControls extends StatelessWidget {
         IconButton.filledTonal(
           tooltip: l10n.mute,
           onPressed: onToggleMute,
-          icon: Icon(micOn ? Icons.mic : Icons.mic_off),
+          icon: Icon(micOn ? MevoraIcons.mic : MevoraIcons.micOff),
         ),
         IconButton.filledTonal(
           tooltip: l10n.cameraOff,
           onPressed: onToggleCamera,
-          icon: Icon(cameraOn ? Icons.videocam : Icons.videocam_off),
+          icon: Icon(cameraOn ? MevoraIcons.video : MevoraIcons.videoOff),
         ),
         IconButton.filledTonal(
           tooltip: l10n.switchCamera,
           onPressed: onSwitchCamera,
-          icon: const Icon(Icons.cameraswitch_outlined),
+          icon: const Icon(MevoraIcons.cameraSwitch),
         ),
         IconButton.filledTonal(
           tooltip: l10n.speaker,
           onPressed: onToggleSpeaker,
-          icon: Icon(speakerOn ? Icons.volume_up : Icons.volume_off),
+          icon: Icon(speakerOn ? MevoraIcons.volumeOn : MevoraIcons.volumeOff),
         ),
         IconButton.filled(
           tooltip: l10n.endCall,
           onPressed: onEnd,
           style: IconButton.styleFrom(backgroundColor: Colors.red),
-          icon: const Icon(Icons.call_end),
+          icon: const Icon(MevoraIcons.callEnd),
         ),
       ],
     );

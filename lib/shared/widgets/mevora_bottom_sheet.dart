@@ -1,52 +1,123 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
 
+/// Mevora's modal sheet: theme drag handle, optional serif title, content
+/// padded for the keyboard and the gesture bar.
 abstract final class MevoraBottomSheet {
   static Future<T?> show<T>(
     BuildContext context, {
     required Widget child,
     String? title,
+    String? subtitle,
     bool isDismissible = true,
+    bool scrollable = false,
   }) {
     return showModalBottomSheet<T>(
       context: context,
+      // Above the tab bar: a modal should own the screen, not share it.
+      useRootNavigator: true,
       isScrollControlled: true,
+      useSafeArea: true,
       isDismissible: isDismissible,
       enableDrag: isDismissible,
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: AppSpacing.lg,
-            right: AppSpacing.lg,
-            top: AppSpacing.md,
-            bottom:
-                MediaQuery.viewInsetsOf(sheetContext).bottom + AppSpacing.lg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(sheetContext).colorScheme.outline,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                ),
+        final theme = Theme.of(sheetContext);
+        final content = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (title != null) ...[
+              Semantics(
+                header: true,
+                child: Text(title, style: theme.textTheme.headlineSmall),
               ),
-              if (title != null) ...[
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  title,
-                  style: Theme.of(sheetContext).textTheme.titleLarge,
-                ),
+              if (subtitle != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(subtitle, style: theme.textTheme.bodyMedium),
               ],
               const SizedBox(height: AppSpacing.md),
-              child,
             ],
+            child,
+          ],
+        );
+        return Padding(
+          padding: EdgeInsets.only(
+            left: AppSpacing.screenPadding,
+            right: AppSpacing.screenPadding,
+            bottom:
+                MediaQuery.viewInsetsOf(sheetContext).bottom +
+                MediaQuery.paddingOf(sheetContext).bottom +
+                AppSpacing.md,
           ),
+          child: scrollable ? SingleChildScrollView(child: content) : content,
         );
       },
+    );
+  }
+
+  /// A list of actions (photo source, attach menu, …). Returns the chosen
+  /// value, or null when dismissed.
+  static Future<T?> showActions<T>(
+    BuildContext context, {
+    required List<MevoraSheetAction<T>> actions,
+    String? title,
+  }) {
+    return show<T>(
+      context,
+      title: title,
+      child: Builder(
+        builder: (sheetContext) => MevoraListGroup(
+          children: [
+            for (final action in actions)
+              MevoraListRow(
+                title: action.label,
+                subtitle: action.subtitle,
+                icon: action.icon,
+                destructive: action.destructive,
+                showChevron: false,
+                onTap: () => Navigator.of(sheetContext).pop(action.value),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MevoraSheetAction<T> {
+  const MevoraSheetAction({
+    required this.value,
+    required this.label,
+    this.subtitle,
+    this.icon,
+    this.destructive = false,
+  });
+
+  final T value;
+  final String label;
+  final String? subtitle;
+  final IconData? icon;
+  final bool destructive;
+}
+
+/// The drag-handle-less header row used inside full-height sheets.
+class MevoraSheetHandle extends StatelessWidget {
+  const MevoraSheetHandle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 36,
+        height: 4,
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
+        decoration: BoxDecoration(
+          color: context.palette.borderStrong,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
     );
   }
 }

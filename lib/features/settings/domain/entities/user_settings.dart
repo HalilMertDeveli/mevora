@@ -12,6 +12,7 @@ class UserSettings {
     this.locationOnboardingCompleted = false,
     this.lastLocationUpdate,
     this.showOnlineStatus = true,
+    this.personalizeRecommendations = true,
   });
 
   final String uid;
@@ -32,6 +33,10 @@ class UserSettings {
   final DateTime? lastLocationUpdate;
   final bool showOnlineStatus;
 
+  /// Whether recommendations adapt to this member's interactions. Default ON;
+  /// the server treats only an explicit `false` as off.
+  final bool personalizeRecommendations;
+
   UserSettings copyWith({
     String? uid,
     String? languageCode,
@@ -45,6 +50,7 @@ class UserSettings {
     bool? locationOnboardingCompleted,
     DateTime? lastLocationUpdate,
     bool? showOnlineStatus,
+    bool? personalizeRecommendations,
   }) {
     return UserSettings(
       uid: uid ?? this.uid,
@@ -61,6 +67,8 @@ class UserSettings {
           locationOnboardingCompleted ?? this.locationOnboardingCompleted,
       lastLocationUpdate: lastLocationUpdate ?? this.lastLocationUpdate,
       showOnlineStatus: showOnlineStatus ?? this.showOnlineStatus,
+      personalizeRecommendations:
+          personalizeRecommendations ?? this.personalizeRecommendations,
     );
   }
 }

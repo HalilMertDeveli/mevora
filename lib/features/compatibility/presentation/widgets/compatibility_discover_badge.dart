@@ -1,106 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/localization/locale_casing.dart';
 import 'package:mevora/core/theme/app_colors.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
-/// Prominent compatibility score for discovery cards (Mevora 2.0).
+/// The Discover card's answer to "why am I seeing this person?".
+///
+/// One human sentence (the strongest reason) and the top signals as tone
+/// pills, with the overall score as a quiet ring. The whole strip opens the
+/// full breakdown.
 class DiscoveryCompatibilityScore extends StatelessWidget {
   const DiscoveryCompatibilityScore({
     super.key,
     required this.score,
     this.status = CompatibilityDisplayStatus.ready,
+    this.reason,
+    this.signals = const [],
     this.onWhyTap,
   });
 
   final int score;
   final CompatibilityDisplayStatus status;
+
+  /// The single most telling reason, already localized.
+  final String? reason;
+  final List<CompatibilitySignal> signals;
   final VoidCallback? onWhyTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final p = context.palette;
 
     if (status == CompatibilityDisplayStatus.calculating) {
       return Row(
         children: [
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: theme.colorScheme.tertiary,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            l10n.compatCalculating,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          const MevoraOrbitLoader(size: 24),
+          const SizedBox(width: AppSpacing.s12),
+          Text(l10n.compatCalculating, style: theme.textTheme.bodyMedium),
         ],
       );
     }
-
     if (status == CompatibilityDisplayStatus.unavailable) {
-      return Text(
-        l10n.compatUnavailable,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      );
+      return Text(l10n.compatUnavailable, style: theme.textTheme.bodyMedium);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // A human line always leads: the strongest real reason when there is one,
+    // otherwise the overall tier. The ring carries the number.
+    final sentence = (reason != null && reason!.isNotEmpty)
+        ? reason!
+        : CompatibilityL10n.tier(l10n, score);
+    final body = Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          '$score%',
-          style: theme.textTheme.displayMedium?.copyWith(
-            color: AppColors.softGreen,
-            fontWeight: FontWeight.w600,
-            height: 1,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          l10n.compatScoreHeading,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        if (onWhyTap != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          TextButton(
-            onPressed: onWhyTap,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              foregroundColor: theme.colorScheme.secondary,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                LocaleCasing.upper(
                   l10n.whyYouMatch,
-                  style: theme.textTheme.labelLarge,
+                  Localizations.localeOf(context),
                 ),
-                const SizedBox(width: 4),
-                const Icon(Icons.arrow_forward_rounded, size: 16),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: p.compatibility,
+                  letterSpacing: 1,
+                ),
+              ),
+              ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  sentence,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontSize: 15,
+                    height: 21 / 15,
+                  ),
+                ),
               ],
-            ),
+              if (signals.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                CompatibilitySignalPills(signals: signals, showScores: false),
+              ],
+            ],
           ),
+        ),
+        const SizedBox(width: AppSpacing.s12),
+        CompatibilityRing(score: score, size: 48),
+        if (onWhyTap != null) ...[
+          const SizedBox(width: AppSpacing.xs),
+          Icon(MevoraIcons.chevronRight, size: 18, color: p.textTertiary),
         ],
       ],
+    );
+
+    if (onWhyTap == null) return body;
+    return Semantics(
+      button: true,
+      label: l10n.whyYouMatch,
+      child: InkWell(
+        onTap: onWhyTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          child: body,
+        ),
+      ),
     );
   }
 }
 
-/// Compact compatibility chip for legacy surfaces.
+/// Compact compatibility pill for secondary surfaces (details header).
 class CompatibilityDiscoverBadge extends StatelessWidget {
   const CompatibilityDiscoverBadge({
     super.key,
@@ -116,58 +135,29 @@ class CompatibilityDiscoverBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
     final label = switch (status) {
       CompatibilityDisplayStatus.calculating => l10n.compatCalculating,
       CompatibilityDisplayStatus.unavailable => l10n.compatUnavailable,
-      CompatibilityDisplayStatus.ready => l10n.compatDiscoverBadge(score),
+      CompatibilityDisplayStatus.ready =>
+        CompatibilityL10n.tierWithPercent(l10n, score),
     };
-
+    final pill = MevoraPill(
+      label: label,
+      icon: status == CompatibilityDisplayStatus.unavailable
+          ? MevoraIcons.info
+          : MevoraIcons.compatibility,
+      tone: MevoraTone.compatibility,
+    );
     final canTap = status == CompatibilityDisplayStatus.ready && onTap != null;
-
-    return Material(
-      color: Colors.transparent,
+    if (!canTap) return pill;
+    return Semantics(
+      button: true,
       child: InkWell(
-        onTap: canTap ? onTap : null,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.pill),
-            color: AppColors.softGreen.withValues(alpha: 0.12),
-            border: Border.all(color: AppColors.softGreen.withValues(alpha: 0.35)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (status == CompatibilityDisplayStatus.calculating)
-                SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    color: theme.colorScheme.tertiary,
-                  ),
-                )
-              else
-                Icon(
-                  status == CompatibilityDisplayStatus.unavailable
-                      ? Icons.info_outline
-                      : Icons.insights_outlined,
-                  size: 14,
-                  color: AppColors.softGreen,
-                ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s12),
+          child: pill,
         ),
       ),
     );

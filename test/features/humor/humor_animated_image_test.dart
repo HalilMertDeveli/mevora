@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
@@ -211,7 +213,7 @@ Finder _imageOf(String url) => find.byWidgetPredicate(
       (widget.image as NetworkImage).url == url,
 );
 
-Finder get _spinner => find.byType(CircularProgressIndicator);
+Finder get _spinner => find.byType(MevoraOrbitLoader);
 Finder get _failed => find.text(_en.humorMediaUnavailable);
 Finder get _tryAgain => find.widgetWithText(OutlinedButton, _en.humorTryAgain);
 Finder get _next => find.widgetWithText(FilledButton, _en.humorMediaNext);
@@ -358,7 +360,7 @@ void main() {
       expect(_imageOf(webp), findsOneWidget);
       expect(_spinner, findsOneWidget);
       expect(texts(), [_en.humorCategorySarcasm, 'GIPHY · @AppleTV']);
-      expect(find.byIcon(Icons.verified), findsOneWidget);
+      expect(find.byIcon(MevoraIcons.verified), findsOneWidget);
 
       later.complete(_Response(200, _animatedGif));
       await _decode(tester);

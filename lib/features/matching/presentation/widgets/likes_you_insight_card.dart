@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/features/compatibility/presentation/compatibility_l10n.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_breakdown.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_category_bars.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/features/matching/domain/models/incoming_likes.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
-/// Insight-led liker card — compatibility when real data exists.
+/// Someone who liked you — and, when Mevora has the data, why you two fit.
+/// One action: open their profile, where connecting happens.
 class LikesYouInsightCard extends StatelessWidget {
   const LikesYouInsightCard({
     super.key,
@@ -34,106 +38,68 @@ class LikesYouInsightCard extends StatelessWidget {
       if (item.age != null && item.age! > 0) '${item.age}',
       if (item.city != null && item.city!.isNotEmpty) item.city!,
     ].join(' · ');
-    final bars = breakdown == null
-        ? const <Widget>[]
-        : compatibilityCategoryBarsFromBreakdown(
-            context,
-            breakdown!,
-            maxBars: 3,
-          );
+    final signals = breakdown == null
+        ? const <CompatibilitySignal>[]
+        : compatibilitySignalsFromBreakdown(breakdown!, limit: 3);
 
     return MevoraCard(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                MevoraAvatar(
-                  name: item.displayName,
-                  image: MevoraNetworkImages.provider(item.photoUrl),
-                  size: 52,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              MevoraAvatar(
+                name: item.displayName,
+                image: MevoraNetworkImages.provider(item.photoUrl),
+                size: 56,
+              ),
+              const SizedBox(width: AppSpacing.s12 + 2),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.displayName, style: theme.textTheme.titleMedium),
+                    if (meta.isNotEmpty)
+                      Text(meta, style: theme.textTheme.bodySmall),
+                    if (breakdown != null)
                       Text(
-                        item.displayName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        CompatibilityL10n.tier(l10n, breakdown!.overallScore),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: context.palette.compatibility,
                         ),
                       ),
-                      if (meta.isNotEmpty)
-                        Text(
-                          meta,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.insights_outlined,
-                  color: AppColors.softGreen,
-                  size: 22,
-                ),
-              ],
-            ),
-            if (breakdown != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                l10n.likesYouCompatibilityLabel(breakdown!.overallScore),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: AppColors.softGreen,
-                  fontWeight: FontWeight.w600,
+                  ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              ...bars,
-            ] else ...[
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                l10n.likesYouInsightSubtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              if (breakdown != null)
+                CompatibilityRing(score: breakdown!.overallScore, size: 44),
             ],
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: MevoraButton(
-                    label: l10n.likesYouSeeWhy,
-                    variant: MevoraButtonVariant.secondary,
-                    size: MevoraButtonSize.small,
-                    onPressed: onTap,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: MevoraButton(
-                    label: l10n.discoveryActionConnect,
-                    size: MevoraButtonSize.small,
-                    onPressed: onConnect ?? onTap,
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: AppSpacing.s12),
+          if (signals.isNotEmpty)
+            CompatibilitySignalPills(signals: signals, showScores: false)
+          else
+            Text(
+              l10n.likesYouInsightSubtitle,
+              style: theme.textTheme.bodySmall,
             ),
-          ],
-        ),
+          const SizedBox(height: AppSpacing.md),
+          MevoraButton(
+            label: l10n.likesYouSeeWhy,
+            icon: MevoraIcons.compatibility,
+            variant: MevoraButtonVariant.tonal,
+            size: MevoraButtonSize.small,
+            onPressed: onConnect ?? onTap,
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Entry card on the Matches tab — insight-led, not heart-centric.
+/// Entry point on the Matches tab: "People who liked you".
 class LikesYouEntryCard extends StatelessWidget {
   const LikesYouEntryCard({super.key, required this.onTap});
 
@@ -143,35 +109,46 @@ class LikesYouEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final p = context.palette;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
+        AppSpacing.screenPadding,
         AppSpacing.sm,
-        AppSpacing.md,
+        AppSpacing.screenPadding,
         AppSpacing.xs,
       ),
       child: MevoraCard(
         onTap: onTap,
-        child: ListTile(
-          leading: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.softGreen.withValues(alpha: 0.14),
-              border: Border.all(
-                color: AppColors.softGreen.withValues(alpha: 0.35),
+        color: p.matchContainer,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        semanticLabel: l10n.likesYouTitle,
+        child: Row(
+          children: [
+            MevoraIconBadge(
+              icon: MevoraIcons.liked,
+              tone: MevoraTone.match,
+              size: 44,
+              circle: true,
+              background: p.surface,
+            ),
+            const SizedBox(width: AppSpacing.s12 + 2),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.likesYouTitle, style: theme.textTheme.titleSmall),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    l10n.likesYouEntrySubtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: p.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: const Icon(
-              Icons.insights_outlined,
-              color: AppColors.softGreen,
-              size: 22,
-            ),
-          ),
-          title: Text(l10n.likesYouTitle, style: theme.textTheme.titleMedium),
-          subtitle: Text(l10n.likesYouEntrySubtitle),
-          trailing: const Icon(Icons.chevron_right),
+            Icon(MevoraIcons.chevronRight, size: 18, color: p.textSecondary),
+          ],
         ),
       ),
     );

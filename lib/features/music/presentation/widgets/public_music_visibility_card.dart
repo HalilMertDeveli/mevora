@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
 import 'package:mevora/features/music/presentation/controllers/public_music_controller.dart';
@@ -9,7 +10,9 @@ import 'package:mevora/features/music/presentation/pages/public_music_selection_
 import 'package:mevora/features/music/presentation/widgets/public_music_taste_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
-import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_banner.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 /// Owner-facing control for the Music Taste section.
 ///
@@ -67,70 +70,54 @@ class _PublicMusicVisibilityCardState extends State<PublicMusicVisibilityCard> {
     final published = widget.profile.publicProfile;
     final shown = _pendingEnabled ?? published.enabled;
 
-    return MevoraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.publicMusicVisibilityTitle,
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-              Switch(
-                value: shown,
-                // A hidden card has no content by definition, so asking
-                // hasContent here left the switch dead exactly where it was
-                // needed. What matters is whether there is a selection to
-                // show at all.
-                onChanged: _busy || !published.hasSelection
-                    ? null
-                    : (value) => unawaited(_setEnabled(value)),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            l10n.publicMusicVisibilityBody,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          // Follows the switch rather than the stored value, so the preview
-          // and the control never disagree while a write is in flight.
-          if (shown && published.hasSelection) ...[
-            const SizedBox(height: AppSpacing.md),
-            PublicMusicTasteSection(
-              profile: published.enabled
-                  ? published
-                  : published.copyWith(enabled: true),
-            ),
-          ] else if (published.hasSelection) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              l10n.publicMusicHiddenNotice,
-              style: theme.textTheme.bodySmall,
+    // The control lives in a list group and the preview sits below it, so the
+    // preview's own card is never nested inside another card.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        MevoraListGroup(
+          children: [
+            MevoraSwitchRow(
+              title: l10n.publicMusicVisibilityTitle,
+              subtitle: l10n.publicMusicVisibilityBody,
+              icon: MevoraIcons.visible,
+              iconTone: MevoraTone.music,
+              value: shown,
+              // A hidden card has no content by definition, so asking
+              // hasContent here left the switch dead exactly where it was
+              // needed. What matters is whether there is a selection to
+              // show at all.
+              onChanged: _busy || !published.hasSelection
+                  ? null
+                  : (value) => unawaited(_setEnabled(value)),
             ),
           ],
-          if (_lastError != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _lastError!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          MevoraButton(
-            label: l10n.publicMusicEditCta,
-            variant: MevoraButtonVariant.secondary,
-            onPressed: _busy ? null : () => unawaited(_edit(context)),
-          ),
+        ),
+        if (_lastError != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          MevoraBanner(message: _lastError!, tone: MevoraTone.error),
         ],
-      ),
+        // Follows the switch rather than the stored value, so the preview
+        // and the control never disagree while a write is in flight.
+        if (shown && published.hasSelection) ...[
+          const SizedBox(height: AppSpacing.lg),
+          PublicMusicTasteSection(
+            profile: published.enabled
+                ? published
+                : published.copyWith(enabled: true),
+          ),
+        ] else if (published.hasSelection) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(l10n.publicMusicHiddenNotice, style: theme.textTheme.bodySmall),
+        ],
+        const SizedBox(height: AppSpacing.md),
+        MevoraButton(
+          label: l10n.publicMusicEditCta,
+          variant: MevoraButtonVariant.secondary,
+          icon: MevoraIcons.edit,
+          onPressed: _busy ? null : () => unawaited(_edit(context)),
+        ),
+      ],
     );
   }
 

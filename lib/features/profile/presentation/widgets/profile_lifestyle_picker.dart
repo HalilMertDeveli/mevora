@@ -22,6 +22,9 @@ class ProfileLifestylePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Column(
+      // Without this each group centres to its own widest row, so the
+      // groups start at different indents.
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _group(
           context,

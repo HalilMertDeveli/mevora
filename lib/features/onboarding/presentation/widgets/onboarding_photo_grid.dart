@@ -1,14 +1,16 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_config.dart';
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
-import 'package:mevora/shared/animations/mevora_status_motion.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
@@ -40,15 +42,19 @@ class OnboardingPhotoGrid extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(l10n.onboardingPhotosHint),
+        Text(l10n.onboardingPhotosHint, style: theme.textTheme.bodyMedium),
         const SizedBox(height: AppSpacing.md),
         if (drafts.isEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
-            child: MevoraStatusMotion(
-              kind: MevoraMotionKind.empty,
-              riveAsset: MevoraRiveAssets.photoUpload,
-              label: l10n.photoEmptyHint,
+            child: MevoraCard(
+              emphasis: MevoraCardEmphasis.outline,
+              child: MevoraEmptyState(
+                art: MevoraArt.photos,
+                compact: true,
+                title: l10n.addPhotoGallery,
+                message: l10n.photoEmptyHint,
+              ),
             ),
           ),
         ReorderableListView.builder(
@@ -72,8 +78,8 @@ class OnboardingPhotoGrid extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             l10n.photoMinRequired,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: context.palette.warning,
             ),
           ),
         ],
@@ -81,13 +87,13 @@ class OnboardingPhotoGrid extends StatelessWidget {
         if (canAdd) ...[
           MevoraButton(
             label: l10n.addPhotoCamera,
-            icon: Icons.photo_camera_outlined,
+            icon: MevoraIcons.camera,
             onPressed: enabled ? onAddCamera : null,
           ),
           const SizedBox(height: AppSpacing.sm),
           MevoraButton(
             label: l10n.addPhotoGallery,
-            icon: Icons.photo_library_outlined,
+            icon: MevoraIcons.photos,
             variant: MevoraButtonVariant.secondary,
             onPressed: enabled ? onAddGallery : null,
           ),
@@ -141,56 +147,39 @@ class _PhotoTile extends StatelessWidget {
               else
                 ColoredBox(
                   color: theme.colorScheme.surfaceContainerHigh,
-                  child: const Icon(Icons.person_outline),
+                  child: const Icon(MevoraIcons.profile),
                 ),
               if (draft.isUploading)
                 ColoredBox(
-                  color: Colors.black45,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      MevoraRiveAnimation(
-                        asset: MevoraRiveAssets.photoUpload,
-                        width: 22,
-                        height: 22,
-                        fallback: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
+                  color: AppColors.scrim.withValues(alpha: 0.5),
+                  child: Center(
+                    child: Text(
+                      AppLocalizations.of(context).percentValue(percent),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.onMedia,
                       ),
-                      Text(
-                        '$percent%',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               if (draft.error != null && !draft.isUploading)
                 ColoredBox(
-                  color: Colors.black45,
-                  child: MevoraRiveAnimation(
-                    asset: MevoraRiveAssets.error,
-                    width: 20,
-                    height: 20,
-                    fallback: Icon(
-                      Icons.error_outline,
-                      size: 18,
-                      color: theme.colorScheme.error,
-                    ),
+                  color: AppColors.scrim.withValues(alpha: 0.5),
+                  child: const Icon(
+                    MevoraIcons.error,
+                    size: 20,
+                    color: AppColors.onMedia,
                   ),
                 ),
               if (draft.remote != null && !draft.isUploading)
                 const Align(
                   alignment: Alignment.bottomRight,
                   child: Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.check_circle, size: 16, color: Colors.white),
+                    padding: EdgeInsets.all(AppSpacing.xs),
+                    child: Icon(
+                      MevoraIcons.success,
+                      size: 16,
+                      color: AppColors.onMedia,
+                    ),
                   ),
                 ),
             ],
@@ -217,11 +206,11 @@ class _PhotoTile extends StatelessWidget {
           if (draft.error != null)
             IconButton(
               tooltip: l10n.photoRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(MevoraIcons.refresh),
               onPressed: enabled ? onRetry : null,
             ),
           IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(MevoraIcons.delete),
             onPressed: enabled ? onRemove : null,
           ),
         ],

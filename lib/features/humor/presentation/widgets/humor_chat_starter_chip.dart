@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
@@ -87,7 +88,7 @@ class _HumorChatStarterChipState extends State<HumorChatStarterChip> {
     final text = HumorChatStarterChip.starterText(l10n, _category);
     return MevoraChip(
       label: text,
-      avatar: const Icon(Icons.edit_note_rounded),
+      avatar: const Icon(MevoraIcons.editNote),
       wrapLabel: true,
       onSelected: (_) {
         final analytics = _analytics(context);

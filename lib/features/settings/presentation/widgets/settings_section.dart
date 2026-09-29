@@ -1,60 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/localization/locale_casing.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
+/// A titled settings group. Utility screens stay calmer than Discover or
+/// Profile: one white surface per group, one hairline between rows.
 class SettingsSection extends StatelessWidget {
   const SettingsSection({
     super.key,
     required this.title,
     required this.children,
+    this.footer,
   });
 
   final String title;
   final List<Widget> children;
+  final String? footer;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          // Turkish uppercases i to İ; the default Unicode mapping would
-          // render "Bildirimler" as "BILDIRIMLER".
-          LocaleCasing.upper(title, Localizations.localeOf(context)),
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            letterSpacing: 1.4,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        MevoraSettingsGroup(children: children),
-        const SizedBox(height: AppSpacing.xl),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: MevoraListGroup(title: title, footer: footer, children: children),
     );
   }
 }
 
+/// An untitled group of rows.
 class MevoraSettingsGroup extends StatelessWidget {
   const MevoraSettingsGroup({super.key, required this.children});
 
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Column(
-        children: [
-          for (var i = 0; i < children.length; i++) ...[
-            children[i],
-            if (i < children.length - 1) const Divider(height: 1),
-          ],
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => MevoraListGroup(children: children);
 }
 
+/// A settings row that navigates (or acts). Destructive rows are drawn in
+/// the error colour so account-ending actions are unmistakable.
 class SettingsNavTile extends StatelessWidget {
   const SettingsNavTile({
     super.key,
@@ -63,6 +46,9 @@ class SettingsNavTile extends StatelessWidget {
     this.onTap,
     this.trailing,
     this.destructive = false,
+    this.icon,
+    this.iconTone = MevoraTone.neutral,
+    this.value,
   });
 
   final String title;
@@ -70,14 +56,21 @@ class SettingsNavTile extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget? trailing;
   final bool destructive;
+  final IconData? icon;
+  final MevoraTone iconTone;
+  final String? value;
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? Theme.of(context).colorScheme.error : null;
-    return ListTile(
-      title: Text(title, style: TextStyle(color: color)),
-      subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: trailing ?? const Icon(Icons.chevron_right),
+    return MevoraListRow(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      iconTone: iconTone,
+      value: value,
+      trailing: trailing,
+      destructive: destructive,
+      showChevron: onTap != null && trailing == null && !destructive,
       onTap: onTap,
     );
   }

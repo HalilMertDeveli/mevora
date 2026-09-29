@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/emulator_qa_login.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
@@ -50,7 +51,7 @@ class EmulatorQaLoginPanel extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.science_outlined,
+                MevoraIcons.science,
                 size: 18,
                 color: theme.colorScheme.onSurfaceVariant,
               ),

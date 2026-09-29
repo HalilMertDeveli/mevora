@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 /// The 81 official Turkish provinces (iller), in alphabetical order.
@@ -125,8 +126,8 @@ class _ProvincePickerSheetState extends State<_ProvincePickerSheet> {
       _filtered = query.isEmpty
           ? TurkishProvinces.all
           : TurkishProvinces.all
-              .where((p) => p.toLowerCase().contains(query))
-              .toList();
+                .where((p) => p.toLowerCase().contains(query))
+                .toList();
     });
   }
 
@@ -155,7 +156,7 @@ class _ProvincePickerSheetState extends State<_ProvincePickerSheet> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(MevoraIcons.close),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -168,7 +169,7 @@ class _ProvincePickerSheetState extends State<_ProvincePickerSheet> {
               autofocus: true,
               decoration: InputDecoration(
                 hintText: l10n.citySelectSearch,
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(MevoraIcons.search),
                 border: const OutlineInputBorder(),
                 isDense: true,
               ),

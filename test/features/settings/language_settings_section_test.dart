@@ -46,6 +46,7 @@ void main() {
 
     expect(controller.language, AppLanguage.turkish);
     expect(controller.locale, const Locale('tr'));
-    expect(find.text('Dil'), findsOneWidget);
+    // Group titles are locale-aware uppercase eyebrows.
+    expect(find.text('DİL'), findsOneWidget);
   });
 }

@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/features/chat/data/services/chat_audio_player.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
@@ -28,6 +30,7 @@ class ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     final alignment = isMine ? Alignment.centerRight : Alignment.centerLeft;
     return Align(
@@ -48,29 +51,35 @@ class ChatBubble extends StatelessWidget {
         child: GestureDetector(
           onLongPress: isMine && !message.deleted ? onDelete : null,
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.symmetric(
+              vertical: AppSpacing.xxs,
+              horizontal: AppSpacing.md,
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s12 + 2,
+              AppSpacing.sm + 1,
+              AppSpacing.s12 + 2,
+              AppSpacing.sm - 1,
+            ),
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+              maxWidth: MediaQuery.sizeOf(context).width * 0.76,
             ),
             decoration: BoxDecoration(
-              color: isMine
-                  ? (Theme.of(context).brightness == Brightness.dark
-                      ? colors.primary
-                      : colors.primaryContainer)
-                  : (Theme.of(context).brightness == Brightness.dark
-                      ? colors.surfaceContainerHigh
-                      : colors.surfaceContainerHighest),
-              borderRadius: BorderRadius.circular(AppRadii.lg),
-              border: isMine || Theme.of(context).brightness == Brightness.dark
-                  ? null
-                  : Border.all(color: colors.outlineVariant),
+              color: isMine ? palette.textPrimary : palette.surface,
+              // A tighter corner points the bubble at its sender.
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(AppRadii.lg),
+                topRight: const Radius.circular(AppRadii.lg),
+                bottomLeft: Radius.circular(isMine ? AppRadii.lg : 6),
+                bottomRight: Radius.circular(isMine ? 6 : AppRadii.lg),
+              ),
+              border: isMine ? null : Border.all(color: palette.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 _body(context, l10n, colors),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xxs),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -81,16 +90,14 @@ class ChatBubble extends StatelessWidget {
                       ),
                     ),
                     if (isMine && !message.deleted) ...[
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Icon(
                         message.status == MessageStatus.read
-                            ? Icons.done_all
-                            : Icons.done,
+                            ? MevoraIcons.checkAll
+                            : MevoraIcons.check,
                         size: 14,
                         color: message.status == MessageStatus.read
-                            ? (Theme.of(context).brightness == Brightness.dark
-                                ? colors.tertiaryContainer
-                                : colors.primary)
+                            ? AppColors.emberNight
                             : _metaColor(context, colors),
                       ),
                     ],
@@ -105,17 +112,19 @@ class ChatBubble extends StatelessWidget {
   }
 
   Color _bubbleForeground(BuildContext context, ColorScheme colors) {
-    if (!isMine) return colors.onSurface;
-    return Theme.of(context).brightness == Brightness.dark
-        ? colors.onPrimary
-        : colors.onPrimaryContainer;
+    final palette = context.palette;
+    return isMine ? palette.background : palette.textPrimary;
   }
 
   Color _metaColor(BuildContext context, ColorScheme colors) {
     return _bubbleForeground(context, colors).withValues(alpha: 0.72);
   }
 
-  Widget _body(BuildContext context, AppLocalizations l10n, ColorScheme colors) {
+  Widget _body(
+    BuildContext context,
+    AppLocalizations l10n,
+    ColorScheme colors,
+  ) {
     final textColor = _bubbleForeground(context, colors);
     if (message.deleted) {
       return Text(
@@ -154,7 +163,7 @@ class ChatBubble extends StatelessWidget {
     }
     return Text(
       message.text,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textColor),
+      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: textColor),
     );
   }
 
@@ -185,7 +194,7 @@ class ChatImageBody extends StatelessWidget {
       bytes: bytes,
     );
     if (provider == null) {
-      return Icon(Icons.image_outlined, color: textColor);
+      return Icon(MevoraIcons.photo, color: textColor);
     }
     return GestureDetector(
       onTap: () {
@@ -206,7 +215,7 @@ class ChatImageBody extends StatelessWidget {
             return SizedBox(
               width: 220,
               height: 120,
-              child: Icon(Icons.broken_image_outlined, color: textColor),
+              child: Icon(MevoraIcons.photoBroken, color: textColor),
             );
           },
         ),
@@ -291,9 +300,7 @@ class _ChatVoiceBodyState extends State<ChatVoiceBody> {
     await player.playMessage(
       messageId: widget.messageId,
       url: widget.url,
-      bytes: local == null || local.isEmpty
-          ? null
-          : Uint8List.fromList(local),
+      bytes: local == null || local.isEmpty ? null : Uint8List.fromList(local),
     );
     if (!mounted) {
       return;
@@ -325,17 +332,17 @@ class _ChatVoiceBodyState extends State<ChatVoiceBody> {
               ? AppLocalizations.of(context).pauseVoice
               : AppLocalizations.of(context).playVoice,
           icon: Icon(
-            _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            _playing ? MevoraIcons.pause : MevoraIcons.play,
             color: widget.textColor,
           ),
         ),
-        Icon(Icons.graphic_eq, color: widget.textColor, size: 18),
+        Icon(MevoraIcons.waveform, color: widget.textColor, size: 18),
         const SizedBox(width: 8),
         Text(
           '$seconds″',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: widget.textColor,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: widget.textColor),
         ),
       ],
     );
@@ -374,23 +381,38 @@ class _TypingDotsState extends State<TypingDots>
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
       child: Row(
         children: [
-          Text('${widget.name} ${AppLocalizations.of(context).typing}'),
-          const SizedBox(width: 8),
+          Text(
+            '${widget.name} ${AppLocalizations.of(context).typing}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(width: AppSpacing.sm),
           AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
               return Row(
                 children: List.generate(3, (index) {
-                  final active =
-                      (_controller.value * 3).floor() % 3 == index;
+                  final active = (_controller.value * 3).floor() % 3 == index;
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Opacity(
-                      opacity: active ? 1 : 0.3,
-                      child: const CircleAvatar(radius: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xxs,
+                    ),
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: context.palette.textSecondary.withValues(
+                          alpha: active ? 1 : 0.3,
+                        ),
+                      ),
                     ),
                   );
                 }),
@@ -447,10 +469,12 @@ class _ChatComposerState extends State<ChatComposer> {
 
   bool get _hasText => widget.controller.text.trim().isNotEmpty;
   bool _cancelArmed = false;
+
   /// Active pointer for hold-to-record. The mic [Listener] must stay mounted
   /// for this pointer's lifetime — swapping it out cancels the gesture.
   int? _voicePointer;
   double _voicePointerStartDx = 0;
+
   /// Preserves the mic [Listener] Element when the Row reorders for recording.
   final GlobalKey _voiceHoldKey = GlobalKey(debugLabel: 'chat-voice-hold');
 
@@ -560,13 +584,11 @@ class _ChatComposerState extends State<ChatComposer> {
     // swaps between text field and recording bar — never unmount the pointer
     // target under the finger (that silently cancelled takes on device).
     return Material(
-      color: colors.surface,
+      color: context.palette.surface,
       elevation: 0,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.6)),
-          ),
+          border: Border(top: BorderSide(color: context.palette.divider)),
         ),
         child: Padding(
           padding: EdgeInsets.fromLTRB(
@@ -635,7 +657,7 @@ class _ChatComposerState extends State<ChatComposer> {
     AppLocalizations l10n,
     ColorScheme colors,
   ) {
-    final radius = BorderRadius.circular(AppRadii.lg);
+    final radius = BorderRadius.circular(_ChatComposerState._actionSize / 2);
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: _actionSize),
       child: TextField(
@@ -652,10 +674,10 @@ class _ChatComposerState extends State<ChatComposer> {
           hintText: l10n.chatHint,
           isDense: true,
           filled: true,
-          fillColor: colors.surfaceContainerHighest,
+          fillColor: context.palette.surfaceMuted,
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 12,
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.s12,
           ),
           border: OutlineInputBorder(
             borderRadius: radius,
@@ -709,7 +731,7 @@ class _AttachMenuButton extends StatelessWidget {
         offset: const Offset(0, -8),
         position: PopupMenuPosition.under,
         icon: Icon(
-          Icons.photo_outlined,
+          MevoraIcons.photo,
           color: enabled
               ? Theme.of(context).colorScheme.onSurfaceVariant
               : Theme.of(context).disabledColor,
@@ -729,7 +751,7 @@ class _AttachMenuButton extends StatelessWidget {
               child: ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.photo_outlined),
+                leading: const Icon(MevoraIcons.photo),
                 title: Text(attachPhotoLabel),
               ),
             ),
@@ -740,7 +762,7 @@ class _AttachMenuButton extends StatelessWidget {
               child: ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.photo_camera_outlined),
+                leading: const Icon(MevoraIcons.camera),
                 title: Text(takePhotoLabel),
               ),
             ),
@@ -771,7 +793,7 @@ class _SendButton extends StatelessWidget {
       child: Tooltip(
         message: tooltip,
         child: Material(
-          color: enabled ? colors.primary : colors.surfaceContainerHighest,
+          color: enabled ? colors.primary : context.palette.surfaceMuted,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
@@ -790,7 +812,7 @@ class _SendButton extends StatelessWidget {
                         ),
                       )
                     : Icon(
-                        Icons.send_rounded,
+                        MevoraIcons.send,
                         size: 20,
                         color: enabled
                             ? colors.onPrimary
@@ -832,10 +854,10 @@ class _VoiceButton extends StatelessWidget {
             shape: BoxShape.circle,
             color: recording
                 ? colors.errorContainer
-                : colors.surfaceContainerHighest,
+                : context.palette.surfaceMuted,
           ),
           child: Icon(
-            Icons.mic_none_rounded,
+            MevoraIcons.mic,
             color: recording
                 ? colors.error
                 : (enabled
@@ -906,7 +928,7 @@ class _RecordingBar extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: AppSpacing.md),
               child: Icon(
-                cancelling ? Icons.close_rounded : Icons.mic_rounded,
+                cancelling ? MevoraIcons.close : MevoraIcons.mic,
                 color: colors.error,
                 size: 26,
               ),
@@ -965,6 +987,8 @@ class _RecordingPulseState extends State<_RecordingPulse>
   }
 }
 
+/// The encryption notice at the head of a conversation: a quiet centred
+/// note, the way messaging apps state a fact about the channel.
 class ChatE2eeBanner extends StatelessWidget {
   const ChatE2eeBanner({
     super.key,
@@ -977,40 +1001,49 @@ class ChatE2eeBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
+    final theme = Theme.of(context);
+    final p = context.palette;
+    return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.s12,
       ),
-      color: colors.surfaceContainerLow,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.lock_outline, size: 18, color: colors.primary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: colors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 340),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.s12 - 2,
           ),
-        ],
+          decoration: BoxDecoration(
+            color: p.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(MevoraIcons.locked, size: 14, color: p.textSecondary),
+                  const SizedBox(width: AppSpacing.xs + 2),
+                  Flexible(
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

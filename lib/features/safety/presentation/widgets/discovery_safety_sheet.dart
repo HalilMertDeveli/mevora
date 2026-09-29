@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
@@ -21,41 +22,45 @@ Future<void> showDiscoverySafetySheet(
 }) {
   final l10n = AppLocalizations.of(context);
   final pageContext = context;
-  return MevoraBottomSheet.show<void>(
+  return MevoraBottomSheet.showActions<_SafetyAction>(
     context,
     title: l10n.more,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const Icon(Icons.visibility_off_outlined),
-          title: Text(l10n.hideProfile),
-          subtitle: Text(l10n.hideProfileMessage),
-          onTap: () {
-            Navigator.pop(context);
-            unawaited(_hide(pageContext, userId, onHide));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.block),
-          title: Text(l10n.block),
-          onTap: () {
-            Navigator.pop(context);
-            unawaited(_block(pageContext, userId, onBlocked));
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.flag_outlined),
-          title: Text(l10n.report),
-          onTap: () {
-            Navigator.pop(context);
-            pageContext.push('${AppRoutes.report}?userId=$userId');
-          },
-        ),
-      ],
-    ),
-  );
+    actions: [
+      MevoraSheetAction(
+        value: _SafetyAction.hide,
+        label: l10n.hideProfile,
+        subtitle: l10n.hideProfileMessage,
+        icon: MevoraIcons.hidden,
+      ),
+      MevoraSheetAction(
+        value: _SafetyAction.block,
+        label: l10n.block,
+        icon: MevoraIcons.block,
+        destructive: true,
+      ),
+      MevoraSheetAction(
+        value: _SafetyAction.report,
+        label: l10n.report,
+        icon: MevoraIcons.report,
+        destructive: true,
+      ),
+    ],
+  ).then((action) {
+    if (action == null || !pageContext.mounted) {
+      return;
+    }
+    switch (action) {
+      case _SafetyAction.hide:
+        unawaited(_hide(pageContext, userId, onHide));
+      case _SafetyAction.block:
+        unawaited(_block(pageContext, userId, onBlocked));
+      case _SafetyAction.report:
+        unawaited(pageContext.push('${AppRoutes.report}?userId=$userId'));
+    }
+  });
 }
+
+enum _SafetyAction { hide, block, report }
 
 Future<void> _hide(
   BuildContext context,
@@ -101,17 +106,17 @@ Future<void> _block(
   }
   try {
     await SocialScope.of(context).safetyRepository.blockUser(userId: userId);
-    await BoostScope.maybeOf(context)?.analytics?.logEvent(
-      AnalyticsEvents.userBlocked,
-    );
+    await BoostScope.maybeOf(
+      context,
+    )?.analytics?.logEvent(AnalyticsEvents.userBlocked);
     if (onBlocked != null) {
       await onBlocked(userId);
     }
   } on Object {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.somethingWentWrong)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.somethingWentWrong)));
     }
   }
 }

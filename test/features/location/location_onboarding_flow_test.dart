@@ -122,7 +122,14 @@ void main() {
     );
 
     expect(find.text(l10n.locationPermissionTitle), findsNothing);
-    expect(find.text(l10n.discoverBestMatchesTitle), findsOneWidget);
+    // The For You screen title matches its tab label, so look in the app bar.
+    expect(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text(l10n.discoverBestMatchesTitle),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('existing user without location sees the flow once then skips', (

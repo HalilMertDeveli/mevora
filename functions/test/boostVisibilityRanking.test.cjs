@@ -252,16 +252,25 @@ describe("5-9. eligibility safety", () => {
   });
 
   it("Boost is applied only after Discover has filtered candidates", () => {
-    const backend = src("backend.ts");
-    const boostAt = backend.indexOf("isBoostedCandidate(doc.id, boosted)");
+    // The candidate loop lives in discoveryPool.ts, shared by Discover and
+    // Mevora Picks; backend.ts must reach candidates only through it.
+    assert.ok(src("backend.ts").includes("scanDiscoveryPool("), "Discover must scan through the pool");
+    const pool = src("discoveryPool.ts");
+    const boostAt = pool.indexOf("isBoostedCandidate(doc.id, boosted)");
     assert.ok(boostAt > -1, "boost must be resolved in the candidate loop");
-    const before = backend.slice(0, boostAt);
+    const before = pool.slice(0, boostAt);
+    const loopAt = pool.indexOf("export async function scanDiscoveryPool");
+    const rejectCallAt = pool.indexOf("await candidateRejectReason(db, viewer", loopAt);
+    assert.ok(
+      rejectCallAt > loopAt && rejectCallAt < boostAt,
+      "the loop must run the eligibility chain before Boost",
+    );
     // Every eligibility gate must already have run by the time Boost appears.
     for (const gate of [
       "passesGenderPreferences",
-      "bumpReject(\"gender_preference\")",
+      "return \"gender_preference\"",
       "resolveProfileAge",
-      "bumpReject(\"age_unresolved\")",
+      "return \"age_unresolved\"",
       "profileReject",
     ]) {
       assert.ok(
@@ -272,9 +281,10 @@ describe("5-9. eligibility safety", () => {
   });
 
   it("blocked, liked, passed and matched users are excluded before ranking", () => {
-    const backend = src("backend.ts");
+    assert.ok(src("backend.ts").includes("loadDiscoveryViewerContext("), "Discover must load exclusions");
+    const pool = src("discoveryPool.ts");
     for (const exclusion of ["blocked", "likesSnap", "passedSnap", "activeMatches"]) {
-      assert.ok(backend.includes(exclusion), `${exclusion} exclusion missing`);
+      assert.ok(pool.includes(exclusion), `${exclusion} exclusion missing`);
     }
   });
 

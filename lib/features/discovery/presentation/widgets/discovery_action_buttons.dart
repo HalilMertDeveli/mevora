@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/constants/app_durations.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_shadows.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_press_scale.dart';
 
+/// Pass · Priority intro · Connect.
+///
+/// Deliberately not a traffic light: pass is a neutral white disc, connect is
+/// the one ember disc, and the priority intro sits between them, smaller.
 class DiscoveryActionButtons extends StatelessWidget {
   const DiscoveryActionButtons({
     super.key,
@@ -15,43 +24,45 @@ class DiscoveryActionButtons extends StatelessWidget {
   final VoidCallback onLike;
   final bool enabled;
 
-  static const _passColor = Color(0xFFFF4458);
-  static const _superLikeColor = Color(0xFF1EA7FD);
-  static const _likeColor = Color(0xFF2BD68A);
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final p = context.palette;
+    final scheme = Theme.of(context).colorScheme;
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 360;
-        final primarySize = compact ? 56.0 : 64.0;
-        final secondarySize = compact ? 44.0 : 50.0;
-        final spacing = compact ? 20.0 : 28.0;
-
+        final primary = compact ? 60.0 : 64.0;
+        final secondary = compact ? 48.0 : 52.0;
+        final gap = compact ? 20.0 : 28.0;
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _RoundActionButton(
-              icon: Icons.close_rounded,
-              color: _passColor,
-              size: primarySize,
+            _ActionDisc(
+              icon: MevoraIcons.pass,
+              size: primary,
+              background: p.surface,
+              foreground: p.textPrimary,
+              bordered: true,
               label: l10n.pass,
               onPressed: enabled ? onPass : null,
             ),
-            SizedBox(width: spacing),
-            _RoundActionButton(
-              icon: Icons.star_rounded,
-              color: _superLikeColor,
-              size: secondarySize,
+            SizedBox(width: gap),
+            _ActionDisc(
+              icon: MevoraIcons.superLike,
+              size: secondary,
+              background: p.surface,
+              foreground: p.humor,
+              bordered: true,
               label: l10n.discoveryActionPriorityIntro,
               onPressed: enabled ? onSuperLike : null,
             ),
-            SizedBox(width: spacing),
-            _RoundActionButton(
-              icon: Icons.favorite_rounded,
-              color: _likeColor,
-              size: primarySize,
+            SizedBox(width: gap),
+            _ActionDisc(
+              icon: MevoraIcons.liked,
+              size: primary,
+              background: scheme.primary,
+              foreground: scheme.onPrimary,
               label: l10n.discoveryActionConnect,
               onPressed: enabled ? onLike : null,
             ),
@@ -62,24 +73,27 @@ class DiscoveryActionButtons extends StatelessWidget {
   }
 }
 
-class _RoundActionButton extends StatelessWidget {
-  const _RoundActionButton({
+class _ActionDisc extends StatelessWidget {
+  const _ActionDisc({
     required this.icon,
-    required this.color,
     required this.size,
+    required this.background,
+    required this.foreground,
     required this.label,
     required this.onPressed,
+    this.bordered = false,
   });
 
   final IconData icon;
-  final Color color;
   final double size;
+  final Color background;
+  final Color foreground;
   final String label;
   final VoidCallback? onPressed;
+  final bool bordered;
 
   @override
   Widget build(BuildContext context) {
-    final surface = Theme.of(context).colorScheme.surface;
     final enabled = onPressed != null;
     return Tooltip(
       message: label,
@@ -89,19 +103,30 @@ class _RoundActionButton extends StatelessWidget {
         label: label,
         excludeSemantics: true,
         child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 150),
-          opacity: enabled ? 1 : 0.4,
-          child: Material(
-            color: surface,
-            shape: const CircleBorder(),
-            elevation: 4,
-            shadowColor: Colors.black26,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: onPressed,
-              child: SizedBox.square(
-                dimension: size,
-                child: Icon(icon, color: color, size: size * 0.52),
+          duration: AppDurations.fast,
+          opacity: enabled ? 1 : 0.45,
+          child: MevoraPressScale(
+            enabled: enabled,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: AppShadows.floating(Theme.of(context).brightness),
+              ),
+              child: Material(
+                color: background,
+                shape: CircleBorder(
+                  side: bordered
+                      ? BorderSide(color: context.palette.border)
+                      : BorderSide.none,
+                ),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onPressed,
+                  child: SizedBox.square(
+                    dimension: size,
+                    child: Icon(icon, color: foreground, size: size * 0.42),
+                  ),
+                ),
               ),
             ),
           ),

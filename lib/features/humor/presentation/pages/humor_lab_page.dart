@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
@@ -15,7 +16,9 @@ import 'package:mevora/features/humor/presentation/widgets/humor_rating_bar.dart
 import 'package:mevora/features/humor/presentation/widgets/humor_report_sheet.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_swipe_hints.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
@@ -100,6 +103,8 @@ class _HumorLabPageState extends State<HumorLabPage> {
           ..showSnackBar(
             SnackBar(
               content: Text(L10nErrors.failure(l10n, failure)),
+              persist: false,
+              duration: const Duration(seconds: 6),
               action: SnackBarAction(
                 label: l10n.humorTryAgain,
                 onPressed: () => unawaited(controller.retryFailedAction()),
@@ -147,14 +152,14 @@ class _HumorLabPageState extends State<HumorLabPage> {
           ? MaterialLocalizations.of(context).backButtonTooltip
           : l10n.close,
       onPressed: _close,
-      icon: canPop ? const BackButtonIcon() : const Icon(Icons.close_rounded),
+      icon: canPop ? const BackButtonIcon() : const Icon(MevoraIcons.close),
     );
 
     if (controller == null) {
       return Scaffold(
         appBar: AppBar(leading: leading, title: Text(l10n.humorLabTitle)),
         body: MevoraEmptyState(
-          icon: Icons.theater_comedy_outlined,
+          art: MevoraArt.humor,
           title: l10n.humorLabTitle,
           message: l10n.humorLabSubtitle,
         ),
@@ -210,7 +215,7 @@ class _HumorLabPageState extends State<HumorLabPage> {
                   IconButton(
                     tooltip: l10n.humorUndoRating,
                     onPressed: state.isSubmitting ? null : controller.goBack,
-                    icon: const Icon(Icons.undo_rounded),
+                    icon: const Icon(MevoraIcons.undo),
                   ),
                 IconButton(
                   tooltip: l10n.humorProfileTitle,
@@ -224,14 +229,14 @@ class _HumorLabPageState extends State<HumorLabPage> {
                       profile: controller.state.profile,
                     );
                   },
-                  icon: const Icon(Icons.insights_outlined),
+                  icon: const Icon(MevoraIcons.compatibility),
                 ),
                 IconButton(
                   tooltip: l10n.humorReport,
                   onPressed: state.canAct
                       ? () => unawaited(_report(context, controller))
                       : null,
-                  icon: const Icon(Icons.flag_outlined),
+                  icon: const Icon(MevoraIcons.report),
                 ),
               ],
             ),
@@ -239,7 +244,7 @@ class _HumorLabPageState extends State<HumorLabPage> {
               child: state.isLoading
                   ? MevoraLoading.page(
                       message: l10n.humorLoadingFeed,
-                      asset: MevoraRiveAssets.empty,
+                      art: MevoraArt.humor,
                     )
                   : state.failure != null && state.items.isEmpty
                   ? MevoraErrorView(
@@ -288,9 +293,7 @@ class _HumorFeedEnd extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return MevoraEmptyState(
-      icon: state.catalogExhausted
-          ? Icons.check_circle_outline
-          : Icons.theater_comedy_outlined,
+      art: state.catalogExhausted ? MevoraArt.success : MevoraArt.humor,
       title: l10n.humorLabTitle,
       // "You have seen everything" is an achievement, "there is nothing here"
       // is our problem, and a plain empty feed is worth retrying. Saying the
@@ -452,9 +455,7 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
             alignment: Alignment.centerLeft,
             child: Text(
               l10n.humorLabSubtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: theme.textTheme.bodySmall,
             ),
           ),
         ),
@@ -463,59 +464,62 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenPadding,
             ),
-            child: Stack(
-              children: [
-                PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  // One extra slot past the last card while the user waits
-                  // for the next page (or has reached the end), so the next
-                  // card lands in place without a jump.
-                  itemCount: state.items.length + (state.atTail ? 1 : 0),
-                  onPageChanged: (index) {
-                    if (_syncingPage) {
-                      return;
-                    }
-                    unawaited(controller.onPageChanged(index));
-                  },
-                  itemBuilder: (context, index) {
-                    if (index >= state.items.length) {
-                      return _HumorTail(controller: controller);
-                    }
-                    final item = state.items[index];
-                    return GestureDetector(
-                      onVerticalDragEnd: (details) {
-                        if (!controller.state.canAct) {
-                          return;
-                        }
-                        final dy = details.primaryVelocity ?? 0;
-                        if (dy < -400) {
-                          unawaited(controller.rateSwipeUp());
-                        } else if (dy > 400) {
-                          unawaited(controller.rateSwipeDown());
-                        }
-                      },
-                      onDoubleTap: controller.replayCurrent,
-                      child: HumorContentPlayer(
-                        content: item,
-                        isActive: index == state.currentIndex,
-                        replayToken: state.replayToken,
-                        analytics: controller.analytics,
-                        // A card whose media failed is passed server-side as
-                        // `media_failed` — never a rating, never counted.
-                        onSkipUnplayable: (contentId) =>
-                            unawaited(controller.skipUnplayable(contentId)),
-                      ),
-                    );
-                  },
-                ),
-                if (state.current != null)
-                  const Positioned(
-                    right: AppSpacing.sm,
-                    top: AppSpacing.sm,
-                    child: HumorSwipeHints(compact: true),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadii.card),
+              child: Stack(
+                children: [
+                  PageView.builder(
+                    controller: _pageController,
+                    scrollDirection: Axis.vertical,
+                    // One extra slot past the last card while the user waits
+                    // for the next page (or has reached the end), so the next
+                    // card lands in place without a jump.
+                    itemCount: state.items.length + (state.atTail ? 1 : 0),
+                    onPageChanged: (index) {
+                      if (_syncingPage) {
+                        return;
+                      }
+                      unawaited(controller.onPageChanged(index));
+                    },
+                    itemBuilder: (context, index) {
+                      if (index >= state.items.length) {
+                        return _HumorTail(controller: controller);
+                      }
+                      final item = state.items[index];
+                      return GestureDetector(
+                        onVerticalDragEnd: (details) {
+                          if (!controller.state.canAct) {
+                            return;
+                          }
+                          final dy = details.primaryVelocity ?? 0;
+                          if (dy < -400) {
+                            unawaited(controller.rateSwipeUp());
+                          } else if (dy > 400) {
+                            unawaited(controller.rateSwipeDown());
+                          }
+                        },
+                        onDoubleTap: controller.replayCurrent,
+                        child: HumorContentPlayer(
+                          content: item,
+                          isActive: index == state.currentIndex,
+                          replayToken: state.replayToken,
+                          analytics: controller.analytics,
+                          // A card whose media failed is passed server-side as
+                          // `media_failed` — never a rating, never counted.
+                          onSkipUnplayable: (contentId) =>
+                              unawaited(controller.skipUnplayable(contentId)),
+                        ),
+                      );
+                    },
                   ),
-              ],
+                  if (state.current != null)
+                    const Positioned(
+                      right: AppSpacing.sm,
+                      top: AppSpacing.sm,
+                      child: HumorSwipeHints(compact: true),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -545,12 +549,15 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
                   },
                 ),
               ),
-              TextButton.icon(
+              MevoraButton(
+                label: l10n.humorSkipContent,
+                icon: MevoraIcons.skip,
+                variant: MevoraButtonVariant.ghost,
+                size: MevoraButtonSize.small,
+                isExpanded: false,
                 onPressed: canAct && !state.reachedEnd
                     ? () => unawaited(controller.skip())
                     : null,
-                icon: const Icon(Icons.skip_next_rounded),
-                label: Text(l10n.humorSkipContent),
               ),
             ],
           ),

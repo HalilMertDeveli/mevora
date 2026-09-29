@@ -12,8 +12,8 @@ import 'package:mevora/features/relationship/domain/entities/relationship_match_
 import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_page_transitions.dart';
-import 'package:mevora/shared/animations/mevora_rive_animation.dart';
-import 'package:mevora/shared/animations/mevora_rive_assets.dart';
+import 'package:mevora/shared/art/mevora_motion.dart';
+import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
@@ -242,7 +242,7 @@ class RelationshipQuestionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final locale = Localizations.localeOf(context).languageCode;
     return ColoredBox(
-      color: Colors.black.withValues(alpha: 0.42),
+      color: AppColors.scrim.withValues(alpha: 0.5),
       child: SafeArea(
         child: Center(
           child: AnimatedOpacity(
@@ -271,9 +271,7 @@ class RelationshipQuestionCard extends StatelessWidget {
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           question.promptFor(locale),
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontSize: 22,
-                          ),
+                          style: theme.textTheme.headlineSmall,
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         for (final answer in question.answers)
@@ -291,19 +289,13 @@ class RelationshipQuestionCard extends StatelessWidget {
                         const SizedBox(height: AppSpacing.xs),
                         if (submitting)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                            child: MevoraRiveAnimation(
-                              asset: MevoraRiveAssets.loading,
-                              width: 36,
-                              height: 36,
-                              semanticsLabel: l10n.loading,
-                              fallback: SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.2,
-                                  color: theme.colorScheme.primary,
-                                ),
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.sm,
+                            ),
+                            child: Semantics(
+                              label: l10n.loading,
+                              child: const Center(
+                                child: MevoraOrbitLoader(size: 32),
                               ),
                             ),
                           ),
@@ -353,7 +345,7 @@ class RelationshipQuestionUnavailableCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return ColoredBox(
-      color: Colors.black.withValues(alpha: 0.42),
+      color: AppColors.scrim.withValues(alpha: 0.5),
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -371,9 +363,7 @@ class RelationshipQuestionUnavailableCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     l10n.relationshipQuestionsPreparing,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontSize: 22,
-                    ),
+                    style: theme.textTheme.headlineSmall,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   MevoraButton(label: l10n.close, onPressed: onDismiss),
@@ -402,7 +392,7 @@ class RelationshipContinueMatchingCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return ColoredBox(
-      color: Colors.black.withValues(alpha: 0.42),
+      color: AppColors.scrim.withValues(alpha: 0.5),
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -458,7 +448,7 @@ class RelationshipTestOfferCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return ColoredBox(
-      color: Colors.black.withValues(alpha: 0.42),
+      color: AppColors.scrim.withValues(alpha: 0.5),
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -469,17 +459,11 @@ class RelationshipTestOfferCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
+                  const Align(
                     alignment: Alignment.center,
-                    child: MevoraRiveAnimation(
-                      asset: MevoraRiveAssets.relationshipResult,
-                      width: 48,
-                      height: 48,
-                      semanticsLabel: l10n.relationshipTestTitle,
-                      fallback: const Icon(
-                        Icons.insights_outlined,
-                        color: AppColors.softGreen,
-                      ),
+                    child: MevoraSpot(
+                      art: MevoraArt.compatibility,
+                      size: 80,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -532,7 +516,7 @@ class RelationshipTestResultCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return ColoredBox(
-      color: Colors.black.withValues(alpha: 0.42),
+      color: AppColors.scrim.withValues(alpha: 0.5),
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -543,17 +527,11 @@ class RelationshipTestResultCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
+                  const Align(
                     alignment: Alignment.center,
-                    child: MevoraRiveAnimation(
-                      asset: MevoraRiveAssets.relationshipResult,
-                      width: 48,
-                      height: 48,
-                      semanticsLabel: l10n.relationshipTestDoneTitle,
-                      fallback: const Icon(
-                        Icons.insights_outlined,
-                        color: AppColors.softGreen,
-                      ),
+                    child: MevoraSpot(
+                      art: MevoraArt.compatibility,
+                      size: 80,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -573,7 +551,7 @@ class RelationshipTestResultCard extends StatelessWidget {
                     Text(
                       l10n.relationshipTestAlign,
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: AppColors.softGreen,
+                        color: context.palette.compatibility,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -649,9 +627,7 @@ class _ResultTile extends StatelessWidget {
     final candidate = suggestion.candidate;
     final distance =
         candidate.distanceLabel ??
-        (candidate.distanceKm == null
-            ? null
-            : '${candidate.distanceKm} km');
+        (candidate.distanceKm == null ? null : '${candidate.distanceKm} km');
     // The surrounding result card is a DecoratedBox with its own background, so
     // the tile needs its own Material — otherwise the tap ink splash paints
     // beneath that decoration and is never visible.

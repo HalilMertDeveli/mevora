@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/permission_scope.dart';
@@ -30,6 +32,13 @@ import 'package:mevora/features/settings/domain/validators/profile_edit_validato
 import 'package:mevora/features/settings/presentation/settings_strings.dart';
 import 'package:mevora/features/settings/presentation/widgets/photo_grid_editor.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
+import 'package:mevora/shared/widgets/mevora_loading.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
+import 'package:mevora/shared/widgets/mevora_dialog.dart';
+import 'package:mevora/shared/widgets/mevora_bottom_sheet.dart';
+import 'package:mevora/shared/widgets/mevora_banner.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
 import 'package:mevora/shared/widgets/turkish_province_picker.dart';
@@ -108,15 +117,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
           child: Scaffold(
             appBar: AppBar(title: Text(l10n.editProfile)),
             body: profile == null
-                ? const Center(child: CircularProgressIndicator())
+                ? const MevoraLoading.page()
                 : SafeArea(
                     child: ListView(
                       padding: const EdgeInsets.all(AppSpacing.screenPadding),
                       children: [
                         ProfileCompletionBanner(
-                          result: ProfileCompletionCalculator.calculate(profile),
+                          result: ProfileCompletionCalculator.calculate(
+                            profile,
+                          ),
                         ),
-                        ProfileSectionHeader(title: l10n.profileEditSectionPhotos),
+                        ProfileSectionHeader(
+                          title: l10n.profileEditSectionPhotos,
+                        ),
                         PhotoGridEditor(
                           photos: profile.photos,
                           onAdd: () => unawaited(_addPhoto(profile, settings)),
@@ -145,8 +158,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         const SizedBox(height: AppSpacing.sm),
                         ProfileGenderPicker(
                           value: _gender,
-                          onChanged: (value) =>
-                              setState(() => _gender = value),
+                          onChanged: (value) => setState(() => _gender = value),
                           enabled: !_saving,
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -178,21 +190,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           controller: _cityController,
                           label: l10n.settingsCity,
                           readOnly: true,
-                          suffixIcon: const Icon(Icons.arrow_drop_down),
+                          suffixIcon: const Icon(MevoraIcons.dropdown),
                           onTap: _saving ? null : () => unawaited(_pickCity()),
                         ),
                         if (profile.birthDate != null) ...[
                           const SizedBox(height: AppSpacing.md),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(l10n.onboardingBirthDate),
-                            subtitle: Text(
-                              '${profile.birthDate!.toLocal().toString().split(' ').first}\n${l10n.settingsBirthDateLocked}',
-                            ),
+                          MevoraListGroup(
+                            children: [
+                              MevoraListRow(
+                                icon: MevoraIcons.calendar,
+                                title: l10n.onboardingBirthDate,
+                                value: L10nFormat.mediumDate(
+                                  l10n,
+                                  profile.birthDate!,
+                                ),
+                                subtitle: l10n.settingsBirthDateLocked,
+                                trailing: Icon(
+                                  MevoraIcons.lock,
+                                  size: 16,
+                                  color: context.palette.textTertiary,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                         const SizedBox(height: AppSpacing.lg),
-                        ProfileSectionHeader(title: l10n.profileEditSectionAbout),
+                        ProfileSectionHeader(
+                          title: l10n.profileEditSectionAbout,
+                        ),
                         MevoraTextField(
                           controller: _bioController,
                           label: l10n.bio,
@@ -205,6 +230,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           l10n.onboardingEducation,
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
+                        const SizedBox(height: AppSpacing.sm),
                         ProfileEducationPicker(
                           value: _education,
                           onChanged: (value) =>
@@ -284,12 +310,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           enabled: !_saving,
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(l10n.profileEditDiscoveryPrefs),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () =>
-                              context.push(AppRoutes.discoveryPreferences),
+                        MevoraListGroup(
+                          children: [
+                            MevoraListRow(
+                              icon: MevoraIcons.filters,
+                              title: l10n.profileEditDiscoveryPrefs,
+                              onTap: () =>
+                                  context.push(AppRoutes.discoveryPreferences),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         ProfileSectionHeader(
@@ -303,11 +332,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         if (_errorKey != null) ...[
                           const SizedBox(height: AppSpacing.sm),
-                          Text(
-                            SettingsStrings.validation(l10n, _errorKey),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
+                          MevoraBanner(
+                            message: SettingsStrings.validation(
+                              l10n,
+                              _errorKey,
                             ),
+                            tone: MevoraTone.error,
                           ),
                         ],
                         const SizedBox(height: AppSpacing.lg),
@@ -409,22 +439,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<bool> _confirmDiscard(AppLocalizations l10n) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.discardChangesTitle),
-        content: Text(l10n.discardChangesMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.keepEditing),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.discard),
-          ),
-        ],
-      ),
+    final result = await MevoraDialog.show(
+      context,
+      title: l10n.discardChangesTitle,
+      message: l10n.discardChangesMessage,
+      confirmLabel: l10n.discard,
+      cancelLabel: l10n.keepEditing,
+      confirmVariant: MevoraButtonVariant.destructive,
     );
     return result ?? false;
   }
@@ -460,37 +481,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _saving = false;
         _baseline = next;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.settingsProfileSaved)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.settingsProfileSaved)));
       context.pop();
     }
   }
 
   Future<void> _addPhoto(UserProfile profile, SettingsServices settings) async {
     final permission = PermissionScope.of(context).controller;
-    final picked = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) {
-        final l10n = AppLocalizations.of(context);
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: Text(l10n.addPhotoCamera),
-                onTap: () => Navigator.pop(context, 'camera'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: Text(l10n.addPhotoGallery),
-                onTap: () => Navigator.pop(context, 'gallery'),
-              ),
-            ],
-          ),
-        );
-      },
+    final l10n = AppLocalizations.of(context);
+    final picked = await MevoraBottomSheet.showActions<String>(
+      context,
+      actions: [
+        MevoraSheetAction(
+          value: 'camera',
+          label: l10n.addPhotoCamera,
+          icon: MevoraIcons.camera,
+        ),
+        MevoraSheetAction(
+          value: 'gallery',
+          label: l10n.addPhotoGallery,
+          icon: MevoraIcons.photos,
+        ),
+      ],
     );
     if (picked == null || !mounted) {
       return;
@@ -577,4 +591,3 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 }
-

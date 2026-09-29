@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
@@ -24,7 +25,7 @@ class HumorSwipeHints extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.keyboard_arrow_up_rounded,
+                MevoraIcons.chevronUp,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: AppSpacing.xs),
@@ -36,7 +37,7 @@ class HumorSwipeHints extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.keyboard_arrow_down_rounded,
+                MevoraIcons.chevronDown,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: AppSpacing.xs),

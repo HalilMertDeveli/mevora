@@ -4,7 +4,11 @@ import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/theme/app_shadows.dart';
 
-enum MevoraCardEmphasis { standard, quiet, elevated }
+/// * [standard] — white card with a hairline, the default container.
+/// * [quiet] — sand fill, no line: secondary information inside a page.
+/// * [elevated] — floats (soft shadow, no line): one hero card per screen.
+/// * [outline] — transparent with a line: optional / not-yet-filled content.
+enum MevoraCardEmphasis { standard, quiet, elevated, outline }
 
 class MevoraCard extends StatelessWidget {
   const MevoraCard({
@@ -14,6 +18,9 @@ class MevoraCard extends StatelessWidget {
     this.padding,
     this.margin,
     this.emphasis = MevoraCardEmphasis.standard,
+    this.color,
+    this.radius = AppRadii.lg,
+    this.semanticLabel,
   });
 
   final Widget child;
@@ -22,45 +29,63 @@ class MevoraCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final MevoraCardEmphasis emphasis;
 
+  /// Tinted cards (a signal container) — overrides the emphasis fill.
+  final Color? color;
+  final double radius;
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final p = context.palette;
+    final brightness = Theme.of(context).brightness;
+    final borderRadius = BorderRadius.circular(radius);
     final content = Padding(
       padding: padding ?? const EdgeInsets.all(AppSpacing.cardPadding),
       child: child,
     );
-    final showBorder = emphasis != MevoraCardEmphasis.elevated;
-    final showShadow = emphasis != MevoraCardEmphasis.quiet;
 
-    return Container(
-      margin: margin,
-      decoration: BoxDecoration(
-        color: switch (emphasis) {
-          MevoraCardEmphasis.elevated => theme.brightness == Brightness.dark
-              ? theme.colorScheme.surfaceContainerHigh
-              : theme.colorScheme.surfaceContainerLowest,
-          MevoraCardEmphasis.quiet => theme.colorScheme.surfaceContainer,
-          MevoraCardEmphasis.standard => theme.brightness == Brightness.dark
-              ? theme.colorScheme.surfaceContainerLow
-              : theme.colorScheme.surfaceContainerLowest,
-        },
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: showBorder
-            ? Border.all(
-                color: theme.brightness == Brightness.dark
-                    ? AppColors.glassBorder
-                    : theme.colorScheme.outlineVariant,
-              )
-            : null,
-        boxShadow: showShadow ? AppShadows.card(theme.brightness) : null,
+    final fill =
+        color ??
+        switch (emphasis) {
+          MevoraCardEmphasis.quiet => p.surfaceMuted,
+          MevoraCardEmphasis.outline => Colors.transparent,
+          _ => p.surface,
+        };
+    final border = switch (emphasis) {
+      MevoraCardEmphasis.standard when color == null => Border.all(
+        color: p.border,
       ),
-      clipBehavior: Clip.antiAlias,
+      MevoraCardEmphasis.outline => Border.all(color: p.borderStrong),
+      _ => null,
+    };
+
+    Widget card = DecoratedBox(
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: borderRadius,
+        border: border,
+        boxShadow: emphasis == MevoraCardEmphasis.elevated
+            ? AppShadows.card(brightness)
+            : null,
+      ),
       child: onTap == null
           ? content
           : Material(
-              color: Colors.transparent,
-              child: InkWell(onTap: onTap, child: content),
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: borderRadius,
+                child: content,
+              ),
             ),
     );
+    if (semanticLabel != null || onTap != null) {
+      card = Semantics(
+        button: onTap != null,
+        label: semanticLabel,
+        child: card,
+      );
+    }
+    return Padding(padding: margin ?? EdgeInsets.zero, child: card);
   }
 }

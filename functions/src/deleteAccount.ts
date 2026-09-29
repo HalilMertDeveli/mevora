@@ -7,6 +7,7 @@ import {logger} from "firebase-functions";
 import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
 import {requestIdentityProviderErasure} from "./identity/identityErasure.js";
 import {safeLogMeta} from "./security/logHygiene.js";
+import {scrubDeletedMemberFromPicks} from "./picks/service.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -174,11 +175,24 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/music`),
       deleteCollectionDocs(`users/${uid}/humor`),
       deleteCollectionDocs(`users/${uid}/humorInteractions`),
+      deleteCollectionDocs(`users/${uid}/personalization`),
+      deleteCollectionDocs(`users/${uid}/personalizationEvents`),
       deleteCollectionDocs(`users/${uid}/verification`),
       deleteCollectionDocs(`users/${uid}/photoModeration`),
       deleteCollectionDocs(`users/${uid}/rateLimits`),
+      deleteCollectionDocs(`users/${uid}/mevoraPicks`),
     ]);
 
+    // Releases this account claim on any store purchase token it owns.
+    //
+    // Deleting a Mevora account does not cancel the store subscription, so the
+    // person may still be paying. Leaving the claim behind would mean their
+    // next account cannot restore what they bought — the ledger would report
+    // the token as owned by someone else, that someone being a uid that no
+    // longer exists. It would also leave RTDN writing entitlement documents
+    // for a deleted user. Releasing it is safe: a token is only obtainable
+    // from the store account that bought the subscription.
+    await deleteQuery("subscriptionPurchases", "userId", uid);
     await deleteQuery("notifications", "userId", uid);
     await deleteQuery("likes", "fromUserId", uid);
     await deleteQuery("likes", "toUserId", uid);
@@ -232,6 +246,9 @@ export const deleteUserAccount = onCall(
       ...failedNotifs.docs.map((d) => d.ref),
       db.doc(`adminReviewQueue/${uid}`),
     ]);
+
+    // Other members' Picks that mention this account, active or cooling down.
+    await scrubDeletedMemberFromPicks(db, uid);
 
     await deletePrefix(`users/${uid}/`);
     await deletePrefix(`profiles/${uid}/`);

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
@@ -9,10 +10,11 @@ import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/match_score_scope.dart';
 import 'package:mevora/core/di/relationship_scope.dart';
+import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/core/routing/app_routes.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
@@ -22,6 +24,10 @@ import 'package:mevora/features/profile/presentation/widgets/profile_question_an
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 class ProfileTabPage extends StatelessWidget {
   const ProfileTabPage({super.key});
@@ -31,25 +37,34 @@ class ProfileTabPage extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final user = AuthScope.maybeOf(context)?.user;
     final theme = Theme.of(context);
+    final humorEnabled =
+        AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.profile),
+        title: Text(l10n.profile, style: theme.textTheme.headlineMedium),
         actions: [
           IconButton(
             tooltip: l10n.settings,
             onPressed: () => context.push(AppRoutes.settings),
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(MevoraIcons.settings),
           ),
+          const SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.screenPadding),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenPadding,
+          AppSpacing.sm,
+          AppSpacing.screenPadding,
+          AppSpacing.xxl,
+        ),
         children: [
+          // Identity: the portrait, the name, one clear action.
           Center(
             child: MevoraAvatar(
               name: user?.displayName ?? l10n.appName,
               image: MevoraNetworkImages.provider(user?.photoUrl),
-              size: 96,
+              size: 112,
               isVerified: user?.isVerified ?? false,
             ),
           ),
@@ -57,66 +72,61 @@ class ProfileTabPage extends StatelessWidget {
           Text(
             user?.displayName ?? l10n.profile,
             textAlign: TextAlign.center,
-            style: theme.textTheme.headlineSmall,
+            style: theme.textTheme.headlineLarge,
           ),
           if (user?.email != null) ...[
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xxs),
             Text(
               user!.email!,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: theme.textTheme.bodySmall,
             ),
           ],
-          const SizedBox(height: AppSpacing.xl),
+          const SizedBox(height: AppSpacing.md),
+          Center(
+            child: MevoraButton(
+              label: l10n.editProfile,
+              icon: MevoraIcons.edit,
+              variant: MevoraButtonVariant.secondary,
+              size: MevoraButtonSize.small,
+              isExpanded: false,
+              onPressed: () => context.push(AppRoutes.editProfile),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const _ProfilePremiumTile(),
           if (user?.id != null) ...[
             ProfileQuestionAnswersSection(
               uid: user!.id,
               isOwner: true,
               showEditAction: true,
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
           ],
-          const _ProfileVerificationTile(),
-          const _ProfileBoostTile(),
-          const _ProfileMatchScoreTile(),
-          const _ProfileRelationshipTile(),
-          _ProfileTile(
-            icon: Icons.edit_outlined,
-            title: l10n.editProfile,
-            onTap: () => context.push(AppRoutes.editProfile),
+          MevoraListGroup(
+            title: l10n.profileSectionSignals,
+            children: [
+              MevoraListRow(
+                icon: MevoraIcons.musicActive,
+                iconTone: MevoraTone.music,
+                title: l10n.musicTitle,
+                onTap: () => context.go(AppRoutes.music),
+              ),
+              // Entry point for anyone who skipped calibration, or who
+              // predates it entirely. Existing users are never pushed back
+              // through onboarding — they start from here, voluntarily.
+              if (humorEnabled) const _HumorProfileTile(),
+              const _ProfileRelationshipTile(),
+            ],
           ),
-          _ProfileTile(
-            icon: Icons.library_music_outlined,
-            title: l10n.musicTitle,
-            onTap: () => context.go(AppRoutes.music),
-          ),
-          if (AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled ==
-              true)
-            // Entry point for anyone who skipped calibration, or who predates
-            // it entirely. Existing users are never pushed back through
-            // onboarding — they start from here, voluntarily.
-            const _HumorProfileTile(),
-          _ProfileTile(
-            icon: Icons.tune_rounded,
-            title: l10n.discoveryPreferences,
-            onTap: () => context.push(AppRoutes.discoveryPreferences),
-          ),
-          _ProfileTile(
-            icon: Icons.notifications_outlined,
-            title: l10n.notificationsTitle,
-            onTap: () => context.push(AppRoutes.notificationSettings),
-          ),
-          _ProfileTile(
-            icon: Icons.privacy_tip_outlined,
-            title: l10n.privacyPermissionsTitle,
-            onTap: () => context.push(AppRoutes.privacyPermissions),
-          ),
-          _ProfileTile(
-            icon: Icons.settings_outlined,
-            title: l10n.settings,
-            onTap: () => context.push(AppRoutes.settings),
+          const SizedBox(height: AppSpacing.lg),
+          MevoraListGroup(
+            title: l10n.profileSectionTrust,
+            children: const [
+              _ProfileVerificationTile(),
+              _ProfileBoostTile(),
+              _ProfileMatchScoreTile(),
+            ],
           ),
         ],
       ),
@@ -147,20 +157,22 @@ class _ProfileVerificationTileState extends State<_ProfileVerificationTile> {
     }
     _subscribedUid = uid;
     unawaited(_subscription?.cancel());
-    _subscription = repository.watchVerification(uid).listen(
-      (value) {
-        if (!mounted) {
-          return;
-        }
-        setState(() => _status = value.status);
-      },
-      onError: (_, _) {
-        if (!mounted) {
-          return;
-        }
-        setState(() => _status = IdentityVerificationStatus.notStarted);
-      },
-    );
+    _subscription = repository
+        .watchVerification(uid)
+        .listen(
+          (value) {
+            if (!mounted) {
+              return;
+            }
+            setState(() => _status = value.status);
+          },
+          onError: (_, _) {
+            if (!mounted) {
+              return;
+            }
+            setState(() => _status = IdentityVerificationStatus.notStarted);
+          },
+        );
   }
 
   @override
@@ -230,17 +242,86 @@ class _ProfileBoostTileState extends State<_ProfileBoostTile> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final active = _boost != null && _boost!.isActiveAt(DateTime.now());
+    return MevoraListRow(
+      icon: active ? MevoraIcons.boostActive : MevoraIcons.boost,
+      iconTone: MevoraTone.accent,
+      title: l10n.boostSpotlight,
+      trailing: active ? BoostActiveBadge(boost: _boost, compact: true) : null,
+      onTap: () => context.push(AppRoutes.boost),
+    );
+  }
+}
+
+/// Entry point to the paywall, and the Premium badge once it is active.
+///
+/// Hidden entirely when the app was wired without billing — Premium off, or
+/// a build with no store. Nothing here decides entitlement; it reads the
+/// server-written status the same way every other gate does.
+class _ProfilePremiumTile extends StatelessWidget {
+  const _ProfilePremiumTile();
+
+  @override
+  Widget build(BuildContext context) {
+    if (SubscriptionScope.billingOf(context) == null) {
+      return const SizedBox.shrink();
+    }
+    final l10n = AppLocalizations.of(context);
+    final isPremium = SubscriptionScope.isPremiumOf(context);
+    final theme = Theme.of(context);
+    final p = context.palette;
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        child: ListTile(
-          leading: const Icon(Icons.bolt_rounded),
-          title: Text(l10n.boostSpotlight),
-          subtitle: _boost == null ? null : BoostActiveBadge(boost: _boost),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => context.push(AppRoutes.boost),
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+      child: MevoraCard(
+        color: p.premiumSurface,
+        onTap: () => context.push(AppRoutes.premium),
+        semanticLabel: l10n.premiumTitle,
+        padding: const EdgeInsets.all(AppSpacing.s20),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: p.premium, width: 1.5),
+              ),
+              child: Icon(
+                isPremium ? MevoraIcons.premiumActive : MevoraIcons.premium,
+                color: p.premium,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.premiumTitle,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: p.onPremiumSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    isPremium
+                        ? l10n.premiumAlreadyActive
+                        : l10n.premiumSubtitle,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 14,
+                      color: p.onPremiumSurface.withValues(alpha: 0.78),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              MevoraIcons.chevronRight,
+              color: p.onPremiumSurface.withValues(alpha: 0.6),
+              size: 18,
+            ),
+          ],
         ),
       ),
     );
@@ -260,57 +341,14 @@ class _ProfileRelationshipTile extends StatelessWidget {
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: Material(
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            child: ListTile(
-              leading: const Icon(Icons.favorite_outline),
-              title: Text(l10n.relationshipMatchesTitle),
-              subtitle: Text(
-                l10n.relationshipProfileSubtitle(controller.answeredCount),
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.go(AppRoutes.matches),
-            ),
-          ),
+        return MevoraListRow(
+          icon: MevoraIcons.questions,
+          iconTone: MevoraTone.compatibility,
+          title: l10n.relationshipMatchesTitle,
+          subtitle: l10n.relationshipProfileSubtitle(controller.answeredCount),
+          onTap: () => context.go(AppRoutes.matches),
         );
       },
-    );
-  }
-}
-
-class _ProfileTile extends StatelessWidget {
-  const _ProfileTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-
-  /// Optional second line, for tiles that carry a state the user cares about.
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        child: ListTile(
-          leading: Icon(icon),
-          title: Text(title),
-          subtitle: subtitle == null ? null : Text(subtitle!),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: onTap,
-        ),
-      ),
     );
   }
 }
@@ -373,8 +411,9 @@ class _HumorProfileTileState extends State<_HumorProfileTile> {
       );
     }
 
-    return _ProfileTile(
-      icon: Icons.theater_comedy_outlined,
+    return MevoraListRow(
+      icon: MevoraIcons.humorActive,
+      iconTone: MevoraTone.humor,
       title: l10n.humorLabTitle,
       subtitle: subtitle,
       // An unfinished calibration resumes through the invitation screen so the

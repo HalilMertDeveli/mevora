@@ -5,6 +5,9 @@ import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/features/notifications/domain/models/notification_prefs.dart';
 import 'package:mevora/features/permissions/presentation/widgets/notification_permission_gate.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_list.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/core/constants/app_spacings.dart';
 
 class NotificationSettingsPage extends StatelessWidget {
   const NotificationSettingsPage({super.key});
@@ -33,43 +36,51 @@ class NotificationSettingsPage extends StatelessWidget {
             ),
           ),
           body: ListView(
+            padding: const EdgeInsets.all(AppSpacing.screenPadding),
             children: [
               const NotificationPermissionGate(),
-              SwitchListTile(
-                title: Text(l10n.messageNotifications),
-                value: prefs.messageNotifications,
-                onChanged: (value) {
-                  unawaited(
-                    social.notificationRepository.savePrefs(
-                      uid,
-                      prefs.copyWith(messageNotifications: value),
-                    ),
-                  );
-                },
-              ),
-              SwitchListTile(
-                title: Text(l10n.matchNotifications),
-                value: prefs.matchNotifications,
-                onChanged: (value) {
-                  unawaited(
-                    social.notificationRepository.savePrefs(
-                      uid,
-                      prefs.copyWith(matchNotifications: value),
-                    ),
-                  );
-                },
-              ),
-              SwitchListTile(
-                title: Text(l10n.hideOnlineStatus),
-                value: prefs.hideOnlineStatus,
-                onChanged: (value) {
-                  unawaited(
-                    social.notificationRepository.savePrefs(
-                      uid,
-                      prefs.copyWith(hideOnlineStatus: value),
-                    ),
-                  );
-                },
+              MevoraListGroup(
+                children: [
+                  MevoraSwitchRow(
+                    title: l10n.messageNotifications,
+                    icon: MevoraIcons.message,
+                    value: prefs.messageNotifications,
+                    onChanged: (value) {
+                      unawaited(
+                        social.notificationRepository.savePrefs(
+                          uid,
+                          prefs.copyWith(messageNotifications: value),
+                        ),
+                      );
+                    },
+                  ),
+                  MevoraSwitchRow(
+                    title: l10n.matchNotifications,
+                    icon: MevoraIcons.liked,
+                    value: prefs.matchNotifications,
+                    onChanged: (value) {
+                      unawaited(
+                        social.notificationRepository.savePrefs(
+                          uid,
+                          prefs.copyWith(matchNotifications: value),
+                        ),
+                      );
+                    },
+                  ),
+                  MevoraSwitchRow(
+                    title: l10n.hideOnlineStatus,
+                    icon: MevoraIcons.hidden,
+                    value: prefs.hideOnlineStatus,
+                    onChanged: (value) {
+                      unawaited(
+                        social.notificationRepository.savePrefs(
+                          uid,
+                          prefs.copyWith(hideOnlineStatus: value),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),

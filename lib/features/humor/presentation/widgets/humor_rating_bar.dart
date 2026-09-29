@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/animations/mevora_press_scale.dart';
 
-/// Always-visible 5-level humor rating bar.
+/// Always-visible 5-level humor scale: five faces, one tap.
+///
+/// Light enough not to compete with the clip above it — outlined discs at
+/// rest, a single marigold disc for the chosen answer. Labels wrap to two
+/// lines instead of shrinking, so "Hiç komik değil" stays readable.
 class HumorRatingBar extends StatelessWidget {
   const HumorRatingBar({
     super.key,
@@ -26,6 +33,7 @@ class HumorRatingBar extends StatelessWidget {
 
     return Semantics(
       label: l10n.humorHowFunny,
+      container: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -33,25 +41,20 @@ class HumorRatingBar extends StatelessWidget {
           Text(
             l10n.humorHowFunny,
             textAlign: TextAlign.center,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: theme.textTheme.titleSmall,
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.s12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (final rating in _order)
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: _RatingChip(
-                      label: _label(l10n, rating),
-                      icon: _icon(rating),
-                      selected: selected == rating,
-                      enabled: enabled,
-                      onTap: () => onRated(rating),
-                      color: theme.colorScheme,
-                    ),
+                  child: _RatingFace(
+                    label: _label(l10n, rating),
+                    icon: _icon(rating),
+                    selected: selected == rating,
+                    enabled: enabled,
+                    onTap: () => onRated(rating),
                   ),
                 ),
             ],
@@ -73,23 +76,22 @@ class HumorRatingBar extends StatelessWidget {
 
   static IconData _icon(HumorRating rating) {
     return switch (rating) {
-      HumorRating.veryFunny => Icons.sentiment_very_satisfied_rounded,
-      HumorRating.funny => Icons.sentiment_satisfied_alt_rounded,
-      HumorRating.neutral => Icons.sentiment_neutral_rounded,
-      HumorRating.notFunny => Icons.sentiment_dissatisfied_rounded,
-      HumorRating.notAtAll => Icons.sentiment_very_dissatisfied_rounded,
+      HumorRating.veryFunny => MevoraIcons.ratingVeryFunny,
+      HumorRating.funny => MevoraIcons.ratingFunny,
+      HumorRating.neutral => MevoraIcons.ratingNeutral,
+      HumorRating.notFunny => MevoraIcons.ratingMeh,
+      HumorRating.notAtAll => MevoraIcons.ratingNotFunny,
     };
   }
 }
 
-class _RatingChip extends StatelessWidget {
-  const _RatingChip({
+class _RatingFace extends StatelessWidget {
+  const _RatingFace({
     required this.label,
     required this.icon,
     required this.selected,
     required this.enabled,
     required this.onTap,
-    required this.color,
   });
 
   final String label;
@@ -97,43 +99,59 @@ class _RatingChip extends StatelessWidget {
   final bool selected;
   final bool enabled;
   final VoidCallback onTap;
-  final ColorScheme color;
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? color.primary : color.surfaceContainerHighest;
-    final fg = selected ? color.onPrimary : color.onSurfaceVariant;
-
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(AppRadii.md),
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-            horizontal: AppSpacing.xs,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 22, color: fg),
-              const SizedBox(height: 2),
-              // Scale a long label ("Hiç komik değil") down to fit rather
-              // than cutting it off — a truncated option is hard to choose.
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: fg),
+    final p = context.palette;
+    final theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      enabled: enabled,
+      label: label,
+      excludeSemantics: true,
+      child: MevoraPressScale(
+        enabled: enabled,
+        child: InkResponse(
+          onTap: enabled ? onTap : null,
+          radius: 36,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: AppDurations.fast,
+                  curve: AppCurves.standard,
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? p.humor : p.surface,
+                    border: Border.all(
+                      color: selected ? p.humor : p.border,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 24,
+                    color: selected ? AppColors.paper : p.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.xs + 2),
+                Text(
+                  label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    letterSpacing: 0,
+                    color: selected ? p.onHumorContainer : p.textSecondary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

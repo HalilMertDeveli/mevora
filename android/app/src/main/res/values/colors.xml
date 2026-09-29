@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="splash_background">#08080A</color>
-    <color name="ic_launcher_background">#08080A</color>
+    <!-- Linen: the same page colour the first Flutter frame paints, so the
+         hand-off from the native splash is seamless. -->
+    <color name="splash_background">#FAF6F1</color>
+    <color name="ic_launcher_background">#FAF6F1</color>
 </resources>

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/services/permissions/permission_status.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -38,11 +39,11 @@ abstract final class PermissionCopy {
 
   static IconData icon(PermissionType type) {
     return switch (type) {
-      PermissionType.camera => Icons.photo_camera_outlined,
-      PermissionType.microphone => Icons.mic_none_outlined,
-      PermissionType.photos => Icons.photo_library_outlined,
-      PermissionType.notifications => Icons.notifications_outlined,
-      PermissionType.location => Icons.place_outlined,
+      PermissionType.camera => MevoraIcons.camera,
+      PermissionType.microphone => MevoraIcons.mic,
+      PermissionType.photos => MevoraIcons.photos,
+      PermissionType.notifications => MevoraIcons.notifications,
+      PermissionType.location => MevoraIcons.location,
     };
   }
 }

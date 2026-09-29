@@ -195,6 +195,22 @@ function createFakeFirestore(seed = {}) {
     if (parts.length % 2 !== 1) {
       throw new Error(`fakeFirestore: collection path must have an odd number of segments: ${path}`);
     }
+    const prefix = `${path}/`;
+    return queryOver(
+      path,
+      (docPath) => docPath.startsWith(prefix) && !docPath.slice(prefix.length).includes("/"),
+    );
+  }
+
+  /** Every document whose immediate parent collection is `collectionId`. */
+  function collectionGroup(collectionId) {
+    return queryOver(collectionId, (docPath) => {
+      const parts = segments(docPath);
+      return parts.length >= 2 && parts[parts.length - 2] === collectionId;
+    });
+  }
+
+  function queryOver(path, inScope) {
     const build = (filters, max, order) => ({
       path,
       where: (field, op, value) => build([...filters, [field, op, value]], max, order),
@@ -203,11 +219,9 @@ function createFakeFirestore(seed = {}) {
       orderBy: (field, direction = "asc") => build(filters, max, [field, direction]),
       doc: (id) => docRef(`${path}/${id}`),
       get: async () => {
-        const prefix = `${path}/`;
         let docs = [];
         for (const [docPath, data] of store.entries()) {
-          if (!docPath.startsWith(prefix)) continue;
-          if (docPath.slice(prefix.length).includes("/")) continue;
+          if (!inScope(docPath)) continue;
           const matches = filters.every(([field, op, value]) => {
             const actual = fieldOf(data, field);
             if (op === "==") return actual === value;
@@ -318,6 +332,7 @@ function createFakeFirestore(seed = {}) {
     paths: () => [...store.keys()].sort(),
     doc: docRef,
     collection: collectionRef,
+    collectionGroup,
     batch,
     runTransaction,
     getAll: async (...refs) => refs.map((ref) => snapshotOf(ref)),

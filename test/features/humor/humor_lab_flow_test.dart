@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/app_scope.dart';
@@ -192,7 +193,7 @@ void main() {
         await tester.pumpWidget(_routerApp(router, source));
         await _settle(tester);
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(MevoraIcons.close));
         await _settle(tester);
 
         expect(find.byType(HumorLabPage), findsNothing);

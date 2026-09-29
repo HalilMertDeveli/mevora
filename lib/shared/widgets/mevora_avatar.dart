@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/extensions/string_extensions.dart';
+import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_typography.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 
+/// A person's portrait. Falls back to serif initials on a warm tint derived
+/// from the name, so two people without photos never look identical.
 class MevoraAvatar extends StatelessWidget {
   const MevoraAvatar({
     super.key,
@@ -9,6 +14,8 @@ class MevoraAvatar extends StatelessWidget {
     this.size = 56,
     this.isVerified = false,
     this.showOnlineIndicator = false,
+    this.ring = false,
+    this.semanticLabel,
   });
 
   final ImageProvider? image;
@@ -17,88 +24,113 @@ class MevoraAvatar extends StatelessWidget {
   final bool isVerified;
   final bool showOnlineIndicator;
 
+  /// A linen ring separating the portrait from busy backgrounds.
+  final bool ring;
+  final String? semanticLabel;
+
+  static const _tints = [
+    (AppColors.emberSoft, AppColors.emberInk),
+    (AppColors.sageSoft, AppColors.sageInk),
+    (AppColors.duskSoft, AppColors.duskInk),
+    (AppColors.marigoldSoft, AppColors.marigoldInk),
+    (AppColors.roseSoft, AppColors.emberInk),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final p = context.palette;
     final initials = (name ?? '').initials;
+    final seed = (name ?? '').codeUnits.fold<int>(0, (a, b) => a + b);
+    final (bg, fg) = _tints[seed % _tints.length];
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          ClipOval(
-            child: ColoredBox(
-              color: colors.primaryContainer,
-              child: image == null
-                  ? Center(
-                      child: Text(
-                        initials.isEmpty ? '?' : initials,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: size * 0.32,
-                          color: colors.onPrimaryContainer,
-                        ),
-                      ),
-                    )
-                  : Image(
-                      image: image!,
-                      width: size,
-                      height: size,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.high,
-                      gaplessPlayback: true,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Text(
-                            initials.isEmpty ? '?' : initials,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: size * 0.32,
-                              color: colors.onPrimaryContainer,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
+    Widget fallback() => ColoredBox(
+      color: bg,
+      child: Center(
+        child: Text(
+          initials.isEmpty ? '?' : initials,
+          style: TextStyle(
+            fontFamily: AppTypography.displayFontFamily,
+            fontWeight: FontWeight.w600,
+            fontSize: size * 0.36,
+            height: 1,
+            color: fg,
           ),
-          if (isVerified)
-            Positioned(
-              right: -2,
-              bottom: -2,
-              child: Semantics(
-                label: 'Verified',
+        ),
+      ),
+    );
+
+    final portrait = ClipOval(
+      child: SizedBox.square(
+        dimension: size,
+        child: image == null
+            ? fallback()
+            : Image(
+                image: image!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                gaplessPlayback: true,
+                frameBuilder: (context, child, frame, sync) =>
+                    sync || frame != null ? child : fallback(),
+                errorBuilder: (context, error, stackTrace) => fallback(),
+              ),
+      ),
+    );
+
+    final badge = (size * 0.34).clamp(14.0, 28.0);
+    return Semantics(
+      label: semanticLabel ?? name,
+      image: true,
+      child: SizedBox.square(
+        dimension: size,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (ring)
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: p.background, width: 3),
+                ),
+                child: portrait,
+              )
+            else
+              portrait,
+            if (isVerified)
+              Positioned(
+                right: -1,
+                bottom: -1,
                 child: Container(
-                  padding: const EdgeInsets.all(2),
+                  width: badge,
+                  height: badge,
                   decoration: BoxDecoration(
-                    color: colors.surface,
+                    color: p.surface,
                     shape: BoxShape.circle,
                   ),
+                  alignment: Alignment.center,
                   child: Icon(
-                    Icons.verified,
-                    size: size * 0.32,
-                    color: colors.tertiary,
+                    MevoraIcons.verified,
+                    size: badge * 0.86,
+                    color: p.compatibility,
                   ),
                 ),
               ),
-            ),
-          if (showOnlineIndicator)
-            Positioned(
-              right: isVerified ? size * 0.18 : 0,
-              bottom: 0,
-              child: Container(
-                width: size * 0.22,
-                height: size * 0.22,
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colors.surface, width: 2),
+            if (showOnlineIndicator)
+              Positioned(
+                right: isVerified ? badge * 0.9 : size * 0.02,
+                bottom: size * 0.02,
+                child: Container(
+                  width: size * 0.24,
+                  height: size * 0.24,
+                  decoration: BoxDecoration(
+                    color: p.success,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: p.surface, width: 2),
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

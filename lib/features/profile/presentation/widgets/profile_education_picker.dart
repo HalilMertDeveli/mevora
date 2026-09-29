@@ -1,9 +1,9 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
+import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_enums.dart';
 import 'package:mevora/features/onboarding/presentation/onboarding_labels.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_chip.dart';
 
 class ProfileEducationPicker extends StatelessWidget {
   const ProfileEducationPicker({
@@ -20,16 +20,23 @@ class ProfileEducationPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: [
-        for (final option in OnboardingEducation.values)
-          RadioListTile<String>(
-            value: option,
-            groupValue: value,
-            title: Text(OnboardingLabels.education(l10n, option)),
-            onChanged: enabled ? (next) => onChanged(next!) : null,
-          ),
-      ],
+    return Semantics(
+      container: true,
+      child: Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: [
+          for (final option in OnboardingEducation.values)
+            Semantics(
+              inMutuallyExclusiveGroup: true,
+              child: MevoraChip(
+                label: OnboardingLabels.education(l10n, option),
+                selected: value == option,
+                onSelected: enabled ? (_) => onChanged(option) : null,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/discovery/presentation/widgets/discovery_swipe_overlay.dart';
 
 Future<void> _pump(WidgetTester tester, Offset drag) {
@@ -19,18 +20,18 @@ Future<void> _pump(WidgetTester tester, Offset drag) {
 void main() {
   testWidgets('right drag shows a heart and no label', (tester) async {
     await _pump(tester, const Offset(100, 0));
-    expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.liked), findsOneWidget);
     expect(find.byType(Text), findsNothing);
   });
 
   testWidgets('left drag shows a cross', (tester) async {
     await _pump(tester, const Offset(-100, 0));
-    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.close), findsOneWidget);
   });
 
   testWidgets('upward drag shows a star', (tester) async {
     await _pump(tester, const Offset(0, -100));
-    expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+    expect(find.byIcon(MevoraIcons.superLike), findsOneWidget);
   });
 
   testWidgets('small drag shows nothing', (tester) async {

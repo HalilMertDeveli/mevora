@@ -104,9 +104,12 @@ class _OnboardingMusicStepState extends State<OnboardingMusicStep> {
           onPressed: _connecting ? null : () => unawaited(_connect()),
         ),
         const SizedBox(height: AppSpacing.xs),
-        TextButton(
+        // Full width like Connect above it, so the label sits centred
+        // under it instead of hugging the left edge of the column.
+        MevoraButton(
+          label: l10n.onboardingMusicSkip,
+          variant: MevoraButtonVariant.ghost,
           onPressed: _connecting ? null : widget.onSkip,
-          child: Text(l10n.onboardingMusicSkip),
         ),
       ],
     );

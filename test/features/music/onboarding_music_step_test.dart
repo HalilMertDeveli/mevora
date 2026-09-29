@@ -112,6 +112,27 @@ void main() {
       expect(find.text(_en.onboardingMusicSkip), findsOneWidget);
     });
 
+    testWidgets('skip sits centred under Connect, not at the left edge', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          OnboardingMusicStep(
+            repository: _ScriptedRepository(
+              const Success(MusicProfile.disconnected),
+            ),
+            onSkip: () {},
+            onFinished: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final connect = tester.getCenter(find.text(_en.onboardingMusicConnect));
+      final skip = tester.getCenter(find.text(_en.onboardingMusicSkip));
+      expect(skip.dx, moreOrLessEquals(connect.dx, epsilon: 0.5));
+    });
+
     testWidgets('skipping continues onboarding without connecting', (
       tester,
     ) async {

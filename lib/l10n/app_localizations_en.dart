@@ -244,11 +244,87 @@ class AppLocalizationsEn extends AppLocalizations {
       'When new questions are ready, you\'ll find them here.';
 
   @override
-  String get learningProfileTitle => 'Let Mevora get to know you';
+  String get learningProfileTitle => 'Let Mevora get to know me';
 
   @override
   String get learningProfileSubtitle =>
       'Your answers help us choose people who fit you.';
+
+  @override
+  String get learningAfterHumorTitle => 'We know your humor a little now.';
+
+  @override
+  String get learningAfterHumorBody =>
+      'Now let\'s learn what matters to you in a relationship.';
+
+  @override
+  String get learningDashboardHeadline => 'How well does Mevora know you?';
+
+  @override
+  String learningDashboardPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get learningDashboardBody =>
+      'Your answers and your profile help us choose people who fit you.';
+
+  @override
+  String learningDashboardResumeInitial(int answered, int total) {
+    return 'Continue where you left off ($answered/$total)';
+  }
+
+  @override
+  String learningDashboardContinue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Continue with $count short questions',
+      one: 'Continue with 1 short question',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get learningDashboardAllAnswered =>
+      'You\'ve answered every question for now. New ones will appear here.';
+
+  @override
+  String get learningDashboardCategoriesTitle => 'Compatibility areas';
+
+  @override
+  String get learningDashboardHighlightsTitle => 'What we\'ve learned so far';
+
+  @override
+  String get learningDashboardHighlightsSubtitle => 'From your own answers.';
+
+  @override
+  String get learningDashboardAnswersTitle => 'Your answers';
+
+  @override
+  String get learningDashboardAnswersFooter =>
+      'Changed your mind? Tap an answer to change it.';
+
+  @override
+  String get learningCategoryRelationship => 'Relationship expectations';
+
+  @override
+  String get learningCategoryCommunication => 'Communication';
+
+  @override
+  String get learningCategoryLifestyle => 'Lifestyle';
+
+  @override
+  String get learningCategoryValues => 'Values';
+
+  @override
+  String get learningCategoryHumor => 'Humor';
+
+  @override
+  String get learningCategoryMusic => 'Music';
+
+  @override
+  String get learningCategoryInterests => 'Interests';
 
   @override
   String get pickTypeBestOverall => 'Best match';

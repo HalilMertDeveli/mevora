@@ -351,6 +351,6 @@ export function learningTopicOf(questionId: string): LearningTopic | null {
 /** Whether a stored stance answer may be compared between two people. */
 export function isComparableLearningAnswer(questionId: string, answerId: unknown): boolean {
   const question = BY_ID.get(questionId);
-  return !!question && question.kind === "stance" &&
+  return !!question && question.active && question.kind === "stance" &&
     question.options.some((option) => option.id === answerId);
 }

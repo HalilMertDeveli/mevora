@@ -19,8 +19,6 @@ import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
-import 'package:mevora/features/relationship_learning/presentation/controllers/relationship_learning_controller.dart';
-import 'package:mevora/features/relationship_learning/presentation/pages/relationship_learning_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
@@ -313,8 +311,8 @@ class _ProfilePremiumTile extends StatelessWidget {
   }
 }
 
-/// The permanent way back into Relationship Learning: the initial questions
-/// while they are unfinished, otherwise a short follow-up round.
+/// The permanent way back into Relationship Learning: the "Mevora Beni
+/// Tanısın" dashboard, with real coverage, short rounds and answer editing.
 class _ProfileLearningTile extends StatelessWidget {
   const _ProfileLearningTile();
 
@@ -330,14 +328,7 @@ class _ProfileLearningTile extends StatelessWidget {
       iconTone: MevoraTone.compatibility,
       title: l10n.learningProfileTitle,
       subtitle: l10n.learningProfileSubtitle,
-      onTap: () => unawaited(
-        context.push<Object?>(
-          RelationshipLearningPage.location(
-            mode: LearningFlowMode.auto,
-            source: 'profile',
-          ),
-        ),
-      ),
+      onTap: () => unawaited(context.push<Object?>(AppRoutes.learningDashboard)),
     );
   }
 }

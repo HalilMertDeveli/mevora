@@ -21,6 +21,7 @@ abstract final class AppRoutes {
   static const String humorCalibration = '/humor/calibration';
   static const String humorResult = '/humor/result';
   static const String relationshipLearning = '/relationship-learning';
+  static const String learningDashboard = '/mevora-knows-me';
   static const String profile = '/profile';
   static const String chat = '/chat/:matchId';
   static const String incomingCall = '/call/incoming/:callId';

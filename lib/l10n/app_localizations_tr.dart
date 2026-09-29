@@ -243,11 +243,88 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yeni sorular hazır olduğunda burada göreceksin.';
 
   @override
-  String get learningProfileTitle => 'Mevora seni tanısın';
+  String get learningProfileTitle => 'Mevora Beni Tanısın';
 
   @override
   String get learningProfileSubtitle =>
       'Cevapların, sana uygun kişileri seçmemize yardım eder.';
+
+  @override
+  String get learningAfterHumorTitle => 'Mizahını biraz tanıdık.';
+
+  @override
+  String get learningAfterHumorBody =>
+      'Şimdi ilişkide senin için nelerin önemli olduğunu öğrenelim.';
+
+  @override
+  String get learningDashboardHeadline => 'Mevora seni ne kadar tanıyor?';
+
+  @override
+  String learningDashboardPercent(int percent) {
+    return '%$percent';
+  }
+
+  @override
+  String get learningDashboardBody =>
+      'Cevapların ve profilin, sana daha uygun kişileri seçmemize yardım ediyor.';
+
+  @override
+  String learningDashboardResumeInitial(int answered, int total) {
+    return 'Kaldığın yerden devam et ($answered/$total)';
+  }
+
+  @override
+  String learningDashboardContinue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kısa soruyla devam et',
+      one: '1 kısa soruyla devam et',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get learningDashboardAllAnswered =>
+      'Şimdilik bütün soruları cevapladın. Yenileri hazır olduğunda burada olacak.';
+
+  @override
+  String get learningDashboardCategoriesTitle => 'Uyum alanları';
+
+  @override
+  String get learningDashboardHighlightsTitle =>
+      'Şimdiye kadar öğrendiklerimiz';
+
+  @override
+  String get learningDashboardHighlightsSubtitle => 'Kendi cevaplarından.';
+
+  @override
+  String get learningDashboardAnswersTitle => 'Cevapların';
+
+  @override
+  String get learningDashboardAnswersFooter =>
+      'Fikrin değiştiyse bir cevaba dokunup değiştirebilirsin.';
+
+  @override
+  String get learningCategoryRelationship => 'İlişki beklentisi';
+
+  @override
+  String get learningCategoryCommunication => 'İletişim';
+
+  @override
+  String get learningCategoryLifestyle => 'Yaşam tarzı';
+
+  @override
+  String get learningCategoryValues => 'Değerler';
+
+  @override
+  String get learningCategoryHumor => 'Mizah';
+
+  @override
+  String get learningCategoryMusic => 'Müzik';
+
+  @override
+  String get learningCategoryInterests => 'İlgi alanları';
 
   @override
   String get pickTypeBestOverall => 'En iyi uyum';

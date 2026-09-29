@@ -461,7 +461,7 @@ abstract class AppLocalizations {
   /// No description provided for @learningProfileTitle.
   ///
   /// In en, this message translates to:
-  /// **'Let Mevora get to know you'**
+  /// **'Let Mevora get to know me'**
   String get learningProfileTitle;
 
   /// No description provided for @learningProfileSubtitle.
@@ -469,6 +469,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your answers help us choose people who fit you.'**
   String get learningProfileSubtitle;
+
+  /// No description provided for @learningAfterHumorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We know your humor a little now.'**
+  String get learningAfterHumorTitle;
+
+  /// No description provided for @learningAfterHumorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Now let\'s learn what matters to you in a relationship.'**
+  String get learningAfterHumorBody;
+
+  /// No description provided for @learningDashboardHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'How well does Mevora know you?'**
+  String get learningDashboardHeadline;
+
+  /// No description provided for @learningDashboardPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String learningDashboardPercent(int percent);
+
+  /// No description provided for @learningDashboardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers and your profile help us choose people who fit you.'**
+  String get learningDashboardBody;
+
+  /// No description provided for @learningDashboardResumeInitial.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue where you left off ({answered}/{total})'**
+  String learningDashboardResumeInitial(int answered, int total);
+
+  /// No description provided for @learningDashboardContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Continue with 1 short question} other{Continue with {count} short questions}}'**
+  String learningDashboardContinue(int count);
+
+  /// No description provided for @learningDashboardAllAnswered.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve answered every question for now. New ones will appear here.'**
+  String get learningDashboardAllAnswered;
+
+  /// No description provided for @learningDashboardCategoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility areas'**
+  String get learningDashboardCategoriesTitle;
+
+  /// No description provided for @learningDashboardHighlightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What we\'ve learned so far'**
+  String get learningDashboardHighlightsTitle;
+
+  /// No description provided for @learningDashboardHighlightsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'From your own answers.'**
+  String get learningDashboardHighlightsSubtitle;
+
+  /// No description provided for @learningDashboardAnswersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answers'**
+  String get learningDashboardAnswersTitle;
+
+  /// No description provided for @learningDashboardAnswersFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed your mind? Tap an answer to change it.'**
+  String get learningDashboardAnswersFooter;
+
+  /// No description provided for @learningCategoryRelationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship expectations'**
+  String get learningCategoryRelationship;
+
+  /// No description provided for @learningCategoryCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication'**
+  String get learningCategoryCommunication;
+
+  /// No description provided for @learningCategoryLifestyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifestyle'**
+  String get learningCategoryLifestyle;
+
+  /// No description provided for @learningCategoryValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Values'**
+  String get learningCategoryValues;
+
+  /// No description provided for @learningCategoryHumor.
+  ///
+  /// In en, this message translates to:
+  /// **'Humor'**
+  String get learningCategoryHumor;
+
+  /// No description provided for @learningCategoryMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get learningCategoryMusic;
+
+  /// No description provided for @learningCategoryInterests.
+  ///
+  /// In en, this message translates to:
+  /// **'Interests'**
+  String get learningCategoryInterests;
 
   /// No description provided for @pickTypeBestOverall.
   ///

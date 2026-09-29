@@ -48,6 +48,11 @@ export interface LearningState {
     snoozedUntilMs: number | null;
   };
   writeWindow: {startMs: number; count: number} | null;
+  /** New-member onboarding journey facts (see journeyStage). */
+  journey: {
+    /** "Skip for now" on the Humor Lab step; the lab stays open for later. */
+    humorSkippedAtMs: number | null;
+  };
 }
 
 export function emptyLearningState(): LearningState {
@@ -59,6 +64,7 @@ export function emptyLearningState(): LearningState {
     initialCompletedAtMs: null,
     progressive: {batch: [], batchCreatedAtMs: null, lastBatchCompletedAtMs: null, snoozedUntilMs: null},
     writeWindow: null,
+    journey: {humorSkippedAtMs: null},
   };
 }
 
@@ -109,6 +115,8 @@ export function parseLearningState(raw: unknown): LearningState {
   const window = data.writeWindow as Record<string, unknown> | undefined;
   const startMs = positiveMs(window?.startMs);
   state.writeWindow = startMs === null ? null : {startMs, count: Math.max(0, Number(window?.count) || 0)};
+  const journey = (data.journey ?? {}) as Record<string, unknown>;
+  state.journey = {humorSkippedAtMs: positiveMs(journey.humorSkippedAtMs)};
   return state;
 }
 
@@ -120,6 +128,7 @@ export function serializeLearningState(state: LearningState): Record<string, unk
     initialCompletedAtMs: state.initialCompletedAtMs,
     progressive: state.progressive,
     writeWindow: state.writeWindow,
+    journey: state.journey,
   };
 }
 
@@ -141,8 +150,33 @@ export function isLearningBlockingPicks(state: LearningState): boolean {
 }
 
 /** The compact progress block other surfaces (Picks) carry. */
-export function learningSummary(state: LearningState, nowMs: number): Record<string, unknown> {
+/**
+ * Where a NEW member is in their first-run journey, from server facts only:
+ *
+ *   basic profile (onboarding) → humor → learning → done
+ *
+ * Existing members are always "done": the journey is never forced on them.
+ * Humor counts as passed once calibrated or explicitly skipped, so a skip can
+ * never send someone back into a loop. Deterministic: same facts, same stage.
+ */
+export type JourneyStage = "humor" | "learning" | "done";
+
+export function journeyStage(state: LearningState, humorCalibrated: boolean): JourneyStage {
+  if (!state.required) return "done";
+  if (!humorCalibrated && state.journey.humorSkippedAtMs === null) return "humor";
+  if (!isInitialComplete(state)) return "learning";
+  return "done";
+}
+
+export function learningSummary(
+  state: LearningState,
+  nowMs: number,
+  facts?: {humorCalibrated: boolean},
+): Record<string, unknown> {
   return {
+    ...(facts
+      ? {humorCalibrated: facts.humorCalibrated, journeyStage: journeyStage(state, facts.humorCalibrated)}
+      : {}),
     required: state.required,
     initialTotal: INITIAL_QUESTION_COUNT,
     initialAnswered: initialAnsweredCount(state),
@@ -265,7 +299,7 @@ export function declaredAdjustments(state: LearningState): Adjustments {
   for (const dimension of PERSONALIZATION_DIMENSIONS) out[dimension] = ADJUSTMENT_BOUNDS.neutral;
   for (const [questionId, answer] of Object.entries(state.answers)) {
     const question = learningQuestion(questionId);
-    if (!question || question.kind !== "importance") continue;
+    if (!question || !question.active || question.kind !== "importance") continue;
     const level = question.options.find((option) => option.id === answer.answerId)?.importance;
     if (level) out[question.dimension] = DECLARED.importance[level];
   }
@@ -380,7 +414,8 @@ export function isProgressivePromptDue(state: LearningState, nowMs: number): boo
 export function comparableAnswers(state: LearningState): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [questionId, answer] of Object.entries(state.answers)) {
-    if (learningQuestion(questionId)?.kind === "stance") out[questionId] = answer.answerId;
+    const question = learningQuestion(questionId);
+    if (question?.active && question.kind === "stance") out[questionId] = answer.answerId;
   }
   return out;
 }

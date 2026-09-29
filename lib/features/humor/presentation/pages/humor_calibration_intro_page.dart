@@ -7,8 +7,10 @@ import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
+import 'package:mevora/features/relationship_learning/domain/entities/relationship_learning.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 
@@ -132,13 +134,24 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
     await _load();
   }
 
-  void _skip() {
+  Future<void> _skip() async {
     // No humor profile is fabricated here. The user simply has none yet, and
     // humor compatibility will correctly report itself as unavailable.
     _log(AnalyticsEvents.humorCalibrationSkipped, {
       'completed': _calibration.completedCount,
     });
-    _exit();
+    // During a new member's first run the skip is recorded on the server, so
+    // the journey moves on to Relationship Learning and never loops back
+    // here. The lab itself stays open for later.
+    final learning = RelationshipLearningScope.maybeOf(context);
+    final journey = learning?.journey;
+    if (learning != null && journey?.stage == JourneyStage.humor) {
+      await learning.repository.skipOnboardingHumor();
+      await journey!.refresh();
+    }
+    if (mounted) {
+      _exit();
+    }
   }
 
   @override

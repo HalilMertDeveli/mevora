@@ -1,5 +1,6 @@
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
+import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 
@@ -40,5 +41,25 @@ abstract class HumorDataSource {
     required String contentId,
     String reason = 'other',
     String details = '',
+  });
+
+  /// Today's "Bugünün Mizah Turu" (`getDailyHumorSet`).
+  Future<HumorDailySet> getDailySet();
+
+  /// Rate the daily slot holding [contentId] on [dayId]. Idempotent: the same
+  /// slot again returns the same progress with `alreadyAnswered`.
+  Future<HumorDailyProgress> submitDailyResponse({
+    required String dayId,
+    required String contentId,
+    required HumorRating rating,
+    int dwellMs = 0,
+    int replayCount = 0,
+  });
+
+  /// Pass the daily slot holding [contentId] because its media could not be
+  /// played (`skipReason: media_failed`) — the only skip the tour has.
+  Future<HumorDailyProgress> skipDailyItem({
+    required String dayId,
+    required String contentId,
   });
 }

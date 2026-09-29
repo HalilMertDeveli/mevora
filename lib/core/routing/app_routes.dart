@@ -20,6 +20,7 @@ abstract final class AppRoutes {
   static const String humorLab = '/humor-lab';
   static const String humorCalibration = '/humor/calibration';
   static const String humorResult = '/humor/result';
+  static const String humorDaily = '/humor/daily';
   static const String relationshipLearning = '/relationship-learning';
   static const String learningDashboard = '/mevora-knows-me';
   static const String profile = '/profile';

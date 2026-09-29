@@ -2197,5 +2197,50 @@
   "sharedTraitExpectationsValue": "You each fit what the other hopes for",
   "sharedTraitRhythm": "Daily rhythm",
   "sharedTraitHobbies": "Hobbies",
-  "sharedTraitLanguages": "Languages"
+  "sharedTraitLanguages": "Languages",
+  "humorDailyTitle": "Today's Humor Round 🎭",
+  "humorDailyBody": "Every day, a few short videos help us get to know you a little better.",
+  "humorDailySecondary": "The more we learn what makes you laugh, the better Mevora knows you.",
+  "humorDailyMeta": "{count} short videos",
+  "@humorDailyMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyStart": "Start",
+  "humorDailyResume": "Continue · {answered}/{total}",
+  "@humorDailyResume": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyDone": "Done for today ✓",
+  "humorDailyLater": "Later",
+  "humorDailyStartsTomorrow": "Your daily humor round starts tomorrow.",
+  "humorDailyProgress": "{position}/{total}",
+  "@humorDailyProgress": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyHintStart": "Today's humor round has begun.",
+  "humorDailyHintMiddle": "Getting to know you a little more 👀",
+  "humorDailyHintEnd": "Just a few more videos.",
+  "humorDailyCompletedTitle": "All done for today 🎭",
+  "humorDailyCompletedBody": "Your humor profile just got a little clearer.",
+  "humorDailyNotReadyTitle": "Today's round is being prepared",
+  "humorDailyNotReadyBody": "Check back a little later.",
+  "humorDailyLockedBody": "The daily humor round begins once your humor profile is ready."
 }

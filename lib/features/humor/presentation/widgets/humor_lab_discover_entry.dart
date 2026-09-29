@@ -5,10 +5,15 @@ import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/analytics/analytics_provider.dart';
+import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
+import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
+import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
+import 'package:mevora/features/humor/presentation/widgets/humor_daily_entry_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
 import 'package:mevora/shared/widgets/mevora_pill.dart';
@@ -31,6 +36,11 @@ class HumorLabDiscoverEntry extends StatefulWidget {
 class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
   HumorCalibration? _calibration;
   var _requested = false;
+
+  /// Today's daily set, read only for the full card and only once the user
+  /// has finished calibration (before that the server can only say locked).
+  HumorDailySet? _daily;
+  var _dailyImpressionLogged = false;
 
   bool get _enabled =>
       AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
@@ -58,6 +68,52 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
     if (calibration != null) {
       setState(() => _calibration = calibration);
     }
+    if (!widget.compact && calibration?.complete == true) {
+      await _loadDaily(repository);
+    }
+  }
+
+  Future<void> _loadDaily(HumorRepository repository) async {
+    final result = await repository.getDailySet();
+    if (!mounted) {
+      return;
+    }
+    final daily = result.valueOrNull;
+    if (daily == null) {
+      return;
+    }
+    setState(() => _daily = daily);
+    if (!_dailyImpressionLogged && _showsDailyCard(daily)) {
+      _dailyImpressionLogged = true;
+      _log(AnalyticsEvents.dailyHumorImpression, {
+        'answered': daily.answeredCount,
+        'total': daily.total,
+      });
+    }
+  }
+
+  bool _showsDailyCard(HumorDailySet daily) =>
+      daily.showsEntryCard && !HumorDailyDeferral.isDeferred(daily.dayId);
+
+  void _log(String name, Map<String, Object> parameters) {
+    final analytics = BoostScope.maybeOf(context)?.analytics;
+    if (analytics != null) {
+      unawaited(analytics.logEvent(name, parameters: parameters));
+    }
+  }
+
+  Future<void> _openDaily() async {
+    await context.push(AppRoutes.humorDaily);
+    if (mounted) {
+      // The tour keeps its progress server-side; show where it stands now.
+      await _load();
+    }
+  }
+
+  void _deferDaily(HumorDailySet daily) {
+    HumorDailyDeferral.defer(daily.dayId);
+    _log(AnalyticsEvents.dailyHumorDeferred, {'answered': daily.answeredCount});
+    setState(() {});
   }
 
   Future<void> _open() async {
@@ -142,7 +198,7 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
         ),
       );
     }
-    return MevoraCard(
+    final labCard = MevoraCard(
       color: p.humorContainer,
       onTap: () => unawaited(_open()),
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -180,5 +236,36 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
         ],
       ),
     );
+    final daily = _daily;
+    if (daily == null) {
+      return labCard;
+    }
+    if (_showsDailyCard(daily)) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HumorDailyEntryCard(
+            set: daily,
+            onStart: () => unawaited(_openDaily()),
+            onDefer: daily.completed ? null : () => _deferDaily(daily),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          labCard,
+        ],
+      );
+    }
+    if (daily.startsTomorrow) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          labCard,
+          const SizedBox(height: AppSpacing.xs),
+          HumorDailyEntryCard(set: daily),
+        ],
+      );
+    }
+    return labCard;
   }
 }

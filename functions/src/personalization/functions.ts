@@ -1,5 +1,6 @@
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
+import {logger} from "firebase-functions";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {onDocumentCreated, onDocumentWritten} from "firebase-functions/v2/firestore";
 import {PERSONALIZATION_ALGORITHM_VERSION, SIGNAL_STRENGTHS} from "./config.js";
@@ -10,6 +11,7 @@ import {
   loadPersonalizationContext,
   pairScores,
   recordLearningEventSafely,
+  resetLearnedPersonalization,
 } from "./store.js";
 
 if (getApps().length === 0) {
@@ -109,6 +111,22 @@ export const recordProfileEngagement = onCall(
 );
 
 /**
+ * "Reset what Mevora learned from me". Clears the observed profile only; the
+ * member's declared answers and their switch are untouched. The client can
+ * never write learned state itself, so this callable is the only way to it.
+ */
+export const resetMyPersonalization = onCall(
+  {enforceAppCheck, region: REGION},
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "sign-in-required");
+    const removed = await resetLearnedPersonalization(db, uid);
+    logger.info("personalization: learned profile reset", {removed});
+    return {ok: true};
+  },
+);
+
+/**
  * Development/QA only: how the caller's personalization would rank the given
  * candidates. Refuses outside the emulator so no production member can read
  * raw scoring internals about anyone.
@@ -143,7 +161,10 @@ export const debugPersonalizationRanking = onCall(
       enabled: context.enabled,
       active: isPersonalizationActive(context.adjustments),
       learnedAdjustments: learned,
+      declaredAdjustments: context.declared,
+      observedAdjustments: context.observed,
       effectiveAdjustments: context.adjustments,
+      partnerCount: context.profile.partnerCount,
       eventCount: context.profile.eventCount,
       dimensions: context.profile.dimensions,
       candidates,

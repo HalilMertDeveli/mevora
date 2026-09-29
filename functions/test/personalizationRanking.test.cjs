@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 
 const {composePicks, evaluatePool} = require("../lib/picks/selection.js");
 const {PICK_COMPOSITION} = require("../lib/picks/config.js");
-const {EXPLORATION, SIGNAL_STRENGTHS} = require("../lib/personalization/config.js");
+const {EXPLORATION, LEARNING, SIGNAL_STRENGTHS} = require("../lib/personalization/config.js");
 const {
   applyLearningEvent,
   effectiveAdjustments,
@@ -51,9 +51,11 @@ function learn(vector, type, times) {
     profile = applyLearningEvent(
       profile,
       {type, strength: SIGNAL_STRENGTHS[type], vector},
-      T0 + i * 60_000,
+      T0 + i * 86_400_000,
     ).profile;
   }
+  // These outcomes stand for connections with several different people.
+  profile.partnerCount = LEARNING.minDistinctPartners;
   return profile;
 }
 

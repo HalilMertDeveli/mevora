@@ -1,6 +1,8 @@
 import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
+import {logger} from "firebase-functions";
+import {markLearningRequired} from "./relationshipLearning/store.js";
 import {
   countApprovedPhotos,
   isAccountEligible,
@@ -158,6 +160,17 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
     },
     {merge: true},
   );
+
+  // New members meet Relationship Learning next; their daily Picks wait for
+  // the initial questions. Best effort: a failure here must never undo a
+  // finished onboarding, and without the marker nobody is ever blocked.
+  try {
+    await markLearningRequired(db, uid);
+  } catch (error) {
+    logger.warn("onboarding: relationship learning marker not written", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 
   return {
     ok: true,

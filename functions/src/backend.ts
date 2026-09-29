@@ -405,6 +405,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     verification,
     questionAnswers,
     personalization,
+    relationshipLearning,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -426,6 +427,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     db.doc(`users/${uid}/verification/identity`).get(),
     db.collection(`users/${uid}/questionAnswers`).limit(100).get(),
     db.doc(`users/${uid}/personalization/profile`).get(),
+    db.doc(`users/${uid}/relationshipLearning/state`).get(),
   ]);
 
   // Never include exact GPS, Spotify secrets, private keys, or message ciphertext bodies.
@@ -448,6 +450,8 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     // Learned recommendation weights: per-dimension adjustments and evidence
     // totals only. They contain no other member's data.
     recommendationPersonalization: personalization.data() ?? null,
+    // The member's own Relationship Learning answers and progress.
+    relationshipLearning: relationshipLearning.data() ?? null,
     location: loc
       ? {
         present: true,

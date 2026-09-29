@@ -22,9 +22,6 @@ export {
 export {
   saveRelationshipAnswer,
   getRelationshipAnswered,
-  getRelationshipMatches,
-  completeRelationshipTest,
-  dismissRelationshipTestOffer,
   syncProfileQuestionAnswers,
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
@@ -55,7 +52,13 @@ export {
   personalizationOnMatchCreated,
   recordProfileEngagement,
   debugPersonalizationRanking,
+  resetMyPersonalization,
 } from "./personalization/functions.js";
+export {
+  getRelationshipLearningState,
+  saveRelationshipLearningAnswer,
+  snoozeRelationshipLearningPrompt,
+} from "./relationshipLearning/functions.js";
 
 // Automation job processors. `deleteUserAccount` enqueues an
 // `accountDeletionVerify` job (plus a Cloud Task); without these exports the

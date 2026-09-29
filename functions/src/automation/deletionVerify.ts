@@ -28,6 +28,9 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   // Learned recommendation preferences. A late like/match trigger could
   // re-create it after the sweep, so it is checked, not assumed.
   `users/${uid}/personalization/profile`,
+  // Their Relationship Learning answers. An in-flight answer save could
+  // re-create it, so it is checked, not assumed.
+  `users/${uid}/relationshipLearning/state`,
   // Humor state is an inferred personality profile. An in-flight humor call
   // can re-create these after the sweep, so they are checked, not assumed.
   `users/${uid}/humor/summary`,

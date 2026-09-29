@@ -1,4 +1,5 @@
 import {createHash} from "node:crypto";
+import {isComparableLearningAnswer, learningTopicOf} from "./relationshipLearning/catalog.js";
 
 export type RelationshipAnswers = Record<string, string>;
 
@@ -204,7 +205,7 @@ export function scoreRelationshipCompatibility(
     shared += 1;
     if (otherAnswer === viewerAnswer) {
       aligned += 1;
-      const topic = QUESTION_TOPICS[questionId];
+      const topic = QUESTION_TOPICS[questionId] ?? learningTopicOf(questionId);
       if (topic) {
         topicHits.set(topic, (topicHits.get(topic) ?? 0) + 1);
       }
@@ -234,6 +235,24 @@ export function answersFromSummary(data: {answers?: unknown} | undefined): Relat
     if (normalized && isValidRelationshipAnswer(key, normalized)) {
       out[key] = normalized;
     }
+  }
+  return out;
+}
+
+/**
+ * Every answer the pair scorer may compare: the relationship questions plus
+ * the stance answers from Relationship Learning, mirrored onto the same
+ * summary document as `learningAnswers`. Same comparison, same score — the
+ * learning questions are simply more shared views.
+ */
+export function comparableAnswersFromSummary(
+  data: {answers?: unknown; learningAnswers?: unknown} | undefined,
+): RelationshipAnswers {
+  const out = answersFromSummary(data);
+  const raw = data?.learningAnswers;
+  if (!raw || typeof raw !== "object") return out;
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (isComparableLearningAnswer(key, value)) out[key] = value as string;
   }
   return out;
 }

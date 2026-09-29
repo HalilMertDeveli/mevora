@@ -15,17 +15,24 @@ export const PICKS_CONFIG = {
   /** How many Picks a fresh batch aims for. Fewer is shown when supply is weak. */
   targetCount: 6,
   /**
-   * Most Picks one batch may ever deliver, replacements included. Keeps the
-   * curated set finite: once reached, the next people arrive with the next
-   * batch rather than as an endless refill.
+   * Most Picks one batch may ever deliver, replacements included. Liked,
+   * passed and matched Picks are never replaced — only ones that stopped
+   * being eligible (block, deletion, hidden) — so deciding quickly does not
+   * buy more people. Keeps the curated set finite: once reached, the next
+   * people arrive with the next day's batch rather than as an endless refill.
    */
   maxDeliveredPerBatch: 10,
-  /** A batch stays in place this long, from when it was generated. */
-  batchTtlMs: 24 * HOUR_MS,
   /**
-   * Replacements for decided Picks are looked for at most this often. A top-up
-   * needs a pool scan, so a low-supply viewer reopening the app must not pay
-   * for one on every visit.
+   * Picks are a DAILY set: a batch lives until the next logical-day boundary
+   * (midnight at this UTC offset — Europe/Istanbul, which has no DST), so
+   * reopening the app never reshuffles today and tomorrow brings new people.
+   * Batches stored before daily Picks keep the refresh time they were given.
+   */
+  logicalDayUtcOffsetMinutes: 180,
+  /**
+   * Open slots (a short first batch, or a Pick that stopped being eligible)
+   * are looked for at most this often. A top-up needs a pool scan, so a
+   * low-supply viewer reopening the app must not pay for one on every visit.
    */
   topUpMinIntervalMs: 30 * 60 * 1000,
   /**

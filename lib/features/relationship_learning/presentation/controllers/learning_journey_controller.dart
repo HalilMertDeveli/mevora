@@ -75,10 +75,16 @@ class LearningJourneyController extends ChangeNotifier {
   /// Re-reads the stage from the server. Call after sign-in and after any
   /// step changes (onboarding finished, humor calibrated or skipped, the
   /// initial questions completed).
+  ///
+  /// Listeners (the router) hear only real changes: a refresh that confirms
+  /// the same stage must not make the router rebuild pages mid-flow.
   Future<void> refresh() async {
     final generation = ++_generation;
+    final wasPending = pending;
     _loading = true;
-    _notify();
+    if (pending != wasPending) {
+      _notify();
+    }
     final result = await _repository.loadState().timeout(
       loadTimeout,
       onTimeout: () => const Err(NetworkFailure('journey-timeout')),
@@ -87,6 +93,7 @@ class LearningJourneyController extends ChangeNotifier {
       return;
     }
     final previous = _stage;
+    final pendingBefore = pending;
     // A failure or a timeout keeps what was known, or counts as done.
     final next =
         result.valueOrNull?.summary.journeyStage ??
@@ -95,7 +102,9 @@ class LearningJourneyController extends ChangeNotifier {
     _stage = next;
     _loading = false;
     _logTransition(previous, next);
-    _notify();
+    if (previous != next || pendingBefore != pending) {
+      _notify();
+    }
   }
 
   /// Signed out: nothing is known about the next member.

@@ -176,6 +176,28 @@ void main() {
       expect(journey.requiredRoute, isNull);
     });
 
+    test(
+      'a refresh that confirms the same stage does not wake the router',
+      () async {
+        final repository = FakeRelationshipLearningRepository(required: true)
+          ..journeyStage = JourneyStage.learning;
+        final journey = controllerFor(repository);
+        await journey.refresh();
+        var notifications = 0;
+        journey.addListener(() => notifications += 1);
+        await journey.refresh();
+        await journey.refresh();
+        expect(
+          notifications,
+          0,
+          reason: 'pushed pages must not be rebuilt mid-flow',
+        );
+        repository.journeyStage = JourneyStage.done;
+        await journey.refresh();
+        expect(notifications, 1);
+      },
+    );
+
     test('sign-out forgets the member', () async {
       final repository = FakeRelationshipLearningRepository(required: true)
         ..journeyStage = JourneyStage.learning;

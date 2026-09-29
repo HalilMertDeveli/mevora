@@ -116,7 +116,10 @@ class _RelationshipLearningPageState extends State<RelationshipLearningPage> {
   Future<void> _leave() async {
     // Finishing the initial questions is a journey step: read the new stage
     // first so the router does not bounce the member back here.
-    await RelationshipLearningScope.maybeOf(context)?.journey?.refresh();
+    final journey = RelationshipLearningScope.maybeOf(context)?.journey;
+    if (journey != null && journey.stage != JourneyStage.done) {
+      await journey.refresh();
+    }
     if (!mounted) {
       return;
     }

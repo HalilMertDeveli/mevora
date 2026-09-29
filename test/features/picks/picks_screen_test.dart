@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
@@ -127,7 +128,14 @@ void main() {
         find.text('Your humor profiles are 92% compatible.'),
         findsOneWidget,
       );
-      expect(find.text(_en.picksMatchScore(89)), findsOneWidget);
+      // The score is the compatibility ring, as on Discover.
+      expect(
+        find.descendant(
+          of: find.byType(CompatibilityRing),
+          matching: find.text('89'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Pass removes the card; tapping the card opens, not decides', (
@@ -139,10 +147,17 @@ void main() {
       expect(opened, ['zeynep']);
       expect(repository.decisions, isEmpty);
 
-      await tester.tap(find.bySemanticsLabel(_en.picksPassSemantics('Zeynep')));
+      final pass = find.bySemanticsLabel(_en.picksPassSemantics('Zeynep'));
+      // The decision bar sits under the reason, below the first fold.
+      await tester.ensureVisible(pass);
+      await tester.pumpAndSettle();
+      await tester.tap(pass);
       await tester.pumpAndSettle();
       expect(repository.decisions, [('zeynep', DiscoveryDecision.pass)]);
       expect(find.text('Zeynep, 25'), findsNothing);
+      // Back to the top, where the header recounts the set.
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 2000));
+      await tester.pumpAndSettle();
       expect(find.text(_en.picksIntroCount(2)), findsOneWidget);
     });
 

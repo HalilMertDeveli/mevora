@@ -273,7 +273,14 @@ class _DiscoveryProfileDetailsPageState
                         const SizedBox(height: AppSpacing.lg),
                         KeyedSubtree(
                           key: _whySectionKey,
-                          child: _WhyYouFitCard(candidate: candidate),
+                          child: _WhyYouFitCard(
+                            candidate: candidate,
+                            // A Pick already asks "Why {name}?" just above;
+                            // this card is then the score breakdown under it.
+                            title: widget.pick != null
+                                ? l10n.compatScoreHeading
+                                : null,
+                          ),
                         ),
                       ],
                       if (candidate.bio != null &&
@@ -476,9 +483,12 @@ class _DiscoveryProfileDetailsPageState
 /// "Why you're seeing this": score ring, the signals, and the concrete
 /// reasons — one sage card, so the reasoning reads as one thought.
 class _WhyYouFitCard extends StatelessWidget {
-  const _WhyYouFitCard({required this.candidate});
+  const _WhyYouFitCard({required this.candidate, this.title});
 
   final DiscoveryCandidate candidate;
+
+  /// Replaces "Why {name}?" when another section already asks it.
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -516,7 +526,7 @@ class _WhyYouFitCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l10n.compatWhyThisPerson(candidate.displayName),
+                      title ?? l10n.compatWhyThisPerson(candidate.displayName),
                       style: theme.textTheme.titleMedium,
                     ),
                     if (candidate.hasCompatibilityScore)

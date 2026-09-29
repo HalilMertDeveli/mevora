@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
-import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
 import 'package:mevora/features/picks/presentation/controllers/mevora_picks_controller.dart';
 import 'package:mevora/features/picks/presentation/widgets/pick_card.dart';
@@ -12,7 +12,9 @@ import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
+import 'package:mevora/shared/widgets/mevora_context_row.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 /// The Mevora Picks screen body: a short, explained list of people Mevora
 /// chose, then a quiet way to browse more.
@@ -87,7 +89,9 @@ class _PicksViewState extends State<PicksView> {
     final l10n = AppLocalizations.of(context);
     final state = widget.controller.state;
     return AnimatedSwitcher(
-      duration: AppDurations.medium,
+      duration: (MediaQuery.maybeDisableAnimationsOf(context) ?? false)
+          ? Duration.zero
+          : AppDurations.normal,
       child: switch (state.phase) {
         PicksPhase.initial || PicksPhase.loading => MevoraLoading.page(
           key: const ValueKey('picks-loading'),
@@ -123,7 +127,9 @@ class _PicksViewState extends State<PicksView> {
           else ...[
             SliverToBoxAdapter(child: _PicksHeader(batch: batch)),
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenPadding,
+              ),
               sliver: SliverList.builder(
                 itemCount: batch.picks.length,
                 itemBuilder: (context, index) {
@@ -149,9 +155,9 @@ class _PicksViewState extends State<PicksView> {
             if (widget.footer != null)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
+                  AppSpacing.screenPadding,
                   0,
-                  AppSpacing.md,
+                  AppSpacing.screenPadding,
                   AppSpacing.md,
                 ),
                 sliver: SliverToBoxAdapter(child: widget.footer),
@@ -200,18 +206,21 @@ class _PicksHeader extends StatelessWidget {
     final count = batch.picks.length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
+        AppSpacing.screenPadding,
+        AppSpacing.sm,
+        AppSpacing.screenPadding,
+        AppSpacing.lg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.picksHeadline,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+          Semantics(
+            header: true,
+            child: Text(
+              l10n.picksHeadline,
+              // The app bar already sets "Mevora Picks" in the display face;
+              // a sans title keeps two serif headlines from stacking.
+              style: theme.textTheme.titleLarge,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -221,9 +230,7 @@ class _PicksHeader extends StatelessWidget {
             batch.status == PicksStatus.lowSupply
                 ? l10n.picksLowSupplyNote(count)
                 : l10n.picksIntroNote,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.bodySmall,
           ),
         ],
       ),
@@ -269,18 +276,20 @@ class _PickEntryState extends State<_PickEntry> {
   @override
   Widget build(BuildContext context) {
     final shown = _visible && !widget.departing;
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final duration = still ? Duration.zero : AppDurations.normal;
     return AnimatedSize(
-      duration: AppDurations.medium,
-      curve: Curves.easeInOut,
+      duration: duration,
+      curve: AppCurves.standard,
       alignment: Alignment.topCenter,
       child: widget.departing
           ? const SizedBox(width: double.infinity)
           : AnimatedOpacity(
-              duration: AppDurations.medium,
+              duration: duration,
               opacity: shown ? 1 : 0,
               child: AnimatedSlide(
-                duration: AppDurations.medium,
-                curve: Curves.easeOutCubic,
+                duration: duration,
+                curve: AppCurves.enter,
                 offset: shown ? Offset.zero : const Offset(0, 0.04),
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -299,55 +308,20 @@ class _DiscoverMoreFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
+        AppSpacing.screenPadding,
         0,
-        AppSpacing.md,
+        AppSpacing.screenPadding,
         AppSpacing.xl,
       ),
-      child: Material(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                Icon(Icons.explore_outlined, color: theme.colorScheme.primary),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.picksDiscoverMore,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        l10n.picksDiscoverMoreHint,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_rounded,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: MevoraContextRow(
+        icon: MevoraIcons.discover,
+        title: l10n.picksDiscoverMore,
+        subtitle: l10n.picksDiscoverMoreHint,
+        tone: MevoraTone.accent,
+        onTap: onTap,
       ),
     );
   }

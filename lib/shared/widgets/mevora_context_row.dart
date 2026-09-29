@@ -56,7 +56,8 @@ class MevoraContextRow extends StatelessWidget {
                     if (subtitle != null && subtitle!.isNotEmpty)
                       Text(
                         subtitle!,
-                        maxLines: 1,
+                        // Wrap rather than cut: long Turkish hints need the second line.
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall,
                       ),

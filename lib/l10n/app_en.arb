@@ -2030,5 +2030,66 @@
   "premiumBenefitMusicTitle": "Your full music match",
   "premiumBenefitMusicBody": "The songs, artists and genres you share with each match.",
   "premiumPlansHeading": "Choose a plan",
-  "chatPreviewEncrypted": "Encrypted message"
+  "chatPreviewEncrypted": "Encrypted message",
+  "streakTitle": "Daily streak",
+  "streakIndicatorTooltip": "Your daily streak",
+  "streakIndicatorSemantics": "{count, plural, =1{Daily streak: 1 day} other{Daily streak: {count} days}}",
+  "@streakIndicatorSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakDays": "{count, plural, =1{1-day streak} other{{count}-day streak}}",
+  "@streakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakDetailsBody": "{count, plural, =1{You came to Mevora today. Come back tomorrow to keep it going.} other{You have come back to Mevora {count} days in a row.}}",
+  "@streakDetailsBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakLongest": "{count, plural, =1{Longest streak: 1 day} other{Longest streak: {count} days}}",
+  "@streakLongest": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakTotalDays": "{count, plural, =1{1 day on Mevora in total} other{{count} days on Mevora in total}}",
+  "@streakTotalDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakLastSevenDays": "Last 7 days",
+  "streakWeekSemantics": "{count, plural, =1{You came back on 1 of the last 7 days} other{You came back on {count} of the last 7 days}}",
+  "@streakWeekSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "streakHowItWorks": "Your streak grows by one on each day you come back to Mevora. Opening the app again on the same day does not add to it.",
+  "streakMissedDayNote": "Skip a day and a new streak begins. Your longest streak always stays on record.",
+  "streakStartedTitle": "Your streak has started",
+  "streakStartedBody": "You came to Mevora today. Come back tomorrow to keep it going.",
+  "streakContinuedBody": "You kept your streak going today.",
+  "streakRestartedTitle": "A new streak has started",
+  "streakRestartedBody": "Today is day 1 again. Your longest streak is still on record.",
+  "streakPersonalBest": "New personal best",
+  "streakMilestone": "Milestone",
+  "streakCelebrationDismiss": "Continue"
 }

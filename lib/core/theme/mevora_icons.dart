@@ -50,6 +50,9 @@ abstract final class MevoraIcons {
   static const IconData boostActive = PhosphorIconsFill.lightning;
   static const IconData premium = PhosphorIconsRegular.crownSimple;
   static const IconData premiumActive = PhosphorIconsFill.crownSimple;
+
+  /// Daily streak — the ember of a returning habit.
+  static const IconData streak = PhosphorIconsFill.fire;
   static const IconData verified = PhosphorIconsFill.sealCheck;
   static const IconData verify = PhosphorIconsRegular.sealCheck;
   static const IconData safety = PhosphorIconsRegular.shieldCheck;

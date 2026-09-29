@@ -22,6 +22,8 @@ import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
 import 'package:mevora/core/di/subscription_services_factory.dart';
+import 'package:mevora/core/di/streak_scope.dart';
+import 'package:mevora/core/di/streak_services_factory.dart';
 import 'package:mevora/core/localization/language_controller.dart';
 import 'package:mevora/core/localization/language_repository.dart';
 import 'package:mevora/core/localization/language_scope.dart';
@@ -33,6 +35,7 @@ import 'package:mevora/core/services/permissions/permission_service.dart';
 import 'package:mevora/core/session/session_recovery_controller.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:mevora/features/streak/presentation/controllers/daily_streak_controller.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
@@ -78,6 +81,7 @@ class MevoraApp extends StatefulWidget {
     this.onboardingServices,
     this.settingsServices,
     this.supportServices,
+    this.streakServices,
   });
 
   final AppConfig config;
@@ -103,6 +107,7 @@ class MevoraApp extends StatefulWidget {
   final SettingsServices? settingsServices;
   final SupportServices? supportServices;
   final OnboardingServices? onboardingServices;
+  final StreakServices? streakServices;
 
   @override
   State<MevoraApp> createState() => _MevoraAppState();
@@ -158,6 +163,11 @@ class _MevoraAppState extends State<MevoraApp> {
     widget.authController.addListener(_syncLanguageUser);
     _syncLocationGate();
     _syncLanguageUser();
+    // Daily streak: checks in when a member is in the app and on resume.
+    // Never awaited — the app does not wait on the streak for anything.
+    widget.streakServices?.controller.attachLifecycle();
+    widget.authController.addListener(_syncStreakUser);
+    _syncStreakUser();
     _permissionService =
         widget.permissionService ?? const PermissionHandlerPermissionService();
     final providedPermissions = widget.permissionController;
@@ -207,6 +217,16 @@ class _MevoraAppState extends State<MevoraApp> {
         unawaited(_pushBinder?.attach());
       });
     }
+  }
+
+  void _syncStreakUser() {
+    final controller = widget.streakServices?.controller;
+    if (controller == null) {
+      return;
+    }
+    controller.bindUser(
+      streakMemberUid(widget.authController.status, current: controller.uid),
+    );
   }
 
   void _syncLocationGate() {
@@ -348,6 +368,11 @@ class _MevoraAppState extends State<MevoraApp> {
       );
     }
 
+    final streak = widget.streakServices;
+    if (streak != null) {
+      child = StreakScope(controller: streak.controller, child: child);
+    }
+
     return AppScope(
       config: widget.config,
       logger: widget.logger,
@@ -360,6 +385,8 @@ class _MevoraAppState extends State<MevoraApp> {
     _pushBinder?.dispose();
     widget.authController.removeListener(_syncLocationGate);
     widget.authController.removeListener(_syncLanguageUser);
+    widget.authController.removeListener(_syncStreakUser);
+    widget.streakServices?.controller.detachLifecycle();
     if (_ownsLocationController) {
       _locationController?.dispose();
     }

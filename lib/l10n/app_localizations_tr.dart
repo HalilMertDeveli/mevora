@@ -4447,4 +4447,113 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get chatPreviewEncrypted => 'Şifreli mesaj';
+
+  @override
+  String get streakTitle => 'Günlük Seri';
+
+  @override
+  String get streakIndicatorTooltip => 'Günlük serin';
+
+  @override
+  String streakIndicatorSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Günlük seri: $count gün',
+      one: 'Günlük seri: 1 gün',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count günlük seri',
+      one: '1 günlük seri',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakDetailsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gündür Mevora\'ya her gün dönüyorsun.',
+      one: 'Bugün Mevora\'ya geldin. Yarın da gelirsen serin büyür.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakLongest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'En uzun serin: $count gün',
+      one: 'En uzun serin: 1 gün',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakTotalDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mevora\'da toplam $count gün',
+      one: 'Mevora\'da toplam 1 gün',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakLastSevenDays => 'Son 7 gün';
+
+  @override
+  String streakWeekSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Son 7 günün $count gününde Mevora\'ya döndün',
+      one: 'Son 7 günün 1 gününde Mevora\'ya döndün',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakHowItWorks =>
+      'Serin, Mevora\'ya döndüğün her gün bir artar. Aynı gün uygulamayı yeniden açmak seriyi artırmaz.';
+
+  @override
+  String get streakMissedDayNote =>
+      'Bir gün ara verirsen yeni bir seri başlar. En uzun serin her zaman kayıtlı kalır.';
+
+  @override
+  String get streakStartedTitle => 'Serin başladı';
+
+  @override
+  String get streakStartedBody =>
+      'Bugün Mevora\'ya geldin. Yarın devam edebilirsin.';
+
+  @override
+  String get streakContinuedBody => 'Serini bugün de sürdürdün.';
+
+  @override
+  String get streakRestartedTitle => 'Yeni bir seri başladı';
+
+  @override
+  String get streakRestartedBody =>
+      'Bugün yeniden 1. gündesin. En uzun serin kayıtlı kalıyor.';
+
+  @override
+  String get streakPersonalBest => 'Yeni kişisel rekor';
+
+  @override
+  String get streakMilestone => 'Dönüm noktası';
+
+  @override
+  String get streakCelebrationDismiss => 'Devam et';
 }

@@ -38,6 +38,7 @@ import {
   scanDiscoveryPool,
 } from "./discoveryPool.js";
 import {attributePickMatch, recordPickDecision} from "./picks/service.js";
+import {dailyStreakDocPath, streakExportView} from "./streak/service.js";
 import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
 import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
 import {
@@ -405,6 +406,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     verification,
     questionAnswers,
     personalization,
+    dailyStreak,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -426,6 +428,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     db.doc(`users/${uid}/verification/identity`).get(),
     db.collection(`users/${uid}/questionAnswers`).limit(100).get(),
     db.doc(`users/${uid}/personalization/profile`).get(),
+    db.doc(dailyStreakDocPath(uid)).get(),
   ]);
 
   // Never include exact GPS, Spotify secrets, private keys, or message ciphertext bodies.
@@ -448,6 +451,8 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     // Learned recommendation weights: per-dimension adjustments and evidence
     // totals only. They contain no other member's data.
     recommendationPersonalization: personalization.data() ?? null,
+    // Engagement only: streak counters and the last local day counted.
+    dailyStreak: streakExportView(dailyStreak.data()),
     location: loc
       ? {
         present: true,

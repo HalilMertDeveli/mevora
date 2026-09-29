@@ -34,6 +34,9 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   `users/${uid}/humor/calibration`,
   // Their own Mevora Picks batch: who they were shown, and why.
   `users/${uid}/mevoraPicks/current`,
+  // Daily streak: engagement history. The check-in refuses to write once the
+  // account document is gone, but a call in flight is checked, not assumed.
+  `users/${uid}/dailyStreak/current`,
 ];
 
 /** Storage prefixes `deleteUserAccount` clears. */

@@ -138,6 +138,20 @@ describe("users/{uid} — private account isolation", () => {
     await deny(db.doc(`users/${UID.A}/rateLimits/messages`).set({count: 0}));
   });
 
+  it("the daily streak is reachable only through recordDailyCheckIn", async () => {
+    // No rule names dailyStreak, so the catch-all deny owns it: the owner can
+    // neither raise their own counters nor read them directly, and nobody
+    // else can do either.
+    const own = who.userA.db().doc(`users/${UID.A}/dailyStreak/current`);
+    await deny(own.set({currentStreak: 999, longestStreak: 999, lastCheckInDay: "2037-05-18"}));
+    await deny(own.update({currentStreak: 999}));
+    await deny(own.delete());
+    await deny(own.get());
+    const other = who.userB.db().doc(`users/${UID.A}/dailyStreak/current`);
+    await deny(other.get());
+    await deny(other.set({currentStreak: 0}));
+  });
+
   /**
    * The load-bearing invariant of the whole identity-verification feature: a
    * normal, fully authenticated user cannot write themselves into a verified

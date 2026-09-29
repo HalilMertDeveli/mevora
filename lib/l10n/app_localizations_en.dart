@@ -4449,4 +4449,113 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatPreviewEncrypted => 'Encrypted message';
+
+  @override
+  String get streakTitle => 'Daily streak';
+
+  @override
+  String get streakIndicatorTooltip => 'Your daily streak';
+
+  @override
+  String streakIndicatorSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Daily streak: $count days',
+      one: 'Daily streak: 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count-day streak',
+      one: '1-day streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakDetailsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You have come back to Mevora $count days in a row.',
+      one: 'You came to Mevora today. Come back tomorrow to keep it going.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakLongest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Longest streak: $count days',
+      one: 'Longest streak: 1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String streakTotalDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days on Mevora in total',
+      one: '1 day on Mevora in total',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakLastSevenDays => 'Last 7 days';
+
+  @override
+  String streakWeekSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You came back on $count of the last 7 days',
+      one: 'You came back on 1 of the last 7 days',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get streakHowItWorks =>
+      'Your streak grows by one on each day you come back to Mevora. Opening the app again on the same day does not add to it.';
+
+  @override
+  String get streakMissedDayNote =>
+      'Skip a day and a new streak begins. Your longest streak always stays on record.';
+
+  @override
+  String get streakStartedTitle => 'Your streak has started';
+
+  @override
+  String get streakStartedBody =>
+      'You came to Mevora today. Come back tomorrow to keep it going.';
+
+  @override
+  String get streakContinuedBody => 'You kept your streak going today.';
+
+  @override
+  String get streakRestartedTitle => 'A new streak has started';
+
+  @override
+  String get streakRestartedBody =>
+      'Today is day 1 again. Your longest streak is still on record.';
+
+  @override
+  String get streakPersonalBest => 'New personal best';
+
+  @override
+  String get streakMilestone => 'Milestone';
+
+  @override
+  String get streakCelebrationDismiss => 'Continue';
 }

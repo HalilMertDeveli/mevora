@@ -32,6 +32,7 @@ export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoo
 export {verifyPremiumPurchase} from "./subscription/verifyPremiumPurchase.js";
 export {onPlaySubscriptionNotification} from "./subscription/googleRtdnFunction.js";
 export {getMevoraPicks} from "./picks/index.js";
+export {recordDailyCheckIn} from "./streak/index.js";
 export {
   createIdentityVerificationSession,
   getIdentityVerificationState,

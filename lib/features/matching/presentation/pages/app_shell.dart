@@ -13,6 +13,7 @@ import 'package:mevora/features/match_score/presentation/widgets/match_feedback_
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
 import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
+import 'package:mevora/features/streak/presentation/widgets/streak_celebration.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 class AppShell extends StatelessWidget {
@@ -30,7 +31,9 @@ class AppShell extends StatelessWidget {
     final matches = social?.matchesController;
 
     Widget body = IncomingCallNavigator(
-      child: MatchFeedbackHost(child: navigationShell),
+      child: MatchFeedbackHost(
+        child: StreakCelebrationHost(child: navigationShell),
+      ),
     );
     if (relationship != null) {
       body = _ShellRelationshipBridge(

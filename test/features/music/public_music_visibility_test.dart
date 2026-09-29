@@ -11,6 +11,7 @@ import 'package:mevora/features/music/domain/entities/public_music_profile.dart'
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 import 'package:mevora/features/music/domain/entities/weekly_music_stats.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
+import 'package:mevora/features/music/presentation/pages/public_music_selection_page.dart';
 import 'package:mevora/features/music/presentation/widgets/public_music_visibility_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
@@ -24,7 +25,8 @@ class _RecordingRepository implements MusicRepository {
 
   /// When set, the write does not finish until this completes.
   final Completer<void>? gate;
-  final calls = <({bool enabled, List<String> artistIds, List<String> trackIds})>[];
+  final calls =
+      <({bool enabled, List<String> artistIds, List<String> trackIds})>[];
 
   @override
   Future<Result<PublicMusicProfile>> updatePublicMusicProfile({
@@ -162,9 +164,27 @@ void main() {
     expect(find.text(_en.publicMusicHiddenNotice), findsOneWidget);
   });
 
-  testWidgets('with nothing chosen the switch stays inert', (tester) async {
-    await _pump(tester, _RecordingRepository(), PublicMusicProfile.hidden);
-    expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNull);
+  testWidgets('with nothing chosen, turning it on opens the picker', (
+    tester,
+  ) async {
+    // A switch that ignored the tap read as broken: Spotify was connected and
+    // the top artists were on screen, but nothing had been picked to show.
+    final repository = _RecordingRepository();
+    await _pump(tester, repository, PublicMusicProfile.hidden);
+
+    final toggle = tester.widget<Switch>(find.byType(Switch));
+    expect(toggle.onChanged, isNotNull);
+
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PublicMusicSelectionPage), findsOneWidget);
+    expect(
+      repository.calls,
+      isEmpty,
+      reason: 'there is nothing to publish until the member picks something',
+    );
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
   });
 
   testWidgets('a visible card can be turned off', (tester) async {
@@ -248,5 +268,4 @@ void main() {
     gate.complete();
     await tester.pumpAndSettle();
   });
-
 }

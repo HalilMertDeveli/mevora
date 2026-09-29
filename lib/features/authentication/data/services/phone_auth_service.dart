@@ -18,6 +18,13 @@ class PhoneAuthService implements FirebaseAuthDataSource {
   PhoneAuthService({FirebaseAuth? firebaseAuth})
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
+  /// How long to wait for any callback before giving up on a send. It sits
+  /// past the auto-retrieval window so `codeAutoRetrievalTimeout` can still
+  /// complete a challenge that never saw `codeSent`.
+  static const Duration sendCallbackTimeout = Duration(
+    seconds: OtpValidator.resendSeconds + 15,
+  );
+
   final FirebaseAuth _firebaseAuth;
   int _sendCount = 0;
   PhoneAuthCredential? _autoCredential;
@@ -75,7 +82,7 @@ class PhoneAuthService implements FirebaseAuthDataSource {
       await _firebaseAuth.verifyPhoneNumber(
         phoneNumber: e164Phone,
         forceResendingToken: forceResendingToken,
-        timeout: const Duration(seconds: 60),
+        timeout: OtpValidator.autoRetrievalTimeout,
         verificationCompleted: (credential) {
           _autoCredential = credential;
           _log(
@@ -167,7 +174,7 @@ class PhoneAuthService implements FirebaseAuthDataSource {
         },
       );
       return await completer.future.timeout(
-        const Duration(seconds: 75),
+        sendCallbackTimeout,
         onTimeout: () {
           _log('VERIFICATION_FAILED', 'code=client-timeout');
           throw const AuthException(

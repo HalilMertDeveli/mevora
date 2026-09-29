@@ -114,15 +114,82 @@ void main() {
     controller.dispose();
   });
 
-  test('resend respects 30s cooldown and uses Firebase resend token path', () async {
-    final repo = FakeAuthRepository(sendResult: const Success(challenge));
+  // testWidgets drives Timer.periodic from the fake test clock, so the full
+  // two-minute cooldown runs without waiting two real minutes.
+  testWidgets('resend stays locked for 120 s, then opens', (tester) async {
+    final repo = FakeAuthRepository();
     final controller = buildController(repo);
     controller.updateNationalNumber('5551112233');
     await controller.sendCode();
 
-    expect(controller.resendSeconds, OtpValidator.resendSeconds);
+    expect(controller.resendSeconds, 120);
     expect(controller.canResend, isFalse);
     expect(await controller.resend(), isFalse);
+
+    await tester.pump(const Duration(seconds: 119));
+    expect(controller.resendSeconds, 1);
+    expect(controller.canResend, isFalse);
+    expect(await controller.resend(), isFalse);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(controller.resendSeconds, 0);
+    expect(controller.canResend, isTrue);
+
+    controller.dispose();
+  });
+
+  testWidgets('resend swaps in the new Firebase challenge and restarts 120 s', (
+    tester,
+  ) async {
+    final repo = FakeAuthRepository();
+    final controller = buildController(repo);
+    controller.updateNationalNumber('5551112233');
+    await controller.sendCode();
+    await tester.pump(OtpValidator.autoRetrievalTimeout);
+
+    final first = controller.resend();
+    // The resend is in flight: a second tap must not start another one.
+    expect(controller.canResend, isFalse);
+    expect(await controller.resend(), isFalse);
+    expect(await first, isTrue);
+
+    final state = controller.state as OtpSent;
+    expect(state.challenge.verificationId, 'vid-resend-1');
+    expect(state.challenge.resendToken, isNotNull);
+    expect(state.challenge.resendAttempt, 1);
+    expect(controller.resendSeconds, 120);
+    expect(controller.canResend, isFalse);
+
+    controller.dispose();
+  });
+
+  testWidgets('a failed resend keeps the earlier session usable', (
+    tester,
+  ) async {
+    final repo = FakeAuthRepository(
+      verifyResult: const Success(AuthUser(id: 'uid-1')),
+    );
+    final controller = buildController(repo);
+    controller.updateNationalNumber('5551112233');
+    await controller.sendCode();
+    await tester.pump(OtpValidator.autoRetrievalTimeout);
+
+    repo.nextFailure = const AuthFailure(
+      'net',
+      kind: AuthErrorKind.network,
+      code: 'network-request-failed',
+    );
+    expect(await controller.resend(), isFalse);
+
+    final state = controller.state;
+    expect(state, isA<OtpError>());
+    expect((state as OtpError).challenge.verificationId, 'vid');
+    expect(state.firebaseCode, 'network-request-failed');
+    expect(controller.hasActiveChallenge, isTrue);
+
+    // The code from the first SMS still signs in.
+    expect(await controller.verify('123456'), isTrue);
+    expect(controller.state, isA<PhoneAuthenticated>());
 
     controller.dispose();
   });

@@ -8,7 +8,7 @@ Production phone authentication for Mevora. OTP codes are created, sent, and ver
 2. Country + national number (default 🇹🇷 +90; trunk `0` OK, e.g. `0542 519 2119` → `+905425192119`)
 3. Domain validation → `SendPhoneVerificationCode`
 4. Firebase `verifyPhoneNumber` sends a **real carrier SMS** (Play Integrity / reCAPTCHA)
-5. 6-digit OTP screen (autofill / paste)
+5. 6-digit OTP screen (autofill / paste). Resend unlocks after 120 s (`OtpValidator.resendSeconds`); the Android SDK listens for the SMS for the same 2 minutes, its maximum. That window is not the OTP lifetime, which Firebase sets. A failed resend keeps the earlier session usable.
 6. `PhoneAuthProvider.credential` + `signInWithCredential`
 7. Account doc `users/{uid}` is created or updated
 8. Cloud Function `syncAuthAccount` sets `phoneVerified` from Admin Auth

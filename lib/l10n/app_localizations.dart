@@ -8125,6 +8125,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Optional. Answer what you like; it sharpens who we pick for you.'**
   String get onboardingAboutYouSubtitle;
+
+  /// No description provided for @sharedTraitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What you have in common'**
+  String get sharedTraitsTitle;
+
+  /// No description provided for @sharedTraitGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for'**
+  String get sharedTraitGoal;
+
+  /// No description provided for @sharedTraitQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship questions'**
+  String get sharedTraitQuestions;
+
+  /// No description provided for @sharedTraitQuestionsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Same answer on {aligned} of {shared}'**
+  String sharedTraitQuestionsValue(int aligned, int shared);
+
+  /// No description provided for @sharedTraitChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Children'**
+  String get sharedTraitChildren;
+
+  /// No description provided for @sharedTraitAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get sharedTraitAge;
+
+  /// No description provided for @sharedTraitAgeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{mine} and {theirs}, close in age'**
+  String sharedTraitAgeValue(int mine, int theirs);
+
+  /// No description provided for @sharedTraitExpectations.
+  ///
+  /// In en, this message translates to:
+  /// **'Smoking and drinking expectations'**
+  String get sharedTraitExpectations;
+
+  /// No description provided for @sharedTraitExpectationsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'You each fit what the other hopes for'**
+  String get sharedTraitExpectationsValue;
+
+  /// No description provided for @sharedTraitRhythm.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily rhythm'**
+  String get sharedTraitRhythm;
+
+  /// No description provided for @sharedTraitHobbies.
+  ///
+  /// In en, this message translates to:
+  /// **'Hobbies'**
+  String get sharedTraitHobbies;
+
+  /// No description provided for @sharedTraitLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Languages'**
+  String get sharedTraitLanguages;
 }
 
 class _AppLocalizationsDelegate

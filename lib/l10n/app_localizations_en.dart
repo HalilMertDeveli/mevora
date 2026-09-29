@@ -4611,4 +4611,45 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingAboutYouSubtitle =>
       'Optional. Answer what you like; it sharpens who we pick for you.';
+
+  @override
+  String get sharedTraitsTitle => 'What you have in common';
+
+  @override
+  String get sharedTraitGoal => 'Looking for';
+
+  @override
+  String get sharedTraitQuestions => 'Relationship questions';
+
+  @override
+  String sharedTraitQuestionsValue(int aligned, int shared) {
+    return 'Same answer on $aligned of $shared';
+  }
+
+  @override
+  String get sharedTraitChildren => 'Children';
+
+  @override
+  String get sharedTraitAge => 'Age';
+
+  @override
+  String sharedTraitAgeValue(int mine, int theirs) {
+    return '$mine and $theirs, close in age';
+  }
+
+  @override
+  String get sharedTraitExpectations => 'Smoking and drinking expectations';
+
+  @override
+  String get sharedTraitExpectationsValue =>
+      'You each fit what the other hopes for';
+
+  @override
+  String get sharedTraitRhythm => 'Daily rhythm';
+
+  @override
+  String get sharedTraitHobbies => 'Hobbies';
+
+  @override
+  String get sharedTraitLanguages => 'Languages';
 }

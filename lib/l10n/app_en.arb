@@ -2139,5 +2139,19 @@
   "dietPescatarian": "Pescatarian",
   "dietHalal": "Halal",
   "dietGlutenFree": "Gluten-free",
-  "onboardingAboutYouSubtitle": "Optional. Answer what you like; it sharpens who we pick for you."
+  "onboardingAboutYouSubtitle": "Optional. Answer what you like; it sharpens who we pick for you.",
+  "sharedTraitsTitle": "What you have in common",
+  "sharedTraitGoal": "Looking for",
+  "sharedTraitQuestions": "Relationship questions",
+  "sharedTraitQuestionsValue": "Same answer on {aligned} of {shared}",
+  "@sharedTraitQuestionsValue": {"placeholders":{"aligned":{"type":"int"},"shared":{"type":"int"}}},
+  "sharedTraitChildren": "Children",
+  "sharedTraitAge": "Age",
+  "sharedTraitAgeValue": "{mine} and {theirs}, close in age",
+  "@sharedTraitAgeValue": {"placeholders":{"mine":{"type":"int"},"theirs":{"type":"int"}}},
+  "sharedTraitExpectations": "Smoking and drinking expectations",
+  "sharedTraitExpectationsValue": "You each fit what the other hopes for",
+  "sharedTraitRhythm": "Daily rhythm",
+  "sharedTraitHobbies": "Hobbies",
+  "sharedTraitLanguages": "Languages"
 }

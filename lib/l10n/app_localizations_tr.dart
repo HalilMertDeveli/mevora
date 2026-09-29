@@ -4609,4 +4609,45 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get onboardingAboutYouSubtitle =>
       'İsteğe bağlı. İstediklerini cevapla; sana seçtiklerimizi daha isabetli yapar.';
+
+  @override
+  String get sharedTraitsTitle => 'Ortak noktalarınız';
+
+  @override
+  String get sharedTraitGoal => 'Aradığınız';
+
+  @override
+  String get sharedTraitQuestions => 'İlişki soruları';
+
+  @override
+  String sharedTraitQuestionsValue(int aligned, int shared) {
+    return '$shared sorunun $aligned tanesinde aynı cevap';
+  }
+
+  @override
+  String get sharedTraitChildren => 'Çocuk';
+
+  @override
+  String get sharedTraitAge => 'Yaş';
+
+  @override
+  String sharedTraitAgeValue(int mine, int theirs) {
+    return '$mine ve $theirs, yaşlarınız yakın';
+  }
+
+  @override
+  String get sharedTraitExpectations => 'Sigara ve alkol beklentisi';
+
+  @override
+  String get sharedTraitExpectationsValue =>
+      'Birbirinizin beklentisine uyuyorsunuz';
+
+  @override
+  String get sharedTraitRhythm => 'Günlük ritim';
+
+  @override
+  String get sharedTraitHobbies => 'Hobiler';
+
+  @override
+  String get sharedTraitLanguages => 'Diller';
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mevora/features/compatibility/domain/services/shared_traits.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/di/settings_scope.dart';
@@ -783,6 +784,11 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       context,
       breakdown: breakdown,
       reasons: reasons,
+      shared: SharedTraits.between(
+        viewer: viewer,
+        candidate: candidate,
+        breakdown: breakdown,
+      ),
     );
   }
 }

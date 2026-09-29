@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mevora/features/compatibility/presentation/widgets/shared_traits_section.dart';
+import 'package:mevora/features/compatibility/domain/services/shared_traits.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
@@ -118,14 +120,27 @@ Future<void> showCompatibilityBreakdownSheet(
   BuildContext context, {
   required CompatibilityBreakdown breakdown,
   required List<CompatibilityReason> reasons,
+  List<SharedTrait> shared = const [],
 }) {
   return MevoraBottomSheet.show<void>(
     context,
     scrollable: true,
-    child: CompatibilityRevealSection(
-      breakdown: breakdown,
-      reasons: reasons,
-      framed: false,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CompatibilityRevealSection(
+          breakdown: breakdown,
+          reasons: reasons,
+          framed: false,
+          // The shared list already says what the reasons would (same goal,
+          // shared interests), and more; show one, not both.
+          showReasons: shared.isEmpty,
+        ),
+        if (shared.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.lg),
+          SharedTraitsSection(traits: shared),
+        ],
+      ],
     ),
   );
 }

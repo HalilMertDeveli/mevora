@@ -1898,5 +1898,17 @@
   "dietPescatarian": "Pesketaryen",
   "dietHalal": "Helal",
   "dietGlutenFree": "Glütensiz",
-  "onboardingAboutYouSubtitle": "İsteğe bağlı. İstediklerini cevapla; sana seçtiklerimizi daha isabetli yapar."
+  "onboardingAboutYouSubtitle": "İsteğe bağlı. İstediklerini cevapla; sana seçtiklerimizi daha isabetli yapar.",
+  "sharedTraitsTitle": "Ortak noktalarınız",
+  "sharedTraitGoal": "Aradığınız",
+  "sharedTraitQuestions": "İlişki soruları",
+  "sharedTraitQuestionsValue": "{shared} sorunun {aligned} tanesinde aynı cevap",
+  "sharedTraitChildren": "Çocuk",
+  "sharedTraitAge": "Yaş",
+  "sharedTraitAgeValue": "{mine} ve {theirs}, yaşlarınız yakın",
+  "sharedTraitExpectations": "Sigara ve alkol beklentisi",
+  "sharedTraitExpectationsValue": "Birbirinizin beklentisine uyuyorsunuz",
+  "sharedTraitRhythm": "Günlük ritim",
+  "sharedTraitHobbies": "Hobiler",
+  "sharedTraitLanguages": "Diller"
 }

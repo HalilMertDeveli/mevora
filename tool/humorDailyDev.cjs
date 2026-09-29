@@ -43,7 +43,10 @@ const argv = process.argv.slice(2);
 const flagIndex = argv.indexOf("--project");
 const projectId =
   flagIndex >= 0 ? argv[flagIndex + 1] : process.env.QA_PROJECT_ID || "mevora-d6ed0";
-const [command, arg] = argv.filter((_, i) => i !== flagIndex && i !== flagIndex + 1);
+// Drop `--project <id>` only when it was given: with no flag, indexOf is -1 and
+// `flagIndex + 1` would otherwise remove the command itself.
+const [command, arg] =
+  flagIndex >= 0 ? argv.filter((_, i) => i !== flagIndex && i !== flagIndex + 1) : argv;
 const usage =
   "usage: node tool/humorDailyDev.cjs status|publish|clock <YYYY-MM-DD|+n|clear> [--project <id>]";
 if (!projectId || !/^[a-z0-9][a-z0-9-]{2,62}$/.test(projectId) || !command) {

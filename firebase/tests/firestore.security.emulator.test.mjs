@@ -1771,6 +1771,65 @@ describe("humor lab — client access boundaries", () => {
   });
 });
 
+describe("daily humor — manifests and member progress", () => {
+  const adminDb = () => env.authenticatedContext("admin-1", {admin: true}).firestore();
+  const DAY = "2026-09-29";
+
+  beforeEach(async () => {
+    await seed(env, async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`humorDailySets/${DAY}`).set({
+        dayId: DAY,
+        status: "published",
+        version: 1,
+        contentIds: ["hc_1", "hc_2", "hc_3"],
+        categories: ["sarcasm", "dry", "absurd"],
+      });
+      await db.doc(`users/${UID.A}/humorDaily/${DAY}`).set({
+        dayId: DAY,
+        answeredCount: 1,
+        completed: false,
+        answers: {0: {contentId: "hc_1", rating: "funny", skipped: false}},
+      });
+      await db.doc("devClock/humorDaily").set({dayId: "2026-10-01"});
+    });
+  });
+
+  it("the owner reads their own daily answers; peers and signed-out clients cannot", async () => {
+    await allow(who.userA.db().doc(`users/${UID.A}/humorDaily/${DAY}`).get());
+    await deny(who.userB.db().doc(`users/${UID.A}/humorDaily/${DAY}`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/humorDaily/${DAY}`).get());
+    await deny(who.userB.db().collection(`users/${UID.A}/humorDaily`).get());
+  });
+
+  it("no client writes daily progress — completion cannot be claimed", async () => {
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/humorDaily/${DAY}`).set(
+        {answeredCount: 10, completed: true},
+        {merge: true},
+      ),
+    );
+    await deny(who.userA.db().doc(`users/${UID.A}/humorDaily/2026-09-30`).set({completed: true}));
+    await deny(who.userA.db().doc(`users/${UID.A}/humorDaily/${DAY}`).delete());
+    await deny(who.userB.db().doc(`users/${UID.A}/humorDaily/${DAY}`).set({completed: true}));
+  });
+
+  it("members cannot read or write the global manifest; admins read only", async () => {
+    await deny(who.userA.db().doc(`humorDailySets/${DAY}`).get());
+    await deny(who.userA.db().collection("humorDailySets").get());
+    await deny(who.userA.db().doc(`humorDailySets/${DAY}`).set({contentIds: ["mine"]}));
+    await deny(who.userA.db().doc("humorDailySets/2026-09-30").set({status: "published"}));
+    await allow(adminDb().doc(`humorDailySets/${DAY}`).get());
+    await deny(adminDb().doc(`humorDailySets/${DAY}`).update({contentIds: ["x"]}));
+  });
+
+  it("the emulator test clock is out of every client's reach", async () => {
+    await deny(who.userA.db().doc("devClock/humorDaily").get());
+    await deny(who.userA.db().doc("devClock/humorDaily").set({dayId: "2030-01-01"}));
+    await deny(adminDb().doc("devClock/humorDaily").set({dayId: "2030-01-01"}));
+  });
+});
+
 describe("Spotify music — public card vs private taste", () => {
   it("the public Music Taste card is readable by other members", async () => {
     // publicMusic lives on profiles/{uid}, which is the public card by

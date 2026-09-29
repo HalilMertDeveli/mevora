@@ -1930,5 +1930,50 @@
   "sharedTraitExpectationsValue": "Birbirinizin beklentisine uyuyorsunuz",
   "sharedTraitRhythm": "Günlük ritim",
   "sharedTraitHobbies": "Hobiler",
-  "sharedTraitLanguages": "Diller"
+  "sharedTraitLanguages": "Diller",
+  "humorDailyTitle": "Bugünün Mizah Turu 🎭",
+  "humorDailyBody": "Her gün birkaç kısa video ile seni biraz daha iyi tanıyoruz.",
+  "humorDailySecondary": "Neye güldüğünü öğrendikçe Mevora seni daha iyi tanır.",
+  "humorDailyMeta": "{count} kısa video",
+  "@humorDailyMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyStart": "Başla",
+  "humorDailyResume": "Devam et · {answered}/{total}",
+  "@humorDailyResume": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyDone": "Bugünlük tamam ✓",
+  "humorDailyLater": "Sonra",
+  "humorDailyStartsTomorrow": "Günlük mizah turun yarın başlıyor.",
+  "humorDailyProgress": "{position}/{total}",
+  "@humorDailyProgress": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyHintStart": "Bugünün mizah turuna başladık.",
+  "humorDailyHintMiddle": "Biraz daha tanıyoruz 👀",
+  "humorDailyHintEnd": "Son birkaç video.",
+  "humorDailyCompletedTitle": "Bugünlük tamam 🎭",
+  "humorDailyCompletedBody": "Mizah profilin biraz daha netleşti.",
+  "humorDailyNotReadyTitle": "Bugünün turu hazırlanıyor",
+  "humorDailyNotReadyBody": "Biraz sonra yeniden bakabilirsin.",
+  "humorDailyLockedBody": "Günlük mizah turu, mizah profilin hazır olduğunda başlar."
 }

@@ -4727,4 +4727,67 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sharedTraitLanguages => 'Diller';
+
+  @override
+  String get humorDailyTitle => 'Bugünün Mizah Turu 🎭';
+
+  @override
+  String get humorDailyBody =>
+      'Her gün birkaç kısa video ile seni biraz daha iyi tanıyoruz.';
+
+  @override
+  String get humorDailySecondary =>
+      'Neye güldüğünü öğrendikçe Mevora seni daha iyi tanır.';
+
+  @override
+  String humorDailyMeta(int count) {
+    return '$count kısa video';
+  }
+
+  @override
+  String get humorDailyStart => 'Başla';
+
+  @override
+  String humorDailyResume(int answered, int total) {
+    return 'Devam et · $answered/$total';
+  }
+
+  @override
+  String get humorDailyDone => 'Bugünlük tamam ✓';
+
+  @override
+  String get humorDailyLater => 'Sonra';
+
+  @override
+  String get humorDailyStartsTomorrow => 'Günlük mizah turun yarın başlıyor.';
+
+  @override
+  String humorDailyProgress(int position, int total) {
+    return '$position/$total';
+  }
+
+  @override
+  String get humorDailyHintStart => 'Bugünün mizah turuna başladık.';
+
+  @override
+  String get humorDailyHintMiddle => 'Biraz daha tanıyoruz 👀';
+
+  @override
+  String get humorDailyHintEnd => 'Son birkaç video.';
+
+  @override
+  String get humorDailyCompletedTitle => 'Bugünlük tamam 🎭';
+
+  @override
+  String get humorDailyCompletedBody => 'Mizah profilin biraz daha netleşti.';
+
+  @override
+  String get humorDailyNotReadyTitle => 'Bugünün turu hazırlanıyor';
+
+  @override
+  String get humorDailyNotReadyBody => 'Biraz sonra yeniden bakabilirsin.';
+
+  @override
+  String get humorDailyLockedBody =>
+      'Günlük mizah turu, mizah profilin hazır olduğunda başlar.';
 }

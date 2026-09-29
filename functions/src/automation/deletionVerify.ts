@@ -93,13 +93,17 @@ export async function verifyAccountDeletion(
     issues.push("inbound_picks_remnant");
   }
 
-  const [humorInteractions, humorReports, humorQueuePointer] = await Promise.all([
+  const [humorInteractions, humorDaily, humorReports, humorQueuePointer] = await Promise.all([
     db.collection(`users/${uid}/humorInteractions`).limit(1).get(),
+    db.collection(`users/${uid}/humorDaily`).limit(1).get(),
     db.collection("humorReports").where("reporterId", "==", uid).limit(1).get(),
     db.collection("humorModerationQueue").where("lastReporterId", "==", uid).limit(1).get(),
   ]);
   if (!humorInteractions.empty) {
     issues.push("humor_interactions_remnant");
+  }
+  if (!humorDaily.empty) {
+    issues.push("humor_daily_remnant");
   }
   if (!humorReports.empty) {
     issues.push("humor_reports_remnant");

@@ -7,6 +7,7 @@ import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/humor/data/datasources/humor_data_source.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
+import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
@@ -99,6 +100,61 @@ class HumorRepositoryImpl implements HumorRepository {
     );
   }
 
+  @override
+  Future<Result<HumorDailySet>> getDailySet() {
+    return _guard('getDailyHumorSet', _dataSource.getDailySet);
+  }
+
+  @override
+  Future<Result<HumorDailySubmitOutcome>> submitDailyResponse({
+    required String dayId,
+    required String contentId,
+    required HumorRating rating,
+    int dwellMs = 0,
+    int replayCount = 0,
+  }) {
+    return _guardDaily(
+      () => _dataSource.submitDailyResponse(
+        dayId: dayId,
+        contentId: contentId,
+        rating: rating,
+        dwellMs: dwellMs,
+        replayCount: replayCount,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<HumorDailySubmitOutcome>> skipDailyItem({
+    required String dayId,
+    required String contentId,
+  }) {
+    return _guardDaily(
+      () => _dataSource.skipDailyItem(dayId: dayId, contentId: contentId),
+    );
+  }
+
+  /// A daily submission, with the refusals that mean "your picture of the
+  /// day is out of date" kept apart from real failures: those are answered by
+  /// reloading the set, never by a retry of the same request.
+  Future<Result<HumorDailySubmitOutcome>> _guardDaily(
+    Future<HumorDailyProgress> Function() action,
+  ) async {
+    try {
+      return Success(HumorDailyAccepted(await action()));
+    } on FirebaseFunctionsException catch (error) {
+      _debug('submitDailyHumorResponse', error.code, error.message);
+      final stale = _dailyStaleReason(error.code, error.message);
+      if (stale != null) {
+        return Success(HumorDailyStale(stale));
+      }
+      return Err(_mapHumorCallableError(error.code, error.message));
+    } on Object catch (error) {
+      _debug('submitDailyHumorResponse', error.runtimeType.toString(), null);
+      return Err(FailureMapper.from(error));
+    }
+  }
+
   /// Runs one humor call and turns whatever it throws into a [Failure].
   ///
   /// Callable errors keep their meaning here instead of all collapsing into
@@ -129,6 +185,31 @@ class HumorRepositoryImpl implements HumorRepository {
       '[HUMOR] $callable failed: $code${message == null ? '' : ' ($message)'}',
     );
   }
+}
+
+/// The daily-set refusals that call for a reload, or `null` for any other
+/// error. Every `failed-precondition` is one: the server's state moved.
+HumorDailyStaleReason? _dailyStaleReason(String code, String? message) {
+  final text = message ?? '';
+  if (code == 'not-found') {
+    return HumorDailyStaleReason.contentUnavailable;
+  }
+  if (code != 'failed-precondition') {
+    return null;
+  }
+  if (text.contains('day-closed')) {
+    return HumorDailyStaleReason.dayClosed;
+  }
+  if (text.contains('slot-replaced')) {
+    return HumorDailyStaleReason.slotReplaced;
+  }
+  if (text.contains('not-eligible')) {
+    return HumorDailyStaleReason.notEligible;
+  }
+  if (text.contains('content-unavailable')) {
+    return HumorDailyStaleReason.contentUnavailable;
+  }
+  return HumorDailyStaleReason.other;
 }
 
 /// Maps a Cloud Functions error code onto the app's existing [Failure] types.

@@ -4728,4 +4728,69 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sharedTraitLanguages => 'Languages';
+
+  @override
+  String get humorDailyTitle => 'Today\'s Humor Round 🎭';
+
+  @override
+  String get humorDailyBody =>
+      'Every day, a few short videos help us get to know you a little better.';
+
+  @override
+  String get humorDailySecondary =>
+      'The more we learn what makes you laugh, the better Mevora knows you.';
+
+  @override
+  String humorDailyMeta(int count) {
+    return '$count short videos';
+  }
+
+  @override
+  String get humorDailyStart => 'Start';
+
+  @override
+  String humorDailyResume(int answered, int total) {
+    return 'Continue · $answered/$total';
+  }
+
+  @override
+  String get humorDailyDone => 'Done for today ✓';
+
+  @override
+  String get humorDailyLater => 'Later';
+
+  @override
+  String get humorDailyStartsTomorrow =>
+      'Your daily humor round starts tomorrow.';
+
+  @override
+  String humorDailyProgress(int position, int total) {
+    return '$position/$total';
+  }
+
+  @override
+  String get humorDailyHintStart => 'Today\'s humor round has begun.';
+
+  @override
+  String get humorDailyHintMiddle => 'Getting to know you a little more 👀';
+
+  @override
+  String get humorDailyHintEnd => 'Just a few more videos.';
+
+  @override
+  String get humorDailyCompletedTitle => 'All done for today 🎭';
+
+  @override
+  String get humorDailyCompletedBody =>
+      'Your humor profile just got a little clearer.';
+
+  @override
+  String get humorDailyNotReadyTitle => 'Today\'s round is being prepared';
+
+  @override
+  String get humorDailyNotReadyBody => 'Check back a little later.';
+
+  @override
+  String get humorDailyLockedBody =>
+      'The daily humor round begins once your humor profile is ready.';
 }

@@ -113,7 +113,13 @@ class _RelationshipLearningPageState extends State<RelationshipLearningPage> {
     setState(() {});
   }
 
-  void _leave() {
+  Future<void> _leave() async {
+    // Finishing the initial questions is a journey step: read the new stage
+    // first so the router does not bounce the member back here.
+    await RelationshipLearningScope.maybeOf(context)?.journey?.refresh();
+    if (!mounted) {
+      return;
+    }
     final next = widget.next;
     final router = GoRouter.maybeOf(context);
     if (next != null && next.startsWith('/') && router != null) {
@@ -178,6 +184,9 @@ class _RelationshipLearningPageState extends State<RelationshipLearningPage> {
         key: const ValueKey('learning-intro'),
         total: c.total,
         onStart: c.begin,
+        // Straight after the Humor Lab: say what just happened and what is
+        // next, in one line each.
+        afterHumor: widget.source == 'journey' && c.summary.humorCalibrated,
       ),
       LearningFlowPhase.question => _QuestionView(
         key: const ValueKey('learning-question'),
@@ -193,10 +202,16 @@ class _RelationshipLearningPageState extends State<RelationshipLearningPage> {
 }
 
 class _Intro extends StatelessWidget {
-  const _Intro({super.key, required this.total, required this.onStart});
+  const _Intro({
+    super.key,
+    required this.total,
+    required this.onStart,
+    this.afterHumor = false,
+  });
 
   final int total;
   final VoidCallback onStart;
+  final bool afterHumor;
 
   @override
   Widget build(BuildContext context) {
@@ -212,14 +227,16 @@ class _Intro extends StatelessWidget {
           Semantics(
             header: true,
             child: Text(
-              l10n.learningIntroTitle,
+              afterHumor
+                  ? l10n.learningAfterHumorTitle
+                  : l10n.learningIntroTitle,
               textAlign: TextAlign.center,
               style: theme.textTheme.headlineMedium,
             ),
           ),
           const SizedBox(height: AppSpacing.s12),
           Text(
-            l10n.learningIntroBody,
+            afterHumor ? l10n.learningAfterHumorBody : l10n.learningIntroBody,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: context.palette.textSecondary,
@@ -359,7 +376,6 @@ class _Done extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return MevoraEmptyState(
       art: MevoraArt.success,
-      animate: true,
       title: followUp ? l10n.learningFollowUpDoneTitle : l10n.learningDoneTitle,
       message: followUp ? l10n.learningFollowUpDoneBody : l10n.learningDoneBody,
       actionLabel: l10n.learningDoneContinue,

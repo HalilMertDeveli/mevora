@@ -8,6 +8,7 @@ import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
+import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
@@ -89,13 +90,16 @@ class _HumorCalibrationResultPageState
     );
   }
 
-  void _done() {
+  Future<void> _done() async {
     final onDone = widget.onDone;
     if (onDone != null) {
       onDone();
       return;
     }
-    if (!context.mounted) {
+    // A new member's journey moves on to Relationship Learning now that
+    // humor is calibrated; read it first so Discover is not flashed.
+    await RelationshipLearningScope.maybeOf(context)?.journey?.refresh();
+    if (!mounted) {
       return;
     }
     final router = GoRouter.maybeOf(context);

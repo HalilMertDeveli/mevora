@@ -59,6 +59,16 @@ class RelationshipLearningRepositoryImpl
   }
 
   @override
+  Future<Result<void>> skipOnboardingHumor() async {
+    try {
+      await _backend.invoke('skipOnboardingHumor', const {});
+      return const Success(null);
+    } on Object catch (error) {
+      return Err(FailureMapper.from(error));
+    }
+  }
+
+  @override
   Future<Result<void>> resetLearnedPreferences() async {
     try {
       await _backend.invoke('resetMyPersonalization', const {});
@@ -80,6 +90,8 @@ abstract final class RelationshipLearningParser {
       blocksPicks: firestoreFlag(data['blocksPicks']),
       progressiveDue: firestoreFlag(data['progressiveDue']),
       followUpSize: firestoreInt(data['followUpSize'], 3),
+      humorCalibrated: firestoreFlag(data['humorCalibrated']),
+      journeyStage: JourneyStage.parse(data['journeyStage']),
     );
   }
 
@@ -102,7 +114,94 @@ abstract final class RelationshipLearningParser {
       followUpQuestions: followUp is Map
           ? parseQuestions(followUp['questions'])
           : const [],
+      overview: parseOverview(data['overview']),
     );
+  }
+
+  static LearningOverview parseOverview(Object? raw) {
+    if (raw is! Map) {
+      return LearningOverview.empty;
+    }
+    final data = Map<String, dynamic>.from(raw);
+    final categories = <LearningCategoryProgress>[];
+    final rawCategories = data['categories'];
+    if (rawCategories is List) {
+      for (final item in rawCategories.whereType<Map<Object?, Object?>>()) {
+        final key = item['key'];
+        if (key is! String) {
+          continue;
+        }
+        categories.add(
+          LearningCategoryProgress(
+            key: key,
+            answered: firestoreInt(item['answered'], 0),
+            questions: firestoreInt(item['questions'], 0),
+            signals: firestoreInt(item['signals'], 0),
+            signalsPossible: firestoreInt(item['signalsPossible'], 0),
+            progress: _unit(item['progress']),
+          ),
+        );
+      }
+    }
+    final highlights = <LearningHighlight>[];
+    final rawHighlights = data['highlights'];
+    if (rawHighlights is List) {
+      for (final item in rawHighlights.whereType<Map<Object?, Object?>>()) {
+        final text = item['text'];
+        final questionId = item['questionId'];
+        if (text is! Map || questionId is! String) {
+          continue;
+        }
+        final tr = text['tr'];
+        final en = text['en'];
+        if (tr is String && en is String) {
+          highlights.add(
+            LearningHighlight(
+              questionId: questionId,
+              category: item['category'] is String
+                  ? item['category'] as String
+                  : '',
+              textTr: tr,
+              textEn: en,
+            ),
+          );
+        }
+      }
+    }
+    final answered = <AnsweredLearningQuestion>[];
+    final rawAnswered = data['answered'];
+    if (rawAnswered is List) {
+      for (final item in rawAnswered.whereType<Map<Object?, Object?>>()) {
+        final map = Map<String, dynamic>.from(item);
+        final question = parseQuestion(map);
+        if (question == null || !question.isAnswered) {
+          continue;
+        }
+        final at = map['answeredAtMs'];
+        answered.add(
+          AnsweredLearningQuestion(
+            question: question,
+            category: map['category'] is String
+                ? map['category'] as String
+                : question.dimension,
+            answeredAt: at is num && at > 0
+                ? DateTime.fromMillisecondsSinceEpoch(at.toInt())
+                : null,
+          ),
+        );
+      }
+    }
+    return LearningOverview(
+      overallProgress: _unit(data['overallProgress']),
+      categories: categories,
+      highlights: highlights,
+      answered: answered,
+    );
+  }
+
+  static double _unit(Object? raw) {
+    final value = raw is num ? raw.toDouble() : 0.0;
+    return value.isNaN ? 0 : value.clamp(0.0, 1.0);
   }
 
   static List<LearningQuestion> parseQuestions(Object? raw) {

@@ -15,6 +15,7 @@ const {learningStatePath, markLearningRequired} = require("../lib/relationshipLe
 const {
   getRelationshipLearningState,
   saveRelationshipLearningAnswer,
+  skipOnboardingHumor,
   snoozeRelationshipLearningPrompt,
 } = require("../lib/relationshipLearning/functions.js");
 const {PERSONALIZATION_DIMENSIONS, LEARNING, SIGNAL_STRENGTHS} = require("../lib/personalization/config.js");
@@ -489,6 +490,149 @@ describe("privacy: relationship learning never touches message content", () => {
     for (const file of fs.readdirSync(dir)) {
       const source = fs.readFileSync(path.join(dir, file), "utf8");
       assert.equal(/ciphertext|messageText|\.text\b|messages\//.test(source), false, file);
+    }
+  });
+});
+
+describe("first-run journey: basic profile -> humor -> learning -> done", () => {
+  const {journeyStage} = model;
+  const required = () => ({...model.emptyLearningState(), required: true});
+
+  it("sends a new member to humor, then learning, then done", () => {
+    assert.equal(journeyStage(required(), false), "humor");
+    assert.equal(journeyStage(required(), true), "learning");
+    const done = {...stateAfterInitial(), required: true};
+    assert.equal(journeyStage(done, true), "done");
+  });
+
+  it("never routes an existing member anywhere", () => {
+    assert.equal(journeyStage(model.emptyLearningState(), false), "done");
+    const partial = answerAll(model.emptyLearningState(), catalog.initialQuestions().slice(0, 3));
+    assert.equal(journeyStage(partial, false), "done");
+  });
+
+  it("a humor skip moves on and can never loop back", () => {
+    const skipped = {...required(), journey: {humorSkippedAtMs: T0}};
+    assert.equal(journeyStage(skipped, false), "learning");
+    const reread = model.parseLearningState(JSON.parse(JSON.stringify(model.serializeLearningState(skipped))));
+    assert.equal(journeyStage(reread, false), "learning");
+  });
+
+  it("the skip callable records once, and ignores members without a journey", async () => {
+    await markLearningRequired(db, "me");
+    let state = await callAs(getRelationshipLearningState, "me");
+    assert.equal(state.journeyStage, "humor");
+    await callAs(skipOnboardingHumor, "me");
+    const first = (await stored("me")).journey.humorSkippedAtMs;
+    assert.ok(first > 0);
+    await callAs(skipOnboardingHumor, "me");
+    assert.equal((await stored("me")).journey.humorSkippedAtMs, first);
+    state = await callAs(getRelationshipLearningState, "me");
+    assert.equal(state.journeyStage, "learning");
+    await callAs(skipOnboardingHumor, "other");
+    assert.equal(await stored("other"), undefined, "no state is created for an existing member");
+    await assert.rejects(callAs(skipOnboardingHumor, null), /sign-in-required/);
+  });
+
+  it("a calibrated humor profile counts as the humor step done", async () => {
+    await markLearningRequired(db, "me");
+    await db.doc("users/me/humor/calibration").set({version: 1, completedCount: 15, complete: true});
+    const state = await callAs(getRelationshipLearningState, "me");
+    assert.equal(state.humorCalibrated, true);
+    assert.equal(state.journeyStage, "learning");
+  });
+});
+
+describe("learning dashboard overview", () => {
+  const overview = require("../lib/relationshipLearning/overview.js");
+  const richSignals = {
+    hasRelationshipGoal: true, hasLifestyle: true, hasInterests: true, hasMusic: true, humorReady: true,
+    relationshipAnswerCount: 5,
+  };
+
+  it("reports real coverage per category, starting from zero", () => {
+    const cats = overview.categoryProgress(model.emptyLearningState(), model.noProfileSignals());
+    assert.deepEqual(cats.map((c) => c.key), [...overview.LEARNING_CATEGORIES]);
+    for (const c of cats) assert.equal(c.progress, 0);
+    assert.equal(overview.overallProgress(cats), 0);
+    const total = cats.reduce((sum, c) => sum + c.questions, 0);
+    assert.equal(total, catalog.LEARNING_QUESTIONS.filter((q) => q.active).length, "every active question counted once");
+  });
+
+  it("moves with answers and existing profile data, never past 100%", () => {
+    const state = stateAfterInitial();
+    const partial = overview.categoryProgress(state, model.noProfileSignals());
+    const rich = overview.categoryProgress(state, richSignals);
+    for (let i = 0; i < partial.length; i++) {
+      assert.ok(rich[i].progress >= partial[i].progress);
+      assert.ok(rich[i].progress <= 1);
+    }
+    const comm = partial.find((c) => c.key === "communication");
+    assert.ok(comm.questions > 0 && comm.answered > 0);
+    const all = answerAll(state, catalog.progressiveQuestions(), "b");
+    const full = overview.categoryProgress(all, richSignals);
+    for (const c of full) assert.equal(c.progress, 1, c.key);
+    assert.equal(overview.overallProgress(full), 1);
+  });
+
+  it("reads back only the member's own answers, in soft wording", () => {
+    let state = model.applyAnswer(model.emptyLearningState(), "rl_texting", "c", T0).state;
+    state = model.applyAnswer(state, "rl_plans", "a", T0).state; // no read-back defined
+    const highlights = overview.answerHighlights(state);
+    assert.deepEqual(highlights.map((h) => h.questionId), ["rl_texting"]);
+    for (const [id, options] of Object.entries(overview.ANSWER_HIGHLIGHTS)) {
+      assert.ok(catalog.learningQuestion(id), `highlight for unknown ${id}`);
+      for (const text of Object.values(options)) {
+        assert.equal(/\b(you are|always|never|asla|her zaman|kişiliğin)\b/i.test(text.tr + " " + text.en), false, text.en);
+      }
+    }
+    assert.ok(overview.answerHighlights(stateAfterInitial()).length <= overview.MAX_HIGHLIGHTS);
+  });
+
+  it("serves the overview with the answered list for editing", async () => {
+    for (const q of catalog.initialQuestions().slice(0, 4)) {
+      await callAs(saveRelationshipLearningAnswer, "me", {questionId: q.id, answerId: "a"});
+    }
+    const state = await callAs(getRelationshipLearningState, "me");
+    assert.equal(state.overview.answered.length, 4);
+    assert.ok(state.overview.answered.every((q) => q.answerId && q.category && q.answeredAtMs));
+    assert.ok(state.overview.overallProgress > 0 && state.overview.overallProgress < 1);
+    assert.ok(state.overview.highlights.length > 0);
+  });
+
+  it("editing an answer updates its time and the declared weight", async () => {
+    await callAs(saveRelationshipLearningAnswer, "me", {questionId: "rl_humor_importance", answerId: "a"});
+    const before = (await stored("me")).answers.rl_humor_importance.answeredAtMs;
+    await new Promise((r) => setTimeout(r, 5));
+    await callAs(saveRelationshipLearningAnswer, "me", {questionId: "rl_humor_importance", answerId: "c"});
+    const after = (await stored("me")).answers.rl_humor_importance;
+    assert.equal(after.answerId, "c");
+    assert.ok(after.answeredAtMs > before);
+    const context = await loadPersonalizationContext(db, "me");
+    assert.equal(context.declared.humor, DECLARED.importance.low);
+    assert.equal(Object.keys((await stored("me")).answers).length, 1, "an edit is not a new answer");
+  });
+
+  it("a retired question can no longer be answered or steer anything", async () => {
+    const question = catalog.learningQuestion("rl_humor_importance");
+    const texting = catalog.learningQuestion("rl_texting");
+    await callAs(saveRelationshipLearningAnswer, "me", {questionId: "rl_humor_importance", answerId: "a"});
+    await callAs(saveRelationshipLearningAnswer, "me", {questionId: "rl_texting", answerId: "a"});
+    question.active = false;
+    texting.active = false;
+    try {
+      await assert.rejects(
+        callAs(saveRelationshipLearningAnswer, "me", {questionId: "rl_humor_importance", answerId: "b"}),
+        /invalid-question/,
+      );
+      const context = await loadPersonalizationContext(db, "me");
+      assert.equal(context.declared.humor, 1, "a retired importance answer carries no weight");
+      const state = model.parseLearningState(await stored("me"));
+      assert.equal("rl_texting" in model.comparableAnswers(state), false);
+      assert.equal(catalog.isComparableLearningAnswer("rl_texting", "a"), false);
+    } finally {
+      question.active = true;
+      texting.active = true;
     }
   });
 });

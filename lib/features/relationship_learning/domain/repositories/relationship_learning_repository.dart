@@ -18,6 +18,10 @@ abstract interface class RelationshipLearningRepository {
   /// "Not now" for the follow-up round.
   Future<Result<void>> snoozeFollowUp();
 
+  /// "Skip for now" on the onboarding Humor Lab step. Recorded server-side
+  /// so the first-run journey moves on and never loops back.
+  Future<Result<void>> skipOnboardingHumor();
+
   /// Clears what Mevora learned from interactions. Declared answers stay.
   Future<Result<void>> resetLearnedPreferences();
 }

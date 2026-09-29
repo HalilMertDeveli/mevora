@@ -493,21 +493,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
     final humorEnabled =
         AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
-    final learningAvailable =
-        RelationshipLearningScope.maybeOf(context) != null;
+    final journeyAvailable =
+        RelationshipLearningScope.maybeOf(context)?.journey != null;
     AuthScope.of(context).applyOnboardingComplete();
 
-    // Relationship Learning comes next: a new member's first Picks are chosen
-    // from these answers. It is resumable, never a trap — leaving it lands on
-    // the Picks screen, which offers the rest. Humor calibration follows when
-    // the lab is on.
-    if (learningAvailable && mounted) {
-      context.go(
-        RelationshipLearningPage.location(
-          next: humorEnabled ? AppRoutes.humorCalibration : AppRoutes.discovery,
-          source: 'onboarding',
-        ),
-      );
+    // The first-run journey takes it from here: Humor Lab, then Relationship
+    // Learning, then Picks. The server knows which step this member owes, so
+    // the router sends them there now and after any restart; nothing to
+    // navigate by hand.
+    if (journeyAvailable) {
       return;
     }
     if (humorEnabled && mounted) {

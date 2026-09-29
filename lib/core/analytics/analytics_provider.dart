@@ -87,6 +87,15 @@ abstract final class AnalyticsEvents {
   static const String personalizationEnabled = 'personalization_enabled';
   static const String personalizationDisabled = 'personalization_disabled';
   static const String personalizationReset = 'personalization_reset';
+  // First-run journey and the learning dashboard. No answers, ever.
+  static const String humorOnboardingStarted = 'humor_onboarding_started';
+  static const String humorOnboardingCompleted = 'humor_onboarding_completed';
+  static const String relationshipLearningDashboardOpened =
+      'relationship_learning_dashboard_opened';
+  static const String relationshipLearningContinueStarted =
+      'relationship_learning_continue_started';
+  static const String relationshipLearningAnswerEdited =
+      'relationship_learning_answer_edited';
   static const String spotifyConnectStarted = 'spotify_connect_started';
   static const String spotifyConnectSuccess = 'spotify_connect_success';
   static const String spotifyConnectFailed = 'spotify_connect_failed';

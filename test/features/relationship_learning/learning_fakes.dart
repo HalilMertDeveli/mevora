@@ -43,6 +43,35 @@ class FakeRelationshipLearningRepository
   int loads = 0;
   int snoozes = 0;
   int resets = 0;
+  int humorSkips = 0;
+  JourneyStage journeyStage = JourneyStage.done;
+  bool humorCalibrated = false;
+  List<LearningCategoryProgress> categories = const [
+    LearningCategoryProgress(
+      key: 'relationship',
+      answered: 2,
+      questions: 5,
+      signals: 1,
+      signalsPossible: 1,
+      progress: 0.5,
+    ),
+    LearningCategoryProgress(
+      key: 'communication',
+      answered: 1,
+      questions: 6,
+      signals: 0,
+      signalsPossible: 0,
+      progress: 0.17,
+    ),
+  ];
+  List<LearningHighlight> highlights = const [
+    LearningHighlight(
+      questionId: 'rl_q1',
+      category: 'relationship',
+      textTr: 'Adım adım ilerlemeye daha yakınsın.',
+      textEn: 'You lean towards taking things step by step.',
+    ),
+  ];
   int completions = 0;
   bool failSaves = false;
   bool failLoads = false;
@@ -57,6 +86,8 @@ class FakeRelationshipLearningRepository
     initialAnswered: answeredInitial,
     initialCompleted: _completed || answeredInitial == initial.length,
     blocksPicks: required && !(_completed || answeredInitial == initial.length),
+    journeyStage: journeyStage,
+    humorCalibrated: humorCalibrated,
   );
 
   @override
@@ -70,6 +101,19 @@ class FakeRelationshipLearningRepository
         summary: summary,
         initialQuestions: List.of(initial),
         followUpQuestions: summary.initialCompleted ? List.of(followUp) : [],
+        overview: LearningOverview(
+          overallProgress:
+              answeredInitial / (initial.isEmpty ? 1 : initial.length),
+          categories: categories,
+          highlights: highlights,
+          answered: [
+            for (final q in [
+              ...initial,
+              ...followUp,
+            ].where((q) => q.isAnswered))
+              AnsweredLearningQuestion(question: q, category: q.dimension),
+          ],
+        ),
       ),
     );
   }
@@ -111,6 +155,15 @@ class FakeRelationshipLearningRepository
   @override
   Future<Result<void>> snoozeFollowUp() async {
     snoozes += 1;
+    return const Success(null);
+  }
+
+  @override
+  Future<Result<void>> skipOnboardingHumor() async {
+    humorSkips += 1;
+    if (journeyStage == JourneyStage.humor) {
+      journeyStage = JourneyStage.learning;
+    }
     return const Success(null);
   }
 

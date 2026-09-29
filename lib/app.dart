@@ -34,6 +34,7 @@ import 'package:mevora/core/services/permissions/permission_service.dart';
 import 'package:mevora/core/session/session_recovery_controller.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/location/domain/repositories/location_repository.dart';
@@ -48,6 +49,7 @@ import 'package:mevora/features/permissions/presentation/controllers/permission_
 import 'package:mevora/features/profile/domain/repositories/profile_question_answer_repository.dart';
 import 'package:mevora/features/relationship/domain/repositories/relationship_repository.dart';
 import 'package:mevora/features/relationship_learning/domain/repositories/relationship_learning_repository.dart';
+import 'package:mevora/features/relationship_learning/presentation/controllers/learning_journey_controller.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/repositories/verification_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -113,6 +115,7 @@ class MevoraApp extends StatefulWidget {
 class _MevoraAppState extends State<MevoraApp> {
   late final GoRouter _router;
   LocationController? _locationController;
+  LearningJourneyController? _journey;
   bool _ownsLocationController = false;
   FcmPushBinder? _pushBinder;
   late final LanguageController _languageController;
@@ -180,12 +183,25 @@ class _MevoraAppState extends State<MevoraApp> {
       _onboardingServices = createOnboardingServices();
       _ownsOnboardingServices = true;
     }
+    final learning = widget.relationshipLearningRepository;
+    if (learning != null) {
+      _journey = LearningJourneyController(
+        repository: learning,
+        humorEnabled: widget.config.featureFlags.humorLabEnabled,
+        analytics: widget.analytics,
+      );
+      // Registered before the router's own listener, so the journey is
+      // already pending when the router first sees a signed-in member.
+      widget.authController.addListener(_syncJourney);
+      _syncJourney();
+    }
     _router =
         widget.router ??
         createAppRouter(
           config: widget.config,
           authController: widget.authController,
           locationController: _locationController,
+          journey: _journey,
         );
     final social = widget.socialServices;
     if (social != null) {
@@ -205,6 +221,22 @@ class _MevoraAppState extends State<MevoraApp> {
 
   void _syncLocationGate() {
     unawaited(_locationController?.syncForUser(widget.authController.user?.id));
+  }
+
+  /// The first-run journey follows the signed-in member: read once their
+  /// basic profile is complete, forgotten on sign-out.
+  void _syncJourney() {
+    final journey = _journey;
+    if (journey == null) {
+      return;
+    }
+    final status = widget.authController.status;
+    if (status is Authenticated &&
+        (status.user.onboardingCompleted || status.user.profileCompleted)) {
+      journey.startFor(status.user.id);
+    } else if (status is Unauthenticated) {
+      journey.clear();
+    }
   }
 
   void _syncLanguageUser() {
@@ -302,6 +334,7 @@ class _MevoraAppState extends State<MevoraApp> {
       child = RelationshipLearningScope(
         repository: learning,
         analyticsProvider: widget.analytics,
+        journey: _journey,
         child: child,
       );
     }
@@ -359,6 +392,8 @@ class _MevoraAppState extends State<MevoraApp> {
     _pushBinder?.dispose();
     widget.authController.removeListener(_syncLocationGate);
     widget.authController.removeListener(_syncLanguageUser);
+    widget.authController.removeListener(_syncJourney);
+    _journey?.dispose();
     if (_ownsLocationController) {
       _locationController?.dispose();
     }

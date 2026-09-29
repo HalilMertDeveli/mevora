@@ -6,6 +6,13 @@ import {isAccountEligible} from "../profileSafety.js";
 import {INITIAL_QUESTION_COUNT, LEARNING_CATALOG_VERSION, initialQuestions, learningQuestion} from "./catalog.js";
 import {PROGRESSIVE} from "./config.js";
 import {
+  answerHighlights,
+  answeredQuestionIds,
+  categoryProgress,
+  learningCategoryOf,
+  overallProgress,
+} from "./overview.js";
+import {
   applyAnswer,
   declaredConfidence,
   ensureProgressiveBatch,
@@ -13,6 +20,8 @@ import {
   isInitialComplete,
   isProgressivePromptDue,
   learningSummary,
+  type LearningState,
+  type ProfileSignals,
   parseLearningState,
   emptyLearningState,
 } from "./model.js";
@@ -75,7 +84,7 @@ export const getRelationshipLearningState = onCall(
       .filter((question) => question !== null);
     return {
       catalogVersion: LEARNING_CATALOG_VERSION,
-      ...learningSummary(state, nowMs),
+      ...learningSummary(state, nowMs, {humorCalibrated: signals.humorReady}),
       initial: {
         total: INITIAL_QUESTION_COUNT,
         answered: initialAnsweredCount(state),
@@ -87,7 +96,48 @@ export const getRelationshipLearningState = onCall(
         batchSize: PROGRESSIVE.batchSize,
         questions: round.map((question) => questionPayload(question, state)),
       },
+      overview: overviewPayload(state, signals),
     };
+  },
+);
+
+/** The learning dashboard: real coverage, the member's own read-backs, and their answers. */
+function overviewPayload(state: LearningState, signals: ProfileSignals): Record<string, unknown> {
+  const categories = categoryProgress(state, signals);
+  return {
+    overallProgress: overallProgress(categories),
+    categories,
+    highlights: answerHighlights(state),
+    answered: answeredQuestionIds(state)
+      .map((id) => learningQuestion(id))
+      .filter((question) => question !== null)
+      .map((question) => ({
+        ...questionPayload(question, state),
+        category: learningCategoryOf(question),
+        answeredAtMs: state.answers[question.id]?.answeredAtMs ?? null,
+      })),
+  };
+}
+
+/**
+ * "Skip for now" on the onboarding Humor Lab step. Recorded on the server so
+ * the journey moves on to Relationship Learning and never loops back; the
+ * Humor Lab itself stays available. Idempotent: the first skip time is kept.
+ */
+export const skipOnboardingHumor = onCall(
+  {enforceAppCheck, region: REGION},
+  async (request) => {
+    const uid = requireUid(request.auth?.uid);
+    const nowMs = Date.now();
+    const ref = db.doc(learningStatePath(uid));
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) return; // Existing members have no journey to advance.
+      const state = parseLearningState(snap.data());
+      if (state.journey.humorSkippedAtMs !== null) return;
+      tx.set(ref, learningStateWrite({...state, journey: {humorSkippedAtMs: nowMs}}), {merge: true});
+    });
+    return {ok: true};
   },
 );
 

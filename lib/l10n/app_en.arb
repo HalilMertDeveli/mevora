@@ -163,8 +163,52 @@
   "learningFollowUpDoneBody": "Your answers will make your Picks fit you better.",
   "learningNothingTitle": "No new questions for now",
   "learningNothingBody": "When new questions are ready, you'll find them here.",
-  "learningProfileTitle": "Let Mevora get to know you",
+  "learningProfileTitle": "Let Mevora get to know me",
   "learningProfileSubtitle": "Your answers help us choose people who fit you.",
+  "learningAfterHumorTitle": "We know your humor a little now.",
+  "learningAfterHumorBody": "Now let's learn what matters to you in a relationship.",
+  "learningDashboardHeadline": "How well does Mevora know you?",
+  "learningDashboardPercent": "{percent}%",
+  "@learningDashboardPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "learningDashboardBody": "Your answers and your profile help us choose people who fit you.",
+  "learningDashboardResumeInitial": "Continue where you left off ({answered}/{total})",
+  "@learningDashboardResumeInitial": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "learningDashboardContinue": "{count, plural, =1{Continue with 1 short question} other{Continue with {count} short questions}}",
+  "@learningDashboardContinue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "learningDashboardAllAnswered": "You've answered every question for now. New ones will appear here.",
+  "learningDashboardCategoriesTitle": "Compatibility areas",
+  "learningDashboardHighlightsTitle": "What we've learned so far",
+  "learningDashboardHighlightsSubtitle": "From your own answers.",
+  "learningDashboardAnswersTitle": "Your answers",
+  "learningDashboardAnswersFooter": "Changed your mind? Tap an answer to change it.",
+  "learningCategoryRelationship": "Relationship expectations",
+  "learningCategoryCommunication": "Communication",
+  "learningCategoryLifestyle": "Lifestyle",
+  "learningCategoryValues": "Values",
+  "learningCategoryHumor": "Humor",
+  "learningCategoryMusic": "Music",
+  "learningCategoryInterests": "Interests",
   "pickTypeBestOverall": "Best match",
   "pickTypeValuesMatch": "Values match",
   "pickTypeHumorMatch": "Humor match",

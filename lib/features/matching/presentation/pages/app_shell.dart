@@ -9,7 +9,6 @@ import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/calls/domain/models/call_session.dart';
-import 'package:mevora/features/match_score/presentation/widgets/match_feedback_prompt.dart';
 import 'package:mevora/features/matching/presentation/controllers/matches_controller.dart';
 import 'package:mevora/features/relationship/presentation/controllers/relationship_controller.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
@@ -29,9 +28,7 @@ class AppShell extends StatelessWidget {
     final relationship = RelationshipScope.controllerOf(context);
     final matches = social?.matchesController;
 
-    Widget body = IncomingCallNavigator(
-      child: MatchFeedbackHost(child: navigationShell),
-    );
+    Widget body = IncomingCallNavigator(child: navigationShell);
     if (relationship != null) {
       body = _ShellRelationshipBridge(
         controller: relationship,

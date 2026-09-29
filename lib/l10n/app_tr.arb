@@ -965,27 +965,6 @@
   "musicConnectError": "Spotify bağlanamadı. Mevora'nın geri kalanı çalışmaya devam eder.",
   "settingsConnectSpotify": "Spotify'ı bağla",
   "settingsSpotifySubtitle": "Müzik zevkin de eşleşmenin bir parçası olsun. Mevora müzik çalmaz.",
-  "matchScoreTitle": "Eşleşme puanı",
-  "matchScoreSubtitle": "Bağlantı itibarın",
-  "matchScoreValue": "{score} puan",
-  "@matchScoreValue": {
-    "placeholders": {
-      "score": {
-        "type": "int"
-      }
-    }
-  },
-  "matchScoreHistoryTitle": "Puan geçmişi",
-  "matchScoreHistoryEmpty": "Yeni eşleşmeler ve sohbetler burada puan ekler.",
-  "matchScoreHistoryMatch": "Yeni eşleşme +1",
-  "matchScoreHistoryInteraction": "Sohbet +1",
-  "matchFeedbackTitle": "Bu eşleşme nasıldı?",
-  "matchFeedbackMessage": "İsteğe bağlı. Bu not yalnızca senin geçmişinde kalır — karşı taraf görmez ve puanları değiştirmez.",
-  "matchFeedbackHint": "Kısa bir özel not",
-  "matchFeedbackSubmit": "Notu kaydet",
-  "matchFeedbackThanks": "Geçmişine kaydedildi.",
-  "matchFeedbackTooShort": "Kısa bir not yaz veya atla.",
-  "matchFeedbackFailed": "Not kaydedilemedi. Tekrar dene.",
   "relationshipPromptTitle": "Mevora seni daha iyi tanısın",
   "relationshipQuestionsPreparing": "Yeni sorular hazırlanıyor. Biraz sonra tekrar dene.",
   "relationshipTestTitle": "Mevora seni daha iyi tanısın",

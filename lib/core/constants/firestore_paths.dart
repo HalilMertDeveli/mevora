@@ -24,9 +24,6 @@ abstract final class FirestorePaths {
   static const String blockedUsers = 'blockedUsers';
   static const String messages = 'messages';
   static const String fcmTokens = 'fcmTokens';
-  static const String scoreHistory = 'matchScoreHistory';
-  static const String matchFeedback = 'matchFeedback';
-  static const String pendingFeedback = 'pendingMatchFeedback';
   static const String relationshipAnswers = 'relationshipAnswers';
   static const String relationshipMatch = 'relationshipMatch';
   static const String relationshipSeen = 'relationshipSeen';
@@ -88,14 +85,6 @@ abstract final class FirestorePaths {
 
   static String subscriptionCurrent(String uid) =>
       '$users/$uid/$subscription/current';
-
-  static String matchScoreHistory(String uid) => '$users/$uid/$scoreHistory';
-
-  static String matchFeedbackDoc(String uid, String matchId) =>
-      '$users/$uid/$matchFeedback/$matchId';
-
-  static String pendingMatchFeedback(String uid) =>
-      '$users/$uid/$pendingFeedback';
 
   static String purchase(String purchaseId) => '$purchases/$purchaseId';
 

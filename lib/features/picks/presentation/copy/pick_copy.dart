@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
+import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/features/humor/domain/services/humor_profile_display.dart';
 import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_compatibility_badge.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 /// Turns server-computed Pick reasons into localised copy.
 ///
@@ -22,14 +24,28 @@ abstract final class PickCopy {
     };
   }
 
+  /// Glyphs match the compatibility signal each Pick type stands for (see
+  /// `CompatibilitySignalKind.icon`), so a reason looks the same on a Pick
+  /// and on the compatibility card.
   static IconData typeIcon(PickType type) {
     return switch (type) {
-      PickType.bestOverall => Icons.auto_awesome_rounded,
-      PickType.valuesMatch => Icons.favorite_border_rounded,
-      PickType.humorMatch => Icons.sentiment_very_satisfied_rounded,
-      PickType.musicMatch => Icons.headphones_rounded,
-      PickType.nearbyMatch => Icons.near_me_rounded,
-      PickType.unexpectedMatch => Icons.explore_rounded,
+      PickType.bestOverall => MevoraIcons.compatibility,
+      PickType.valuesMatch => MevoraIcons.like,
+      PickType.humorMatch => MevoraIcons.humor,
+      PickType.musicMatch => MevoraIcons.track,
+      PickType.nearbyMatch => MevoraIcons.location,
+      PickType.unexpectedMatch => MevoraIcons.discover,
+    };
+  }
+
+  /// The signal colour of a Pick type: music and humor keep their own
+  /// signal colours, everything about fit reads as compatibility.
+  static MevoraTone typeTone(PickType type) {
+    return switch (type) {
+      PickType.humorMatch => MevoraTone.humor,
+      PickType.musicMatch => MevoraTone.music,
+      PickType.nearbyMatch || PickType.unexpectedMatch => MevoraTone.accent,
+      PickType.bestOverall || PickType.valuesMatch => MevoraTone.compatibility,
     };
   }
 
@@ -149,7 +165,7 @@ abstract final class PickCopy {
   ) {
     final lines = <({IconData icon, String text})>[];
     if (pick.pickType == PickType.unexpectedMatch) {
-      lines.add((icon: Icons.explore_rounded, text: l10n.pickDetailUnexpected));
+      lines.add((icon: MevoraIcons.discover, text: l10n.pickDetailUnexpected));
     }
     for (final reason in pick.reasons) {
       final sentence = reasonSentence(l10n, reason);
@@ -160,7 +176,7 @@ abstract final class PickCopy {
       if (reason.type == PickReasonType.humor) {
         final traits = humorTraits(l10n, pick);
         if (traits != null) {
-          lines.add((icon: Icons.theater_comedy_outlined, text: traits));
+          lines.add((icon: MevoraIcons.ratingVeryFunny, text: traits));
         }
       }
     }
@@ -169,15 +185,15 @@ abstract final class PickCopy {
 
   static IconData _reasonIcon(PickReasonType type) {
     return switch (type) {
-      PickReasonType.overall => Icons.auto_awesome_rounded,
-      PickReasonType.relationship => Icons.favorite_border_rounded,
-      PickReasonType.relationshipViews => Icons.forum_outlined,
-      PickReasonType.communication => Icons.chat_bubble_outline_rounded,
-      PickReasonType.lifestyle => Icons.spa_outlined,
-      PickReasonType.humor => Icons.sentiment_very_satisfied_rounded,
-      PickReasonType.music => Icons.headphones_rounded,
-      PickReasonType.distance => Icons.near_me_outlined,
-      PickReasonType.interests => Icons.interests_outlined,
+      PickReasonType.overall => MevoraIcons.compatibility,
+      PickReasonType.relationship => MevoraIcons.like,
+      PickReasonType.relationshipViews => MevoraIcons.questions,
+      PickReasonType.communication => MevoraIcons.message,
+      PickReasonType.lifestyle => MevoraIcons.coffee,
+      PickReasonType.humor => MevoraIcons.humor,
+      PickReasonType.music => MevoraIcons.track,
+      PickReasonType.distance => MevoraIcons.location,
+      PickReasonType.interests => MevoraIcons.insight,
     };
   }
 }

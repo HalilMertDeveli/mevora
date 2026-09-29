@@ -416,10 +416,13 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppRadii.xl),
         ),
       ),
-      pageTransitionsTheme: const PageTransitionsTheme(
+      pageTransitionsTheme: PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          // Inherit the framework's platform defaults (Cupertino swipe-back
+          // on iOS) instead of naming that builder: it moved from material to
+          // cupertino between Flutter releases, and CI runs a newer stable.
+          ...const PageTransitionsTheme().builders,
+          TargetPlatform.android: const FadeForwardsPageTransitionsBuilder(),
         },
       ),
     );

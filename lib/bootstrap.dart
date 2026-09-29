@@ -21,6 +21,7 @@ import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/di/social_services_factory.dart';
 import 'package:mevora/core/di/support_scope.dart';
 import 'package:mevora/core/di/subscription_services_factory.dart';
+import 'package:mevora/core/di/streak_services_factory.dart';
 import 'package:mevora/core/di/verification_services_factory.dart';
 import 'package:mevora/core/errors/error_handler.dart';
 import 'package:mevora/core/identity/firebase_auth_uid_source.dart';
@@ -140,6 +141,10 @@ Future<void> bootstrap(AppEnvironment environment) async {
     logger: logger,
     useEmulatorStore: config.useEmulators,
   );
+  final streakServices = createStreakServices(
+    analytics: analytics,
+    logger: logger,
+  );
   final languageController = LanguageController(
     repository: LanguageRepository(
       local: SharedPreferencesLanguageDataSource(
@@ -177,6 +182,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       permissionService: permissionService,
       settingsServices: settingsServices,
       supportServices: supportServices,
+      streakServices: streakServices,
     ),
   );
 }

@@ -181,6 +181,7 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/photoModeration`),
       deleteCollectionDocs(`users/${uid}/rateLimits`),
       deleteCollectionDocs(`users/${uid}/mevoraPicks`),
+      deleteCollectionDocs(`users/${uid}/dailyStreak`),
     ]);
 
     // Releases this account claim on any store purchase token it owns.

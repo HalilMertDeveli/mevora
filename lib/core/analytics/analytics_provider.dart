@@ -68,6 +68,11 @@ abstract final class AnalyticsEvents {
   static const String pickPass = 'pick_pass';
   static const String pickMutualMatch = 'pick_mutual_match';
   static const String picksDiscoverMoreOpened = 'picks_discover_more_opened';
+  // Daily streak. Only credited days are logged, never a same-day reopen.
+  // Params: status, streak_length_bucket, personal_best — no uid or dates.
+  static const String streakCheckIn = 'streak_check_in';
+  static const String streakPersonalBest = 'streak_personal_best';
+  static const String streakDetailsViewed = 'streak_details_viewed';
   static const String spotifyConnectStarted = 'spotify_connect_started';
   static const String spotifyConnectSuccess = 'spotify_connect_success';
   static const String spotifyConnectFailed = 'spotify_connect_failed';

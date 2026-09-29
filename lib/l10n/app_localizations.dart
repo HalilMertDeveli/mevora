@@ -7927,6 +7927,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Encrypted message'**
   String get chatPreviewEncrypted;
+
+  /// No description provided for @streakTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily streak'**
+  String get streakTitle;
+
+  /// No description provided for @streakIndicatorTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Your daily streak'**
+  String get streakIndicatorTooltip;
+
+  /// No description provided for @streakIndicatorSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Daily streak: 1 day} other{Daily streak: {count} days}}'**
+  String streakIndicatorSemantics(int count);
+
+  /// No description provided for @streakDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1-day streak} other{{count}-day streak}}'**
+  String streakDays(int count);
+
+  /// No description provided for @streakDetailsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You came to Mevora today. Come back tomorrow to keep it going.} other{You have come back to Mevora {count} days in a row.}}'**
+  String streakDetailsBody(int count);
+
+  /// No description provided for @streakLongest.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Longest streak: 1 day} other{Longest streak: {count} days}}'**
+  String streakLongest(int count);
+
+  /// No description provided for @streakTotalDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day on Mevora in total} other{{count} days on Mevora in total}}'**
+  String streakTotalDays(int count);
+
+  /// No description provided for @streakLastSevenDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get streakLastSevenDays;
+
+  /// No description provided for @streakWeekSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You came back on 1 of the last 7 days} other{You came back on {count} of the last 7 days}}'**
+  String streakWeekSemantics(int count);
+
+  /// No description provided for @streakHowItWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'Your streak grows by one on each day you come back to Mevora. Opening the app again on the same day does not add to it.'**
+  String get streakHowItWorks;
+
+  /// No description provided for @streakMissedDayNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip a day and a new streak begins. Your longest streak always stays on record.'**
+  String get streakMissedDayNote;
+
+  /// No description provided for @streakStartedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your streak has started'**
+  String get streakStartedTitle;
+
+  /// No description provided for @streakStartedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You came to Mevora today. Come back tomorrow to keep it going.'**
+  String get streakStartedBody;
+
+  /// No description provided for @streakContinuedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You kept your streak going today.'**
+  String get streakContinuedBody;
+
+  /// No description provided for @streakRestartedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A new streak has started'**
+  String get streakRestartedTitle;
+
+  /// No description provided for @streakRestartedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Today is day 1 again. Your longest streak is still on record.'**
+  String get streakRestartedBody;
+
+  /// No description provided for @streakPersonalBest.
+  ///
+  /// In en, this message translates to:
+  /// **'New personal best'**
+  String get streakPersonalBest;
+
+  /// No description provided for @streakMilestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone'**
+  String get streakMilestone;
+
+  /// No description provided for @streakCelebrationDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get streakCelebrationDismiss;
 }
 
 class _AppLocalizationsDelegate

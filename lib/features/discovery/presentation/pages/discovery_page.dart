@@ -36,6 +36,7 @@ import 'package:mevora/features/picks/domain/entities/mevora_pick.dart';
 import 'package:mevora/features/picks/domain/repositories/mevora_picks_repository.dart';
 import 'package:mevora/features/picks/presentation/controllers/mevora_picks_controller.dart';
 import 'package:mevora/features/picks/presentation/widgets/picks_view.dart';
+import 'package:mevora/features/streak/presentation/widgets/streak_indicator.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/features/relationship/presentation/widgets/relationship_question_card.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -354,6 +355,8 @@ class _DiscoveryPageState extends State<DiscoveryPage>
                     : () => _openFilters(controller),
                 icon: const Icon(MevoraIcons.filters),
               ),
+            // The daily streak lives on the main daily surface.
+            const StreakIndicator(),
             BoostButton(
               isActive: state.activeBoost != null,
               onPressed: () => unawaited(_openBoost(controller)),

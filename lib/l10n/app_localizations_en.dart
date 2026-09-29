@@ -275,7 +275,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String learningDashboardTotals(int total, int days) {
-    return '$total answers in total · $days days completed';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total answers',
+      one: '1 answer',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0 in total · $_temp1 completed';
   }
 
   @override

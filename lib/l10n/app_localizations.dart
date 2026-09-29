@@ -497,7 +497,7 @@ abstract class AppLocalizations {
   /// No description provided for @learningDashboardTotals.
   ///
   /// In en, this message translates to:
-  /// **'{total} answers in total · {days} days completed'**
+  /// **'{total, plural, =1{1 answer} other{{total} answers}} in total · {days, plural, =1{1 day} other{{days} days}} completed'**
   String learningDashboardTotals(int total, int days);
 
   /// No description provided for @learningDashboardToday.

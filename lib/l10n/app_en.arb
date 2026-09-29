@@ -183,7 +183,7 @@
       }
     }
   },
-  "learningDashboardTotals": "{total} answers in total · {days} days completed",
+  "learningDashboardTotals": "{total, plural, =1{1 answer} other{{total} answers}} in total · {days, plural, =1{1 day} other{{days} days}} completed",
   "@learningDashboardTotals": {
     "placeholders": {
       "total": {

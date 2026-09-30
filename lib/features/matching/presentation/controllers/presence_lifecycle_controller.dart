@@ -12,7 +12,12 @@ class PresenceLifecycleController with WidgetsBindingObserver {
   }) : _presence = presenceRepository,
        _uidSource = uidSource;
 
-  static const Duration heartbeatInterval = Duration(seconds: 30);
+  /// Liveness only: going online and offline are written explicitly on
+  /// resume and pause. The beat exists for an app that dies without a
+  /// pause, and every beat is re-read by each partner's open listener.
+  /// Viewers treat a beat older than PresenceSubtitle.staleAfter as
+  /// offline, which must stay above two intervals.
+  static const Duration heartbeatInterval = Duration(seconds: 60);
 
   final PresenceRepository _presence;
   final AuthUidSource _uidSource;
@@ -74,7 +79,9 @@ class PresenceLifecycleController with WidgetsBindingObserver {
 
   Future<void> _goOnline() async {
     final uid = _uid;
-    if (uid == null || !_foreground) {
+    // Already online with a beat running: an auth-state replay or an
+    // inactive → resumed flicker (notification shade) changes nothing.
+    if (uid == null || !_foreground || _heartbeat != null) {
       return;
     }
     _startHeartbeat();
@@ -130,7 +137,8 @@ class PresenceLifecycleController with WidgetsBindingObserver {
 
   void _startHeartbeat() {
     _heartbeat?.cancel();
-    unawaited(_heartbeatNow());
+    // No immediate beat: setOnline right after this already stamps
+    // updatedAt, so a second write would only fan out twice.
     _heartbeat = Timer.periodic(heartbeatInterval, (_) {
       unawaited(_heartbeatNow());
     });

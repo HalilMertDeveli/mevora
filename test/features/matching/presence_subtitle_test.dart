@@ -47,7 +47,7 @@ void main() {
     final lastSeenAt = now.subtract(const Duration(hours: 1));
     final presence = PresenceWatch(
       isOnline: true,
-      updatedAt: now.subtract(const Duration(minutes: 2)),
+      updatedAt: now.subtract(const Duration(minutes: 3)),
       lastSeenAt: lastSeenAt,
     );
 

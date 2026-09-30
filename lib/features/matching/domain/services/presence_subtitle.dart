@@ -6,7 +6,8 @@ import 'package:mevora/l10n/app_localizations.dart';
 
 /// WhatsApp-style chat header subtitle: typing > online > last seen.
 abstract final class PresenceSubtitle {
-  static const Duration staleAfter = Duration(seconds: 90);
+  /// Two missed 60 s heartbeats plus slack for a slow write.
+  static const Duration staleAfter = Duration(seconds: 150);
 
   static String? chatHeader({
     required AppLocalizations l10n,

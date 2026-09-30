@@ -4,6 +4,10 @@ const {createAdminWorld, rejectsWith, key} = require("./helpers/adminHarness.cjs
 const specs = require("../lib/admin/commands.js");
 const {reconcilePhotoModeration} = require("../lib/moderation/photoModerationService.js");
 
+const fs = require("node:fs");
+const path = require("node:path");
+const PORTRAIT = fs.readFileSync(path.join(__dirname, "..", "..", "assets", "images", "portraits", "mock-01.jpg"));
+
 const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(32, 1)]);
 
 /** A member with one photo stuck in manual review (still in pending/). */
@@ -68,6 +72,29 @@ describe("admin photo review — the ledger stays the authority", () => {
     assert.ok(w.db.paths().some((p) => p.startsWith("adminAuditLog/") && w.db.read(p).action === "PHOTO_APPROVED"));
   });
 
+  it("approving a decodable photo publishes its display variants through the ledger", async () => {
+    const w = await world();
+    w.bucket.put("users/member-1/profile/pending/img1.png", PORTRAIT, "image/jpeg");
+    await w.run(specs.adminReviewPhotoSpec, "mod-1", {uid: "member-1", imageId: "img1", decision: "approve", idempotencyKey: key()});
+    const ledger = w.db.read("users/member-1/photoModeration/img1");
+    assert.match(ledger.thumbUrl, /img1_thumb\.jpg\?alt=media&token=/);
+    assert.match(ledger.cardUrl, /img1_card\.jpg\?alt=media&token=/);
+    assert.ok(w.bucket.files.has("users/member-1/profile/thumbs/img1_thumb.jpg"));
+    assert.ok(w.bucket.files.has("users/member-1/profile/thumbs/img1_card.jpg"));
+    const photo = w.db.read("profiles/member-1").photos[0];
+    assert.equal(photo.thumbUrl, ledger.thumbUrl);
+    assert.equal(photo.cardUrl, ledger.cardUrl);
+  });
+
+  it("an undecodable photo is still approved, just without variants", async () => {
+    const w = await world();
+    const result = await w.run(specs.adminReviewPhotoSpec, "mod-1", {uid: "member-1", imageId: "img1", decision: "approve", idempotencyKey: key()});
+    assert.equal(result.status, "approved");
+    const ledger = w.db.read("users/member-1/photoModeration/img1");
+    assert.equal(ledger.thumbUrl ?? null, null);
+    assert.equal(ledger.cardUrl ?? null, null);
+  });
+
   it("the ledger never names the moderator (the member can read it)", async () => {
     const w = await world();
     await w.run(specs.adminReviewPhotoSpec, "mod-1", {uid: "member-1", imageId: "img1", decision: "approve", idempotencyKey: key()});
@@ -94,6 +121,22 @@ describe("admin photo review — the ledger stays the authority", () => {
     assert.equal(w.db.read(`moderationActions/${result.actionId}`).type, "PHOTO_REMOVED");
     assert.equal(w.bucket.files.has("users/member-1/profile/photos/img1.png"), false);
     assert.equal(w.db.read("profiles/member-1").photos[0].downloadUrl, null);
+  });
+
+  it("removing a published photo also deletes its display variants", async () => {
+    const w = await world({published: true});
+    w.bucket.put("users/member-1/profile/thumbs/img1_thumb.jpg", PORTRAIT);
+    w.bucket.put("users/member-1/profile/thumbs/img1_card.jpg", PORTRAIT);
+    await w.db.doc("users/member-1/photoModeration/img1").set({thumbUrl: "https://t", cardUrl: "https://c"}, {merge: true});
+    await w.run(specs.adminReviewPhotoSpec, "mod-1", {uid: "member-1", imageId: "img1", decision: "reject", reasonCode: "NUDITY_SEXUAL_CONTENT", idempotencyKey: key()});
+    assert.equal(w.bucket.files.has("users/member-1/profile/thumbs/img1_thumb.jpg"), false);
+    assert.equal(w.bucket.files.has("users/member-1/profile/thumbs/img1_card.jpg"), false);
+    const ledger = w.db.read("users/member-1/photoModeration/img1");
+    assert.equal(ledger.thumbUrl, null);
+    assert.equal(ledger.cardUrl, null);
+    const photo = w.db.read("profiles/member-1").photos[0];
+    assert.equal(photo.thumbUrl, null);
+    assert.equal(photo.cardUrl, null);
   });
 
   it("a rejected photo stays rejected: no second decision, no client self-approval", async () => {

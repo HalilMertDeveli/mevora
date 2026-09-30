@@ -399,7 +399,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         leftName: me?.displayName ?? l10n.you,
         leftImage: MevoraNetworkImages.provider(me?.photoUrl),
         rightName: match.displayName,
-        rightImage: MevoraNetworkImages.provider(match.photoUrl),
+        rightImage: MevoraNetworkImages.provider(match.cardPhoto),
         compatibilitySection: WhyYouMatchPanel(
           breakdown: breakdown,
           reasons: reasons,
@@ -630,7 +630,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     return MevoraMatchCelebration(
       leftName: l10n.you,
       rightName: match.displayName,
-      rightImage: MevoraNetworkImages.provider(match.photoUrl),
+      rightImage: MevoraNetworkImages.provider(match.cardPhoto),
       compatibilitySection: WhyYouMatchPanel(
         breakdown: breakdown,
         reasons: reasons,

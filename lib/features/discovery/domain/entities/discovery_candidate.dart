@@ -10,6 +10,8 @@ class DiscoveryCandidate {
     required this.displayName,
     required this.age,
     this.photos = const [],
+    this.cardPhotoUrl,
+    this.thumbPhotoUrl,
     this.distanceLabel,
     this.distanceKm,
     this.compatibilityScore = 0,
@@ -59,10 +61,25 @@ class DiscoveryCandidate {
 
   final String displayName;
   final int age;
+
+  /// Full-size photos, in display order — the full-screen profile gallery.
   final List<String> photos;
 
-  /// Primary photo for card thumbnails.
+  /// The primary photo's server-rendered card variant (~720px shorter edge).
+  /// Null for photos approved before variants existed.
+  final String? cardPhotoUrl;
+
+  /// The primary photo's server-rendered thumbnail (~320px shorter edge).
+  final String? thumbPhotoUrl;
+
+  /// Primary photo at full size.
   String? get photoUrl => photos.isEmpty ? null : photos.first;
+
+  /// Primary photo for the full-width Picks and Discover cards.
+  String? get cardPhoto => cardPhotoUrl ?? photoUrl;
+
+  /// Primary photo for avatars and list rows.
+  String? get avatarPhoto => thumbPhotoUrl ?? cardPhotoUrl ?? photoUrl;
 
   /// Derived server label such as "3.8 km away".
   final String? distanceLabel;
@@ -140,6 +157,8 @@ class DiscoveryCandidate {
     String? displayName,
     int? age,
     List<String>? photos,
+    String? cardPhotoUrl,
+    String? thumbPhotoUrl,
     String? distanceLabel,
     double? distanceKm,
     int? compatibilityScore,
@@ -185,6 +204,8 @@ class DiscoveryCandidate {
       displayName: displayName ?? this.displayName,
       age: age ?? this.age,
       photos: photos ?? this.photos,
+      cardPhotoUrl: cardPhotoUrl ?? this.cardPhotoUrl,
+      thumbPhotoUrl: thumbPhotoUrl ?? this.thumbPhotoUrl,
       distanceLabel: distanceLabel ?? this.distanceLabel,
       distanceKm: distanceKm ?? this.distanceKm,
       compatibilityScore: compatibilityScore ?? this.compatibilityScore,

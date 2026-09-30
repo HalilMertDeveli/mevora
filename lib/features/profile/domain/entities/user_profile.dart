@@ -7,6 +7,7 @@ class ProfilePhoto {
     required this.storagePath,
     this.downloadUrl,
     this.thumbUrl,
+    this.cardUrl,
     this.moderationStatus = 'pending',
     this.order = 0,
     this.isPrimary = false,
@@ -16,6 +17,10 @@ class ProfilePhoto {
   final String storagePath;
   final String? downloadUrl;
   final String? thumbUrl;
+
+  /// Server-rendered card-size variant. Written only by moderation; the client
+  /// round-trips it so reordering photos does not strip it.
+  final String? cardUrl;
 
   /// `pending` | `approved` | `rejected`. Clients cannot mark approved.
   final String moderationStatus;
@@ -33,6 +38,7 @@ class ProfilePhoto {
     String? storagePath,
     String? downloadUrl,
     String? thumbUrl,
+    String? cardUrl,
     String? moderationStatus,
     int? order,
     bool? isPrimary,
@@ -42,6 +48,7 @@ class ProfilePhoto {
       storagePath: storagePath ?? this.storagePath,
       downloadUrl: downloadUrl ?? this.downloadUrl,
       thumbUrl: thumbUrl ?? this.thumbUrl,
+      cardUrl: cardUrl ?? this.cardUrl,
       moderationStatus: moderationStatus ?? this.moderationStatus,
       order: order ?? this.order,
       isPrimary: isPrimary ?? this.isPrimary,

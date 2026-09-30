@@ -7,6 +7,7 @@ import {
   readLedger,
 } from "../../moderation/photoModerationLedger.js";
 import {publishApprovedPhoto, setPhotoModerationStatus} from "../../moderation/photoModerationService.js";
+import {deletePhotoVariants} from "../../moderation/photoVariants.js";
 import {ACTION_COLLECTION, buildActionRecord, type ActionType} from "../actions/actionTypes.js";
 import {appendAuditEvent, recordAuditEvent} from "../audit/auditService.js";
 import type {AdminActor} from "../auth/adminAuthorization.js";
@@ -341,6 +342,10 @@ export async function reviewPhoto(
       newStatus = "approved";
       let storagePath = isPublishedStoragePath(input.uid, claim.storagePath) ? claim.storagePath : undefined;
       let downloadUrl = storagePath ? claim.downloadUrl : undefined;
+      // Left undefined when the photo is already published (e.g. a reported
+      // photo re-approved): the ledger keeps the variants it already has.
+      let thumbUrl: string | null | undefined;
+      let cardUrl: string | null | undefined;
       if (!storagePath || !downloadUrl) {
         const bucket = deps.bucket();
         const pending = await findPendingObject(bucket, input.uid, input.imageId);
@@ -358,6 +363,8 @@ export async function reviewPhoto(
         });
         storagePath = published.destPath;
         downloadUrl = published.downloadUrl;
+        thumbUrl = published.thumbUrl;
+        cardUrl = published.cardUrl;
       }
       await setPhotoModerationStatus(db, input.uid, input.imageId, {
         moderationStatus: "approved",
@@ -366,6 +373,8 @@ export async function reviewPhoto(
         moderatedAt: FieldValue.serverTimestamp(),
         storagePath,
         downloadUrl,
+        thumbUrl,
+        cardUrl,
         processingError: null,
       });
     } else {
@@ -376,6 +385,9 @@ export async function reviewPhoto(
       if (located && located.source !== "quarantine") {
         quarantinedTo = await quarantine(deps, input.uid, input.imageId, located.path);
       }
+      // The display variants are copies of the same image; the quarantined
+      // original is the evidence, so they are simply removed.
+      await deletePhotoVariants(deps.bucket(), input.uid, input.imageId);
       await setPhotoModerationStatus(db, input.uid, input.imageId, {
         moderationStatus: "rejected",
         moderationReason: input.reasonCode,
@@ -383,6 +395,8 @@ export async function reviewPhoto(
         moderatedAt: FieldValue.serverTimestamp(),
         // The published copy is gone; nothing may keep pointing at it.
         downloadUrl: null,
+        thumbUrl: null,
+        cardUrl: null,
       });
     }
   } catch (error) {

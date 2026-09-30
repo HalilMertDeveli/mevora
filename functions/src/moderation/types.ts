@@ -15,6 +15,7 @@ export interface PhotoRecord {
   storagePath?: string;
   downloadUrl?: string | null;
   thumbUrl?: string | null;
+  cardUrl?: string | null;
   moderationStatus?: string;
   moderationReason?: string | null;
   moderatedAt?: unknown;

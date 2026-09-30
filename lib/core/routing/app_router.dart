@@ -6,6 +6,12 @@ import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/config/emulator_qa_login.dart';
 import 'package:mevora/core/routing/auth_redirector.dart';
 import 'package:mevora/core/routing/lazy_shell_navigator.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_gate.dart';
+import 'package:mevora/features/app_operations/presentation/controllers/app_operations_controller.dart';
+import 'package:mevora/features/app_operations/presentation/pages/maintenance_page.dart';
+import 'package:mevora/features/app_operations/presentation/pages/update_required_page.dart';
+import 'package:mevora/features/app_operations/presentation/widgets/feature_unavailable_view.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/settings/presentation/pages/blocked_users_page.dart';
 import 'package:mevora/features/subscription/presentation/pages/paywall_route.dart';
@@ -61,12 +67,18 @@ GoRouter createAppRouter({
   required AuthController authController,
   LocationController? locationController,
   LearningJourneyController? journey,
+  AppOperationsController? appOperations,
 }) {
   final refresh = Listenable.merge(<Listenable>[
     authController,
     ?locationController,
     ?journey,
+    ?appOperations?.routing,
   ]);
+  // The build-time flag and the owner's runtime switch must both allow it.
+  bool humorAvailable() =>
+      config.featureFlags.humorLabEnabled &&
+      (appOperations?.isFeatureEnabled(AppFeature.humorLab) ?? true);
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refresh,
@@ -81,8 +93,12 @@ GoRouter createAppRouter({
             authController.phoneChallenge != null,
         needsLocationOnboarding: locationController?.onboardingNeeded ?? false,
         locationGateResolved: locationController?.isResolved ?? true,
-        journeyRoute: journey?.requiredRoute,
+        journeyRoute: journeyRouteFor(
+          journey?.requiredRoute,
+          humorAvailable: humorAvailable(),
+        ),
         journeyPending: journey?.pending ?? false,
+        operationsGate: appOperations?.gate ?? AppOperationsGate.normal,
       );
     },
     routes: [
@@ -267,6 +283,20 @@ GoRouter createAppRouter({
         ),
       ),
       GoRoute(
+        path: AppRoutes.maintenance,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const MaintenancePage(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.updateRequired,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const UpdateRequiredPage(),
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.report,
         pageBuilder: (context, state) {
           final params = state.uri.queryParameters;
@@ -284,7 +314,10 @@ GoRouter createAppRouter({
         path: AppRoutes.boost,
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const BoostScreen(),
+          child: const AppFeatureGate(
+            feature: AppFeature.boost,
+            child: BoostScreen(),
+          ),
         ),
       ),
       GoRoute(
@@ -292,7 +325,7 @@ GoRouter createAppRouter({
         redirect: (context, state) {
           // Same gate as the lab itself: with the flag off there is no
           // personalization step, so there is no way to strand a user on one.
-          if (!config.featureFlags.humorLabEnabled) {
+          if (!humorAvailable()) {
             return AppRoutes.discovery;
           }
           return null;
@@ -305,7 +338,7 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.humorResult,
         redirect: (context, state) {
-          if (!config.featureFlags.humorLabEnabled) {
+          if (!humorAvailable()) {
             return AppRoutes.discovery;
           }
           return null;
@@ -318,7 +351,7 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.humorDaily,
         redirect: (context, state) {
-          if (!config.featureFlags.humorLabEnabled) {
+          if (!humorAvailable()) {
             return AppRoutes.discovery;
           }
           return null;
@@ -348,7 +381,7 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.humorLab,
         redirect: (context, state) {
-          if (!config.featureFlags.humorLabEnabled) {
+          if (!humorAvailable()) {
             return AppRoutes.discovery;
           }
           return null;
@@ -532,4 +565,15 @@ GoRouter createAppRouter({
       ),
     ],
   );
+}
+
+/// The first-run journey's humor step is skipped the same way whether the
+/// Humor Lab is off at build time or switched off by the owner — otherwise
+/// the journey and the humor routes would redirect into each other.
+@visibleForTesting
+String? journeyRouteFor(String? route, {required bool humorAvailable}) {
+  if (route == AppRoutes.humorCalibration && !humorAvailable) {
+    return LearningJourneyController.learningRoute;
+  }
+  return route;
 }

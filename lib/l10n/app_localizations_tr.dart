@@ -4787,4 +4787,49 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get humorDailyLockedBody =>
       'Günlük mizah turu, mizah profilin hazır olduğunda başlar.';
+
+  @override
+  String get appOpsMaintenanceTitle => 'Kısa bir bakım molası';
+
+  @override
+  String get appOpsMaintenanceMessage =>
+      'Mevora kısa süreli bakımda. Birazdan tekrar buradayız.';
+
+  @override
+  String get appOpsMaintenanceSupport => 'Destekle iletişime geç';
+
+  @override
+  String get appOpsMaintenanceAccount => 'Hesap ayarları';
+
+  @override
+  String get appOpsUpdateRequiredTitle => 'Güncelleme zamanı';
+
+  @override
+  String get appOpsUpdateRequiredMessage =>
+      'Mevora\'nın bu sürümü artık desteklenmiyor. Devam etmek için uygulamayı güncelle.';
+
+  @override
+  String get appOpsUpdateAction => 'Güncelle';
+
+  @override
+  String appOpsUpdateFromStore(String store) {
+    return 'Mevora\'yı $store üzerinden güncelle.';
+  }
+
+  @override
+  String get appOpsGenericStore => 'uygulama mağazası';
+
+  @override
+  String get appOpsUpdateAvailable => 'Mevora\'nın yeni bir sürümü hazır.';
+
+  @override
+  String get appOpsFeatureUnavailableTitle => 'Geçici olarak kullanılamıyor';
+
+  @override
+  String get appOpsFeatureUnavailableMessage =>
+      'Bu özellik kısa bir mola verdi. Biraz sonra yeniden bakabilirsin.';
+
+  @override
+  String get appOpsSpotifyUnavailable =>
+      'Spotify bağlantısı şu an geçici olarak kullanılamıyor. Daha sonra Müzik sekmesinden bağlayabilirsin.';
 }

@@ -1974,5 +1974,18 @@
   "humorDailyCompletedBody": "Mizah profilin biraz daha netleşti.",
   "humorDailyNotReadyTitle": "Bugünün turu hazırlanıyor",
   "humorDailyNotReadyBody": "Biraz sonra yeniden bakabilirsin.",
-  "humorDailyLockedBody": "Günlük mizah turu, mizah profilin hazır olduğunda başlar."
+  "humorDailyLockedBody": "Günlük mizah turu, mizah profilin hazır olduğunda başlar.",
+  "appOpsMaintenanceTitle": "Kısa bir bakım molası",
+  "appOpsMaintenanceMessage": "Mevora kısa süreli bakımda. Birazdan tekrar buradayız.",
+  "appOpsMaintenanceSupport": "Destekle iletişime geç",
+  "appOpsMaintenanceAccount": "Hesap ayarları",
+  "appOpsUpdateRequiredTitle": "Güncelleme zamanı",
+  "appOpsUpdateRequiredMessage": "Mevora'nın bu sürümü artık desteklenmiyor. Devam etmek için uygulamayı güncelle.",
+  "appOpsUpdateAction": "Güncelle",
+  "appOpsUpdateFromStore": "Mevora'yı {store} üzerinden güncelle.",
+  "appOpsGenericStore": "uygulama mağazası",
+  "appOpsUpdateAvailable": "Mevora'nın yeni bir sürümü hazır.",
+  "appOpsFeatureUnavailableTitle": "Geçici olarak kullanılamıyor",
+  "appOpsFeatureUnavailableMessage": "Bu özellik kısa bir mola verdi. Biraz sonra yeniden bakabilirsin.",
+  "appOpsSpotifyUnavailable": "Spotify bağlantısı şu an geçici olarak kullanılamıyor. Daha sonra Müzik sekmesinden bağlayabilirsin."
 }

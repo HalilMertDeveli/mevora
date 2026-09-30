@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
 import 'package:mevora/features/music/domain/entities/music_taste.dart';
 import 'package:mevora/features/music/domain/repositories/music_repository.dart';
 import 'package:mevora/features/music/presentation/controllers/public_music_controller.dart';
@@ -64,6 +66,10 @@ class _OnboardingMusicStepState extends State<OnboardingMusicStep> {
   Widget _buildQuestion(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final spotifyEnabled = AppOperationsScope.isFeatureEnabled(
+      context,
+      AppFeature.spotify,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -98,11 +104,23 @@ class _OnboardingMusicStepState extends State<OnboardingMusicStep> {
               ),
             ),
           ),
-        MevoraButton(
-          label: l10n.onboardingMusicConnect,
-          isLoading: _connecting,
-          onPressed: _connecting ? null : () => unawaited(_connect()),
-        ),
+        if (spotifyEnabled)
+          MevoraButton(
+            label: l10n.onboardingMusicConnect,
+            isLoading: _connecting,
+            onPressed: _connecting ? null : () => unawaited(_connect()),
+          )
+        else
+          Padding(
+            key: const Key('onboardingSpotifyUnavailable'),
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Text(
+              l10n.appOpsSpotifyUnavailable,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
         const SizedBox(height: AppSpacing.xs),
         // Full width like Connect above it, so the label sits centred
         // under it instead of hugging the left edge of the column.

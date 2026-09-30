@@ -6,6 +6,7 @@ import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/relationship_learning_scope.dart';
@@ -14,6 +15,7 @@ import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
@@ -36,7 +38,13 @@ class ProfileTabPage extends StatelessWidget {
     final user = AuthScope.maybeOf(context)?.user;
     final theme = Theme.of(context);
     final humorEnabled =
-        AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
+        AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled ==
+            true &&
+        AppOperationsScope.isFeatureEnabled(context, AppFeature.humorLab);
+    final boostEnabled = AppOperationsScope.isFeatureEnabled(
+      context,
+      AppFeature.boost,
+    );
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.profile, style: theme.textTheme.headlineMedium),
@@ -120,9 +128,9 @@ class ProfileTabPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           MevoraListGroup(
             title: l10n.profileSectionTrust,
-            children: const [
-              _ProfileVerificationTile(),
-              _ProfileBoostTile(),
+            children: [
+              const _ProfileVerificationTile(),
+              if (boostEnabled) const _ProfileBoostTile(),
             ],
           ),
         ],

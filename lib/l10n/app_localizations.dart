@@ -8419,6 +8419,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The daily humor round begins once your humor profile is ready.'**
   String get humorDailyLockedBody;
+
+  /// No description provided for @appOpsMaintenanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A short maintenance break'**
+  String get appOpsMaintenanceTitle;
+
+  /// No description provided for @appOpsMaintenanceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora is briefly down for maintenance. We\'ll be right back.'**
+  String get appOpsMaintenanceMessage;
+
+  /// No description provided for @appOpsMaintenanceSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get appOpsMaintenanceSupport;
+
+  /// No description provided for @appOpsMaintenanceAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account settings'**
+  String get appOpsMaintenanceAccount;
+
+  /// No description provided for @appOpsUpdateRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to update'**
+  String get appOpsUpdateRequiredTitle;
+
+  /// No description provided for @appOpsUpdateRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This version of Mevora is no longer supported. Update the app to keep going.'**
+  String get appOpsUpdateRequiredMessage;
+
+  /// No description provided for @appOpsUpdateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get appOpsUpdateAction;
+
+  /// No description provided for @appOpsUpdateFromStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Mevora from {store}.'**
+  String appOpsUpdateFromStore(String store);
+
+  /// No description provided for @appOpsGenericStore.
+  ///
+  /// In en, this message translates to:
+  /// **'your app store'**
+  String get appOpsGenericStore;
+
+  /// No description provided for @appOpsUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version of Mevora is available.'**
+  String get appOpsUpdateAvailable;
+
+  /// No description provided for @appOpsFeatureUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporarily unavailable'**
+  String get appOpsFeatureUnavailableTitle;
+
+  /// No description provided for @appOpsFeatureUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is taking a short break. Please check back a little later.'**
+  String get appOpsFeatureUnavailableMessage;
+
+  /// No description provided for @appOpsSpotifyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting Spotify is temporarily unavailable. You can connect it later from the Music tab.'**
+  String get appOpsSpotifyUnavailable;
 }
 
 class _AppLocalizationsDelegate

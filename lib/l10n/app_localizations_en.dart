@@ -4803,4 +4803,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get humorDailyLockedBody =>
       'The daily humor round begins once your humor profile is ready.';
+
+  @override
+  String get appOpsMaintenanceTitle => 'A short maintenance break';
+
+  @override
+  String get appOpsMaintenanceMessage =>
+      'Mevora is briefly down for maintenance. We\'ll be right back.';
+
+  @override
+  String get appOpsMaintenanceSupport => 'Contact support';
+
+  @override
+  String get appOpsMaintenanceAccount => 'Account settings';
+
+  @override
+  String get appOpsUpdateRequiredTitle => 'Time to update';
+
+  @override
+  String get appOpsUpdateRequiredMessage =>
+      'This version of Mevora is no longer supported. Update the app to keep going.';
+
+  @override
+  String get appOpsUpdateAction => 'Update';
+
+  @override
+  String appOpsUpdateFromStore(String store) {
+    return 'Update Mevora from $store.';
+  }
+
+  @override
+  String get appOpsGenericStore => 'your app store';
+
+  @override
+  String get appOpsUpdateAvailable => 'A new version of Mevora is available.';
+
+  @override
+  String get appOpsFeatureUnavailableTitle => 'Temporarily unavailable';
+
+  @override
+  String get appOpsFeatureUnavailableMessage =>
+      'This feature is taking a short break. Please check back a little later.';
+
+  @override
+  String get appOpsSpotifyUnavailable =>
+      'Connecting Spotify is temporarily unavailable. You can connect it later from the Music tab.';
 }

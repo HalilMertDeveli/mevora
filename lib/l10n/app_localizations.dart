@@ -5534,6 +5534,42 @@ abstract class AppLocalizations {
   /// **'Closed'**
   String get supportTicketStatusClosed;
 
+  /// No description provided for @supportTicketRepliesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replies'**
+  String get supportTicketRepliesTitle;
+
+  /// No description provided for @supportTicketNoRepliesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No reply yet. Mevora Support will answer you here.'**
+  String get supportTicketNoRepliesYet;
+
+  /// No description provided for @supportTicketRepliesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Replies could not be loaded. Try again later.'**
+  String get supportTicketRepliesError;
+
+  /// No description provided for @supportTicketDefaultAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora Support'**
+  String get supportTicketDefaultAuthor;
+
+  /// No description provided for @supportTicketRepliedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Support replied'**
+  String get supportTicketRepliedBadge;
+
+  /// No description provided for @supportTicketNoComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Want to add something? Send a new request and mention this one.'**
+  String get supportTicketNoComposerHint;
+
   /// No description provided for @supportCategoryAccount.
   ///
   /// In en, this message translates to:

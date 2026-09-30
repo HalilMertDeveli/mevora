@@ -3096,6 +3096,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get supportTicketStatusClosed => 'Kapatıldı';
 
   @override
+  String get supportTicketRepliesTitle => 'Yanıtlar';
+
+  @override
+  String get supportTicketNoRepliesYet =>
+      'Henüz yanıt yok. Mevora Destek sana buradan yanıt verecek.';
+
+  @override
+  String get supportTicketRepliesError =>
+      'Yanıtlar yüklenemedi. Daha sonra tekrar dene.';
+
+  @override
+  String get supportTicketDefaultAuthor => 'Mevora Destek';
+
+  @override
+  String get supportTicketRepliedBadge => 'Destek yanıtladı';
+
+  @override
+  String get supportTicketNoComposerHint =>
+      'Eklemek istediğin bir şey mi var? Yeni bir talep gönder ve bu talepten bahset.';
+
+  @override
   String get supportCategoryAccount => 'Hesap ve profil';
 
   @override

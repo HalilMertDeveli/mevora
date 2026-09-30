@@ -3109,6 +3109,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get supportTicketStatusClosed => 'Closed';
 
   @override
+  String get supportTicketRepliesTitle => 'Replies';
+
+  @override
+  String get supportTicketNoRepliesYet =>
+      'No reply yet. Mevora Support will answer you here.';
+
+  @override
+  String get supportTicketRepliesError =>
+      'Replies could not be loaded. Try again later.';
+
+  @override
+  String get supportTicketDefaultAuthor => 'Mevora Support';
+
+  @override
+  String get supportTicketRepliedBadge => 'Support replied';
+
+  @override
+  String get supportTicketNoComposerHint =>
+      'Want to add something? Send a new request and mention this one.';
+
+  @override
   String get supportCategoryAccount => 'Account & profile';
 
   @override

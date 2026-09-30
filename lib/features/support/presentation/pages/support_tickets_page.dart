@@ -9,6 +9,7 @@ import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/support/domain/models/support_ticket.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_empty_state.dart';
+import 'package:mevora/shared/widgets/mevora_pill.dart';
 
 class SupportTicketsPage extends StatelessWidget {
   const SupportTicketsPage({super.key});
@@ -50,10 +51,26 @@ class SupportTicketsPage extends StatelessWidget {
               return Card(
                 child: ListTile(
                   title: Text(ticket.subject),
-                  subtitle: Text(
-                    '${_statusLabel(l10n, ticket.status)}\n${ticket.message}',
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${_statusLabel(l10n, ticket.status)}\n${ticket.message}',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (ticket.hasSupportReply)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.xs),
+                          child: MevoraPill(
+                            key: ValueKey('support-replied-${ticket.id}'),
+                            label: l10n.supportTicketRepliedBadge,
+                            icon: MevoraIcons.message,
+                            tone: MevoraTone.info,
+                            dense: true,
+                          ),
+                        ),
+                    ],
                   ),
                   isThreeLine: true,
                   trailing: const Icon(MevoraIcons.chevronRight),

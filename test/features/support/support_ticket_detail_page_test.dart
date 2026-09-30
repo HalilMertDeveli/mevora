@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ import 'package:mevora/features/authentication/domain/entities/auth_providers.da
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:mevora/features/support/domain/models/support_message.dart';
 import 'package:mevora/features/support/domain/models/support_ticket.dart';
 import 'package:mevora/features/support/domain/repositories/support_repository.dart';
 import 'package:mevora/features/support/presentation/pages/support_ticket_detail_page.dart';
@@ -55,6 +57,33 @@ class _FakeSupportRepository implements SupportRepository {
   final Map<String, SupportTicket> _tickets;
   bool throwOnGet;
   int getCalls = 0;
+
+  /// One live thread per ticket id; [emitThread] pushes a new snapshot.
+  final Map<String, List<SupportMessage>> _threads = {};
+  final Map<String, StreamController<List<SupportMessage>>> _threadChanges = {};
+  final List<String> threadRequests = [];
+
+  void emitThread(String ticketId, List<SupportMessage> messages) {
+    _threads[ticketId] = messages;
+    _threadChanges[ticketId]?.add(messages);
+  }
+
+  @override
+  Stream<List<SupportMessage>> watchMessages({
+    required String userId,
+    required String ticketId,
+  }) {
+    threadRequests.add(ticketId);
+    final changes = _threadChanges.putIfAbsent(
+      ticketId,
+      StreamController<List<SupportMessage>>.broadcast,
+    );
+    return Stream.multi((controller) {
+      controller.add(_threads[ticketId] ?? const []);
+      final sub = changes.stream.listen(controller.add);
+      controller.onCancel = sub.cancel;
+    });
+  }
 
   @override
   Stream<List<SupportTicket>> watchTickets(String userId) {
@@ -162,8 +191,9 @@ void main() {
       reason: 'route must forward the path ticketId for deep links',
     );
     expect(
-      RegExp(r'SupportTicket\(\s*[\r\n]\s*id: state\.pathParameters')
-          .hasMatch(source),
+      RegExp(
+        r'SupportTicket\(\s*[\r\n]\s*id: state\.pathParameters',
+      ).hasMatch(source),
       isFalse,
       reason: 'route must not construct a placeholder SupportTicket',
     );
@@ -196,11 +226,7 @@ void main() {
     final auth = _authenticatedAuth();
     final repository = _FakeSupportRepository(tickets: {'ticket-1': _ticket()});
     await tester.pumpWidget(
-      await _harness(
-        auth: auth,
-        repository: repository,
-        ticketId: 'ticket-1',
-      ),
+      await _harness(auth: auth, repository: repository, ticketId: 'ticket-1'),
     );
     await tester.pumpAndSettle();
 
@@ -239,11 +265,7 @@ void main() {
       tickets: {'ticket-9': _ticket(id: 'ticket-9', userId: 'other-user')},
     );
     await tester.pumpWidget(
-      await _harness(
-        auth: auth,
-        repository: repository,
-        ticketId: 'ticket-9',
-      ),
+      await _harness(auth: auth, repository: repository, ticketId: 'ticket-9'),
     );
     await tester.pumpAndSettle();
 
@@ -261,11 +283,7 @@ void main() {
       throwOnGet: true,
     );
     await tester.pumpWidget(
-      await _harness(
-        auth: auth,
-        repository: repository,
-        ticketId: 'ticket-1',
-      ),
+      await _harness(auth: auth, repository: repository, ticketId: 'ticket-1'),
     );
     await tester.pumpAndSettle();
 
@@ -278,5 +296,120 @@ void main() {
 
     expect(find.text('Cannot upload a photo'), findsOneWidget);
     auth.dispose();
+  });
+
+  group('support reply thread', () {
+    testWidgets('an unanswered request says no reply yet', (tester) async {
+      final auth = _authenticatedAuth();
+      final repository = _FakeSupportRepository();
+      await tester.pumpWidget(
+        await _harness(
+          auth: auth,
+          repository: repository,
+          ticketId: 'ticket-1',
+          extra: _ticket(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(_l10n.supportTicketRepliesTitle), findsOneWidget);
+      expect(find.text(_l10n.supportTicketNoRepliesYet), findsOneWidget);
+      expect(repository.threadRequests, ['ticket-1']);
+      auth.dispose();
+    });
+
+    testWidgets('shows the original message, then replies in order, live', (
+      tester,
+    ) async {
+      final auth = _authenticatedAuth();
+      final repository = _FakeSupportRepository();
+      repository.emitThread('ticket-1', [
+        SupportMessage(
+          id: 'm1',
+          text: 'Thanks, we are looking into it.',
+          authorLabel: SupportMessage.defaultAuthorLabel,
+          createdAt: DateTime.utc(2026, 1, 2, 9),
+        ),
+      ]);
+      await tester.pumpWidget(
+        await _harness(
+          auth: auth,
+          repository: repository,
+          ticketId: 'ticket-1',
+          extra: _ticket(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final original = find.text('The upload fails at 80%.');
+      final first = find.text('Thanks, we are looking into it.');
+      expect(original, findsOneWidget);
+      expect(first, findsOneWidget);
+      expect(
+        tester.getTopLeft(original).dy,
+        lessThan(tester.getTopLeft(first).dy),
+        reason: 'the member\'s own message comes before the replies',
+      );
+      expect(find.text(_l10n.supportTicketDefaultAuthor), findsOneWidget);
+      expect(find.text(_l10n.supportTicketNoRepliesYet), findsNothing);
+
+      // A second reply arrives while the page is open.
+      repository.emitThread('ticket-1', [
+        SupportMessage(
+          id: 'm1',
+          text: 'Thanks, we are looking into it.',
+          authorLabel: SupportMessage.defaultAuthorLabel,
+          createdAt: DateTime.utc(2026, 1, 2, 9),
+        ),
+        SupportMessage(
+          id: 'm2',
+          text: 'Fixed. Please try the upload again.',
+          authorLabel: SupportMessage.defaultAuthorLabel,
+          createdAt: DateTime.utc(2026, 1, 3, 9),
+        ),
+      ]);
+      await tester.pumpAndSettle();
+
+      final second = find.text('Fixed. Please try the upload again.');
+      expect(second, findsOneWidget);
+      expect(
+        tester.getTopLeft(first).dy,
+        lessThan(tester.getTopLeft(second).dy),
+      );
+      expect(find.text(_l10n.supportTicketDefaultAuthor), findsNWidgets(2));
+      // The member is told how to add more; there is no reply composer.
+      expect(find.text(_l10n.supportTicketNoComposerHint), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+      auth.dispose();
+    });
+
+    testWidgets('a deep-linked ticket loads its thread after resolving', (
+      tester,
+    ) async {
+      final auth = _authenticatedAuth();
+      final repository = _FakeSupportRepository(
+        tickets: {'ticket-1': _ticket()},
+      );
+      repository.emitThread('ticket-1', [
+        SupportMessage(
+          id: 'm1',
+          text: 'We replied from the console.',
+          authorLabel: SupportMessage.defaultAuthorLabel,
+          createdAt: DateTime.utc(2026, 1, 2),
+        ),
+      ]);
+      await tester.pumpWidget(
+        await _harness(
+          auth: auth,
+          repository: repository,
+          ticketId: 'ticket-1',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.getCalls, 1);
+      expect(find.text('We replied from the console.'), findsOneWidget);
+      auth.dispose();
+    });
   });
 }

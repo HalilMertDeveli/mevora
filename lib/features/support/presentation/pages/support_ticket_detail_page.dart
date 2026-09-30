@@ -5,9 +5,11 @@ import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/support_scope.dart';
+import 'package:mevora/features/support/domain/models/support_message.dart';
 import 'package:mevora/features/support/domain/models/support_ticket.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 
 /// Support ticket detail.
@@ -109,9 +111,7 @@ class _SupportTicketDetailPageState extends State<SupportTicketDetailPage> {
           child: _isLoading
               ? MevoraLoading.page(message: l10n.loading)
               : MevoraErrorView(
-                  art: _notFound
-                      ? MevoraArt.emptyMessages
-                      : MevoraArt.error,
+                  art: _notFound ? MevoraArt.emptyMessages : MevoraArt.error,
                   title: _notFound
                       ? l10n.supportTicketNotFoundTitle
                       : l10n.somethingWentWrong,
@@ -127,14 +127,42 @@ class _SupportTicketDetailPageState extends State<SupportTicketDetailPage> {
   }
 }
 
-class _SupportTicketDetailView extends StatelessWidget {
+/// The request as the member wrote it, then Mevora Support's replies as a
+/// live thread. There is no reply composer: members add details by sending
+/// a new request.
+class _SupportTicketDetailView extends StatefulWidget {
   const _SupportTicketDetailView({required this.ticket});
 
   final SupportTicket ticket;
 
   @override
+  State<_SupportTicketDetailView> createState() =>
+      _SupportTicketDetailViewState();
+}
+
+class _SupportTicketDetailViewState extends State<_SupportTicketDetailView> {
+  Stream<List<SupportMessage>>? _messages;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_messages != null) {
+      return;
+    }
+    final uid = AuthScope.of(context).user?.id;
+    final repository = SupportScope.maybeOf(context)?.repository;
+    if (uid != null && uid.isNotEmpty && repository != null) {
+      _messages = repository.watchMessages(
+        userId: uid,
+        ticketId: widget.ticket.id,
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final ticket = widget.ticket;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.supportTicketDetailTitle)),
       body: ListView(
@@ -147,7 +175,10 @@ class _SupportTicketDetailView extends StatelessWidget {
           ),
           _InfoRow(label: l10n.supportTicketCategory, value: ticket.category),
           const SizedBox(height: AppSpacing.md),
-          Text(l10n.supportTicketMessage, style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            l10n.supportTicketMessage,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: AppSpacing.xs),
           Text(ticket.message),
           if (ticket.attachments.isNotEmpty) ...[
@@ -162,6 +193,18 @@ class _SupportTicketDetailView extends StatelessWidget {
                 child: Text(path),
               ),
           ],
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            l10n.supportTicketRepliesTitle,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _ReplyThread(stream: _messages),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            l10n.supportTicketNoComposerHint,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );
@@ -174,6 +217,96 @@ class _SupportTicketDetailView extends StatelessWidget {
       SupportTicketStatus.resolved => l10n.supportTicketStatusResolved,
       SupportTicketStatus.closed => l10n.supportTicketStatusClosed,
     };
+  }
+}
+
+class _ReplyThread extends StatelessWidget {
+  const _ReplyThread({required this.stream});
+
+  final Stream<List<SupportMessage>>? stream;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final source = stream;
+    if (source == null) {
+      return Text(l10n.supportTicketNoRepliesYet);
+    }
+    return StreamBuilder<List<SupportMessage>>(
+      stream: source,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text(l10n.supportTicketRepliesError);
+        }
+        if (!snapshot.hasData) {
+          // The thread is a local-cache-first snapshot; a spinner would
+          // only flash. Hold the space quietly until it lands.
+          return const SizedBox(height: AppSpacing.lg);
+        }
+        final messages = snapshot.data!;
+        if (messages.isEmpty) {
+          return Text(l10n.supportTicketNoRepliesYet);
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final message in messages)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _ReplyBubble(message: message),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ReplyBubble extends StatelessWidget {
+  const _ReplyBubble({required this.message});
+
+  final SupportMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    // The console signs every reply "Mevora Support"; show it in the
+    // member's language.
+    final author =
+        message.authorLabel.isEmpty ||
+            message.authorLabel == SupportMessage.defaultAuthorLabel
+        ? l10n.supportTicketDefaultAuthor
+        : message.authorLabel;
+    final time = message.createdAt;
+    return MevoraCard(
+      emphasis: MevoraCardEmphasis.quiet,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(author, style: theme.textTheme.labelLarge)),
+              if (time != null)
+                Text(
+                  _formatTime(context, time),
+                  style: theme.textTheme.labelSmall,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(message.text),
+        ],
+      ),
+    );
+  }
+
+  static String _formatTime(BuildContext context, DateTime time) {
+    final local = time.toLocal();
+    final material = MaterialLocalizations.of(context);
+    return '${material.formatMediumDate(local)} '
+        '${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
   }
 }
 

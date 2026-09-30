@@ -159,6 +159,41 @@ public sealed class AppControlTests
         Assert.Equal("warning", sent.GetProperty("severity").GetString());
     }
 
+    /// <summary>
+    /// The console's audit filters are a copy of the backend vocabulary. Found
+    /// in runtime QA: the App Control events were missing, so "History of App
+    /// control changes" silently showed the whole log. Keep both in lock-step.
+    /// </summary>
+    [Fact]
+    public void Audit_filter_vocabulary_matches_the_backend()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "functions", "src", "admin")))
+        {
+            dir = dir.Parent;
+        }
+        Assert.NotNull(dir);
+        var ts = File.ReadAllText(Path.Combine(dir!.FullName, "functions", "src", "admin", "audit", "auditTypes.ts"));
+        static string[] List(string source, string name)
+        {
+            var start = source.IndexOf($"export const {name} = [", StringComparison.Ordinal);
+            var end = source.IndexOf("] as const", start, StringComparison.Ordinal);
+            return System.Text.RegularExpressions.Regex.Matches(source[start..end], "\"([A-Za-z_]+)\"").Select(m => m.Groups[1].Value).ToArray();
+        }
+        Assert.Equal(List(ts, "AUDIT_ACTIONS").Order(), Mevora.Admin.Web.Services.Vocab.AuditActions.Order());
+        Assert.Equal(List(ts, "AUDIT_TARGET_TYPES").Order(), Mevora.Admin.Web.Services.Vocab.AuditTargetTypes.Order());
+    }
+
+    [Fact]
+    public async Task App_control_history_link_keeps_its_filter()
+    {
+        using var f = Factory();
+        await f.Client(OwnerWithAppControl).GetStringAsync("/Audit?targetType=app_config&action=APP_MAINTENANCE_ENABLED");
+        var sent = f.Api.Last("adminListAuditEvents");
+        Assert.Equal("app_config", sent.GetProperty("targetType").GetString());
+        Assert.Equal("APP_MAINTENANCE_ENABLED", sent.GetProperty("action").GetString());
+    }
+
     [Fact]
     public async Task A_stale_revision_is_explained()
     {

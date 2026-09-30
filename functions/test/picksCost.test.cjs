@@ -121,6 +121,12 @@ describe(`Picks cost per open (target ${PICKS_DAILY_TARGET})`, () => {
     assert.equal(large.reopen.reads, small.reopen.reads);
   });
 
+  it("generating costs the same however long the member's decision history is", async () => {
+    const small = await measure({history: 0});
+    const large = await measure({history: 300});
+    assert.equal(large.generation.reads, small.generation.reads);
+  });
+
   it("a reopen reads neither the decision history nor the global Boost list", async () => {
     seedWorld({candidates: 3 * PICKS_DAILY_TARGET, history: 50, boosts: 5});
     await awayFromDayBoundary();
@@ -206,6 +212,34 @@ describe("one read per document per request", () => {
     const summaryReads = [...db.stats().byPath.keys()]
       .filter((path) => /^users\/s\d+\/(music|relationshipMatch)\/summary$/.test(path));
     assert.deepEqual(summaryReads, []);
+  });
+});
+
+describe("pair-targeted exclusions keep the pool exact", () => {
+  beforeEach(() => db.reset({}));
+
+  it("a new batch leaves out everyone decided or blocked, in every record they can leave", async () => {
+    // Exactly one day of eligible people once the eight below are left out.
+    seedWorld({candidates: PICKS_DAILY_TARGET + 8});
+    const pair = (uid) => [VIEWER, uid].sort().join("_");
+    await db.doc(`likes/${VIEWER}_s0`).set({fromUserId: VIEWER, toUserId: "s0", action: "like"});
+    await db.doc(`users/${VIEWER}/passedUsers/s1`).set({toUserId: "s1"});
+    await db.doc(`likes/${VIEWER}_s2`).set({fromUserId: VIEWER, toUserId: "s2", action: "pass"});
+    await db.doc(`matches/${pair("s3")}`).set({userIds: [VIEWER, "s3"].sort(), isActive: true});
+    await db.doc(`blocks/${VIEWER}_s4`).set({blockerId: VIEWER, blockedUserId: "s4"});
+    await db.doc(`blocks/s5_${VIEWER}`).set({blockerId: "s5", blockedUserId: VIEWER});
+    await db.doc(`users/${VIEWER}/blockedUsers/s6`).set({blockedUserId: "s6"});
+    await db.doc(`users/s7/blockedUsers/${VIEWER}`).set({blockedUserId: VIEWER});
+    // A like FROM them is not a decision BY the viewer: s8 stays eligible.
+    await db.doc(`likes/s8_${VIEWER}`).set({fromUserId: "s8", toUserId: VIEWER, action: "like"});
+    await awayFromDayBoundary();
+    const result = await callAs(getMevoraPicks, VIEWER);
+    const uids = result.picks.map((item) => item.uid);
+    assert.equal(uids.length, PICKS_DAILY_TARGET);
+    for (const excluded of ["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7"]) {
+      assert.equal(uids.includes(excluded), false, `${excluded} must be left out`);
+    }
+    assert.ok(uids.includes("s8"));
   });
 });
 

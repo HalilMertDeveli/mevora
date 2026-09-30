@@ -263,6 +263,94 @@ export async function loadPairDecisions(
   return {liked, passed, matched};
 }
 
+/**
+ * Which of these people are blocked from the viewer, or have blocked them, in
+ * any of the four records a block can leave: `blocks/{a}_{b}` either way
+ * (server-written) and `users/{a}/blockedUsers/{b}` either way (the owner may
+ * write their own). Pair-targeted: one document-id query per 15 candidates for
+ * the top-level records, one per 30 for the viewer's own subcollection, and
+ * one document read per candidate for theirs.
+ */
+export async function loadPairBlocks(
+  db: Firestore,
+  viewerUid: string,
+  candidateUids: readonly string[],
+): Promise<Set<string>> {
+  const blocked = new Set<string>();
+  const unique = [...new Set(candidateUids.filter((id) => id && id !== viewerUid))];
+  if (unique.length === 0) return blocked;
+  const byBlockId = new Map<string, string>();
+  for (const uid of unique) {
+    byBlockId.set(blockId(viewerUid, uid), uid);
+    byBlockId.set(blockId(uid, viewerUid), uid);
+  }
+  const blockIds = [...byBlockId.keys()];
+  const queries: Array<Promise<void>> = [];
+  for (let i = 0; i < blockIds.length; i += 30) {
+    const chunk = blockIds.slice(i, i + 30);
+    queries.push(db.collection("blocks").where(FieldPath.documentId(), "in", chunk).get().then((snap) => {
+      // The document id is what counts (see isBlockedPair in the rules).
+      for (const doc of snap.docs) {
+        const uid = byBlockId.get(doc.id);
+        if (uid) blocked.add(uid);
+      }
+    }));
+  }
+  for (let i = 0; i < unique.length; i += 30) {
+    const chunk = unique.slice(i, i + 30);
+    queries.push(db.collection(`users/${viewerUid}/blockedUsers`)
+      .where(FieldPath.documentId(), "in", chunk).get().then((snap) => {
+        for (const doc of snap.docs) blocked.add(doc.id);
+      }));
+  }
+  queries.push(db.getAll(...unique.map((uid) => db.doc(`users/${uid}/blockedUsers/${viewerUid}`)))
+    .then((snaps) => {
+      snaps.forEach((snap, index) => {
+        if (snap.exists) blocked.add(unique[index]);
+      });
+    }));
+  await Promise.all(queries);
+  return blocked;
+}
+
+/**
+ * The viewer with everything the rule chain needs to know about these
+ * specific people: blocks either way (always looked up per pair — the one
+ * record a preloaded set cannot cover is the other member's own
+ * subcollection) and, for a viewer loaded without history, their decisions.
+ * People already excluded (seen, blocked, batch members, cooldowns) cost no
+ * lookup.
+ */
+export async function resolvePairExclusions(
+  db: Firestore,
+  viewer: DiscoveryViewerContext,
+  candidateUids: readonly string[],
+): Promise<DiscoveryViewerContext> {
+  const unknown = [...new Set(candidateUids)].filter(
+    (uid) => uid && uid !== viewer.uid && !viewer.seen.has(uid) && !viewer.blocked.has(uid),
+  );
+  if (unknown.length === 0) return viewer;
+  const [blocks, decisions] = await Promise.all([
+    loadPairBlocks(db, viewer.uid, unknown),
+    viewer.historyLoaded === false
+      ? loadPairDecisions(db, viewer.uid, unknown)
+      : Promise.resolve({liked: new Set<string>(), passed: new Set<string>(), matched: new Set<string>()}),
+  ]);
+  const resolved = withPairDecisions(viewer, decisions);
+  return {...resolved, blocked: new Set([...viewer.blocked, ...blocks])};
+}
+
+/** The viewer's decision about one person, as the Picks lifecycle names it. */
+export function decisionOf(
+  viewer: DiscoveryViewerContext,
+  uid: string,
+): "matched" | "liked" | "passed" | null {
+  if (viewer.matchedUids.has(uid)) return "matched";
+  if (viewer.likedUids.has(uid)) return "liked";
+  if (viewer.passedUids.has(uid)) return "passed";
+  return null;
+}
+
 /** A basics-only viewer, with the decisions about these specific people filled in. */
 export function withPairDecisions(
   viewer: DiscoveryViewerContext,
@@ -332,10 +420,14 @@ export async function loadDiscoveryViewerContext(
  * Why this candidate may not be shown to this viewer, or null when they may.
  *
  * The single rule chain for "may these two people be put in front of each
- * other": already decided or matched, blocked in either direction (by the
- * preloaded set and by a direct pair check), smoke-test isolation, inactivity,
- * profile/account/moderation/photo/age gates, and mutual gender preference.
- * Order matters only for cost — cheap in-memory checks run before reads.
+ * other": already decided or matched, blocked in either direction, smoke-test
+ * isolation, inactivity, profile/account/moderation/photo/age gates, and
+ * mutual gender preference.
+ *
+ * It reads nothing. `viewer.seen` and `viewer.blocked` must already cover
+ * this candidate — callers resolve the pair first (resolvePairExclusions),
+ * for a whole page at once, after the checks that need no pair state
+ * (candidateOwnRejectReason) have thinned it out.
  */
 export async function candidateRejectReason(
   db: Firestore,
@@ -355,14 +447,33 @@ export async function candidateRejectReason(
   if (viewer.blocked.has(uid)) {
     return "blocked";
   }
+  return candidateOwnRejectReason(viewer, candidate);
+}
+
+/**
+ * The part of the rule chain that needs no pair state: smoke-test isolation,
+ * inactivity, profile/account/moderation/photo/age gates and mutual gender
+ * preference. Run first, so pair lookups are paid only for people who could
+ * otherwise be shown.
+ */
+export function candidateOwnRejectReason(
+  viewer: DiscoveryViewerContext,
+  candidate: {
+    uid: string;
+    profile: DocumentData | undefined;
+    account: DocumentData | undefined;
+    candidatePrefs: DocumentData | undefined;
+    lastActiveAt: unknown;
+  },
+): string | null {
+  if (candidate.uid === viewer.uid) {
+    return "already_seen_or_matched";
+  }
   if (!passesSmokeDiscoveryIsolation(viewer.callerAccount, candidate.account)) {
     return "smoke_isolation";
   }
   if (!isActiveForDiscovery(candidate.lastActiveAt)) {
     return "inactive";
-  }
-  if (await isBlocked(db, viewer.uid, uid)) {
-    return "blocked";
   }
   const profileReject = discoveryProfileRejectReason({
     candidateProfile: candidate.profile,
@@ -482,11 +593,28 @@ export async function scanDiscoveryPool(
       label: string | null;
       candidateBoosted: boolean;
     }> = [];
+    // Pair state (decisions, blocks either way) only for the people the rest
+    // of the rule chain would still admit, looked up for the page at once.
+    const ownFields = (doc: (typeof profiles.docs)[number]) => {
+      const account = accountsByUid.get(doc.id);
+      return {
+        uid: doc.id,
+        profile: doc.data(),
+        account,
+        candidatePrefs: preferencesByUid.get(doc.id),
+        lastActiveAt: account?.lastActiveAt,
+      };
+    };
+    const pageViewer = await resolvePairExclusions(
+      db,
+      viewer,
+      profiles.docs.filter((doc) => candidateOwnRejectReason(viewer, ownFields(doc)) === null).map((doc) => doc.id),
+    );
     for (const doc of profiles.docs) {
       lastUid = doc.id;
       const data = doc.data();
       const account = accountsByUid.get(doc.id);
-      const reject = await candidateRejectReason(db, viewer, {
+      const reject = await candidateRejectReason(db, pageViewer, {
         uid: doc.id,
         profile: data,
         account,
@@ -657,6 +785,8 @@ export interface RevalidatedCandidate {
   account: DocumentData | undefined;
   /** Exact viewer→candidate distance; server-side only. */
   exactKm: number | null;
+  /** The viewer's decision about them, when they made one. */
+  decision?: "matched" | "liked" | "passed" | null;
 }
 
 /**
@@ -685,16 +815,36 @@ export async function revalidatePoolCandidates(
       hasViewerLocation ? loadUserLocations(db, unique) : Promise.resolve(new Map()),
     ]);
   const profilesByUid = new Map(profileSnaps.map((snap) => [snap.id, snap.data()] as const));
-  for (const uid of unique) {
-    const profile = profilesByUid.get(uid);
+  const fieldsOf = (uid: string) => {
     const account = accountsByUid.get(uid);
-    let rejectReason = await candidateRejectReason(db, viewer, {
+    return {
       uid,
-      profile,
+      profile: profilesByUid.get(uid),
       account,
       candidatePrefs: preferencesByUid.get(uid),
       lastActiveAt: account?.lastActiveAt,
-    });
+    };
+  };
+  // Decisions for everyone asked about (a liked Pick whose account has since
+  // gone is still "liked", not a slot to refill); blocks only for people the
+  // rest of the chain would still admit. Both in parallel.
+  const [decisions, blocks] = await Promise.all([
+    viewer.historyLoaded === false
+      ? loadPairDecisions(db, viewer.uid, unique)
+      : Promise.resolve({liked: new Set<string>(), passed: new Set<string>(), matched: new Set<string>()}),
+    loadPairBlocks(
+      db,
+      viewer.uid,
+      unique.filter((uid) => !viewer.blocked.has(uid) && candidateOwnRejectReason(viewer, fieldsOf(uid)) === null),
+    ),
+  ]);
+  const decided = {
+    ...withPairDecisions(viewer, decisions),
+    blocked: new Set([...viewer.blocked, ...blocks]),
+  };
+  for (const uid of unique) {
+    const {profile, account} = fieldsOf(uid);
+    let rejectReason = await candidateRejectReason(db, decided, fieldsOf(uid));
     let exactKm: number | null = null;
     const other = locationsByUid.get(uid);
     if (!rejectReason && hasViewerLocation && other) {
@@ -708,7 +858,7 @@ export async function revalidatePoolCandidates(
         rejectReason = "distance_over_radius";
       }
     }
-    out.set(uid, {uid, rejectReason, profile, account, exactKm});
+    out.set(uid, {uid, rejectReason, profile, account, exactKm, decision: decisionOf(decided, uid)});
   }
   return out;
 }

@@ -1,6 +1,4 @@
-using System.Text.RegularExpressions;
 using Google.Cloud.Firestore;
-using Mevora.Web.Models;
 using Mevora.Web.Services.Email;
 using Microsoft.AspNetCore.Http;
 
@@ -74,12 +72,8 @@ public sealed class FirebaseSupportService : IFirebaseSupportService
             var now = Timestamp.GetCurrentTimestamp();
             var collection = _firebase.Firestore.Collection("supportTickets");
             var doc = collection.Document();
-            var userId = string.IsNullOrWhiteSpace(draft.UserId)
-                ? $"web-{doc.Id}"
-                : SanitizeUserId(draft.UserId);
 
             string? attachmentUrl = null;
-            var attachments = new List<string>();
 
             if (screenshot is { Length: > 0 })
             {
@@ -90,41 +84,20 @@ public sealed class FirebaseSupportService : IFirebaseSupportService
                 }
 
                 attachmentUrl = upload.ObjectPath;
-                if (!string.IsNullOrEmpty(attachmentUrl))
-                {
-                    attachments.Add(attachmentUrl);
-                }
             }
 
-            var data = new Dictionary<string, object>
-            {
-                ["id"] = doc.Id,
-                ["userId"] = userId,
-                ["name"] = draft.Name.Trim(),
-                ["email"] = draft.Email.Trim().ToLowerInvariant(),
-                ["category"] = draft.Category,
-                ["subject"] = draft.Subject.Trim(),
-                ["description"] = draft.Description.Trim(),
-                ["message"] = draft.Description.Trim(),
-                ["priority"] = draft.Priority,
-                ["status"] = SupportTicketStatuses.Open,
-                ["source"] = "website",
-                ["attachments"] = attachments,
-                ["createdAt"] = now,
-                ["updatedAt"] = now,
-            };
-
-            if (!string.IsNullOrEmpty(attachmentUrl))
-            {
-                data["attachmentUrl"] = attachmentUrl;
-            }
+            var data = WebsiteSupportTicket.BuildDocument(doc.Id, draft, now, attachmentUrl);
 
             await doc.SetAsync(data, cancellationToken: cancellationToken);
             _logger.LogInformation("Support ticket {TicketId} created via website.", doc.Id);
 
             try
             {
-                await _notifications.NotifyTicketCreatedAsync(draft, doc.Id, userId, cancellationToken);
+                await _notifications.NotifyTicketCreatedAsync(
+                    draft,
+                    doc.Id,
+                    WebsiteSupportTicket.NormalizeClaimedUserId(draft.UserId),
+                    cancellationToken);
             }
             catch (Exception notifyEx)
             {
@@ -200,16 +173,5 @@ public sealed class FirebaseSupportService : IFirebaseSupportService
             _logger.LogError(ex, "Support attachment upload failed for ticket {TicketId}.", ticketId);
             return (false, null, "Ekran görüntüsü yüklenemedi. Dosya olmadan tekrar deneyebilirsiniz.");
         }
-    }
-
-    private static string SanitizeUserId(string value)
-    {
-        var trimmed = value.Trim();
-        if (trimmed.Length > 128)
-        {
-            trimmed = trimmed[..128];
-        }
-
-        return Regex.Replace(trimmed, @"[^\w\-@.]", string.Empty);
     }
 }

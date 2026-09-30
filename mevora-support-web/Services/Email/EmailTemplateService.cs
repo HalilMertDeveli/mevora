@@ -15,7 +15,7 @@ public sealed record SupportEmailModel(
     string TicketId,
     string Name,
     string Email,
-    string UserId,
+    string ClaimedUserId,
     string Category,
     string Subject,
     string Description,
@@ -49,7 +49,7 @@ public sealed class EmailTemplateService : IEmailTemplateService
         Category: {model.Category}
         Subject: {model.Subject}
         From: {model.Name} <{model.Email}>
-        User ID: {model.UserId}
+        Claimed user ID (unverified): {model.ClaimedUserId}
         Created: {model.CreatedAt:u}
 
         Description:
@@ -92,7 +92,7 @@ public sealed class EmailTemplateService : IEmailTemplateService
             .Replace("{{TicketId}}", Html(model.TicketId), StringComparison.Ordinal)
             .Replace("{{Name}}", Html(model.Name), StringComparison.Ordinal)
             .Replace("{{Email}}", Html(model.Email), StringComparison.Ordinal)
-            .Replace("{{UserId}}", Html(model.UserId), StringComparison.Ordinal)
+            .Replace("{{ClaimedUserId}}", Html(model.ClaimedUserId), StringComparison.Ordinal)
             .Replace("{{Category}}", Html(model.Category), StringComparison.Ordinal)
             .Replace("{{Subject}}", Html(model.Subject), StringComparison.Ordinal)
             .Replace("{{Description}}", Html(model.Description).Replace("\n", "<br/>", StringComparison.Ordinal), StringComparison.Ordinal)
@@ -122,7 +122,7 @@ public sealed class EmailTemplateService : IEmailTemplateService
               <strong>Category:</strong> {{Category}}<br/>
               <strong>Subject:</strong> {{Subject}}<br/>
               <strong>From:</strong> {{Name}} &lt;{{Email}}&gt;<br/>
-              <strong>User ID:</strong> {{UserId}}<br/>
+              <strong>Claimed user ID (unverified):</strong> {{ClaimedUserId}}<br/>
               <strong>Created:</strong> {{CreatedAt}}</p>
               <p>{{Description}}</p>
               </body></html>

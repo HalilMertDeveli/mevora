@@ -10,7 +10,7 @@ public interface ISupportNotificationService
     Task NotifyTicketCreatedAsync(
         SupportTicketDraft draft,
         string ticketId,
-        string? resolvedUserId,
+        string? claimedUserId,
         CancellationToken cancellationToken = default);
 }
 
@@ -39,14 +39,14 @@ public sealed class SupportNotificationService : ISupportNotificationService
     public async Task NotifyTicketCreatedAsync(
         SupportTicketDraft draft,
         string ticketId,
-        string? resolvedUserId,
+        string? claimedUserId,
         CancellationToken cancellationToken = default)
     {
         var model = new SupportEmailModel(
             TicketId: ticketId,
             Name: draft.Name.Trim(),
             Email: draft.Email.Trim(),
-            UserId: string.IsNullOrWhiteSpace(resolvedUserId) ? "(none)" : resolvedUserId,
+            ClaimedUserId: string.IsNullOrWhiteSpace(claimedUserId) ? "(none)" : claimedUserId,
             Category: draft.Category,
             Subject: draft.Subject.Trim(),
             Description: draft.Description.Trim(),

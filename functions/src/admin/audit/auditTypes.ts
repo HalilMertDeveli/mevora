@@ -64,6 +64,12 @@ export const AUDIT_ACTIONS = [
   "ADMIN_ACTIVATION_ISSUED",
 
   "MAINTENANCE_RUN",
+
+  "APP_MAINTENANCE_ENABLED",
+  "APP_MAINTENANCE_DISABLED",
+  "APP_MIN_VERSION_CHANGED",
+  "APP_FEATURE_SWITCH_CHANGED",
+  "APP_ANNOUNCEMENT_CHANGED",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -80,6 +86,7 @@ export const AUDIT_TARGET_TYPES = [
   "review_item",
   "appeal",
   "staff",
+  "app_config",
   "system",
 ] as const;
 

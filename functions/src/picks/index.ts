@@ -7,6 +7,7 @@ import {isLearningBlockingPicks, learningSummary} from "../relationshipLearning/
 import {learningDayKey} from "../relationshipLearning/schedule.js";
 import {loadLearningState} from "../relationshipLearning/store.js";
 import {servePicks} from "./service.js";
+import {assertAppFeatureAvailable} from "../appOperations/appOperationsGate.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -37,6 +38,7 @@ export const getMevoraPicks = onCall(
     if (!isAccountEligible(callerAccount.data())) {
       throw new HttpsError("permission-denied", "account-suspended");
     }
+    await assertAppFeatureAvailable(db, "picks");
     const nowMs = Date.now();
     const learningState = await loadLearningState(db, uid);
     const learning = learningSummary(learningState, learningDayKey(nowMs), nowMs);

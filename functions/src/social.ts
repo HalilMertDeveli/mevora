@@ -26,6 +26,7 @@ import {recordLearningEventSafely} from "./personalization/store.js";
 import {assertCallerAccountEligible} from "./accountGuard.js";
 import {reportPriority} from "./admin/reports/reportPriority.js";
 import {intakeUserReport} from "./admin/reports/reportIntake.js";
+import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -216,6 +217,7 @@ export async function swipeTransaction(
 
 export const recordSwipe = onCall(socialCallable, async (request) => {
   const uid = requireUid(request.auth?.uid);
+  await assertAppFeatureAvailable(db, null);
   const targetUserId = String(request.data?.targetUserId ?? "");
   const action = String(request.data?.action ?? "like");
   if (!targetUserId || targetUserId === uid) {
@@ -448,6 +450,7 @@ export const createVideoCall = onCall(
     const matchId = String(request.data?.matchId ?? "");
     const receiverId = String(request.data?.receiverId ?? "");
     await assertCallerAccountEligible(db, uid);
+    await assertAppFeatureAvailable(db, "calls");
     const match = await db.doc(`matches/${matchId}`).get();
     const userIds = (match.data()?.userIds as string[]) ?? [];
     if (!match.exists || match.data()?.isActive !== true || !userIds.includes(uid) || !userIds.includes(receiverId)) {

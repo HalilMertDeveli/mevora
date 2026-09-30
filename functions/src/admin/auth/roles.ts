@@ -94,6 +94,7 @@ const TRUST_SAFETY_ADMIN: readonly Permission[] = [
   "automation.review",
   "automation.resolve_sensitive",
   "audit.read",
+  "app_control.read",
 ];
 
 const SUPER_ADMIN: readonly Permission[] = [...PERMISSIONS];

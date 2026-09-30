@@ -58,6 +58,7 @@ async function requireAdmin(uid: string): Promise<void> {
 
 export const getHumorFeed = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "humorLab");
   const data = (request.data ?? {}) as Record<string, unknown>;
   try {
     const feed = await buildHumorFeed({
@@ -85,6 +86,7 @@ export const getHumorFeed = onCall(callableOptions, async (request) => {
 
 export const submitHumorFeedback = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "humorLab");
   // `rating` may be omitted only for a skip; `saved` is forwarded only when it
   // is an explicit boolean; `gestureHints` is reduced to two booleans.
   const parsed = parseSubmitHumorFeedbackInput(request.data);
@@ -166,6 +168,7 @@ export const getMatchHumorCompatibility = onCall(callableOptions, async (request
  */
 export const getDailyHumorSet = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "humorLab");
   const {getDailyHumorSetView} = await import("./dailyService.js");
   try {
     return await getDailyHumorSetView({db, uid, nowMs: Date.now()});
@@ -181,6 +184,7 @@ export const getDailyHumorSet = onCall(callableOptions, async (request) => {
  */
 export const submitDailyHumorResponse = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "humorLab");
   const {DailyResponseRejected, parseDailyResponseInput, submitDailyHumorResponse: submit} =
     await import("./dailyService.js");
   const parsed = parseDailyResponseInput(request.data);
@@ -482,6 +486,7 @@ export {
   ratingWeight,
 } from "./profile.js";
 import {assertCallerAccountEligible} from "../accountGuard.js";
+import {assertAppFeatureAvailable} from "../appOperations/appOperationsGate.js";
 export {rankHumorFeed, scoreHumorCandidate} from "./ranking.js";
 export {classifyHumorSafety} from "./moderation.js";
 export {applyHumorAiTagging} from "./aiTagging.js";

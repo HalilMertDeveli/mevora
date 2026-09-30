@@ -1,4 +1,18 @@
 import {REASON_CODES, RESTORE_REASON_CODES, PHOTO_REJECT_REASONS} from "./actions/actionTypes.js";
+import {ANNOUNCEMENT_SEVERITIES, APP_FEATURES, APP_PLATFORMS} from "../appOperations/appOperationsConfig.js";
+import {
+  MESSAGE_MAX,
+  TITLE_MAX,
+  getAppControl,
+  instantOrNull,
+  plainText,
+  storeUrlOrNull,
+  updateAnnouncement,
+  updateFeatureSwitch,
+  updateMaintenanceMode,
+  updateMinimumVersion,
+  versionOrNull,
+} from "./appControl/appControlService.js";
 import {AUDIT_ACTIONS, AUDIT_TARGET_TYPES} from "./audit/auditTypes.js";
 import {requirePermission} from "./auth/adminAuthorization.js";
 import {ADMIN_ROLES, GRANTABLE_ROLES} from "./auth/roles.js";
@@ -207,6 +221,81 @@ export const adminEnableStaffSpec: AdminCommandSpec<{targetUid: string; reason: 
   rateClass: "sensitive",
   parse: (raw) => ({targetUid: uid(raw.targetUid, "targetUid"), reason: text(raw.reason, "reason", {max: REASON_MAX, required: true})}),
   handler: ({deps, actor, requestId}, input) => setStaffStatus(deps, actor, {...input, status: "active"}, requestId),
+};
+
+// --- App Control ------------------------------------------------------------
+// Four named changes to the app's operating state, never a generic config
+// write. Each carries the revision it was made against and an idempotency key.
+
+function revision(raw: unknown): number {
+  return integer(raw, "expectedRevision", {min: 0, max: 1_000_000_000});
+}
+
+export const adminGetAppControlSpec: AdminCommandSpec<Record<string, never>, unknown> = {
+  name: "adminGetAppControl",
+  permission: "app_control.read",
+  rateClass: "read",
+  parse: () => ({}),
+  handler: ({deps, actor}) => getAppControl(deps, actor),
+};
+
+export const adminUpdateMaintenanceModeSpec: AdminCommandSpec<Parameters<typeof updateMaintenanceMode>[2], unknown> = {
+  name: "adminUpdateMaintenanceMode",
+  permission: "app_control.write",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    enabled: bool(raw.enabled),
+    message: plainText(raw.message, "message", MESSAGE_MAX, false),
+    expectedRevision: revision(raw.expectedRevision),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => updateMaintenanceMode(deps, actor, input, requestId),
+};
+
+export const adminUpdateMinimumVersionSpec: AdminCommandSpec<Parameters<typeof updateMinimumVersion>[2], unknown> = {
+  name: "adminUpdateMinimumVersion",
+  permission: "app_control.write",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    platform: oneOf(raw.platform, APP_PLATFORMS, "platform"),
+    minimumVersion: versionOrNull(raw.minimumVersion, "minimumVersion"),
+    recommendedVersion: versionOrNull(raw.recommendedVersion, "recommendedVersion"),
+    updateUrl: storeUrlOrNull(raw.updateUrl, "updateUrl"),
+    expectedRevision: revision(raw.expectedRevision),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => updateMinimumVersion(deps, actor, input, requestId),
+};
+
+export const adminUpdateFeatureSwitchSpec: AdminCommandSpec<Parameters<typeof updateFeatureSwitch>[2], unknown> = {
+  name: "adminUpdateFeatureSwitch",
+  permission: "app_control.write",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    feature: oneOf(raw.feature, APP_FEATURES, "feature"),
+    enabled: bool(raw.enabled),
+    reason: text(raw.reason, "reason", {max: REASON_MAX, required: true}),
+    expectedRevision: revision(raw.expectedRevision),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => updateFeatureSwitch(deps, actor, input, requestId),
+};
+
+export const adminUpdateAnnouncementSpec: AdminCommandSpec<Parameters<typeof updateAnnouncement>[2], unknown> = {
+  name: "adminUpdateAnnouncement",
+  permission: "app_control.write",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    enabled: bool(raw.enabled),
+    title: plainText(raw.title, "title", TITLE_MAX, false),
+    message: plainText(raw.message, "message", MESSAGE_MAX, false),
+    severity: oneOf(raw.severity ?? "info", ANNOUNCEMENT_SEVERITIES, "severity"),
+    startsAtMs: instantOrNull(raw.startsAt, "startsAt"),
+    expiresAtMs: instantOrNull(raw.expiresAt, "expiresAt"),
+    expectedRevision: revision(raw.expectedRevision),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => updateAnnouncement(deps, actor, input, requestId),
 };
 
 // --- Users ------------------------------------------------------------------

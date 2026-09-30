@@ -46,7 +46,19 @@ class SemanticVersion implements Comparable<SemanticVersion> {
     return SemanticVersion(numbers[0], numbers[1], numbers[2]);
   }
 
+  /// The version of the running app. Flavor builds carry a name suffix
+  /// (`versionNameSuffix`: `1.0.1-dev`, `1.0.1-staging`); that is still
+  /// release 1.0.1 and must meet the same minimum, so the suffix is dropped
+  /// before the strict parse. Published versions never go through this.
+  static SemanticVersion? tryParseInstalled(Object? raw) {
+    if (raw is! String) {
+      return null;
+    }
+    return tryParse(raw.trim().replaceFirst(_flavorSuffix, ''));
+  }
+
   static final RegExp _digits = RegExp(r'^\d{1,9}$');
+  static final RegExp _flavorSuffix = RegExp(r'-[A-Za-z][A-Za-z0-9.]*(?=\+|$)');
 
   @override
   int compareTo(SemanticVersion other) {

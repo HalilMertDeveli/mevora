@@ -32,6 +32,37 @@ void main() {
       }
     });
 
+    test('an installed flavor build is its release version', () {
+      // Found on a development APK in runtime QA: versionName "1.0.1-dev"
+      // was unreadable, so a raised minimum never gated dev or staging builds.
+      expect(
+        SemanticVersion.tryParseInstalled('1.0.1-dev'),
+        const SemanticVersion(1, 0, 1),
+      );
+      expect(
+        SemanticVersion.tryParseInstalled('1.0.1-staging+2'),
+        const SemanticVersion(1, 0, 1),
+      );
+      expect(
+        SemanticVersion.tryParseInstalled('1.0.1'),
+        const SemanticVersion(1, 0, 1),
+      );
+      expect(SemanticVersion.tryParseInstalled('dev'), isNull);
+      expect(SemanticVersion.tryParseInstalled(null), isNull);
+      // Published versions stay strict.
+      expect(SemanticVersion.tryParse('1.0.1-dev'), isNull);
+      final config = AppOperationsConfig.fromMap(const {
+        'minimumVersion': {'android': '9.0.0'},
+      });
+      expect(
+        config.versionGateFor(
+          platform: AppPlatform.android,
+          installed: '1.0.1-dev',
+        ),
+        VersionGate.updateRequired,
+      );
+    });
+
     test('compares numerically, not as text', () {
       final a = SemanticVersion.tryParse('1.10.0')!;
       final b = SemanticVersion.tryParse('1.9.9')!;

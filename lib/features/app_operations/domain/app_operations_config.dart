@@ -193,7 +193,7 @@ class AppOperationsConfig {
     required AppPlatform platform,
     required String? installed,
   }) {
-    final current = SemanticVersion.tryParse(installed);
+    final current = SemanticVersion.tryParseInstalled(installed);
     if (current == null) {
       return VersionGate.ok;
     }

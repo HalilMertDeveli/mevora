@@ -1,0 +1,13 @@
+@model Mevora.Admin.Web.Pages.AdminPageModel
+@if (!string.IsNullOrEmpty(Model.Flash))
+{
+    <div class="alert alert-ok" role="status">@Model.Flash</div>
+}
+@if (!string.IsNullOrEmpty(Model.FlashError))
+{
+    <div class="alert alert-error" role="alert">@Model.FlashError</div>
+}
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-error" role="alert">@Model.ErrorMessage</div>
+}

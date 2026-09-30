@@ -1,0 +1,47 @@
+@page
+@model Mevora.Admin.Web.Pages.Audit.IndexModel
+@{
+    ViewData["Title"] = "Audit log";
+}
+<div class="page-head">
+    <div>
+        <h1>Audit log</h1>
+        <p>Append-only. Every staff decision, sensitive view, sign-in and role change. Filter by one field at a time.</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+<form method="get" class="filters">
+    <div class="field"><label for="actor">Staff UID</label><input id="actor" name="actor" type="text" value="@Model.Actor" maxlength="128" /></div>
+    <div class="field"><label for="target">Target id</label><input id="target" name="target" type="text" value="@Model.Target" maxlength="300" /></div>
+    <div class="field"><label for="action">Event</label><input id="action" name="action" type="text" value="@Model.Action" maxlength="64" placeholder="e.g. USER_BANNED" /></div>
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a class="btn btn-ghost" href="/Audit">Clear</a>
+</form>
+@{
+    var rows = Model.Result.Items().ToList();
+}
+@if (rows.Count == 0)
+{
+    <p class="muted">No events.</p>
+}
+else
+{
+    <table class="data">
+        <thead><tr><th scope="col">When</th><th scope="col">Event</th><th scope="col">Staff</th><th scope="col">Target</th><th scope="col">Details</th><th scope="col">Request</th></tr></thead>
+        <tbody>
+            @foreach (var e in rows)
+            {
+                <tr>
+                    <td class="nowrap">@e.When("createdAt")</td>
+                    <td><strong>@e.S("action")</strong></td>
+                    <td class="mono small">@e.S("actorAdminId")<div class="muted">@JsonView.Label(e.Str("actorRole"))</div></td>
+                    <td class="small">@JsonView.Label(e.Str("targetType")) <span class="mono">@e.S("targetId")</span>
+                        @if (e.Str("caseId") is { } cid) { <div><a href="/Cases/@cid">case</a></div> }</td>
+                    <td class="mono small wrap-anywhere">@e.Get("metadata").GetRawText()</td>
+                    <td class="mono small">@e.S("requestId")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <partial name="_Pager" model="Model.Pager" />
+}

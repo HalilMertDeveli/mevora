@@ -1,0 +1,74 @@
+@page
+@model Mevora.Admin.Web.Pages.Reports.IndexModel
+@{
+    ViewData["Title"] = "Reports";
+}
+<div class="page-head">
+    <div>
+        <h1>User reports</h1>
+        <p>Priority is set by the server from the report reason. Most reports are worked through their case.</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+
+<nav class="tabs" aria-label="Report status">
+    @foreach (var s in new[] {"open", "resolved", "dismissed", "all"})
+    {
+        <a class="tab @(Model.Status == s ? "active" : "")" href="/Reports?status=@s">@JsonView.Label(s)</a>
+    }
+</nav>
+
+<p class="boundary">A report can reference a match and a message by ID. Message content is end-to-end encrypted and is never available here.</p>
+
+@{
+    var rows = Model.Result.Items().ToList();
+}
+@if (rows.Count == 0)
+{
+    <p class="muted">No reports.</p>
+}
+else
+{
+    <table class="data">
+        <thead>
+            <tr><th scope="col">Priority</th><th scope="col">Reason</th><th scope="col">Reported</th><th scope="col">Reporter</th><th scope="col">Description</th><th scope="col">Case</th><th scope="col">Filed</th><th scope="col"><span class="muted">Actions</span></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in rows)
+            {
+                <tr>
+                    <td><span class="prio prio-@r.S("priority")">@JsonView.Label(r.Str("priority"))</span></td>
+                    <td>@JsonView.Label(r.Str("reason"))<br /><span class="status status-@r.S("status")">@JsonView.Label(r.Str("status"))</span></td>
+                    <td><partial name="_UserChip" model='r.Get("reportedUser")' /></td>
+                    <td><partial name="_UserChip" model='r.Get("reporter")' /></td>
+                    <td class="small wrap-anywhere">@r.S("description")
+                        @if (r.Str("messageId") is { } mid) { <div class="muted">Message ref: <span class="mono">@mid</span></div> }</td>
+                    <td class="small">
+                        @if (r.Str("caseId") is { } cid) { <a href="/Cases/@cid">@JsonView.Label(r.Str("caseStatus") ?? "case")</a> }
+                        else if (Model.Can("report.assign") && r.Str("status") == "open")
+                        {
+                            <form method="post" asp-page-handler="OpenCase" class="inline"><input type="hidden" name="reportId" value="@r.S("reportId")" /><button type="submit" class="btn btn-small">Open case</button></form>
+                        }
+                    </td>
+                    <td class="nowrap">@r.Age("createdAt")</td>
+                    <td>
+                        @if (Model.Can("report.resolve") && r.Str("status") == "open")
+                        {
+                            <form method="post" asp-page-handler="Resolve" class="stack" data-confirm="Close this single report?">
+                                <input type="hidden" name="reportId" value="@r.S("reportId")" />
+                                <label class="small" for="o-@r.S("reportId")">Outcome</label>
+                                <select id="o-@r.S("reportId")" name="outcome"><option value="dismissed">Dismiss</option><option value="resolved">Resolve</option></select>
+                                <label class="small" for="c-@r.S("reportId")">Resolution</label>
+                                <select id="c-@r.S("reportId")" name="code">
+                                    @foreach (var code in Vocab.ResolutionCodes) { <option value="@code">@JsonView.Label(code)</option> }
+                                </select>
+                                <button type="submit" class="btn btn-small">Close</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <partial name="_Pager" model="Model.Pager" />
+}

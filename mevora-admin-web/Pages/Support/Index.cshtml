@@ -1,0 +1,63 @@
+@page
+@model Mevora.Admin.Web.Pages.Support.IndexModel
+@{
+    ViewData["Title"] = "Support";
+}
+<div class="page-head">
+    <div>
+        <h1>Support tickets</h1>
+        <p>Tickets from the app and from the public support site, newest first.</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+<form method="get" class="filters">
+    <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+            @foreach (var s in Mevora.Admin.Web.Pages.Support.IndexModel.Statuses)
+            {
+                <option value="@s" selected="@(Model.Status == s)">@JsonView.Label(s)</option>
+            }
+        </select>
+    </div>
+    <div class="field">
+        <label for="assigned">Assignment</label>
+        <select id="assigned" name="assigned">
+            <option value="any" selected="@(Model.Assigned == "any")">Anyone</option>
+            <option value="me" selected="@(Model.Assigned == "me")">Assigned to me</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Apply</button>
+</form>
+@{
+    var rows = Model.Result.Items().ToList();
+}
+@if (rows.Count == 0)
+{
+    <p class="muted">No tickets.</p>
+}
+else
+{
+    <table class="data">
+        <thead><tr><th scope="col">Priority</th><th scope="col">Subject</th><th scope="col">Category</th><th scope="col">From</th><th scope="col">Status</th><th scope="col">Assigned</th><th scope="col">Opened</th></tr></thead>
+        <tbody>
+            @foreach (var t in rows)
+            {
+                <tr>
+                    <td><span class="prio prio-@t.S("priority")">@JsonView.Label(t.Str("priority"))</span></td>
+                    <td><a href="/Support/@t.S("ticketId")">@t.S("subject")</a> @if (t.Bool("escalated")) { <span class="badge badge-danger">Escalated</span> }</td>
+                    <td>@JsonView.Label(t.Str("category"))</td>
+                    <td>
+                        <span class="badge">@JsonView.Label(t.Str("source"))</span>
+                        @if (t.Get("user").ValueKind == JsonValueKind.Object) { <partial name="_UserChip" model='t.Get("user")' /> }
+                        else if (!t.Bool("userIdVerified")) { <span class="muted small">unverified sender</span> }
+                    </td>
+                    <td><span class="status status-@t.S("status")">@JsonView.Label(t.Str("status"))</span></td>
+                    <td class="mono small">@t.S("assignedTo")</td>
+                    <td class="nowrap">@t.Age("createdAt")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <partial name="_Pager" model="Model.Pager" />
+}

@@ -1,0 +1,87 @@
+@page
+@model Mevora.Admin.Web.Pages.Photos.IndexModel
+@{
+    ViewData["Title"] = "Photos";
+    var i = 0;
+}
+<div class="page-head">
+    <div>
+        <h1>Photo moderation</h1>
+        <p>Decisions are written to the server-owned moderation ledger and published by the existing pipeline. Oldest first.</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+
+<nav class="tabs" aria-label="Photo queue">
+    @foreach (var f in Mevora.Admin.Web.Pages.Photos.IndexModel.Filters)
+    {
+        <a class="tab @(Model.Filter == f.Value ? "active" : "")" href="/Photos?filter=@f.Value">@f.Label</a>
+    }
+</nav>
+
+@{
+    var rows = Model.Result.Items().ToList();
+}
+@if (rows.Count == 0)
+{
+    <p class="muted">Nothing waiting in this queue.</p>
+}
+else
+{
+    <div class="photo-grid">
+        @foreach (var p in rows)
+        {
+            i++;
+            var uid = p.S("uid", "");
+            var imageId = p.S("imageId", "");
+            var id = $"p{i}";
+            <article class="photo-card" aria-labelledby="@id-title">
+                <div class="photo-frame">
+                    <img alt="Photo under review" src="/Photos?handler=Preview&uid=@Uri.EscapeDataString(uid)&imageId=@Uri.EscapeDataString(imageId)" loading="lazy" />
+                </div>
+                <div class="photo-body">
+                    <h2 id="@id-title" class="small"><partial name="_UserChip" model='p.Get("user")' /></h2>
+                    <dl class="kv small">
+                        <dt>Photo</dt><dd class="mono">@imageId @(p.Bool("isPrimary") ? "(primary)" : "")</dd>
+                        <dt>State</dt><dd><span class="status status-@p.S("status")">@JsonView.Label(p.Str("status"))</span> @(p.Bool("published") ? "· published" : "· not yet published")</dd>
+                        <dt>Reason</dt><dd>@p.S("reason")</dd>
+                        <dt>Checks</dt><dd>@p.S("processingAttempts", "0") attempt(s) @(p.Str("processingError") is { } err ? $"· {err}" : "")</dd>
+                        <dt>Waiting</dt><dd>@p.Age("updatedAt")</dd>
+                        <dt>Open reports</dt><dd>@p.S("openReportCount", "?")</dd>
+                    </dl>
+                    @if (p.Str("lock") == "another_reviewer")
+                    {
+                        <p class="alert alert-warn small">Another reviewer is deciding this photo.</p>
+                    }
+                    <form method="post" asp-page-handler="Decide" class="stack">
+                        <input type="hidden" name="uid" value="@uid" />
+                        <input type="hidden" name="imageId" value="@imageId" />
+                        <input type="hidden" name="filter" value="@Model.Filter" />
+                        <input type="hidden" name="idempotencyKey" value="@Model.FormKey-@i" />
+                        <div class="field"><label for="@id-reason">Reason (required to reject)</label>
+                            <select id="@id-reason" name="reasonCode" data-requires-for="@id-reject">
+                                <option value="">—</option>
+                                @foreach (var r in Vocab.PhotoRejectReasons) { <option value="@r">@JsonView.Label(r)</option> }
+                            </select></div>
+                        <div class="field"><label for="@id-note">Internal note</label><input id="@id-note" name="internalNote" type="text" maxlength="4000" /></div>
+                        <div class="actions">
+                            @if (Model.Can("photo.approve"))
+                            {
+                                <button type="submit" name="decision" value="approve" class="btn btn-ok">Approve</button>
+                            }
+                            @if (Model.Can("photo.reject"))
+                            {
+                                <button type="submit" name="decision" value="reject" id="@id-reject" class="btn btn-danger">Reject</button>
+                            }
+                            @if (Model.Can("photo.escalate"))
+                            {
+                                <button type="submit" name="decision" value="escalate" class="btn">Escalate</button>
+                            }
+                        </div>
+                    </form>
+                </div>
+            </article>
+        }
+    </div>
+    <partial name="_Pager" model="Model.Pager" />
+}

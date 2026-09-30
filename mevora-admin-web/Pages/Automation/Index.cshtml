@@ -1,0 +1,107 @@
+@page
+@model Mevora.Admin.Web.Pages.Automation.IndexModel
+@{
+    ViewData["Title"] = "Automation";
+}
+<div class="page-head">
+    <div>
+        <h1>Automation — manual review</h1>
+        <p>Jobs the pipeline could not settle on its own. Deletion and identity-erasure jobs are compliance work: closing them by hand asserts the data is gone.</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+<nav class="tabs" aria-label="Job status">
+    <a class="tab @(Model.Status == "manual_review" ? "active" : "")" href="/Automation">Manual review</a>
+    <a class="tab @(Model.Status == "failed" ? "active" : "")" href="/Automation?status=failed">Failed</a>
+</nav>
+@{
+    var jobs = Model.Result.Items().ToList();
+}
+@if (jobs.Count == 0)
+{
+    <p class="muted">No jobs in this state.</p>
+}
+else
+{
+    <table class="data">
+        <thead><tr><th scope="col">Job</th><th scope="col">Subject</th><th scope="col">Attempts</th><th scope="col">Last error / result</th><th scope="col">Updated</th><th scope="col"><span class="muted">Decision</span></th></tr></thead>
+        <tbody>
+            @foreach (var j in jobs)
+            {
+                <tr>
+                    <td><strong>@JsonView.Label(j.Str("kind"))</strong><div class="mono small">@j.S("jobId")</div><div class="small muted">@j.S("policyNote")</div></td>
+                    <td>@if (j.Str("subjectUid") is { } s) { <a class="mono" href="/Users/@Uri.EscapeDataString(s)">@s</a> }</td>
+                    <td>@j.S("attempts", "0") / @j.S("maxAttempts")</td>
+                    <td class="small wrap-anywhere">
+                        <div class="mono">@j.S("error")</div>
+                        @if (j.Get("result").ValueKind == JsonValueKind.Object)
+                        {
+                            <div class="muted">@j.Get("result").GetRawText()</div>
+                        }
+                        @if (j.Get("adminReview").ValueKind == JsonValueKind.Object)
+                        {
+                            <div>Last review: @JsonView.Label(j.Get("adminReview").Str("action")) by <span class="mono">@j.Get("adminReview").S("by")</span></div>
+                        }
+                    </td>
+                    <td class="nowrap">@j.Age("updatedAt")</td>
+                    <td>
+                        @if (j.Arr("allowedActions").Any())
+                        {
+                            <form method="post" asp-page-handler="Review" class="stack" data-confirm="Record this decision on the job?">
+                                <input type="hidden" name="jobId" value="@j.S("jobId")" />
+                                <label class="small" for="a-@j.S("jobId")">Action</label>
+                                <select id="a-@j.S("jobId")" name="action">
+                                    @foreach (var a in j.Arr("allowedActions")) { <option value="@a.GetString()">@JsonView.Label(a.GetString())</option> }
+                                </select>
+                                <label class="small" for="n-@j.S("jobId")">Note (required)</label>
+                                <input id="n-@j.S("jobId")" name="note" type="text" maxlength="4000" required />
+                                <button type="submit" class="btn btn-small">Apply</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="muted small">No action available to your role.</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <partial name="_Pager" model="Model.Pager" />
+}
+
+<section class="card">
+    <h2>Audit findings awaiting review</h2>
+    @if (!Model.Result.Arr("reviewItems").Any())
+    {
+        <p class="muted">None.</p>
+    }
+    else
+    {
+        <table class="data">
+            <thead><tr><th scope="col">Item</th><th scope="col">Kind</th><th scope="col">Summary</th><th scope="col">Filed</th><th scope="col"><span class="muted">Decision</span></th></tr></thead>
+            <tbody>
+                @foreach (var r in Model.Result.Arr("reviewItems"))
+                {
+                    <tr>
+                        <td class="mono small">@r.S("itemId")</td>
+                        <td>@JsonView.Label(r.Str("kind"))</td>
+                        <td class="small">@r.S("summary") <span class="muted">@r.S("remediation")</span></td>
+                        <td class="nowrap">@r.Age("createdAt")</td>
+                        <td>
+                            @if (Model.Can("automation.review"))
+                            {
+                                <form method="post" asp-page-handler="Item" class="stack">
+                                    <input type="hidden" name="itemId" value="@r.S("itemId")" />
+                                    <select name="outcome" aria-label="Outcome"><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option></select>
+                                    <input name="note" type="text" maxlength="4000" required aria-label="Note" placeholder="Note (required)" />
+                                    <button type="submit" class="btn btn-small">Close</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

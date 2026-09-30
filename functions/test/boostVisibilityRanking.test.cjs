@@ -286,7 +286,7 @@ describe("5-9. eligibility safety", () => {
     // either way) before its rule chain runs, whoever calls it.
     const pool = src("discoveryPool.ts");
     const loopAt = pool.indexOf("export async function scanDiscoveryPool");
-    const resolveAt = pool.indexOf("await resolvePairExclusions(", loopAt);
+    const resolveAt = pool.indexOf("resolvePairExclusions(db, viewer, admissible)", loopAt);
     const rejectAt = pool.indexOf("await candidateRejectReason(db, pageViewer", loopAt);
     const boostAt = pool.indexOf("isBoostedCandidate(doc.id, boosted)", loopAt);
     assert.ok(resolveAt > loopAt && resolveAt < rejectAt && rejectAt < boostAt, "pairs resolve before the chain, the chain before Boost");

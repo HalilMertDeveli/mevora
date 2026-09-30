@@ -8,7 +8,12 @@ import {
   loadPreferencesByUid,
   passesGenderPreferences,
 } from "./discoveryMatching.js";
-import {effectiveRadiusKm, isBoostedCandidate, loadActiveBoostSessions} from "./boost/ranking.js";
+import {
+  effectiveRadiusKm,
+  isBoostedCandidate,
+  loadActiveBoostSessions,
+  loadActiveBoostSessionsFor,
+} from "./boost/ranking.js";
 import type {BoostSession} from "./boost/measurement.js";
 import {userLanguage} from "./language.js";
 import {
@@ -151,6 +156,11 @@ export interface DiscoveryViewerContext {
    * needs them for specific people must look those pairs up.
    */
   historyLoaded?: boolean;
+  /**
+   * False when `boosted` was not loaded (loadDiscoveryViewerBasics): a pool
+   * scan then looks up the live Boosts of each page's candidates itself.
+   */
+  boostsLoaded?: boolean;
 }
 
 export type DiscoveryPoolBuckets = Record<DiscoveryDistanceTier, Array<Record<string, unknown>>>;
@@ -176,6 +186,11 @@ export interface DiscoveryPoolScan {
    * not read them again.
    */
   accepted: Map<string, RevalidatedCandidate>;
+  /**
+   * Live Boost sessions the scan looked up for its pages (a viewer loaded
+   * without Boosts). Empty when the viewer carried its own `boosted` set.
+   */
+  boostSessions: Map<string, BoostSession>;
 }
 
 export function hasLocation(origin: DocumentData | undefined): boolean {
@@ -213,6 +228,7 @@ export async function loadDiscoveryViewerBasics(
     blocked: new Set(),
     boosted: new Set(),
     historyLoaded: false,
+    boostsLoaded: false,
   };
 }
 
@@ -411,6 +427,7 @@ export async function loadDiscoveryViewerContext(
       // Ranking needs only the uids; measurement needs the sessions behind them.
       boosted: new Set(boostSessions.keys()),
       historyLoaded: true,
+      boostsLoaded: true,
     },
     boostSessions,
   };
@@ -519,7 +536,8 @@ export async function scanDiscoveryPool(
     shouldStop: (buckets: DiscoveryPoolBuckets) => boolean;
   },
 ): Promise<DiscoveryPoolScan> {
-  const {uid, viewerProfile, origin, lang, boosted} = viewer;
+  const {uid, viewerProfile, origin, lang} = viewer;
+  const boostSessions = new Map<string, BoostSession>();
   const {radiusKm, gateKm, pageSize, maxPages} = options;
   const hasViewerLocation = hasLocation(origin);
 
@@ -605,11 +623,19 @@ export async function scanDiscoveryPool(
         lastActiveAt: account?.lastActiveAt,
       };
     };
-    const pageViewer = await resolvePairExclusions(
-      db,
-      viewer,
-      profiles.docs.filter((doc) => candidateOwnRejectReason(viewer, ownFields(doc)) === null).map((doc) => doc.id),
-    );
+    const admissible = profiles.docs
+      .filter((doc) => candidateOwnRejectReason(viewer, ownFields(doc)) === null)
+      .map((doc) => doc.id);
+    // Boost state, likewise, only for this page's admissible people — never
+    // the whole system's list — unless the viewer already carries it.
+    const [pageViewer, pageBoosts] = await Promise.all([
+      resolvePairExclusions(db, viewer, admissible),
+      viewer.boostsLoaded === false
+        ? loadActiveBoostSessionsFor(db, admissible)
+        : Promise.resolve(new Map<string, BoostSession>()),
+    ]);
+    for (const [boostedUid, session] of pageBoosts) boostSessions.set(boostedUid, session);
+    const boosted = viewer.boostsLoaded === false ? new Set(pageBoosts.keys()) : viewer.boosted;
     for (const doc of profiles.docs) {
       lastUid = doc.id;
       const data = doc.data();
@@ -774,6 +800,7 @@ export async function scanDiscoveryPool(
     evidence,
     hasViewerLocation,
     accepted,
+    boostSessions,
   };
 }
 

@@ -3,7 +3,6 @@ import {getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {isAccountEligible} from "../profileSafety.js";
 import {loadDiscoveryViewerBasics} from "../discoveryPool.js";
-import {loadActiveBoostSessions} from "../boost/ranking.js";
 import {isLearningBlockingPicks, learningSummary} from "../relationshipLearning/model.js";
 import {learningDayKey} from "../relationshipLearning/schedule.js";
 import {loadLearningState} from "../relationshipLearning/store.js";
@@ -49,20 +48,16 @@ export const getMevoraPicks = onCall(
       // the set is chosen from their answers, so it is not served without them.
       return {status: "empty", emptyReason: "learningRequired", picks: [], learning};
     }
-    // Only what does not grow with history is read. Decisions and blocks are
-    // looked up for the specific people being checked, never as the member's
-    // whole history; the live Boosts are loaded only when a pool scan runs
-    // (the day's generation, or a replacement) — never to reopen today.
+    // Only what does not grow with history or with the size of Mevora is
+    // read. Decisions, blocks and live Boosts are looked up for the specific
+    // people being checked — never as the member's whole history, never as
+    // every Boost in the system.
     const viewer = await loadDiscoveryViewerBasics(db, uid, callerAccount.data());
     if (viewer.prefs.discoveryEnabled === false) {
       // A member who turned discovery off is not shown to anyone, and is not
       // shown anyone either.
       return {status: "empty", emptyReason: "discoveryDisabled", picks: [], learning};
     }
-    const loadScanContext = async () => {
-      const boostSessions = await loadActiveBoostSessions(db);
-      return {viewer: {...viewer, boosted: new Set(boostSessions.keys())}, boostSessions};
-    };
-    return {...(await servePicks({db, viewer, loadScanContext, nowMs})), learning};
+    return {...(await servePicks({db, viewer, nowMs})), learning};
   },
 );

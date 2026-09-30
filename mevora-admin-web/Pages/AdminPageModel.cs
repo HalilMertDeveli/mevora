@@ -1,8 +1,10 @@
 using System.Text.Json;
+using Mevora.Admin.Web.Resources;
 using Mevora.Admin.Web.Security;
 using Mevora.Admin.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
 
 namespace Mevora.Admin.Web.Pages;
 
@@ -11,10 +13,18 @@ namespace Mevora.Admin.Web.Pages;
 /// show errors. Mutations always redirect (post/redirect/get) so a refresh
 /// never resubmits a decision; each form carries its own idempotency key, so
 /// even a double-click is a single decision on the backend.
+///
+/// Messages are produced in the staff member's chosen language at the moment
+/// they are shown or flashed.
 /// </summary>
 public abstract class AdminPageModel(IAdminApiClient api) : PageModel
 {
     protected IAdminApiClient Api { get; } = api;
+
+    private IStringLocalizer? _l;
+
+    /// <summary>The console's string table in the request's language.</summary>
+    protected IStringLocalizer L => _l ??= HttpContext.RequestServices.GetRequiredService<IStringLocalizer<SharedResource>>();
 
     [TempData] public string? Flash { get; set; }
     [TempData] public string? FlashError { get; set; }
@@ -39,7 +49,7 @@ public abstract class AdminPageModel(IAdminApiClient api) : PageModel
             {
                 throw new SessionEndedException();
             }
-            ErrorMessage = AdminErrorMessages.For(error);
+            ErrorMessage = L.Error(error);
             return null;
         }
     }
@@ -58,7 +68,7 @@ public abstract class AdminPageModel(IAdminApiClient api) : PageModel
             {
                 throw new SessionEndedException();
             }
-            FlashError = AdminErrorMessages.For(error);
+            FlashError = L.Error(error);
         }
         return redirect?.Invoke() ?? RedirectToPage();
     }

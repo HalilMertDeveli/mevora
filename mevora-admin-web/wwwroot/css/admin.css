@@ -203,3 +203,12 @@ legend { font-weight: 600; padding: 0 4px; }
 .secret { font-family: var(--mono); font-size: 15px; letter-spacing: .08em; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; overflow-wrap: anywhere; }
 
 [hidden] { display: none !important; }
+
+/* Language switcher (TR / EN). A plain POST form: no script needed. */
+.lang-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; margin: 0; }
+.lang-btn { font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .04em; padding: 4px 10px; border: 0; background: var(--surface); color: var(--muted); cursor: pointer; }
+.lang-btn + .lang-btn { border-left: 1px solid var(--border); }
+.lang-btn:hover { color: var(--text); }
+.lang-btn.active { background: var(--brand); color: var(--brand-ink); }
+.login-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.login-top .brand { border-bottom: 0; padding: 0; }

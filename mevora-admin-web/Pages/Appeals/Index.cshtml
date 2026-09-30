@@ -1,19 +1,19 @@
 @page
 @model Mevora.Admin.Web.Pages.Appeals.IndexModel
 @{
-    ViewData["Title"] = "Appeals";
+    ViewData["Title"] = L["Appeals"].Value;
 }
 <div class="page-head">
     <div>
-        <h1>Appeals</h1>
-        <p>Members contesting a decision. Oldest first. The moderator who made a decision cannot judge its appeal.</p>
+        <h1>@L["Appeals"]</h1>
+        <p>@L["Members contesting a decision. Oldest first. The moderator who made a decision cannot judge its appeal."]</p>
     </div>
 </div>
 <partial name="_Flash" model="Model" />
-<nav class="tabs" aria-label="Appeal status">
+<nav class="tabs" aria-label="@L["Appeal status"]">
     @foreach (var s in new[] {"open", "in_review", "resolved"})
     {
-        <a class="tab @(Model.Status == s ? "active" : "")" href="/Appeals?status=@s">@JsonView.Label(s)</a>
+        <a class="tab @(Model.Status == s ? "active" : "")" href="/Appeals?status=@s">@L.Code(s)</a>
     }
 </nav>
 @{
@@ -21,22 +21,22 @@
 }
 @if (rows.Count == 0)
 {
-    <p class="muted">No appeals.</p>
+    <p class="muted">@L["No appeals."]</p>
 }
 else
 {
     <table class="data">
-        <thead><tr><th scope="col">Member</th><th scope="col">Against</th><th scope="col">Their reason</th><th scope="col">Source</th><th scope="col">Status</th><th scope="col">Filed</th></tr></thead>
+        <thead><tr><th scope="col">@L["Member"]</th><th scope="col">@L["Against"]</th><th scope="col">@L["Their reason"]</th><th scope="col">@L["Source"]</th><th scope="col">@L["Status"]</th><th scope="col">@L["Filed"]</th></tr></thead>
         <tbody>
             @foreach (var a in rows)
             {
                 <tr>
                     <td><partial name="_UserChip" model='a.Get("user")' /></td>
-                    <td><a href="/Appeals/@a.S("appealId")">@JsonView.Label(a.Str("actionType"))</a></td>
+                    <td><a href="/Appeals/@a.S("appealId")">@L.Code(a.Str("actionType"))</a></td>
                     <td class="small wrap-anywhere">@a.S("reason")</td>
-                    <td>@JsonView.Label(a.Str("source"))</td>
-                    <td><span class="status status-@a.S("status")">@JsonView.Label(a.Str("status"))</span> @(a.Str("decision") is { } d ? JsonView.Label(d) : "")</td>
-                    <td class="nowrap">@a.Age("createdAt")</td>
+                    <td>@L.Code("source." + a.Str("source"))</td>
+                    <td><span class="status status-@a.S("status")">@L.Code(a.Str("status"))</span> @(a.Str("decision") is { } d ? L.Code(d) : "")</td>
+                    <td class="nowrap">@L.Age(a, "createdAt")</td>
                 </tr>
             }
         </tbody>
@@ -47,16 +47,16 @@ else
 @if (Model.Can("appeal.create"))
 {
     <section class="card">
-        <h2>File an appeal on a member's behalf</h2>
-        <p class="small muted">For members who cannot use the app (a banned account cannot sign in). Confirm the sender's identity first.</p>
+        <h2>@L["File an appeal on a member's behalf"]</h2>
+        <p class="small muted">@L["For members who cannot use the app (a banned account cannot sign in). Confirm the sender's identity first."]</p>
         <form method="post" asp-page-handler="File">
             <div class="field-row">
-                <div class="field"><label for="f-user">Member UID</label><input id="f-user" name="userId" type="text" maxlength="128" required /></div>
-                <div class="field"><label for="f-action">Decision (action id)</label><input id="f-action" name="moderationActionId" type="text" maxlength="128" required /></div>
-                <div class="field"><label for="f-ticket">Support ticket id (optional)</label><input id="f-ticket" name="ticketId" type="text" maxlength="128" /></div>
+                <div class="field"><label for="f-user">@L["Member UID"]</label><input id="f-user" name="userId" type="text" maxlength="128" required /></div>
+                <div class="field"><label for="f-action">@L["Decision (action id)"]</label><input id="f-action" name="moderationActionId" type="text" maxlength="128" required /></div>
+                <div class="field"><label for="f-ticket">@L["Support ticket id (optional)"]</label><input id="f-ticket" name="ticketId" type="text" maxlength="128" /></div>
             </div>
-            <div class="field"><label for="f-reason">The member's appeal, in their words</label><textarea id="f-reason" name="reason" maxlength="2000" required></textarea></div>
-            <button type="submit" class="btn">File appeal</button>
+            <div class="field"><label for="f-reason">@L["The member's appeal, in their words"]</label><textarea id="f-reason" name="reason" maxlength="2000" required></textarea></div>
+            <button type="submit" class="btn">@L["File appeal"]</button>
         </form>
     </section>
 }

@@ -28,8 +28,8 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
     {
         var r = Clean(reason, 500);
         return r is null
-            ? Task.FromResult(Invalid("Say why this needs review."))
-            : Act("adminEscalateVerification", new {uid, reason = r, note = Clean(note, 4000)}, "Opened a verification review case.");
+            ? Task.FromResult(Invalid(L["Say why this needs review."]))
+            : Act("adminEscalateVerification", new {uid, reason = r, note = Clean(note, 4000)}, L["Opened a verification review case."]);
     }
 
     public PagerModel Pager => new("/Verification", Result.Str("nextCursor"), new Dictionary<string, string?> {["filter"] = Filter}, Cursor is not null);

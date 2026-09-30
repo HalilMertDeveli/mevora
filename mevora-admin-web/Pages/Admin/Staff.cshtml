@@ -1,46 +1,46 @@
 @page
 @model Mevora.Admin.Web.Pages.Admin.StaffModel
 @{
-    ViewData["Title"] = "Staff";
+    ViewData["Title"] = L["Staff"].Value;
     var me = User.StaffUid();
 }
 <div class="page-head">
     <div>
-        <h1>Staff &amp; roles</h1>
-        <p>The staff record is the authority: disabling here takes effect on the member's next request.</p>
+        <h1>@L["Staff & roles"]</h1>
+        <p>@L["The staff record is the authority: disabling here takes effect on the member's next request."]</p>
     </div>
 </div>
 <partial name="_Flash" model="Model" />
 
 <table class="data">
-    <thead><tr><th scope="col">Staff</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Since</th><th scope="col"><span class="muted">Access</span></th></tr></thead>
+    <thead><tr><th scope="col">@L["Staff"]</th><th scope="col">@L["Role"]</th><th scope="col">@L["Status"]</th><th scope="col">@L["Since"]</th><th scope="col"><span class="muted">@L["Access"]</span></th></tr></thead>
     <tbody>
         @foreach (var s in Model.Result.Items())
         {
             <tr>
-                <td>@s.S("displayName", "(no name)")<div class="mono small">@s.S("uid") · @s.S("email")</div></td>
-                <td>@JsonView.Label(s.Str("role"))</td>
-                <td><span class="status status-@(s.Str("status") == "active" ? "active" : "banned")">@JsonView.Label(s.Str("status"))</span></td>
-                <td class="nowrap">@s.When("createdAt")</td>
+                <td>@(s.Str("displayName") is { Length: > 0 } dn ? dn : L["(no name)"].Value)<div class="mono small">@s.S("uid") · @s.S("email")</div></td>
+                <td>@L.Code(s.Str("role"))</td>
+                <td><span class="status status-@(s.Str("status") == "active" ? "active" : "banned")">@L.Code("staff." + s.Str("status"))</span></td>
+                <td class="nowrap">@L.When(s, "createdAt")</td>
                 <td>
                     @if (s.Str("uid") == me)
                     {
-                        <span class="muted small">You</span>
+                        <span class="muted small">@L["You"]</span>
                     }
                     else if (s.Str("status") == "active")
                     {
-                        <form method="post" asp-page-handler="Disable" class="stack" data-confirm="Disable this staff member's access and end their sessions?">
+                        <form method="post" asp-page-handler="Disable" class="stack" data-confirm="@L["Disable this staff member's access and end their sessions?"]">
                             <input type="hidden" name="targetUid" value="@s.S("uid")" />
-                            <input name="reason" type="text" maxlength="500" required aria-label="Reason" placeholder="Reason" />
-                            <button type="submit" class="btn btn-small btn-danger">Disable</button>
+                            <input name="reason" type="text" maxlength="500" required aria-label="@L["Reason"]" placeholder="@L["Reason"]" />
+                            <button type="submit" class="btn btn-small btn-danger">@L["Disable"]</button>
                         </form>
                     }
                     else
                     {
                         <form method="post" asp-page-handler="Enable" class="stack">
                             <input type="hidden" name="targetUid" value="@s.S("uid")" />
-                            <input name="reason" type="text" maxlength="500" required aria-label="Reason" placeholder="Reason" />
-                            <button type="submit" class="btn btn-small">Re-enable</button>
+                            <input name="reason" type="text" maxlength="500" required aria-label="@L["Reason"]" placeholder="@L["Reason"]" />
+                            <button type="submit" class="btn btn-small">@L["Re-enable"]</button>
                         </form>
                     }
                 </td>
@@ -52,19 +52,19 @@
 @if (Model.Can("admin.manage_roles"))
 {
     <section class="card">
-        <h2>Grant or change a role</h2>
-        <p class="small muted">The person must already have a sign-in account. They will be asked to set up two-factor authentication on first sign-in.</p>
-        <form method="post" asp-page-handler="Grant" data-confirm="Change this person's staff role?">
+        <h2>@L["Grant or change a role"]</h2>
+        <p class="small muted">@L["The person must already have a sign-in account. They will be asked to set up two-factor authentication on first sign-in."]</p>
+        <form method="post" asp-page-handler="Grant" data-confirm="@L["Change this person's staff role?"]">
             <div class="field-row">
-                <div class="field"><label for="g-email">Email</label><input id="g-email" name="email" type="email" maxlength="254" /></div>
-                <div class="field"><label for="g-uid">or UID</label><input id="g-uid" name="targetUid" type="text" maxlength="128" /></div>
-                <div class="field"><label for="g-name">Display name</label><input id="g-name" name="displayName" type="text" maxlength="80" /></div>
-                <div class="field"><label for="g-role">Role</label>
+                <div class="field"><label for="g-email">@L["Email"]</label><input id="g-email" name="email" type="email" maxlength="254" /></div>
+                <div class="field"><label for="g-uid">@L["or UID"]</label><input id="g-uid" name="targetUid" type="text" maxlength="128" /></div>
+                <div class="field"><label for="g-name">@L["Display name"]</label><input id="g-name" name="displayName" type="text" maxlength="80" /></div>
+                <div class="field"><label for="g-role">@L["Role"]</label>
                     <select id="g-role" name="role">
-                        @foreach (var r in Vocab.Roles) { <option value="@r">@JsonView.Label(r)</option> }
+                        @foreach (var r in Vocab.Roles) { <option value="@r">@L.Code(r)</option> }
                     </select></div>
             </div>
-            <button type="submit" class="btn btn-primary">Save role</button>
+            <button type="submit" class="btn btn-primary">@L["Save role"]</button>
         </form>
     </section>
 }

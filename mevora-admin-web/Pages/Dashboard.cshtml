@@ -1,7 +1,7 @@
 @page
 @model DashboardModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = L["Dashboard"].Value;
     var tiles = new (string Key, string Label, string Href, string Css)[]
     {
         ("criticalCases", "Critical cases", "/Cases?status=active", "stat stat-critical"),
@@ -21,21 +21,21 @@
 }
 <div class="page-head">
     <div>
-        <h1>Dashboard</h1>
-        <p>What needs a human now. Counts reflect only the queues your role can work.</p>
+        <h1>@L["Dashboard"]</h1>
+        <p>@L["What needs a human now. Counts reflect only the queues your role can work."]</p>
     </div>
-    <span class="muted small">Updated @Model.Data.When("generatedAt")</span>
+    <span class="muted small">@L["Updated"] @L.When(Model.Data, "generatedAt")</span>
 </div>
 <partial name="_Flash" model="Model" />
 
-<section class="stats" aria-label="Queue counters">
+<section class="stats" aria-label="@L["Queue counters"]">
     @foreach (var tile in tiles)
     {
         if (Model.Shows(tile.Key))
         {
             <a class="@tile.Css" href="@tile.Href">
                 <span class="n">@Model.Count(tile.Key)</span>
-                <span class="l">@tile.Label</span>
+                <span class="l">@L[tile.Label]</span>
             </a>
         }
     }
@@ -44,24 +44,24 @@
 @if (Model.Can("user.read"))
 {
     <section class="card">
-        <h2>Recent moderation actions</h2>
+        <h2>@L["Recent moderation actions"]</h2>
         @if (!Model.Data.Arr("recentActions").Any())
         {
-            <p class="muted">No actions yet.</p>
+            <p class="muted">@L["No actions yet."]</p>
         }
         else
         {
             <table class="data">
                 <thead>
-                    <tr><th scope="col">When</th><th scope="col">Action</th><th scope="col">Reason</th><th scope="col">Member</th><th scope="col">By</th></tr>
+                    <tr><th scope="col">@L["When"]</th><th scope="col">@L["Action"]</th><th scope="col">@L["Reason"]</th><th scope="col">@L["Member"]</th><th scope="col">@L["By"]</th></tr>
                 </thead>
                 <tbody>
                     @foreach (var a in Model.Data.Arr("recentActions"))
                     {
                         <tr>
-                            <td class="nowrap">@a.When("createdAt")</td>
-                            <td>@JsonView.Label(a.Str("type"))</td>
-                            <td>@JsonView.Label(a.Str("reasonCode"))</td>
+                            <td class="nowrap">@L.When(a, "createdAt")</td>
+                            <td>@L.Code(a.Str("type"))</td>
+                            <td>@L.Code(a.Str("reasonCode"))</td>
                             <td>
                                 @if (a.Str("targetUserId") is { } target)
                                 {

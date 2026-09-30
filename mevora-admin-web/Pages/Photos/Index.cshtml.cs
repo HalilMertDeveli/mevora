@@ -62,17 +62,17 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
     {
         if (decision is not ("approve" or "reject" or "escalate"))
         {
-            return Task.FromResult(Invalid("Unknown decision.", () => Back(filter)));
+            return Task.FromResult(Invalid(L["Unknown decision."], () => Back(filter)));
         }
         if (decision == "reject" && !Vocab.PhotoRejectReasons.Contains(reasonCode))
         {
-            return Task.FromResult(Invalid("Pick a rejection reason.", () => Back(filter)));
+            return Task.FromResult(Invalid(L["Pick a rejection reason."], () => Back(filter)));
         }
         var message = decision switch
         {
-            "approve" => "Photo approved and published.",
-            "reject" => "Photo rejected and removed from view.",
-            _ => "Photo escalated to senior review.",
+            "approve" => L["Photo approved and published."].Value,
+            "reject" => L["Photo rejected and removed from view."].Value,
+            _ => L["Photo escalated to senior review."].Value,
         };
         return Act("adminReviewPhoto", new
         {

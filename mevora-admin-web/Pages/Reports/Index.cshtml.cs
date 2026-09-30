@@ -21,8 +21,8 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
 
     public Task<IActionResult> OnPostResolveAsync(string reportId, string outcome, string code, string? note) =>
         outcome is "resolved" or "dismissed" && Vocab.ResolutionCodes.Contains(code)
-            ? Act("adminResolveUserReport", new {reportId, outcome, code, note = Clean(note, 4000)}, $"Report {outcome}.")
-            : Task.FromResult(Invalid("Choose an outcome and a resolution code."));
+            ? Act("adminResolveUserReport", new {reportId, outcome, code, note = Clean(note, 4000)}, L["Report {0}.", L.Code(outcome)])
+            : Task.FromResult(Invalid(L["Choose an outcome and a resolution code."]));
 
     public async Task<IActionResult> OnPostOpenCaseAsync(string reportId)
     {
@@ -34,7 +34,7 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
         catch (AdminApiException error)
         {
             if (error.EndsSession) throw new SessionEndedException();
-            return Invalid(AdminErrorMessages.For(error));
+            return Invalid(L.Error(error));
         }
     }
 

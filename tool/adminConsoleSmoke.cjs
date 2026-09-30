@@ -33,7 +33,8 @@ const db = admin.firestore();
 class Browser {
   constructor(name) {
     this.name = name;
-    this.cookies = new Map();
+    // The console defaults to Turkish; the assertions below read the English source text.
+    this.cookies = new Map([[".AspNetCore.Culture", "c%3Den%7Cuic%3Den"]]);
   }
   cookieHeader() {
     return [...this.cookies].map(([k, v]) => `${k}=${v}`).join("; ");

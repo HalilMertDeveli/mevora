@@ -43,37 +43,37 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
     {
         var t = Clean(text, 4000);
         return t is null
-            ? Task.FromResult(Invalid("The reply is empty.", Back))
-            : Act("adminReplySupportTicket", new {ticketId = TicketId, text = t, idempotencyKey}, "Reply sent to the member's ticket.", Back);
+            ? Task.FromResult(Invalid(L["The reply is empty."], Back))
+            : Act("adminReplySupportTicket", new {ticketId = TicketId, text = t, idempotencyKey}, L["Reply sent to the member's ticket."], Back);
     }
 
     public Task<IActionResult> OnPostNoteAsync(string? text)
     {
         var t = Clean(text, 4000);
         return t is null
-            ? Task.FromResult(Invalid("The note is empty.", Back))
-            : Act("adminAddSupportNote", new {ticketId = TicketId, text = t}, "Internal note added.", Back);
+            ? Task.FromResult(Invalid(L["The note is empty."], Back))
+            : Act("adminAddSupportNote", new {ticketId = TicketId, text = t}, L["Internal note added."], Back);
     }
 
     public Task<IActionResult> OnPostAssignAsync() =>
-        Act("adminAssignSupportTicket", new {ticketId = TicketId}, "Ticket assigned to you.", Back);
+        Act("adminAssignSupportTicket", new {ticketId = TicketId}, L["Ticket assigned to you."], Back);
 
     public Task<IActionResult> OnPostPriorityAsync(string priority) =>
         priority is "low" or "normal" or "high" or "urgent"
-            ? Act("adminUpdateSupportTicket", new {ticketId = TicketId, priority}, "Priority updated.", Back)
-            : Task.FromResult(Invalid("Unknown priority.", Back));
+            ? Act("adminUpdateSupportTicket", new {ticketId = TicketId, priority}, L["Priority updated."], Back)
+            : Task.FromResult(Invalid(L["Unknown priority."], Back));
 
     public Task<IActionResult> OnPostResolveAsync(string outcome, string? resolutionNote) =>
         outcome is "resolved" or "closed"
-            ? Act("adminResolveSupportTicket", new {ticketId = TicketId, outcome, resolutionNote = Clean(resolutionNote, 4000)}, $"Ticket {outcome}.", Back)
-            : Task.FromResult(Invalid("Unknown outcome.", Back));
+            ? Act("adminResolveSupportTicket", new {ticketId = TicketId, outcome, resolutionNote = Clean(resolutionNote, 4000)}, L["Ticket {0}.", L.Code(outcome)], Back)
+            : Task.FromResult(Invalid(L["Unknown outcome."], Back));
 
     public Task<IActionResult> OnPostEscalateAsync(string? reason, string priority, string idempotencyKey)
     {
         var r = Clean(reason, 500);
         return r is null
-            ? Task.FromResult(Invalid("Say why this goes to Trust & Safety.", Back))
-            : Act("adminEscalateSupportTicket", new {ticketId = TicketId, reason = r, priority, idempotencyKey}, "Escalated to Trust & Safety.", Back);
+            ? Task.FromResult(Invalid(L["Say why this goes to Trust & Safety."], Back))
+            : Act("adminEscalateSupportTicket", new {ticketId = TicketId, reason = r, priority, idempotencyKey}, L["Escalated to Trust & Safety."], Back);
     }
 
     private IActionResult Back() => Redirect($"/Support/{Uri.EscapeDataString(TicketId)}");

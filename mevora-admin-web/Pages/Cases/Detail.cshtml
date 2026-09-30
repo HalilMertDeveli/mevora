@@ -2,18 +2,18 @@
 @model Mevora.Admin.Web.Pages.Cases.DetailModel
 @{
     var c = Model.Case;
-    ViewData["Title"] = $"Case {Model.CaseId}";
+    ViewData["Title"] = $"{L["Case"].Value} {Model.CaseId}";
     var subjectUid = c.Str("subjectUserId");
 }
 <div class="page-head">
     <div>
-        <h1>@JsonView.Label(c.Str("type")) case</h1>
+        <h1>@L["{0} case", L.Code(c.Str("type"))]</h1>
         <p class="mono">@Model.CaseId</p>
     </div>
     <div class="actions">
-        <span class="prio prio-@c.S("priority")">@JsonView.Label(c.Str("priority"))</span>
-        <span class="status status-@c.S("status")">@JsonView.Label(c.Str("status"))</span>
-        @if (c.Bool("escalated")) { <span class="badge badge-danger">Escalated ×@c.S("escalationLevel", "1")</span> }
+        <span class="prio prio-@c.S("priority")">@L.Code(c.Str("priority"))</span>
+        <span class="status status-@c.S("status")">@L.Code(c.Str("status"))</span>
+        @if (c.Bool("escalated")) { <span class="badge badge-danger">@L["Escalated"] ×@c.S("escalationLevel", "1")</span> }
     </div>
 </div>
 <partial name="_Flash" model="Model" />
@@ -23,99 +23,99 @@
 <div class="grid grid-main-side">
     <div>
         <section class="card">
-            <h2>Summary</h2>
+            <h2>@L["Summary"]</h2>
             <dl class="kv">
-                <dt>Subject</dt>
+                <dt>@L["Subject"]</dt>
                 <dd>
                     @if (c.Get("subject").ValueKind == JsonValueKind.Object) { <partial name="_UserChip" model='c.Get("subject")' /> }
                     else { <span class="mono">@c.S("subjectRef")</span> }
                 </dd>
-                <dt>Summary</dt><dd>@c.S("summary")</dd>
-                <dt>Reasons</dt><dd>@string.Join(", ", c.Arr("reasonCodes").Select(r => JsonView.Label(r.GetString())))</dd>
-                <dt>Sources</dt><dd>@c.S("sourceCount", "0") (@c.S("reporterCount", "0") distinct reporters)</dd>
-                <dt>Assigned</dt><dd>@(c.Str("assigneeName") ?? c.S("assignedTo", "unassigned"))</dd>
-                <dt>Opened</dt><dd>@c.When("createdAt")</dd>
+                <dt>@L["Summary"]</dt><dd>@c.S("summary")</dd>
+                <dt>@L["Reasons"]</dt><dd>@string.Join(", ", c.Arr("reasonCodes").Select(r => L.Code(r.GetString())))</dd>
+                <dt>@L["Sources"]</dt><dd>@c.S("sourceCount", "0") (@L["{0} distinct reporters", c.S("reporterCount", "0")])</dd>
+                <dt>@L["Assigned"]</dt><dd>@(c.Str("assigneeName") ?? c.Str("assignedTo") ?? L["unassigned"].Value)</dd>
+                <dt>@L["Opened"]</dt><dd>@L.When(c, "createdAt")</dd>
                 @if (c.Str("resolvedAt") is not null)
                 {
-                    <dt>Closed</dt><dd>@c.When("resolvedAt") · @JsonView.Label(c.Get("resolution").Str("code"))</dd>
+                    <dt>@L["Closed"]</dt><dd>@L.When(c, "resolvedAt") · @L.Code(c.Get("resolution").Str("code"))</dd>
                 }
                 @if (c.Get("verification").ValueKind == JsonValueKind.Object)
                 {
-                    <dt>Verification</dt><dd><span class="status status-@c.Get("verification").S("status")">@JsonView.Label(c.Get("verification").Str("status"))</span></dd>
+                    <dt>@L["Verification"]</dt><dd><span class="status status-@c.Get("verification").S("status")">@L.Code(c.Get("verification").Str("status"))</span></dd>
                 }
             </dl>
         </section>
 
         <section class="card">
-            <h2>Source records</h2>
+            <h2>@L["Source records"]</h2>
             @foreach (var s in c.Arr("sources"))
             {
                 <article class="card">
-                    <p><span class="badge">@JsonView.Label(s.Str("kind"))</span> <span class="mono small">@s.S("ref")</span>
-                        @if (s.Str("exists") == "false") { <span class="badge badge-warn">No longer exists</span> }</p>
+                    <p><span class="badge">@L.Code("source." + s.Str("kind"))</span> <span class="mono small">@s.S("ref")</span>
+                        @if (s.Str("exists") == "false") { <span class="badge badge-warn">@L["No longer exists"]</span> }</p>
                     @switch (s.Str("kind"))
                     {
                         case "report":
                             <dl class="kv">
-                                <dt>Reason</dt><dd>@JsonView.Label(s.Str("reason")) <span class="prio prio-@s.S("priority")">@JsonView.Label(s.Str("priority"))</span></dd>
-                                <dt>Filed</dt><dd>@s.When("createdAt") by <a class="mono" href="/Users/@s.S("reporterId", "")">@s.S("reporterId")</a></dd>
-                                <dt>Description</dt><dd>@s.S("description")</dd>
-                                <dt>Related match</dt><dd class="mono">@s.S("matchId")</dd>
-                                <dt>Related message</dt><dd><span class="mono">@s.S("messageId")</span> <span class="muted small">(ID only — messages are end-to-end encrypted and cannot be opened)</span></dd>
+                                <dt>@L["Reason"]</dt><dd>@L.Code(s.Str("reason")) <span class="prio prio-@s.S("priority")">@L.Code(s.Str("priority"))</span></dd>
+                                <dt>@L["Filed"]</dt><dd>@L.When(s, "createdAt") · <a class="mono" href="/Users/@s.S("reporterId", "")">@s.S("reporterId")</a></dd>
+                                <dt>@L["Description"]</dt><dd>@s.S("description")</dd>
+                                <dt>@L["Related match"]</dt><dd class="mono">@s.S("matchId")</dd>
+                                <dt>@L["Related message"]</dt><dd><span class="mono">@s.S("messageId")</span> <span class="muted small">@L["(ID only — messages are end-to-end encrypted and cannot be opened)"]</span></dd>
                             </dl>
                             break;
                         case "photo":
                             <div class="thumbs">
                                 @if (Model.Can("photo.read"))
                                 {
-                                    <img class="thumb" alt="Reported photo" src="/Photos?handler=Preview&uid=@Uri.EscapeDataString(s.S("uid", ""))&imageId=@Uri.EscapeDataString(s.S("imageId", ""))" />
+                                    <img class="thumb" alt="@L["Reported photo"]" src="/Photos?handler=Preview&uid=@Uri.EscapeDataString(s.S("uid", ""))&imageId=@Uri.EscapeDataString(s.S("imageId", ""))" />
                                 }
                                 <dl class="kv">
-                                    <dt>Status</dt><dd><span class="status status-@s.S("status")">@JsonView.Label(s.Str("status"))</span></dd>
-                                    <dt>Reason</dt><dd>@s.S("reason")</dd>
+                                    <dt>@L["Status"]</dt><dd><span class="status status-@s.S("status")">@L.Code(s.Str("status"))</span></dd>
+                                    <dt>@L["Reason"]</dt><dd>@L.Code(s.Str("reason"))</dd>
                                 </dl>
                             </div>
-                            <a class="btn btn-small" href="/Photos">Open photo queue</a>
+                            <a class="btn btn-small" href="/Photos">@L["Open photo queue"]</a>
                             break;
                         case "support_ticket":
-                            <p>@s.S("subject") · @JsonView.Label(s.Str("status")?.ToLowerInvariant())</p>
-                            <a class="btn btn-small" href="/Support/@s.S("ref", "").Split('/').Last()">Open ticket</a>
+                            <p>@s.S("subject") · @L.Code(s.Str("status")?.ToLowerInvariant())</p>
+                            <a class="btn btn-small" href="/Support/@s.S("ref", "").Split('/').Last()">@L["Open ticket"]</a>
                             break;
                         case "appeal":
-                            <p>@JsonView.Label(s.Str("actionType")) · @JsonView.Label(s.Str("status"))</p>
+                            <p>@L.Code(s.Str("actionType")) · @L.Code(s.Str("status"))</p>
                             <p class="msg">@s.S("reason")</p>
-                            <a class="btn btn-small" href="/Appeals/@s.S("ref", "").Split('/').Last()">Open appeal</a>
+                            <a class="btn btn-small" href="/Appeals/@s.S("ref", "").Split('/').Last()">@L["Open appeal"]</a>
                             break;
                         case "automation_job":
-                            <p>@JsonView.Label(s.Str("jobKind")) · @JsonView.Label(s.Str("status"))</p>
+                            <p>@L.Code(s.Str("jobKind")) · @L.Code(s.Str("status"))</p>
                             <p class="small mono">@s.S("error")</p>
                             break;
                         default:
-                            <p class="small">@JsonView.Label(s.Str("status"))</p>
+                            <p class="small">@L.Code(s.Str("status"))</p>
                             break;
                     }
                 </article>
             }
             @if (c.Num("moreSources") is > 0)
             {
-                <p class="muted small">…and @c.Num("moreSources") more source record(s).</p>
+                <p class="muted small">@L["…and {0} more source record(s).", c.Num("moreSources")!]</p>
             }
         </section>
 
         <section class="card">
-            <h2>Case timeline</h2>
+            <h2>@L["Case timeline"]</h2>
             <ol class="timeline">
                 @foreach (var t in c.Arr("timeline"))
                 {
                     <li>
-                        <div class="t-when">@t.When("createdAt") · @(t.Str("authorName") ?? t.S("authorUid"))</div>
+                        <div class="t-when">@L.When(t, "createdAt") · @(t.Str("authorName") ?? L.Code(t.Str("authorUid")))</div>
                         @if (t.Str("type") == "internal_note")
                         {
                             <div class="t-note">@t.S("text")</div>
                         }
                         else
                         {
-                            <div>@JsonView.Label(t.Str("event"))</div>
+                            <div>@L.Code("event." + t.Str("event"))</div>
                         }
                     </li>
                 }
@@ -125,51 +125,51 @@
 
     <div>
         <section class="card">
-            <h2>Work this case</h2>
+            <h2>@L["Work this case"]</h2>
             @if (Model.IsClosed)
             {
-                <p class="muted">This case is closed. A new report opens a new case.</p>
+                <p class="muted">@L["This case is closed. A new report opens a new case."]</p>
             }
             else
             {
                 <div class="actions">
                     @if (Model.Can("case.assign") && !Model.HeldByMe)
                     {
-                        <form method="post" asp-page-handler="Claim" class="inline"><button type="submit" class="btn btn-primary">Assign to me</button></form>
+                        <form method="post" asp-page-handler="Claim" class="inline"><button type="submit" class="btn btn-primary">@L["Assign to me"]</button></form>
                     }
                     @if (Model.Can("case.assign") && Model.HeldByMe)
                     {
-                        <form method="post" asp-page-handler="Status" class="inline"><input type="hidden" name="status" value="in_review" /><button type="submit" class="btn">Start review</button></form>
-                        <form method="post" asp-page-handler="Status" class="inline"><input type="hidden" name="status" value="waiting" /><button type="submit" class="btn">Waiting on info</button></form>
-                        <form method="post" asp-page-handler="Unassign" class="inline"><button type="submit" class="btn btn-ghost">Release</button></form>
+                        <form method="post" asp-page-handler="Status" class="inline"><input type="hidden" name="status" value="in_review" /><button type="submit" class="btn">@L["Start review"]</button></form>
+                        <form method="post" asp-page-handler="Status" class="inline"><input type="hidden" name="status" value="waiting" /><button type="submit" class="btn">@L["Waiting on info"]</button></form>
+                        <form method="post" asp-page-handler="Unassign" class="inline"><button type="submit" class="btn btn-ghost">@L["Release"]</button></form>
                     }
                 </div>
                 @if (subjectUid is not null)
                 {
-                    <p><a class="btn" href="/Users/@Uri.EscapeDataString(subjectUid)?caseId=@Uri.EscapeDataString(Model.CaseId)">Act on this member</a></p>
-                    <p class="small muted">Warn, suspend, ban and re-verification open on the member's page, already linked to this case.</p>
+                    <p><a class="btn" href="/Users/@Uri.EscapeDataString(subjectUid)?caseId=@Uri.EscapeDataString(Model.CaseId)">@L["Act on this member"]</a></p>
+                    <p class="small muted">@L["Warn, suspend, ban and re-verification open on the member's page, already linked to this case."]</p>
                 }
                 @if (Model.Can("case.resolve"))
                 {
-                    <form method="post" asp-page-handler="Resolve" data-confirm="Close this case? Its open reports close with it.">
-                        <h3>Close</h3>
-                        <div class="field"><label for="outcome">Outcome</label>
-                            <select id="outcome" name="outcome"><option value="resolved">Resolved</option><option value="dismissed">Dismissed</option></select></div>
-                        <div class="field"><label for="code">Resolution</label>
+                    <form method="post" asp-page-handler="Resolve" data-confirm="@L["Close this case? Its open reports close with it."]">
+                        <h3>@L["Close"]</h3>
+                        <div class="field"><label for="outcome">@L["Outcome"]</label>
+                            <select id="outcome" name="outcome"><option value="resolved">@L.Code("resolved")</option><option value="dismissed">@L.Code("dismissed")</option></select></div>
+                        <div class="field"><label for="code">@L["Resolution"]</label>
                             <select id="code" name="code">
-                                @foreach (var r in Vocab.ResolutionCodes) { <option value="@r">@JsonView.Label(r)</option> }
+                                @foreach (var r in Vocab.ResolutionCodes) { <option value="@r">@L.Code(r)</option> }
                             </select></div>
-                        <div class="field"><label for="resolve-note">Internal note</label><textarea id="resolve-note" name="note" maxlength="4000"></textarea></div>
-                        <button type="submit" class="btn btn-ok">Close case</button>
+                        <div class="field"><label for="resolve-note">@L["Internal note"]</label><textarea id="resolve-note" name="note" maxlength="4000"></textarea></div>
+                        <button type="submit" class="btn btn-ok">@L["Close case"]</button>
                     </form>
                 }
                 @if (Model.Can("case.escalate"))
                 {
-                    <form method="post" asp-page-handler="Escalate" data-confirm="Escalate this case to senior review?">
-                        <h3>Escalate</h3>
-                        <div class="field"><label for="esc-reason">Why</label><input id="esc-reason" name="reason" type="text" maxlength="500" required /></div>
-                        <div class="field"><label for="esc-note">Internal note</label><textarea id="esc-note" name="note" maxlength="4000"></textarea></div>
-                        <button type="submit" class="btn btn-danger">Escalate</button>
+                    <form method="post" asp-page-handler="Escalate" data-confirm="@L["Escalate this case to senior review?"]">
+                        <h3>@L["Escalate"]</h3>
+                        <div class="field"><label for="esc-reason">@L["Why"]</label><input id="esc-reason" name="reason" type="text" maxlength="500" required /></div>
+                        <div class="field"><label for="esc-note">@L["Internal note"]</label><textarea id="esc-note" name="note" maxlength="4000"></textarea></div>
+                        <button type="submit" class="btn btn-danger">@L["Escalate"]</button>
                     </form>
                 }
             }
@@ -178,27 +178,27 @@
         @if (Model.Can("case.note"))
         {
             <section class="card">
-                <h2>Internal note</h2>
+                <h2>@L["Internal note"]</h2>
                 <form method="post" asp-page-handler="Note">
-                    <div class="field"><label for="note-text">Visible to staff only — never to the member</label><textarea id="note-text" name="text" maxlength="4000" required></textarea></div>
-                    <button type="submit" class="btn">Add note</button>
+                    <div class="field"><label for="note-text">@L["Visible to staff only — never to the member"]</label><textarea id="note-text" name="text" maxlength="4000" required></textarea></div>
+                    <button type="submit" class="btn">@L["Add note"]</button>
                 </form>
             </section>
         }
 
         <section class="card">
-            <h2>Decisions on this case</h2>
+            <h2>@L["Decisions on this case"]</h2>
             @if (!c.Arr("actions").Any())
             {
-                <p class="muted">None yet.</p>
+                <p class="muted">@L["None yet."]</p>
             }
             else
             {
                 <ul>
                     @foreach (var a in c.Arr("actions"))
                     {
-                        <li>@JsonView.Label(a.Str("type")) · @JsonView.Label(a.Str("reasonCode")) · <span class="small muted">@a.When("createdAt")</span>
-                            @if (a.Str("overturnedByActionId") is not null) { <span class="badge badge-info">Overturned</span> }</li>
+                        <li>@L.Code(a.Str("type")) · @L.Code(a.Str("reasonCode")) · <span class="small muted">@L.When(a, "createdAt")</span>
+                            @if (a.Str("overturnedByActionId") is not null) { <span class="badge badge-info">@L["Overturned"]</span> }</li>
                     }
                 </ul>
             }

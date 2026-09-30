@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using Mevora.Admin.Web.Resources;
 using Mevora.Admin.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Localization;
 
 namespace Mevora.Admin.Web.Pages;
 
@@ -27,6 +29,7 @@ public sealed class LoginModel(
     IAdminApiClient api,
     IStaffSession session,
     LoginFlowStore flow,
+    IStringLocalizer<SharedResource> l,
     ILogger<LoginModel> logger) : PageModel
 {
     public string Stage { get; private set; } = "password";
@@ -42,7 +45,7 @@ public sealed class LoginModel(
     public async Task<IActionResult> OnGetAsync(string? reason)
     {
         if (User.Identity?.IsAuthenticated == true) return Redirect("/Dashboard");
-        if (reason == "expired") Notice = "Your session ended. Please sign in again.";
+        if (reason == "expired") Notice = l["Your session ended. Please sign in again."];
         var state = await flow.ReadAsync(HttpContext);
         if (state is not null)
         {
@@ -58,7 +61,7 @@ public sealed class LoginModel(
         await flow.ClearAsync(HttpContext);
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(Email) || string.IsNullOrEmpty(Password))
         {
-            Error = "Enter your staff email and password.";
+            Error = l["Enter your staff email and password."];
             return Page();
         }
         var email = Email.Trim().ToLowerInvariant();
@@ -66,13 +69,13 @@ public sealed class LoginModel(
         switch (result)
         {
         case PasswordSignInResult.Failed:
-            Error = "Those details did not work.";
+            Error = l["Those details did not work."];
             return Page();
         case PasswordSignInResult.SecondFactorRequired mfa:
             var totp = mfa.Enrollments.FirstOrDefault(e => e.IsTotp) ?? mfa.Enrollments.FirstOrDefault();
             if (totp is null)
             {
-                Error = "This account's second factor is not supported here. Contact a super admin.";
+                Error = l["This account's second factor is not supported here. Contact a super admin."];
                 return Page();
             }
             await flow.WriteAsync(HttpContext, new LoginFlowState
@@ -86,7 +89,7 @@ public sealed class LoginModel(
         case PasswordSignInResult.Success ok:
             return await AdmitAsync(ok.Tokens, email);
         default:
-            Error = "Sign-in failed.";
+            Error = l["Sign-in failed."];
             return Page();
         }
     }
@@ -104,11 +107,11 @@ public sealed class LoginModel(
             : null;
         if (tokens is null)
         {
-            Stage = "code";
-            Error = await flow.RecordFailureAsync(HttpContext, state)
-                ? "That code did not work. Use the current code from your authenticator app."
-                : "Too many attempts. Start again.";
-            if (Error.StartsWith("Too many", StringComparison.Ordinal)) Stage = "password";
+            var canRetry = await flow.RecordFailureAsync(HttpContext, state);
+            Stage = canRetry ? "code" : "password";
+            Error = canRetry
+                ? l["That code did not work. Use the current code from your authenticator app."]
+                : l["Too many attempts. Start again."];
             return Page();
         }
         return await AdmitAsync(tokens, state.Email);
@@ -127,13 +130,13 @@ public sealed class LoginModel(
             : null;
         if (tokens is null)
         {
-            Stage = "enroll";
-            EnrollmentSecret = state.EnrollmentSecret;
-            EnrollmentUri = state.EnrollmentUri;
-            Error = await flow.RecordFailureAsync(HttpContext, state)
-                ? "That code did not work. Check the time on your phone and try the next code."
-                : "Too many attempts. Start again.";
-            if (Error.StartsWith("Too many", StringComparison.Ordinal)) Stage = "password";
+            var canRetry = await flow.RecordFailureAsync(HttpContext, state);
+            Stage = canRetry ? "enroll" : "password";
+            EnrollmentSecret = canRetry ? state.EnrollmentSecret : null;
+            EnrollmentUri = canRetry ? state.EnrollmentUri : null;
+            Error = canRetry
+                ? l["That code did not work. Check the time on your phone and try the next code."]
+                : l["Too many attempts. Start again."];
             return Page();
         }
         logger.LogInformation("staff_totp_enrolled uid={Uid}", tokens.Uid);
@@ -161,7 +164,7 @@ public sealed class LoginModel(
             if (start is null)
             {
                 await flow.ClearAsync(HttpContext);
-                Error = "Two-factor enrolment could not be started. Identity Platform MFA (TOTP) must be enabled for this project.";
+                Error = l["Two-factor enrolment could not be started. Identity Platform MFA (TOTP) must be enabled for this project."];
                 return Page();
             }
             await flow.WriteAsync(HttpContext, new LoginFlowState
@@ -185,8 +188,8 @@ public sealed class LoginModel(
             Stage = "password";
             // Same message for a member account, a disabled or an unknown staff member.
             Error = error.Code == "backend_unavailable"
-                ? AdminErrorMessages.For(error.Code)
-                : "This account does not have access to the Trust & Safety console.";
+                ? l.Error(error.Code)
+                : l["This account does not have access to the Trust & Safety console."];
             return Page();
         }
         await flow.ClearAsync(HttpContext);

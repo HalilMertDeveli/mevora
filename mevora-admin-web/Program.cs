@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using System.Threading.RateLimiting;
 using Mevora.Admin.Web.Configuration;
 using Mevora.Admin.Web.Pages;
@@ -8,8 +10,10 @@ using Mevora.Admin.Web.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.WebEncoders;
 
 var builder = WebApplication.CreateBuilder(args);
 var isDevelopment = builder.Environment.IsDevelopment();
@@ -20,6 +24,10 @@ builder.Services.AddOptions<AdminWebOptions>()
     .ValidateOnStart();
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddLocalization();
+// Emit Turkish letters as themselves rather than &#x...; references. Markup
+// characters (< > & quotes) are still encoded.
+builder.Services.Configure<WebEncoderOptions>(o => o.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All));
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSingleton<DistributedTicketStore>();
 builder.Services.AddSingleton<LoginFlowStore>();
@@ -87,6 +95,20 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage("/Login");
     options.Conventions.AllowAnonymousToPage("/Status");
     options.Conventions.AllowAnonymousToPage("/Error");
+    options.Conventions.AllowAnonymousToPage("/Language");
+}).AddViewLocalization();
+
+// Console language: Turkish or English, chosen per browser with the switcher
+// (a culture cookie) and otherwise the configured default. Dates and numbers
+// follow the same culture. Stored codes are translated only for display; what
+// the console sends back to the backend is always the code itself.
+builder.Services.AddOptions<RequestLocalizationOptions>().Configure<IConfiguration>((options, config) =>
+{
+    var defaultCulture = config["AdminWeb:DefaultCulture"] is "en" ? "en" : "tr";
+    options.SetDefaultCulture(defaultCulture)
+        .AddSupportedCultures(ConsoleCultures.All)
+        .AddSupportedUICultures(ConsoleCultures.All);
+    options.RequestCultureProviders = [new CookieRequestCultureProvider()];
 });
 
 builder.Services.AddRateLimiter(options =>
@@ -134,6 +156,7 @@ if (!isDevelopment)
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseStatusCodePagesWithReExecute("/Status/{0}");
 app.UseStaticFiles();
+app.UseRequestLocalization();
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();

@@ -78,6 +78,46 @@ export function discoveryProfileRejectReason(options: {
   return null;
 }
 
+/**
+ * The gates a candidate's profile document decides on its own, from the
+ * viewer's side: discoverable, complete and not held by moderation, adult,
+ * inside the viewer's age range, enough usable photos, and of a gender the
+ * viewer wants. Whoever fails one is rejected whatever their account, their
+ * own preferences or their location say — so a scan reads none of those for
+ * them. Same reason labels as the full chain.
+ */
+export function profileOnlyRejectReason(options: {
+  viewerPrefs: DocumentData;
+  viewerProfile: DocumentData;
+  candidateProfile: DocumentData | undefined;
+  minAge: number;
+  maxAge: number;
+}): string | null {
+  const data = options.candidateProfile;
+  if (!isProfileDiscoverable(data)) {
+    return discoveryProfileRejectReason({
+      candidateProfile: data,
+      candidateAccount: undefined,
+      minAge: options.minAge,
+      maxAge: options.maxAge,
+    }) ?? "underage_or_undiscoverable";
+  }
+  if (!isAdultProfile(data)) {
+    return "underage";
+  }
+  const age = resolveProfileAge(data);
+  if (age === null || age < 18 || age < options.minAge || age > options.maxAge) {
+    return "age_filter";
+  }
+  if (countUsableDiscoveryPhotos(data?.photos) < MIN_PROFILE_PHOTOS) {
+    return "photos_insufficient";
+  }
+  if (!interestedInAllows(datingPreference(options.viewerPrefs, options.viewerProfile), data?.gender)) {
+    return "gender_preference";
+  }
+  return null;
+}
+
 export function passesDiscoveryProfileFilters(options: {
   candidateProfile: DocumentData | undefined;
   candidateAccount: DocumentData | undefined;

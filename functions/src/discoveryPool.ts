@@ -7,6 +7,7 @@ import {
   loadActiveMatchPartnerIds,
   loadPreferencesByUid,
   passesGenderPreferences,
+  profileOnlyRejectReason,
 } from "./discoveryMatching.js";
 import {
   effectiveRadiusKm,
@@ -594,11 +595,28 @@ export async function scanDiscoveryPool(
       break;
     }
     cursorSnap = profiles.docs[profiles.docs.length - 1];
-    const candidateUids = profiles.docs.map((doc) => doc.id);
-    const [accountsByUid, preferencesByUid, locationsByUid] = await Promise.all([
-      loadUserAccounts(db, candidateUids),
-      loadPreferencesByUid(db, candidateUids),
-      hasViewerLocation ? loadUserLocations(db, candidateUids) : Promise.resolve(new Map()),
+
+    // The page is narrowed in stages, cheapest first, and each stage reads
+    // only for the people the previous one left standing. `early` keeps the
+    // reason for everyone ruled out before the full chain runs.
+    const early = new Map<string, string>();
+    // Stage 1 — the profile document alone, already in hand: age, photos,
+    // moderation, and whether the viewer wants this gender at all.
+    for (const doc of profiles.docs) {
+      const reason = profileOnlyRejectReason({
+        viewerPrefs: viewer.prefs,
+        viewerProfile,
+        candidateProfile: doc.data(),
+        minAge: Number(viewer.prefs.minAge ?? 18),
+        maxAge: Number(viewer.prefs.maxAge ?? 99),
+      });
+      if (reason) early.set(doc.id, reason);
+    }
+    const profileOk = profiles.docs.map((doc) => doc.id).filter((id) => !early.has(id));
+    // Stage 2 — account, activity and their own preferences, in bulk.
+    const [accountsByUid, preferencesByUid] = await Promise.all([
+      loadUserAccounts(db, profileOk),
+      loadPreferencesByUid(db, profileOk),
     ]);
 
     // First pass: the rule chain and the hard distance gate. Nothing here
@@ -623,9 +641,27 @@ export async function scanDiscoveryPool(
         lastActiveAt: account?.lastActiveAt,
       };
     };
-    const admissible = profiles.docs
-      .filter((doc) => candidateOwnRejectReason(viewer, ownFields(doc)) === null)
+    const ownOk = profiles.docs
+      .filter((doc) => {
+        if (early.has(doc.id)) return false;
+        const reason = candidateOwnRejectReason(viewer, ownFields(doc));
+        if (reason) early.set(doc.id, reason);
+        return reason === null;
+      })
       .map((doc) => doc.id);
+    // Stage 3 — location, then the hard distance gate, before any pair lookup.
+    const locationsByUid = hasViewerLocation
+      ? await loadUserLocations(db, ownOk)
+      : new Map<string, {latitude: number; longitude: number}>();
+    const admissible = ownOk.filter((candidateUid) => {
+      const other = locationsByUid.get(candidateUid);
+      if (!hasViewerLocation || !other) return true;
+      const km = haversineKm(Number(origin?.latitude), Number(origin?.longitude), other.latitude, other.longitude);
+      if (isWithinDiscoveryRadius(km, gateKm)) return true;
+      early.set(candidateUid, "distance_over_radius");
+      return false;
+    });
+    // Stage 4 — pair state and Boost for whoever is left.
     // Boost state, likewise, only for this page's admissible people — never
     // the whole system's list — unless the viewer already carries it.
     const [pageViewer, pageBoosts] = await Promise.all([
@@ -638,6 +674,11 @@ export async function scanDiscoveryPool(
     const boosted = viewer.boostsLoaded === false ? new Set(pageBoosts.keys()) : viewer.boosted;
     for (const doc of profiles.docs) {
       lastUid = doc.id;
+      const ruledOut = early.get(doc.id);
+      if (ruledOut) {
+        bumpReject(ruledOut);
+        continue;
+      }
       const data = doc.data();
       const account = accountsByUid.get(doc.id);
       const reject = await candidateRejectReason(db, pageViewer, {

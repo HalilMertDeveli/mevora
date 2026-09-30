@@ -36,7 +36,7 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
         var reason = Clean(justification, 300);
         if (reason is null || reason.Length < 5)
         {
-            return Invalid("Give a short justification (it is recorded) before revealing contact details.", Back);
+            return Invalid(L["Give a short justification (it is recorded) before revealing contact details."], Back);
         }
         await LoadAsync(includeSensitive: true, justification: reason, before: null);
         return Page();
@@ -50,7 +50,7 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
             userMessage = Clean(userMessage, 1000),
             caseId = Clean(caseId, 128),
             idempotencyKey,
-        }, "Warning issued.", Back);
+        }, L["Warning issued."], Back);
 
     public Task<IActionResult> OnPostSuspendAsync(string reasonCode, string duration, int? customHours, string? internalNote, string? caseId, string idempotencyKey)
     {
@@ -59,19 +59,19 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
         {
             if (customHours is not { } h || h < Vocab.MinSuspensionHours || h > Vocab.MaxSuspensionHours)
             {
-                return Task.FromResult(Invalid($"A custom suspension must be between {Vocab.MinSuspensionHours} and {Vocab.MaxSuspensionHours} hours.", Back));
+                return Task.FromResult(Invalid(L["A custom suspension must be between {0} and {1} hours.", Vocab.MinSuspensionHours, Vocab.MaxSuspensionHours], Back));
             }
             hours = h;
         }
         else if (!int.TryParse(duration, NumberStyles.Integer, CultureInfo.InvariantCulture, out hours) ||
                  !Vocab.SuspensionPresets.Any(p => p.Value == duration))
         {
-            return Task.FromResult(Invalid("Choose a suspension length.", Back));
+            return Task.FromResult(Invalid(L["Choose a suspension length."], Back));
         }
         var note = Clean(internalNote, 4000);
         if (note is null)
         {
-            return Task.FromResult(Invalid("An internal note is required for a suspension.", Back));
+            return Task.FromResult(Invalid(L["An internal note is required for a suspension."], Back));
         }
         return Act("adminSuspendUser", new
         {
@@ -81,22 +81,22 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
             internalNote = note,
             caseId = Clean(caseId, 128),
             idempotencyKey,
-        }, $"Account suspended for {hours} hour(s).", Back);
+        }, L["Account suspended for {0} hour(s).", hours], Back);
     }
 
     public Task<IActionResult> OnPostBanAsync(string reasonCode, string? internalNote, string? confirmWord, string? caseId, string idempotencyKey)
     {
         if (!string.Equals(confirmWord?.Trim(), "BAN", StringComparison.Ordinal))
         {
-            return Task.FromResult(Invalid("Type BAN to confirm a permanent ban.", Back));
+            return Task.FromResult(Invalid(L["Type BAN to confirm a permanent ban."], Back));
         }
         var note = Clean(internalNote, 4000);
         if (note is null)
         {
-            return Task.FromResult(Invalid("An internal note is required for a ban.", Back));
+            return Task.FromResult(Invalid(L["An internal note is required for a ban."], Back));
         }
         return Act("adminBanUser", new {uid = Uid, reasonCode, internalNote = note, caseId = Clean(caseId, 128), idempotencyKey},
-            "Account permanently banned. Sign-in is disabled.", Back);
+            L["Account permanently banned. Sign-in is disabled."], Back);
     }
 
     public Task<IActionResult> OnPostRestoreAsync(string reasonCode, string? internalNote, string idempotencyKey)
@@ -104,9 +104,9 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
         var note = Clean(internalNote, 4000);
         if (note is null)
         {
-            return Task.FromResult(Invalid("An internal note is required to restore an account.", Back));
+            return Task.FromResult(Invalid(L["An internal note is required to restore an account."], Back));
         }
-        return Act("adminRestoreUser", new {uid = Uid, reasonCode, internalNote = note, idempotencyKey}, "Account restored.", Back);
+        return Act("adminRestoreUser", new {uid = Uid, reasonCode, internalNote = note, idempotencyKey}, L["Account restored."], Back);
     }
 
     public Task<IActionResult> OnPostReverifyAsync(string reasonCode, string? internalNote, string idempotencyKey)
@@ -114,10 +114,10 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
         var note = Clean(internalNote, 4000);
         if (note is null)
         {
-            return Task.FromResult(Invalid("An internal note is required.", Back));
+            return Task.FromResult(Invalid(L["An internal note is required."], Back));
         }
         return Act("adminRequireReverification", new {uid = Uid, reasonCode, internalNote = note, idempotencyKey},
-            "Re-verification required. The verified badge was removed until the member verifies again with the provider.", Back);
+            L["Re-verification required. The verified badge was removed until the member verifies again with the provider."], Back);
     }
 
     public async Task<IActionResult> OnPostOpenCaseAsync(string type, string reasonCode, string priority, string? summary)
@@ -125,7 +125,7 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
         var text = Clean(summary, 300);
         if (text is null)
         {
-            return Invalid("Add a short summary for the case.", Back);
+            return Invalid(L["Add a short summary for the case."], Back);
         }
         try
         {
@@ -135,7 +135,7 @@ public sealed class DetailModel(IAdminApiClient api) : AdminPageModel(api)
         catch (AdminApiException error)
         {
             if (error.EndsSession) throw new SessionEndedException();
-            return Invalid(AdminErrorMessages.For(error), Back);
+            return Invalid(L.Error(error), Back);
         }
     }
 

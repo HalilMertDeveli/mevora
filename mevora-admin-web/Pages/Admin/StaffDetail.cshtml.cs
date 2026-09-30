@@ -50,33 +50,33 @@ public sealed class StaffDetailModel(IAdminApiClient api, IFirebaseIdentityClien
 
     public Task<IActionResult> OnPostRoleAsync(string? role)
     {
-        if (role is null || !Vocab.GrantableRoles.Contains(role)) return Task.FromResult(Invalid("Choose a role.", Back));
+        if (role is null || !Vocab.GrantableRoles.Contains(role)) return Task.FromResult(Invalid(L["Choose a role."], Back));
         return Act("adminUpdateStaffRole", new {targetUid = Uid, role},
-            $"Role changed to {JsonView.Label(role)}. Their current sessions were ended.", Back);
+            L["Role changed to {0}. Their current sessions were ended.", L.Code(role)], Back);
     }
 
     public Task<IActionResult> OnPostDisableAsync(string? reason)
     {
         var r = Clean(reason, 500);
         return r is null
-            ? Task.FromResult(Invalid("Give a reason for disabling access.", Back))
-            : Act("adminDisableStaff", new {targetUid = Uid, reason = r}, "Access disabled and sessions ended. It takes effect on their next request.", Back);
+            ? Task.FromResult(Invalid(L["Give a reason for disabling access."], Back))
+            : Act("adminDisableStaff", new {targetUid = Uid, reason = r}, L["Access disabled and sessions ended. It takes effect on their next request."], Back);
     }
 
     public Task<IActionResult> OnPostEnableAsync(string? reason)
     {
         var r = Clean(reason, 500);
         return r is null
-            ? Task.FromResult(Invalid("Give a reason for re-enabling access.", Back))
-            : Act("adminEnableStaff", new {targetUid = Uid, reason = r}, "Access re-enabled. They sign in again with two-factor authentication.", Back);
+            ? Task.FromResult(Invalid(L["Give a reason for re-enabling access."], Back))
+            : Act("adminEnableStaff", new {targetUid = Uid, reason = r}, L["Access re-enabled. They sign in again with two-factor authentication."], Back);
     }
 
     public Task<IActionResult> OnPostRevokeAsync(string? reason)
     {
         var r = Clean(reason, 500);
         return r is null
-            ? Task.FromResult(Invalid("Give a reason for ending their sessions.", Back))
-            : Act("adminRevokeStaffSessions", new {targetUid = Uid, reason = r}, "All their console sessions were ended. They must sign in again.", Back);
+            ? Task.FromResult(Invalid(L["Give a reason for ending their sessions."], Back))
+            : Act("adminRevokeStaffSessions", new {targetUid = Uid, reason = r}, L["All their console sessions were ended. They must sign in again."], Back);
     }
 
     public async Task<IActionResult> OnPostActivationAsync()
@@ -91,15 +91,15 @@ public sealed class StaffDetailModel(IAdminApiClient api, IFirebaseIdentityClien
         catch (AdminApiException error)
         {
             if (error.EndsSession) throw new SessionEndedException();
-            return Invalid(AdminErrorMessages.For(error), Back);
+            return Invalid(L.Error(error), Back);
         }
         if (result.Str("email") is { Length: > 0 } email && await identity.SendPasswordSetupEmailAsync(email, HttpContext.RequestAborted))
         {
-            Flash = "Firebase emailed them a password-setup link.";
+            Flash = L["Firebase emailed them a password-setup link."];
         }
         else
         {
-            FlashError = "The password-setup email could not be sent. Try again shortly.";
+            FlashError = L["The password-setup email could not be sent. Try again shortly."];
         }
         return Back();
     }

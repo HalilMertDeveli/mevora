@@ -28,7 +28,7 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
         }
         if (Q is {Length: < 2} && Status is null)
         {
-            ErrorMessage = "Enter at least two characters.";
+            ErrorMessage = L["Enter at least two characters."];
             return;
         }
         Searched = true;

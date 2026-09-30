@@ -3,11 +3,11 @@
 {
     var status = Model.S("accountStatus", "unknown");
     <a class="user-chip" href="/Users/@Uri.EscapeDataString(Model.S("uid", ""))">
-        <span class="user-name">@Model.S("displayName", "(no name)")</span>
-        <span class="status status-@status">@JsonView.Label(status)</span>
+        <span class="user-name">@(Model.Str("displayName") is { Length: > 0 } name ? name : L["(no name)"].Value)</span>
+        <span class="status status-@status">@L.Code(status)</span>
         @if (Model.Bool("isVerified"))
         {
-            <span class="badge badge-ok">Verified</span>
+            <span class="badge badge-ok">@L["Verified"]</span>
         }
     </a>
 }

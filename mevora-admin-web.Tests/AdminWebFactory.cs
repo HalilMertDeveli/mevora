@@ -108,10 +108,14 @@ public sealed class AdminWebFactory : WebApplicationFactory<Program>
     public FakeIdentity Identity { get; } = new();
     public bool UseTestStaff { get; init; } = true;
 
+    /// <summary>Console default language. English here so assertions read the source text; LocalizationTests cover Turkish.</summary>
+    public string DefaultCulture { get; init; } = "en";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("AdminWeb:BffSharedSecret", Secret);
+        builder.UseSetting("AdminWeb:DefaultCulture", DefaultCulture);
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton<IAdminApiClient>(Api);

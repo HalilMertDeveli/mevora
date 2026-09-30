@@ -1,0 +1,10 @@
+@{
+    var current = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
+}
+<form method="post" action="/Language" class="lang-switch" aria-label="@L["Language"]">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="returnUrl" value="@returnUrl" />
+    <button type="submit" name="culture" value="tr" class="lang-btn @(current == "tr" ? "active" : "")" aria-pressed="@(current == "tr" ? "true" : "false")" lang="tr" title="Türkçe">TR</button>
+    <button type="submit" name="culture" value="en" class="lang-btn @(current == "en" ? "active" : "")" aria-pressed="@(current == "en" ? "true" : "false")" lang="en" title="English">EN</button>
+</form>

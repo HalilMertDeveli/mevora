@@ -2,18 +2,18 @@
 @model Mevora.Admin.Web.Pages.Support.DetailModel
 @{
     var t = Model.Ticket;
-    ViewData["Title"] = t.S("subject", "Ticket");
+    ViewData["Title"] = t.S("subject", L["Ticket"].Value);
     var closed = t.Str("status") == "closed";
 }
 <div class="page-head">
     <div>
-        <h1>@t.S("subject", "Ticket")</h1>
+        <h1>@t.S("subject", L["Ticket"].Value)</h1>
         <p class="mono">@Model.TicketId</p>
     </div>
     <div class="actions">
-        <span class="prio prio-@t.S("priority")">@JsonView.Label(t.Str("priority"))</span>
-        <span class="status status-@t.S("status")">@JsonView.Label(t.Str("status"))</span>
-        <span class="badge">@JsonView.Label(t.Str("source"))</span>
+        <span class="prio prio-@t.S("priority")">@L.Code(t.Str("priority"))</span>
+        <span class="status status-@t.S("status")">@L.Code(t.Str("status"))</span>
+        <span class="badge">@L.Code("source." + t.Str("source"))</span>
     </div>
 </div>
 <partial name="_Flash" model="Model" />
@@ -23,104 +23,106 @@
 <div class="grid grid-main-side">
     <div>
         <section class="card">
-            <h2>Conversation</h2>
-            <p class="small muted">What the member can see. Staff are shown to the member as “Mevora Support”.</p>
+            <h2>@L["Conversation"]</h2>
+            <p class="small muted">@L["What the member can see. Staff are shown to the member as “Mevora Support”."]</p>
             <ol class="thread">
                 <li class="msg msg-user">
-                    <div class="msg-meta">Member · @t.When("createdAt") · @JsonView.Label(t.Str("category"))</div>@t.S("message")</li>
+                    <div class="msg-meta">@L["Member"] · @L.When(t, "createdAt") · @L.Code(t.Str("category"))</div>@t.S("message")</li>
                 @foreach (var m in t.Arr("thread"))
                 {
                     <li class="msg @(m.Str("type") == "user" ? "msg-user" : "msg-support")">
-                        <div class="msg-meta">@(m.Str("type") == "user" ? "Member" : "Mevora Support") · @m.When("createdAt")</div>@m.S("text")</li>
+                        <div class="msg-meta">@(m.Str("type") == "user" ? L["Member"].Value : "Mevora Support") · @L.When(m, "createdAt")</div>@m.S("text")</li>
                 }
             </ol>
             @for (var i = 0; i < (t.Num("attachmentCount") ?? 0); i++)
             {
-                <p><a class="btn btn-small" href="/Support/@Uri.EscapeDataString(Model.TicketId)?handler=Attachment&index=@i">View attachment @(i + 1)</a></p>
+                <p><a class="btn btn-small" href="/Support/@Uri.EscapeDataString(Model.TicketId)?handler=Attachment&index=@i">@L["View attachment {0}", i + 1]</a></p>
             }
             @if (Model.Can("support.reply") && !closed)
             {
-                <form method="post" asp-page-handler="Reply" data-confirm="Send this reply to the member?">
+                <form method="post" asp-page-handler="Reply" data-confirm="@L["Send this reply to the member?"]">
                     <input type="hidden" name="idempotencyKey" value="@Model.FormKey-reply" />
-                    <div class="field"><label for="reply">Reply to the member</label><textarea id="reply" name="text" maxlength="4000" required></textarea></div>
-                    <button type="submit" class="btn btn-primary">Send reply</button>
+                    <div class="field"><label for="reply">@L["Reply to the member"]</label><textarea id="reply" name="text" maxlength="4000" required></textarea></div>
+                    <button type="submit" class="btn btn-primary">@L["Send reply"]</button>
                 </form>
             }
             @if (t.Str("source") == "website")
             {
-                <p class="boundary">Website ticket: the member may not see in-app replies. Contact: @t.S("contactName") · <span class="mono">@t.S("contactEmail")</span></p>
+                <p class="boundary">@L["Website ticket: the member may not see in-app replies. Contact:"] @t.S("contactName") · <span class="mono">@t.S("contactEmail")</span></p>
             }
         </section>
 
         <section class="card">
-            <h2>Internal notes</h2>
-            <p class="small muted">Staff only. Never shown to the member.</p>
+            <h2>@L["Internal notes"]</h2>
+            <p class="small muted">@L["Staff only. Never shown to the member."]</p>
             <ol class="thread">
                 @foreach (var n in t.Arr("internalNotes"))
                 {
-                    <li class="msg msg-note"><div class="msg-meta">@(n.Str("authorName") ?? n.S("authorUid")) · @n.When("createdAt")</div>@n.S("text")</li>
+                    <li class="msg msg-note"><div class="msg-meta">@(n.Str("authorName") ?? n.S("authorUid")) · @L.When(n, "createdAt")</div>@n.S("text")</li>
                 }
             </ol>
             <form method="post" asp-page-handler="Note">
-                <div class="field"><label for="note">Add an internal note</label><textarea id="note" name="text" maxlength="4000" required></textarea></div>
-                <button type="submit" class="btn">Add note</button>
+                <div class="field"><label for="note">@L["Add an internal note"]</label><textarea id="note" name="text" maxlength="4000" required></textarea></div>
+                <button type="submit" class="btn">@L["Add note"]</button>
             </form>
         </section>
     </div>
     <div>
         <section class="card">
-            <h2>Ticket</h2>
+            <h2>@L["Ticket"]</h2>
             <dl class="kv">
-                <dt>From</dt>
+                <dt>@L["From"]</dt>
                 <dd>
                     @if (t.Get("user").ValueKind == JsonValueKind.Object) { <partial name="_UserChip" model='t.Get("user")' /> }
                     else { <span class="mono">@t.S("userId")</span> }
-                    @if (!t.Bool("userIdVerified")) { <div class="alert alert-warn small">Sender not verified: website tickets carry whatever user id the visitor typed. Do not act on the account without confirming identity.</div> }
+                    @if (!t.Bool("userIdVerified")) { <div class="alert alert-warn small">@L["Sender not verified: website tickets carry whatever user id the visitor typed. Do not act on the account without confirming identity."]</div> }
                 </dd>
-                <dt>Assigned</dt><dd class="mono">@t.S("assignedTo")</dd>
-                <dt>First response</dt><dd>@t.When("firstResponseAt")</dd>
-                <dt>Resolved</dt><dd>@t.When("resolvedAt")</dd>
-                @if (t.Str("caseId") is { } cid) { <dt>Case</dt><dd><a href="/Cases/@cid">@cid</a></dd> }
+                <dt>@L["Assigned"]</dt><dd class="mono">@t.S("assignedTo")</dd>
+                <dt>@L["First response"]</dt><dd>@L.When(t, "firstResponseAt")</dd>
+                <dt>@L["Resolved"]</dt><dd>@L.When(t, "resolvedAt")</dd>
+                @if (t.Str("caseId") is { } cid) { <dt>@L["Case"]</dt><dd><a href="/Cases/@cid">@cid</a></dd> }
             </dl>
         </section>
         @if (!closed)
         {
             <section class="card">
-                <h2>Actions</h2>
+                <h2>@L["Actions"]</h2>
                 @if (Model.Can("support.assign"))
                 {
-                    <form method="post" asp-page-handler="Assign" class="inline"><button type="submit" class="btn">Assign to me</button></form>
+                    <form method="post" asp-page-handler="Assign" class="inline"><button type="submit" class="btn">@L["Assign to me"]</button></form>
                     <form method="post" asp-page-handler="Priority" class="field-row">
-                        <div class="field"><label for="priority">Priority</label>
+                        <div class="field"><label for="priority">@L["Priority"]</label>
                             <select id="priority" name="priority">
-                                @foreach (var p in new[] {"low", "normal", "high", "urgent"}) { <option value="@p" selected="@(t.Str("priority") == p)">@JsonView.Label(p)</option> }
+                                @foreach (var p in new[] {"low", "normal", "high", "urgent"}) { <option value="@p" selected="@(t.Str("priority") == p)">@L.Code(p)</option> }
                             </select></div>
-                        <button type="submit" class="btn">Set</button>
+                        <button type="submit" class="btn">@L["Set"]</button>
                     </form>
                 }
                 @if (Model.Can("support.resolve"))
                 {
                     <form method="post" asp-page-handler="Resolve">
-                        <div class="field"><label for="outcome">Outcome</label>
-                            <select id="outcome" name="outcome"><option value="resolved">Resolved</option><option value="closed">Closed (no more replies)</option></select></div>
-                        <div class="field"><label for="rnote">Internal resolution note</label><textarea id="rnote" name="resolutionNote" maxlength="4000"></textarea></div>
-                        <button type="submit" class="btn btn-ok">Update</button>
+                        <div class="field"><label for="outcome">@L["Outcome"]</label>
+                            <select id="outcome" name="outcome"><option value="resolved">@L.Code("resolved")</option><option value="closed">@L["Closed (no more replies)"]</option></select></div>
+                        <div class="field"><label for="rnote">@L["Internal resolution note"]</label><textarea id="rnote" name="resolutionNote" maxlength="4000"></textarea></div>
+                        <button type="submit" class="btn btn-ok">@L["Update"]</button>
                     </form>
                 }
                 @if (Model.Can("support.escalate"))
                 {
-                    <form method="post" asp-page-handler="Escalate" data-confirm="Hand this ticket to Trust & Safety?">
-                        <h3>Escalate to Trust &amp; Safety</h3>
+                    <form method="post" asp-page-handler="Escalate" data-confirm="@L["Hand this ticket to Trust & Safety?"]">
+                        <h3>@L["Escalate to Trust & Safety"]</h3>
                         <input type="hidden" name="idempotencyKey" value="@Model.FormKey-esc" />
-                        <div class="field"><label for="ereason">Why</label><input id="ereason" name="reason" type="text" maxlength="500" required /></div>
-                        <div class="field"><label for="eprio">Priority</label>
-                            <select id="eprio" name="priority"><option value="high">High</option><option value="critical">Critical</option><option value="medium">Medium</option><option value="normal">Normal</option></select></div>
-                        <button type="submit" class="btn btn-danger">Escalate</button>
+                        <div class="field"><label for="ereason">@L["Why"]</label><input id="ereason" name="reason" type="text" maxlength="500" required /></div>
+                        <div class="field"><label for="eprio">@L["Priority"]</label>
+                            <select id="eprio" name="priority">
+                                @foreach (var p in new[] {"high", "critical", "medium", "normal"}) { <option value="@p">@L.Code(p)</option> }
+                            </select></div>
+                        <button type="submit" class="btn btn-danger">@L["Escalate"]</button>
                     </form>
                 }
                 @if (Model.Can("appeal.create"))
                 {
-                    <p class="small muted">A banned member's appeal that arrives here is filed from <a href="/Appeals">Appeals → file on a member's behalf</a>, after confirming identity.</p>
+                    <p class="small muted">@L["A banned member's appeal that arrives here is filed from"] <a href="/Appeals">@L["Appeals → file on a member's behalf"]</a>@L[", after confirming identity."]</p>
                 }
             </section>
         }

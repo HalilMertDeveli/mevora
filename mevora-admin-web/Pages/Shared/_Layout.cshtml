@@ -22,9 +22,10 @@
         ("/AppControl", "App control", "app_control.read"),
     };
     var env = AdminOptions.Value.EnvironmentLabel;
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 }
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@lang">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -35,10 +36,10 @@
     <script src="~/js/admin.js" asp-append-version="true" defer></script>
 </head>
 <body class="@(signedIn ? "app" : "app app-anonymous")">
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main">@L["Skip to content"]</a>
     @if (signedIn)
     {
-        <aside class="sidebar" aria-label="Console navigation">
+        <aside class="sidebar" aria-label="@L["Console navigation"]">
             <div class="brand">
                 <span class="brand-mark" aria-hidden="true">M</span>
                 <span class="brand-text">Trust &amp; Safety</span>
@@ -49,32 +50,33 @@
                     {
                         if (User.Can(item.Permission))
                         {
-                            <li><a class="@Active(item.Href)" href="@item.Href">@item.Label</a></li>
+                            <li><a class="@Active(item.Href)" href="@item.Href">@L[item.Label]</a></li>
                         }
                     }
                 </ul>
             </nav>
-            <p class="sidebar-note">Access is checked on the server for every action. Hidden items are a convenience, not a control.</p>
+            <p class="sidebar-note">@L["Access is checked on the server for every action. Hidden items are a convenience, not a control."]</p>
         </aside>
     }
     <div class="main-column">
         @if (signedIn)
         {
             <header class="topbar">
-                <span class="env env-@env.ToLowerInvariant()">@env</span>
+                <span class="env env-@env.ToLowerInvariant()">@L[env]</span>
                 @if (!User.UsedMfa())
                 {
-                    <span class="badge badge-warn" title="Production always requires two-factor sign-in.">MFA not used (emulator)</span>
+                    <span class="badge badge-warn" title="@L["Production always requires two-factor sign-in."]">@L["MFA not used (emulator)"]</span>
                 }
                 <span class="topbar-spacer"></span>
+                <partial name="_LanguageSwitch" />
                 <span class="who">
                     <strong>@User.Identity?.Name</strong>
-                    <span class="role">@JsonView.Label(User.StaffRole())</span>
-                    @if (User.IsOwner()) { <span class="badge badge-info">Owner</span> }
+                    <span class="role">@L.Code(User.StaffRole())</span>
+                    @if (User.IsOwner()) { <span class="badge badge-info">@L["Owner"]</span> }
                 </span>
                 <form method="post" action="/Logout" class="inline">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-ghost">Sign out</button>
+                    <button type="submit" class="btn btn-ghost">@L["Sign out"]</button>
                 </form>
             </header>
         }

@@ -4,18 +4,18 @@
     var s = Model.Staff;
     var account = Model.Data.Get("account");
     var activity = Model.Data.Get("activity");
-    ViewData["Title"] = s.S("displayName", "Staff member");
+    ViewData["Title"] = s.Str("displayName") is { Length: > 0 } title ? title : L["Staff member"].Value;
     var uidParam = Uri.EscapeDataString(Model.Uid);
 }
 <div class="page-head">
     <div>
-        <h1>@s.S("displayName", "(no name)")
-            @if (s.Bool("isOwner")) { <span class="badge badge-info">Owner</span> }
-            @if (s.Bool("qaSeed")) { <span class="badge badge-warn">QA · emulator only</span> }
+        <h1>@(s.Str("displayName") is { Length: > 0 } dn ? dn : L["(no name)"].Value)
+            @if (s.Bool("isOwner")) { <span class="badge badge-info">@L["Owner"]</span> }
+            @if (s.Bool("qaSeed")) { <span class="badge badge-warn">@L["QA · emulator only"]</span> }
         </h1>
         <p class="mono small">@s.S("email") · @Model.Uid</p>
     </div>
-    <a class="btn btn-ghost" href="/Admin/Staff">All staff</a>
+    <a class="btn btn-ghost" href="/Admin/Staff">@L["All staff"]</a>
 </div>
 <partial name="_Flash" model="Model" />
 
@@ -23,69 +23,69 @@
 {
     <div class="grid grid-main-side">
         <section class="card">
-            <h2>Record</h2>
+            <h2>@L["Record"]</h2>
             <dl class="kv">
-                <dt>Role</dt><dd>@JsonView.Label(s.Str("role"))</dd>
-                <dt>Status</dt><dd><span class="status status-@(s.Str("status") == "active" ? "active" : "banned")">@JsonView.Label(s.Str("status"))</span>
+                <dt>@L["Role"]</dt><dd>@L.Code(s.Str("role"))</dd>
+                <dt>@L["Status"]</dt><dd><span class="status status-@(s.Str("status") == "active" ? "active" : "banned")">@L.Code("staff." + s.Str("status"))</span>
                     @if (s.Str("statusReason") is { } why) { <span class="muted small">— @why</span> }</dd>
-                <dt>Added</dt><dd>@s.When("createdAt") <span class="muted small mono">by @s.S("createdBy")</span></dd>
-                <dt>Last role change</dt><dd>@s.When("lastRoleChangeAt") <span class="muted small mono">by @s.S("lastRoleChangeBy")</span></dd>
-                <dt>Last console sign-in</dt><dd>@s.When("lastLoginAt")
-                    @if (s.Get("lastLoginMfa").ValueKind == JsonValueKind.False) { <span class="badge badge-warn">no MFA (emulator)</span> }</dd>
-                <dt>Last Firebase sign-in</dt><dd>@account.When("lastSignInAt")</dd>
-                <dt>Two-factor</dt><dd>
-                    @if (account.Arr("mfaFactors").Any()) { <span class="badge badge-ok">Enrolled: @string.Join(", ", account.Arr("mfaFactors").Select(f => f.GetString()))</span> }
-                    else { <span class="badge badge-warn">Not enrolled yet — required at next console sign-in</span> }</dd>
-                <dt>Sign-in account</dt><dd>@(account.Bool("disabled") ? "Disabled in Firebase Auth" : account.Bool("exists") ? "Active" : "Missing")</dd>
-                <dt>Last activity</dt><dd>@Model.Data.When("lastActivityAt")</dd>
+                <dt>@L["Added"]</dt><dd>@L.When(s, "createdAt") <span class="muted small mono">@L["by {0}", s.S("createdBy")]</span></dd>
+                <dt>@L["Last role change"]</dt><dd>@L.When(s, "lastRoleChangeAt") <span class="muted small mono">@L["by {0}", s.S("lastRoleChangeBy")]</span></dd>
+                <dt>@L["Last console sign-in"]</dt><dd>@L.When(s, "lastLoginAt")
+                    @if (s.Get("lastLoginMfa").ValueKind == JsonValueKind.False) { <span class="badge badge-warn">@L["no MFA (emulator)"]</span> }</dd>
+                <dt>@L["Last Firebase sign-in"]</dt><dd>@L.When(account, "lastSignInAt")</dd>
+                <dt>@L["Two-factor"]</dt><dd>
+                    @if (account.Arr("mfaFactors").Any()) { <span class="badge badge-ok">@L["Enrolled: {0}", string.Join(", ", account.Arr("mfaFactors").Select(f => f.GetString()))]</span> }
+                    else { <span class="badge badge-warn">@L["Not enrolled yet — required at next console sign-in"]</span> }</dd>
+                <dt>@L["Sign-in account"]</dt><dd>@(account.Bool("disabled") ? L["Disabled in Firebase Auth"] : account.Bool("exists") ? L["Active"] : L["Missing"])</dd>
+                <dt>@L["Last activity"]</dt><dd>@L.When(Model.Data, "lastActivityAt")</dd>
             </dl>
         </section>
 
         <section class="card">
-            <h2>Controls</h2>
+            <h2>@L["Controls"]</h2>
             @if (Model.IsSelf)
             {
-                <p class="muted">This is your own account. Nobody changes their own role or access.</p>
+                <p class="muted">@L["This is your own account. Nobody changes their own role or access."]</p>
             }
             else if (s.Bool("isOwner"))
             {
-                <div class="alert alert-info small">The owner's account is protected: it cannot be demoted, disabled or signed out from the console. Ownership changes are a separate, deliberate procedure.</div>
+                <div class="alert alert-info small">@L["The owner's account is protected: it cannot be demoted, disabled or signed out from the console. Ownership changes are a separate, deliberate procedure."]</div>
             }
             else
             {
                 <div class="stack">
                     @if (Model.Can("admin.manage_roles"))
                     {
-                        <form method="post" asp-page-handler="Role" class="stack" data-confirm="Change this colleague's role? Their current sessions end.">
-                            <div class="field"><label for="role">Role</label>
+                        <form method="post" asp-page-handler="Role" class="stack" data-confirm="@L["Change this colleague's role? Their current sessions end."]">
+                            <div class="field"><label for="role">@L["Role"]</label>
                                 <select id="role" name="role">
                                     @foreach (var r in Vocab.GrantableRoles)
                                     {
-                                        <option value="@r" selected="@(r == s.Str("role"))">@JsonView.Label(r)</option>
+                                        <option value="@r" selected="@(r == s.Str("role"))">@L.Code(r)</option>
                                     }
                                 </select></div>
-                            <button type="submit" class="btn">Change role</button>
+                            <button type="submit" class="btn">@L["Change role"]</button>
                         </form>
                     }
-                    <form method="post" asp-page-handler="Revoke" class="stack" data-confirm="End all of this colleague's console sessions?">
-                        <div class="field"><label for="revoke-reason">End all sessions</label><input id="revoke-reason" name="reason" type="text" maxlength="500" required placeholder="Reason, e.g. lost laptop" /></div>
-                        <button type="submit" class="btn">End sessions</button>
+                    <form method="post" asp-page-handler="Revoke" class="stack" data-confirm="@L["End all of this colleague's console sessions?"]">
+                        <div class="field"><label for="revoke-reason">@L["End all sessions"]</label><input id="revoke-reason" name="reason" type="text" maxlength="500" required placeholder="@L["Reason, e.g. lost laptop"]" /></div>
+                        <button type="submit" class="btn">@L["End sessions"]</button>
                     </form>
                     @if (s.Str("status") == "active")
                     {
-                        <form method="post" asp-page-handler="Activation" data-confirm="Email this colleague a new password-setup link?">
-                            <button type="submit" class="btn btn-ghost">Send password-setup email</button>
+                        <form method="post" asp-page-handler="Activation" data-confirm="@L["Email this colleague a new password-setup link?"]">
+                            <button type="submit" class="btn btn-ghost">@L["Send password-setup email"]</button>
                         </form>
-                        <form method="post" asp-page-handler="Disable" class="stack" data-confirm="Disable this colleague's access and end their sessions?">
-                            <div class="field"><label for="disable-reason">Disable access</label><input id="disable-reason" name="reason" type="text" maxlength="500" required placeholder="Reason" /></div>
-                            <button type="submit" class="btn btn-danger">Disable</button>
+                        <form method="post" asp-page-handler="Disable" class="stack" data-confirm="@L["Disable this colleague's access and end their sessions?"]">
+                            <div class="field"><label for="disable-reason">@L["Disable access"]</label><input id="disable-reason" name="reason" type="text" maxlength="500" required placeholder="@L["Reason"]" /></div>
+                            <button type="submit" class="btn btn-danger">@L["Disable"]</button>
                         </form>
                     }
                     else
                     {
                         <form method="post" asp-page-handler="Enable" class="stack">
-                            <div class="field"><label for="enable-reason">Re-enable access</label><input id="enable-reason" name="reason" type="text" maxlength="500" required placeholder="Reason" /></div>
-                            <button type="submit" class="btn btn-ok">Re-enable</button>
+                            <div class="field"><label for="enable-reason">@L["Re-enable access"]</label><input id="enable-reason" name="reason" type="text" maxlength="500" required placeholder="@L["Reason"]" /></div>
+                            <button type="submit" class="btn btn-ok">@L["Re-enable"]</button>
                         </form>
                     }
                 </div>
@@ -94,39 +94,39 @@
     </div>
 
     <section class="card">
-        <h2>Activity</h2>
-        <p class="small muted">All-time counts from the audit log. <a href="/Audit?actor=@uidParam">Everything they did</a> · <a href="/Audit?target=@uidParam">Changes made to their access</a></p>
+        <h2>@L["Activity"]</h2>
+        <p class="small muted">@L["All-time counts from the audit log."] <a href="/Audit?actor=@uidParam">@L["Everything they did"]</a> · <a href="/Audit?target=@uidParam">@L["Changes made to their access"]</a></p>
         <div class="stats">
             @foreach (var tile in StaffDetailModel.ActivityTiles)
             {
                 <a class="stat" href="/Audit?actor=@uidParam">
                     <span class="n">@(activity.Num(tile.Key)?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "—")</span>
-                    <span class="l">@tile.Label</span>
+                    <span class="l">@L[tile.Label]</span>
                 </a>
             }
         </div>
     </section>
 
     <section class="card">
-        <h2>Recent actions</h2>
+        <h2>@L["Recent actions"]</h2>
         @if (!Model.Data.Arr("recentActions").Any())
         {
-            <p class="muted">No actions yet.</p>
+            <p class="muted">@L["No actions yet."]</p>
         }
         else
         {
             <table class="data">
-                <thead><tr><th scope="col">When</th><th scope="col">Event</th><th scope="col">Target</th></tr></thead>
+                <thead><tr><th scope="col">@L["When"]</th><th scope="col">@L["Event"]</th><th scope="col">@L["Target"]</th></tr></thead>
                 <tbody>
                     @foreach (var a in Model.Data.Arr("recentActions"))
                     {
                         <tr>
-                            <td class="nowrap">@a.When("createdAt")</td>
-                            <td><strong>@a.S("action")</strong></td>
-                            <td class="small">@JsonView.Label(a.Str("targetType"))
+                            <td class="nowrap">@L.When(a, "createdAt")</td>
+                            <td><strong>@L.Code("audit." + a.Str("action"))</strong><div class="mono small muted">@a.S("action")</div></td>
+                            <td class="small">@L.Code("target." + a.Str("targetType"))
                                 @if (a.Str("targetType") == "user" && a.Str("targetId") is { } tu) { <a class="mono" href="/Users/@Uri.EscapeDataString(tu)">@tu</a> }
                                 else { <span class="mono">@a.S("targetId")</span> }
-                                @if (a.Str("caseId") is { } cid) { <a href="/Cases/@Uri.EscapeDataString(cid)">case</a> }</td>
+                                @if (a.Str("caseId") is { } cid) { <a href="/Cases/@Uri.EscapeDataString(cid)">@L["case"]</a> }</td>
                         </tr>
                     }
                 </tbody>

@@ -1,7 +1,7 @@
 @page
 @model Mevora.Admin.Web.Pages.AppControl.IndexModel
 @{
-    ViewData["Title"] = "App control";
+    ViewData["Title"] = L["App control"].Value;
     var c = Model.Config;
     var h = Model.Health;
     var revision = c.Num("revision") ?? 0;
@@ -10,96 +10,98 @@
     var a = c.Get("announcement");
     string Local(string? iso) => iso is not null && DateTimeOffset.TryParse(iso, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var t)
         ? t.UtcDateTime.ToString("yyyy-MM-ddTHH:mm", System.Globalization.CultureInfo.InvariantCulture) : "";
+    var none = L["none"].Value;
 }
 <div class="page-head">
     <div>
-        <h1>App control</h1>
-        <p>The app's operating state: maintenance, version rules, emergency feature switches and a short announcement. Every change is enforced by the backend, reaches the app within seconds and is audited.</p>
+        <h1>@L["App control"]</h1>
+        <p>@L["The app's operating state: maintenance, version rules, emergency feature switches and a short announcement. Every change is enforced by the backend, reaches the app within seconds and is audited."]</p>
     </div>
-    <span class="muted small">Revision @revision · changed @c.When("updatedAt") <span class="mono">@c.S("updatedBy", "")</span></span>
+    <span class="muted small">@L["Revision {0} · changed {1}", revision, L.When(c, "updatedAt")] <span class="mono">@c.S("updatedBy", "")</span></span>
 </div>
 <partial name="_Flash" model="Model" />
 @if (!Model.CanWrite)
 {
-    <p class="alert alert-info small">Read-only: only the owner changes App control.</p>
+    <p class="alert alert-info small">@L["Read-only: only the owner changes App control."]</p>
 }
 
 @if (Model.Data.ValueKind == JsonValueKind.Object)
 {
     <div class="grid grid-2">
         <section class="card @(maintenance.Bool("enabled") ? "card-danger" : "")">
-            <h2>Application status</h2>
+            <h2>@L["Application status"]</h2>
             <p>
-                @if (maintenance.Bool("enabled")) { <span class="status status-banned">Maintenance</span> }
-                else { <span class="status status-active">Normal</span> }
+                @if (maintenance.Bool("enabled")) { <span class="status status-banned">@L["Maintenance"]</span> }
+                else { <span class="status status-active">@L["Normal"]</span> }
             </p>
-            <p class="small muted">During maintenance the app shows a maintenance screen. Account deletion, data export, support and legal pages stay reachable; report and block stay available on the backend.</p>
-            @if (maintenance.Str("message") is { } custom) { <p class="small">Message shown: “@custom”</p> }
+            <p class="small muted">@L["During maintenance the app shows a maintenance screen. Account deletion, data export, support and legal pages stay reachable; report and block stay available on the backend."]</p>
+            @if (maintenance.Str("message") is { } custom) { <p class="small">@L["Message shown: “{0}”", custom]</p> }
             @if (Model.CanWrite)
             {
                 <form method="post" asp-page-handler="Maintenance" class="stack"
-                      data-confirm="@(maintenance.Bool("enabled") ? "Turn maintenance OFF and reopen the app?" : "Turn maintenance ON? Members will see the maintenance screen.")">
+                      data-confirm="@(maintenance.Bool("enabled") ? L["Turn maintenance OFF and reopen the app?"] : L["Turn maintenance ON? Members will see the maintenance screen."])">
                     <input type="hidden" name="expectedRevision" value="@revision" />
                     <input type="hidden" name="idempotencyKey" value="@Model.FormKey-maint" />
                     <input type="hidden" name="enabled" value="@(maintenance.Bool("enabled") ? "false" : "true")" />
                     @if (!maintenance.Bool("enabled"))
                     {
-                        <div class="field"><label for="m-message">Message (optional, plain text)</label>
+                        <div class="field"><label for="m-message">@L["Message (optional, plain text)"]</label>
                             <textarea id="m-message" name="message" maxlength="@IndexModel.MessageMax" rows="2" placeholder="Mevora kısa süreli bakımda. Birazdan tekrar buradayız."></textarea></div>
-                        <button type="submit" class="btn btn-danger">Turn maintenance ON</button>
+                        <button type="submit" class="btn btn-danger">@L["Turn maintenance ON"]</button>
                     }
                     else
                     {
-                        <button type="submit" class="btn btn-ok">Turn maintenance OFF</button>
+                        <button type="submit" class="btn btn-ok">@L["Turn maintenance OFF"]</button>
                     }
                 </form>
             }
         </section>
 
         <section class="card">
-            <h2>Health</h2>
+            <h2>@L["Health"]</h2>
             <dl class="kv">
-                <dt>Admin backend</dt><dd><span class="badge badge-ok">Reachable</span></dd>
+                <dt>@L["Admin backend"]</dt><dd><span class="badge badge-ok">@L["Reachable"]</span></dd>
                 @foreach (var (key, label) in new[] {("firestore", "Firestore"), ("auth", "Authentication"), ("storage", "Storage")})
                 {
                     var probe = h.Get(key);
-                    <dt>@label</dt>
-                    <dd>@if (probe.Bool("ok")) { <span class="badge badge-ok">Reachable</span> } else { <span class="badge badge-danger">Unreachable</span> }
+                    <dt>@L[label]</dt>
+                    <dd>@if (probe.Bool("ok")) { <span class="badge badge-ok">@L["Reachable"]</span> } else { <span class="badge badge-danger">@L["Unreachable"]</span> }
                         <span class="muted small">@probe.Num("ms") ms</span></dd>
                 }
-                <dt>Environment</dt><dd>@JsonView.Label(h.Str("environment")) <span class="mono small">@h.S("projectId", "")</span></dd>
-                <dt>Config revision</dt><dd>@revision</dd>
-                <dt>Last change</dt><dd>@c.When("updatedAt") <span class="mono small">@c.S("updatedBy", "")</span></dd>
-                <dt>Checked</dt><dd>@h.When("checkedAt")</dd>
+                <dt>@L["Environment"]</dt><dd>@L.Code("env." + h.Str("environment")) <span class="mono small">@h.S("projectId", "")</span></dd>
+                <dt>@L["Config revision"]</dt><dd>@revision</dd>
+                <dt>@L["Last change"]</dt><dd>@L.When(c, "updatedAt") <span class="mono small">@c.S("updatedBy", "")</span></dd>
+                <dt>@L["Checked"]</dt><dd>@L.When(h, "checkedAt")</dd>
             </dl>
-            <p class="small muted">Each line is a live probe made when this page loaded. Crash and analytics data are not connected to the console.</p>
-            <p class="small"><a href="/Audit?targetType=app_config">History of App control changes</a></p>
+            <p class="small muted">@L["Each line is a live probe made when this page loaded. Crash and analytics data are not connected to the console."]</p>
+            <p class="small"><a href="/Audit?targetType=app_config">@L["History of App control changes"]</a></p>
         </section>
     </div>
 
     <section class="card">
-        <h2>Feature switches</h2>
-        <p class="small muted">For emergencies. Every switch is ON unless turned off here. Off is enforced by the backend, so an old app version cannot bypass it.</p>
+        <h2>@L["Feature switches"]</h2>
+        <p class="small muted">@L["For emergencies. Every switch is ON unless turned off here. Off is enforced by the backend, so an old app version cannot bypass it."]</p>
         <table class="data">
-            <thead><tr><th scope="col">Feature</th><th scope="col">State</th><th scope="col">When off</th>@if (Model.CanWrite) { <th scope="col"><span class="muted">Change</span></th> }</tr></thead>
+            <thead><tr><th scope="col">@L["Feature"]</th><th scope="col">@L["State"]</th><th scope="col">@L["When off"]</th>@if (Model.CanWrite) { <th scope="col"><span class="muted">@L["Change"]</span></th> }</tr></thead>
             <tbody>
                 @foreach (var f in IndexModel.Features)
                 {
                     var on = features.Get(f.Key).ValueKind != JsonValueKind.False;
+                    var label = L[f.Label].Value;
                     <tr>
-                        <td><strong>@f.Label</strong></td>
-                        <td>@if (on) { <span class="status status-active">On</span> } else { <span class="status status-banned">Off</span> }</td>
-                        <td class="small">@f.Effect</td>
+                        <td><strong>@label</strong></td>
+                        <td>@if (on) { <span class="status status-active">@L["On"]</span> } else { <span class="status status-banned">@L["Off"]</span> }</td>
+                        <td class="small">@L[f.Effect]</td>
                         @if (Model.CanWrite)
                         {
                             <td>
-                                <form method="post" asp-page-handler="Feature" class="stack" data-confirm="@(on ? $"Turn {f.Label} OFF for every member?" : $"Turn {f.Label} back ON?")">
+                                <form method="post" asp-page-handler="Feature" class="stack" data-confirm="@(on ? L["Turn {0} OFF for every member?", label] : L["Turn {0} back ON?", label])">
                                     <input type="hidden" name="feature" value="@f.Key" />
                                     <input type="hidden" name="enabled" value="@(on ? "false" : "true")" />
                                     <input type="hidden" name="expectedRevision" value="@revision" />
                                     <input type="hidden" name="idempotencyKey" value="@Model.FormKey-f-@f.Key" />
-                                    <input name="reason" type="text" maxlength="500" required aria-label="Reason for @f.Label" placeholder="Reason" />
-                                    <button type="submit" class="btn btn-small @(on ? "btn-danger" : "btn-ok")">@(on ? "Turn off" : "Turn on")</button>
+                                    <input name="reason" type="text" maxlength="500" required aria-label="@L["Reason for {0}", label]" placeholder="@L["Reason"]" />
+                                    <button type="submit" class="btn btn-small @(on ? "btn-danger" : "btn-ok")">@(on ? L["Turn off"] : L["Turn on"])</button>
                                 </form>
                             </td>
                         }
@@ -110,30 +112,30 @@
     </section>
 
     <section class="card">
-        <h2>Version rules</h2>
-        <p class="small muted">Below the <strong>minimum</strong> version the app blocks with “Update required”. Below the <strong>recommended</strong> version it shows a dismissible update suggestion. Leave empty for no rule.</p>
+        <h2>@L["Version rules"]</h2>
+        <p class="small muted">@L["Below the <strong>minimum</strong> version the app blocks with “Update required”. Below the <strong>recommended</strong> version it shows a dismissible update suggestion. Leave empty for no rule."]</p>
         <div class="grid grid-2">
             @foreach (var (platform, label) in new[] {("android", "Android"), ("ios", "iOS")})
             {
                 <div>
                     <h3>@label</h3>
                     <dl class="kv">
-                        <dt>Minimum</dt><dd class="mono">@c.Get("minimumVersion").S(platform, "none")</dd>
-                        <dt>Recommended</dt><dd class="mono">@c.Get("recommendedVersion").S(platform, "none")</dd>
-                        <dt>Store link</dt><dd class="small wrap-anywhere">@c.Get("updateUrl").S(platform, "none")</dd>
+                        <dt>@L["Minimum"]</dt><dd class="mono">@c.Get("minimumVersion").S(platform, none)</dd>
+                        <dt>@L["Recommended"]</dt><dd class="mono">@c.Get("recommendedVersion").S(platform, none)</dd>
+                        <dt>@L["Store link"]</dt><dd class="small wrap-anywhere">@c.Get("updateUrl").S(platform, none)</dd>
                     </dl>
                     @if (Model.CanWrite)
                     {
-                        <form method="post" asp-page-handler="Version" class="stack" data-confirm="Save @label version rules? Members below the minimum will be blocked until they update.">
+                        <form method="post" asp-page-handler="Version" class="stack" data-confirm="@L["Save {0} version rules? Members below the minimum will be blocked until they update.", label]">
                             <input type="hidden" name="platform" value="@platform" />
                             <input type="hidden" name="expectedRevision" value="@revision" />
                             <input type="hidden" name="idempotencyKey" value="@Model.FormKey-v-@platform" />
                             <div class="field-row">
-                                <div class="field"><label for="min-@platform">Minimum</label><input id="min-@platform" name="minimumVersion" type="text" maxlength="20" value="@c.Get("minimumVersion").Str(platform)" placeholder="1.0.1" /></div>
-                                <div class="field"><label for="rec-@platform">Recommended</label><input id="rec-@platform" name="recommendedVersion" type="text" maxlength="20" value="@c.Get("recommendedVersion").Str(platform)" /></div>
+                                <div class="field"><label for="min-@platform">@L["Minimum"]</label><input id="min-@platform" name="minimumVersion" type="text" maxlength="20" value="@c.Get("minimumVersion").Str(platform)" placeholder="1.0.1" /></div>
+                                <div class="field"><label for="rec-@platform">@L["Recommended"]</label><input id="rec-@platform" name="recommendedVersion" type="text" maxlength="20" value="@c.Get("recommendedVersion").Str(platform)" /></div>
                             </div>
-                            <div class="field"><label for="url-@platform">Store link (Google Play / App Store, https)</label><input id="url-@platform" name="updateUrl" type="url" maxlength="300" value="@c.Get("updateUrl").Str(platform)" /></div>
-                            <button type="submit" class="btn">Save @label rules</button>
+                            <div class="field"><label for="url-@platform">@L["Store link (Google Play / App Store, https)"]</label><input id="url-@platform" name="updateUrl" type="url" maxlength="300" value="@c.Get("updateUrl").Str(platform)" /></div>
+                            <button type="submit" class="btn">@L["Save {0} rules", label]</button>
                         </form>
                     }
                 </div>
@@ -142,46 +144,46 @@
     </section>
 
     <section class="card">
-        <h2>Announcement</h2>
+        <h2>@L["Announcement"]</h2>
         @if (a.ValueKind == JsonValueKind.Object)
         {
             <dl class="kv">
-                <dt>State</dt><dd>@if (a.Bool("enabled")) { <span class="status status-active">Published</span> } else { <span class="status status-expired">Off</span> } <span class="badge badge-@(a.Str("severity") == "warning" ? "warn" : "info")">@JsonView.Label(a.Str("severity"))</span></dd>
-                <dt>Title</dt><dd>@a.S("title")</dd>
-                <dt>Message</dt><dd class="wrap-anywhere">@a.S("message")</dd>
-                <dt>Shown</dt><dd>@a.When("startsAt") → @a.When("expiresAt")</dd>
+                <dt>@L["State"]</dt><dd>@if (a.Bool("enabled")) { <span class="status status-active">@L["Published"]</span> } else { <span class="status status-expired">@L["Off"]</span> } <span class="badge badge-@(a.Str("severity") == "warning" ? "warn" : "info")">@L.Code("severity." + a.Str("severity"))</span></dd>
+                <dt>@L["Title"]</dt><dd>@a.S("title")</dd>
+                <dt>@L["Message"]</dt><dd class="wrap-anywhere">@a.S("message")</dd>
+                <dt>@L["Shown"]</dt><dd>@L.When(a, "startsAt") → @L.When(a, "expiresAt")</dd>
             </dl>
         }
         else
         {
-            <p class="muted">No announcement.</p>
+            <p class="muted">@L["No announcement."]</p>
         }
         @if (Model.CanWrite)
         {
-            <form method="post" asp-page-handler="Announcement" class="stack" data-confirm="Publish this announcement to every member?">
+            <form method="post" asp-page-handler="Announcement" class="stack" data-confirm="@L["Publish this announcement to every member?"]">
                 <input type="hidden" name="enabled" value="true" />
                 <input type="hidden" name="expectedRevision" value="@revision" />
                 <input type="hidden" name="idempotencyKey" value="@Model.FormKey-ann" />
-                <div class="field"><label for="a-title">Title (plain text)</label><input id="a-title" name="title" type="text" maxlength="@IndexModel.TitleMax" required value="@a.Str("title")" /></div>
-                <div class="field"><label for="a-message">Message (plain text)</label><textarea id="a-message" name="message" maxlength="@IndexModel.MessageMax" rows="3" required>@a.Str("message")</textarea></div>
+                <div class="field"><label for="a-title">@L["Title (plain text)"]</label><input id="a-title" name="title" type="text" maxlength="@IndexModel.TitleMax" required value="@a.Str("title")" /></div>
+                <div class="field"><label for="a-message">@L["Message (plain text)"]</label><textarea id="a-message" name="message" maxlength="@IndexModel.MessageMax" rows="3" required>@a.Str("message")</textarea></div>
                 <div class="field-row">
-                    <div class="field"><label for="a-severity">Style</label>
+                    <div class="field"><label for="a-severity">@L["Style"]</label>
                         <select id="a-severity" name="severity">
-                            <option value="info" selected="@(a.Str("severity") != "warning")">Info</option>
-                            <option value="warning" selected="@(a.Str("severity") == "warning")">Warning</option>
+                            <option value="info" selected="@(a.Str("severity") != "warning")">@L.Code("severity.info")</option>
+                            <option value="warning" selected="@(a.Str("severity") == "warning")">@L.Code("severity.warning")</option>
                         </select></div>
-                    <div class="field"><label for="a-starts">Starts (UTC, optional)</label><input id="a-starts" name="startsAt" type="datetime-local" value="@Local(a.Str("startsAt"))" /></div>
-                    <div class="field"><label for="a-ends">Ends (UTC, required, ≤ 31 days)</label><input id="a-ends" name="expiresAt" type="datetime-local" required value="@Local(a.Str("expiresAt"))" /></div>
+                    <div class="field"><label for="a-starts">@L["Starts (UTC, optional)"]</label><input id="a-starts" name="startsAt" type="datetime-local" value="@Local(a.Str("startsAt"))" /></div>
+                    <div class="field"><label for="a-ends">@L["Ends (UTC, required, ≤ 31 days)"]</label><input id="a-ends" name="expiresAt" type="datetime-local" required value="@Local(a.Str("expiresAt"))" /></div>
                 </div>
-                <button type="submit" class="btn btn-primary">Publish announcement</button>
+                <button type="submit" class="btn btn-primary">@L["Publish announcement"]</button>
             </form>
             @if (a.Bool("enabled"))
             {
-                <form method="post" asp-page-handler="Announcement" data-confirm="Take the announcement down?">
+                <form method="post" asp-page-handler="Announcement" data-confirm="@L["Take the announcement down?"]">
                     <input type="hidden" name="enabled" value="false" />
                     <input type="hidden" name="expectedRevision" value="@revision" />
                     <input type="hidden" name="idempotencyKey" value="@Model.FormKey-ann-off" />
-                    <button type="submit" class="btn btn-ghost">Turn announcement off</button>
+                    <button type="submit" class="btn btn-ghost">@L["Turn announcement off"]</button>
                 </form>
             }
         }

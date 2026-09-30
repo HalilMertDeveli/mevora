@@ -25,18 +25,18 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
         var r = Clean(reason, 2000);
         if (r is null || r.Length < 10)
         {
-            return Invalid("Summarise the member's appeal (at least 10 characters).");
+            return Invalid(L["Summarise the member's appeal (at least 10 characters)."]);
         }
         try
         {
             var result = await Api.CallAsync("adminOpenAppeal", new {userId = userId.Trim(), moderationActionId = moderationActionId.Trim(), reason = r, ticketId = Clean(ticketId, 128)});
-            Flash = result.Bool("created") ? "Appeal filed." : "An appeal for that decision already exists.";
+            Flash = result.Bool("created") ? L["Appeal filed."] : L["An appeal for that decision already exists."];
             return Redirect($"/Appeals/{Uri.EscapeDataString(result.S("appealId", ""))}");
         }
         catch (AdminApiException error)
         {
             if (error.EndsSession) throw new SessionEndedException();
-            return Invalid(AdminErrorMessages.For(error));
+            return Invalid(L.Error(error));
         }
     }
 

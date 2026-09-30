@@ -24,9 +24,9 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
     public Task<IActionResult> OnPostDecideAsync(string contentId, string decision, string? note) =>
         decision is "approve" or "reject" or "escalate"
             ? Act("adminReviewHumorContent", new {contentId, decision, note = Clean(note, 4000)},
-                decision == "escalate" ? "Escalated." : $"Content {(decision == "approve" ? "approved" : "rejected")}.",
+                decision == "escalate" ? L["Escalated."] : decision == "approve" ? L["Content approved."] : L["Content rejected."],
                 () => Redirect($"/Humor?status={Status}"))
-            : Task.FromResult(Invalid("Unknown decision."));
+            : Task.FromResult(Invalid(L["Unknown decision."]));
 
     public PagerModel Pager => new("/Humor", Result.Str("nextCursor"), new Dictionary<string, string?> {["status"] = Status}, Cursor is not null);
 }

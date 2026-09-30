@@ -31,8 +31,8 @@ public sealed class StaffModel(IAdminApiClient api, IFirebaseIdentityClient iden
     {
         var e = Clean(email, 254);
         var name = Clean(displayName, 80);
-        if (e is null || name is null || name.Length < 2) return Invalid("Enter the colleague's work email and name.");
-        if (role is null || !Vocab.GrantableRoles.Contains(role)) return Invalid("Choose a role.");
+        if (e is null || name is null || name.Length < 2) return Invalid(L["Enter the colleague's work email and name."]);
+        if (role is null || !Vocab.GrantableRoles.Contains(role)) return Invalid(L["Choose a role."]);
         JsonElement created;
         try
         {
@@ -41,22 +41,22 @@ public sealed class StaffModel(IAdminApiClient api, IFirebaseIdentityClient iden
         catch (AdminApiException error)
         {
             if (error.EndsSession) throw new SessionEndedException();
-            return Invalid(AdminErrorMessages.For(error));
+            return Invalid(L.Error(error));
         }
         var uid = created.Str("uid") ?? "";
         var detail = $"/Admin/Staff/{Uri.EscapeDataString(uid)}";
         if (!created.Bool("accountCreated"))
         {
-            Flash = $"{name} added as {JsonView.Label(role)} using their existing sign-in. They set up two-factor authentication at their next console sign-in.";
+            Flash = L["{0} added as {1} using their existing sign-in. They set up two-factor authentication at their next console sign-in.", name, L.Code(role)];
             return Redirect(detail);
         }
         if (await identity.SendPasswordSetupEmailAsync(created.Str("email") ?? e, HttpContext.RequestAborted))
         {
-            Flash = $"{name} added as {JsonView.Label(role)}. Firebase emailed them a link to set their password; two-factor setup follows at first sign-in.";
+            Flash = L["{0} added as {1}. Firebase emailed them a link to set their password; two-factor setup follows at first sign-in.", name, L.Code(role)];
         }
         else
         {
-            FlashError = $"{name} was added, but the password-setup email could not be sent. Use \"Send password-setup email\" on their page.";
+            FlashError = L["{0} was added, but the password-setup email could not be sent. Use \"Send password-setup email\" on their page.", name];
         }
         return Redirect(detail);
     }

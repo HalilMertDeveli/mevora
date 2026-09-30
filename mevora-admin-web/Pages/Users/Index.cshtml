@@ -1,57 +1,57 @@
 @page
 @model Mevora.Admin.Web.Pages.Users.IndexModel
 @{
-    ViewData["Title"] = "Users";
+    ViewData["Title"] = L["Users"].Value;
 }
 <div class="page-head">
     <div>
-        <h1>Users</h1>
-        <p>Find a member by UID, exact email, exact phone (E.164, e.g. +905…) or display name.</p>
+        <h1>@L["Users"]</h1>
+        <p>@L["Find a member by UID, exact email, exact phone (E.164, e.g. +905…) or display name."]</p>
     </div>
 </div>
 <partial name="_Flash" model="Model" />
 
 <form method="get" class="filters" role="search">
     <div class="field">
-        <label for="q">Search</label>
-        <input id="q" name="q" type="search" value="@Model.Q" maxlength="128" placeholder="UID, email, +phone or name" autofocus />
+        <label for="q">@L["Search"]</label>
+        <input id="q" name="q" type="search" value="@Model.Q" maxlength="128" placeholder="@L["UID, email, +phone or name"]" autofocus />
     </div>
     <div class="field">
-        <label for="mode">Match on</label>
+        <label for="mode">@L["Match on"]</label>
         <select id="mode" name="mode">
-            <option value="auto" selected="@(Model.Mode == "auto")">Auto-detect</option>
+            <option value="auto" selected="@(Model.Mode == "auto")">@L["Auto-detect"]</option>
             <option value="uid" selected="@(Model.Mode == "uid")">UID</option>
-            <option value="email" selected="@(Model.Mode == "email")">Email (exact)</option>
-            <option value="phone" selected="@(Model.Mode == "phone")">Phone (exact)</option>
-            <option value="name" selected="@(Model.Mode == "name")">Display name (prefix)</option>
+            <option value="email" selected="@(Model.Mode == "email")">@L["Email (exact)"]</option>
+            <option value="phone" selected="@(Model.Mode == "phone")">@L["Phone (exact)"]</option>
+            <option value="name" selected="@(Model.Mode == "name")">@L["Display name (prefix)"]</option>
         </select>
     </div>
     <div class="field">
-        <label for="status">Or list restricted</label>
+        <label for="status">@L["Or list restricted"]</label>
         <select id="status" name="status">
             <option value="">—</option>
-            <option value="suspended" selected="@(Model.Status == "suspended")">Suspended</option>
-            <option value="banned" selected="@(Model.Status == "banned")">Banned</option>
+            <option value="suspended" selected="@(Model.Status == "suspended")">@L.Code("suspended")</option>
+            <option value="banned" selected="@(Model.Status == "banned")">@L.Code("banned")</option>
         </select>
     </div>
-    <button type="submit" class="btn btn-primary">Search</button>
+    <button type="submit" class="btn btn-primary">@L["Search"]</button>
 </form>
 
-<p class="boundary">Email and phone match exactly — the console cannot list accounts by partial contact details. Contact details are masked here; revealing them is an audited action on the user page.</p>
+<p class="boundary">@L["Email and phone match exactly — the console cannot list accounts by partial contact details. Contact details are masked here; revealing them is an audited action on the user page."]</p>
 
 @if (Model.Searched)
 {
     var rows = Model.Result.Items().ToList();
     if (rows.Count == 0)
     {
-        <p class="muted">No members matched.</p>
+        <p class="muted">@L["No members matched."]</p>
     }
     else
     {
         <table class="data">
-            <caption>@rows.Count result(s) · matched by @JsonView.Label(Model.Result.Str("mode"))</caption>
+            <caption>@L["{0} result(s) · matched by {1}", rows.Count, L.Code("match." + Model.Result.Str("mode"))]</caption>
             <thead>
-                <tr><th scope="col">Member</th><th scope="col">UID</th><th scope="col">Status</th><th scope="col">Email</th><th scope="col">Phone</th></tr>
+                <tr><th scope="col">@L["Member"]</th><th scope="col">UID</th><th scope="col">@L["Status"]</th><th scope="col">@L["Email"]</th><th scope="col">@L["Phone"]</th></tr>
             </thead>
             <tbody>
                 @foreach (var u in rows)
@@ -59,7 +59,7 @@
                     <tr>
                         <td><partial name="_UserChip" model="u" /></td>
                         <td class="mono">@u.S("uid")</td>
-                        <td><span class="status status-@u.S("accountStatus")">@JsonView.Label(u.Str("accountStatus"))</span></td>
+                        <td><span class="status status-@u.S("accountStatus")">@L.Code(u.Str("accountStatus"))</span></td>
                         <td class="mono">@u.S("email")</td>
                         <td class="mono">@u.S("phone")</td>
                     </tr>

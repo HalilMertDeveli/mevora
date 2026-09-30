@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node location.rules.test.mjs && node location.rules.emulator.test.mjs && node compatibility.rules.emulator.test.mjs && node --test moderation.pipeline.test.mjs mutualLike.pipeline.test.mjs && npm run test:security",
-    "test:security": "node --test --test-concurrency=1 firestore.security.emulator.test.mjs storage.security.emulator.test.mjs",
+    "test:security": "node --test --test-concurrency=1 firestore.security.emulator.test.mjs storage.security.emulator.test.mjs admin.security.emulator.test.mjs",
     "test:contract": "node location.rules.test.mjs",
     "test:pipeline": "node --test moderation.pipeline.test.mjs",
     "test:match": "node --test mutualMatch.callable.test.mjs",

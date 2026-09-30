@@ -123,6 +123,11 @@ async function block(blocker, blocked) {
 
 const uidsOf = (result) => result.picks.map((item) => item.uid);
 
+/** A strong candidate who joins after today's batch was made. */
+function latecomer(uid) {
+  return profile(uid, {updatedAt: 99_000});
+}
+
 describe("Picks sizing comes from one place", () => {
   it("the default daily target is 10 and is one of the supported options", () => {
     assert.equal(PICKS_DAILY_TARGET, 10);
@@ -359,7 +364,6 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
 
     it(
       "two concurrent opens run one expensive generation",
-      {todo: "duplicate pool scans are fixed by fix/picks-concurrent-generation"},
       async () => {
         const now = Date.now();
         const poolPages = () => db.stats().queries.filter((query) => query.path === "profiles").length;
@@ -372,7 +376,76 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
         assert.equal(x.generationId, y.generationId);
         assert.deepEqual(uidsOf(x), uidsOf(y));
         assert.equal(poolPages(), onePass, "the second open must not scan the pool again");
+        // Five at once, the same.
+        seedWorld({strong: 3 * target});
+        const many = await Promise.all(Array.from({length: 5}, () => serve(now, sizing)));
+        assert.equal(new Set(many.map((result) => result.generationId)).size, 1);
+        assert.equal(poolPages(), onePass);
+        assert.equal(db.read(picksDocPath(VIEWER)).generationLease, undefined, "the lease is released");
       },
     );
+
+    it("a lease left by a crashed generation is taken over once it lapses", async () => {
+      const now = Date.now();
+      await db.doc(picksDocPath(VIEWER)).set({generationLease: {token: "dead", untilMs: now - 1}});
+      const result = await serve(now, sizing);
+      assert.equal(result.picks.length, target);
+      assert.equal(db.read(picksDocPath(VIEWER)).generationLease, undefined);
+    });
+
+    it("a failed generation releases its lease so the next open need not wait", async () => {
+      const now = Date.now();
+      const failing = {...db, collection: (path) => {
+        if (path === "profiles") throw new Error("pool unavailable");
+        return db.collection(path);
+      }};
+      const {viewer, boostSessions} = await loadDiscoveryViewerContext(db, VIEWER, {uid: VIEWER});
+      await assert.rejects(() => servePicks({db: failing, viewer, boostSessions, nowMs: now, sizing}));
+      assert.equal(db.read(picksDocPath(VIEWER))?.generationLease, undefined);
+      const started = Date.now();
+      const result = await serve(now + 1, sizing);
+      assert.equal(result.picks.length, target);
+      assert.ok(Date.now() - started < PICKS_CONFIG.generationLeaseMs / 2, "no lease wait");
+    });
+
+    it("a low-supply batch stays short today and never rescans the pool on reopen", async () => {
+      seedWorld({strong: 3, weak: 5});
+      const now = Date.now();
+      const first = await serve(now, sizing);
+      assert.equal(first.status, "lowSupply");
+      // More strong people join later in the day...
+      for (let i = 0; i < target; i++) {
+        await db.doc(`users/late${i}`).set({uid: `late${i}`});
+        await db.doc(`profiles/late${i}`).set(latecomer(`late${i}`));
+      }
+      db.resetStats();
+      const later = await serve(now + 4 * INTERVAL, sizing);
+      // ...but today's batch is not refilled, and reopening costs no pool scan.
+      assert.deepEqual(uidsOf(later).sort(), ["s0", "s1", "s2"]);
+      assert.equal(db.stats().queries.filter((query) => query.path === "profiles").length, 0);
+    });
+
+    it("an empty replacement scan backs off: 30 min, then 1 h, then 2 h", async () => {
+      // Exactly one day's worth of strong people: a replacement finds nobody.
+      seedWorld({strong: target});
+      const now = Date.now();
+      const first = await serve(now, sizing);
+      await block(VIEWER, uidsOf(first)[0]);
+      const pages = () => db.stats().queries.filter((query) => query.path === "profiles").length;
+      const scansAt = async (at) => {
+        db.resetStats();
+        await serve(at, sizing);
+        return pages() > 0;
+      };
+      assert.equal(await scansAt(now + INTERVAL - 1), false, "not before the interval");
+      assert.equal(await scansAt(now + INTERVAL), true, "first replacement scan");
+      assert.equal(stored().emptyTopUpStreak, 1);
+      assert.equal(await scansAt(now + 2 * INTERVAL), false, "backed off to 1 h");
+      assert.equal(await scansAt(now + 3 * INTERVAL), true);
+      assert.equal(stored().emptyTopUpStreak, 2);
+      assert.equal(await scansAt(now + 6 * INTERVAL), false, "backed off to 2 h");
+      assert.equal(await scansAt(now + 7 * INTERVAL), true);
+      assert.equal(stored().deliveredCount, target, "nobody was found, nobody was added");
+    });
   });
 }

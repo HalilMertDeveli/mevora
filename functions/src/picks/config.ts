@@ -92,6 +92,21 @@ export const PICKS_CONFIG = {
    */
   topUpMinIntervalMs: 30 * 60 * 1000,
   /**
+   * A replacement scan that finds nobody doubles the wait before the next one
+   * (30 min, 1 h, 2 h, 4 h, then every 4 h), so a Pick lost in a thin pool
+   * does not buy a full pool scan on every visit for the rest of the day.
+   */
+  topUpMaxBackoffMs: 4 * HOUR_MS,
+  /**
+   * While one open of the day generates the batch, it holds a lease on the
+   * member's batch document; a second open waits for that batch instead of
+   * paying for its own pool scan. A holder that dies simply lets the lease
+   * lapse, and the next open takes over.
+   */
+  generationLeaseMs: 20_000,
+  /** How often a waiting open re-reads the batch while another generates. */
+  generationWaitPollMs: 150,
+  /**
    * A Pick that expires undecided rests for this long before it may be picked
    * again, so the same faces do not recycle day after day. Liked, passed and
    * matched people never return to Picks: those exclusions come from the

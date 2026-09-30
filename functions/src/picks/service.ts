@@ -1,6 +1,7 @@
 import {randomBytes} from "node:crypto";
 import type {DocumentData, DocumentReference, Firestore} from "firebase-admin/firestore";
 import {logger} from "firebase-functions";
+import {HttpsError} from "firebase-functions/v2/https";
 import {coarseDistanceLabel} from "../geo/coarseDistance.js";
 import {discoveryProfileProjection} from "../profileSafety.js";
 import {DISCOVERY_MAX_RADIUS_KM} from "../discoveryFallback.js";
@@ -34,6 +35,7 @@ import {
   newBatch,
   parseBatch,
   scrubCandidate,
+  topUpScanDue,
   topUpSlots,
   type PickCardSnapshot,
   type PickDecision,
@@ -374,38 +376,7 @@ export async function servePicks(input: {
   let delivered: StoredPick[] = [];
 
   if (!isBatchLive(stored, nowMs)) {
-    // Generate: the old batch's undecided Picks cool down, then the pool is
-    // scanned with everyone in the old batch and every cooldown excluded.
-    const cooldowns = cooldownsAfterExpiry(stored, nowMs);
-    const exclude = new Set([...excludedFromSelection(stored, nowMs), ...Object.keys(cooldowns)]);
-    const generationId = newGenerationId();
-    const {composed, cards} = await selectFromPool({
-      db,
-      viewer,
-      exclude,
-      slots: sizing.targetCount,
-      existing: [],
-      firstRank: 0,
-      batchKey: generationId,
-      sizing,
-    });
-    delivered = buildStoredPicks(generationId, composed, cards, nowMs);
-    const fresh = newBatch({generationId, nowMs, picks: delivered, cooldowns, sizing});
-    // Two concurrent opens must not both generate: the first write wins and
-    // the other request serves what it wrote.
-    batch = await db.runTransaction(async (tx) => {
-      const current = parseBatch((await tx.get(ref)).data());
-      if (
-        current &&
-        isBatchLive(current, nowMs) &&
-        current.generationId !== stored?.generationId
-      ) {
-        delivered = [];
-        return current;
-      }
-      tx.set(ref, fresh);
-      return fresh;
-    });
+    ({batch, delivered} = await generateOnce({db, ref, viewer, nowMs, sizing}));
   } else {
     batch = stored as PicksBatch;
   }
@@ -431,10 +402,11 @@ export async function servePicks(input: {
   let changed = revalidated.changed;
   batch = revalidated.batch;
 
-  // Fill open slots (a short first batch, or a Pick that stopped being
-  // eligible). Liked, passed and matched Picks keep their slot: today's set
-  // stays finite however fast the member decides.
-  if (delivered.length === 0 && needsTopUp(batch, nowMs)) {
+  // Replace Picks that stopped being eligible, one for one, within the day's
+  // ceiling. Liked, passed and matched Picks keep their slot, and a short
+  // batch stays short: today's set is finite however fast the member decides.
+  // The scan slot is claimed first, so two opens never pay for the same scan.
+  if (delivered.length === 0 && needsTopUp(batch, nowMs) && (await claimTopUpScan(db, ref, batch, nowMs))) {
     const {composed, cards} = await selectFromPool({
       db,
       viewer,
@@ -523,6 +495,141 @@ export async function servePicks(input: {
     targetCount: batch.targetCount,
     picks,
   };
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+type GenerationClaim =
+  | {kind: "live"; batch: PicksBatch}
+  | {kind: "wait"}
+  | {kind: "acquired"; previous: PicksBatch | null};
+
+/**
+ * Takes the day's generation lease on the member's batch document, unless a
+ * live batch already exists (someone generated it meanwhile) or another open
+ * holds an unexpired lease. The lease is a field beside the batch; writing
+ * the fresh batch replaces the document and so releases it.
+ */
+async function claimGeneration(
+  db: Firestore,
+  ref: DocumentReference,
+  token: string,
+  nowMs: number,
+): Promise<GenerationClaim> {
+  return db.runTransaction(async (tx) => {
+    const raw = (await tx.get(ref)).data();
+    const current = parseBatch(raw);
+    if (current && isBatchLive(current, nowMs)) return {kind: "live", batch: current};
+    const lease = (raw?.generationLease ?? null) as {token?: unknown; untilMs?: unknown} | null;
+    const leaseUntil = Number(lease?.untilMs);
+    if (lease && lease.token !== token && Number.isFinite(leaseUntil) && leaseUntil > nowMs) {
+      return {kind: "wait"};
+    }
+    tx.set(ref, {generationLease: {token, untilMs: nowMs + PICKS_CONFIG.generationLeaseMs}}, {merge: true});
+    return {kind: "acquired", previous: current};
+  });
+}
+
+/** Drops this open's lease after a failed generation, so the next open need not wait it out. */
+async function releaseGeneration(db: Firestore, ref: DocumentReference, token: string): Promise<void> {
+  try {
+    await db.runTransaction(async (tx) => {
+      const raw = (await tx.get(ref)).data();
+      const lease = raw?.generationLease as {token?: unknown} | undefined;
+      if (lease?.token !== token) return;
+      const rest = {...raw};
+      delete rest.generationLease;
+      tx.set(ref, rest);
+    });
+  } catch (error) {
+    // The lease expires on its own; releasing it early is only a courtesy.
+    logger.warn("picks_generation_release_failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * Generates today's batch at most once per member, however many opens race
+ * for it. The winner scans the pool and writes the batch; every other open
+ * waits for that batch and serves it. If the winner dies, its lease lapses
+ * after `generationLeaseMs` and the next open takes over.
+ */
+async function generateOnce(input: {
+  db: Firestore;
+  ref: DocumentReference;
+  viewer: DiscoveryViewerContext;
+  nowMs: number;
+  sizing: PicksSizing;
+}): Promise<{batch: PicksBatch; delivered: StoredPick[]}> {
+  const {db, ref, viewer, nowMs, sizing} = input;
+  const token = newGenerationId();
+  const startedAt = Date.now();
+  let previous: PicksBatch | null = null;
+  for (;;) {
+    const elapsed = Date.now() - startedAt;
+    const claim = await claimGeneration(db, ref, token, nowMs + elapsed);
+    if (claim.kind === "live") return {batch: claim.batch, delivered: []};
+    if (claim.kind === "acquired") {
+      previous = claim.previous;
+      break;
+    }
+    if (elapsed > 2 * PICKS_CONFIG.generationLeaseMs) {
+      // A lease is renewed by nobody, so this only happens if the clock or
+      // the store misbehaves. Fail this open rather than spin.
+      throw new HttpsError("unavailable", "picks-generation-busy");
+    }
+    await sleep(PICKS_CONFIG.generationWaitPollMs);
+  }
+  try {
+    // The old batch's undecided Picks cool down, then the pool is scanned
+    // with everyone in the old batch and every cooldown excluded.
+    const cooldowns = cooldownsAfterExpiry(previous, nowMs);
+    const exclude = new Set([...excludedFromSelection(previous, nowMs), ...Object.keys(cooldowns)]);
+    const generationId = newGenerationId();
+    const {composed, cards} = await selectFromPool({
+      db,
+      viewer,
+      exclude,
+      slots: sizing.targetCount,
+      existing: [],
+      firstRank: 0,
+      batchKey: generationId,
+      sizing,
+    });
+    const picks = buildStoredPicks(generationId, composed, cards, nowMs);
+    const fresh = newBatch({generationId, nowMs, picks, cooldowns, sizing});
+    return await db.runTransaction(async (tx) => {
+      const current = parseBatch((await tx.get(ref)).data());
+      // Our lease lapsed and another open wrote today's batch first: serve theirs.
+      if (current && isBatchLive(current, nowMs)) return {batch: current, delivered: []};
+      tx.set(ref, fresh);
+      return {batch: fresh, delivered: picks};
+    });
+  } catch (error) {
+    await releaseGeneration(db, ref, token);
+    throw error;
+  }
+}
+
+/**
+ * Claims the replacement scan for this open by moving the scan clock, so a
+ * concurrent open of the same batch sees it as just scanned and skips its own
+ * scan. False when another open claimed it first or the batch moved on.
+ */
+async function claimTopUpScan(
+  db: Firestore,
+  ref: DocumentReference,
+  batch: PicksBatch,
+  nowMs: number,
+): Promise<boolean> {
+  return db.runTransaction(async (tx) => {
+    const current = parseBatch((await tx.get(ref)).data());
+    if (!current || current.generationId !== batch.generationId) return false;
+    if (!topUpScanDue(current, nowMs)) return false;
+    tx.update(ref, {lastScanAtMs: nowMs});
+    return true;
+  });
 }
 
 /**

@@ -170,6 +170,36 @@ void main() {
       expect(find.text('home'), findsOneWidget);
     });
 
+    testWidgets('is read out by screen readers above the page', (tester) async {
+      // Every page route paints a ModalBarrier wrapped in BlockSemantics,
+      // which drops whatever was painted before it in the same semantics
+      // container. The banner is painted before the navigator, so without
+      // its own boundary it vanished from the accessibility tree.
+      final semantics = tester.ensureSemantics();
+      final store = MemoryAppOperationsStore(
+        config: const AppOperationsConfig(
+          announcement: AppAnnouncement(
+            id: 'a11y',
+            title: 'Planned maintenance',
+            message: 'Tonight 02:00-02:15',
+            severity: AnnouncementSeverity.info,
+          ),
+        ),
+      );
+      final controller = await _controller(tester, store.config!, store: store);
+      await tester.pumpWidget(
+        _app(controller, const Scaffold(body: Text('home')), withHost: true),
+      );
+      await tester.pump();
+      expect(
+        find.bySemanticsLabel(RegExp('Planned maintenance')),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('Close'), findsOneWidget);
+      expect(find.bySemanticsLabel('home'), findsOneWidget);
+      semantics.dispose();
+    });
+
     testWidgets('is hidden during maintenance', (tester) async {
       final controller = await _controller(
         tester,

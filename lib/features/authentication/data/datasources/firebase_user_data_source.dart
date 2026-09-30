@@ -132,13 +132,21 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
         kind: AuthErrorKind.unknown,
       );
     }
-    if (user.isBanned || !user.isActive) {
+    ensureSignInAllowed(user);
+    return user;
+  }
+
+  /// A suspended member signs in into the restricted state (the router
+  /// holds them on the restricted screen, from which they can appeal).
+  /// Banned, deleted and disabled accounts are refused.
+  @visibleForTesting
+  static void ensureSignInAllowed(AuthUser user) {
+    if (!user.isSuspended && (user.isBanned || !user.isActive)) {
       throw const AuthException(
         AuthMessages.banned,
         kind: AuthErrorKind.banned,
       );
     }
-    return user;
   }
 
   @override

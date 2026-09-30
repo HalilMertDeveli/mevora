@@ -148,7 +148,11 @@ class AuthController extends ChangeNotifier {
         if (_isClosingSessionEcho(user.id)) {
           return;
         }
-        if (user.isBanned || !user.isActive) {
+        // A suspension keeps the session: the member lands on the
+        // restricted screen (router) and is released when the account
+        // document flips back to active. Everything else that is not active
+        // ends the session.
+        if (!user.isSuspended && (user.isBanned || !user.isActive)) {
           unawaited(_handleBanned());
           return;
         }

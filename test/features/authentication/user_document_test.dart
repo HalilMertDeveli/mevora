@@ -54,7 +54,7 @@ void main() {
     UserDocument read(Map<String, dynamic> account) =>
         UserDocument.fromAccountAndProfile(uid: 'u1', account: account, profile: const {});
 
-    test('a live suspension is not active, so the session is refused', () {
+    test('a live suspension is not active (the member is restricted)', () {
       final doc = read({
         'accountStatus': 'suspended',
         'isSuspended': true,

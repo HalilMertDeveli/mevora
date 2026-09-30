@@ -45,6 +45,11 @@ abstract final class AuthRedirector {
       return AppRoutes.login;
     }
 
+    final restriction = _accountRestrictionRedirect(status, location);
+    if (restriction != null) {
+      return restriction;
+    }
+
     switch (status) {
       case AuthInitializing():
         return location == AppRoutes.splash ? null : AppRoutes.splash;
@@ -109,6 +114,36 @@ abstract final class AuthRedirector {
         }
         return null;
     }
+  }
+
+  /// Restricted-account gate. A suspended member stays signed in but only
+  /// reaches the restricted screen and what it links to: their moderation
+  /// record and appeals, support, the legal pages, and account deletion /
+  /// data export. When staff restore the account the user document flips to
+  /// active and the member is released back into the normal flow.
+  static String? _accountRestrictionRedirect(
+    AuthStatus status,
+    String location,
+  ) {
+    final suspended = status is Authenticated && status.user.isSuspended;
+    if (!suspended) {
+      return status is Authenticated && location == AppRoutes.accountRestricted
+          ? AppRoutes.splash
+          : null;
+    }
+    return restrictedAccountAllows(location)
+        ? null
+        : AppRoutes.accountRestricted;
+  }
+
+  /// Routes a suspended member may open.
+  static bool restrictedAccountAllows(String location) {
+    return location == AppRoutes.accountRestricted ||
+        location == AppRoutes.moderationStatus ||
+        location == AppRoutes.accountSettings ||
+        location == AppRoutes.supportCenter ||
+        location.startsWith('${AppRoutes.supportCenter}/') ||
+        _publicLegalRoutes.contains(location);
   }
 
   static bool _journeyAllows(String location) {

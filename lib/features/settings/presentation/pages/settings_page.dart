@@ -103,6 +103,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => context.push(AppRoutes.accountSettings),
                 ),
                 SettingsNavTile(
+                  icon: MevoraIcons.safety,
+                  title: l10n.moderationStatusTitle,
+                  subtitle: l10n.moderationStatusSettingsSubtitle,
+                  onTap: () => context.push(AppRoutes.moderationStatus),
+                ),
+                SettingsNavTile(
                   icon: MevoraIcons.boost,
                   title: l10n.boostHistoryTitle,
                   onTap: () => context.push(AppRoutes.boost),

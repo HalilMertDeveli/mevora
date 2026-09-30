@@ -21,6 +21,7 @@ class UserDocument {
     this.profileCompleted = false,
     this.onboardingCompleted = false,
     this.accountStatus = AccountStatus.active,
+    this.suspendedUntil,
     this.isVerified = false,
   });
 
@@ -38,6 +39,10 @@ class UserDocument {
   final bool profileCompleted;
   final bool onboardingCompleted;
   final AccountStatus accountStatus;
+
+  /// End of a timed suspension; only meaningful while [accountStatus] is
+  /// suspended.
+  final DateTime? suspendedUntil;
   final bool isVerified;
 
   bool get isBanned => accountStatus.isBanned;
@@ -60,12 +65,13 @@ class UserDocument {
     required Map<String, dynamic> profile,
   }) {
     final providers = account['authProviders'];
+    final suspendedUntil = firestoreDate(account['suspendedUntil']);
     final status = AccountStatusX.fromFirestore(
       account['accountStatus'],
       legacyIsBanned: account['isBanned'] as bool?,
       legacyIsActive: account['isActive'] as bool?,
       legacyIsSuspended: account['isSuspended'] as bool?,
-      suspendedUntil: firestoreDate(account['suspendedUntil']),
+      suspendedUntil: suspendedUntil,
     );
     return UserDocument(
       id: uid,
@@ -84,6 +90,7 @@ class UserDocument {
       lastActiveAt: firestoreDate(account['lastActiveAt']),
       updatedAt: firestoreDate(account['updatedAt']),
       accountStatus: status,
+      suspendedUntil: status == AccountStatus.suspended ? suspendedUntil : null,
       isVerified: firestoreFlag(account['isVerified']),
       displayName:
           (profile['displayName'] as String?) ??
@@ -125,6 +132,8 @@ class UserDocument {
       isActive: isActive,
       isBanned: isBanned,
       isVerified: isVerified,
+      accountStatus: accountStatus,
+      suspendedUntil: suspendedUntil,
     );
   }
 

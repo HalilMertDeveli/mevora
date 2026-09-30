@@ -42,6 +42,12 @@ abstract final class AppRoutes {
   static const String notificationSettings = '/settings/notifications';
   static const String privacyPermissions = '/settings/privacy';
   static const String accountSettings = '/settings/account';
+
+  /// The member's own moderation record and appeals ("Account status").
+  static const String moderationStatus = '/settings/account-status';
+
+  /// Where a suspended member is held until the account is restored.
+  static const String accountRestricted = '/account-restricted';
   static const String boost = '/boost';
   static const String likesYou = '/likes-you';
 

@@ -305,26 +305,20 @@ abstract class AppLocalizations {
   /// No description provided for @learningCardTitle.
   ///
   /// In en, this message translates to:
-  /// **'Let Mevora get to know you'**
+  /// **'Today\'s questions are ready'**
   String get learningCardTitle;
 
-  /// No description provided for @learningCardInitialStart.
+  /// No description provided for @learningCardTodayStart.
   ///
   /// In en, this message translates to:
-  /// **'{total} short questions help us choose people who fit you.'**
-  String learningCardInitialStart(int total);
+  /// **'Today\'s {total} short questions help us choose people who fit you.'**
+  String learningCardTodayStart(int total);
 
-  /// No description provided for @learningCardInitialResume.
+  /// No description provided for @learningCardTodayResume.
   ///
   /// In en, this message translates to:
   /// **'{answered} of {total} answered. Pick up where you left off.'**
-  String learningCardInitialResume(int answered, int total);
-
-  /// No description provided for @learningCardFollowUp.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} short questions to sharpen your Picks.'**
-  String learningCardFollowUp(int count);
+  String learningCardTodayResume(int answered, int total);
 
   /// No description provided for @learningCardStart.
   ///
@@ -338,11 +332,11 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get learningCardResume;
 
-  /// No description provided for @learningCardNotNow.
+  /// No description provided for @learningSkipToday.
   ///
   /// In en, this message translates to:
-  /// **'Not now'**
-  String get learningCardNotNow;
+  /// **'Skip for today'**
+  String get learningSkipToday;
 
   /// No description provided for @learningRequiredTitle.
   ///
@@ -359,14 +353,14 @@ abstract class AppLocalizations {
   /// No description provided for @learningIntroTitle.
   ///
   /// In en, this message translates to:
-  /// **'Let Mevora get to know you'**
+  /// **'Let Mevora get to know you a little more each day'**
   String get learningIntroTitle;
 
   /// No description provided for @learningIntroBody.
   ///
   /// In en, this message translates to:
-  /// **'We use your answers to choose people who fit you better.'**
-  String get learningIntroBody;
+  /// **'Today\'s {count} short questions help us choose people who fit you better.'**
+  String learningIntroBody(int count);
 
   /// No description provided for @learningIntroMeta.
   ///
@@ -419,13 +413,13 @@ abstract class AppLocalizations {
   /// No description provided for @learningDoneTitle.
   ///
   /// In en, this message translates to:
-  /// **'Thanks, we know you a little better now.'**
+  /// **'That\'s it for today.'**
   String get learningDoneTitle;
 
   /// No description provided for @learningDoneBody.
   ///
   /// In en, this message translates to:
-  /// **'From now on, the people we choose for you follow your answers.'**
+  /// **'Mevora knows you a little better now.'**
   String get learningDoneBody;
 
   /// No description provided for @learningDoneContinue.
@@ -434,29 +428,23 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get learningDoneContinue;
 
-  /// No description provided for @learningFollowUpDoneTitle.
+  /// No description provided for @learningDoneTomorrow.
   ///
   /// In en, this message translates to:
-  /// **'Thank you!'**
-  String get learningFollowUpDoneTitle;
+  /// **'New questions will be waiting tomorrow.'**
+  String get learningDoneTomorrow;
 
-  /// No description provided for @learningFollowUpDoneBody.
+  /// No description provided for @learningSkippedTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your answers will make your Picks fit you better.'**
-  String get learningFollowUpDoneBody;
+  /// **'Okay, see you tomorrow.'**
+  String get learningSkippedTitle;
 
-  /// No description provided for @learningNothingTitle.
+  /// No description provided for @learningSkippedBody.
   ///
   /// In en, this message translates to:
-  /// **'No new questions for now'**
-  String get learningNothingTitle;
-
-  /// No description provided for @learningNothingBody.
-  ///
-  /// In en, this message translates to:
-  /// **'When new questions are ready, you\'ll find them here.'**
-  String get learningNothingBody;
+  /// **'You can still answer today\'s questions from Let Mevora get to know me in your profile.'**
+  String get learningSkippedBody;
 
   /// No description provided for @learningProfileTitle.
   ///
@@ -479,7 +467,7 @@ abstract class AppLocalizations {
   /// No description provided for @learningAfterHumorBody.
   ///
   /// In en, this message translates to:
-  /// **'Now let\'s learn what matters to you in a relationship.'**
+  /// **'Now let\'s learn what matters to you in a relationship, with today\'s questions.'**
   String get learningAfterHumorBody;
 
   /// No description provided for @learningDashboardHeadline.
@@ -500,23 +488,29 @@ abstract class AppLocalizations {
   /// **'Your answers and your profile help us choose people who fit you.'**
   String get learningDashboardBody;
 
-  /// No description provided for @learningDashboardResumeInitial.
+  /// No description provided for @learningDashboardThisMonth.
   ///
   /// In en, this message translates to:
-  /// **'Continue where you left off ({answered}/{total})'**
-  String learningDashboardResumeInitial(int answered, int total);
+  /// **'{count, plural, =0{No questions answered this month yet} =1{1 question answered this month} other{{count} questions answered this month}}'**
+  String learningDashboardThisMonth(int count);
 
-  /// No description provided for @learningDashboardContinue.
+  /// No description provided for @learningDashboardTotals.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Continue with 1 short question} other{Continue with {count} short questions}}'**
-  String learningDashboardContinue(int count);
+  /// **'{total, plural, =1{1 answer} other{{total} answers}} in total · {days, plural, =1{1 day} other{{days} days}} completed'**
+  String learningDashboardTotals(int total, int days);
 
-  /// No description provided for @learningDashboardAllAnswered.
+  /// No description provided for @learningDashboardToday.
   ///
   /// In en, this message translates to:
-  /// **'You\'ve answered every question for now. New ones will appear here.'**
-  String get learningDashboardAllAnswered;
+  /// **'Today\'s questions ({answered}/{total})'**
+  String learningDashboardToday(int answered, int total);
+
+  /// No description provided for @learningDashboardTodayDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done for today. New questions arrive tomorrow.'**
+  String get learningDashboardTodayDone;
 
   /// No description provided for @learningDashboardCategoriesTitle.
   ///
@@ -8317,6 +8311,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Languages'**
   String get sharedTraitLanguages;
+
+  /// No description provided for @humorDailyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Humor Round 🎭'**
+  String get humorDailyTitle;
+
+  /// No description provided for @humorDailyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day, a few short videos help us get to know you a little better.'**
+  String get humorDailyBody;
+
+  /// No description provided for @humorDailySecondary.
+  ///
+  /// In en, this message translates to:
+  /// **'The more we learn what makes you laugh, the better Mevora knows you.'**
+  String get humorDailySecondary;
+
+  /// No description provided for @humorDailyMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} short videos'**
+  String humorDailyMeta(int count);
+
+  /// No description provided for @humorDailyStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get humorDailyStart;
+
+  /// No description provided for @humorDailyResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue · {answered}/{total}'**
+  String humorDailyResume(int answered, int total);
+
+  /// No description provided for @humorDailyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done for today ✓'**
+  String get humorDailyDone;
+
+  /// No description provided for @humorDailyLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get humorDailyLater;
+
+  /// No description provided for @humorDailyStartsTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Your daily humor round starts tomorrow.'**
+  String get humorDailyStartsTomorrow;
+
+  /// No description provided for @humorDailyProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{position}/{total}'**
+  String humorDailyProgress(int position, int total);
+
+  /// No description provided for @humorDailyHintStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s humor round has begun.'**
+  String get humorDailyHintStart;
+
+  /// No description provided for @humorDailyHintMiddle.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting to know you a little more 👀'**
+  String get humorDailyHintMiddle;
+
+  /// No description provided for @humorDailyHintEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Just a few more videos.'**
+  String get humorDailyHintEnd;
+
+  /// No description provided for @humorDailyCompletedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All done for today 🎭'**
+  String get humorDailyCompletedTitle;
+
+  /// No description provided for @humorDailyCompletedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your humor profile just got a little clearer.'**
+  String get humorDailyCompletedBody;
+
+  /// No description provided for @humorDailyNotReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s round is being prepared'**
+  String get humorDailyNotReadyTitle;
+
+  /// No description provided for @humorDailyNotReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back a little later.'**
+  String get humorDailyNotReadyBody;
+
+  /// No description provided for @humorDailyLockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The daily humor round begins once your humor profile is ready.'**
+  String get humorDailyLockedBody;
 }
 
 class _AppLocalizationsDelegate

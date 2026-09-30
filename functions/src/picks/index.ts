@@ -4,6 +4,7 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {isAccountEligible} from "../profileSafety.js";
 import {loadDiscoveryViewerContext} from "../discoveryPool.js";
 import {isLearningBlockingPicks, learningSummary} from "../relationshipLearning/model.js";
+import {learningDayKey} from "../relationshipLearning/schedule.js";
 import {loadLearningState} from "../relationshipLearning/store.js";
 import {servePicks} from "./service.js";
 
@@ -38,10 +39,10 @@ export const getMevoraPicks = onCall(
     }
     const nowMs = Date.now();
     const learningState = await loadLearningState(db, uid);
-    const learning = learningSummary(learningState, nowMs);
+    const learning = learningSummary(learningState, learningDayKey(nowMs), nowMs);
     if (isLearningBlockingPicks(learningState)) {
-      // A new member's first Picks wait for the initial questions: the set
-      // is chosen from their answers, so it is not served without them.
+      // A new member's first Picks wait for their first daily question set:
+      // the set is chosen from their answers, so it is not served without them.
       return {status: "empty", emptyReason: "learningRequired", picks: [], learning};
     }
     const {viewer, boostSessions} = await loadDiscoveryViewerContext(db, uid, callerAccount.data());

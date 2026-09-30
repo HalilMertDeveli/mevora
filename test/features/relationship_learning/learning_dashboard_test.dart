@@ -24,101 +24,92 @@ Widget _app(Widget home, FakeRelationshipLearningRepository repository) {
 }
 
 void main() {
-  testWidgets('shows real progress, categories, read-backs and answers', (
+  testWidgets('shows real counts, categories, read-backs and answers', (
     tester,
   ) async {
-    final repository = FakeRelationshipLearningRepository(answered: 15);
+    final repository = FakeRelationshipLearningRepository(
+      answered: 10,
+      earlier: [for (var i = 50; i < 60; i++) learningQuestion(i, answer: 'b')],
+    )..thisMonth = 20;
     await tester.pumpWidget(_app(const LearningDashboardPage(), repository));
     await tester.pumpAndSettle();
     expect(find.text(_tr.learningDashboardHeadline), findsOneWidget);
-    expect(find.text(_tr.learningDashboardPercent(100)), findsWidgets);
+    expect(find.text('Bu ay 30 soru cevapladın'), findsOneWidget);
+    expect(find.text(_tr.learningDashboardTotals(20, 1)), findsOneWidget);
+    expect(find.byKey(const Key('learningDashboardTodayDone')), findsOneWidget);
     expect(find.text(_tr.learningCategoryRelationship), findsOneWidget);
-    expect(find.text(_tr.learningCategoryCommunication), findsOneWidget);
-    expect(find.text(_tr.learningDashboardPercent(17)), findsOneWidget);
-    expect(find.text('Adım adım ilerlemeye daha yakınsın.'), findsOneWidget);
-    final firstAnswer = find.byKey(const Key('learningAnswer_rl_q1'));
-    await tester.scrollUntilVisible(firstAnswer, 300);
-    expect(firstAnswer, findsOneWidget);
+    expect(find.text(_tr.learningDashboardPercent(13)), findsOneWidget);
+    final highlight = find.text('Adım adım ilerlemeye daha yakınsın.');
+    await tester.scrollUntilVisible(highlight, 300);
+    expect(highlight, findsOneWidget);
+    final earlier = find.byKey(const Key('learningAnswer_relationship_q50_v1'));
+    await tester.scrollUntilVisible(earlier, 300);
+    expect(earlier, findsOneWidget);
   });
 
-  testWidgets('an unfinished member continues the initial questions', (
+  testWidgets("an unfinished day opens today's questions where they stopped", (
     tester,
   ) async {
     final repository = FakeRelationshipLearningRepository(answered: 6);
     await tester.pumpWidget(_app(const LearningDashboardPage(), repository));
     await tester.pumpAndSettle();
-    expect(
-      find.text(_tr.learningDashboardResumeInitial(6, 15)),
-      findsOneWidget,
-    );
-    await tester.tap(find.byKey(const Key('learningDashboardContinue')));
+    expect(find.text('Bugünün soruları (6/10)'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('learningDashboardToday')));
     await tester.pumpAndSettle();
     expect(find.byType(RelationshipLearningPage), findsOneWidget);
-    expect(find.text(_tr.learningProgress(7, 15)), findsOneWidget);
+    expect(find.text('7 / 10'), findsOneWidget);
   });
 
-  testWidgets('a finished member continues in a short round, then returns', (
+  testWidgets('finishing today from the dashboard comes back to it, done', (
     tester,
   ) async {
-    final repository = FakeRelationshipLearningRepository(
-      answered: 15,
-      followUp: [
-        learningQuestion(21),
-        learningQuestion(22),
-        learningQuestion(23),
-      ],
-    );
+    final repository = FakeRelationshipLearningRepository(answered: 8);
     await tester.pumpWidget(_app(const LearningDashboardPage(), repository));
     await tester.pumpAndSettle();
-    expect(find.text(_tr.learningDashboardContinue(3)), findsOneWidget);
-    await tester.tap(find.byKey(const Key('learningDashboardContinue')));
+    await tester.tap(find.byKey(const Key('learningDashboardToday')));
     await tester.pumpAndSettle();
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 2; i++) {
       await tester.tap(find.byKey(const Key('learningOption_a')));
       await tester.pumpAndSettle();
     }
-    expect(find.text(_tr.learningFollowUpDoneTitle), findsOneWidget);
+    expect(find.text('Bugünlük tamam.'), findsOneWidget);
     await tester.tap(find.text(_tr.learningDoneContinue));
     await tester.pumpAndSettle();
     expect(find.byType(LearningDashboardPage), findsOneWidget);
-    expect(
-      find.byKey(const Key('learningDashboardAllAnswered')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const Key('learningDashboardTodayDone')), findsOneWidget);
   });
 
-  testWidgets('changing an earlier answer saves it and refreshes', (
+  testWidgets('changing an earlier answer updates it and refreshes', (
     tester,
   ) async {
-    final repository = FakeRelationshipLearningRepository(answered: 15);
+    final repository = FakeRelationshipLearningRepository(
+      answered: 10,
+      earlier: [learningQuestion(50, answer: 'a')],
+    );
     await tester.pumpWidget(_app(const LearningDashboardPage(), repository));
     await tester.pumpAndSettle();
-    final row = find.byKey(const Key('learningAnswer_rl_q3'));
+    final row = find.byKey(const Key('learningAnswer_relationship_q50_v1'));
     await tester.scrollUntilVisible(row, 300);
     await tester.tap(row);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('learningEditOption_c')));
     await tester.pumpAndSettle();
-    expect(repository.saves, [('rl_q3', 'c')]);
-    expect(repository.initial[2].answerId, 'c');
-    expect(
-      repository.answeredInitial,
-      15,
-      reason: 'an edit is not a new answer',
-    );
+    expect(repository.updates, [('relationship_q50_v1', 'c')]);
+    expect(repository.earlier.single.answerId, 'c');
+    expect(repository.saves, isEmpty, reason: 'an edit is not a new answer');
   });
 
   testWidgets('choosing the same answer again saves nothing', (tester) async {
-    final repository = FakeRelationshipLearningRepository(answered: 15);
+    final repository = FakeRelationshipLearningRepository(answered: 10);
     await tester.pumpWidget(_app(const LearningDashboardPage(), repository));
     await tester.pumpAndSettle();
-    final row = find.byKey(const Key('learningAnswer_rl_q1'));
+    final row = find.byKey(const Key('learningAnswer_relationship_q1_v1'));
     await tester.scrollUntilVisible(row, 300);
     await tester.tap(row);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('learningEditOption_a')));
     await tester.pumpAndSettle();
-    expect(repository.saves, isEmpty);
+    expect(repository.updates, isEmpty);
   });
 
   testWidgets('a load failure offers a retry', (tester) async {
@@ -133,9 +124,9 @@ void main() {
   });
 
   testWidgets(
-    'right after the Humor Lab, the questions open with a transition',
+    "right after the Humor Lab, today's questions open with a transition",
     (tester) async {
-      final repository = FakeRelationshipLearningRepository()
+      final repository = FakeRelationshipLearningRepository(required: true)
         ..humorCalibrated = true;
       await tester.pumpWidget(
         _app(const RelationshipLearningPage(source: 'journey'), repository),
@@ -149,6 +140,7 @@ void main() {
   test('parses the overview and drops malformed parts', () {
     final overview = RelationshipLearningParser.parseOverview({
       'overallProgress': 1.7,
+      'totals': {'thisMonth': 30, 'total': 120, 'completedDays': 12},
       'categories': [
         {
           'key': 'humor',
@@ -162,41 +154,46 @@ void main() {
       ],
       'highlights': [
         {
-          'questionId': 'rl_pace',
+          'questionId': 'relationship_pace_v1',
           'category': 'relationship',
           'text': {'tr': 'x', 'en': 'y'},
         },
-        {'questionId': 'rl_bad'},
+        {'questionId': 'relationship_bad_v1'},
       ],
       'answered': [
         {
-          'id': 'rl_pace',
+          'id': 'relationship_pace_v1',
+          'version': 1,
           'prompt': {'tr': 'Soru?', 'en': 'Question?'},
           'options': [
             {
-              'id': 'a',
+              'id': 'fast',
               'label': {'tr': 'A', 'en': 'A'},
             },
             {
-              'id': 'b',
+              'id': 'slow',
               'label': {'tr': 'B', 'en': 'B'},
             },
           ],
-          'answerId': 'b',
+          'answerId': 'slow',
           'category': 'relationship',
           'answeredAtMs': 1_700_000_000_000,
         },
         {
-          'id': 'rl_unanswered',
+          'id': 'relationship_unanswered_v1',
           'prompt': {'tr': 'x', 'en': 'x'},
           'options': <Object>[],
         },
       ],
     });
     expect(overview.overallProgress, 1.0, reason: 'clamped');
+    expect(overview.totals.thisMonth, 30);
+    expect(overview.totals.total, 120);
+    expect(overview.totals.completedDays, 12);
     expect(overview.categories.single.key, 'humor');
     expect(overview.highlights.single.textFor('tr'), 'x');
-    expect(overview.answered.single.question.answerId, 'b');
+    expect(overview.answered.single.question.answerId, 'slow');
+    expect(overview.answered.single.category, 'relationship');
     expect(overview.answered.single.answeredAt, isNotNull);
     expect(RelationshipLearningParser.parseOverview(null).categories, isEmpty);
   });

@@ -1,5 +1,7 @@
 import {createHash} from "node:crypto";
-import {isComparableLearningAnswer, learningTopicOf} from "./relationshipLearning/catalog.js";
+import {answerAgreement, isComparableLearningAnswer, learningQuestion, learningTopicOf} from "./relationshipLearning/catalog.js";
+import {confidentScore} from "./relationshipLearning/compare.js";
+import {EVIDENCE} from "./relationshipLearning/config.js";
 
 export type RelationshipAnswers = Record<string, string>;
 
@@ -196,14 +198,28 @@ export function scoreRelationshipCompatibility(
   }
   let shared = 0;
   let aligned = 0;
+  let agreementSum = 0;
+  let learningShared = 0;
   const topicHits = new Map<string, number>();
   for (const questionId of viewerKeys) {
-    const viewerAnswer = normalizeAnswerId(viewer[questionId]) ?? viewer[questionId];
     const otherRaw = candidate[questionId];
     if (otherRaw == null) continue;
-    const otherAnswer = normalizeAnswerId(otherRaw) ?? String(otherRaw);
+    let agreement: number;
+    if (learningQuestion(questionId)) {
+      // Daily relationship questions: each question's own rule
+      // (exact / distance / matrix), comparing the same versioned id only.
+      const value = answerAgreement(questionId, viewer[questionId], otherRaw);
+      if (value === null) continue;
+      agreement = value;
+      learningShared += 1;
+    } else {
+      const viewerAnswer = normalizeAnswerId(viewer[questionId]) ?? viewer[questionId];
+      const otherAnswer = normalizeAnswerId(otherRaw) ?? String(otherRaw);
+      agreement = otherAnswer === viewerAnswer ? 1 : 0;
+    }
     shared += 1;
-    if (otherAnswer === viewerAnswer) {
+    agreementSum += agreement;
+    if (agreement >= EVIDENCE.alignedAtLeast) {
       aligned += 1;
       const topic = QUESTION_TOPICS[questionId] ?? learningTopicOf(questionId);
       if (topic) {
@@ -218,8 +234,11 @@ export function scoreRelationshipCompatibility(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([topic]) => topic);
+  const raw = Math.max(0, Math.min(100, Math.round((agreementSum / shared) * 100)));
   return {
-    score: Math.max(0, Math.min(100, Math.round((aligned / shared) * 100))),
+    // With daily answers in the mix, the score is shrunk toward neutral until
+    // enough answers are shared: 10 shared answers are not 200.
+    score: learningShared > 0 ? confidentScore(raw, shared) : raw,
     sharedQuestionCount: shared,
     alignedCount: aligned,
     topTopics,

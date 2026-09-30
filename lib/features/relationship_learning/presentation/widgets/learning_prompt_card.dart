@@ -10,42 +10,30 @@ import 'package:mevora/shared/widgets/mevora_card.dart';
 import 'package:mevora/shared/widgets/mevora_meter.dart';
 
 /// Whether [summary] has anything to invite the member to right now.
-bool learningPromptVisible(LearningSummary summary) =>
-    summary.invitesInitial ||
-    (summary.initialCompleted && summary.progressiveDue);
+bool learningPromptVisible(LearningSummary summary) => summary.invitesToday;
 
-/// "Mevora seni biraz daha tanısın" — an optional invitation on the Picks
-/// screen. Existing members see it until they finish the initial questions;
-/// afterwards it appears only when a follow-up round is due, and "Not now"
-/// puts it away for days.
+/// "Bugünün soruları hazır" — today's set on the Picks screen, until it is
+/// answered or put away for today.
 class LearningPromptCard extends StatelessWidget {
   const LearningPromptCard({
     super.key,
     required this.summary,
     required this.onOpen,
-    this.onNotNow,
+    this.onSkipToday,
   });
 
   final LearningSummary summary;
   final VoidCallback onOpen;
 
-  /// Only offered for follow-up rounds.
-  final VoidCallback? onNotNow;
+  /// "Bugünlük geç"; hidden when today's set cannot be skipped.
+  final VoidCallback? onSkipToday;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final initial = !summary.initialCompleted;
-    final resuming = initial && summary.initialAnswered > 0;
-    final body = initial
-        ? resuming
-              ? l10n.learningCardInitialResume(
-                  summary.initialAnswered,
-                  summary.initialTotal,
-                )
-              : l10n.learningCardInitialStart(summary.initialTotal)
-        : l10n.learningCardFollowUp(summary.followUpSize);
+    final today = summary.today;
+    final resuming = today.started;
     return MevoraCard(
       key: const Key('learningPromptCard'),
       child: Column(
@@ -65,26 +53,28 @@ class LearningPromptCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            body,
+            resuming
+                ? l10n.learningCardTodayResume(today.answered, today.total)
+                : l10n.learningCardTodayStart(today.total),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: context.palette.textSecondary,
             ),
           ),
           if (resuming) ...[
             const SizedBox(height: AppSpacing.s12),
-            MevoraMeter(value: summary.initialAnswered / summary.initialTotal),
+            MevoraMeter(value: today.answered / today.total),
           ],
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
-              if (!initial && onNotNow != null) ...[
+              if (onSkipToday != null && today.canSkip) ...[
                 Expanded(
                   child: MevoraButton(
-                    key: const Key('learningNotNowButton'),
-                    label: l10n.learningCardNotNow,
+                    key: const Key('learningSkipTodayCardButton'),
+                    label: l10n.learningSkipToday,
                     variant: MevoraButtonVariant.ghost,
                     size: MevoraButtonSize.small,
-                    onPressed: onNotNow,
+                    onPressed: onSkipToday,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s12),
@@ -120,7 +110,8 @@ class LearningGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final resuming = summary.initialAnswered > 0;
+    final today = summary.today;
+    final resuming = today.started;
     return Padding(
       key: const Key('learningGate'),
       padding: const EdgeInsets.all(AppSpacing.screenPadding),
@@ -136,7 +127,7 @@ class LearningGate extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s12),
           Text(
-            l10n.learningRequiredBody(summary.initialTotal),
+            l10n.learningRequiredBody(today.total),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: context.palette.textSecondary,
@@ -145,14 +136,11 @@ class LearningGate extends StatelessWidget {
           if (resuming) ...[
             const SizedBox(height: AppSpacing.lg),
             Text(
-              l10n.learningProgress(
-                summary.initialAnswered,
-                summary.initialTotal,
-              ),
+              l10n.learningProgress(today.answered, today.total),
               style: theme.textTheme.labelLarge,
             ),
             const SizedBox(height: AppSpacing.sm),
-            MevoraMeter(value: summary.initialAnswered / summary.initialTotal),
+            MevoraMeter(value: today.answered / today.total),
           ],
           const SizedBox(height: AppSpacing.xl),
           MevoraButton(

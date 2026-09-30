@@ -34,17 +34,16 @@
   "picksMatchScore": "Mevora uyumu %{score}",
   "picksEmptyDoneMessage": "Mevora yarın senin için yeni kişiler seçecek.",
   "picksEmptyNoCandidatesMessage": "Sana rastgele profiller göstermek yerine yarın yeniden bakacağız.",
-  "learningCardTitle": "Mevora seni biraz daha tanısın",
-  "learningCardInitialStart": "{total} kısa soru, sana daha uygun kişileri seçmemize yardım eder.",
-  "learningCardInitialResume": "{answered} / {total} tamamlandı. Kaldığın yerden devam et.",
-  "learningCardFollowUp": "{count} kısa soruyla önerilerini geliştirebilirsin.",
+  "learningCardTitle": "Bugünün soruları hazır",
+  "learningCardTodayStart": "Bugünün {total} kısa sorusu, sana daha uygun kişileri seçmemize yardımcı olacak.",
+  "learningCardTodayResume": "{answered} / {total} tamamlandı. Kaldığın yerden devam et.",
   "learningCardStart": "Başla",
   "learningCardResume": "Devam et",
-  "learningCardNotNow": "Şimdi değil",
+  "learningSkipToday": "Bugünlük geç",
   "learningRequiredTitle": "Önce seni biraz tanıyalım",
   "learningRequiredBody": "Bugünkü seçimlerini cevaplarına göre hazırlayacağız. {total} kısa soru, yaklaşık iki dakika.",
-  "learningIntroTitle": "Mevora seni biraz daha tanısın",
-  "learningIntroBody": "Verdiğin cevapları sana daha uygun insanları seçebilmek için kullanıyoruz.",
+  "learningIntroTitle": "Mevora seni her gün biraz daha tanısın",
+  "learningIntroBody": "Bugünün {count} kısa sorusu, sana daha uygun kişileri seçmemize yardımcı olacak.",
   "learningIntroMeta": "{count} kısa soru · yaklaşık iki dakika",
   "learningIntroStart": "Başlayalım",
   "learningProgress": "{current} / {total}",
@@ -53,23 +52,23 @@
   "learningNext": "Sonraki",
   "learningSaveFailed": "Cevabın kaydedilemedi. Tekrar dene.",
   "learningLoadErrorTitle": "Sorular yüklenemedi.",
-  "learningDoneTitle": "Teşekkürler, seni biraz daha tanıdık.",
-  "learningDoneBody": "Bundan sonra senin için seçtiğimiz kişiler cevaplarına göre belirlenecek.",
+  "learningDoneTitle": "Bugünlük tamam.",
+  "learningDoneBody": "Mevora artık seni biraz daha iyi tanıyor.",
   "learningDoneContinue": "Devam et",
-  "learningFollowUpDoneTitle": "Teşekkürler!",
-  "learningFollowUpDoneBody": "Cevapların, önerilerini sana daha uygun hale getirecek.",
-  "learningNothingTitle": "Şimdilik yeni soru yok",
-  "learningNothingBody": "Yeni sorular hazır olduğunda burada göreceksin.",
+  "learningDoneTomorrow": "Yarın yeni sorular seni bekliyor.",
+  "learningSkippedTitle": "Tamam, yarın görüşürüz.",
+  "learningSkippedBody": "İstersen bugünün sorularını Profil'deki Mevora Beni Tanısın bölümünden yine cevaplayabilirsin.",
   "learningProfileTitle": "Mevora Beni Tanısın",
   "learningProfileSubtitle": "Cevapların, sana uygun kişileri seçmemize yardım eder.",
   "learningAfterHumorTitle": "Mizahını biraz tanıdık.",
-  "learningAfterHumorBody": "Şimdi ilişkide senin için nelerin önemli olduğunu öğrenelim.",
+  "learningAfterHumorBody": "Şimdi bugünün sorularıyla ilişkide senin için nelerin önemli olduğunu öğrenelim.",
   "learningDashboardHeadline": "Mevora seni ne kadar tanıyor?",
   "learningDashboardPercent": "%{percent}",
   "learningDashboardBody": "Cevapların ve profilin, sana daha uygun kişileri seçmemize yardım ediyor.",
-  "learningDashboardResumeInitial": "Kaldığın yerden devam et ({answered}/{total})",
-  "learningDashboardContinue": "{count, plural, =1{1 kısa soruyla devam et} other{{count} kısa soruyla devam et}}",
-  "learningDashboardAllAnswered": "Şimdilik bütün soruları cevapladın. Yenileri hazır olduğunda burada olacak.",
+  "learningDashboardThisMonth": "{count, plural, =0{Bu ay henüz soru cevaplamadın} =1{Bu ay 1 soru cevapladın} other{Bu ay {count} soru cevapladın}}",
+  "learningDashboardTotals": "Toplam {total} cevap · {days} gün tamamlandı",
+  "learningDashboardToday": "Bugünün soruları ({answered}/{total})",
+  "learningDashboardTodayDone": "Bugünlük tamam. Yarın yeni sorular gelecek.",
   "learningDashboardCategoriesTitle": "Uyum alanları",
   "learningDashboardHighlightsTitle": "Şimdiye kadar öğrendiklerimiz",
   "learningDashboardHighlightsSubtitle": "Kendi cevaplarından.",
@@ -1930,5 +1929,50 @@
   "sharedTraitExpectationsValue": "Birbirinizin beklentisine uyuyorsunuz",
   "sharedTraitRhythm": "Günlük ritim",
   "sharedTraitHobbies": "Hobiler",
-  "sharedTraitLanguages": "Diller"
+  "sharedTraitLanguages": "Diller",
+  "humorDailyTitle": "Bugünün Mizah Turu 🎭",
+  "humorDailyBody": "Her gün birkaç kısa video ile seni biraz daha iyi tanıyoruz.",
+  "humorDailySecondary": "Neye güldüğünü öğrendikçe Mevora seni daha iyi tanır.",
+  "humorDailyMeta": "{count} kısa video",
+  "@humorDailyMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyStart": "Başla",
+  "humorDailyResume": "Devam et · {answered}/{total}",
+  "@humorDailyResume": {
+    "placeholders": {
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyDone": "Bugünlük tamam ✓",
+  "humorDailyLater": "Sonra",
+  "humorDailyStartsTomorrow": "Günlük mizah turun yarın başlıyor.",
+  "humorDailyProgress": "{position}/{total}",
+  "@humorDailyProgress": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "humorDailyHintStart": "Bugünün mizah turuna başladık.",
+  "humorDailyHintMiddle": "Biraz daha tanıyoruz 👀",
+  "humorDailyHintEnd": "Son birkaç video.",
+  "humorDailyCompletedTitle": "Bugünlük tamam 🎭",
+  "humorDailyCompletedBody": "Mizah profilin biraz daha netleşti.",
+  "humorDailyNotReadyTitle": "Bugünün turu hazırlanıyor",
+  "humorDailyNotReadyBody": "Biraz sonra yeniden bakabilirsin.",
+  "humorDailyLockedBody": "Günlük mizah turu, mizah profilin hazır olduğunda başlar."
 }

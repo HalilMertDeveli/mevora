@@ -5,8 +5,10 @@ import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
+import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
+import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
 import 'package:mevora/features/humor/domain/services/humor_feed_policy.dart';
 
 /// Cloud Functions surface for Humor Lab.
@@ -137,6 +139,45 @@ class FunctionsHumorDataSource implements HumorDataSource {
     });
   }
 
+  @override
+  Future<HumorDailySet> getDailySet() async {
+    final data = await _backend.invoke('getDailyHumorSet', const {});
+    return HumorDailySet.fromMap(data);
+  }
+
+  @override
+  Future<HumorDailyProgress> submitDailyResponse({
+    required String dayId,
+    required String contentId,
+    required HumorRating rating,
+    int dwellMs = 0,
+    int replayCount = 0,
+  }) async {
+    final data = await _backend.invoke('submitDailyHumorResponse', {
+      'dayId': dayId,
+      'contentId': contentId,
+      'rating': rating.apiValue,
+      'dwellMs': dwellMs,
+      'replayCount': replayCount,
+    });
+    return HumorDailyProgress.fromMap(data);
+  }
+
+  @override
+  Future<HumorDailyProgress> skipDailyItem({
+    required String dayId,
+    required String contentId,
+  }) async {
+    // The only skip the daily tour has: media that could not be played.
+    final data = await _backend.invoke('submitDailyHumorResponse', {
+      'dayId': dayId,
+      'contentId': contentId,
+      'skipped': true,
+      'skipReason': HumorSkipReason.mediaFailed,
+    });
+    return HumorDailyProgress.fromMap(data);
+  }
+
   /// Missing or malformed calibration data degrades to "not started" rather
   /// than throwing: an older backend must not break the feed.
   HumorCalibration _parseCalibration(Object? raw) {
@@ -158,48 +199,7 @@ class FunctionsHumorDataSource implements HumorDataSource {
     );
   }
 
-  List<HumorContent> _parseItems(Object? raw) {
-    if (raw is! List) {
-      return const [];
-    }
-    final items = <HumorContent>[];
-    for (final item in raw) {
-      if (item is! Map) {
-        continue;
-      }
-      final map = Map<String, dynamic>.from(item);
-      final id = map['contentId'] as String?;
-      if (id == null || id.isEmpty) {
-        continue;
-      }
-      final media = map['media'] is Map
-          ? Map<String, dynamic>.from(map['media'] as Map)
-          : const <String, dynamic>{};
-      items.add(
-        HumorContent(
-          contentId: id,
-          type: HumorContent.parseType(map['type'] as String?),
-          language: (map['language'] as String?) ?? 'en',
-          category: HumorCategory.parse((map['category'] as String?) ?? 'meme'),
-          humorTags: firestoreStringList(map['humorTags']),
-          textBody: media['textBody'] as String?,
-          downloadUrl: media['downloadUrl'] as String?,
-          thumbUrl: media['thumbUrl'] as String?,
-          durationMs: media['durationMs'] == null
-              ? null
-              : firestoreInt(media['durationMs'], 0),
-          aspectRatio: media['aspectRatio'] == null
-              ? null
-              : _asDouble(media['aspectRatio']),
-          calibrationStage: map['calibrationStage'] == null
-              ? null
-              : HumorCalibration.parseStage(map['calibrationStage'] as String?),
-          attribution: HumorContentAttribution.tryParse(map['attribution']),
-        ),
-      );
-    }
-    return items;
-  }
+  List<HumorContent> _parseItems(Object? raw) => HumorContent.listFromFeed(raw);
 
   UserHumorProfile _parseProfile(Map<String, dynamic> data) {
     final topRaw = data['topVibes'];

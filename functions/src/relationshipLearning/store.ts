@@ -1,7 +1,7 @@
-import {FieldValue, type DocumentData, type Firestore} from "firebase-admin/firestore";
+import {FieldValue, type DocumentData, type Firestore, type Transaction} from "firebase-admin/firestore";
 import {isHumorCalibrationReady} from "../humor/compatibility.js";
 import {answersFromSummary} from "../relationshipCompatibility.js";
-import {LEARNING_CATALOG_VERSION, type LearningQuestion} from "./catalog.js";
+import {LEARNING_CATALOG_VERSION, learningQuestion, type LearningQuestion} from "./catalog.js";
 import {
   comparableAnswers,
   emptyLearningState,
@@ -10,24 +10,55 @@ import {
   type LearningState,
   type ProfileSignals,
 } from "./model.js";
+import {buildDailySet, parseDailySet, type DailySet} from "./schedule.js";
 
 /**
- * Firestore side of Relationship Learning.
+ * Firestore side of the daily relationship questions.
  *
- *   users/{uid}/relationshipLearning/state   answers, progress, rounds (server-only; owner may read)
- *   users/{uid}/relationshipMatch/summary    .learningAnswers — stance answers mirrored for the
- *                                            pair scorer, so scoring costs no extra read
+ *   relationshipDailySets/{dateKey}               the day's global set, written once by the
+ *                                                 first request of the day (clients: read-only)
+ *   users/{uid}/relationshipLearning/state        answers, today's progress (server-only; owner may read)
+ *   users/{uid}/relationshipDaily/{dateKey}       one record per completed day (server-only; owner may read)
+ *   users/{uid}/relationshipMatch/summary         .learningAnswers — comparable answers mirrored for
+ *                                                 the pair scorer, so scoring costs no extra read
  *
- * Every write goes through a callable; the client can never write either
- * document, so answers are validated and derived state cannot be forged.
+ * Every member write goes through a callable, so answers are validated and
+ * derived state cannot be forged.
  */
+
+export function dailySetPath(dateKey: string): string {
+  return `relationshipDailySets/${dateKey}`;
+}
 
 export function learningStatePath(uid: string): string {
   return `users/${uid}/relationshipLearning/state`;
 }
 
+export function dailyCompletionPath(uid: string, dateKey: string): string {
+  return `users/${uid}/relationshipDaily/${dateKey}`;
+}
+
 export function relationshipSummaryPath(uid: string): string {
   return `users/${uid}/relationshipMatch/summary`;
+}
+
+/**
+ * The global set for `dateKey`: read if it exists, otherwise built from the
+ * schedule and written in a transaction where the first writer wins. Every
+ * member asking that day therefore gets byte-identical question ids, versions
+ * and order, even if the question bank changes later in the day.
+ */
+export async function loadOrCreateDailySet(db: Firestore, dateKey: string): Promise<DailySet> {
+  const ref = db.doc(dailySetPath(dateKey));
+  const existing = parseDailySet((await ref.get()).data(), dateKey);
+  if (existing) return existing;
+  return db.runTransaction(async (tx) => {
+    const current = parseDailySet((await tx.get(ref)).data(), dateKey);
+    if (current) return current;
+    const set = buildDailySet(dateKey);
+    tx.set(ref, {...set, createdAt: FieldValue.serverTimestamp()});
+    return set;
+  });
 }
 
 export async function loadLearningState(db: Firestore, uid: string): Promise<LearningState> {
@@ -35,21 +66,43 @@ export async function loadLearningState(db: Firestore, uid: string): Promise<Lea
   return snap.exists ? parseLearningState(snap.data()) : emptyLearningState();
 }
 
-/** The learning-state document body, with a server timestamp. */
-export function learningStateWrite(state: LearningState): Record<string, unknown> {
-  return {
+/**
+ * Writes the whole state (not a merge): maps like today's progress must never
+ * keep keys from an earlier shape. `createdAt` is carried over.
+ */
+export function writeLearningState(
+  tx: Transaction,
+  db: Firestore,
+  uid: string,
+  state: LearningState,
+  existing: DocumentData | undefined,
+): void {
+  tx.set(db.doc(learningStatePath(uid)), {
     ...serializeLearningState(state),
     catalogVersion: LEARNING_CATALOG_VERSION,
+    createdAt: existing?.createdAt ?? FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
-  };
+  });
 }
 
-/** The summary mirror: replaces the whole map so a changed answer never lingers. */
-export function learningMirrorWrite(state: LearningState): Record<string, unknown> {
-  return {
-    learningAnswers: comparableAnswers(state),
-    learningUpdatedAt: FieldValue.serverTimestamp(),
-  };
+/**
+ * Replaces the comparable-answer mirror wholesale (update, not merge), so an
+ * answer to a retired question or version never lingers in pair scoring.
+ */
+export function writeLearningMirror(
+  tx: Transaction,
+  db: Firestore,
+  uid: string,
+  state: LearningState,
+  summaryExists: boolean,
+): void {
+  const ref = db.doc(relationshipSummaryPath(uid));
+  const fields = {learningAnswers: comparableAnswers(state), learningUpdatedAt: FieldValue.serverTimestamp()};
+  if (summaryExists) {
+    tx.update(ref, fields);
+  } else {
+    tx.set(ref, fields, {merge: true});
+  }
 }
 
 function hasText(value: unknown): boolean {
@@ -66,7 +119,7 @@ function hasLifestyle(data: DocumentData): boolean {
   return !!profile && Object.values(profile).some((value) => hasText(value));
 }
 
-/** What the member's existing profile already says, reused for confidence. */
+/** What the member's existing profile already says, reused for coverage. */
 export async function loadProfileSignals(db: Firestore, uid: string): Promise<ProfileSignals> {
   const [profile, summary, music, calibration] = await Promise.all([
     db.doc(`profiles/${uid}`).get(),
@@ -86,17 +139,16 @@ export async function loadProfileSignals(db: Firestore, uid: string): Promise<Pr
 }
 
 /**
- * Marks a member who just finished onboarding as someone whose daily Picks
- * wait for the initial questions. Create-only: it never touches a member who
- * already has state, and a failure leaves them unblocked rather than stuck.
+ * Marks a member who just finished onboarding as someone whose first Picks
+ * wait for their first completed daily set. Create-only: it never touches a
+ * member who already has state, and a failure leaves them unblocked.
  */
 export async function markLearningRequired(db: Firestore, uid: string): Promise<void> {
   const ref = db.doc(learningStatePath(uid));
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (snap.exists) return;
-    const state = {...emptyLearningState(), required: true};
-    tx.set(ref, {...learningStateWrite(state), createdAt: FieldValue.serverTimestamp()});
+    writeLearningState(tx, db, uid, {...emptyLearningState(), required: true}, undefined);
   });
 }
 
@@ -107,21 +159,34 @@ export async function markLearningRequired(db: Firestore, uid: string): Promise<
 export interface QuestionPayload {
   id: string;
   version: number;
-  kind: string;
+  answerType: string;
+  category: string;
   dimension: string;
   prompt: {tr: string; en: string};
   options: Array<{id: string; label: {tr: string; en: string}}>;
   answerId: string | null;
 }
 
-export function questionPayload(question: LearningQuestion, state: LearningState): QuestionPayload {
+/** A question as the client sees it, with the member's answer when `answered`. */
+export function questionPayload(question: LearningQuestion, answerId: string | null): QuestionPayload {
   return {
     id: question.id,
     version: question.version,
-    kind: question.kind,
+    answerType: question.answerType,
+    category: question.category,
     dimension: question.dimension,
     prompt: {...question.prompt},
     options: question.options.map((option) => ({id: option.id, label: {...option.label}})),
-    answerId: state.answers[question.id]?.answerId ?? null,
+    answerId,
   };
+}
+
+/** Today's set for the client, each question with today's answer (if any). */
+export function dailySetPayload(set: DailySet, state: LearningState): QuestionPayload[] {
+  return set.questions.map((ref) => {
+    const question = learningQuestion(ref.id) as LearningQuestion;
+    const answer = state.answers[ref.id];
+    const today = answer && answer.dateKey === set.dateKey && answer.version === ref.version;
+    return questionPayload(question, today ? answer.answerId : null);
+  });
 }

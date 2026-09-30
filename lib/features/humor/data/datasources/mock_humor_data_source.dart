@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:cloud_functions/cloud_functions.dart'
+    show FirebaseFunctionsException;
 import 'package:mevora/features/humor/data/datasources/humor_data_source.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
+import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 import 'package:mevora/features/humor/domain/services/humor_feed_policy.dart';
@@ -303,7 +306,8 @@ class MockHumorDataSource implements HumorDataSource {
     );
   }
 
-  int get _completedCalibration => _ratings.length > HumorCalibration.totalInteractions
+  int get _completedCalibration =>
+      _ratings.length > HumorCalibration.totalInteractions
       ? HumorCalibration.totalInteractions
       : _ratings.length;
 
@@ -519,5 +523,198 @@ class MockHumorDataSource implements HumorDataSource {
     if (!_ratings.containsKey(contentId)) {
       _passed.add(contentId);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Daily humor ("Bugünün Mizah Turu")
+  // ---------------------------------------------------------------------------
+
+  /// Items in a mock day, matching the server's set size.
+  static const dailySetSize = 10;
+
+  /// The canonical day. Defaults to today in Europe/Istanbul (UTC+3).
+  String dailyDayId = _istanbulDayId(DateTime.now());
+
+  /// Report `locked` / `starts_tomorrow` once calibration is complete, as the
+  /// server does on the day calibration finished.
+  var dailyStartsTomorrow = false;
+
+  /// Report `not_ready` once calibration is complete.
+  var dailyNotReady = false;
+
+  /// Make every daily call fail as a network error would.
+  var failDaily = false;
+
+  /// When set, daily submissions wait for it — holds one in flight.
+  Completer<void>? dailyGate;
+  var dailySetCalls = 0;
+  var dailySubmitCalls = 0;
+  var dailySkipCalls = 0;
+
+  String? _dailyItemsDay;
+  List<HumorContent> _dailyItems = const [];
+  final Map<int, HumorDailyAnswer> _dailyAnswers = {};
+
+  /// Answers recorded for today's set, by slot index.
+  Map<int, HumorDailyAnswer> get dailyAnswers =>
+      Map.unmodifiable(_dailyAnswers);
+
+  static String _istanbulDayId(DateTime now) {
+    final local = now.toUtc().add(const Duration(hours: 3));
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)}';
+  }
+
+  /// Roll the canonical day over to [nextDayId]: a submission for the old
+  /// day is then refused with `day-closed`, and the next load starts fresh.
+  void closeDay(String nextDayId) {
+    dailyDayId = nextDayId;
+  }
+
+  /// Answer the first [count] slots of today's set, as another session.
+  void seedDailyProgress(int count) {
+    final items = _ensureDailyItems();
+    for (var i = 0; i < count && i < items.length; i += 1) {
+      _dailyAnswers[i] = HumorDailyAnswer(
+        index: i,
+        contentId: items[i].contentId,
+        rating: HumorRating.funny,
+      );
+    }
+  }
+
+  /// Today's fixed order: content the user has not seen first, then the rest
+  /// of the catalog. Frozen per day, like the server's set.
+  List<HumorContent> _ensureDailyItems() {
+    if (_dailyItemsDay != dailyDayId) {
+      _dailyItemsDay = dailyDayId;
+      _dailyAnswers.clear();
+      final fresh = _items.where((item) => !_interacted(item.contentId));
+      final seen = _items.where((item) => _interacted(item.contentId));
+      _dailyItems = [...fresh, ...seen].take(dailySetSize).toList();
+    }
+    return _dailyItems;
+  }
+
+  int get _dailyNextIndex {
+    for (var i = 0; i < _dailyItems.length; i += 1) {
+      if (!_dailyAnswers.containsKey(i)) {
+        return i;
+      }
+    }
+    return _dailyItems.length;
+  }
+
+  @override
+  Future<HumorDailySet> getDailySet() async {
+    dailySetCalls += 1;
+    if (failDaily) {
+      throw StateError('mock-daily-failed');
+    }
+    if (!calibration.complete) {
+      return HumorDailySet(
+        status: HumorDailyStatus.locked,
+        lockedReason: HumorDailyLockedReason.calibrationIncomplete,
+        dayId: dailyDayId,
+      );
+    }
+    if (dailyStartsTomorrow) {
+      return HumorDailySet(
+        status: HumorDailyStatus.locked,
+        lockedReason: HumorDailyLockedReason.startsTomorrow,
+        dayId: dailyDayId,
+      );
+    }
+    final items = _ensureDailyItems();
+    if (dailyNotReady || items.isEmpty) {
+      return HumorDailySet(
+        status: HumorDailyStatus.notReady,
+        dayId: dailyDayId,
+      );
+    }
+    final answered = _dailyAnswers.length;
+    final entries = _dailyAnswers.keys.toList()..sort();
+    return HumorDailySet(
+      status: HumorDailyStatus.ready,
+      dayId: dailyDayId,
+      total: items.length,
+      answeredCount: answered,
+      completed: answered >= items.length,
+      nextIndex: _dailyNextIndex,
+      items: List.unmodifiable(items),
+      answers: [for (final index in entries) _dailyAnswers[index]!],
+    );
+  }
+
+  @override
+  Future<HumorDailyProgress> submitDailyResponse({
+    required String dayId,
+    required String contentId,
+    required HumorRating rating,
+    int dwellMs = 0,
+    int replayCount = 0,
+  }) async {
+    dailySubmitCalls += 1;
+    return _answerDaily(dayId, contentId, rating: rating);
+  }
+
+  @override
+  Future<HumorDailyProgress> skipDailyItem({
+    required String dayId,
+    required String contentId,
+  }) async {
+    dailySkipCalls += 1;
+    return _answerDaily(dayId, contentId, skipped: true);
+  }
+
+  /// Mirrors the server: idempotent per slot, refused once the day closed.
+  Future<HumorDailyProgress> _answerDaily(
+    String dayId,
+    String contentId, {
+    HumorRating? rating,
+    bool skipped = false,
+  }) async {
+    await dailyGate?.future;
+    if (failDaily) {
+      throw StateError('mock-daily-failed');
+    }
+    if (!calibration.complete) {
+      throw FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: 'not-eligible',
+      );
+    }
+    if (dayId != dailyDayId) {
+      throw FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: 'day-closed',
+      );
+    }
+    final items = _ensureDailyItems();
+    final index = items.indexWhere((item) => item.contentId == contentId);
+    if (index < 0) {
+      throw FirebaseFunctionsException(
+        code: 'not-found',
+        message: 'content-unavailable',
+      );
+    }
+    final already = _dailyAnswers.containsKey(index);
+    if (!already) {
+      _dailyAnswers[index] = HumorDailyAnswer(
+        index: index,
+        contentId: contentId,
+        rating: rating,
+        skipped: skipped,
+      );
+    }
+    final answered = _dailyAnswers.length;
+    return HumorDailyProgress(
+      dayId: dailyDayId,
+      total: items.length,
+      answeredCount: answered,
+      completed: answered >= items.length,
+      nextIndex: _dailyNextIndex,
+      alreadyAnswered: already,
+    );
   }
 }

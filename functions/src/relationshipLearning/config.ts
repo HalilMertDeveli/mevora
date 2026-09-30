@@ -1,38 +1,52 @@
 /**
- * Relationship Learning — every tunable number in one place.
+ * Relationship questions — every tunable number in one place.
  *
- * Nothing here runs on a clock. Follow-up questions become available after a
- * quiet period measured from the member's own last answers, and are only
- * ever offered when the member opens the app; there is no scheduler, no
- * push and no hourly anything.
+ * Nothing here runs on a clock. The daily set is chosen when the first member
+ * of the day asks for it; there is no scheduler, no push and no hourly
+ * anything.
  */
 
-const DAY_MS = 86_400_000;
+export const LEARNING_STATE_SCHEMA_VERSION = 2;
 
-export const LEARNING_STATE_SCHEMA_VERSION = 1;
-
-export const PROGRESSIVE = {
-  /** Questions per follow-up round ("3 kısa soru"). */
-  batchSize: 3,
-  /** The first follow-up round waits this long after the initial set. */
-  firstDelayMs: DAY_MS,
-  /** A finished round is followed by at least this much quiet. */
-  intervalMs: 3 * DAY_MS,
-  /** "Not now" hides the prompt for this long. The questions stay answerable. */
-  snoozeMs: 3 * DAY_MS,
+export const DAILY = {
+  /**
+   * The logical day: midnight at this UTC offset (Europe/Istanbul, no DST),
+   * decided on the SERVER clock — the same convention as daily Picks. A
+   * device clock or time zone can never move a member into another day.
+   */
+  utcOffsetMinutes: 180,
+  /** Day 0 of the rotation. Changing it reshuffles every future day. */
+  anchorDateKey: "2026-09-01",
+  /** Bump when the rotation rule changes; part of every questionSetId. */
+  scheduleVersion: 1,
 } as const;
 
 /**
- * Declared importance -> the member's declared weight for that dimension.
- * Inside the personalization band (0.70-1.30) with room to spare, so what the
- * member later shows through their connections can still move it.
+ * Declared importance (answer position 1..5) -> the member's declared weight
+ * for that dimension. Inside the personalization band (0.70-1.30) with room
+ * to spare, so what the member later shows through their connections can
+ * still move it.
  */
-export const DECLARED = {
-  importance: {high: 1.15, medium: 1.0, low: 0.88},
-  /** Each answer about a dimension adds this much declared confidence. */
-  confidencePerAnswer: 0.25,
-  /** Each existing profile signal for a dimension adds this much. */
-  confidencePerProfileSignal: 0.25,
+export const DECLARED_IMPORTANCE: Record<number, number> = {
+  1: 0.88,
+  2: 0.94,
+  3: 1.0,
+  4: 1.08,
+  5: 1.15,
+};
+
+/**
+ * Shared-answer evidence. A pair's question score is shrunk toward the
+ * neutral 50 until enough answers are shared:
+ *
+ *   score = 50 + (raw - 50) * shared / (shared + priorSharedAnswers)
+ *
+ * 10 shared answers keep two thirds of the signal, 100 keep 95%, 300 keep 98%.
+ */
+export const EVIDENCE = {
+  priorSharedAnswers: 5,
+  /** Agreement at or above this counts as an aligned view for explanations. */
+  alignedAtLeast: 0.75,
 } as const;
 
 /** Per-member write budget for answers: generous for real use, bounded for loops. */

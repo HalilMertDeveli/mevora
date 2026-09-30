@@ -1,5 +1,5 @@
 /**
- * Runs both humor emulator flows (calibration and feed pagination) against a
+ * Runs the humor emulator flows (calibration, feed pagination, daily set) against a
  * throwaway Firestore emulator:
  *
  *   npm --prefix functions run test:emulator:humor
@@ -28,7 +28,7 @@ const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
 
-const FLOWS = ["humorCalibrationFlow.cjs", "humorFeedPaginationFlow.cjs"];
+const FLOWS = ["humorCalibrationFlow.cjs", "humorFeedPaginationFlow.cjs", "humorDailyFlow.cjs"];
 const repoRoot = path.resolve(__dirname, "..", "..", "..");
 
 /** Only ever called on an emulator this script started itself. */

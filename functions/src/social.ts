@@ -634,6 +634,7 @@ export const sendMessageNotification = onDocumentCreated(
           : FcmTypes.newMessage,
       data: {matchId},
       prefKey: "messageNotifications",
+      idempotencyKey: `message_${matchId}_${event.params.messageId}`,
     });
   },
 );
@@ -652,6 +653,7 @@ export const sendMatchNotification = onDocumentCreated(
         type: FcmTypes.newMatch,
         data: {matchId: event.params.matchId},
         prefKey: "matchNotifications",
+        idempotencyKey: `newMatch_${event.params.matchId}`,
       });
     }
   },

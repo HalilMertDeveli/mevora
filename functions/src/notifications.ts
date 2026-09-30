@@ -2,6 +2,11 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getMessaging} from "firebase-admin/messaging";
 import {onDocumentWritten} from "firebase-functions/v2/firestore";
+import {
+  MAX_DEVICE_TOKENS_PER_COLLECTION,
+  isAlreadyExists,
+  pushNotificationId,
+} from "./pushIdempotency.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -79,8 +84,8 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
 
 export async function collectDeviceTokens(uid: string): Promise<string[]> {
   const [devices, legacy] = await Promise.all([
-    db.collection(`users/${uid}/devices`).get(),
-    db.collection(`users/${uid}/fcmTokens`).get(),
+    db.collection(`users/${uid}/devices`).limit(MAX_DEVICE_TOKENS_PER_COLLECTION).get(),
+    db.collection(`users/${uid}/fcmTokens`).limit(MAX_DEVICE_TOKENS_PER_COLLECTION).get(),
   ]);
   const tokens = new Set<string>();
   for (const doc of [...devices.docs, ...legacy.docs]) {
@@ -120,7 +125,7 @@ export async function sendUserPush(options: {
   const payload: Record<string, string> = {type: options.type, ...options.data};
 
 
-  await db.collection("notifications").add({
+  const record = {
     userId: options.uid,
     type: options.type,
     title,
@@ -130,7 +135,24 @@ export async function sendUserPush(options: {
     matchId: payload.matchId ?? null,
     callId: payload.callId ?? null,
     route: routeFor(options.type, payload),
-  });
+  };
+  if (options.idempotencyKey) {
+    // The deterministic id is the claim: a redelivered trigger or a retried
+    // call for the same event finds the record and sends no second push.
+    try {
+      await db
+        .collection("notifications")
+        .doc(pushNotificationId(options.uid, options.idempotencyKey))
+        .create(record);
+    } catch (error) {
+      if (isAlreadyExists(error)) {
+        return;
+      }
+      throw error;
+    }
+  } else {
+    await db.collection("notifications").add(record);
+  }
 
   const tokens = await collectDeviceTokens(options.uid);
   if (tokens.length === 0) {
@@ -185,6 +207,7 @@ export const sendCallNotification = onDocumentWritten(
         type: FcmTypes.incomingCall,
         data: {callId, matchId},
         prefKey: "callNotifications",
+        idempotencyKey: `incomingCall_${callId}`,
       });
     }
     if (after.status === "missed" && before?.status !== "missed") {
@@ -193,6 +216,7 @@ export const sendCallNotification = onDocumentWritten(
         type: FcmTypes.missedCall,
         data: {callId, matchId},
         prefKey: "callNotifications",
+        idempotencyKey: `missedCall_${callId}`,
       });
     }
   },

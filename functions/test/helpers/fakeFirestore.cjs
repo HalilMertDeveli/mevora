@@ -13,6 +13,8 @@
  *   only when the callback resolves (a throw leaves the store untouched);
  * - a JS Date is stored as a Timestamp, as the real SDK does;
  * - queries support ==, !=, in, array-contains and the range operators,
+ *   filters on the document id (FieldPath.documentId() / "__name__": ids for
+ *   a collection, full paths for a collection group, or references);
  *   several orderBy clauses (including "__name__"), startAfter by values or
  *   by a document snapshot (with the implicit document-name tie-break), and
  *   count() aggregation;
@@ -276,8 +278,13 @@ function createFakeFirestore(seed = {}) {
       let docs = [];
       for (const [docPath, data] of store.entries()) {
         if (!inScope(docPath)) continue;
-        const matches = filters.every(([field, op, value]) => {
-          const actual = fieldOf(data, field);
+        const matches = filters.every(([rawField, op, rawValue]) => {
+          // FieldPath.documentId() stringifies to "__name__".
+          const field = typeof rawField === "string" ? rawField : String(rawField);
+          const byId = field === "__name__";
+          const idOf = (v) => (typeof v === "string" ? v : isGroup ? v.path : v.id);
+          const actual = byId ? (isGroup ? docPath : segments(docPath).slice(-1)[0]) : fieldOf(data, field);
+          const value = byId ? (Array.isArray(rawValue) ? rawValue.map(idOf) : idOf(rawValue)) : rawValue;
           switch (op) {
           case "==": return equalValues(actual, value);
           case "!=": return actual !== undefined && !equalValues(actual, value);

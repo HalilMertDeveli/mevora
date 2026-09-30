@@ -112,8 +112,10 @@ class _CountingMatches implements MatchRepository {
   final MatchRepository _inner;
   int opened = 0;
 
+  // The optional limit keeps this override valid whether or not the
+  // repository interface declares it.
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) =>
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) =>
       _inner.watchMatches(uid);
 
   @override

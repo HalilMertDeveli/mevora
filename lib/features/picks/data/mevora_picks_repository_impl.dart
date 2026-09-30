@@ -75,7 +75,7 @@ abstract final class MevoraPicksParser {
       refreshAt: refreshAtMs is num
           ? DateTime.fromMillisecondsSinceEpoch(refreshAtMs.toInt())
           : null,
-      targetCount: firestoreInt(data['targetCount'], 6),
+      targetCount: firestoreInt(data['targetCount'], 10),
       picks: picks,
       learning: RelationshipLearningParser.summaryOrUnknown(data['learning']),
     );

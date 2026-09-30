@@ -186,12 +186,13 @@ function strong(uid, overall, extra = {}) {
 }
 
 describe("Pick set composition", () => {
-  it("6+ strong candidates → the target set of 6", () => {
-    const pool = Array.from({length: 9}, (_, i) => strong(`u${i}`, 90 - i));
-    const picks = composePicks(evaluatePool(pool), {targetCount: PICKS_CONFIG.targetCount});
-    assert.equal(picks.length, 6);
-    assert.deepEqual(picks.map((p) => p.rank), [0, 1, 2, 3, 4, 5]);
-    assert.equal(new Set(picks.map((p) => p.candidateUid)).size, 6);
+  it("more strong candidates than the target → exactly the target set", () => {
+    const target = PICKS_CONFIG.targetCount;
+    const pool = Array.from({length: target + 3}, (_, i) => strong(`u${i}`, 95 - i));
+    const picks = composePicks(evaluatePool(pool), {targetCount: target});
+    assert.equal(picks.length, target);
+    assert.deepEqual(picks.map((p) => p.rank), Array.from({length: target}, (_, i) => i));
+    assert.equal(new Set(picks.map((p) => p.candidateUid)).size, target);
   });
 
   it("3 strong candidates → 3 Picks; quality is never lowered to reach 6", () => {
@@ -307,6 +308,11 @@ describe("Pick set composition", () => {
 
 const DAY_MS = 86_400_000;
 
+/** Uids for a batch filled exactly to the configured target. */
+function fullBatchUids() {
+  return Array.from({length: PICKS_CONFIG.targetCount}, (_, i) => String.fromCharCode(97 + i));
+}
+
 function storedBatch(nowMs, uids = ["a", "b", "c"]) {
   const composed = uids.map((uid, rank) => ({
     candidateUid: uid,
@@ -390,7 +396,7 @@ describe("Pick lifecycle", () => {
   });
 
   it("tops up only with room, budget and after the scan interval", () => {
-    const full = storedBatch(now, ["a", "b", "c", "d", "e", "f"]);
+    const full = storedBatch(now, fullBatchUids());
     assert.equal(lifecycle.needsTopUp(full, now + PICKS_CONFIG.topUpMinIntervalMs), false);
     // A Pick that stopped being eligible frees its slot...
     const blocked = lifecycle.applyRevalidation(full, new Map([["a", "ineligible"]]), now).batch;
@@ -402,11 +408,11 @@ describe("Pick lifecycle", () => {
   });
 
   it("never refills a slot spent on a like, a pass or a match", () => {
-    let batch = storedBatch(now, ["a", "b", "c", "d", "e", "f"]);
+    let batch = storedBatch(now, fullBatchUids());
     batch = lifecycle.applyDecision(batch, "a", "passed", now).batch;
     batch = lifecycle.applyDecision(batch, "b", "liked", now).batch;
     batch = lifecycle.applyDecision(batch, "c", "matched", now).batch;
-    assert.equal(lifecycle.slotsUsed(batch), 6);
+    assert.equal(lifecycle.slotsUsed(batch), PICKS_CONFIG.targetCount);
     assert.equal(lifecycle.needsTopUp(batch, now + PICKS_CONFIG.topUpMinIntervalMs), false);
     assert.equal(lifecycle.topUpSlots(batch), 0);
   });
@@ -539,23 +545,18 @@ async function serve(nowMs) {
 }
 
 describe("Mevora Picks service", () => {
+  const TARGET = PICKS_CONFIG.targetCount;
+
   beforeEach(() => {
-    seedWorld([
-      ["c1", {}],
-      ["c2", {}],
-      ["c3", {}],
-      ["c4", {}],
-      ["c5", {}],
-      ["c6", {}],
-      ["c7", {}],
-      ["c8", {}],
-    ]);
+    // Two strong candidates more than one day's target.
+    seedWorld(Array.from({length: TARGET + 2}, (_, i) => [`c${i + 1}`, {}]));
   });
 
-  it("serves a curated batch of 6 with real reasons, and the same batch on reopen", async () => {
+  it("serves a curated batch of the daily target with real reasons, and the same batch on reopen", async () => {
     const first = await serve(Date.now());
     assert.equal(first.status, "ready");
-    assert.equal(first.picks.length, 6);
+    assert.equal(first.targetCount, TARGET);
+    assert.equal(first.picks.length, TARGET);
     for (const item of first.picks) {
       assert.ok(item.pick.pickType, "every Pick has a type");
       assert.ok(item.pick.reasons.length > 0, "every Pick has a reason");
@@ -565,7 +566,7 @@ describe("Mevora Picks service", () => {
     const again = await serve(Date.now());
     assert.equal(again.generationId, first.generationId);
     assert.deepEqual(again.picks.map((p) => p.uid), first.picks.map((p) => p.uid));
-    assert.deepEqual(db.read("pickFunnelDaily/" + new Date().toISOString().slice(0, 10)).delivered, 6);
+    assert.deepEqual(db.read("pickFunnelDaily/" + new Date().toISOString().slice(0, 10)).delivered, TARGET);
   });
 
   it("like and pass remove Picks; a passed person never comes back", async () => {
@@ -587,7 +588,7 @@ describe("Mevora Picks service", () => {
 
   it("deciding does not buy more people: today's set stays finite", async () => {
     const first = await serve(Date.now());
-    assert.equal(first.picks.length, 6);
+    assert.equal(first.picks.length, TARGET);
     assert.equal(first.dayKey, lifecycle.logicalDayKey(Date.now()));
     for (const item of first.picks.slice(0, 3)) {
       await db.doc(`users/${VIEWER}/passedUsers/${item.uid}`).set({toUserId: item.uid});
@@ -596,7 +597,7 @@ describe("Mevora Picks service", () => {
     // Well past the top-up interval, and two unused candidates remain in the pool.
     const later = await serve(Date.now() + PICKS_CONFIG.topUpMinIntervalMs + 1);
     assert.equal(later.generationId, first.generationId);
-    assert.equal(later.picks.length, 3);
+    assert.equal(later.picks.length, TARGET - 3);
     assert.deepEqual(later.picks.map((p) => p.uid), first.picks.slice(3).map((p) => p.uid));
   });
 
@@ -607,7 +608,7 @@ describe("Mevora Picks service", () => {
     const later = await serve(Date.now() + PICKS_CONFIG.topUpMinIntervalMs + 1);
     assert.equal(later.generationId, first.generationId);
     assert.equal(later.picks.some((p) => p.uid === blocked), false);
-    assert.equal(later.picks.length, 6);
+    assert.equal(later.picks.length, TARGET);
   });
 
   it("a blocked or deleted member disappears on the next request", async () => {

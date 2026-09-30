@@ -191,7 +191,7 @@ async function main() {
     const page = await mod.act(`/Cases/${underageCase}`, `/Cases/${underageCase}?handler=Resolve`, {
       outcome: "resolved", code: "action_taken", note: "Suspended pending age verification.",
     });
-    assert.match(flash(page.html), /resolved/);
+    assert.match(flash(page.html), /resolved/i);
     assert.equal((await db.doc("reports/qa_ts_report_3").get()).get("status"), "resolved");
   });
 
@@ -298,12 +298,12 @@ async function main() {
 
   await step("Staff management: super admin disables and re-enables a staff member", async () => {
     assert.equal((await superAdmin.login("super@mevora.test")).status, 302);
-    const off = await superAdmin.act("/Admin/Staff", "/Admin/Staff?handler=Disable", {targetUid: "qa_staff_support", reason: "Leaving the team"});
+    const off = await superAdmin.act("/Admin/Staff/qa_staff_support", "/Admin/Staff/qa_staff_support?handler=Disable", {reason: "Leaving the team"});
     assert.match(flash(off.html), /disabled/);
     // The disabled agent's live session is refused on the next request.
     const next = await support.get("/Support");
     assert.equal(next.status, 302);
-    await superAdmin.act("/Admin/Staff", "/Admin/Staff?handler=Enable", {targetUid: "qa_staff_support", reason: "Back"});
+    await superAdmin.act("/Admin/Staff/qa_staff_support", "/Admin/Staff/qa_staff_support?handler=Enable", {reason: "Back"});
     assert.equal((await db.doc("adminStaff/qa_staff_support").get()).get("status"), "active");
   });
 

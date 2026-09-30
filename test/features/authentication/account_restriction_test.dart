@@ -242,4 +242,43 @@ void main() {
       await profile.close();
     });
   });
+  group('cached account snapshots', () {
+    // Runtime QA: a member whose ban had just been lifted signed in, got the
+    // cached "banned" copy of their account first and was signed straight
+    // back out. A cached restriction is now held until the server answers.
+    test('a cached restriction is held back', () {
+      for (final account in <Map<String, dynamic>>[
+        {'accountStatus': 'banned'},
+        {'isBanned': true},
+        {'accountStatus': 'deleted'},
+        {'accountStatus': 'suspended'},
+        {'isActive': false},
+      ]) {
+        expect(
+          FirebaseUserDataSource.isCachedRestriction(account, fromCache: true),
+          isTrue,
+          reason: '$account',
+        );
+      }
+    });
+
+    test('server snapshots and active accounts always pass', () {
+      expect(
+        FirebaseUserDataSource.isCachedRestriction({
+          'accountStatus': 'banned',
+        }, fromCache: false),
+        isFalse,
+      );
+      expect(
+        FirebaseUserDataSource.isCachedRestriction({
+          'accountStatus': 'active',
+        }, fromCache: true),
+        isFalse,
+      );
+      expect(
+        FirebaseUserDataSource.isCachedRestriction(null, fromCache: true),
+        isFalse,
+      );
+    });
+  });
 }

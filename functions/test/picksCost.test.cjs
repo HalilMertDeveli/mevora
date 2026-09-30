@@ -264,6 +264,48 @@ describe("Boost is looked up for the people on the page, not for everyone", () =
   });
 });
 
+describe("a scan narrows each page cheapest-first", () => {
+  beforeEach(() => db.reset({}));
+
+  it("people the profile alone rules out, or who are out of range, cost no further reads", async (t) => {
+    const here = {latitude: 41.0082, longitude: 28.9784};
+    const farAway = {latitude: -34.6037, longitude: -58.3816};
+    seedWorld({candidates: PICKS_DAILY_TARGET + 2});
+    await db.doc(`userLocation/${VIEWER}`).set(here);
+    await db.doc(`userPreferences/${VIEWER}`).set({minAge: 18, maxAge: 40});
+    const add = async (uid, overrides, location = here) => {
+      await db.doc(`users/${uid}`).set({uid});
+      await db.doc(`profiles/${uid}`).set(profile(uid, {updatedAt: 60_000, ...overrides}));
+      await db.doc(`userLocation/${uid}`).set(location);
+    };
+    for (let i = 0; i < PICKS_DAILY_TARGET + 2; i++) await db.doc(`userLocation/s${i}`).set(here);
+    for (let i = 0; i < 10; i++) await add(`w${i}`, {gender: "woman", interestedIn: "men"});
+    for (let i = 0; i < 5; i++) await add(`o${i}`, {age: 61});
+    for (let i = 0; i < 5; i++) await add(`f${i}`, {}, farAway);
+    db.resetStats();
+    await awayFromDayBoundary();
+    const result = await callAs(getMevoraPicks, VIEWER);
+    assert.equal(result.picks.length, PICKS_DAILY_TARGET);
+    assert.ok(result.picks.every((item) => item.uid.startsWith("s")));
+    const read = db.stats().byPath;
+    const touched = (uid) => [...read.keys()].filter((path) =>
+      path !== `profiles/${uid}` && (path.endsWith(`/${uid}`) || path.startsWith(`users/${uid}/`)));
+    for (const uid of ["w0", "w9", "o0", "o4"]) {
+      assert.deepEqual(touched(uid), [], `${uid} is ruled out by its profile alone`);
+    }
+    for (const uid of ["f0", "f4"]) {
+      // Account, preferences and location were needed to rule them out; the
+      // pair lookups and summaries after the distance gate were not.
+      assert.deepEqual(
+        touched(uid).sort(),
+        [`userLocation/${uid}`, `userPreferences/${uid}`, `users/${uid}`].sort(),
+        `${uid} stops at the distance gate`,
+      );
+    }
+    t.diagnostic(`mixed page (12 eligible, 10 wrong gender, 5 too old, 5 too far): ${db.stats().reads} reads`);
+  });
+});
+
 describe("pair-targeted exclusions keep the pool exact", () => {
   beforeEach(() => db.reset({}));
 

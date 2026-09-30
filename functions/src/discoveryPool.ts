@@ -1,5 +1,5 @@
-import type {DocumentData, Firestore} from "firebase-admin/firestore";
-import {blockId} from "./ids.js";
+import {FieldPath, type DocumentData, type Firestore} from "firebase-admin/firestore";
+import {blockId, canonicalMatchId, likeId} from "./ids.js";
 import {coarseDistanceLabel} from "./geo/coarseDistance.js";
 import {discoveryProfileProjection, resolveProfileAge} from "./profileSafety.js";
 import {
@@ -130,6 +130,13 @@ export interface DiscoveryViewerContext {
   matchedUids: Set<string>;
   blocked: Set<string>;
   boosted: Set<string>;
+  /**
+   * False for a viewer loaded without their decision history (see
+   * loadDiscoveryViewerBasics): `seen`, `likedUids`, `passedUids`,
+   * `matchedUids`, `blocked` and `boosted` are then empty, and a caller that
+   * needs them for specific people must look those pairs up.
+   */
+  historyLoaded?: boolean;
 }
 
 export type DiscoveryPoolBuckets = Record<DiscoveryDistanceTier, Array<Record<string, unknown>>>;
@@ -156,26 +163,121 @@ export function hasLocation(origin: DocumentData | undefined): boolean {
 }
 
 /**
- * The viewer-side reads every pool request makes, in one round trip: who the
- * viewer is, what they want, where they are, and everyone already excluded
- * for them (liked, passed, matched, blocked either way).
+ * The viewer-side reads whose cost does not grow with how long someone has
+ * used Mevora: who the viewer is, what they want, where they are, which
+ * language. Enough to revalidate and render a stored Picks batch; the
+ * exclusion history is left empty (`historyLoaded: false`).
+ */
+export async function loadDiscoveryViewerBasics(
+  db: Firestore,
+  uid: string,
+  callerAccount: DocumentData | undefined,
+): Promise<DiscoveryViewerContext> {
+  const [prefsSnap, viewerProfileSnap, locationSnap, lang] = await Promise.all([
+    db.doc(`userPreferences/${uid}`).get(),
+    db.doc(`profiles/${uid}`).get(),
+    db.doc(`userLocation/${uid}`).get(),
+    userLanguage(uid),
+  ]);
+  return {
+    uid,
+    callerAccount,
+    prefs: prefsSnap.data() ?? {},
+    viewerProfile: viewerProfileSnap.data() ?? {},
+    origin: locationSnap.data(),
+    lang,
+    seen: new Set([uid]),
+    likedUids: new Set(),
+    passedUids: new Set(),
+    matchedUids: new Set(),
+    blocked: new Set(),
+    boosted: new Set(),
+    historyLoaded: false,
+  };
+}
+
+/**
+ * The viewer's decisions about specific people, looked up pair by pair
+ * instead of by reading the whole history: one document-id query per 30
+ * candidates against each of likes, passedUsers and matches. Billed per
+ * document that exists (at least one read per query), so the cost follows
+ * the candidates asked about, not how many people the viewer ever decided on.
+ */
+export async function loadPairDecisions(
+  db: Firestore,
+  viewerUid: string,
+  candidateUids: readonly string[],
+): Promise<{liked: Set<string>; passed: Set<string>; matched: Set<string>}> {
+  const liked = new Set<string>();
+  const passed = new Set<string>();
+  const matched = new Set<string>();
+  const unique = [...new Set(candidateUids.filter((id) => id && id !== viewerUid))];
+  for (let i = 0; i < unique.length; i += 30) {
+    const chunk = unique.slice(i, i + 30);
+    const [likes, passes, matches] = await Promise.all([
+      db.collection("likes")
+        .where(FieldPath.documentId(), "in", chunk.map((uid) => likeId(viewerUid, uid)))
+        .get(),
+      db.collection(`users/${viewerUid}/passedUsers`)
+        .where(FieldPath.documentId(), "in", chunk)
+        .get(),
+      db.collection("matches")
+        .where(FieldPath.documentId(), "in", chunk.map((uid) => canonicalMatchId(viewerUid, uid)))
+        .get(),
+    ]);
+    for (const doc of likes.docs) {
+      const target = String(doc.get("toUserId") ?? "");
+      if (!target) continue;
+      // A like document with action "pass" is a pass, whatever its collection.
+      if (doc.get("action") === "pass") passed.add(target);
+      else liked.add(target);
+    }
+    for (const doc of passes.docs) passed.add(doc.id);
+    for (const doc of matches.docs) {
+      if (doc.get("isActive") !== true) continue;
+      for (const other of (doc.get("userIds") as string[]) ?? []) {
+        if (other && other !== viewerUid) matched.add(other);
+      }
+    }
+  }
+  return {liked, passed, matched};
+}
+
+/** A basics-only viewer, with the decisions about these specific people filled in. */
+export function withPairDecisions(
+  viewer: DiscoveryViewerContext,
+  decisions: {liked: Set<string>; passed: Set<string>; matched: Set<string>},
+): DiscoveryViewerContext {
+  const union = (a: Set<string>, b: Set<string>) => new Set([...a, ...b]);
+  return {
+    ...viewer,
+    seen: union(viewer.seen, union(decisions.liked, union(decisions.passed, decisions.matched))),
+    likedUids: union(viewer.likedUids, decisions.liked),
+    passedUids: union(viewer.passedUids, decisions.passed),
+    matchedUids: union(viewer.matchedUids, decisions.matched),
+  };
+}
+
+/**
+ * The viewer-side reads a pool scan needs, in one round trip: who the viewer
+ * is, what they want, where they are, and everyone already excluded for them
+ * (liked, passed, matched, blocked either way). Pass `basics` when they were
+ * already loaded for this request, so they are not read twice.
  */
 export async function loadDiscoveryViewerContext(
   db: Firestore,
   uid: string,
   callerAccount: DocumentData | undefined,
+  basics?: DiscoveryViewerContext,
 ): Promise<{viewer: DiscoveryViewerContext; boostSessions: Map<string, BoostSession>}> {
-  const [prefsSnap, viewerProfileSnap, locationSnap, blocked, likesSnap, passedSnap, boostSessions, activeMatches, lang] =
+  const [base, blocked, likesSnap, passedSnap, boostSessions, activeMatches] =
     await Promise.all([
-      db.doc(`userPreferences/${uid}`).get(),
-      db.doc(`profiles/${uid}`).get(),
-      db.doc(`userLocation/${uid}`).get(),
+      basics ? Promise.resolve(basics) : loadDiscoveryViewerBasics(db, uid, callerAccount),
       loadBlockedUserIds(db, uid),
       db.collection("likes").where("fromUserId", "==", uid).get(),
       db.collection(`users/${uid}/passedUsers`).get(),
       loadActiveBoostSessions(db),
       loadActiveMatchPartnerIds(db, uid),
-      userLanguage(uid),
     ]);
   const seen = new Set(likesSnap.docs.map((doc) => String(doc.get("toUserId") ?? "")));
   for (const doc of passedSnap.docs) seen.add(doc.id);
@@ -192,12 +294,7 @@ export async function loadDiscoveryViewerContext(
   }
   return {
     viewer: {
-      uid,
-      callerAccount,
-      prefs: prefsSnap.data() ?? {},
-      viewerProfile: viewerProfileSnap.data() ?? {},
-      origin: locationSnap.data(),
-      lang,
+      ...base,
       seen,
       likedUids,
       passedUids,
@@ -205,6 +302,7 @@ export async function loadDiscoveryViewerContext(
       blocked,
       // Ranking needs only the uids; measurement needs the sessions behind them.
       boosted: new Set(boostSessions.keys()),
+      historyLoaded: true,
     },
     boostSessions,
   };

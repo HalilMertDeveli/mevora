@@ -2,7 +2,7 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {isAccountEligible} from "../profileSafety.js";
-import {loadDiscoveryViewerContext} from "../discoveryPool.js";
+import {loadDiscoveryViewerBasics, loadDiscoveryViewerContext} from "../discoveryPool.js";
 import {isLearningBlockingPicks, learningSummary} from "../relationshipLearning/model.js";
 import {learningDayKey} from "../relationshipLearning/schedule.js";
 import {loadLearningState} from "../relationshipLearning/store.js";
@@ -20,9 +20,10 @@ const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
  * Mevora Picks for the signed-in member.
  *
  * Cost is bounded by the batch lifecycle rather than a request quota: a pool
- * scan happens only when a batch is generated (at most once per batch TTL) or
- * topped up (at most once per `topUpMinIntervalMs`). Every other call only
- * revalidates the handful of Picks already chosen.
+ * scan happens only when a batch is generated (once per member per day) or a
+ * Pick that became ineligible is replaced. Every other call reads the stored
+ * batch and revalidates only the handful of Picks still active in it — its
+ * cost does not grow with the member's history.
  *
  * Ranking, categories and reasons are computed here and nowhere else; the
  * client renders what it receives and never sends a score.
@@ -47,12 +48,16 @@ export const getMevoraPicks = onCall(
       // the set is chosen from their answers, so it is not served without them.
       return {status: "empty", emptyReason: "learningRequired", picks: [], learning};
     }
-    const {viewer, boostSessions} = await loadDiscoveryViewerContext(db, uid, callerAccount.data());
+    // Only what does not grow with history is read up front. The full
+    // exclusion history and the live Boosts are loaded only when a pool scan
+    // runs (the day's generation, or a replacement) — never to reopen today.
+    const viewer = await loadDiscoveryViewerBasics(db, uid, callerAccount.data());
     if (viewer.prefs.discoveryEnabled === false) {
-      // Same switch that empties Discover: a member who turned discovery off
-      // is not shown to anyone, and is not shown anyone either.
+      // A member who turned discovery off is not shown to anyone, and is not
+      // shown anyone either.
       return {status: "empty", emptyReason: "discoveryDisabled", picks: [], learning};
     }
-    return {...(await servePicks({db, viewer, boostSessions, nowMs})), learning};
+    const loadFullViewer = () => loadDiscoveryViewerContext(db, uid, callerAccount.data(), viewer);
+    return {...(await servePicks({db, viewer, loadFullViewer, nowMs})), learning};
   },
 );

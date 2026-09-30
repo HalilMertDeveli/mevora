@@ -113,13 +113,88 @@ describe(`Picks cost per open (target ${PICKS_DAILY_TARGET})`, () => {
     assert.ok(large.reopen.reads >= small.reopen.reads);
   });
 
-  it(
-    "reopen cost does not grow with the member's history or with Boosts elsewhere",
-    {todo: "removed by perf/picks-live-batch-fast-path"},
-    async () => {
-      const small = await measure({history: 0});
-      const large = await measure({history: 300, boosts: 50});
-      assert.equal(large.reopen.reads, small.reopen.reads);
-    },
-  );
+  it("reopen cost does not grow with the member's history or with Boosts elsewhere", async () => {
+    const small = await measure({history: 0});
+    const large = await measure({history: 300, boosts: 50});
+    assert.equal(large.reopen.reads, small.reopen.reads);
+  });
+
+  it("a reopen reads neither the decision history nor the global Boost list", async () => {
+    seedWorld({candidates: 3 * PICKS_DAILY_TARGET, history: 50, boosts: 5});
+    await awayFromDayBoundary();
+    await callAs(getMevoraPicks, VIEWER);
+    db.resetStats();
+    await callAs(getMevoraPicks, VIEWER);
+    const queries = db.stats().queries;
+    assert.equal(queries.some((query) => query.group && query.path === "boosts"), false, "no Boost scan");
+    assert.equal(queries.some((query) => query.path === "profiles"), false, "no pool scan");
+    // Only the pair lookups for today's Picks: none of them returns history.
+    const historyDocs = queries
+      .filter((query) => query.path === "likes" || query.path.endsWith("/passedUsers"))
+      .reduce((sum, query) => sum + query.docs, 0);
+    assert.equal(historyDocs, 0);
+  });
+});
+
+describe("the fast path stays exact", () => {
+  beforeEach(() => db.reset({}));
+
+  async function openTwice(mutate) {
+    seedWorld({candidates: 3 * PICKS_DAILY_TARGET});
+    await awayFromDayBoundary();
+    const first = await callAs(getMevoraPicks, VIEWER);
+    const uids = first.picks.map((item) => item.uid);
+    await mutate(uids);
+    const again = await callAs(getMevoraPicks, VIEWER);
+    return {first, again, uids, againUids: again.picks.map((item) => item.uid)};
+  }
+
+  it("a decision stored canonically but never mirrored into the batch still hides the Pick", async () => {
+    // recordPickDecision is best effort; the canonical like/pass/match is the truth.
+    const {again, uids, againUids} = await openTwice(async ([liked, passed, matched, passAsLike]) => {
+      await db.doc(`likes/${VIEWER}_${liked}`).set({fromUserId: VIEWER, toUserId: liked, action: "like"});
+      await db.doc(`users/${VIEWER}/passedUsers/${passed}`).set({toUserId: passed});
+      await db.doc(`matches/${[VIEWER, matched].sort().join("_")}`)
+        .set({userIds: [VIEWER, matched].sort(), isActive: true});
+      await db.doc(`likes/${VIEWER}_${passAsLike}`)
+        .set({fromUserId: VIEWER, toUserId: passAsLike, action: "pass"});
+    });
+    assert.deepEqual(againUids, uids.slice(4));
+    const states = Object.fromEntries(
+      lifecycle.parseBatch(db.read(`users/${VIEWER}/mevoraPicks/current`)).picks
+        .map((pick) => [pick.candidateUid, pick.state]),
+    );
+    assert.equal(states[uids[0]], "liked");
+    assert.equal(states[uids[1]], "passed");
+    assert.equal(states[uids[2]], "matched");
+    assert.equal(states[uids[3]], "passed");
+    assert.equal(again.picks.length, PICKS_DAILY_TARGET - 4);
+  });
+
+  it("an ended match does not count as a decision", async () => {
+    const {againUids, uids} = await openTwice(async ([ended]) => {
+      await db.doc(`matches/${[VIEWER, ended].sort().join("_")}`)
+        .set({userIds: [VIEWER, ended].sort(), isActive: false});
+    });
+    assert.deepEqual(againUids, uids);
+  });
+
+  it("a block from either side, in any of its four records, hides the Pick on the next open", async () => {
+    const {againUids, uids} = await openTwice(async ([a, b, c, d]) => {
+      await db.doc(`blocks/${VIEWER}_${a}`).set({blockerId: VIEWER, blockedUserId: a});
+      await db.doc(`blocks/${b}_${VIEWER}`).set({blockerId: b, blockedUserId: VIEWER});
+      await db.doc(`users/${VIEWER}/blockedUsers/${c}`).set({blockedUserId: c});
+      await db.doc(`users/${d}/blockedUsers/${VIEWER}`).set({blockedUserId: VIEWER});
+    });
+    assert.deepEqual(againUids, uids.slice(4));
+  });
+
+  it("a suspended, hidden or deleted member disappears on the next open", async () => {
+    const {againUids, uids} = await openTwice(async ([suspended, hidden, deleted]) => {
+      await db.doc(`users/${suspended}`).set({uid: suspended, isSuspended: true});
+      await db.doc(`profiles/${hidden}`).set({isDiscoverable: false}, {merge: true});
+      await db.doc(`profiles/${deleted}`).delete();
+    });
+    assert.deepEqual(againUids, uids.slice(3));
+  });
 });

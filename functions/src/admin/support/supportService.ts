@@ -1,5 +1,6 @@
 import {randomBytes} from "node:crypto";
 import {FieldValue, type DocumentData} from "firebase-admin/firestore";
+import {logger} from "firebase-functions";
 import {ACTION_COLLECTION, buildActionRecord} from "../actions/actionTypes.js";
 import {appendAuditEvent, recordAuditEvent} from "../audit/auditService.js";
 import {STAFF_COLLECTION, parseStaffRecord, type AdminActor} from "../auth/adminAuthorization.js";
@@ -8,6 +9,7 @@ import type {AdminDeps} from "../deps.js";
 import {AdminError} from "../errors.js";
 import {cursorPart, decodeCursor, deterministicId, encodeCursor, iso} from "../validation.js";
 import {loadUserCards} from "../users/userCards.js";
+import {safeLogMeta} from "../../security/logHygiene.js";
 
 /**
  * Support operations over the existing `supportTickets` collection.
@@ -254,7 +256,9 @@ export async function replySupportTicket(
   const messageId = deterministicId("msg", actor.uid, input.ticketId, input.idempotencyKey);
   const ticketRef = db.doc(`supportTickets/${input.ticketId}`);
   const messageRef = ticketRef.collection("messages").doc(messageId);
-  return db.runTransaction(async (tx) => {
+  let notifyUid: string | null = null;
+  const result = await db.runTransaction(async (tx) => {
+    notifyUid = null;
     const [snap, existing] = await Promise.all([readTicket(tx, deps, input.ticketId), tx.get(messageRef)]);
     if (existing.exists) {
       return {ticketId: input.ticketId, messageId, replayed: true};
@@ -291,8 +295,23 @@ export async function replySupportTicket(
       requestId,
       metadata: {messageId, replyLength: input.text.length},
     }, nowMs);
+    // Only an app ticket's userId is the signed-in member; a website
+    // visitor typed theirs, so nobody is notified about it.
+    const data = snap.data() ?? {};
+    notifyUid = ticketUserVerified(data) ? String(data.userId) : null;
     return {ticketId: input.ticketId, messageId, replayed: false};
   });
+  // After commit, once per new reply. Best-effort: the reply is stored and
+  // visible in the app whether or not the push goes out.
+  const uid = notifyUid as string | null;
+  if (!result.replayed && uid && deps.notify) {
+    try {
+      await deps.notify({uid, type: "supportReply", data: {ticketId: input.ticketId}});
+    } catch (error) {
+      logger.warn("support reply notification failed", safeLogMeta({ticketId: input.ticketId, error: String(error)}));
+    }
+  }
+  return result;
 }
 
 export async function addSupportNote(

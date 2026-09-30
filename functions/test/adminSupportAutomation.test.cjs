@@ -113,6 +113,78 @@ describe("support tickets", () => {
   });
 });
 
+describe("support reply notification", () => {
+  function recordNotifications(w, {fail = false} = {}) {
+    const sent = [];
+    w.deps.notify = async (input) => {
+      sent.push(input);
+      if (fail) {
+        throw new Error("messaging unavailable");
+      }
+    };
+    return sent;
+  }
+
+  it("a new reply to an app ticket notifies the member once, after it is stored", async () => {
+    const w = await world();
+    const sent = [];
+    w.deps.notify = async (input) => {
+      // The reply is already committed when the push is asked for.
+      assert.equal(w.db.paths().filter((p) => p.startsWith("supportTickets/app1/messages/")).length, 1);
+      sent.push(input);
+    };
+    await w.run(specs.adminReplySupportTicketSpec, "support-1", {ticketId: "app1", text: "We are on it.", idempotencyKey: key()});
+    assert.deepEqual(sent, [{uid: "member-1", type: "supportReply", data: {ticketId: "app1"}}]);
+  });
+
+  it("a replayed reply does not notify again", async () => {
+    const w = await world();
+    const sent = recordNotifications(w);
+    const k = key();
+    await w.run(specs.adminReplySupportTicketSpec, "support-1", {ticketId: "app1", text: "Hello", idempotencyKey: k});
+    const again = await w.run(specs.adminReplySupportTicketSpec, "support-1", {ticketId: "app1", text: "Hello", idempotencyKey: k});
+    assert.equal(again.replayed, true);
+    assert.equal(sent.length, 1);
+  });
+
+  it("a website ticket never notifies the member its userId names", async () => {
+    const w = await world();
+    const sent = recordNotifications(w);
+    await w.run(specs.adminReplySupportTicketSpec, "support-1", {ticketId: "web1", text: "Please try again.", idempotencyKey: key()});
+    await w.db.doc("supportTickets/web2").set({
+      userId: "web-visitor-9", subject: "Help", message: "help", status: "open",
+      attachments: [], createdAt: new Date(w.now - 1000), updatedAt: new Date(w.now - 1000),
+    });
+    await w.run(specs.adminReplySupportTicketSpec, "support-1", {ticketId: "web2", text: "Hi", idempotencyKey: key()});
+    assert.equal(sent.length, 0);
+  });
+
+  it("the reply still succeeds when the push fails", async () => {
+    const w = await world();
+    const sent = recordNotifications(w, {fail: true});
+    const reply = await w.run(specs.adminReplySupportTicketSpec, "support-1", {ticketId: "app1", text: "Stored anyway.", idempotencyKey: key()});
+    assert.equal(reply.replayed, false);
+    assert.equal(sent.length, 1);
+    assert.equal(w.db.read(`supportTickets/app1/messages/${reply.messageId}`).text, "Stored anyway.");
+    assert.equal(w.db.read("supportTickets/app1").hasUnreadSupportReply, true);
+  });
+
+  it("an internal note never notifies", async () => {
+    const w = await world();
+    const sent = recordNotifications(w);
+    await w.run(specs.adminAddSupportNoteSpec, "support-1", {ticketId: "app1", text: "Staff-only context."});
+    assert.equal(sent.length, 0);
+  });
+
+  it("a reply to a closed ticket is refused and notifies nobody", async () => {
+    const w = await world();
+    const sent = recordNotifications(w);
+    await w.run(specs.adminResolveSupportTicketSpec, "support-1", {ticketId: "app1", outcome: "closed"});
+    await rejectsWith(w.run(specs.adminReplySupportTicketSpec, "support-1", {ticketId: "app1", text: "late", idempotencyKey: key()}), "ticket_closed");
+    assert.equal(sent.length, 0);
+  });
+});
+
 describe("automation manual review", () => {
   async function jobs() {
     const w = await world();

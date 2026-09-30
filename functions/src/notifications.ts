@@ -20,6 +20,7 @@ export const FcmTypes = {
   incomingLike: "incomingLike",
   boostActivated: "boostActivated",
   boostExpired: "boostExpired",
+  supportReply: "supportReply",
 } as const;
 
 export type FcmType = (typeof FcmTypes)[keyof typeof FcmTypes];
@@ -69,6 +70,10 @@ const copy: Record<FcmType, {tr: {title: string; body: string}; en: {title: stri
   boostExpired: {
     tr: {title: "Mevora", body: "Boost süresi doldu"},
     en: {title: "Mevora", body: "Your Boost has ended"},
+  },
+  supportReply: {
+    tr: {title: "Mevora", body: "Destek ekibi talebine yanıt verdi"},
+    en: {title: "Mevora", body: "Support replied to your request"},
   },
 };
 
@@ -150,6 +155,9 @@ function routeFor(type: FcmType, data: Record<string, string>): string | null {
   }
   if ((type === "boostActivated" || type === "boostExpired")) {
     return "/boost";
+  }
+  if (type === "supportReply") {
+    return data.ticketId ? `/settings/support/tickets/${data.ticketId}` : "/settings/support/tickets";
   }
   if (data.matchId) {
     return `/chat/${data.matchId}`;

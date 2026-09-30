@@ -28,6 +28,14 @@ abstract final class PushRouteResolver {
       case 'boostActivated':
       case 'boostExpired':
         return AppRoutes.boost;
+      case 'supportReply':
+        // A staff reply to the member's own request. Without an id the list
+        // is the honest destination.
+        final ticketId = data['ticketId']?.toString();
+        if (ticketId == null || ticketId.isEmpty) {
+          return AppRoutes.supportTickets;
+        }
+        return AppRoutes.supportTicketDetailPath(ticketId);
       default:
         return null;
     }

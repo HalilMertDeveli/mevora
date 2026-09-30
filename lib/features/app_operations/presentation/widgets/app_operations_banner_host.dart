@@ -84,10 +84,18 @@ class AppOperationsBannerHost extends StatelessWidget {
           ),
         Expanded(
           key: const ValueKey('appOpsNavigatorSlot'),
-          child: MediaQuery.removePadding(
-            context: context,
-            removeTop: hasBanner,
-            child: child,
+          // Each route's modal barrier uses BlockSemantics, which hides
+          // everything painted before it in the same semantics container —
+          // including these banners. A container of its own keeps that
+          // blocking inside the navigator, so screen readers still hear the
+          // announcement.
+          child: Semantics(
+            container: true,
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: hasBanner,
+              child: child,
+            ),
           ),
         ),
       ],

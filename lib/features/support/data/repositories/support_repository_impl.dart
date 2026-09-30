@@ -2,6 +2,7 @@ import 'package:mevora/core/constants/firestore_paths.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/storage/storage_provider.dart';
 import 'package:mevora/features/support/data/datasources/firebase_support_data_source.dart';
+import 'package:mevora/features/support/domain/models/support_message.dart';
 import 'package:mevora/features/support/domain/models/support_ticket.dart';
 import 'package:mevora/features/support/domain/repositories/support_repository.dart';
 
@@ -35,6 +36,17 @@ class SupportRepositoryImpl implements SupportRepository {
       return null;
     }
     return ticket;
+  }
+
+  @override
+  Stream<List<SupportMessage>> watchMessages({
+    required String userId,
+    required String ticketId,
+  }) {
+    if (userId.isEmpty || ticketId.isEmpty) {
+      return Stream.value(const <SupportMessage>[]);
+    }
+    return _dataSource.watchMessages(ticketId);
   }
 
   @override

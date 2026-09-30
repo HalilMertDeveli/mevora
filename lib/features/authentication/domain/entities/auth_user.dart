@@ -1,3 +1,4 @@
+import 'package:mevora/core/identity/account_status.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_providers.dart';
 
 class AuthUser {
@@ -18,6 +19,8 @@ class AuthUser {
     this.isActive = true,
     this.isBanned = false,
     this.isVerified = false,
+    this.accountStatus = AccountStatus.active,
+    this.suspendedUntil,
   });
 
   final String id;
@@ -38,6 +41,18 @@ class AuthUser {
   final bool isActive;
   final bool isBanned;
   final bool isVerified;
+
+  /// The server-owned status from `users/{uid}`. [isActive] / [isBanned]
+  /// stay the coarse flags; this keeps the case that behaves differently —
+  /// a suspension, which keeps the member signed in but restricted.
+  final AccountStatus accountStatus;
+
+  /// When a timed suspension ends; null for an open-ended one.
+  final DateTime? suspendedUntil;
+
+  /// Signed in, but held on the restricted screen until staff restore the
+  /// account or the suspension runs out.
+  bool get isSuspended => accountStatus == AccountStatus.suspended;
 
   bool get isProfileComplete => profileCompleted || onboardingCompleted;
 
@@ -62,6 +77,8 @@ class AuthUser {
     bool? isActive,
     bool? isBanned,
     bool? isVerified,
+    AccountStatus? accountStatus,
+    DateTime? suspendedUntil,
   }) {
     return AuthUser(
       id: id ?? this.id,
@@ -80,6 +97,8 @@ class AuthUser {
       isActive: isActive ?? this.isActive,
       isBanned: isBanned ?? this.isBanned,
       isVerified: isVerified ?? this.isVerified,
+      accountStatus: accountStatus ?? this.accountStatus,
+      suspendedUntil: suspendedUntil ?? this.suspendedUntil,
     );
   }
 
@@ -101,7 +120,9 @@ class AuthUser {
         other.onboardingCompleted == onboardingCompleted &&
         other.isActive == isActive &&
         other.isBanned == isBanned &&
-        other.isVerified == isVerified;
+        other.isVerified == isVerified &&
+        other.accountStatus == accountStatus &&
+        other.suspendedUntil == suspendedUntil;
   }
 
   @override
@@ -122,5 +143,7 @@ class AuthUser {
     isActive,
     isBanned,
     isVerified,
+    accountStatus,
+    suspendedUntil,
   );
 }

@@ -10,6 +10,7 @@ import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
+import 'package:mevora/core/di/moderation_status_scope.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
@@ -329,6 +330,13 @@ class _MevoraAppState extends State<MevoraApp> {
         repository: supportServices.repository,
         child: child,
       );
+      final moderationStatus = supportServices.moderationStatus;
+      if (moderationStatus != null) {
+        child = ModerationStatusScope(
+          repository: moderationStatus,
+          child: child,
+        );
+      }
     }
 
     final social = widget.socialServices;

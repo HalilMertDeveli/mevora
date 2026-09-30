@@ -470,8 +470,8 @@
   "authSmsQuota": "SMS sending limit reached. Please try again later.",
   "authFirebaseUnavailable": "Verification is temporarily unavailable. Please try again later.",
   "authNetwork": "Check your internet connection.",
-  "authDisabled": "This account has been disabled.",
-  "authBanned": "This account has been suspended.",
+  "authDisabled": "This account has been disabled. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.",
+  "authBanned": "This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.",
   "authOauth": "We could not complete sign-in. Please try again.",
   "authUnknown": "Something unexpected happened. Please try again.",
   "authAccountExists": "That sign-in method is already tied to another Mevora account. Accounts are never merged automatically.",
@@ -2271,5 +2271,86 @@
   "appOpsUpdateAvailable": "A new version of Mevora is available.",
   "appOpsFeatureUnavailableTitle": "Temporarily unavailable",
   "appOpsFeatureUnavailableMessage": "This feature is taking a short break. Please check back a little later.",
-  "appOpsSpotifyUnavailable": "Connecting Spotify is temporarily unavailable. You can connect it later from the Music tab."
+  "appOpsSpotifyUnavailable": "Connecting Spotify is temporarily unavailable. You can connect it later from the Music tab.",
+  "supportTicketRepliesTitle": "Replies",
+  "supportTicketNoRepliesYet": "No reply yet. Mevora Support will answer you here.",
+  "supportTicketRepliesError": "Replies could not be loaded. Try again later.",
+  "supportTicketDefaultAuthor": "Mevora Support",
+  "supportTicketRepliedBadge": "Support replied",
+  "supportTicketNoComposerHint": "Want to add something? Send a new request and mention this one.",
+  "accountRestrictedTitle": "Account restricted",
+  "accountRestrictedHeadline": "Your account is restricted",
+  "accountRestrictedBody": "While your account is restricted you can't use Discover, matches or chat. You can still see why, appeal the decision, contact support or manage your data.",
+  "accountRestrictedUntil": "The restriction ends on {date}.",
+  "@accountRestrictedUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accountRestrictedOpenEnded": "The restriction stays in place until our team reviews it.",
+  "accountRestrictedReleaseNote": "When the restriction is lifted, you'll be taken back to Mevora automatically.",
+  "accountRestrictedWhy": "Why is my account restricted?",
+  "accountRestrictedContactSupport": "Contact support",
+  "accountRestrictedManageData": "Your data and account deletion",
+  "moderationStatusTitle": "Account status",
+  "moderationStatusSettingsSubtitle": "Warnings, restrictions and appeals",
+  "moderationStatusActive": "Your account is in good standing.",
+  "moderationStatusSuspended": "Your account is restricted.",
+  "moderationStatusBanned": "Your account is closed.",
+  "moderationStatusInactive": "Your account is not active.",
+  "moderationStatusReason": "Reason: {category}",
+  "@moderationStatusReason": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "moderationStatusLoadFailed": "Your account status could not be loaded. Pull down to try again.",
+  "moderationDecisionsTitle": "Decisions about your account",
+  "moderationDecisionsEmpty": "There are no moderation decisions on your account.",
+  "moderationDecisionUntil": "Until {date}",
+  "@moderationDecisionUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "moderationDecisionReversed": "Reversed",
+  "moderationTypeWarning": "Warning",
+  "moderationTypeTemporarySuspension": "Temporary restriction",
+  "moderationTypePermanentBan": "Account closure",
+  "moderationTypePhotoRejected": "Photo not approved",
+  "moderationTypePhotoRemoved": "Photo removed",
+  "moderationTypeRequireReverification": "Verification needed again",
+  "moderationTypeOther": "Moderation decision",
+  "moderationReasonHarmfulBehavior": "Harmful or abusive behavior",
+  "moderationReasonScamOrFraud": "Scams or fraud",
+  "moderationReasonSpam": "Spam",
+  "moderationReasonAuthenticity": "Profile authenticity",
+  "moderationReasonAgeRequirement": "Age requirement",
+  "moderationReasonContentRules": "Content rules",
+  "moderationReasonPhotoRequirements": "Photo requirements",
+  "moderationReasonWellbeing": "Safety and wellbeing",
+  "moderationReasonGeneral": "Community guidelines",
+  "moderationAppealAction": "Appeal this decision",
+  "moderationAppealOpen": "Appeal received. We'll review it and show the result here.",
+  "moderationAppealInReview": "Your appeal is being reviewed.",
+  "moderationAppealAccepted": "Appeal accepted",
+  "moderationAppealRejected": "Appeal not accepted",
+  "moderationAppealResolved": "Appeal reviewed",
+  "moderationAppealWindowClosed": "The 30-day appeal window for this decision has closed.",
+  "moderationAppealSheetBody": "Tell us why you think this decision is wrong. Someone on our team who did not make the decision will review it.",
+  "moderationAppealReasonLabel": "Your appeal",
+  "moderationAppealReasonHint": "At least 10 characters",
+  "moderationAppealReasonTooShort": "Please write at least 10 characters.",
+  "moderationAppealSubmit": "Send appeal",
+  "moderationAppealSent": "Your appeal was sent. We'll show the result here.",
+  "moderationAppealAlreadySent": "You have already appealed this decision.",
+  "moderationAppealNotAllowed": "This decision can't be appealed.",
+  "moderationAppealInvalid": "Please write between 10 and 2,000 characters.",
+  "moderationAppealFailed": "We couldn't send your appeal. Check your connection and try again."
 }

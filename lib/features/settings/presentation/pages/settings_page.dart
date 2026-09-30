@@ -104,6 +104,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: l10n.linkedAccounts,
                   onTap: () => context.push(AppRoutes.accountSettings),
                 ),
+                SettingsNavTile(
+                  icon: MevoraIcons.safety,
+                  title: l10n.moderationStatusTitle,
+                  subtitle: l10n.moderationStatusSettingsSubtitle,
+                  onTap: () => context.push(AppRoutes.moderationStatus),
+                ),
                 if (AppOperationsScope.isFeatureEnabled(
                   context,
                   AppFeature.boost,

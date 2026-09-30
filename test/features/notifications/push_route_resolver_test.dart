@@ -54,4 +54,19 @@ void main() {
       AppRoutes.chatPath('a_b'),
     );
   });
+
+  test('a support reply opens that ticket, or the list without an id', () {
+    expect(
+      PushRouteResolver.fromData({'type': 'supportReply', 'ticketId': 't1'}),
+      AppRoutes.supportTicketDetailPath('t1'),
+    );
+    expect(
+      PushRouteResolver.fromData({'type': 'supportReply'}),
+      AppRoutes.supportTickets,
+    );
+    expect(
+      PushRouteResolver.fromData({'type': 'supportReply', 'ticketId': ''}),
+      AppRoutes.supportTickets,
+    );
+  });
 }

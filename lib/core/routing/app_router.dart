@@ -40,6 +40,8 @@ import 'package:mevora/features/location/presentation/pages/location_permission_
 import 'package:mevora/features/matching/presentation/pages/app_shell.dart';
 import 'package:mevora/features/matching/presentation/pages/likes_you_page.dart';
 import 'package:mevora/features/matching/presentation/pages/matches_page.dart';
+import 'package:mevora/features/moderation_status/presentation/pages/account_restricted_page.dart';
+import 'package:mevora/features/moderation_status/presentation/pages/moderation_status_page.dart';
 import 'package:mevora/features/music/presentation/pages/music_page.dart';
 import 'package:mevora/features/humor/presentation/pages/humor_calibration_intro_page.dart';
 import 'package:mevora/features/humor/presentation/pages/humor_calibration_result_page.dart';
@@ -262,6 +264,13 @@ GoRouter createAppRouter({
         ),
       ),
       GoRoute(
+        path: AppRoutes.accountRestricted,
+        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const AccountRestrictedPage(),
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.legalTerms,
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
           key: state.pageKey,
@@ -466,6 +475,13 @@ GoRouter createAppRouter({
             pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
               key: state.pageKey,
               child: const AccountSettingsPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'account-status',
+            pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const ModerationStatusPage(),
             ),
           ),
           GoRoute(

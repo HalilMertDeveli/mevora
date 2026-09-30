@@ -48,11 +48,24 @@ export interface AdminBucketPort {
   ]>;
 }
 
+/** A member-facing notification the admin platform asks for. */
+export interface AdminNotifyInput {
+  uid: string;
+  type: "supportReply";
+  data: Record<string, string>;
+}
+
 export interface AdminDeps {
   db: Firestore;
   auth: AdminAuthPort;
   bucket: () => AdminBucketPort;
   now: () => number;
+  /**
+   * Sends a member push + in-app notification. Optional so the in-memory
+   * test world runs without it; callers treat it as best-effort. The default
+   * loads notifications.ts lazily — that module reads Firestore at import.
+   */
+  notify?: (input: AdminNotifyInput) => Promise<void>;
 }
 
 export function defaultAdminDeps(): AdminDeps {
@@ -61,5 +74,16 @@ export function defaultAdminDeps(): AdminDeps {
     auth: getAuth() as unknown as AdminAuthPort,
     bucket: () => getStorage().bucket() as unknown as AdminBucketPort,
     now: () => Date.now(),
+    notify: async (input) => {
+      const {FcmTypes, sendUserPush} = await import("../notifications.js");
+      await sendUserPush({
+        uid: input.uid,
+        type: FcmTypes[input.type],
+        data: input.data,
+        // A reply to the member's own request is a service message: only the
+        // master switch silences it, like an account notice.
+        prefKey: "notificationsEnabled",
+      });
+    },
   };
 }

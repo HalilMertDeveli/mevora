@@ -776,10 +776,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authNetwork => 'İnternet bağlantını kontrol et.';
 
   @override
-  String get authDisabled => 'Bu hesap devre dışı bırakılmış.';
+  String get authDisabled =>
+      'Bu hesap devre dışı bırakılmış. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine halilmertdeveliii@gmail.com adresinden yaz.';
 
   @override
-  String get authBanned => 'Bu hesap askıya alındı.';
+  String get authBanned =>
+      'Bu hesap topluluk kurallarımızı ihlal ettiği için kapatıldı. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine halilmertdeveliii@gmail.com adresinden yaz.';
 
   @override
   String get authOauth => 'Giriş tamamlanamadı. Lütfen tekrar dene.';
@@ -4832,4 +4834,206 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get appOpsSpotifyUnavailable =>
       'Spotify bağlantısı şu an geçici olarak kullanılamıyor. Daha sonra Müzik sekmesinden bağlayabilirsin.';
+
+  @override
+  String get supportTicketRepliesTitle => 'Yanıtlar';
+
+  @override
+  String get supportTicketNoRepliesYet =>
+      'Henüz yanıt yok. Mevora Destek sana buradan yanıt verecek.';
+
+  @override
+  String get supportTicketRepliesError =>
+      'Yanıtlar yüklenemedi. Daha sonra tekrar dene.';
+
+  @override
+  String get supportTicketDefaultAuthor => 'Mevora Destek';
+
+  @override
+  String get supportTicketRepliedBadge => 'Destek yanıtladı';
+
+  @override
+  String get supportTicketNoComposerHint =>
+      'Eklemek istediğin bir şey mi var? Yeni bir talep gönder ve bu talepten bahset.';
+
+  @override
+  String get accountRestrictedTitle => 'Hesap kısıtlandı';
+
+  @override
+  String get accountRestrictedHeadline => 'Hesabın kısıtlandı';
+
+  @override
+  String get accountRestrictedBody =>
+      'Hesabın kısıtlıyken Keşfet, eşleşmeler ve sohbeti kullanamazsın. Yine de nedenini görebilir, karara itiraz edebilir, destekle iletişime geçebilir ya da verilerini yönetebilirsin.';
+
+  @override
+  String accountRestrictedUntil(String date) {
+    return 'Kısıtlama $date tarihinde sona erer.';
+  }
+
+  @override
+  String get accountRestrictedOpenEnded =>
+      'Kısıtlama, ekibimiz inceleyene kadar devam eder.';
+
+  @override
+  String get accountRestrictedReleaseNote =>
+      'Kısıtlama kaldırıldığında otomatik olarak Mevora\'ya geri döneceksin.';
+
+  @override
+  String get accountRestrictedWhy => 'Hesabım neden kısıtlandı?';
+
+  @override
+  String get accountRestrictedContactSupport => 'Destekle iletişime geç';
+
+  @override
+  String get accountRestrictedManageData => 'Verilerin ve hesap silme';
+
+  @override
+  String get moderationStatusTitle => 'Hesap durumu';
+
+  @override
+  String get moderationStatusSettingsSubtitle =>
+      'Uyarılar, kısıtlamalar ve itirazlar';
+
+  @override
+  String get moderationStatusActive => 'Hesabın iyi durumda.';
+
+  @override
+  String get moderationStatusSuspended => 'Hesabın kısıtlandı.';
+
+  @override
+  String get moderationStatusBanned => 'Hesabın kapatıldı.';
+
+  @override
+  String get moderationStatusInactive => 'Hesabın aktif değil.';
+
+  @override
+  String moderationStatusReason(String category) {
+    return 'Neden: $category';
+  }
+
+  @override
+  String get moderationStatusLoadFailed =>
+      'Hesap durumun yüklenemedi. Tekrar denemek için aşağı çek.';
+
+  @override
+  String get moderationDecisionsTitle => 'Hesabınla ilgili kararlar';
+
+  @override
+  String get moderationDecisionsEmpty =>
+      'Hesabınla ilgili bir moderasyon kararı yok.';
+
+  @override
+  String moderationDecisionUntil(String date) {
+    return '$date tarihine kadar';
+  }
+
+  @override
+  String get moderationDecisionReversed => 'Geri alındı';
+
+  @override
+  String get moderationTypeWarning => 'Uyarı';
+
+  @override
+  String get moderationTypeTemporarySuspension => 'Geçici kısıtlama';
+
+  @override
+  String get moderationTypePermanentBan => 'Hesap kapatma';
+
+  @override
+  String get moderationTypePhotoRejected => 'Fotoğraf onaylanmadı';
+
+  @override
+  String get moderationTypePhotoRemoved => 'Fotoğraf kaldırıldı';
+
+  @override
+  String get moderationTypeRequireReverification => 'Yeniden doğrulama gerekli';
+
+  @override
+  String get moderationTypeOther => 'Moderasyon kararı';
+
+  @override
+  String get moderationReasonHarmfulBehavior =>
+      'Zarar verici ya da taciz edici davranış';
+
+  @override
+  String get moderationReasonScamOrFraud => 'Dolandırıcılık';
+
+  @override
+  String get moderationReasonSpam => 'İstenmeyen içerik (spam)';
+
+  @override
+  String get moderationReasonAuthenticity => 'Profil gerçekliği';
+
+  @override
+  String get moderationReasonAgeRequirement => 'Yaş şartı';
+
+  @override
+  String get moderationReasonContentRules => 'İçerik kuralları';
+
+  @override
+  String get moderationReasonPhotoRequirements => 'Fotoğraf şartları';
+
+  @override
+  String get moderationReasonWellbeing => 'Güvenlik ve iyi oluş';
+
+  @override
+  String get moderationReasonGeneral => 'Topluluk kuralları';
+
+  @override
+  String get moderationAppealAction => 'Bu karara itiraz et';
+
+  @override
+  String get moderationAppealOpen =>
+      'İtirazın alındı. İnceleyip sonucu burada göstereceğiz.';
+
+  @override
+  String get moderationAppealInReview => 'İtirazın inceleniyor.';
+
+  @override
+  String get moderationAppealAccepted => 'İtirazın kabul edildi';
+
+  @override
+  String get moderationAppealRejected => 'İtirazın kabul edilmedi';
+
+  @override
+  String get moderationAppealResolved => 'İtirazın incelendi';
+
+  @override
+  String get moderationAppealWindowClosed =>
+      'Bu karar için 30 günlük itiraz süresi doldu.';
+
+  @override
+  String get moderationAppealSheetBody =>
+      'Bu kararın neden yanlış olduğunu düşündüğünü anlat. Kararı vermeyen bir ekip üyemiz inceleyecek.';
+
+  @override
+  String get moderationAppealReasonLabel => 'İtirazın';
+
+  @override
+  String get moderationAppealReasonHint => 'En az 10 karakter';
+
+  @override
+  String get moderationAppealReasonTooShort => 'Lütfen en az 10 karakter yaz.';
+
+  @override
+  String get moderationAppealSubmit => 'İtirazı gönder';
+
+  @override
+  String get moderationAppealSent =>
+      'İtirazın gönderildi. Sonucu burada göstereceğiz.';
+
+  @override
+  String get moderationAppealAlreadySent => 'Bu karara zaten itiraz ettin.';
+
+  @override
+  String get moderationAppealNotAllowed => 'Bu karara itiraz edilemez.';
+
+  @override
+  String get moderationAppealInvalid =>
+      'Lütfen 10 ile 2.000 karakter arasında yaz.';
+
+  @override
+  String get moderationAppealFailed =>
+      'İtirazın gönderilemedi. Bağlantını kontrol edip tekrar dene.';
 }

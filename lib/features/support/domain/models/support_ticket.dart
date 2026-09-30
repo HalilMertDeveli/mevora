@@ -44,6 +44,9 @@ class SupportTicket {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.supportReplyCount = 0,
+    this.hasUnreadSupportReply = false,
+    this.lastSupportReplyAt,
   });
 
   final String id;
@@ -56,10 +59,19 @@ class SupportTicket {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  SupportTicket copyWith({
-    SupportTicketStatus? status,
-    DateTime? updatedAt,
-  }) {
+  /// Server-owned reply bookkeeping written by the admin console. Missing on
+  /// requests nobody has answered yet.
+  final int supportReplyCount;
+  final bool hasUnreadSupportReply;
+  final DateTime? lastSupportReplyAt;
+
+  /// Mevora support has answered at least once.
+  bool get hasSupportReply =>
+      supportReplyCount > 0 ||
+      hasUnreadSupportReply ||
+      lastSupportReplyAt != null;
+
+  SupportTicket copyWith({SupportTicketStatus? status, DateTime? updatedAt}) {
     return SupportTicket(
       id: id,
       userId: userId,
@@ -70,6 +82,9 @@ class SupportTicket {
       status: status ?? this.status,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      supportReplyCount: supportReplyCount,
+      hasUnreadSupportReply: hasUnreadSupportReply,
+      lastSupportReplyAt: lastSupportReplyAt,
     );
   }
 }

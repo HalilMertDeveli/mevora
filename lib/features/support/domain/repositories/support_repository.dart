@@ -1,3 +1,4 @@
+import 'package:mevora/features/support/domain/models/support_message.dart';
 import 'package:mevora/features/support/domain/models/support_ticket.dart';
 
 class SupportTicketDraft {
@@ -27,6 +28,13 @@ abstract class SupportRepository {
   /// [userId]. Callers must render a not-found state rather than fabricate
   /// placeholder ticket data.
   Future<SupportTicket?> getTicket({
+    required String userId,
+    required String ticketId,
+  });
+
+  /// The request's user-visible thread (support replies), oldest first,
+  /// live. Staff-only notes are never part of it.
+  Stream<List<SupportMessage>> watchMessages({
     required String userId,
     required String ticketId,
   });

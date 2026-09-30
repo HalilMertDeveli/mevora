@@ -175,6 +175,51 @@ void main() {
     expect(await local.readLanguageCode(), 'tr');
   });
 
+  test('repeated attaches for the same user and language sync once', () async {
+    final remote = FakeUserSettingsRepository();
+    final controller = LanguageController(
+      repository: LanguageRepository(
+        local: MemoryLanguageDataSource(languageCode: 'en'),
+        remote: remote,
+      ),
+      deviceLocale: const Locale('tr'),
+    );
+    await controller.load();
+    // The app attaches on every auth notification (each profile snapshot).
+    await Future.wait([
+      controller.attachUser('u4'),
+      controller.attachUser('u4'),
+    ]);
+    await controller.attachUser('u4');
+    expect(remote.saveCalls, 1);
+
+    await controller.setLanguage(AppLanguage.turkish);
+    await Future<void>.delayed(Duration.zero);
+    expect(remote.saved['u4'], 'tr');
+    expect(remote.saveCalls, 2);
+    await controller.attachUser('u4');
+    expect(remote.saveCalls, 2);
+
+    controller.detachUser();
+    await controller.attachUser('u4');
+    expect(remote.saveCalls, 3, reason: 'a new sign-in syncs again');
+  });
+
+  test('a failed sync is retried on the next attach', () async {
+    final remote = FakeUserSettingsRepository(throwOnSave: true);
+    final controller = LanguageController(
+      repository: LanguageRepository(
+        local: MemoryLanguageDataSource(languageCode: 'en'),
+        remote: remote,
+      ),
+      deviceLocale: const Locale('tr'),
+    );
+    await controller.load();
+    await controller.attachUser('u5');
+    await controller.attachUser('u5');
+    expect(remote.saveCalls, 2);
+  });
+
   test('offline language switch works before attachUser', () async {
     final local = MemoryLanguageDataSource();
     final controller = LanguageController(

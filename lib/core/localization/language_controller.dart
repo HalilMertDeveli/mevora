@@ -27,6 +27,11 @@ class LanguageController extends ChangeNotifier {
   bool _loaded = false;
   String? _uid;
 
+  /// What the last remote sync wrote (or is writing), so an unchanged
+  /// uid + language is not synced again.
+  String? _syncedUid;
+  String? _syncedCode;
+
   bool get isLoaded => _loaded;
 
   AppLanguage get language => _language;
@@ -68,14 +73,23 @@ class LanguageController extends ChangeNotifier {
 
   /// After login, push the local preference to `userSettings/{uid}`.
   /// Does not overwrite local language from Firebase.
+  ///
+  /// The app calls this on every auth-controller notification, which fires
+  /// for each users/profiles snapshot. Each sync is a read plus a full write
+  /// of the settings doc, so it runs once per signed-in uid and language.
   Future<void> attachUser(String uid) async {
     _uid = uid;
+    if (_syncedUid == uid && _syncedCode == _language.code) {
+      return;
+    }
     await _syncRemote();
   }
 
   /// Logout must keep the local language preference.
   void detachUser() {
     _uid = null;
+    _syncedUid = null;
+    _syncedCode = null;
   }
 
   Future<void> _syncRemote() async {
@@ -83,10 +97,19 @@ class LanguageController extends ChangeNotifier {
     if (uid == null) {
       return;
     }
+    final code = _language.code;
+    // Claimed before the await so overlapping calls do not sync twice.
+    _syncedUid = uid;
+    _syncedCode = code;
     try {
       await _repository.syncToRemote(uid: uid, language: _language);
     } on Object {
       // Offline / permission errors must not roll back the local UI language.
+      // Forget the claim so the next attach retries.
+      if (_syncedUid == uid && _syncedCode == code) {
+        _syncedUid = null;
+        _syncedCode = null;
+      }
     }
   }
 

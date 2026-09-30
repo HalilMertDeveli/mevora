@@ -1,0 +1,70 @@
+@page
+@model LoginModel
+@{
+    ViewData["Title"] = L["Sign in"].Value;
+}
+<div class="login-wrap">
+    <div class="login-card">
+        <div class="login-top">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">M</span>
+            </div>
+            <partial name="_LanguageSwitch" />
+        </div>
+        <h1>@L["Trust & Safety console"]</h1>
+        @if (Model.Notice is not null)
+        {
+            <div class="alert alert-info" role="status">@Model.Notice</div>
+        }
+        @if (Model.Error is not null)
+        {
+            <div class="alert alert-error" role="alert">@Model.Error</div>
+        }
+
+        @if (Model.Stage == "code")
+        {
+            <form method="post" asp-page-handler="Code" autocomplete="off">
+                <p class="muted">@L["Enter the 6-digit code from your authenticator app."]</p>
+                <div class="field">
+                    <label for="Code">@L["Verification code"]</label>
+                    <input id="Code" name="Code" type="text" inputmode="numeric" pattern="[0-9 ]{6,10}" autocomplete="one-time-code" required autofocus />
+                </div>
+                <button type="submit" class="btn btn-primary">@L["Verify"]</button>
+            </form>
+            <form method="post" asp-page-handler="Cancel" class="inline"><button type="submit" class="btn btn-ghost">@L["Start over"]</button></form>
+        }
+        else if (Model.Stage == "enroll")
+        {
+            <p>@L["Two-factor authentication is required for every staff account. Add this account to an authenticator app (Google Authenticator, 1Password, Microsoft Authenticator…) using the key below, then enter the code it shows."]</p>
+            <h3>@L["Setup key"]</h3>
+            <p class="secret">@Model.EnrollmentSecret</p>
+            <details>
+                <summary class="small">@L["Setup link (for apps that accept otpauth links)"]</summary>
+                <p class="secret small">@Model.EnrollmentUri</p>
+            </details>
+            <form method="post" asp-page-handler="Enroll" autocomplete="off">
+                <div class="field">
+                    <label for="Code">@L["Code from the app"]</label>
+                    <input id="Code" name="Code" type="text" inputmode="numeric" pattern="[0-9 ]{6,10}" autocomplete="one-time-code" required autofocus />
+                </div>
+                <button type="submit" class="btn btn-primary">@L["Turn on two-factor and sign in"]</button>
+            </form>
+            <form method="post" asp-page-handler="Cancel" class="inline"><button type="submit" class="btn btn-ghost">@L["Cancel"]</button></form>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Password">
+                <div class="field">
+                    <label for="Email">@L["Staff email"]</label>
+                    <input id="Email" name="Email" type="email" autocomplete="username" required autofocus value="@Model.Email" />
+                </div>
+                <div class="field">
+                    <label for="Password">@L["Password"]</label>
+                    <input id="Password" name="Password" type="password" autocomplete="current-password" required />
+                </div>
+                <button type="submit" class="btn btn-primary">@L["Continue"]</button>
+            </form>
+            <p class="hint">@L["Staff accounts only. Every sign-in is recorded in the audit log."]</p>
+        }
+    </div>
+</div>

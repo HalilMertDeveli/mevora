@@ -1,0 +1,138 @@
+@page
+@model DashboardModel
+@{
+    ViewData["Title"] = L["Dashboard"].Value;
+    var tiles = new (string Key, string Label, string Href, string Css)[]
+    {
+        ("criticalCases", "Critical cases", "/Cases?status=active", "stat stat-critical"),
+        ("highPriorityCases", "High-priority cases", "/Cases?status=active", "stat stat-high"),
+        ("openCases", "Open cases", "/Cases?status=active", "stat"),
+        ("myCases", "Assigned to me", "/Cases?assigned=me", "stat"),
+        ("openReports", "Open user reports", "/Reports", "stat stat-high"),
+        ("photoManualReview", "Photos in manual review", "/Photos", "stat stat-warn"),
+        ("humorReview", "Humor needing review", "/Humor", "stat"),
+        ("verificationInReview", "Verification in review", "/Verification", "stat"),
+        ("verificationReviewCases", "Verification cases", "/Cases?type=VERIFICATION_REVIEW", "stat"),
+        ("automationManualReview", "Automation manual review", "/Automation", "stat stat-warn"),
+        ("openAppeals", "Open appeals", "/Appeals", "stat"),
+        ("openSupportTickets", "Open support tickets", "/Support", "stat"),
+        ("urgentSupportTickets", "Urgent support tickets", "/Support", "stat stat-high"),
+    };
+    // Platform and staff overview (owner / Trust & Safety admin). Each is a
+    // count() aggregation the backend only returns to roles allowed to see it.
+    var platform = new (string Key, string Label, string Href, string Css)[]
+    {
+        ("totalUsers", "Members", "/Users", "stat"),
+        ("newUsers7d", "New members (7 days)", "/Users", "stat"),
+        ("activeUsers7d", "Active members (7 days)", "/Users", "stat"),
+        ("suspendedAccounts", "Suspended accounts", "/Audit?action=USER_SUSPENDED", "stat stat-warn"),
+        ("bannedAccounts", "Banned accounts", "/Audit?action=USER_BANNED", "stat stat-high"),
+        ("activeStaff", "Active staff", "/Admin/Staff", "stat"),
+        ("disabledStaff", "Disabled staff", "/Admin/Staff", "stat"),
+    };
+}
+<div class="page-head">
+    <div>
+        <h1>@L["Dashboard"]</h1>
+        <p>@L["What needs a human now. Counts reflect only the queues your role can work."]</p>
+    </div>
+    <span class="muted small">@L["Updated"] @L.When(Model.Data, "generatedAt")</span>
+</div>
+<partial name="_Flash" model="Model" />
+
+<section class="stats" aria-label="@L["Queue counters"]">
+    @foreach (var tile in tiles)
+    {
+        if (Model.Shows(tile.Key))
+        {
+            <a class="@tile.Css" href="@tile.Href">
+                <span class="n">@Model.Count(tile.Key)</span>
+                <span class="l">@L[tile.Label]</span>
+            </a>
+        }
+    }
+</section>
+
+@if (platform.Any(t => Model.Shows(t.Key)))
+{
+    <h2>@L.GetString("Platform & staff")</h2>
+    <section class="stats" aria-label="@L["Platform counters"]">
+        @foreach (var tile in platform)
+        {
+            if (Model.Shows(tile.Key))
+            {
+                <a class="@tile.Css" href="@tile.Href">
+                    <span class="n">@Model.Count(tile.Key)</span>
+                    <span class="l">@L[tile.Label]</span>
+                </a>
+            }
+        }
+    </section>
+}
+
+@if (Model.Can("audit.read"))
+{
+    <section class="card">
+        <h2>@L["Recent staff actions"]</h2>
+        @if (!Model.Data.Arr("recentAdminActions").Any())
+        {
+            <p class="muted">@L["No staff actions yet."]</p>
+        }
+        else
+        {
+            <table class="data">
+                <thead>
+                    <tr><th scope="col">@L["When"]</th><th scope="col">@L["Event"]</th><th scope="col">@L["Staff"]</th><th scope="col">@L["Target"]</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Data.Arr("recentAdminActions"))
+                    {
+                        <tr>
+                            <td class="nowrap">@L.When(a, "createdAt")</td>
+                            <td><strong>@L.Code("audit." + a.Str("action"))</strong><div class="mono small muted">@a.S("action")</div></td>
+                            <td class="mono small">@a.S("actorAdminId")<div class="muted">@L.Code(a.Str("actorRole"))</div></td>
+                            <td class="small">@L.Code("target." + a.Str("targetType")) <span class="mono">@a.S("targetId")</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <p class="small"><a href="/Audit">@L["Open the audit log"]</a></p>
+        }
+    </section>
+}
+
+@if (Model.Can("user.read"))
+{
+    <section class="card">
+        <h2>@L["Recent moderation actions"]</h2>
+        @if (!Model.Data.Arr("recentActions").Any())
+        {
+            <p class="muted">@L["No actions yet."]</p>
+        }
+        else
+        {
+            <table class="data">
+                <thead>
+                    <tr><th scope="col">@L["When"]</th><th scope="col">@L["Action"]</th><th scope="col">@L["Reason"]</th><th scope="col">@L["Member"]</th><th scope="col">@L["By"]</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Data.Arr("recentActions"))
+                    {
+                        <tr>
+                            <td class="nowrap">@L.When(a, "createdAt")</td>
+                            <td>@L.Code(a.Str("type"))</td>
+                            <td>@L.Code(a.Str("reasonCode"))</td>
+                            <td>
+                                @if (a.Str("targetUserId") is { } target)
+                                {
+                                    <a class="mono" href="/Users/@Uri.EscapeDataString(target)">@target</a>
+                                }
+                            </td>
+                            <td class="mono">@a.S("actorAdminId")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}

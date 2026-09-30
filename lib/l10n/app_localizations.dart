@@ -1361,13 +1361,13 @@ abstract class AppLocalizations {
   /// No description provided for @authDisabled.
   ///
   /// In en, this message translates to:
-  /// **'This account has been disabled.'**
+  /// **'This account has been disabled. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.'**
   String get authDisabled;
 
   /// No description provided for @authBanned.
   ///
   /// In en, this message translates to:
-  /// **'This account has been suspended.'**
+  /// **'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.'**
   String get authBanned;
 
   /// No description provided for @authOauth.
@@ -8419,6 +8419,444 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The daily humor round begins once your humor profile is ready.'**
   String get humorDailyLockedBody;
+
+  /// No description provided for @appOpsMaintenanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'A short maintenance break'**
+  String get appOpsMaintenanceTitle;
+
+  /// No description provided for @appOpsMaintenanceMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora is briefly down for maintenance. We\'ll be right back.'**
+  String get appOpsMaintenanceMessage;
+
+  /// No description provided for @appOpsMaintenanceSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get appOpsMaintenanceSupport;
+
+  /// No description provided for @appOpsMaintenanceAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account settings'**
+  String get appOpsMaintenanceAccount;
+
+  /// No description provided for @appOpsUpdateRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to update'**
+  String get appOpsUpdateRequiredTitle;
+
+  /// No description provided for @appOpsUpdateRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This version of Mevora is no longer supported. Update the app to keep going.'**
+  String get appOpsUpdateRequiredMessage;
+
+  /// No description provided for @appOpsUpdateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get appOpsUpdateAction;
+
+  /// No description provided for @appOpsUpdateFromStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Mevora from {store}.'**
+  String appOpsUpdateFromStore(String store);
+
+  /// No description provided for @appOpsGenericStore.
+  ///
+  /// In en, this message translates to:
+  /// **'your app store'**
+  String get appOpsGenericStore;
+
+  /// No description provided for @appOpsUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version of Mevora is available.'**
+  String get appOpsUpdateAvailable;
+
+  /// No description provided for @appOpsFeatureUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporarily unavailable'**
+  String get appOpsFeatureUnavailableTitle;
+
+  /// No description provided for @appOpsFeatureUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is taking a short break. Please check back a little later.'**
+  String get appOpsFeatureUnavailableMessage;
+
+  /// No description provided for @appOpsSpotifyUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting Spotify is temporarily unavailable. You can connect it later from the Music tab.'**
+  String get appOpsSpotifyUnavailable;
+
+  /// No description provided for @supportTicketRepliesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replies'**
+  String get supportTicketRepliesTitle;
+
+  /// No description provided for @supportTicketNoRepliesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No reply yet. Mevora Support will answer you here.'**
+  String get supportTicketNoRepliesYet;
+
+  /// No description provided for @supportTicketRepliesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Replies could not be loaded. Try again later.'**
+  String get supportTicketRepliesError;
+
+  /// No description provided for @supportTicketDefaultAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'Mevora Support'**
+  String get supportTicketDefaultAuthor;
+
+  /// No description provided for @supportTicketRepliedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Support replied'**
+  String get supportTicketRepliedBadge;
+
+  /// No description provided for @supportTicketNoComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Want to add something? Send a new request and mention this one.'**
+  String get supportTicketNoComposerHint;
+
+  /// No description provided for @accountRestrictedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account restricted'**
+  String get accountRestrictedTitle;
+
+  /// No description provided for @accountRestrictedHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted'**
+  String get accountRestrictedHeadline;
+
+  /// No description provided for @accountRestrictedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'While your account is restricted you can\'t use Discover, matches or chat. You can still see why, appeal the decision, contact support or manage your data.'**
+  String get accountRestrictedBody;
+
+  /// No description provided for @accountRestrictedUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'The restriction ends on {date}.'**
+  String accountRestrictedUntil(String date);
+
+  /// No description provided for @accountRestrictedOpenEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'The restriction stays in place until our team reviews it.'**
+  String get accountRestrictedOpenEnded;
+
+  /// No description provided for @accountRestrictedReleaseNote.
+  ///
+  /// In en, this message translates to:
+  /// **'When the restriction is lifted, you\'ll be taken back to Mevora automatically.'**
+  String get accountRestrictedReleaseNote;
+
+  /// No description provided for @accountRestrictedWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is my account restricted?'**
+  String get accountRestrictedWhy;
+
+  /// No description provided for @accountRestrictedContactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get accountRestrictedContactSupport;
+
+  /// No description provided for @accountRestrictedManageData.
+  ///
+  /// In en, this message translates to:
+  /// **'Your data and account deletion'**
+  String get accountRestrictedManageData;
+
+  /// No description provided for @moderationStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account status'**
+  String get moderationStatusTitle;
+
+  /// No description provided for @moderationStatusSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Warnings, restrictions and appeals'**
+  String get moderationStatusSettingsSubtitle;
+
+  /// No description provided for @moderationStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is in good standing.'**
+  String get moderationStatusActive;
+
+  /// No description provided for @moderationStatusSuspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is restricted.'**
+  String get moderationStatusSuspended;
+
+  /// No description provided for @moderationStatusBanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is closed.'**
+  String get moderationStatusBanned;
+
+  /// No description provided for @moderationStatusInactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is not active.'**
+  String get moderationStatusInactive;
+
+  /// No description provided for @moderationStatusReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {category}'**
+  String moderationStatusReason(String category);
+
+  /// No description provided for @moderationStatusLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account status could not be loaded. Pull down to try again.'**
+  String get moderationStatusLoadFailed;
+
+  /// No description provided for @moderationDecisionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Decisions about your account'**
+  String get moderationDecisionsTitle;
+
+  /// No description provided for @moderationDecisionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no moderation decisions on your account.'**
+  String get moderationDecisionsEmpty;
+
+  /// No description provided for @moderationDecisionUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Until {date}'**
+  String moderationDecisionUntil(String date);
+
+  /// No description provided for @moderationDecisionReversed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reversed'**
+  String get moderationDecisionReversed;
+
+  /// No description provided for @moderationTypeWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get moderationTypeWarning;
+
+  /// No description provided for @moderationTypeTemporarySuspension.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary restriction'**
+  String get moderationTypeTemporarySuspension;
+
+  /// No description provided for @moderationTypePermanentBan.
+  ///
+  /// In en, this message translates to:
+  /// **'Account closure'**
+  String get moderationTypePermanentBan;
+
+  /// No description provided for @moderationTypePhotoRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo not approved'**
+  String get moderationTypePhotoRejected;
+
+  /// No description provided for @moderationTypePhotoRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo removed'**
+  String get moderationTypePhotoRemoved;
+
+  /// No description provided for @moderationTypeRequireReverification.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification needed again'**
+  String get moderationTypeRequireReverification;
+
+  /// No description provided for @moderationTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderation decision'**
+  String get moderationTypeOther;
+
+  /// No description provided for @moderationReasonHarmfulBehavior.
+  ///
+  /// In en, this message translates to:
+  /// **'Harmful or abusive behavior'**
+  String get moderationReasonHarmfulBehavior;
+
+  /// No description provided for @moderationReasonScamOrFraud.
+  ///
+  /// In en, this message translates to:
+  /// **'Scams or fraud'**
+  String get moderationReasonScamOrFraud;
+
+  /// No description provided for @moderationReasonSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Spam'**
+  String get moderationReasonSpam;
+
+  /// No description provided for @moderationReasonAuthenticity.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile authenticity'**
+  String get moderationReasonAuthenticity;
+
+  /// No description provided for @moderationReasonAgeRequirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Age requirement'**
+  String get moderationReasonAgeRequirement;
+
+  /// No description provided for @moderationReasonContentRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Content rules'**
+  String get moderationReasonContentRules;
+
+  /// No description provided for @moderationReasonPhotoRequirements.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo requirements'**
+  String get moderationReasonPhotoRequirements;
+
+  /// No description provided for @moderationReasonWellbeing.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety and wellbeing'**
+  String get moderationReasonWellbeing;
+
+  /// No description provided for @moderationReasonGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'Community guidelines'**
+  String get moderationReasonGeneral;
+
+  /// No description provided for @moderationAppealAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal this decision'**
+  String get moderationAppealAction;
+
+  /// No description provided for @moderationAppealOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal received. We\'ll review it and show the result here.'**
+  String get moderationAppealOpen;
+
+  /// No description provided for @moderationAppealInReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Your appeal is being reviewed.'**
+  String get moderationAppealInReview;
+
+  /// No description provided for @moderationAppealAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal accepted'**
+  String get moderationAppealAccepted;
+
+  /// No description provided for @moderationAppealRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal not accepted'**
+  String get moderationAppealRejected;
+
+  /// No description provided for @moderationAppealResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Appeal reviewed'**
+  String get moderationAppealResolved;
+
+  /// No description provided for @moderationAppealWindowClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'The 30-day appeal window for this decision has closed.'**
+  String get moderationAppealWindowClosed;
+
+  /// No description provided for @moderationAppealSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us why you think this decision is wrong. Someone on our team who did not make the decision will review it.'**
+  String get moderationAppealSheetBody;
+
+  /// No description provided for @moderationAppealReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your appeal'**
+  String get moderationAppealReasonLabel;
+
+  /// No description provided for @moderationAppealReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 10 characters'**
+  String get moderationAppealReasonHint;
+
+  /// No description provided for @moderationAppealReasonTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Please write at least 10 characters.'**
+  String get moderationAppealReasonTooShort;
+
+  /// No description provided for @moderationAppealSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send appeal'**
+  String get moderationAppealSubmit;
+
+  /// No description provided for @moderationAppealSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your appeal was sent. We\'ll show the result here.'**
+  String get moderationAppealSent;
+
+  /// No description provided for @moderationAppealAlreadySent.
+  ///
+  /// In en, this message translates to:
+  /// **'You have already appealed this decision.'**
+  String get moderationAppealAlreadySent;
+
+  /// No description provided for @moderationAppealNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This decision can\'t be appealed.'**
+  String get moderationAppealNotAllowed;
+
+  /// No description provided for @moderationAppealInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please write between 10 and 2,000 characters.'**
+  String get moderationAppealInvalid;
+
+  /// No description provided for @moderationAppealFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t send your appeal. Check your connection and try again.'**
+  String get moderationAppealFailed;
 }
 
 class _AppLocalizationsDelegate

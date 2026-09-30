@@ -17,6 +17,7 @@ import {
   distanceDisclosureDecision,
 } from "./geo/coarseDistance.js";
 import {isAccountEligible} from "./profileSafety.js";
+import {assertCallerAccountEligible} from "./accountGuard.js";
 import {
   loadActiveMatchPartnerIds,
   passesDiscoveryProfileFilters,
@@ -46,6 +47,7 @@ import {
   cleanupOldNotifications,
 } from "./automation/cleanup.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
+import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -89,6 +91,7 @@ function parsePendingPhotoPath(name: string): {uid: string; imageId: string} | n
 
 export const getDiscoveryCandidates = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, null);
   const callerAccount = await db.doc(`users/${uid}`).get();
   if (!isAccountEligible(callerAccount.data())) {
     throw new HttpsError("permission-denied", "account-suspended");
@@ -185,6 +188,7 @@ export const getDiscoveryFeed = getDiscoveryCandidates;
 
 export const recordDiscoveryDecision = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, null);
   const candidateUid = String(request.data?.candidateUid ?? request.data?.targetUserId ?? "");
   const action = String(request.data?.action ?? "like");
   if (!candidateUid || candidateUid === uid) {
@@ -328,6 +332,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
  */
 export const getDistanceLabel = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertCallerAccountEligible(db, uid);
   const otherUid = String(request.data?.otherUid ?? "");
   if (!otherUid || otherUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid user.");

@@ -42,12 +42,45 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
       account: _users
           .doc(uid)
           .snapshots()
+          .where(
+            (snap) => !isCachedRestriction(
+              snap.exists ? snap.data() : null,
+              fromCache: snap.metadata.isFromCache,
+            ),
+          )
           .map((snap) => snap.exists ? (snap.data() ?? const {}) : null),
       profile: _profiles
           .doc(uid)
           .snapshots()
           .map((snap) => snap.data() ?? const <String, dynamic>{}),
     );
+  }
+
+  /// True for a locally cached account snapshot that says the account is
+  /// restricted (banned, deleted, disabled or suspended).
+  ///
+  /// Such a snapshot is held back until the server's copy arrives. Firestore
+  /// emits the cached document first, so a member whose ban was just lifted
+  /// used to sign in, see the stale "banned" copy and be signed straight back
+  /// out as banned (found in runtime QA). Waiting costs nothing for a real
+  /// restriction: the server copy says the same thing a moment later, and a
+  /// banned account cannot refresh its session anyway.
+  @visibleForTesting
+  static bool isCachedRestriction(
+    Map<String, dynamic>? account, {
+    required bool fromCache,
+  }) {
+    if (!fromCache || account == null) {
+      return false;
+    }
+    final status = AccountStatusX.fromFirestore(
+      account['accountStatus'],
+      legacyIsBanned: account['isBanned'] as bool?,
+      legacyIsActive: account['isActive'] as bool?,
+      legacyIsSuspended: account['isSuspended'] as bool?,
+      suspendedUntil: null,
+    );
+    return status != AccountStatus.active;
   }
 
   /// Combines the private account and the public profile into one live
@@ -132,13 +165,21 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
         kind: AuthErrorKind.unknown,
       );
     }
-    if (user.isBanned || !user.isActive) {
+    ensureSignInAllowed(user);
+    return user;
+  }
+
+  /// A suspended member signs in into the restricted state (the router
+  /// holds them on the restricted screen, from which they can appeal).
+  /// Banned, deleted and disabled accounts are refused.
+  @visibleForTesting
+  static void ensureSignInAllowed(AuthUser user) {
+    if (!user.isSuspended && (user.isBanned || !user.isActive)) {
       throw const AuthException(
         AuthMessages.banned,
         kind: AuthErrorKind.banned,
       );
     }
-    return user;
   }
 
   @override
@@ -159,7 +200,9 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
   Future<AuthUser> upsertFromSession(AuthSession session) {
     final uid = session.uid;
     // Coalesce concurrent upserts for the same uid (e.g. sign-in + auth snapshot).
-    return _upsertInFlight[uid] ??= _runUpsert(session); // ignore: unawaited_futures
+    return _upsertInFlight[uid] ??= _runUpsert(
+      session,
+    ); // ignore: unawaited_futures
   }
 
   Future<AuthUser> _runUpsert(AuthSession session) async {
@@ -207,7 +250,8 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
 
       if (!profileSnap.exists) {
         batch.set(profileRef, _newProfileStub(session, now));
-      } else if (session.persistDisplayName && _isPresent(session.displayName)) {
+      } else if (session.persistDisplayName &&
+          _isPresent(session.displayName)) {
         final profile = profileSnap.data() ?? const <String, dynamic>{};
         if (!_isPresent(profile['displayName'])) {
           batch.update(profileRef, {

@@ -1,4 +1,6 @@
+import 'package:mevora/core/routing/app_operations_redirect.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_gate.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 
 /// Pure redirect rules for the authentication gate.
@@ -33,6 +35,7 @@ abstract final class AuthRedirector {
     bool locationGateResolved = true,
     String? journeyRoute,
     bool journeyPending = false,
+    AppOperationsGate operationsGate = AppOperationsGate.normal,
   }) {
     if (allowDesignSystem && location == AppRoutes.designSystem) {
       return null;
@@ -43,6 +46,20 @@ abstract final class AuthRedirector {
     // deep link, restored location, or a hand-typed URL.
     if (location == AppRoutes.qaLogin && !qaLoginEnabled) {
       return AppRoutes.login;
+    }
+
+    // Maintenance and required updates come before sign-in state.
+    final operations = AppOperationsRedirect.evaluate(
+      gate: operationsGate,
+      location: location,
+    );
+    if (operations.decided) {
+      return operations.target;
+    }
+
+    final restriction = _accountRestrictionRedirect(status, location);
+    if (restriction != null) {
+      return restriction;
     }
 
     switch (status) {
@@ -109,6 +126,36 @@ abstract final class AuthRedirector {
         }
         return null;
     }
+  }
+
+  /// Restricted-account gate. A suspended member stays signed in but only
+  /// reaches the restricted screen and what it links to: their moderation
+  /// record and appeals, support, the legal pages, and account deletion /
+  /// data export. When staff restore the account the user document flips to
+  /// active and the member is released back into the normal flow.
+  static String? _accountRestrictionRedirect(
+    AuthStatus status,
+    String location,
+  ) {
+    final suspended = status is Authenticated && status.user.isSuspended;
+    if (!suspended) {
+      return status is Authenticated && location == AppRoutes.accountRestricted
+          ? AppRoutes.splash
+          : null;
+    }
+    return restrictedAccountAllows(location)
+        ? null
+        : AppRoutes.accountRestricted;
+  }
+
+  /// Routes a suspended member may open.
+  static bool restrictedAccountAllows(String location) {
+    return location == AppRoutes.accountRestricted ||
+        location == AppRoutes.moderationStatus ||
+        location == AppRoutes.accountSettings ||
+        location == AppRoutes.supportCenter ||
+        location.startsWith('${AppRoutes.supportCenter}/') ||
+        _publicLegalRoutes.contains(location);
   }
 
   static bool _journeyAllows(String location) {

@@ -1,0 +1,10 @@
+@page
+@model ErrorModel
+@{
+    ViewData["Title"] = L["Error"].Value;
+}
+<div class="card">
+    <h1>@L["Something went wrong"]</h1>
+    <p>@L["The error was logged. No details are shown here."] @if (Model.RequestId is not null) { <span class="mono">(@L["ref"] @Model.RequestId)</span> }</p>
+    <p><a class="btn" href="/Dashboard">@L["Back to the console"]</a></p>
+</div>

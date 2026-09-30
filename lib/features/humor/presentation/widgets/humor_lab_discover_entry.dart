@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/app_scope.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
@@ -43,7 +45,8 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
   var _dailyImpressionLogged = false;
 
   bool get _enabled =>
-      AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true;
+      AppScope.maybeOf(context)?.config.featureFlags.humorLabEnabled == true &&
+      AppOperationsScope.isFeatureEnabled(context, AppFeature.humorLab);
 
   @override
   void didChangeDependencies() {

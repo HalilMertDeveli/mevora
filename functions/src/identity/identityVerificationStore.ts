@@ -123,7 +123,7 @@ export async function attachProviderSession(
 
 export type ApplyEventResult =
   | {applied: true; status: IdentityVerificationStatus}
-  | {applied: false; skipped: "duplicate" | "stale" | "session_mismatch" | "no_such_user"};
+  | {applied: false; skipped: "duplicate" | "stale" | "session_mismatch" | "session_revoked" | "no_such_user"};
 
 /**
  * Applies an authenticated provider decision.
@@ -171,6 +171,13 @@ export async function applyIdentityProviderEvent(
       return {applied: false, skipped: "session_mismatch"} as const;
     }
 
+    // A session Trust & Safety revoked (re-verification required) can never
+    // grant the badge again, however late or re-delivered its webhook is.
+    const revoked = verificationSnap.data()?.revokedProviderSessionIds;
+    if (Array.isArray(revoked) && revoked.includes(event.providerSessionId)) {
+      return {applied: false, skipped: "session_revoked"} as const;
+    }
+
     const decision = shouldApplyEvent(existing, event);
     if (!decision.apply) {
       return {applied: false, skipped: decision.skipReason ?? "stale"} as const;
@@ -187,7 +194,9 @@ export async function applyIdentityProviderEvent(
       lastEventId: event.eventId,
       lastEventAtMs: event.occurredAtMs,
       ...(verificationSnap.exists ? {} : {createdAt: FieldValue.serverTimestamp()}),
-      ...(verified ? {verifiedAt: FieldValue.serverTimestamp()} : {}),
+      // A fresh provider verdict of "verified" satisfies an outstanding
+      // re-verification requirement; nothing else clears it.
+      ...(verified ? {verifiedAt: FieldValue.serverTimestamp(), reverificationRequired: false} : {}),
     };
     tx.set(verificationRef, update, {merge: true});
 
@@ -205,6 +214,65 @@ export async function applyIdentityProviderEvent(
     }
 
     return {applied: true, status: event.status} as const;
+  });
+}
+
+/**
+ * Trust & Safety asks a member to verify again.
+ *
+ * This is the only verification write outside the provider flow, and it can
+ * only take the badge away:
+ *
+ *  - status becomes `expired` (terminal, and a state the member may start a
+ *    new session from — canStartIdentitySession allows it);
+ *  - `isVerified` is cleared on users/{uid} and profiles/{uid} in the same
+ *    transaction, exactly as a provider "expired" event would;
+ *  - the current provider session is revoked, and `lastEventAtMs` moves to
+ *    now, so neither a late nor a re-delivered webhook from the old session
+ *    can restore the badge.
+ *
+ * Only a new session that the provider itself marks verified sets the badge
+ * again. There is deliberately no admin path that writes `verified`.
+ */
+export async function requireIdentityReverification(
+  db: Firestore,
+  uid: string,
+  input: {actionId: string; nowMs: number},
+): Promise<{previousStatus: IdentityVerificationStatus; wasVerified: boolean}> {
+  const verificationRef = identityVerificationRef(db, uid);
+  const userRef = db.doc(`users/${uid}`);
+  const profileRef = db.doc(`profiles/${uid}`);
+  return db.runTransaction(async (tx) => {
+    const [verificationSnap, userSnap, profileSnap] = await Promise.all([
+      tx.get(verificationRef),
+      tx.get(userRef),
+      tx.get(profileRef),
+    ]);
+    if (!userSnap.exists) {
+      throw new Error("no_such_user");
+    }
+    const existing = parseIdentityVerificationDoc(verificationSnap.data());
+    tx.set(verificationRef, {
+      schemaVersion: IDENTITY_VERIFICATION_SCHEMA_VERSION,
+      provider: existing.provider,
+      status: "expired" satisfies IdentityVerificationStatus,
+      reason: FieldValue.delete(),
+      reverificationRequired: true,
+      reverificationRequiredAt: FieldValue.serverTimestamp(),
+      reverificationActionId: input.actionId,
+      lastEventAtMs: Math.max(existing.lastEventAtMs ?? 0, input.nowMs),
+      ...(existing.providerSessionId
+        ? {revokedProviderSessionIds: FieldValue.arrayUnion(existing.providerSessionId)}
+        : {}),
+      updatedAt: FieldValue.serverTimestamp(),
+      ...(verificationSnap.exists ? {} : {createdAt: FieldValue.serverTimestamp(), attemptCount: 0}),
+    }, {merge: true});
+    const badge = {isVerified: false, updatedAt: FieldValue.serverTimestamp()};
+    tx.set(userRef, badge, {merge: true});
+    if (profileSnap.exists) {
+      tx.set(profileRef, badge, {merge: true});
+    }
+    return {previousStatus: existing.status, wasVerified: userSnap.get("isVerified") === true};
   });
 }
 

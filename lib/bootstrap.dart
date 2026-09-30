@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/feature_flags.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/boost_services_factory.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/di/discovery_services_factory.dart';
@@ -140,11 +141,14 @@ Future<void> bootstrap(AppEnvironment environment) async {
     analytics: analytics,
     logger: logger,
   );
+  final preferences = await SharedPreferences.getInstance();
+  final appOperations = createAppOperationsController(
+    preferences: preferences,
+    logger: logger,
+  );
   final languageController = LanguageController(
     repository: LanguageRepository(
-      local: SharedPreferencesLanguageDataSource(
-        preferences: await SharedPreferences.getInstance(),
-      ),
+      local: SharedPreferencesLanguageDataSource(preferences: preferences),
       remote: UserSettingsRepositoryImpl(
         dataSource: FirebaseSettingsDataSource(),
       ),
@@ -178,6 +182,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       settingsServices: settingsServices,
       supportServices: supportServices,
       streakServices: streakServices,
+      appOperations: appOperations,
     ),
   );
 }

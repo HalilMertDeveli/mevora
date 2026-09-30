@@ -23,6 +23,10 @@ import {attributePickMatch, recordPickDecision} from "./picks/service.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
 import {SIGNAL_STRENGTHS} from "./personalization/config.js";
 import {recordLearningEventSafely} from "./personalization/store.js";
+import {assertCallerAccountEligible} from "./accountGuard.js";
+import {reportPriority} from "./admin/reports/reportPriority.js";
+import {intakeUserReport} from "./admin/reports/reportIntake.js";
+import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -58,6 +62,21 @@ const REPORT_REASONS = new Set([
   "other",
 ]);
 const MAX_REPORTS_PER_DAY = 20;
+const MAX_REPORT_DESCRIPTION = 2000;
+
+/** A document id the client may cite (match / message), or null. */
+function boundedRef(raw: unknown): string | null {
+  // A match id is two uids joined, so allow their length; never a path.
+  return typeof raw === "string" && /^[^/\s]{1,300}$/.test(raw) ? raw : null;
+}
+
+function boundedDescription(raw: unknown): string | null {
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const trimmed = raw.trim().slice(0, MAX_REPORT_DESCRIPTION);
+  return trimmed.length ? trimmed : null;
+}
 
 function requireUid(uid: string | undefined): string {
   if (!uid) {
@@ -198,6 +217,7 @@ export async function swipeTransaction(
 
 export const recordSwipe = onCall(socialCallable, async (request) => {
   const uid = requireUid(request.auth?.uid);
+  await assertAppFeatureAvailable(db, null);
   const targetUserId = String(request.data?.targetUserId ?? "");
   const action = String(request.data?.action ?? "like");
   if (!targetUserId || targetUserId === uid) {
@@ -390,17 +410,24 @@ export const reportUser = onCall(socialCallable, async (request) => {
   if (recent.size >= MAX_REPORTS_PER_DAY) {
     throw new HttpsError("resource-exhausted", "report-rate-limit");
   }
-  await db.collection("reports").add({
+  // Priority is decided here, server-side; a client-supplied one is ignored.
+  // matchId / messageId are operational references only — the message itself
+  // stays end-to-end encrypted and is never read by moderation.
+  const {priority, priorityRank} = reportPriority(reason);
+  const reportRef = await db.collection("reports").add({
     reporterId: uid,
     reportedUserId: userId,
-    matchId: request.data?.matchId ?? null,
-    messageId: request.data?.messageId ?? null,
+    matchId: boundedRef(request.data?.matchId),
+    messageId: boundedRef(request.data?.messageId),
     reason,
-    description: request.data?.description ?? null,
+    description: boundedDescription(request.data?.description),
+    priority,
+    priorityRank,
     createdAt: FieldValue.serverTimestamp(),
     status: "open",
   });
   await markProfilePhotosForManualReview(db, userId, `report:${reason}`);
+  await intakeUserReport(db, {reportId: reportRef.id, reporterId: uid, reportedUserId: userId, reason});
   return {ok: true};
 });
 
@@ -422,6 +449,8 @@ export const createVideoCall = onCall(
     const uid = requireUid(request.auth?.uid);
     const matchId = String(request.data?.matchId ?? "");
     const receiverId = String(request.data?.receiverId ?? "");
+    await assertCallerAccountEligible(db, uid);
+    await assertAppFeatureAvailable(db, "calls");
     const match = await db.doc(`matches/${matchId}`).get();
     const userIds = (match.data()?.userIds as string[]) ?? [];
     if (!match.exists || match.data()?.isActive !== true || !userIds.includes(uid) || !userIds.includes(receiverId)) {
@@ -463,6 +492,7 @@ export const respondToVideoCall = onCall(
   livekitCallable,
   async (request) => {
     const uid = requireUid(request.auth?.uid);
+    await assertCallerAccountEligible(db, uid);
     const callId = String(request.data?.callId ?? "");
     const accept = request.data?.accept === true;
     const ref = db.doc(`calls/${callId}`);

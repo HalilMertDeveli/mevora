@@ -791,10 +791,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authNetwork => 'Check your internet connection.';
 
   @override
-  String get authDisabled => 'This account has been disabled.';
+  String get authDisabled =>
+      'This account has been disabled. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.';
 
   @override
-  String get authBanned => 'This account has been suspended.';
+  String get authBanned =>
+      'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.';
 
   @override
   String get authOauth => 'We could not complete sign-in. Please try again.';
@@ -4803,4 +4805,252 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get humorDailyLockedBody =>
       'The daily humor round begins once your humor profile is ready.';
+
+  @override
+  String get appOpsMaintenanceTitle => 'A short maintenance break';
+
+  @override
+  String get appOpsMaintenanceMessage =>
+      'Mevora is briefly down for maintenance. We\'ll be right back.';
+
+  @override
+  String get appOpsMaintenanceSupport => 'Contact support';
+
+  @override
+  String get appOpsMaintenanceAccount => 'Account settings';
+
+  @override
+  String get appOpsUpdateRequiredTitle => 'Time to update';
+
+  @override
+  String get appOpsUpdateRequiredMessage =>
+      'This version of Mevora is no longer supported. Update the app to keep going.';
+
+  @override
+  String get appOpsUpdateAction => 'Update';
+
+  @override
+  String appOpsUpdateFromStore(String store) {
+    return 'Update Mevora from $store.';
+  }
+
+  @override
+  String get appOpsGenericStore => 'your app store';
+
+  @override
+  String get appOpsUpdateAvailable => 'A new version of Mevora is available.';
+
+  @override
+  String get appOpsFeatureUnavailableTitle => 'Temporarily unavailable';
+
+  @override
+  String get appOpsFeatureUnavailableMessage =>
+      'This feature is taking a short break. Please check back a little later.';
+
+  @override
+  String get appOpsSpotifyUnavailable =>
+      'Connecting Spotify is temporarily unavailable. You can connect it later from the Music tab.';
+
+  @override
+  String get supportTicketRepliesTitle => 'Replies';
+
+  @override
+  String get supportTicketNoRepliesYet =>
+      'No reply yet. Mevora Support will answer you here.';
+
+  @override
+  String get supportTicketRepliesError =>
+      'Replies could not be loaded. Try again later.';
+
+  @override
+  String get supportTicketDefaultAuthor => 'Mevora Support';
+
+  @override
+  String get supportTicketRepliedBadge => 'Support replied';
+
+  @override
+  String get supportTicketNoComposerHint =>
+      'Want to add something? Send a new request and mention this one.';
+
+  @override
+  String get accountRestrictedTitle => 'Account restricted';
+
+  @override
+  String get accountRestrictedHeadline => 'Your account is restricted';
+
+  @override
+  String get accountRestrictedBody =>
+      'While your account is restricted you can\'t use Discover, matches or chat. You can still see why, appeal the decision, contact support or manage your data.';
+
+  @override
+  String accountRestrictedUntil(String date) {
+    return 'The restriction ends on $date.';
+  }
+
+  @override
+  String get accountRestrictedOpenEnded =>
+      'The restriction stays in place until our team reviews it.';
+
+  @override
+  String get accountRestrictedReleaseNote =>
+      'When the restriction is lifted, you\'ll be taken back to Mevora automatically.';
+
+  @override
+  String get accountRestrictedWhy => 'Why is my account restricted?';
+
+  @override
+  String get accountRestrictedContactSupport => 'Contact support';
+
+  @override
+  String get accountRestrictedManageData => 'Your data and account deletion';
+
+  @override
+  String get moderationStatusTitle => 'Account status';
+
+  @override
+  String get moderationStatusSettingsSubtitle =>
+      'Warnings, restrictions and appeals';
+
+  @override
+  String get moderationStatusActive => 'Your account is in good standing.';
+
+  @override
+  String get moderationStatusSuspended => 'Your account is restricted.';
+
+  @override
+  String get moderationStatusBanned => 'Your account is closed.';
+
+  @override
+  String get moderationStatusInactive => 'Your account is not active.';
+
+  @override
+  String moderationStatusReason(String category) {
+    return 'Reason: $category';
+  }
+
+  @override
+  String get moderationStatusLoadFailed =>
+      'Your account status could not be loaded. Pull down to try again.';
+
+  @override
+  String get moderationDecisionsTitle => 'Decisions about your account';
+
+  @override
+  String get moderationDecisionsEmpty =>
+      'There are no moderation decisions on your account.';
+
+  @override
+  String moderationDecisionUntil(String date) {
+    return 'Until $date';
+  }
+
+  @override
+  String get moderationDecisionReversed => 'Reversed';
+
+  @override
+  String get moderationTypeWarning => 'Warning';
+
+  @override
+  String get moderationTypeTemporarySuspension => 'Temporary restriction';
+
+  @override
+  String get moderationTypePermanentBan => 'Account closure';
+
+  @override
+  String get moderationTypePhotoRejected => 'Photo not approved';
+
+  @override
+  String get moderationTypePhotoRemoved => 'Photo removed';
+
+  @override
+  String get moderationTypeRequireReverification => 'Verification needed again';
+
+  @override
+  String get moderationTypeOther => 'Moderation decision';
+
+  @override
+  String get moderationReasonHarmfulBehavior => 'Harmful or abusive behavior';
+
+  @override
+  String get moderationReasonScamOrFraud => 'Scams or fraud';
+
+  @override
+  String get moderationReasonSpam => 'Spam';
+
+  @override
+  String get moderationReasonAuthenticity => 'Profile authenticity';
+
+  @override
+  String get moderationReasonAgeRequirement => 'Age requirement';
+
+  @override
+  String get moderationReasonContentRules => 'Content rules';
+
+  @override
+  String get moderationReasonPhotoRequirements => 'Photo requirements';
+
+  @override
+  String get moderationReasonWellbeing => 'Safety and wellbeing';
+
+  @override
+  String get moderationReasonGeneral => 'Community guidelines';
+
+  @override
+  String get moderationAppealAction => 'Appeal this decision';
+
+  @override
+  String get moderationAppealOpen =>
+      'Appeal received. We\'ll review it and show the result here.';
+
+  @override
+  String get moderationAppealInReview => 'Your appeal is being reviewed.';
+
+  @override
+  String get moderationAppealAccepted => 'Appeal accepted';
+
+  @override
+  String get moderationAppealRejected => 'Appeal not accepted';
+
+  @override
+  String get moderationAppealResolved => 'Appeal reviewed';
+
+  @override
+  String get moderationAppealWindowClosed =>
+      'The 30-day appeal window for this decision has closed.';
+
+  @override
+  String get moderationAppealSheetBody =>
+      'Tell us why you think this decision is wrong. Someone on our team who did not make the decision will review it.';
+
+  @override
+  String get moderationAppealReasonLabel => 'Your appeal';
+
+  @override
+  String get moderationAppealReasonHint => 'At least 10 characters';
+
+  @override
+  String get moderationAppealReasonTooShort =>
+      'Please write at least 10 characters.';
+
+  @override
+  String get moderationAppealSubmit => 'Send appeal';
+
+  @override
+  String get moderationAppealSent =>
+      'Your appeal was sent. We\'ll show the result here.';
+
+  @override
+  String get moderationAppealAlreadySent =>
+      'You have already appealed this decision.';
+
+  @override
+  String get moderationAppealNotAllowed => 'This decision can\'t be appealed.';
+
+  @override
+  String get moderationAppealInvalid =>
+      'Please write between 10 and 2,000 characters.';
+
+  @override
+  String get moderationAppealFailed =>
+      'We couldn\'t send your appeal. Check your connection and try again.';
 }

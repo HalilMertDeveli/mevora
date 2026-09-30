@@ -74,3 +74,7 @@ export {
 export {processAutomationTask, automationJobDrain} from "./automation/schedules.js";
 // Admin-only, read-only B-01 follow-up audit (never mutates blocks).
 export {runForgedBlockAudit} from "./automation/forgedBlockAuditCallable.js";
+// Admin / Trust & Safety control plane: explicit staff commands (RBAC + MFA +
+// audit), the member's appeal callables, and T&S upkeep. See
+// docs/ADMIN_TRUST_SAFETY_ARCHITECTURE.md.
+export * from "./admin/index.js";

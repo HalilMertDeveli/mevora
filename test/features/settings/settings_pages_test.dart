@@ -232,6 +232,9 @@ void main() {
     expect(find.text('Edit profile'), findsOneWidget);
     expect(find.text('Change password'), findsOneWidget);
     expect(find.text('Linked accounts'), findsOneWidget);
+    // Warnings, restrictions and appeals are reachable for every member.
+    expect(find.text('Account status'), findsOneWidget);
+    expect(find.text('Warnings, restrictions and appeals'), findsOneWidget);
     expect(find.text('Delete account'), findsOneWidget);
     expect(find.text('Log out'), findsOneWidget);
     expect(find.text('Connect Spotify'), findsOneWidget);

@@ -65,6 +65,10 @@ Email yapılandırılmamışsa ticket yine Firestore’a yazılır; mail atlanı
 ## Firestore
 
 - `supportTickets` — Open/InProgress/Resolved/Closed, Low/Normal/High/Urgent
+  - `source: "website"`, `userId: "web-{ticketId}"` always. The visitor is not signed in, so a
+    website ticket never carries a member uid in `userId` (the app lists tickets, and account
+    export/deletion find them, by `userId`). The optional user id field is stored as
+    `claimedUserId` — an unverified claim staff must confirm before acting on an account.
 - `faqItems` — published FAQs (fallback: `Data/DefaultFaqData.cs`)
 
 ## Storage

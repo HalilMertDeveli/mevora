@@ -1,0 +1,87 @@
+@page "/Appeals/{appealId}"
+@model Mevora.Admin.Web.Pages.Appeals.DetailModel
+@{
+    var a = Model.Appeal;
+    var original = a.Get("originalAction");
+    ViewData["Title"] = L["Appeal"].Value;
+    var resolved = a.Str("status") == "resolved";
+    var mine = original.Str("actorAdminId") == User.StaffUid();
+}
+<div class="page-head">
+    <div>
+        <h1>@L["Appeal against {0}", L.Code(a.Str("actionType"))]</h1>
+        <p class="mono">@Model.AppealId</p>
+    </div>
+    <span class="status status-@a.S("status")">@L.Code(a.Str("status"))</span>
+</div>
+<partial name="_Flash" model="Model" />
+@if (a.ValueKind == JsonValueKind.Object)
+{
+<div class="grid grid-main-side">
+    <div>
+        <section class="card">
+            <h2>@L["The member's appeal"]</h2>
+            <p><partial name="_UserChip" model='a.Get("user")' /> · @L["current status"] <span class="status status-@a.S("currentAccountStatus")">@L.Code(a.Str("currentAccountStatus"))</span></p>
+            <div class="msg msg-user">@a.S("reason")</div>
+            <p class="small muted">@L["Filed {0} via {1}", L.When(a, "createdAt"), L.Code("source." + a.Str("source"))]</p>
+        </section>
+        <section class="card">
+            <h2>@L["The decision being appealed"]</h2>
+            <dl class="kv">
+                <dt>@L["Action"]</dt><dd>@L.Code(original.Str("type")) · <span class="mono small">@original.S("actionId")</span></dd>
+                <dt>@L["Reason"]</dt><dd>@L.Code(original.Str("reasonCode"))</dd>
+                <dt>@L["Decided"]</dt><dd>@L.When(original, "createdAt") · <span class="mono">@original.S("actorAdminId")</span></dd>
+                <dt>@L["Expires"]</dt><dd>@L.When(original, "expiresAt")</dd>
+                <dt>@L["Internal note"]</dt><dd>@original.S("internalNote")</dd>
+                @if (original.Str("overturnedByActionId") is not null) { <dt>@L["Overturned"]</dt><dd><span class="badge badge-info">@L["yes"]</span></dd> }
+            </dl>
+            @if (a.Str("caseId") is { } cid) { <p><a href="/Cases/@cid">@L["Open the appeal case"]</a></p> }
+        </section>
+        @if (resolved)
+        {
+            <section class="card">
+                <h2>@L["Outcome"]</h2>
+                <p><strong>@L.Code(a.Str("decision"))</strong> · <span class="mono">@a.S("resolvedBy")</span> · @L.When(a, "resolvedAt")</p>
+                <div class="msg msg-support">@a.Get("resolution").S("userMessage")</div>
+            </section>
+        }
+    </div>
+    <div>
+        @if (!resolved)
+        {
+            <section class="card">
+                <h2>@L["Decide"]</h2>
+                @if (mine && User.StaffRole() != "super_admin")
+                {
+                    <p class="alert alert-warn">@L["You made the original decision. Another senior moderator must review this appeal."]</p>
+                }
+                else
+                {
+                    @if (Model.Can("appeal.assign") && a.Str("assignedTo") != User.StaffUid())
+                    {
+                        <form method="post" asp-page-handler="Assign" class="inline"><button type="submit" class="btn">@L["Assign to me"]</button></form>
+                    }
+                    @if (Model.Can("appeal.resolve"))
+                    {
+                        <form method="post" asp-page-handler="Resolve" data-confirm="@L["Record this appeal decision? It cannot be changed afterwards."]">
+                            <input type="hidden" name="idempotencyKey" value="@Model.FormKey-resolve" />
+                            <fieldset>
+                                <legend>@L["Decision"]</legend>
+                                <label><input type="radio" name="decision" value="reject" required /> @L["Reject — the decision stands"]</label>
+                                <label><input type="radio" name="decision" value="accept" /> @L["Accept — overturn it (a suspension or ban is lifted by a new restore action)"]</label>
+                            </fieldset>
+                            <div class="field"><label for="umsg">@L["Message to the member"]</label><textarea id="umsg" name="userMessage" maxlength="1000" required></textarea></div>
+                            <div class="field"><label for="inote">@L["Internal note"]</label><textarea id="inote" name="internalNote" maxlength="4000"></textarea></div>
+                            <button type="submit" class="btn btn-primary">@L["Record decision"]</button>
+                        </form>
+                        @if (a.Str("actionType") == "REQUIRE_REVERIFICATION")
+                        {
+                            <p class="boundary">@L["Accepting does not make the member verified — only a new provider verification can."]</p>
+                        }
+                    }
+                }
+            </section>
+        }
+    </div>
+</div>
+}

@@ -11,6 +11,8 @@ import {PurchaseVerificationService} from "./purchaseVerificationService.js";
 import {LEGACY_DURATION_MS, walletDocPath} from "./config.js";
 import type {ActiveBoostSnapshot, PurchaseLedger, VerifyBoostRequest} from "./types.js";
 import {FcmTypes, sendUserPush} from "../notifications.js";
+import {assertCallerAccountEligible} from "../accountGuard.js";
+import {assertAppFeatureAvailable} from "../appOperations/appOperationsGate.js";
 
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 const callableOptions = {
@@ -344,6 +346,8 @@ export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
 export const activateBoost = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const db = getFirestore();
+  await assertCallerAccountEligible(db, uid);
+  await assertAppFeatureAvailable(db, "boost");
   const result = await db.runTransaction(async (tx) => {
     const now = Timestamp.now().toDate();
     const walletRef = db.doc(walletDocPath(uid));

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>mevora-admin-web-dev-secrets</UserSecretsId>
+    <RootNamespace>Mevora.Admin.Web</RootNamespace>
+    <AssemblyName>Mevora.Admin.Web</AssemblyName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!--
+    Deliberately no FirebaseAdmin / Google.Cloud.Firestore package: the admin
+    web holds no service-account credential and cannot read or write Firestore.
+    Every read and every decision goes through the admin commands in
+    functions/src/admin, which authorise the staff member on each call.
+  -->
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Mevora.Admin.Web.Tests" />
+  </ItemGroup>
+
+</Project>

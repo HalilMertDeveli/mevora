@@ -1,0 +1,66 @@
+@page
+@model Mevora.Admin.Web.Pages.Admin.StaffModel
+@{
+    ViewData["Title"] = L["Staff"].Value;
+    var me = User.StaffUid();
+    var summary = Model.Result.Get("summary");
+}
+<div class="page-head">
+    <div>
+        <h1>@L["Staff & roles"]</h1>
+        <p>@L["The staff record is the authority: a change here takes effect on the colleague's next request. Every change is in the audit log."]</p>
+    </div>
+    <span class="muted small">@L["{0} active · {1} disabled", summary.Num("active")!, summary.Num("disabled")!]</span>
+</div>
+<partial name="_Flash" model="Model" />
+
+<table class="data">
+    <thead><tr><th scope="col">@L["Staff"]</th><th scope="col">@L["Role"]</th><th scope="col">@L["Status"]</th><th scope="col">@L["Last console sign-in"]</th><th scope="col">@L["Added"]</th><th scope="col">@L["Last role change"]</th></tr></thead>
+    <tbody>
+        @foreach (var s in Model.Result.Items())
+        {
+            var uid = s.S("uid");
+            <tr>
+                <td>
+                    <a href="/Admin/Staff/@Uri.EscapeDataString(uid)"><strong>@(s.Str("displayName") is { Length: > 0 } dn ? dn : L["(no name)"].Value)</strong></a>
+                    @if (s.Bool("isOwner")) { <span class="badge badge-info">@L["Owner"]</span> }
+                    @if (s.Bool("qaSeed")) { <span class="badge badge-warn" title="@L["Seeded by tool/seedEmulatorAdminQa.cjs for role testing. Not an employee."]">@L["QA · emulator only"]</span> }
+                    @if (uid == me) { <span class="muted small">@L["(you)"]</span> }
+                    <div class="mono small">@s.S("email") · @uid</div>
+                </td>
+                <td>@L.Code(s.Str("role"))</td>
+                <td><span class="status status-@(s.Str("status") == "active" ? "active" : "banned")">@L.Code("staff." + s.Str("status"))</span></td>
+                <td class="nowrap">
+                    @if (s.Str("lastLoginAt") is null) { <span class="muted">@L["Never"]</span> }
+                    else
+                    {
+                        @L.When(s, "lastLoginAt")
+                        @if (s.Has("lastLoginMfa") && s.Get("lastLoginMfa").ValueKind == JsonValueKind.False) { <div><span class="badge badge-warn">@L["no MFA (emulator)"]</span></div> }
+                    }
+                </td>
+                <td class="nowrap">@L.When(s, "createdAt")<div class="muted small mono">@L["by {0}", s.S("createdBy")]</div></td>
+                <td class="nowrap">@L.When(s, "lastRoleChangeAt")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.Can("admin.manage_roles"))
+{
+    <section class="card">
+        <h2>@L["Add staff"]</h2>
+        <p class="small muted">@L["Use the colleague's dedicated work email. You never see or choose their password: Firebase emails them a link to set it, and the console makes them set up two-factor authentication at first sign-in. Super admin cannot be granted here."]</p>
+        <form method="post" asp-page-handler="Create" data-confirm="@L["Add this colleague and email them a password-setup link?"]">
+            <input type="hidden" name="idempotencyKey" value="@Model.FormKey-create" />
+            <div class="field-row">
+                <div class="field"><label for="n-email">@L["Work email"]</label><input id="n-email" name="email" type="email" maxlength="254" required autocomplete="off" /></div>
+                <div class="field"><label for="n-name">@L["Display name"]</label><input id="n-name" name="displayName" type="text" minlength="2" maxlength="80" required /></div>
+                <div class="field"><label for="n-role">@L["Role"]</label>
+                    <select id="n-role" name="role">
+                        @foreach (var r in Vocab.GrantableRoles) { <option value="@r">@L.Code(r)</option> }
+                    </select></div>
+            </div>
+            <button type="submit" class="btn btn-primary">@L["Add staff"]</button>
+        </form>
+    </section>
+}

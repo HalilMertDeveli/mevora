@@ -1,0 +1,74 @@
+@page
+@model Mevora.Admin.Web.Pages.Reports.IndexModel
+@{
+    ViewData["Title"] = L["Reports"].Value;
+}
+<div class="page-head">
+    <div>
+        <h1>@L["User reports"]</h1>
+        <p>@L["Priority is set by the server from the report reason. Most reports are worked through their case."]</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+
+<nav class="tabs" aria-label="@L["Report status"]">
+    @foreach (var s in new[] {"open", "resolved", "dismissed", "all"})
+    {
+        <a class="tab @(Model.Status == s ? "active" : "")" href="/Reports?status=@s">@L.Code(s)</a>
+    }
+</nav>
+
+<p class="boundary">@L["A report can reference a match and a message by ID. Message content is end-to-end encrypted and is never available here."]</p>
+
+@{
+    var rows = Model.Result.Items().ToList();
+}
+@if (rows.Count == 0)
+{
+    <p class="muted">@L["No reports."]</p>
+}
+else
+{
+    <table class="data">
+        <thead>
+            <tr><th scope="col">@L["Priority"]</th><th scope="col">@L["Reason"]</th><th scope="col">@L["Reported"]</th><th scope="col">@L["Reporter"]</th><th scope="col">@L["Description"]</th><th scope="col">@L["Case"]</th><th scope="col">@L["Filed"]</th><th scope="col"><span class="muted">@L["Actions"]</span></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in rows)
+            {
+                <tr>
+                    <td><span class="prio prio-@r.S("priority")">@L.Code(r.Str("priority"))</span></td>
+                    <td>@L.Code(r.Str("reason"))<br /><span class="status status-@r.S("status")">@L.Code(r.Str("status"))</span></td>
+                    <td><partial name="_UserChip" model='r.Get("reportedUser")' /></td>
+                    <td><partial name="_UserChip" model='r.Get("reporter")' /></td>
+                    <td class="small wrap-anywhere">@r.S("description")
+                        @if (r.Str("messageId") is { } mid) { <div class="muted">@L["Message ref"]: <span class="mono">@mid</span></div> }</td>
+                    <td class="small">
+                        @if (r.Str("caseId") is { } cid) { <a href="/Cases/@cid">@L.Code(r.Str("caseStatus") ?? "case")</a> }
+                        else if (Model.Can("report.assign") && r.Str("status") == "open")
+                        {
+                            <form method="post" asp-page-handler="OpenCase" class="inline"><input type="hidden" name="reportId" value="@r.S("reportId")" /><button type="submit" class="btn btn-small">@L["Open case"]</button></form>
+                        }
+                    </td>
+                    <td class="nowrap">@L.Age(r, "createdAt")</td>
+                    <td>
+                        @if (Model.Can("report.resolve") && r.Str("status") == "open")
+                        {
+                            <form method="post" asp-page-handler="Resolve" class="stack" data-confirm="@L["Close this single report?"]">
+                                <input type="hidden" name="reportId" value="@r.S("reportId")" />
+                                <label class="small" for="o-@r.S("reportId")">@L["Outcome"]</label>
+                                <select id="o-@r.S("reportId")" name="outcome"><option value="dismissed">@L["Dismiss"]</option><option value="resolved">@L["Resolve"]</option></select>
+                                <label class="small" for="c-@r.S("reportId")">@L["Resolution"]</label>
+                                <select id="c-@r.S("reportId")" name="code">
+                                    @foreach (var code in Vocab.ResolutionCodes) { <option value="@code">@L.Code(code)</option> }
+                                </select>
+                                <button type="submit" class="btn btn-small">@L["Close"]</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <partial name="_Pager" model="Model.Pager" />
+}

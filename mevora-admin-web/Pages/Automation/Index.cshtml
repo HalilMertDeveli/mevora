@@ -1,0 +1,107 @@
+@page
+@model Mevora.Admin.Web.Pages.Automation.IndexModel
+@{
+    ViewData["Title"] = L["Automation"].Value;
+}
+<div class="page-head">
+    <div>
+        <h1>@L["Automation — manual review"]</h1>
+        <p>@L["Jobs the pipeline could not settle on its own. Deletion and identity-erasure jobs are compliance work: closing them by hand asserts the data is gone."]</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+<nav class="tabs" aria-label="@L["Job status"]">
+    <a class="tab @(Model.Status == "manual_review" ? "active" : "")" href="/Automation">@L.Code("manual_review")</a>
+    <a class="tab @(Model.Status == "failed" ? "active" : "")" href="/Automation?status=failed">@L.Code("failed")</a>
+</nav>
+@{
+    var jobs = Model.Result.Items().ToList();
+}
+@if (jobs.Count == 0)
+{
+    <p class="muted">@L["No jobs in this state."]</p>
+}
+else
+{
+    <table class="data">
+        <thead><tr><th scope="col">@L["Job"]</th><th scope="col">@L["Subject"]</th><th scope="col">@L["Attempts"]</th><th scope="col">@L["Last error / result"]</th><th scope="col">@L["Updated"]</th><th scope="col"><span class="muted">@L["Decision"]</span></th></tr></thead>
+        <tbody>
+            @foreach (var j in jobs)
+            {
+                <tr>
+                    <td><strong>@L.Code(j.Str("kind"))</strong><div class="mono small">@j.S("jobId")</div><div class="small muted">@L[j.S("policyNote", "")]</div></td>
+                    <td>@if (j.Str("subjectUid") is { } s) { <a class="mono" href="/Users/@Uri.EscapeDataString(s)">@s</a> }</td>
+                    <td>@j.S("attempts", "0") / @j.S("maxAttempts")</td>
+                    <td class="small wrap-anywhere">
+                        <div class="mono">@j.S("error")</div>
+                        @if (j.Get("result").ValueKind == JsonValueKind.Object)
+                        {
+                            <div class="muted">@j.Get("result").GetRawText()</div>
+                        }
+                        @if (j.Get("adminReview").ValueKind == JsonValueKind.Object)
+                        {
+                            <div>@L["Last review"]: @L.Code("job." + j.Get("adminReview").Str("action")) · <span class="mono">@j.Get("adminReview").S("by")</span></div>
+                        }
+                    </td>
+                    <td class="nowrap">@L.Age(j, "updatedAt")</td>
+                    <td>
+                        @if (j.Arr("allowedActions").Any())
+                        {
+                            <form method="post" asp-page-handler="Review" class="stack" data-confirm="@L["Record this decision on the job?"]">
+                                <input type="hidden" name="jobId" value="@j.S("jobId")" />
+                                <label class="small" for="a-@j.S("jobId")">@L["Action"]</label>
+                                <select id="a-@j.S("jobId")" name="action">
+                                    @foreach (var a in j.Arr("allowedActions")) { <option value="@a.GetString()">@L.Code("job." + a.GetString())</option> }
+                                </select>
+                                <label class="small" for="n-@j.S("jobId")">@L["Note (required)"]</label>
+                                <input id="n-@j.S("jobId")" name="note" type="text" maxlength="4000" required />
+                                <button type="submit" class="btn btn-small">@L["Apply"]</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="muted small">@L["No action available to your role."]</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <partial name="_Pager" model="Model.Pager" />
+}
+
+<section class="card">
+    <h2>@L["Audit findings awaiting review"]</h2>
+    @if (!Model.Result.Arr("reviewItems").Any())
+    {
+        <p class="muted">@L["None."]</p>
+    }
+    else
+    {
+        <table class="data">
+            <thead><tr><th scope="col">@L["Item"]</th><th scope="col">@L["Kind"]</th><th scope="col">@L["Summary"]</th><th scope="col">@L["Filed"]</th><th scope="col"><span class="muted">@L["Decision"]</span></th></tr></thead>
+            <tbody>
+                @foreach (var r in Model.Result.Arr("reviewItems"))
+                {
+                    <tr>
+                        <td class="mono small">@r.S("itemId")</td>
+                        <td>@L.Code(r.Str("kind"))</td>
+                        <td class="small">@r.S("summary") <span class="muted">@r.S("remediation")</span></td>
+                        <td class="nowrap">@L.Age(r, "createdAt")</td>
+                        <td>
+                            @if (Model.Can("automation.review"))
+                            {
+                                <form method="post" asp-page-handler="Item" class="stack">
+                                    <input type="hidden" name="itemId" value="@r.S("itemId")" />
+                                    <select name="outcome" aria-label="@L["Outcome"]"><option value="resolved">@L.Code("resolved")</option><option value="dismissed">@L.Code("dismissed")</option></select>
+                                    <input name="note" type="text" maxlength="4000" required aria-label="@L["Note"]" placeholder="@L["Note (required)"]" />
+                                    <button type="submit" class="btn btn-small">@L["Close"]</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

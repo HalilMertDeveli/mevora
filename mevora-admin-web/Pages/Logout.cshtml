@@ -1,0 +1,9 @@
+@page
+@model LogoutModel
+@{
+    ViewData["Title"] = L["Sign out"].Value;
+}
+<form method="post">
+    <p>@L["Sign out of the Trust & Safety console?"]</p>
+    <button type="submit" class="btn btn-primary">@L["Sign out"]</button>
+</form>

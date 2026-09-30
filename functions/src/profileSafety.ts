@@ -32,15 +32,59 @@ export function isAdultProfile(data: DocumentData | undefined): boolean {
   return age !== null && age >= MIN_ONBOARDING_AGE;
 }
 
-export function isAccountEligible(account: DocumentData | undefined): boolean {
-  if (!account) {
-    return true;
+export type EffectiveAccountStatus = "active" | "suspended" | "banned" | "deleted";
+
+function millisOf(value: unknown): number | null {
+  if (value instanceof Timestamp) {
+    return value.toMillis();
   }
-  if (account.isBanned === true || account.isSuspended === true) {
-    return false;
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  const withMillis = value as {toMillis?: () => number} | null | undefined;
+  if (withMillis && typeof withMillis.toMillis === "function") {
+    return withMillis.toMillis();
+  }
+  return null;
+}
+
+/**
+ * The account's standing right now.
+ *
+ * `users/{uid}.accountStatus` is canonical. The legacy `isBanned` /
+ * `isSuspended` booleans are still honoured so nothing that predates the
+ * canonical field loosens: either flag restricts on its own.
+ *
+ * A suspension carrying `suspendedUntil` ends by itself once that instant
+ * passes — eligibility does not wait for the expiry sweep to rewrite the
+ * document. A suspension with no end date lasts until an admin restores it.
+ */
+export function effectiveAccountStatus(
+  account: DocumentData | undefined,
+  nowMs: number = Date.now(),
+): EffectiveAccountStatus {
+  if (!account) {
+    return "active";
   }
   const status = String(account.accountStatus ?? "active");
-  return status !== "banned" && status !== "suspended" && status !== "deleted";
+  if (status === "deleted") {
+    return "deleted";
+  }
+  if (status === "banned" || account.isBanned === true) {
+    return "banned";
+  }
+  if (status === "suspended" || account.isSuspended === true) {
+    const until = millisOf(account.suspendedUntil);
+    if (until !== null && until <= nowMs) {
+      return "active";
+    }
+    return "suspended";
+  }
+  return "active";
+}
+
+export function isAccountEligible(account: DocumentData | undefined, nowMs: number = Date.now()): boolean {
+  return effectiveAccountStatus(account, nowMs) === "active";
 }
 
 export function isProfileDiscoverable(data: DocumentData | undefined): boolean {

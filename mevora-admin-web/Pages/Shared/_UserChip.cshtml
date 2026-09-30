@@ -1,0 +1,17 @@
+@model JsonElement
+@if (Model.ValueKind == JsonValueKind.Object)
+{
+    var status = Model.S("accountStatus", "unknown");
+    <a class="user-chip" href="/Users/@Uri.EscapeDataString(Model.S("uid", ""))">
+        <span class="user-name">@(Model.Str("displayName") is { Length: > 0 } name ? name : L["(no name)"].Value)</span>
+        <span class="status status-@status">@L.Code(status)</span>
+        @if (Model.Bool("isVerified"))
+        {
+            <span class="badge badge-ok">@L["Verified"]</span>
+        }
+    </a>
+}
+else
+{
+    <span class="muted">—</span>
+}

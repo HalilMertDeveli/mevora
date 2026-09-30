@@ -52,7 +52,12 @@ class SettingsHubRepositoryImpl implements SettingsHubRepository {
         .collection(FirestorePaths.userSettings)
         .doc(uid)
         .snapshots()
-        .asyncMap((_) => _settingsDataSource.loadSettings(uid));
+        .map(
+          (snap) => FirebaseSettingsDataSource.settingsFromData(
+            uid,
+            snap.data(),
+          ),
+        );
   }
 
   @override
@@ -71,7 +76,19 @@ class SettingsHubRepositoryImpl implements SettingsHubRepository {
         .collection(FirestorePaths.userPrivacy)
         .doc(uid)
         .snapshots()
-        .asyncMap((_) => _settingsDataSource.loadPrivacy(uid));
+        // The snapshot already carries the document. Re-fetching it per
+        // event doubled the reads of every privacy listener: one per match
+        // partner in the inbox, two more in each open chat.
+        //
+        // An empty cache hit is skipped: its defaults would show a member's
+        // online status for a moment before the server copy says hidden.
+        .where((snap) => snap.exists || !snap.metadata.isFromCache)
+        .map(
+          (snap) => FirebaseSettingsDataSource.privacyFromData(
+            uid,
+            snap.data(),
+          ),
+        );
   }
 
   @override

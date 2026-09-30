@@ -15,7 +15,16 @@ class FirebaseSettingsDataSource {
         .collection(FirestorePaths.userSettings)
         .doc(uid)
         .get();
-    final data = snap.data() ?? const <String, dynamic>{};
+    return settingsFromData(uid, snap.data());
+  }
+
+  /// Parses a `userSettings/{uid}` document. Shared by the one-shot load and
+  /// the listener, so a snapshot never needs a second read to be decoded.
+  static UserSettings settingsFromData(
+    String uid,
+    Map<String, dynamic>? stored,
+  ) {
+    final data = stored ?? const <String, dynamic>{};
     return UserSettings(
       uid: uid,
       languageCode: AppLanguage.fromCode(
@@ -62,7 +71,15 @@ class FirebaseSettingsDataSource {
         .collection(FirestorePaths.userPrivacy)
         .doc(uid)
         .get();
-    final data = snap.data() ?? const <String, dynamic>{};
+    return privacyFromData(uid, snap.data());
+  }
+
+  /// Parses a `userPrivacy/{uid}` document; see [settingsFromData].
+  static UserPrivacy privacyFromData(
+    String uid,
+    Map<String, dynamic>? stored,
+  ) {
+    final data = stored ?? const <String, dynamic>{};
     return UserPrivacy(
       uid: uid,
       showOnlineStatus: data['showOnlineStatus'] as bool? ?? true,

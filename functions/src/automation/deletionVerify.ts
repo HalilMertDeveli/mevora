@@ -40,12 +40,16 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   // Daily streak: engagement history. The check-in refuses to write once the
   // account document is gone, but a call in flight is checked, not assumed.
   `users/${uid}/dailyStreak/current`,
+  // The admin console's name-search row; the profile trigger could recreate
+  // it if a profile write raced the deletion, so it is checked.
+  `adminUserLookup/${uid}`,
 ];
 
 /** Storage prefixes `deleteUserAccount` clears. */
 const REMNANT_STORAGE_PREFIXES = (uid: string): string[] => [
   `users/${uid}/`,
   `profiles/${uid}/`,
+  `moderation/quarantine/${uid}/`,
 ];
 
 /**
@@ -106,6 +110,12 @@ export async function verifyAccountDeletion(
   }
   if (!humorQueuePointer.empty) {
     issues.push("humor_queue_reporter_remnant");
+  }
+
+  // Appeals are the member's own words; they go with the account.
+  const appeals = await db.collection("appeals").where("userId", "==", uid).limit(1).get();
+  if (!appeals.empty) {
+    issues.push("appeals_remnant");
   }
 
   for (const prefix of REMNANT_STORAGE_PREFIXES(uid)) {

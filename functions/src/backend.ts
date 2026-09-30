@@ -17,6 +17,7 @@ import {
   distanceDisclosureDecision,
 } from "./geo/coarseDistance.js";
 import {isAccountEligible} from "./profileSafety.js";
+import {assertCallerAccountEligible} from "./accountGuard.js";
 import {
   loadActiveMatchPartnerIds,
   passesDiscoveryProfileFilters,
@@ -328,6 +329,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
  */
 export const getDistanceLabel = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertCallerAccountEligible(db, uid);
   const otherUid = String(request.data?.otherUid ?? "");
   if (!otherUid || otherUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid user.");

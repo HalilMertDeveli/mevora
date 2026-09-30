@@ -117,7 +117,7 @@ export async function setPhotoModerationStatus(
   });
 }
 
-async function publishApprovedPhoto(options: {
+export async function publishApprovedPhoto(options: {
   db: Firestore;
   bucket: Bucket;
   uid: string;

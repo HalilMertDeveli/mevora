@@ -6,6 +6,7 @@ import {shapeIncomingLikesResponse, type IncomingLikeItem} from "./incomingLikes
 import {buildCompatibilitySnapshotFromProfiles} from "./compatibility/compatibilitySnapshot.js";
 import {isUserPremium} from "./premium.js";
 import {usableDiscoveryPhotos} from "./profileSafety.js";
+import {assertCallerAccountEligible} from "./accountGuard.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -57,6 +58,7 @@ function photoUrlFromProfile(data: Record<string, unknown>): string | null {
  */
 export const getIncomingLikes = onCall(callableOptions, async (request) => {
   const uid = requireUid(request.auth?.uid);
+  await assertCallerAccountEligible(db, uid);
   const premium = await isUserPremium(uid);
 
   const likesSnap = await db

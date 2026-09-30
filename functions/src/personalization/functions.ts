@@ -13,6 +13,7 @@ import {
   recordLearningEventSafely,
   resetLearnedPersonalization,
 } from "./store.js";
+import {assertCallerAccountEligible} from "../accountGuard.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -93,6 +94,7 @@ export const recordProfileEngagement = onCall(
     if (!uid) throw new HttpsError("unauthenticated", "sign-in-required");
     const data = (request.data ?? {}) as Record<string, unknown>;
     const candidateUid = data.candidateUid;
+    await assertCallerAccountEligible(db, uid);
     if (!isUid(candidateUid) || candidateUid === uid) {
       throw new HttpsError("invalid-argument", "invalid-candidate");
     }

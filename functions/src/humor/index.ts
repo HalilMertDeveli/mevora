@@ -120,6 +120,7 @@ export const getHumorProfile = onCall(callableOptions, async (request) => {
  */
 export const getMatchHumorCompatibility = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertCallerAccountEligible(db, uid);
   const rawMatchId = request.data?.matchId;
   const matchId = typeof rawMatchId === "string" ? rawMatchId.trim() : "";
   // A `/` would let the lookup resolve to a nested document a participant can
@@ -375,6 +376,7 @@ export {
   confidenceFromInteractions,
   ratingWeight,
 } from "./profile.js";
+import {assertCallerAccountEligible} from "../accountGuard.js";
 export {rankHumorFeed, scoreHumorCandidate} from "./ranking.js";
 export {classifyHumorSafety} from "./moderation.js";
 export {applyHumorAiTagging} from "./aiTagging.js";

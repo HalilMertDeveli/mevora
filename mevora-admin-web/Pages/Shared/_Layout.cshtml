@@ -69,6 +69,7 @@
                 <span class="who">
                     <strong>@User.Identity?.Name</strong>
                     <span class="role">@JsonView.Label(User.StaffRole())</span>
+                    @if (User.IsOwner()) { <span class="badge badge-info">Owner</span> }
                 </span>
                 <form method="post" action="/Logout" class="inline">
                     @Html.AntiForgeryToken()

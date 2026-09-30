@@ -107,6 +107,10 @@ describe("audit log", () => {
     const list = await w.run(specs.adminListAuditEventsSpec, "tsa-1", {targetId: "member-1"});
     assert.equal(list.items.length, 1);
     assert.equal(list.items[0].action, "USER_WARNED");
-    await rejectsWith(w.run(specs.adminListAuditEventsSpec, "tsa-1", {targetId: "member-1", action: "USER_WARNED"}), "invalid_argument");
+    // Filters combine (the oversight view asks "what did X do to Y").
+    const combined = await w.run(specs.adminListAuditEventsSpec, "tsa-1", {targetId: "member-1", action: "USER_WARNED", actorAdminId: "mod-1"});
+    assert.equal(combined.items.length, 1);
+    const miss = await w.run(specs.adminListAuditEventsSpec, "tsa-1", {targetId: "member-1", action: "USER_BANNED"});
+    assert.equal(miss.items.length, 0);
   });
 });

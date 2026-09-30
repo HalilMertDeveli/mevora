@@ -8,9 +8,18 @@
  * The person must already have a Firebase Auth account (email/password). The
  * script writes adminStaff/{uid}, mirrors the admin / adminRole custom claims,
  * revokes their existing sessions and appends an ADMIN_GRANTED audit event.
+ * It never creates a login or handles a password: the owner creates their own
+ * account (Firebase console → Authentication → Add user, or the password reset
+ * flow) so the credential never passes through this repository or a shell.
+ *
+ * --owner marks the account as the platform owner (adminStaff.isOwner). Only a
+ * super_admin can be the owner, there is exactly one, and no console command
+ * can set, clear or act on it. Running --owner again for the same account is
+ * a no-op; for a different account while an owner exists it refuses —
+ * transferring ownership is a separate, deliberate procedure.
  *
  * Production (owner-run, with Application Default Credentials for the project):
- *   node tool/adminBootstrapStaff.cjs --project mevora-d6ed0 --email you@example.com --role super_admin --confirm
+ *   node tool/adminBootstrapStaff.cjs --project mevora-d6ed0 --email you@example.com --role super_admin --owner --confirm
  *
  * Emulator: set FIRESTORE_EMULATOR_HOST and FIREBASE_AUTH_EMULATOR_HOST first;
  * --confirm is still required.
@@ -30,10 +39,15 @@ const project = arg("project");
 const email = (arg("email") || "").trim().toLowerCase();
 const role = arg("role") || "super_admin";
 const confirmed = args.includes("--confirm");
+const owner = args.includes("--owner");
 const ROLES = ["support_agent", "moderator", "senior_moderator", "trust_safety_admin", "super_admin"];
 
 if (!project || !email || !confirmed || !ROLES.includes(role)) {
-  console.error("Usage: node tool/adminBootstrapStaff.cjs --project <id> --email <staff email> --role <role> --confirm");
+  console.error("Usage: node tool/adminBootstrapStaff.cjs --project <id> --email <staff email> --role <role> [--owner] --confirm");
+  process.exit(1);
+}
+if (owner && role !== "super_admin") {
+  console.error("REFUSING TO RUN: --owner requires --role super_admin.");
   process.exit(1);
 }
 
@@ -49,13 +63,22 @@ const db = admin.firestore();
 const auth = admin.auth();
 
 async function main() {
-  console.log(`${emulated ? "EMULATOR" : "PRODUCTION"} project ${project}: grant ${role} to ${email}`);
+  console.log(`${emulated ? "EMULATOR" : "PRODUCTION"} project ${project}: grant ${role}${owner ? " (owner)" : ""} to ${email}`);
   const user = await auth.getUserByEmail(email);
   const ref = db.doc(`adminStaff/${user.uid}`);
   const existing = await ref.get();
-  if (existing.exists && existing.get("status") === "active" && existing.get("role") === "super_admin") {
-    console.log("Already an active super admin — nothing to do.");
+  const alreadySuper = existing.exists && existing.get("status") === "active" && existing.get("role") === "super_admin";
+  if (alreadySuper && (!owner || existing.get("isOwner") === true)) {
+    console.log(`Already an active super admin${existing.get("isOwner") === true ? " and the owner" : ""} — nothing to do.`);
     return;
+  }
+  if (owner) {
+    const owners = await db.collection("adminStaff").where("isOwner", "==", true).get();
+    const other = owners.docs.find((doc) => doc.id !== user.uid);
+    if (other) {
+      console.error(`REFUSING TO RUN: ${other.get("email") || other.id} is already the owner. Ownership transfer is a separate procedure.`);
+      process.exit(1);
+    }
   }
   const nowMs = Date.now();
   await db.runTransaction(async (tx) => {
@@ -66,6 +89,7 @@ async function main() {
       displayName: user.displayName || null,
       email,
       permissionsVersion: 1,
+      ...(owner ? {isOwner: true} : {}),
       sessionsValidAfter: admin.firestore.Timestamp.fromMillis(nowMs),
       createdBy: "bootstrap",
       lastRoleChangeBy: "bootstrap",
@@ -81,7 +105,7 @@ async function main() {
       caseId: null,
       actionId: null,
       requestId: null,
-      metadata: {newRole: role, via: "tool/adminBootstrapStaff.cjs"},
+      metadata: {newRole: role, owner, via: "tool/adminBootstrapStaff.cjs"},
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   });

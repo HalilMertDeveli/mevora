@@ -18,6 +18,18 @@
         ("openSupportTickets", "Open support tickets", "/Support", "stat"),
         ("urgentSupportTickets", "Urgent support tickets", "/Support", "stat stat-high"),
     };
+    // Platform and staff overview (owner / Trust & Safety admin). Each is a
+    // count() aggregation the backend only returns to roles allowed to see it.
+    var platform = new (string Key, string Label, string Href, string Css)[]
+    {
+        ("totalUsers", "Members", "/Users", "stat"),
+        ("newUsers7d", "New members (7 days)", "/Users", "stat"),
+        ("activeUsers7d", "Active members (7 days)", "/Users", "stat"),
+        ("suspendedAccounts", "Suspended accounts", "/Audit?action=USER_SUSPENDED", "stat stat-warn"),
+        ("bannedAccounts", "Banned accounts", "/Audit?action=USER_BANNED", "stat stat-high"),
+        ("activeStaff", "Active staff", "/Admin/Staff", "stat"),
+        ("disabledStaff", "Disabled staff", "/Admin/Staff", "stat"),
+    };
 }
 <div class="page-head">
     <div>
@@ -40,6 +52,54 @@
         }
     }
 </section>
+
+@if (platform.Any(t => Model.Shows(t.Key)))
+{
+    <h2>Platform &amp; staff</h2>
+    <section class="stats" aria-label="Platform counters">
+        @foreach (var tile in platform)
+        {
+            if (Model.Shows(tile.Key))
+            {
+                <a class="@tile.Css" href="@tile.Href">
+                    <span class="n">@Model.Count(tile.Key)</span>
+                    <span class="l">@tile.Label</span>
+                </a>
+            }
+        }
+    </section>
+}
+
+@if (Model.Can("audit.read"))
+{
+    <section class="card">
+        <h2>Recent staff actions</h2>
+        @if (!Model.Data.Arr("recentAdminActions").Any())
+        {
+            <p class="muted">No staff actions yet.</p>
+        }
+        else
+        {
+            <table class="data">
+                <thead>
+                    <tr><th scope="col">When</th><th scope="col">Event</th><th scope="col">Staff</th><th scope="col">Target</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Data.Arr("recentAdminActions"))
+                    {
+                        <tr>
+                            <td class="nowrap">@a.When("createdAt")</td>
+                            <td><strong>@a.S("action")</strong></td>
+                            <td class="mono small">@a.S("actorAdminId")<div class="muted">@JsonView.Label(a.Str("actorRole"))</div></td>
+                            <td class="small">@JsonView.Label(a.Str("targetType")) <span class="mono">@a.S("targetId")</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <p class="small"><a href="/Audit">Open the audit log</a></p>
+        }
+    </section>
+}
 
 @if (Model.Can("user.read"))
 {

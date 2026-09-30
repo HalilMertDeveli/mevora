@@ -10,6 +10,7 @@ public static class StaffClaims
     public const string Permission = "mevora:perm";
     public const string Mfa = "mevora:mfa";
     public const string SessionStarted = "mevora:session_started";
+    public const string Owner = "mevora:owner";
 
     public const string PolicyPrefix = "perm:";
 
@@ -21,6 +22,9 @@ public static class StaffClaims
     public static string? StaffRole(this ClaimsPrincipal user) => user.FindFirst(Role)?.Value;
 
     public static bool UsedMfa(this ClaimsPrincipal user) => user.FindFirst(Mfa)?.Value == "true";
+
+    /// <summary>Display only (an "Owner" label); every owner protection is enforced by the backend.</summary>
+    public static bool IsOwner(this ClaimsPrincipal user) => user.FindFirst(Owner)?.Value == "true";
 }
 
 /// <summary>

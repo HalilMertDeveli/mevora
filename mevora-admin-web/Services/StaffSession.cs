@@ -65,6 +65,7 @@ public sealed class StaffSession(
             new(ClaimTypes.Name, profile.Str("displayName") ?? tokens.Uid),
             new(StaffClaims.Role, profile.Str("role") ?? ""),
             new(StaffClaims.Mfa, profile.Bool("mfa") ? "true" : "false"),
+            new(StaffClaims.Owner, profile.Bool("isOwner") ? "true" : "false"),
             new(StaffClaims.SessionStarted, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)),
         };
         foreach (var permission in profile.Arr("permissions"))

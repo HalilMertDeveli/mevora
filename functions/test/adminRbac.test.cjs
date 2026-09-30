@@ -72,7 +72,9 @@ describe("RBAC — role → permission map is the single authority", () => {
   it("no role can grant a role at or above its own, except super admin", () => {
     assert.equal(canGrantRole("trust_safety_admin", "trust_safety_admin"), false);
     assert.equal(canGrantRole("trust_safety_admin", "senior_moderator"), true);
-    assert.equal(canGrantRole("super_admin", "super_admin"), true);
+    // super_admin is never granted through the console, not even by a super admin.
+    assert.equal(canGrantRole("super_admin", "super_admin"), false);
+    assert.equal(canGrantRole("super_admin", "trust_safety_admin"), true);
   });
 });
 
@@ -172,11 +174,17 @@ describe("authorization chain", () => {
 
   it("super admin can manage roles", async () => {
     const w = await world();
+    const result = await w.run(specs.adminUpdateStaffRoleSpec, "super-1", {targetUid: "mod-1", role: "senior_moderator"});
+    assert.equal(result.role, "senior_moderator");
+    assert.equal(w.db.read("adminStaff/mod-1").role, "senior_moderator");
+    assert.deepEqual(w.auth.users.get("mod-1").customClaims, {admin: true, adminRole: "senior_moderator"});
+  });
+
+  it("a role change never turns a non-staff account into staff", async () => {
+    const w = await world();
     w.auth.addUser("new-staff", {email: "new-staff@mevora.test"});
-    const result = await w.run(specs.adminUpdateStaffRoleSpec, "super-1", {targetUid: "new-staff", role: "moderator"});
-    assert.equal(result.role, "moderator");
-    assert.equal(w.db.read("adminStaff/new-staff").role, "moderator");
-    assert.deepEqual(w.auth.users.get("new-staff").customClaims, {admin: true, adminRole: "moderator"});
+    await rejectsWith(w.run(specs.adminUpdateStaffRoleSpec, "super-1", {targetUid: "new-staff", role: "moderator"}), "not_found");
+    assert.equal(w.db.read("adminStaff/new-staff"), undefined);
   });
 
   it("a client-supplied role is ignored — the staff record decides", async () => {

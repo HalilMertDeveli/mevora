@@ -115,13 +115,30 @@ export function roleHasPermission(role: AdminRole, permission: Permission): bool
 }
 
 /**
- * Whether `actorRole` may put somebody into `targetRole`.
+ * Roles the console can hand out. super_admin is deliberately absent: the
+ * owner is the platform's super admin, created only by
+ * tool/adminBootstrapStaff.cjs, so no console command can mint a second one.
+ */
+export const GRANTABLE_ROLES = ["support_agent", "moderator", "senior_moderator", "trust_safety_admin"] as const satisfies readonly AdminRole[];
+
+export type GrantableRole = (typeof GRANTABLE_ROLES)[number];
+
+export function isGrantableRole(value: unknown): value is GrantableRole {
+  return typeof value === "string" && (GRANTABLE_ROLES as readonly string[]).includes(value);
+}
+
+/**
+ * Whether `actorRole` may put somebody into `targetRole` through the console.
  *
- * A super admin may grant anything. Everyone else holding admin.manage_roles
- * may only grant roles strictly below their own, so a role can never be used
- * to mint an equal or higher one.
+ * Nobody may grant super_admin (see GRANTABLE_ROLES). A super admin may grant
+ * every other role; anyone else holding admin.manage_roles may only grant
+ * roles strictly below their own, so a role can never mint an equal or
+ * higher one.
  */
 export function canGrantRole(actorRole: AdminRole, targetRole: AdminRole): boolean {
+  if (!isGrantableRole(targetRole)) {
+    return false;
+  }
   if (actorRole === "super_admin") {
     return true;
   }

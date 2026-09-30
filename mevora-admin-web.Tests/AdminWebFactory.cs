@@ -60,6 +60,16 @@ public sealed class FakeIdentity : IFirebaseIdentityClient
 
     public Task<FirebaseTokens?> RefreshAsync(string refreshToken, CancellationToken ct) => Task.FromResult<FirebaseTokens?>(Tokens());
 
+    /// <summary>Addresses a password-setup email was requested for (the fake never sends anything).</summary>
+    public ConcurrentQueue<string> SetupEmails { get; } = new();
+    public bool SetupEmailFails { get; set; }
+
+    public Task<bool> SendPasswordSetupEmailAsync(string email, CancellationToken ct)
+    {
+        SetupEmails.Enqueue(email);
+        return Task.FromResult(!SetupEmailFails);
+    }
+
     public static FirebaseTokens Tokens() => new("header.payload.sig", "refresh-token", DateTimeOffset.UtcNow.AddHours(1), "staff-1");
 }
 
@@ -132,6 +142,8 @@ public sealed class AdminWebFactory : WebApplicationFactory<Program>
     public static readonly string Moderator = "mod-1|moderator|dashboard.read,user.read,user.warn,user.suspend,case.read,case.assign,case.resolve,case.escalate,case.note,report.read,report.resolve,photo.read,photo.approve,photo.reject,photo.escalate";
     public static readonly string Senior = Moderator.Replace("mod-1|moderator|", "senior-1|senior_moderator|") + ",user.ban,user.restore,appeal.read,appeal.resolve";
     public static readonly string SupportAgent = "support-1|support_agent|dashboard.read,user.read,support.read,support.reply,support.assign,support.resolve";
+    public static readonly string Owner = "owner-1|super_admin|dashboard.read,user.read,audit.read,admin.manage_staff,admin.manage_roles";
+    public static readonly string TrustSafetyAdmin = Senior.Replace("senior-1|senior_moderator|", "tsa-1|trust_safety_admin|") + ",audit.read,support.read,support.reply";
 
     /// <summary>GETs a page and returns the antiforgery token rendered in its first form.</summary>
     public static async Task<string> AntiforgeryToken(HttpClient client, string path)

@@ -49,6 +49,13 @@ export interface StaffRecord {
   permissionsVersion: number;
   /** Tokens issued (auth_time) before this instant are refused. Epoch ms. */
   sessionsValidAfterMs: number | null;
+  /**
+   * The platform owner. Server-owned: set only by tool/adminBootstrapStaff.cjs
+   * --owner, never by a console command. The owner's account cannot be
+   * demoted, disabled, sanctioned or signed out through the normal staff
+   * commands; changing ownership is a separate, deliberate procedure.
+   */
+  isOwner: boolean;
 }
 
 export interface AdminActor {
@@ -57,6 +64,7 @@ export interface AdminActor {
   permissions: ReadonlySet<Permission>;
   displayName: string | null;
   mfa: boolean;
+  isOwner: boolean;
 }
 
 export interface AdminAuthEnv {
@@ -87,6 +95,7 @@ export function parseStaffRecord(uid: string, data: Record<string, unknown> | un
     email: typeof data.email === "string" ? data.email : null,
     permissionsVersion: typeof data.permissionsVersion === "number" ? data.permissionsVersion : 1,
     sessionsValidAfterMs: toMillis(data.sessionsValidAfter),
+    isOwner: data.isOwner === true,
   };
 }
 
@@ -170,6 +179,7 @@ export async function authorizeAdminRequest(
     permissions,
     displayName: staff.displayName,
     mfa,
+    isOwner: staff.isOwner,
   };
 }
 

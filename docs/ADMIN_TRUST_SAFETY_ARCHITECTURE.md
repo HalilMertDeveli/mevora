@@ -115,8 +115,60 @@ Single authority: `functions/src/admin/auth/roles.ts`.
 | admin.manage_staff / manage_roles / maintenance | | | | | ✓ |
 
 Staff guards: nobody acts on their own account or role; roles are granted only
-below one's own rank (super admins excepted); an active super admin cannot be
-sanctioned; the last active super admin cannot be demoted or disabled.
+below one's own rank (super admins excepted); **super_admin is never granted
+through the console** (`GRANTABLE_ROLES` in roles.ts); an active super admin
+cannot be sanctioned; the last active super admin cannot be demoted or disabled.
+
+### Owner and organisation
+
+Production starts with one **owner super admin** and, when needed, one or more
+**Trust & Safety admins** who run daily operations (moderation, reports,
+users, support, verification review, appeals, photos, automation, audit
+reading). The narrower roles stay for when the team grows. There is no
+generic "admin" role.
+
+- The owner is `adminStaff/{uid}.isOwner == true` on a `super_admin` record.
+  Only `tool/adminBootstrapStaff.cjs --owner` sets it; clients cannot write
+  `adminStaff` at all, and no console command sets, clears or acts on it
+  (`cannot_modify_owner` for role change, disable, session revoke and
+  activation, even from another super admin). There is exactly one owner; the
+  tool refuses a second.
+- Ownership transfer is deliberately not a console action. If it is ever
+  needed it becomes its own command (`adminTransferOwnership`) requiring the
+  current owner, a recent MFA sign-in, typed confirmation and an audit event.
+- Owner-level permissions (`admin.manage_staff`, `admin.manage_roles`,
+  `admin.maintenance`) belong to super_admin only; trust_safety_admin never
+  holds them (tested).
+
+### Adding and managing staff
+
+`adminCreateStaff` (manage_staff + manage_roles) takes email, display name and
+a grantable role. It creates the Firebase Auth login when none exists, with a
+32-byte random password that is never returned, stored or logged, and marks
+the address verified (Firebase requires that before MFA enrolment). The admin
+web then asks Firebase (`accounts:sendOobCode`, PASSWORD_RESET) to email the
+colleague a password-setup link — the super admin never sees a password or a
+link. A member's app account cannot become staff (`staff_account_is_member`).
+At first console sign-in `adminRecordLogin` forces TOTP enrolment.
+
+The staff console (`/Admin/Staff`, `/Admin/Staff/{uid}`) lists every
+colleague (role, status, owner/QA badges, last console sign-in, creator, last
+role change) and offers change role, disable / re-enable, end sessions
+(`adminRevokeStaffSessions`: `sessionsValidAfter = now` + refresh-token
+revocation) and resend password setup (`adminIssueStaffActivation`). The
+detail page adds Firebase sign-in facts, enrolled MFA factor kinds (never
+secrets) and an activity summary built from one `count()` per activity group
+on `adminAuditLog (actorAdminId, action)` plus the last 20 events.
+
+Staff audit events: `ADMIN_CREATED`, `ADMIN_ROLE_CHANGED`, `ADMIN_DISABLED`,
+`ADMIN_ENABLED`, `ADMIN_SESSIONS_REVOKED`, `ADMIN_ACTIVATION_ISSUED`
+(`ADMIN_GRANTED` remains for bootstrap and historic grants).
+
+The seeded emulator accounts (`super@`, `tsa@`, `senior@`, `moderator@`,
+`support@mevora.test`) are **EMULATOR / QA ONLY** role-test identities, marked
+`seededFor: "emulator-qa"` and badged in the console. The owner's own QA login
+(`halilmertdeveliii@gmail.com`) is seeded only when `SUPER_ADMIN_QA_PASSWORD`
+is set; there is no default.
 
 The first super admin is created with `tool/adminBootstrapStaff.cjs` (owner-run).
 Every later change goes through the console and is audited.
@@ -298,6 +350,13 @@ scheduled retention sweep. Events include `ADMIN_LOGIN`,
 `SENSITIVE_PROFILE_VIEWED`, case, sanction, photo, humor, verification,
 support, automation, appeal and staff events.
 
+The console filters the log by any combination of staff member, staff role,
+event, target type, target id, case and a UTC date range. The most selective
+equality filter and the date range run in Firestore (field + `createdAt`
+composite indexes); the remaining filters apply to that ordered stream, and a
+request reads at most 500 events (`AUDIT_SCAN_CAP`) — a page that stops early
+says so and its cursor continues exactly where the scan ended.
+
 Metadata is scrubbed: passwords, tokens, OTPs, secrets, authorization headers,
 message bodies, identity documents and raw payloads are dropped; free text
 (internal notes, justifications) is reduced to its length; emails/phones in
@@ -356,7 +415,7 @@ change.
    `AdminWeb__WebApiKey`, `AdminWeb__FunctionsBaseUrl`,
    `AdminWeb__BffSharedSecret`. For more than one instance, register a shared
    `IDistributedCache` (e.g. Redis) for sessions.
-7. **First super admin** — `node tool/adminBootstrapStaff.cjs --project mevora-d6ed0 --email <you> --role super_admin --confirm`.
+7. **Owner super admin** — the owner creates their own Firebase Auth login (console → Authentication → Add user, choosing the password themselves), then runs `node tool/adminBootstrapStaff.cjs --project mevora-d6ed0 --email <owner email> --role super_admin --owner --confirm`. TOTP enrolment is forced at first console sign-in. Colleagues are then added from `/Admin/Staff`.
 8. **Backfills** (console, super admin) — Admin → maintenance commands:
    `adminBackfillReportPriority`, `adminRebuildUserLookup` (paged).
 

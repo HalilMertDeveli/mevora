@@ -1,5 +1,5 @@
-import type {DocumentData, Firestore} from "firebase-admin/firestore";
-import {blockId} from "./ids.js";
+import {FieldPath, type DocumentData, type DocumentSnapshot, type Firestore} from "firebase-admin/firestore";
+import {blockId, canonicalMatchId, likeId} from "./ids.js";
 import {coarseDistanceLabel} from "./geo/coarseDistance.js";
 import {discoveryProfileProjection, resolveProfileAge} from "./profileSafety.js";
 import {
@@ -7,8 +7,14 @@ import {
   loadActiveMatchPartnerIds,
   loadPreferencesByUid,
   passesGenderPreferences,
+  profileOnlyRejectReason,
 } from "./discoveryMatching.js";
-import {effectiveRadiusKm, isBoostedCandidate, loadActiveBoostSessions} from "./boost/ranking.js";
+import {
+  effectiveRadiusKm,
+  isBoostedCandidate,
+  loadActiveBoostSessions,
+  loadActiveBoostSessionsFor,
+} from "./boost/ranking.js";
 import type {BoostSession} from "./boost/measurement.js";
 import {userLanguage} from "./language.js";
 import {
@@ -16,10 +22,14 @@ import {
   isWithinDiscoveryRadius,
   type DiscoveryDistanceTier,
 } from "./discoveryFallback.js";
-import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
+import {isActiveForDiscovery} from "./discoveryActivity.js";
 import {musicRankingBonus} from "./musicCompatibility.js";
-import {musicScoreForPair} from "./spotifyMusic.js";
-import {relationshipScoreForPair} from "./relationshipMatch.js";
+import {hasMusicTaste, musicScoreFromSummaries, musicSummaryPath} from "./spotifyMusic.js";
+import {
+  hasRelationshipAnswers,
+  relationshipScoreFromSummaries,
+  relationshipSummaryPath,
+} from "./relationshipMatch.js";
 import {
   calculateCompatibility,
   compatibilityEvidence,
@@ -58,18 +68,38 @@ export async function isBlocked(db: Firestore, a: string, b: string): Promise<bo
   return subA.exists || subB.exists || topA.exists || topB.exists;
 }
 
+/**
+ * Existing documents at `pathOf(uid)` for each uid, fetched in bulk (one
+ * batched get per 100). Missing documents are simply absent from the map.
+ */
+async function loadDocsByUid(
+  db: Firestore,
+  uids: readonly string[],
+  pathOf: (uid: string) => string,
+): Promise<Map<string, DocumentData>> {
+  const out = new Map<string, DocumentData>();
+  const unique = [...new Set(uids.filter(Boolean))];
+  for (let i = 0; i < unique.length; i += 100) {
+    const chunk = unique.slice(i, i + 100);
+    const snaps = await db.getAll(...chunk.map((uid) => db.doc(pathOf(uid))));
+    snaps.forEach((snap, index) => {
+      const data = snap.data();
+      if (data != null) out.set(chunk[index], data);
+    });
+  }
+  return out;
+}
+
+/**
+ * The `users/{uid}` documents, read once each. They carry both the account
+ * state (suspension, deletion, verification) and `lastActiveAt`, so nothing
+ * here reads the same document a second time for activity.
+ */
 export async function loadUserAccounts(
   db: Firestore,
   uids: string[],
 ): Promise<Map<string, DocumentData>> {
-  const unique = [...new Set(uids.filter(Boolean))];
-  const entries = await Promise.all(
-    unique.map(async (uid) => {
-      const snap = await db.doc(`users/${uid}`).get();
-      return [uid, snap.data()] as const;
-    }),
-  );
-  return new Map(entries.filter(([, data]) => data != null) as Array<[string, DocumentData]>);
+  return loadDocsByUid(db, uids, (uid) => `users/${uid}`);
 }
 
 export async function loadBlockedUserIds(db: Firestore, uid: string): Promise<Set<string>> {
@@ -96,20 +126,10 @@ export async function loadUserLocations(
   uids: string[],
 ): Promise<Map<string, {latitude: number; longitude: number}>> {
   const out = new Map<string, {latitude: number; longitude: number}>();
-  const unique = [...new Set(uids)].filter((id) => id.length > 0);
-  for (let i = 0; i < unique.length; i += 30) {
-    const chunk = unique.slice(i, i + 30);
-    const snaps = await Promise.all(chunk.map((id) => db.doc(`userLocation/${id}`).get()));
-    snaps.forEach((snap, index) => {
-      const data = snap.data();
-      if (data?.latitude == null || data?.longitude == null) {
-        return;
-      }
-      out.set(chunk[index], {
-        latitude: Number(data.latitude),
-        longitude: Number(data.longitude),
-      });
-    });
+  const docs = await loadDocsByUid(db, uids, (uid) => `userLocation/${uid}`);
+  for (const [uid, data] of docs) {
+    if (data.latitude == null || data.longitude == null) continue;
+    out.set(uid, {latitude: Number(data.latitude), longitude: Number(data.longitude)});
   }
   return out;
 }
@@ -130,6 +150,18 @@ export interface DiscoveryViewerContext {
   matchedUids: Set<string>;
   blocked: Set<string>;
   boosted: Set<string>;
+  /**
+   * False for a viewer loaded without their decision history (see
+   * loadDiscoveryViewerBasics): `seen`, `likedUids`, `passedUids`,
+   * `matchedUids`, `blocked` and `boosted` are then empty, and a caller that
+   * needs them for specific people must look those pairs up.
+   */
+  historyLoaded?: boolean;
+  /**
+   * False when `boosted` was not loaded (loadDiscoveryViewerBasics): a pool
+   * scan then looks up the live Boosts of each page's candidates itself.
+   */
+  boostsLoaded?: boolean;
 }
 
 export type DiscoveryPoolBuckets = Record<DiscoveryDistanceTier, Array<Record<string, unknown>>>;
@@ -149,6 +181,17 @@ export interface DiscoveryPoolScan {
   /** Which profile dimensions both sides actually filled in. Server-side only. */
   evidence: Map<string, CompatibilityEvidence>;
   hasViewerLocation: boolean;
+  /**
+   * What the scan read about every candidate it accepted, in the shape
+   * revalidation returns — so a caller serving them in this same request need
+   * not read them again.
+   */
+  accepted: Map<string, RevalidatedCandidate>;
+  /**
+   * Live Boost sessions the scan looked up for its pages (a viewer loaded
+   * without Boosts). Empty when the viewer carried its own `boosted` set.
+   */
+  boostSessions: Map<string, BoostSession>;
 }
 
 export function hasLocation(origin: DocumentData | undefined): boolean {
@@ -156,26 +199,210 @@ export function hasLocation(origin: DocumentData | undefined): boolean {
 }
 
 /**
- * The viewer-side reads every pool request makes, in one round trip: who the
- * viewer is, what they want, where they are, and everyone already excluded
- * for them (liked, passed, matched, blocked either way).
+ * The viewer-side reads whose cost does not grow with how long someone has
+ * used Mevora: who the viewer is, what they want, where they are, which
+ * language. Enough to revalidate and render a stored Picks batch; the
+ * exclusion history is left empty (`historyLoaded: false`).
+ */
+export async function loadDiscoveryViewerBasics(
+  db: Firestore,
+  uid: string,
+  callerAccount: DocumentData | undefined,
+): Promise<DiscoveryViewerContext> {
+  const [prefsSnap, viewerProfileSnap, locationSnap, lang] = await Promise.all([
+    db.doc(`userPreferences/${uid}`).get(),
+    db.doc(`profiles/${uid}`).get(),
+    db.doc(`userLocation/${uid}`).get(),
+    userLanguage(uid),
+  ]);
+  return {
+    uid,
+    callerAccount,
+    prefs: prefsSnap.data() ?? {},
+    viewerProfile: viewerProfileSnap.data() ?? {},
+    origin: locationSnap.data(),
+    lang,
+    seen: new Set([uid]),
+    likedUids: new Set(),
+    passedUids: new Set(),
+    matchedUids: new Set(),
+    blocked: new Set(),
+    boosted: new Set(),
+    historyLoaded: false,
+    boostsLoaded: false,
+  };
+}
+
+/**
+ * The viewer's decisions about specific people, looked up pair by pair
+ * instead of by reading the whole history: one document-id query per 30
+ * candidates against each of likes, passedUsers and matches. Billed per
+ * document that exists (at least one read per query), so the cost follows
+ * the candidates asked about, not how many people the viewer ever decided on.
+ */
+export async function loadPairDecisions(
+  db: Firestore,
+  viewerUid: string,
+  candidateUids: readonly string[],
+): Promise<{liked: Set<string>; passed: Set<string>; matched: Set<string>}> {
+  const liked = new Set<string>();
+  const passed = new Set<string>();
+  const matched = new Set<string>();
+  const unique = [...new Set(candidateUids.filter((id) => id && id !== viewerUid))];
+  for (let i = 0; i < unique.length; i += 30) {
+    const chunk = unique.slice(i, i + 30);
+    const [likes, passes, matches] = await Promise.all([
+      db.collection("likes")
+        .where(FieldPath.documentId(), "in", chunk.map((uid) => likeId(viewerUid, uid)))
+        .get(),
+      db.collection(`users/${viewerUid}/passedUsers`)
+        .where(FieldPath.documentId(), "in", chunk)
+        .get(),
+      db.collection("matches")
+        .where(FieldPath.documentId(), "in", chunk.map((uid) => canonicalMatchId(viewerUid, uid)))
+        .get(),
+    ]);
+    for (const doc of likes.docs) {
+      const target = String(doc.get("toUserId") ?? "");
+      if (!target) continue;
+      // A like document with action "pass" is a pass, whatever its collection.
+      if (doc.get("action") === "pass") passed.add(target);
+      else liked.add(target);
+    }
+    for (const doc of passes.docs) passed.add(doc.id);
+    for (const doc of matches.docs) {
+      if (doc.get("isActive") !== true) continue;
+      for (const other of (doc.get("userIds") as string[]) ?? []) {
+        if (other && other !== viewerUid) matched.add(other);
+      }
+    }
+  }
+  return {liked, passed, matched};
+}
+
+/**
+ * Which of these people are blocked from the viewer, or have blocked them, in
+ * any of the four records a block can leave: `blocks/{a}_{b}` either way
+ * (server-written) and `users/{a}/blockedUsers/{b}` either way (the owner may
+ * write their own). Pair-targeted: one document-id query per 15 candidates for
+ * the top-level records, one per 30 for the viewer's own subcollection, and
+ * one document read per candidate for theirs.
+ */
+export async function loadPairBlocks(
+  db: Firestore,
+  viewerUid: string,
+  candidateUids: readonly string[],
+): Promise<Set<string>> {
+  const blocked = new Set<string>();
+  const unique = [...new Set(candidateUids.filter((id) => id && id !== viewerUid))];
+  if (unique.length === 0) return blocked;
+  const byBlockId = new Map<string, string>();
+  for (const uid of unique) {
+    byBlockId.set(blockId(viewerUid, uid), uid);
+    byBlockId.set(blockId(uid, viewerUid), uid);
+  }
+  const blockIds = [...byBlockId.keys()];
+  const queries: Array<Promise<void>> = [];
+  for (let i = 0; i < blockIds.length; i += 30) {
+    const chunk = blockIds.slice(i, i + 30);
+    queries.push(db.collection("blocks").where(FieldPath.documentId(), "in", chunk).get().then((snap) => {
+      // The document id is what counts (see isBlockedPair in the rules).
+      for (const doc of snap.docs) {
+        const uid = byBlockId.get(doc.id);
+        if (uid) blocked.add(uid);
+      }
+    }));
+  }
+  for (let i = 0; i < unique.length; i += 30) {
+    const chunk = unique.slice(i, i + 30);
+    queries.push(db.collection(`users/${viewerUid}/blockedUsers`)
+      .where(FieldPath.documentId(), "in", chunk).get().then((snap) => {
+        for (const doc of snap.docs) blocked.add(doc.id);
+      }));
+  }
+  queries.push(db.getAll(...unique.map((uid) => db.doc(`users/${uid}/blockedUsers/${viewerUid}`)))
+    .then((snaps) => {
+      snaps.forEach((snap, index) => {
+        if (snap.exists) blocked.add(unique[index]);
+      });
+    }));
+  await Promise.all(queries);
+  return blocked;
+}
+
+/**
+ * The viewer with everything the rule chain needs to know about these
+ * specific people: blocks either way (always looked up per pair — the one
+ * record a preloaded set cannot cover is the other member's own
+ * subcollection) and, for a viewer loaded without history, their decisions.
+ * People already excluded (seen, blocked, batch members, cooldowns) cost no
+ * lookup.
+ */
+export async function resolvePairExclusions(
+  db: Firestore,
+  viewer: DiscoveryViewerContext,
+  candidateUids: readonly string[],
+): Promise<DiscoveryViewerContext> {
+  const unknown = [...new Set(candidateUids)].filter(
+    (uid) => uid && uid !== viewer.uid && !viewer.seen.has(uid) && !viewer.blocked.has(uid),
+  );
+  if (unknown.length === 0) return viewer;
+  const [blocks, decisions] = await Promise.all([
+    loadPairBlocks(db, viewer.uid, unknown),
+    viewer.historyLoaded === false
+      ? loadPairDecisions(db, viewer.uid, unknown)
+      : Promise.resolve({liked: new Set<string>(), passed: new Set<string>(), matched: new Set<string>()}),
+  ]);
+  const resolved = withPairDecisions(viewer, decisions);
+  return {...resolved, blocked: new Set([...viewer.blocked, ...blocks])};
+}
+
+/** The viewer's decision about one person, as the Picks lifecycle names it. */
+export function decisionOf(
+  viewer: DiscoveryViewerContext,
+  uid: string,
+): "matched" | "liked" | "passed" | null {
+  if (viewer.matchedUids.has(uid)) return "matched";
+  if (viewer.likedUids.has(uid)) return "liked";
+  if (viewer.passedUids.has(uid)) return "passed";
+  return null;
+}
+
+/** A basics-only viewer, with the decisions about these specific people filled in. */
+export function withPairDecisions(
+  viewer: DiscoveryViewerContext,
+  decisions: {liked: Set<string>; passed: Set<string>; matched: Set<string>},
+): DiscoveryViewerContext {
+  const union = (a: Set<string>, b: Set<string>) => new Set([...a, ...b]);
+  return {
+    ...viewer,
+    seen: union(viewer.seen, union(decisions.liked, union(decisions.passed, decisions.matched))),
+    likedUids: union(viewer.likedUids, decisions.liked),
+    passedUids: union(viewer.passedUids, decisions.passed),
+    matchedUids: union(viewer.matchedUids, decisions.matched),
+  };
+}
+
+/**
+ * The viewer-side reads a pool scan needs, in one round trip: who the viewer
+ * is, what they want, where they are, and everyone already excluded for them
+ * (liked, passed, matched, blocked either way). Pass `basics` when they were
+ * already loaded for this request, so they are not read twice.
  */
 export async function loadDiscoveryViewerContext(
   db: Firestore,
   uid: string,
   callerAccount: DocumentData | undefined,
+  basics?: DiscoveryViewerContext,
 ): Promise<{viewer: DiscoveryViewerContext; boostSessions: Map<string, BoostSession>}> {
-  const [prefsSnap, viewerProfileSnap, locationSnap, blocked, likesSnap, passedSnap, boostSessions, activeMatches, lang] =
+  const [base, blocked, likesSnap, passedSnap, boostSessions, activeMatches] =
     await Promise.all([
-      db.doc(`userPreferences/${uid}`).get(),
-      db.doc(`profiles/${uid}`).get(),
-      db.doc(`userLocation/${uid}`).get(),
+      basics ? Promise.resolve(basics) : loadDiscoveryViewerBasics(db, uid, callerAccount),
       loadBlockedUserIds(db, uid),
       db.collection("likes").where("fromUserId", "==", uid).get(),
       db.collection(`users/${uid}/passedUsers`).get(),
       loadActiveBoostSessions(db),
       loadActiveMatchPartnerIds(db, uid),
-      userLanguage(uid),
     ]);
   const seen = new Set(likesSnap.docs.map((doc) => String(doc.get("toUserId") ?? "")));
   for (const doc of passedSnap.docs) seen.add(doc.id);
@@ -192,12 +419,7 @@ export async function loadDiscoveryViewerContext(
   }
   return {
     viewer: {
-      uid,
-      callerAccount,
-      prefs: prefsSnap.data() ?? {},
-      viewerProfile: viewerProfileSnap.data() ?? {},
-      origin: locationSnap.data(),
-      lang,
+      ...base,
       seen,
       likedUids,
       passedUids,
@@ -205,6 +427,8 @@ export async function loadDiscoveryViewerContext(
       blocked,
       // Ranking needs only the uids; measurement needs the sessions behind them.
       boosted: new Set(boostSessions.keys()),
+      historyLoaded: true,
+      boostsLoaded: true,
     },
     boostSessions,
   };
@@ -214,10 +438,14 @@ export async function loadDiscoveryViewerContext(
  * Why this candidate may not be shown to this viewer, or null when they may.
  *
  * The single rule chain for "may these two people be put in front of each
- * other": already decided or matched, blocked in either direction (by the
- * preloaded set and by a direct pair check), smoke-test isolation, inactivity,
- * profile/account/moderation/photo/age gates, and mutual gender preference.
- * Order matters only for cost — cheap in-memory checks run before reads.
+ * other": already decided or matched, blocked in either direction, smoke-test
+ * isolation, inactivity, profile/account/moderation/photo/age gates, and
+ * mutual gender preference.
+ *
+ * It reads nothing. `viewer.seen` and `viewer.blocked` must already cover
+ * this candidate — callers resolve the pair first (resolvePairExclusions),
+ * for a whole page at once, after the checks that need no pair state
+ * (candidateOwnRejectReason) have thinned it out.
  */
 export async function candidateRejectReason(
   db: Firestore,
@@ -237,14 +465,33 @@ export async function candidateRejectReason(
   if (viewer.blocked.has(uid)) {
     return "blocked";
   }
+  return candidateOwnRejectReason(viewer, candidate);
+}
+
+/**
+ * The part of the rule chain that needs no pair state: smoke-test isolation,
+ * inactivity, profile/account/moderation/photo/age gates and mutual gender
+ * preference. Run first, so pair lookups are paid only for people who could
+ * otherwise be shown.
+ */
+export function candidateOwnRejectReason(
+  viewer: DiscoveryViewerContext,
+  candidate: {
+    uid: string;
+    profile: DocumentData | undefined;
+    account: DocumentData | undefined;
+    candidatePrefs: DocumentData | undefined;
+    lastActiveAt: unknown;
+  },
+): string | null {
+  if (candidate.uid === viewer.uid) {
+    return "already_seen_or_matched";
+  }
   if (!passesSmokeDiscoveryIsolation(viewer.callerAccount, candidate.account)) {
     return "smoke_isolation";
   }
   if (!isActiveForDiscovery(candidate.lastActiveAt)) {
     return "inactive";
-  }
-  if (await isBlocked(db, viewer.uid, uid)) {
-    return "blocked";
   }
   const profileReject = discoveryProfileRejectReason({
     candidateProfile: candidate.profile,
@@ -290,11 +537,28 @@ export async function scanDiscoveryPool(
     shouldStop: (buckets: DiscoveryPoolBuckets) => boolean;
   },
 ): Promise<DiscoveryPoolScan> {
-  const {uid, viewerProfile, origin, lang, boosted} = viewer;
+  const {uid, viewerProfile, origin, lang} = viewer;
+  const boostSessions = new Map<string, BoostSession>();
   const {radiusKm, gateKm, pageSize, maxPages} = options;
   const hasViewerLocation = hasLocation(origin);
 
+  // The viewer's side of every pair score, read once per scan rather than
+  // once per candidate. When the viewer has no usable music or relationship
+  // data, every pair score on that dimension is null, so no candidate's
+  // summary is read for it at all.
+  const [viewerMusicSnap, viewerRelationshipSnap] = await Promise.all([
+    db.doc(musicSummaryPath(uid)).get(),
+    db.doc(relationshipSummaryPath(uid)).get(),
+  ]);
+  const viewerMusic = viewerMusicSnap.data();
+  const viewerRelationship = viewerRelationshipSnap.data();
+  const scoresMusic = hasMusicTaste(viewerMusic);
+  const scoresRelationship = hasRelationshipAnswers(viewerRelationship);
+  const accepted = new Map<string, RevalidatedCandidate>();
+
   let pageCursor = options.cursor;
+  // The previous page's last document positions the next page directly.
+  let cursorSnap: DocumentSnapshot | null = null;
   let lastUid: string | null = null;
   let scannedFullPage = false;
   const buckets: DiscoveryPoolBuckets = {
@@ -317,34 +581,112 @@ export async function scanDiscoveryPool(
       .where("profileCompleted", "==", true)
       .orderBy("updatedAt", "desc")
       .limit(pageSize);
-    if (pageCursor) {
-      const cursorSnap = await db.doc(`profiles/${pageCursor}`).get();
-      if (cursorSnap.exists) {
-        query = query.startAfter(cursorSnap);
-      }
+    if (!cursorSnap && pageCursor) {
+      // Only a cursor handed in from outside needs reading.
+      const snap = await db.doc(`profiles/${pageCursor}`).get();
+      if (snap.exists) cursorSnap = snap;
+    }
+    if (cursorSnap) {
+      query = query.startAfter(cursorSnap);
     }
     const profiles = await query.get();
     scannedFullPage = profiles.size === pageSize;
     if (profiles.empty) {
       break;
     }
-    const candidateUids = profiles.docs.map((doc) => doc.id);
-    const [lastActiveByUid, accountsByUid, preferencesByUid, locationsByUid] = await Promise.all([
-      loadLastActiveAt(db, candidateUids),
-      loadUserAccounts(db, candidateUids),
-      loadPreferencesByUid(db, candidateUids),
-      hasViewerLocation ? loadUserLocations(db, candidateUids) : Promise.resolve(new Map()),
+    cursorSnap = profiles.docs[profiles.docs.length - 1];
+
+    // The page is narrowed in stages, cheapest first, and each stage reads
+    // only for the people the previous one left standing. `early` keeps the
+    // reason for everyone ruled out before the full chain runs.
+    const early = new Map<string, string>();
+    // Stage 1 — the profile document alone, already in hand: age, photos,
+    // moderation, and whether the viewer wants this gender at all.
+    for (const doc of profiles.docs) {
+      const reason = profileOnlyRejectReason({
+        viewerPrefs: viewer.prefs,
+        viewerProfile,
+        candidateProfile: doc.data(),
+        minAge: Number(viewer.prefs.minAge ?? 18),
+        maxAge: Number(viewer.prefs.maxAge ?? 99),
+      });
+      if (reason) early.set(doc.id, reason);
+    }
+    const profileOk = profiles.docs.map((doc) => doc.id).filter((id) => !early.has(id));
+    // Stage 2 — account, activity and their own preferences, in bulk.
+    const [accountsByUid, preferencesByUid] = await Promise.all([
+      loadUserAccounts(db, profileOk),
+      loadPreferencesByUid(db, profileOk),
     ]);
 
+    // First pass: the rule chain and the hard distance gate. Nothing here
+    // reads per candidate beyond the page's bulk loads above.
+    const survivors: Array<{
+      uid: string;
+      data: DocumentData;
+      tier: DiscoveryDistanceTier;
+      distanceKm: number | null;
+      label: string | null;
+      candidateBoosted: boolean;
+    }> = [];
+    // Pair state (decisions, blocks either way) only for the people the rest
+    // of the rule chain would still admit, looked up for the page at once.
+    const ownFields = (doc: (typeof profiles.docs)[number]) => {
+      const account = accountsByUid.get(doc.id);
+      return {
+        uid: doc.id,
+        profile: doc.data(),
+        account,
+        candidatePrefs: preferencesByUid.get(doc.id),
+        lastActiveAt: account?.lastActiveAt,
+      };
+    };
+    const ownOk = profiles.docs
+      .filter((doc) => {
+        if (early.has(doc.id)) return false;
+        const reason = candidateOwnRejectReason(viewer, ownFields(doc));
+        if (reason) early.set(doc.id, reason);
+        return reason === null;
+      })
+      .map((doc) => doc.id);
+    // Stage 3 — location, then the hard distance gate, before any pair lookup.
+    const locationsByUid = hasViewerLocation
+      ? await loadUserLocations(db, ownOk)
+      : new Map<string, {latitude: number; longitude: number}>();
+    const admissible = ownOk.filter((candidateUid) => {
+      const other = locationsByUid.get(candidateUid);
+      if (!hasViewerLocation || !other) return true;
+      const km = haversineKm(Number(origin?.latitude), Number(origin?.longitude), other.latitude, other.longitude);
+      if (isWithinDiscoveryRadius(km, gateKm)) return true;
+      early.set(candidateUid, "distance_over_radius");
+      return false;
+    });
+    // Stage 4 — pair state and Boost for whoever is left.
+    // Boost state, likewise, only for this page's admissible people — never
+    // the whole system's list — unless the viewer already carries it.
+    const [pageViewer, pageBoosts] = await Promise.all([
+      resolvePairExclusions(db, viewer, admissible),
+      viewer.boostsLoaded === false
+        ? loadActiveBoostSessionsFor(db, admissible)
+        : Promise.resolve(new Map<string, BoostSession>()),
+    ]);
+    for (const [boostedUid, session] of pageBoosts) boostSessions.set(boostedUid, session);
+    const boosted = viewer.boostsLoaded === false ? new Set(pageBoosts.keys()) : viewer.boosted;
     for (const doc of profiles.docs) {
       lastUid = doc.id;
+      const ruledOut = early.get(doc.id);
+      if (ruledOut) {
+        bumpReject(ruledOut);
+        continue;
+      }
       const data = doc.data();
-      const reject = await candidateRejectReason(db, viewer, {
+      const account = accountsByUid.get(doc.id);
+      const reject = await candidateRejectReason(db, pageViewer, {
         uid: doc.id,
         profile: data,
-        account: accountsByUid.get(doc.id),
+        account,
         candidatePrefs: preferencesByUid.get(doc.id),
-        lastActiveAt: lastActiveByUid.get(doc.id),
+        lastActiveAt: account?.lastActiveAt,
       });
       if (reject) {
         bumpReject(reject);
@@ -354,6 +696,7 @@ export async function scanDiscoveryPool(
       let distanceKm: number | null = null;
       let label: string | null = null;
       let tier: DiscoveryDistanceTier = "no_location";
+      let exactKmOf: number | null = null;
       if (hasViewerLocation) {
         const other = locationsByUid.get(doc.id);
         if (other) {
@@ -387,6 +730,7 @@ export async function scanDiscoveryPool(
             maxNearbyKm,
           );
           exactDistanceKm.set(doc.id, exactKm);
+          exactKmOf = exactKm;
           // Tier classification above used the exact value. What leaves the
           // backend is quantised: a 0.1 km figure for a candidate the caller
           // can pick out of the deck is a sharper trilateration oracle than
@@ -401,8 +745,24 @@ export async function scanDiscoveryPool(
         // Viewer has no location → location-independent discovery.
         tier = "no_location";
       }
-      const music = await musicScoreForPair(uid, doc.id);
-      const relationship = await relationshipScoreForPair(uid, doc.id);
+      survivors.push({uid: doc.id, data, tier, distanceKm, label, candidateBoosted});
+      accepted.set(doc.id, {uid: doc.id, rejectReason: null, profile: data, account, exactKm: exactKmOf});
+    }
+
+    // Second pass: pair scores for the survivors only, their summaries read
+    // in bulk — and not at all on a dimension the viewer has no data for.
+    const survivorUids = survivors.map((survivor) => survivor.uid);
+    const [musicByUid, relationshipByUid] = await Promise.all([
+      scoresMusic ? loadDocsByUid(db, survivorUids, musicSummaryPath) : Promise.resolve(new Map()),
+      scoresRelationship
+        ? loadDocsByUid(db, survivorUids, relationshipSummaryPath)
+        : Promise.resolve(new Map()),
+    ]);
+    for (const {uid: candidateUid, data, tier, distanceKm, label, candidateBoosted} of survivors) {
+      const music = scoresMusic ? musicScoreFromSummaries(viewerMusic, musicByUid.get(candidateUid)) : null;
+      const relationship = scoresRelationship
+        ? relationshipScoreFromSummaries(uid, candidateUid, viewerRelationship, relationshipByUid.get(candidateUid))
+        : null;
       const compat = calculateCompatibility({
         viewerProfile,
         candidateProfile: data,
@@ -416,12 +776,12 @@ export async function scanDiscoveryPool(
           : null,
         musicScore: music?.score ?? null,
       });
-      evidence.set(doc.id, compatibilityEvidence(viewerProfile, data));
+      evidence.set(candidateUid, compatibilityEvidence(viewerProfile, data));
       buckets[tier].push({
-        uid: doc.id,
+        uid: candidateUid,
         profile: {
-          ...discoveryProfileProjection({...data, uid: doc.id}),
-          isVerified: accountsByUid.get(doc.id)?.isVerified === true,
+          ...discoveryProfileProjection({...data, uid: candidateUid}),
+          isVerified: accountsByUid.get(candidateUid)?.isVerified === true,
         },
         distanceLabel: label,
         distanceKm,
@@ -480,6 +840,8 @@ export async function scanDiscoveryPool(
     exactDistanceKm,
     evidence,
     hasViewerLocation,
+    accepted,
+    boostSessions,
   };
 }
 
@@ -491,6 +853,8 @@ export interface RevalidatedCandidate {
   account: DocumentData | undefined;
   /** Exact viewer→candidate distance; server-side only. */
   exactKm: number | null;
+  /** The viewer's decision about them, when they made one. */
+  decision?: "matched" | "liked" | "passed" | null;
 }
 
 /**
@@ -511,25 +875,44 @@ export async function revalidatePoolCandidates(
     return out;
   }
   const hasViewerLocation = hasLocation(viewer.origin);
-  const [profileSnaps, accountsByUid, preferencesByUid, lastActiveByUid, locationsByUid] =
+  const [profileSnaps, accountsByUid, preferencesByUid, locationsByUid] =
     await Promise.all([
       db.getAll(...unique.map((id) => db.doc(`profiles/${id}`))),
       loadUserAccounts(db, unique),
       loadPreferencesByUid(db, unique),
-      loadLastActiveAt(db, unique),
       hasViewerLocation ? loadUserLocations(db, unique) : Promise.resolve(new Map()),
     ]);
   const profilesByUid = new Map(profileSnaps.map((snap) => [snap.id, snap.data()] as const));
-  for (const uid of unique) {
-    const profile = profilesByUid.get(uid);
+  const fieldsOf = (uid: string) => {
     const account = accountsByUid.get(uid);
-    let rejectReason = await candidateRejectReason(db, viewer, {
+    return {
       uid,
-      profile,
+      profile: profilesByUid.get(uid),
       account,
       candidatePrefs: preferencesByUid.get(uid),
-      lastActiveAt: lastActiveByUid.get(uid),
-    });
+      lastActiveAt: account?.lastActiveAt,
+    };
+  };
+  // Decisions for everyone asked about (a liked Pick whose account has since
+  // gone is still "liked", not a slot to refill); blocks only for people the
+  // rest of the chain would still admit. Both in parallel.
+  const [decisions, blocks] = await Promise.all([
+    viewer.historyLoaded === false
+      ? loadPairDecisions(db, viewer.uid, unique)
+      : Promise.resolve({liked: new Set<string>(), passed: new Set<string>(), matched: new Set<string>()}),
+    loadPairBlocks(
+      db,
+      viewer.uid,
+      unique.filter((uid) => !viewer.blocked.has(uid) && candidateOwnRejectReason(viewer, fieldsOf(uid)) === null),
+    ),
+  ]);
+  const decided = {
+    ...withPairDecisions(viewer, decisions),
+    blocked: new Set([...viewer.blocked, ...blocks]),
+  };
+  for (const uid of unique) {
+    const {profile, account} = fieldsOf(uid);
+    let rejectReason = await candidateRejectReason(db, decided, fieldsOf(uid));
     let exactKm: number | null = null;
     const other = locationsByUid.get(uid);
     if (!rejectReason && hasViewerLocation && other) {
@@ -543,7 +926,7 @@ export async function revalidatePoolCandidates(
         rejectReason = "distance_over_radius";
       }
     }
-    out.set(uid, {uid, rejectReason, profile, account, exactKm});
+    out.set(uid, {uid, rejectReason, profile, account, exactKm, decision: decisionOf(decided, uid)});
   }
   return out;
 }

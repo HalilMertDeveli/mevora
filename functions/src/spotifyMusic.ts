@@ -1286,18 +1286,42 @@ export async function musicScoreForPair(
   candidateUid: string,
 ): Promise<(ReturnType<typeof enrichMusicCompatibility>) | null> {
   const [viewer, candidate] = await Promise.all([
-    db.doc(`users/${viewerUid}/music/summary`).get(),
-    db.doc(`users/${candidateUid}/music/summary`).get(),
+    db.doc(musicSummaryPath(viewerUid)).get(),
+    db.doc(musicSummaryPath(candidateUid)).get(),
   ]);
-  const viewerTaste = tasteFromSummary(viewer.data());
-  const candidateTaste = tasteFromSummary(candidate.data());
+  return musicScoreFromSummaries(viewer.data(), candidate.data());
+}
+
+export function musicSummaryPath(uid: string): string {
+  return `users/${uid}/music/summary`;
+}
+
+/**
+ * Whether a music summary carries usable taste. Without it on the viewer's
+ * side every pair score is null, so a pool scan need not read any candidate's.
+ */
+export function hasMusicTaste(summary: DocumentData | undefined): boolean {
+  const taste = tasteFromSummary(summary);
+  return taste !== null && !isTasteEmpty(taste);
+}
+
+/**
+ * The pair score from two summaries the caller already holds — for scans that
+ * load the viewer's summary once and candidates' in bulk. No reads.
+ */
+export function musicScoreFromSummaries(
+  viewerSummary: DocumentData | undefined,
+  candidateSummary: DocumentData | undefined,
+): (ReturnType<typeof enrichMusicCompatibility>) | null {
+  const viewerTaste = tasteFromSummary(viewerSummary);
+  const candidateTaste = tasteFromSummary(candidateSummary);
   if (!viewerTaste || !candidateTaste || isTasteEmpty(viewerTaste) || isTasteEmpty(candidateTaste)) {
     return null;
   }
   const scored = scoreMusicCompatibility(viewerTaste, candidateTaste);
   return enrichMusicCompatibility(scored, [
-    ...catalogFromSummary(viewer.data()),
-    ...catalogFromSummary(candidate.data()),
+    ...catalogFromSummary(viewerSummary),
+    ...catalogFromSummary(candidateSummary),
   ]);
 }
 

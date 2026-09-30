@@ -23,6 +23,7 @@ public sealed class AccessTests
     [InlineData("/Audit")]
     [InlineData("/Admin/Staff")]
     [InlineData("/Admin/Staff/tsa-1")]
+    [InlineData("/AppControl")]
     public async Task Every_console_page_requires_sign_in(string path)
     {
         using var factory = new AdminWebFactory();
@@ -45,6 +46,7 @@ public sealed class AccessTests
     [InlineData("/Audit")]
     [InlineData("/Admin/Staff")]
     [InlineData("/Admin/Staff/tsa-1")]
+    [InlineData("/AppControl")]
     public async Task Role_without_the_permission_gets_403(string path)
     {
         using var factory = new AdminWebFactory();

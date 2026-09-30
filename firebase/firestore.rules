@@ -1102,6 +1102,29 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // -----------------------------------------------------------
+    // App Control (owner's operating switches for the mobile app).
+    // `public` is the sanitized projection the app reads before and after
+    // sign-in: maintenance, minimum versions, feature switches, announcement.
+    // It is written only by the admin App Control commands (Admin SDK).
+    // Everything else — the full record with who changed it, and the
+    // idempotency markers — is server-only.
+    // -----------------------------------------------------------
+    match /appOperationsConfig/public {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    // Rules are OR-ed across matches: this grants nothing, so only the get
+    // above reaches `public` and every other document here stays closed.
+    match /appOperationsConfig/{docId} {
+      allow read, write: if false;
+    }
+
+    match /appOperationsConfigWrites/{writeId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

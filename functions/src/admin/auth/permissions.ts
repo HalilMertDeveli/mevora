@@ -61,6 +61,13 @@ export const PERMISSIONS = [
 
   "audit.read",
 
+  // App Control: the owner's switches for the mobile app (maintenance,
+  // minimum versions, feature kill switches, announcement). Read lets a
+  // Trust & Safety admin see what members are experiencing; write is the
+  // owner's (super_admin only).
+  "app_control.read",
+  "app_control.write",
+
   "admin.manage_staff",
   "admin.manage_roles",
   // Bounded backfills (lookup index, report priority). Never data edits.

@@ -365,6 +365,37 @@ strings are redacted.
 Structured logs carry command, actor uid, outcome, duration and the request id
 (also stored on the audit event).
 
+### App Control
+
+The owner's controlled switches for the mobile app (`/AppControl`). It is
+not a database editor. It exposes four named, audited changes:
+
+| Command | Changes | Audit |
+|---|---|---|
+| `adminUpdateMaintenanceMode` | maintenance on/off + optional plain-text message | `APP_MAINTENANCE_ENABLED` / `_DISABLED` |
+| `adminUpdateMinimumVersion` | per platform: minimum (blocking), recommended (soft), store link (Play / App Store hosts only) | `APP_MIN_VERSION_CHANGED` |
+| `adminUpdateFeatureSwitch` | `boost`, `calls`, `spotify`, `humorLab`, `picks` on/off + reason | `APP_FEATURE_SWITCH_CHANGED` |
+| `adminUpdateAnnouncement` | plain-text title ≤80, message ≤280, info/warning, start, required end ≤31 days | `APP_ANNOUNCEMENT_CHANGED` |
+
+- Permissions: `app_control.read` (trust_safety_admin, super_admin), `app_control.write` (super_admin only).
+- Every change carries `expectedRevision` and an idempotency key. A stale revision gets `conflict`; a replay returns the first result.
+- One transaction writes `appOperationsConfig/current` (server-only, with the actor), the public projection `appOperationsConfig/public` (world-readable, no actor), the idempotency marker `appOperationsConfigWrites/*` and the audit event. Audit metadata holds previous and new values. Announcement text is recorded as lengths only.
+- The health panel shows real probes made on page load (Firestore read, Auth `getUser`, Storage `exists`) plus environment and revision. Crash and analytics services are not connected, so nothing is invented for them.
+
+**Server enforcement** (`functions/src/appOperations/appOperationsGate.ts`):
+- Maintenance, or a feature switched off, refuses the guarded callables with `unavailable` / `maintenance` or `feature_disabled`, so an old app build cannot bypass it. The public doc is cached for 15 s per instance, and an unreadable config fails open.
+- Guarded:
+  - `activateBoost`
+  - `createVideoCall`
+  - `spotifyLinkMusic` and `syncSpotifyTaste`
+  - the four Humor Lab callables
+  - `getMevoraPicks`
+  - `getDiscoveryCandidates`, `recordDiscoveryDecision` and `recordSwipe` (maintenance only)
+- Never guarded:
+  - account deletion, data export, support, report / block / unmatch and appeals
+  - `verifyBoostPurchase`: a paid purchase is always credited
+  - `spotifyCompleteAuth`: Spotify sign-in never locks a member out
+
 ## 13. Retention and account deletion
 
 | Data | Policy (days) | On account deletion |

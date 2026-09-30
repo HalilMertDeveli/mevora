@@ -88,6 +88,37 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets(
+    'an Android background trip writes offline once and online once',
+    (tester) async {
+      await attachInForeground(tester);
+      // Going out: inactive, hidden, paused. Coming back: hidden, inactive,
+      // resumed.
+      for (final state in [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        controller.didChangeAppLifecycleState(state);
+      }
+      await tester.pump();
+      expect(presence.writes, ['online', 'offline', 'online']);
+      controller.dispose();
+    },
+  );
+
+  test('a controller that never went online writes nothing on dispose', () {
+    final presence = _RecordingPresence();
+    PresenceLifecycleController(
+      presenceRepository: presence,
+      uidSource: _ReplayingUid('me'),
+    ).dispose();
+    expect(presence.writes, isEmpty);
+  });
+
   test('viewers tolerate two missed beats', () {
     expect(
       PresenceSubtitle.staleAfter,

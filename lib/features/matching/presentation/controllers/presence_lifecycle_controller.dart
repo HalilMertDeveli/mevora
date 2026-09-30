@@ -111,9 +111,14 @@ class PresenceLifecycleController with WidgetsBindingObserver {
   }
 
   Future<void> _goOffline() async {
+    // The beat runs exactly while this client has said it is online. Android
+    // reports hidden and paused on the way out and hidden again on the way
+    // back, so without this every background trip wrote offline two or three
+    // times.
+    final wasOnline = _heartbeat != null;
     _stopHeartbeat();
     final uid = _uid;
-    if (uid == null) {
+    if (uid == null || !wasOnline) {
       return;
     }
     try {

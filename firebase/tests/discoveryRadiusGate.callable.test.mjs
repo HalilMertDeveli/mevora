@@ -1,6 +1,7 @@
 /**
- * The discovery distance gate, driven through the callable the deck actually
- * uses (`getDiscoveryCandidates`).
+ * The discovery distance gate, driven through the callable that actually puts
+ * people in front of a member: Mevora Picks (`getMevoraPicks`). The open-ended
+ * deck callable (`getDiscoveryCandidates`) is retired; the last test pins that.
  *
  * Why this exists: distance used to be computed, ranked on and labelled, but it
  * never excluded anyone. A runtime probe showed a viewer in Istanbul was served
@@ -11,9 +12,11 @@
  * every log line while excluding nobody. Unit tests pin the predicate; only this
  * suite proves the deployed callable drops the candidate.
  *
- * Fixtures sit at deliberate distances from the viewer so one matrix covers
- * every rung of the ladder:
+ * Fixtures sit at deliberate distances from the viewer and are otherwise
+ * identical, so the only thing that can keep one of them out is distance:
  *   near ~3 km, mid ~40 km, far ~12,300 km (Buenos Aires)
+ * Picks reach past the preferred radius (50 km) only up to the hard ceiling
+ * (100 km), so near and mid are in, far is out.
  *
  * Needs auth + firestore + functions, and functions/lib must be built:
  *   npm --prefix functions run build
@@ -26,8 +29,10 @@ import {initializeTestEnvironment} from "@firebase/rules-unit-testing";
 import {doc, setDoc, Timestamp} from "firebase/firestore";
 
 const PROJECT_ID = "mevora-dev";
-const AUTH_HOST = "127.0.0.1:9099";
-const FUNCTIONS_HOST = "127.0.0.1:5001";
+// emulators:exec exports the hosts it started; the defaults are the CI ports.
+const AUTH_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "127.0.0.1:9099";
+const FUNCTIONS_HOST = process.env.MEVORA_FUNCTIONS_EMULATOR_HOST ?? "127.0.0.1:5001";
+const [FIRESTORE_HOST, FIRESTORE_PORT] = (process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080").split(":");
 const REGION = "europe-west1";
 
 /** Viewer origin — the coordinates the QA seed uses. */
@@ -111,27 +116,26 @@ async function authRest(path, body) {
   return json;
 }
 
-async function candidatesFor(radiusKm) {
-  const res = await fetch(
-    `http://${FUNCTIONS_HOST}/${PROJECT_ID}/${REGION}/getDiscoveryCandidates`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokens.viewer}`,
-      },
-      body: JSON.stringify({data: {radiusKm, limit: 20, includeDebug: true}}),
+async function call(name, data = {}) {
+  const res = await fetch(`http://${FUNCTIONS_HOST}/${PROJECT_ID}/${REGION}/${name}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${tokens.viewer}`,
     },
-  );
+    body: JSON.stringify({data}),
+  });
   const json = await res.json().catch(() => ({}));
-  assert.equal(res.status, 200, `HTTP ${res.status}: ${JSON.stringify(json)}`);
+  return {status: res.status, json};
+}
+
+/** Today's Picks for the viewer. The batch is stable for the day. */
+async function picks() {
+  const {status, json} = await call("getMevoraPicks");
+  assert.equal(status, 200, `HTTP ${status}: ${JSON.stringify(json)}`);
   const result = json.result ?? {};
-  const byUid = new Map((result.items ?? []).map((item) => [item.uid, item]));
-  /** Which fixtures came back, in the order the deck would show them. */
-  const names = (result.items ?? [])
-    .map((item) => Object.keys(uids).find((key) => uids[key] === item.uid))
-    .filter(Boolean);
-  return {result, byUid, names, debug: result.debug ?? {}};
+  const byUid = new Map((result.picks ?? []).map((item) => [item.uid, item]));
+  return {result, byUid};
 }
 
 function photoRecords(uid) {
@@ -191,6 +195,11 @@ async function seed(db, key) {
     birthDate: Timestamp.fromDate(person.birthDate),
     city: place.city,
     photos,
+    // Identical for everyone: the pair clears the Picks quality floor on
+    // shared goal, interests and lifestyle, so only distance can differ.
+    relationshipGoal: "longTerm",
+    interests: ["hiking", "jazz", "cooking", "chess"],
+    lifestyle: ["nonsmoker", "earlybird"],
     isDiscoverable: true,
     profileCompleted: true,
     profileModerationStatus: "approved",
@@ -226,7 +235,7 @@ async function priv(fn) {
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: PROJECT_ID,
-    firestore: {host: "127.0.0.1", port: 8080},
+    firestore: {host: FIRESTORE_HOST, port: Number(FIRESTORE_PORT)},
   });
 
   for (const key of Object.keys(people)) {
@@ -261,56 +270,27 @@ describe("discovery hard distance gate, through the real callable", () => {
     assert.ok(far > 12000, `far is ${far.toFixed(0)} km`);
   });
 
-  it("excludes a candidate on the far side of the planet at the widest rung", async () => {
-    // The whole reason this suite exists. 100 km is as wide as the gate opens,
-    // so if Buenos Aires is absent here it is absent everywhere.
-    const {byUid, debug} = await candidatesFor(100);
-    assert.equal(byUid.has(uids.far), false, "Buenos Aires must not be in the deck");
-    assert.equal(debug.gateKm, 100);
-    assert.ok(
-      (debug.rejectionReasons?.distance_over_radius ?? 0) >= 1,
-      `expected a distance rejection, got ${JSON.stringify(debug.rejectionReasons)}`,
-    );
+  it("returns both in-range candidates", async () => {
+    // The control for the next test: same profile, same preferences, only
+    // the location differs.
+    const {byUid, result} = await picks();
+    assert.equal(byUid.has(uids.near), true, `3 km candidate must be picked: ${JSON.stringify(result)}`);
+    assert.equal(byUid.has(uids.mid), true, "40 km candidate must be picked");
   });
 
-  it("returns both in-range candidates at the widest rung, nearest first", async () => {
-    const {byUid, names} = await candidatesFor(100);
-    assert.equal(byUid.has(uids.near), true, "3 km candidate must be in the deck");
-    assert.equal(byUid.has(uids.mid), true, "40 km candidate must be in the deck");
-    assert.deepEqual(
-      names.filter((n) => n === "near" || n === "mid"),
-      ["near", "mid"],
-      "the closer candidate must be shown first",
-    );
-  });
-
-  it("narrows the deck as the rung narrows, and widens it again", async () => {
-    // "Start with the nearest, widen from there" — one fixture crossing the
-    // boundary in both directions is what makes the gate progressive rather
-    // than a single fixed cutoff.
-    const tight = await candidatesFor(5);
-    assert.equal(tight.byUid.has(uids.near), true, "3 km candidate at a 5 km gate");
-    assert.equal(tight.byUid.has(uids.mid), false, "40 km candidate must be gated out at 5 km");
-    assert.equal(tight.byUid.has(uids.far), false);
-    assert.equal(tight.debug.gateKm, 5);
-
-    const wider = await candidatesFor(50);
-    assert.equal(wider.byUid.has(uids.near), true);
-    assert.equal(wider.byUid.has(uids.mid), true, "40 km candidate must return at a 50 km gate");
-    assert.equal(wider.byUid.has(uids.far), false);
-    assert.equal(wider.debug.gateKm, 50);
+  it("excludes a candidate on the far side of the planet", async () => {
+    // The whole reason this suite exists.
+    const {byUid} = await picks();
+    assert.equal(byUid.has(uids.far), false, "Buenos Aires must not be picked");
   });
 
   it("never discloses a distance past the ceiling for anyone it returns", async () => {
     // A returned item carrying distanceKm 100 used to be the tell that someone
     // arbitrarily far had been let in. Now 100 can only ever mean 95-100 km.
-    const {result} = await candidatesFor(100);
-    for (const item of result.items ?? []) {
+    const {result} = await picks();
+    for (const item of result.picks ?? []) {
       if (item.distanceKm == null) continue;
-      assert.ok(
-        item.distanceKm <= 100,
-        `${item.uid} disclosed ${item.distanceKm} km`,
-      );
+      assert.ok(item.distanceKm <= 100, `${item.uid} disclosed ${item.distanceKm} km`);
     }
   });
 
@@ -319,7 +299,17 @@ describe("discovery hard distance gate, through the real callable", () => {
     // FUNCTIONS_EMULATOR is set, which makes that gate invisible to exactly the
     // QA that would catch a regression. This suite runs under the emulator, so
     // a green run here is the assertion that discovery did not copy it.
-    const {byUid} = await candidatesFor(100);
+    const {byUid} = await picks();
     assert.equal(byUid.has(uids.far), false);
+  });
+
+  it("offers no open-ended deck beside Picks", async () => {
+    // The paged deck had no daily cap; it must refuse, not page.
+    for (const name of ["getDiscoveryCandidates", "getDiscoveryFeed"]) {
+      const {status, json} = await call(name, {radiusKm: 100, limit: 20, cursor: ""});
+      assert.equal(status, 400, `${name}: HTTP ${status} ${JSON.stringify(json)}`);
+      assert.equal(json.error?.status, "FAILED_PRECONDITION");
+      assert.equal(json.error?.message, "discovery-deck-retired");
+    }
   });
 });

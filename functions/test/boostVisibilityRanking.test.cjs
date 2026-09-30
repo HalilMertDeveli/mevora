@@ -252,9 +252,10 @@ describe("5-9. eligibility safety", () => {
   });
 
   it("Boost is applied only after Discover has filtered candidates", () => {
-    // The candidate loop lives in discoveryPool.ts, shared by Discover and
-    // Mevora Picks; backend.ts must reach candidates only through it.
-    assert.ok(src("backend.ts").includes("scanDiscoveryPool("), "Discover must scan through the pool");
+    // The candidate loop lives in discoveryPool.ts; Mevora Picks (the only
+    // surface that still puts people in front of a member) must reach
+    // candidates only through it.
+    assert.ok(src("picks/service.ts").includes("scanDiscoveryPool("), "Picks must scan through the pool");
     const pool = src("discoveryPool.ts");
     const boostAt = pool.indexOf("isBoostedCandidate(doc.id, boosted)");
     assert.ok(boostAt > -1, "boost must be resolved in the candidate loop");
@@ -281,7 +282,7 @@ describe("5-9. eligibility safety", () => {
   });
 
   it("blocked, liked, passed and matched users are excluded before ranking", () => {
-    assert.ok(src("backend.ts").includes("loadDiscoveryViewerContext("), "Discover must load exclusions");
+    assert.ok(src("picks/index.ts").includes("loadDiscoveryViewerContext("), "Picks must load exclusions");
     const pool = src("discoveryPool.ts");
     for (const exclusion of ["blocked", "likesSnap", "passedSnap", "activeMatches"]) {
       assert.ok(pool.includes(exclusion), `${exclusion} exclusion missing`);

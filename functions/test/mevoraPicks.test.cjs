@@ -707,3 +707,28 @@ describe("Mevora Picks service", () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Product boundary: Picks is the only way people are put in front of a member.
+// ---------------------------------------------------------------------------
+
+describe("No open-ended feed beside Picks", () => {
+  it("the retired Discover deck refuses every request, cursor or not", async () => {
+    // backend.ts also registers a Storage trigger, which needs a bucket at load.
+    process.env.FIREBASE_CONFIG ??= JSON.stringify({
+      projectId: "demo-picks-boundary",
+      storageBucket: "demo-picks-boundary.appspot.com",
+    });
+    const {getDiscoveryCandidates, getDiscoveryFeed} = require("../lib/backend.js");
+    seedWorld([["c1", {}], ["c2", {}], ["c3", {}]]);
+    for (const callable of [getDiscoveryCandidates, getDiscoveryFeed]) {
+      for (const data of [{}, {cursor: "c1", limit: 20, radiusKm: 100, expandDistance: true}]) {
+        await assert.rejects(
+          () => callAs(callable, VIEWER, data),
+          (error) => error.code === "failed-precondition" && error.message === "discovery-deck-retired",
+        );
+      }
+    }
+    await assert.rejects(() => callAs(getDiscoveryCandidates, null), (error) => error.code === "unauthenticated");
+  });
+});

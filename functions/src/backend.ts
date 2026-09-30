@@ -23,21 +23,10 @@ import {
   passesDiscoveryProfileFilters,
   passesGenderPreferences,
 } from "./discoveryMatching.js";
-import {sortByBoostVisibility} from "./boost/ranking.js";
-import {attributeBoostEvent, recordBoostImpressions} from "./boost/measurement.js";
-import {
-  fillFromDistanceTiers,
-  resolveDiscoveryRadiusKm,
-  type DiscoveryDistanceTier,
-} from "./discoveryFallback.js";
+import {attributeBoostEvent} from "./boost/measurement.js";
 import {userLanguage} from "./language.js";
 import {ensureMatchScore, preservedMatchScoreFields} from "./matchScore.js";
-import {
-  haversineKm,
-  isBlocked as isBlockedPair,
-  loadDiscoveryViewerContext,
-  scanDiscoveryPool,
-} from "./discoveryPool.js";
+import {haversineKm, isBlocked as isBlockedPair} from "./discoveryPool.js";
 import {attributePickMatch, recordPickDecision} from "./picks/service.js";
 import {dailyStreakDocPath, streakExportView} from "./streak/service.js";
 import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
@@ -89,99 +78,23 @@ function parsePendingPhotoPath(name: string): {uid: string; imageId: string} | n
   return {uid, imageId};
 }
 
+/**
+ * Retired: the open-ended Discover deck.
+ *
+ * Mevora is not an endless profile feed. People arrive as the finite daily
+ * Mevora Picks batch (`getMevoraPicks`), and deciding quickly never buys more
+ * of them. This callable paged the whole pool by cursor with no daily cap, so
+ * even with no screen left that calls it, a hand-made request (or an old
+ * build) could page through everyone — a way around the daily limit.
+ *
+ * It stays exported so such a caller gets a clear refusal instead of a 404,
+ * and maintenance mode still answers first. The pool scan itself lives on in
+ * discoveryPool.ts, where Picks uses it.
+ */
 export const getDiscoveryCandidates = onCall(callableOptions, async (request) => {
-  const uid = requireUid(request);
+  requireUid(request);
   await assertAppFeatureAvailable(db, null);
-  const callerAccount = await db.doc(`users/${uid}`).get();
-  if (!isAccountEligible(callerAccount.data())) {
-    throw new HttpsError("permission-denied", "account-suspended");
-  }
-  const allowedRadii = new Set([5, 10, 25, 50, 100]);
-  const requested = Number(request.data?.radiusKm ?? 25);
-  const radiusKm = allowedRadii.has(requested) ? requested : 25;
-  // The hard distance gate for this request. radiusKm is the progressive
-  // step — the client walks it up the ladder when a deck comes back empty —
-  // and this is the one place the absolute product ceiling is asserted, so
-  // widening allowedRadii later cannot silently widen the gate past it.
-  const gateKm = resolveDiscoveryRadiusKm(radiusKm);
-  const limit = Math.min(Math.max(Number(request.data?.limit ?? 10), 1), 20);
-  const cursor = String(request.data?.cursor ?? "");
-  // Client may ask for soft distance expansion when a preferred radius is empty.
-  const expandDistance = request.data?.expandDistance === true;
-  const {viewer, boostSessions} = await loadDiscoveryViewerContext(db, uid, callerAccount.data());
-  const boosted = viewer.boosted;
-  if (viewer.prefs.discoveryEnabled === false) {
-    return {items: [], nextCursor: null, fallbackLevel: "empty"};
-  }
-  const includeDebug = request.data?.includeDebug === true;
-
-  // Scan multiple profile pages when nearby is sparse so far/no-location
-  // candidates can still fill the deck without a full collection download.
-  const scan = await scanDiscoveryPool(db, viewer, {
-    cursor,
-    radiusKm,
-    gateKm,
-    pageSize: 40,
-    maxPages: expandDistance ? 4 : 3,
-    // Enough nearby — stop scanning. Otherwise keep scanning for fallback tiers.
-    shouldStop: (pool) => {
-      const nearbyCount = pool.nearby.length;
-      const totalEligible =
-        nearbyCount + pool.extended.length + pool.far.length + pool.no_location.length;
-      return nearbyCount >= limit || totalEligible >= limit * 2;
-    },
-  });
-  const {buckets, rejectionReasons, lastUid, scannedFullPage, hasViewerLocation} = scan;
-
-  // Rank each tier with the existing boost/compat ranking (no engine rewrite).
-  for (const key of Object.keys(buckets) as DiscoveryDistanceTier[]) {
-    buckets[key] = sortByBoostVisibility(buckets[key], boosted, radiusKm);
-  }
-
-  const filled = fillFromDistanceTiers(buckets, limit);
-  logger.info("discovery_fallback", {
-    viewerHasLocation: hasViewerLocation,
-    radiusKm,
-    gateKm,
-    expandDistance,
-    nearby: buckets.nearby.length,
-    extended: buckets.extended.length,
-    far: buckets.far.length,
-    noLocation: buckets.no_location.length,
-    returned: filled.items.length,
-    fallbackLevel: filled.fallbackLevel,
-    rejectionReasons,
-  });
-
-  // An impression is a profile that reached this response page. Being
-  // considered as a ranking candidate is not an impression.
-  await recordBoostImpressions({
-    db,
-    viewerUid: uid,
-    shownUids: filled.items.map((item) => String((item as {uid?: unknown}).uid ?? "")),
-    sessions: boostSessions,
-  });
-
-  const nextCursor = scannedFullPage ? lastUid : null;
-  return {
-    items: filled.items,
-    nextCursor,
-    fallbackLevel: filled.fallbackLevel,
-    ...(includeDebug
-      ? {
-          debug: {
-            rejectionReasons,
-            viewerHasLocation: hasViewerLocation,
-            radiusKm,
-            gateKm,
-            nearby: buckets.nearby.length,
-            extended: buckets.extended.length,
-            far: buckets.far.length,
-            noLocation: buckets.no_location.length,
-          },
-        }
-      : {}),
-  };
+  throw new HttpsError("failed-precondition", "discovery-deck-retired");
 });
 
 export const getDiscoveryFeed = getDiscoveryCandidates;

@@ -28,6 +28,7 @@ import {userLanguage} from "./language.js";
 import {ensureMatchScore, preservedMatchScoreFields} from "./matchScore.js";
 import {haversineKm, isBlocked as isBlockedPair} from "./discoveryPool.js";
 import {attributePickMatch, recordPickDecision} from "./picks/service.js";
+import {assertDecisionOffered, offeredDecisionSource} from "./picks/decisionScope.js";
 import {dailyStreakDocPath, streakExportView} from "./streak/service.js";
 import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
 import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
@@ -107,7 +108,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   if (!candidateUid || candidateUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid candidate.");
   }
-  const [callerAccount, callerProfileSnap, callerPrefsSnap, candidateProfile, candidatePrefsSnap, candidateAccountSnap, activeMatches] =
+  const [callerAccount, callerProfileSnap, callerPrefsSnap, candidateProfile, candidatePrefsSnap, candidateAccountSnap, activeMatches, offeredBy] =
     await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -116,6 +117,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
     db.doc(`userPreferences/${candidateUid}`).get(),
     db.doc(`users/${candidateUid}`).get(),
     loadActiveMatchPartnerIds(db, uid),
+    offeredDecisionSource({db, viewerUid: uid, candidateUid}),
   ]);
   if (!isAccountEligible(callerAccount.data())) {
     throw new HttpsError("permission-denied", "account-suspended");
@@ -123,6 +125,9 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   if (activeMatches.has(candidateUid)) {
     throw new HttpsError("failed-precondition", "already-matched");
   }
+  // Only someone Picks or Likes You actually showed — checked before any
+  // eligibility gate, so a refusal says nothing about a stranger.
+  assertDecisionOffered(offeredBy);
   const callerPrefs = callerPrefsSnap.data() ?? {};
   const minAge = Number(callerPrefs.minAge ?? 18);
   const maxAge = Number(callerPrefs.maxAge ?? 99);

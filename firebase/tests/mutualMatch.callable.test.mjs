@@ -178,6 +178,41 @@ async function seed(db, key) {
   });
 }
 
+/**
+ * A like is accepted only for someone the member was shown, so each liker
+ * gets a Picks batch holding the people it likes here — the shape
+ * getMevoraPicks stores, reduced to what the decision scope reads.
+ */
+async function seedPicks(db, viewerKey, candidateKeys) {
+  const nowMs = Date.now();
+  const picks = candidateKeys.map((key, rank) => ({
+    candidateUid: uids[key],
+    pickId: `mm_pick_${key}`,
+    rank,
+    pickType: "bestOverall",
+    labels: ["bestOverall"],
+    reasons: [],
+    overallScore: 80,
+    isBoosted: false,
+    selectionStrategy: "exploit",
+    state: "active",
+    deliveredAtMs: nowMs,
+    decidedAtMs: null,
+    card: {},
+  }));
+  await setDoc(doc(db, `users/${uids[viewerKey]}/mevoraPicks/current`), {
+    schemaVersion: 1,
+    generationId: `mm_gen_${stamp}_${viewerKey}`,
+    generatedAtMs: nowMs,
+    refreshAtMs: nowMs + 86_400_000,
+    lastScanAtMs: nowMs,
+    deliveredCount: picks.length,
+    picks,
+    cooldowns: {},
+    candidateUids: picks.map((pick) => pick.candidateUid).sort(),
+  });
+}
+
 /** Runs `fn` against a Firestore client with rules disabled. */
 async function priv(fn) {
   let out;
@@ -207,6 +242,10 @@ before(async () => {
     for (const key of Object.keys(people)) {
       await seed(db, key);
     }
+    // A and B were each other's Pick; C was shown A (and never B).
+    await seedPicks(db, "a", ["b"]);
+    await seedPicks(db, "b", ["a"]);
+    await seedPicks(db, "c", ["a"]);
   });
 });
 
@@ -309,5 +348,32 @@ describe("two-device mutual match (recordDiscoveryDecision)", () => {
       getDoc(doc(db, `likes/${uids.c}_${uids.a}`)),
     );
     assert.equal(like.exists(), false, "a refused like must not be stored");
+  });
+
+  it("refuses a like on someone the member was never shown", async () => {
+    // C and B would pass every gate (he wants women, she wants men), but B
+    // was never one of C's Picks and never liked him: a hand-made call.
+    const res = await callAs("c", "recordDiscoveryDecision", {
+      candidateUid: uids.b,
+      action: "like",
+    });
+
+    assert.notEqual(res.status, 200, JSON.stringify(res.body));
+    assert.match(JSON.stringify(res.body), /candidate-not-offered/);
+
+    const like = await priv((db) =>
+      getDoc(doc(db, `likes/${uids.c}_${uids.b}`)),
+    );
+    assert.equal(like.exists(), false, "a refused like must not be stored");
+  });
+
+  it("moves each side's Pick to matched", async () => {
+    for (const [viewer, candidate] of [["a", "b"], ["b", "a"]]) {
+      const batch = await priv((db) =>
+        getDoc(doc(db, `users/${uids[viewer]}/mevoraPicks/current`)),
+      );
+      const pick = batch.data().picks.find((p) => p.candidateUid === uids[candidate]);
+      assert.equal(pick.state, "matched", `${viewer}'s Pick of ${candidate}`);
+    }
   });
 });

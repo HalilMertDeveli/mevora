@@ -134,6 +134,7 @@ function projectPhotos(photos: Array<Record<string, unknown>>): Array<Record<str
     id: photo.id,
     downloadUrl: photo.downloadUrl ?? null,
     thumbUrl: photo.thumbUrl ?? null,
+    cardUrl: photo.cardUrl ?? null,
     order: photo.order ?? 0,
     isPrimary: photo.isPrimary ?? false,
     moderationStatus: photo.moderationStatus ?? "pending",

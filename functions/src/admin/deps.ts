@@ -41,6 +41,7 @@ export interface AdminBucketPort {
     copy(destination: unknown): Promise<unknown>;
     delete(options?: {ignoreNotFound?: boolean}): Promise<unknown>;
     setMetadata(metadata: Record<string, unknown>): Promise<unknown>;
+    save(data: Buffer, options?: Record<string, unknown>): Promise<unknown>;
   };
   getFiles(options: {prefix: string; maxResults?: number; autoPaginate?: boolean}): Promise<[
     Array<{name: string}>,

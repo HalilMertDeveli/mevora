@@ -31,10 +31,11 @@ export const SERVER_OWNED_PHOTO_FIELDS = [
   // B-11: thumbUrl was treated as client presentation data, but discovery
   // renders `thumbUrl ?? downloadUrl`, so a client-supplied thumbnail URL was
   // preferred over the moderated one — a route around B-02 needing no Storage
-  // write at all. Nothing generates profile thumbnails today, so the ledger
-  // never supplies one and this reconciles to null, leaving discovery on the
-  // approved downloadUrl.
+  // write at all. The display variants are rendered by publishApprovedPhoto
+  // from the approved bytes and recorded in the ledger; whatever a client
+  // writes here is replaced with the ledger's value (or null).
   "thumbUrl",
+  "cardUrl",
 ] as const;
 
 /** Fields the client legitimately owns: ordering and identity only. */
@@ -47,8 +48,10 @@ export interface LedgerEntry {
   moderatedAt?: unknown;
   storagePath?: string | null;
   downloadUrl?: string | null;
-  /** B-11: server-owned. No generator exists yet, so this stays null today. */
+  /** B-11: server-owned. Rendered by publishApprovedPhoto (photoVariants.ts). */
   thumbUrl?: string | null;
+  /** Server-owned card-size variant; same authority as thumbUrl. */
+  cardUrl?: string | null;
 }
 
 export function ledgerRef(db: Firestore, uid: string, imageId: string) {
@@ -71,6 +74,8 @@ export async function writeLedgerEntry(
       moderatedAt: entry.moderatedAt ?? FieldValue.serverTimestamp(),
       ...(entry.storagePath === undefined ? {} : {storagePath: entry.storagePath}),
       ...(entry.downloadUrl === undefined ? {} : {downloadUrl: entry.downloadUrl}),
+      ...(entry.thumbUrl === undefined ? {} : {thumbUrl: entry.thumbUrl}),
+      ...(entry.cardUrl === undefined ? {} : {cardUrl: entry.cardUrl}),
       updatedAt: FieldValue.serverTimestamp(),
     },
     {merge: true},
@@ -93,6 +98,7 @@ export async function readLedger(
       storagePath: (data.storagePath ?? null) as string | null,
       downloadUrl: (data.downloadUrl ?? null) as string | null,
       thumbUrl: (data.thumbUrl ?? null) as string | null,
+      cardUrl: (data.cardUrl ?? null) as string | null,
     });
   }
   return out;
@@ -160,10 +166,13 @@ export async function backfillLegacyApproval(options: {
  */
 export function reconcilePhoto(photo: PhotoRecord, entry: LedgerEntry | null): PhotoRecord {
   const next: PhotoRecord = {...photo};
-  // B-11: the thumbnail URL is server-owned. Only the ledger may supply one,
+  // B-11: the variant URLs are server-owned. Only the ledger may supply them,
   // so a client cannot point discovery at unmoderated imagery through the
-  // `thumbUrl ?? downloadUrl` fallback.
-  next.thumbUrl = entry?.thumbUrl ?? null;
+  // `thumbUrl ?? downloadUrl` fallback — and only while the photo is
+  // approved, so a photo pulled back into review stops rendering anywhere.
+  const approved = entry?.status === "approved";
+  next.thumbUrl = approved ? entry?.thumbUrl ?? null : null;
+  next.cardUrl = approved ? entry?.cardUrl ?? null : null;
   if (!entry) {
     next.moderationStatus = "pending";
     next.moderationReason = null;

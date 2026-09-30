@@ -37,7 +37,9 @@ function primaryApprovedPhoto(data: DocumentData): string | null {
     return null;
   }
   const primary = photos.find((photo) => photo.isPrimary === true) ?? photos[0];
-  const url = primary.downloadUrl ?? primary.thumbUrl;
+  // participantPhotos feeds the chat header, inbox and match tiles — avatar
+  // sizes — so the 320px variant is enough; older photos have none yet.
+  const url = primary.thumbUrl ?? primary.downloadUrl;
   return typeof url === "string" && url.length > 0 ? url : null;
 }
 

@@ -81,10 +81,10 @@ class PickCard extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        if (candidate.photoUrl == null)
+                        if (candidate.cardPhoto == null)
                           const PhotoUnavailablePlaceholder()
                         else
-                          DiscoveryNetworkImage(url: candidate.photoUrl!),
+                          DiscoveryNetworkImage(url: candidate.cardPhoto!),
                         IgnorePointer(
                           child: DecoratedBox(
                             decoration: BoxDecoration(

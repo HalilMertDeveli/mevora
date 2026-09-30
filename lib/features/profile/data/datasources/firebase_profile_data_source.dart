@@ -149,6 +149,7 @@ class FirebaseProfileDataSource {
             'storagePath': photo.storagePath,
             'downloadUrl': photo.downloadUrl,
             'thumbUrl': photo.thumbUrl,
+            'cardUrl': photo.cardUrl,
             'moderationStatus': photo.moderationStatus,
             'order': photo.order,
             'isPrimary': photo.isPrimary,
@@ -183,6 +184,7 @@ class FirebaseProfileDataSource {
             storagePath: ((value[i] as Map)['storagePath'] as String?) ?? '',
             downloadUrl: (value[i] as Map)['downloadUrl'] as String?,
             thumbUrl: (value[i] as Map)['thumbUrl'] as String?,
+            cardUrl: (value[i] as Map)['cardUrl'] as String?,
             moderationStatus:
                 ((value[i] as Map)['moderationStatus'] as String?) ?? 'pending',
             order: firestoreInt((value[i] as Map)['order'], i),

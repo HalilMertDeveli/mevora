@@ -5,6 +5,7 @@ import {logger} from "firebase-functions";
 import {ApplePurchaseVerifier} from "./applePurchaseVerifier.js";
 import {BoostActivationService} from "./boostActivationService.js";
 import {ensureDefaultCatalog, isDurationPack, resolveBoostPack} from "./catalog.js";
+import {expireDueBoosts} from "./expiry.js";
 import {BoostCreditService} from "./creditService.js";
 import {GooglePurchaseVerifier} from "./googlePurchaseVerifier.js";
 import {PurchaseVerificationService} from "./purchaseVerificationService.js";
@@ -444,32 +445,15 @@ export const activateBoost = onCall(callableOptions, async (request) => {
 export const expireBoost = onSchedule(
   {schedule: "every 15 minutes", region: "europe-west1"},
   async () => {
-    const db = getFirestore();
-    const now = Timestamp.now();
-    const snap = await db.collectionGroup("boosts").where("status", "==", "active").get();
-    const expiredDocs: Array<{uid: string; boostId: string}> = [];
-    const batch = db.batch();
-    for (const doc of snap.docs) {
-      const expires = doc.data().expiresAt as Timestamp | undefined;
-      if (expires && expires.toMillis() <= now.toMillis()) {
-        batch.update(doc.ref, {status: "expired"});
-        expiredDocs.push({uid: String(doc.data().userId ?? ""), boostId: doc.id});
-        logger.info("boost_expired", {userId: doc.data().userId, boostId: doc.id});
-      }
-    }
-    if (expiredDocs.length) {
-      await batch.commit();
-      for (const item of expiredDocs) {
-        if (!item.uid) {
-          continue;
-        }
-        await sendUserPush({
+    await expireDueBoosts(getFirestore(), {
+      now: Timestamp.now(),
+      notify: (item) =>
+        sendUserPush({
           uid: item.uid,
           type: FcmTypes.boostExpired,
           data: {boostId: item.boostId},
           prefKey: "notificationsEnabled",
-        });
-      }
-    }
+        }),
+    });
   },
 );

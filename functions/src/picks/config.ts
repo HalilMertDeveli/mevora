@@ -11,17 +11,73 @@
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
-export const PICKS_CONFIG = {
+/**
+ * The one product decision behind the size of Picks: how many people a member
+ * meets per day. The owner chooses between the supported values; every count
+ * below (delivery ceiling, shortlist, scan bounds) is derived from it, and the
+ * app reads the chosen value from the response rather than carrying its own.
+ */
+export const PICKS_DAILY_TARGET_OPTIONS = [10, 15] as const;
+export type PicksDailyTarget = (typeof PICKS_DAILY_TARGET_OPTIONS)[number];
+export const PICKS_DAILY_TARGET: PicksDailyTarget = 10;
+
+/** Every count that scales with the daily target. */
+export interface PicksSizing {
   /** How many Picks a fresh batch aims for. Fewer is shown when supply is weak. */
-  targetCount: 6,
+  targetCount: number;
   /**
-   * Most Picks one batch may ever deliver, replacements included. Liked,
-   * passed and matched Picks are never replaced — only ones that stopped
-   * being eligible (block, deletion, hidden) — so deciding quickly does not
-   * buy more people. Keeps the curated set finite: once reached, the next
-   * people arrive with the next day's batch rather than as an endless refill.
+   * Replacements one batch may add for Picks that stopped being eligible
+   * (block, deletion, hidden, suspension, out of range). Liked, passed and
+   * matched Picks are never replaced, so deciding quickly buys nobody.
    */
-  maxDeliveredPerBatch: 10,
+  maxReplacementsPerBatch: number;
+  /**
+   * Most Picks one batch may ever deliver: the target plus the replacement
+   * allowance. Keeps the day finite even when many Picks turn ineligible.
+   */
+  maxDeliveredPerBatch: number;
+  /** Pool scan bounds, per generation. Same page size as the old deck. */
+  scanPageSize: number;
+  scanMaxPages: number;
+  /** Stop scanning once this many eligible candidates are scored. */
+  scanShortlistSize: number;
+}
+
+/**
+ * Derives every count from the target. The ratios are the ones the original
+ * 6-Pick batch was tuned with: a shortlist of six candidates per slot (so the
+ * quality floor and the diversity rules have real alternatives to choose
+ * from), about sixteen profiles scanned per slot at most, and a replacement
+ * allowance of a quarter of the target (rounded up).
+ *
+ *   target 10 → at most 13 delivered, shortlist 60, ≤ 4 pages of 40 (160 profiles)
+ *   target 15 → at most 19 delivered, shortlist 90, ≤ 6 pages of 40 (240 profiles)
+ */
+export function picksSizing(targetCount: number): PicksSizing {
+  const target = Math.max(1, Math.floor(targetCount));
+  const maxReplacementsPerBatch = Math.ceil(target / 4);
+  const scanPageSize = 40;
+  return {
+    targetCount: target,
+    maxReplacementsPerBatch,
+    maxDeliveredPerBatch: target + maxReplacementsPerBatch,
+    scanPageSize,
+    scanMaxPages: Math.ceil((target * 16) / scanPageSize),
+    scanShortlistSize: target * 6,
+  };
+}
+
+export const PICKS_SIZING: PicksSizing = picksSizing(PICKS_DAILY_TARGET);
+
+/**
+ * Batches written before the target became configurable carry no sizing of
+ * their own. They were generated for 6 with a ceiling of 10, and they keep
+ * those numbers until they expire, so a deploy never tops up a live batch.
+ */
+export const LEGACY_BATCH_SIZING = {targetCount: 6, maxDeliveredPerBatch: 10} as const;
+
+export const PICKS_CONFIG = {
+  ...PICKS_SIZING,
   /**
    * Picks are a DAILY set: a batch lives until the next logical-day boundary
    * (midnight at this UTC offset — Europe/Istanbul, which has no DST), so
@@ -37,10 +93,9 @@ export const PICKS_CONFIG = {
   topUpMinIntervalMs: 30 * 60 * 1000,
   /**
    * A Pick that expires undecided rests for this long before it may be picked
-   * again, so the same faces do not recycle day after day. The person stays
-   * reachable in Discover More throughout. Liked, passed and matched people
-   * never return to Picks: those exclusions come from the canonical Discover
-   * state (likes, passedUsers, matches) and are permanent there.
+   * again, so the same faces do not recycle day after day. Liked, passed and
+   * matched people never return to Picks: those exclusions come from the
+   * canonical decision state (likes, passedUsers, matches) and are permanent.
    */
   expiredCooldownMs: 3 * DAY_MS,
   /**
@@ -49,11 +104,6 @@ export const PICKS_CONFIG = {
    * radius cannot fill the batch with candidates who clear the quality floor.
    */
   preferredRadiusKm: 50,
-  /** Pool scan bounds, per generation. Same page size as Discover. */
-  scanPageSize: 40,
-  scanMaxPages: 4,
-  /** Stop scanning once this many eligible candidates are scored. */
-  scanShortlistSize: 60,
 } as const;
 
 /**

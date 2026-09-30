@@ -13,11 +13,15 @@
  *   only when the callback resolves (a throw leaves the store untouched);
  * - a JS Date is stored as a Timestamp, as the real SDK does;
  * - queries support ==, !=, in, array-contains and the range operators,
- *   several orderBy clauses (including "__name__"), startAfter by values,
- *   and count() aggregation;
+ *   several orderBy clauses (including "__name__"), startAfter by values or
+ *   by a document snapshot (with the implicit document-name tie-break), and
+ *   count() aggregation;
  * - transactions are optimistic like the real service: a transaction whose
  *   read documents changed before it commits is re-run (up to 5 attempts),
  *   so concurrent callers see each other's writes the way they would live.
+ * - reads and writes are metered the way Firestore bills them: one read per
+ *   document fetched (a missing one included), one per document a query
+ *   returns and at least one per query; `stats()` / `resetStats()`.
  *
  * Not a test file (no `.test.cjs` suffix), so testSuiteCoverage ignores it.
  */
@@ -164,15 +168,26 @@ function codedError(code, message) {
 function createFakeFirestore(seed = {}) {
   const store = new Map();
   const versions = new Map();
-  const bump = (path) => versions.set(path, (versions.get(path) ?? 0) + 1);
+  const meter = {reads: 0, writes: 0, queries: []};
+  const bump = (path) => {
+    versions.set(path, (versions.get(path) ?? 0) + 1);
+    meter.writes += 1;
+  };
+  const resetStats = () => {
+    meter.reads = 0;
+    meter.writes = 0;
+    meter.queries = [];
+  };
 
   const reset = (next = {}) => {
+    resetStats();
     store.clear();
     for (const [path, data] of Object.entries(next)) {
       store.set(path, applyPatch({}, data, true));
     }
   };
   reset(seed);
+  resetStats();
 
   const snapshotOf = (ref) => {
     const data = store.get(ref.path);
@@ -219,7 +234,10 @@ function createFakeFirestore(seed = {}) {
     const ref = {
       path,
       id: parts[parts.length - 1],
-      get: async () => snapshotOf(ref),
+      get: async () => {
+        meter.reads += 1;
+        return snapshotOf(ref);
+      },
       set: async (data, options) => writeSet(ref, data, options),
       update: async (data) => writeUpdate(ref, data),
       create: async (data) => writeCreate(ref, data),
@@ -287,13 +305,21 @@ function createFakeFirestore(seed = {}) {
         });
       }
       if (cursor) {
+        // A snapshot cursor positions on that document: its values for every
+        // ordered field, then its name, in the last ordering's direction.
+        const snapshotCursor = cursor.length === 1 && cursor[0] && typeof cursor[0].get === "function" &&
+          cursor[0].ref ? cursor[0] : null;
+        const values = snapshotCursor ? orders.map(([field]) => valueFor(snapshotCursor, field)) : cursor;
+        const lastDirection = orders.length ? orders[orders.length - 1][1] : "asc";
         docs = docs.filter((d) => {
-          for (let i = 0; i < orders.length && i < cursor.length; i++) {
+          for (let i = 0; i < orders.length && i < values.length; i++) {
             const [field, direction] = orders[i];
-            const c = compareValues(valueFor(d, field), cursor[i]);
+            const c = compareValues(valueFor(d, field), values[i]);
             if (c !== 0) return direction === "desc" ? c < 0 : c > 0;
           }
-          return false;
+          if (!snapshotCursor) return false;
+          const byName = compareValues(d.ref.path, snapshotCursor.ref.path);
+          return lastDirection === "desc" ? byName < 0 : byName > 0;
         });
       }
       if (typeof max === "number") docs = docs.slice(0, max);
@@ -309,10 +335,13 @@ function createFakeFirestore(seed = {}) {
       doc: (id) => docRef(`${path}/${id}`),
       count: () => ({get: async () => {
         const n = run(filters, max, orders, cursor).length;
+        meter.reads += 1;
         return {data: () => ({count: n})};
       }}),
       get: async () => {
         const docs = run(filters, max, orders, cursor);
+        meter.reads += Math.max(1, docs.length);
+        meter.queries.push({path, group: isGroup, docs: docs.length});
         return {docs, empty: docs.length === 0, size: docs.length};
       },
     });
@@ -368,6 +397,7 @@ function createFakeFirestore(seed = {}) {
           return result;
         }
         noteRead(refOrQuery.path);
+        meter.reads += 1;
         // Yield like a network read, so concurrent transactions interleave.
         await Promise.resolve();
         return snapshotOf(refOrQuery);
@@ -423,7 +453,13 @@ function createFakeFirestore(seed = {}) {
     collectionGroup,
     batch,
     runTransaction,
-    getAll: async (...refs) => refs.map((ref) => snapshotOf(ref)),
+    getAll: async (...refs) => {
+      meter.reads += refs.length;
+      return refs.map((ref) => snapshotOf(ref));
+    },
+    /** Billing-equivalent reads and writes since the last reset. */
+    stats: () => ({reads: meter.reads, writes: meter.writes, queries: [...meter.queries]}),
+    resetStats,
   };
 }
 

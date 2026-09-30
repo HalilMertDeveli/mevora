@@ -154,7 +154,7 @@ class MevoraPicksBatch {
     this.emptyReason,
     this.generationId,
     this.refreshAt,
-    this.targetCount = 6,
+    this.targetCount = 10,
     this.picks = const [],
     this.learning = LearningSummary.unknown,
   });
@@ -168,6 +168,9 @@ class MevoraPicksBatch {
   final PicksEmptyReason? emptyReason;
   final String? generationId;
   final DateTime? refreshAt;
+
+  /// The day's size, as the server chose it (PICKS_DAILY_TARGET). The
+  /// default only covers a response that carries none.
   final int targetCount;
   final List<MevoraPick> picks;
 

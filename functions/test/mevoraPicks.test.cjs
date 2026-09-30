@@ -407,6 +407,34 @@ describe("Pick lifecycle", () => {
     assert.equal(lifecycle.needsTopUp(exhausted, now + PICKS_CONFIG.topUpMinIntervalMs), false);
   });
 
+  it("a short batch owes no replacements; each ineligible Pick owes exactly one", () => {
+    const short = storedBatch(now, ["a", "b", "c"]);
+    assert.equal(lifecycle.replacementsOwed(short), 0);
+    assert.equal(lifecycle.needsTopUp(short, now + 10 * PICKS_CONFIG.topUpMinIntervalMs), false);
+    const lost = lifecycle.applyRevalidation(short, new Map([["a", "ineligible"]]), now).batch;
+    assert.equal(lifecycle.replacementsOwed(lost), 1);
+    assert.equal(lifecycle.topUpSlots(lost), 1);
+    const replaced = lifecycle.appendPicks(lost, lifecycle.buildStoredPicks("gen1", [{
+      candidateUid: "z", rank: 9, pickType: "bestOverall", labels: ["bestOverall"], reasons: [],
+      overallScore: 80, isBoosted: false, selectionStrategy: "exploit",
+    }], new Map(), now), now);
+    assert.equal(lifecycle.replacementsOwed(replaced), 0);
+  });
+
+  it("empty replacement scans back off, and a successful one resets the clock", () => {
+    const interval = PICKS_CONFIG.topUpMinIntervalMs;
+    let batch = storedBatch(now, fullBatchUids());
+    assert.equal(lifecycle.topUpWaitMs(batch), interval);
+    batch = lifecycle.markScanned(batch, now);
+    assert.equal(lifecycle.topUpWaitMs(batch), 2 * interval);
+    batch = lifecycle.markScanned(lifecycle.markScanned(lifecycle.markScanned(batch, now), now), now);
+    assert.equal(lifecycle.topUpWaitMs(batch), PICKS_CONFIG.topUpMaxBackoffMs);
+    batch = lifecycle.markScanned(batch, now);
+    assert.equal(lifecycle.topUpWaitMs(batch), PICKS_CONFIG.topUpMaxBackoffMs, "capped");
+    batch = lifecycle.appendPicks(batch, [], now);
+    assert.equal(lifecycle.topUpWaitMs(batch), interval);
+  });
+
   it("never refills a slot spent on a like, a pass or a match", () => {
     let batch = storedBatch(now, fullBatchUids());
     batch = lifecycle.applyDecision(batch, "a", "passed", now).batch;

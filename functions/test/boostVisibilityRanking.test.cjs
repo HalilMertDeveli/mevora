@@ -260,7 +260,7 @@ describe("5-9. eligibility safety", () => {
     assert.ok(boostAt > -1, "boost must be resolved in the candidate loop");
     const before = pool.slice(0, boostAt);
     const loopAt = pool.indexOf("export async function scanDiscoveryPool");
-    const rejectCallAt = pool.indexOf("await candidateRejectReason(db, viewer", loopAt);
+    const rejectCallAt = pool.indexOf("await candidateRejectReason(db, pageViewer", loopAt);
     assert.ok(
       rejectCallAt > loopAt && rejectCallAt < boostAt,
       "the loop must run the eligibility chain before Boost",
@@ -281,10 +281,23 @@ describe("5-9. eligibility safety", () => {
   });
 
   it("blocked, liked, passed and matched users are excluded before ranking", () => {
-    assert.ok(src("backend.ts").includes("loadDiscoveryViewerContext("), "Discover must load exclusions");
+    // The scan itself resolves every page's pair state (decisions and blocks
+    // either way) before its rule chain runs, whoever calls it.
     const pool = src("discoveryPool.ts");
-    for (const exclusion of ["blocked", "likesSnap", "passedSnap", "activeMatches"]) {
-      assert.ok(pool.includes(exclusion), `${exclusion} exclusion missing`);
+    const loopAt = pool.indexOf("export async function scanDiscoveryPool");
+    const resolveAt = pool.indexOf("await resolvePairExclusions(", loopAt);
+    const rejectAt = pool.indexOf("await candidateRejectReason(db, pageViewer", loopAt);
+    const boostAt = pool.indexOf("isBoostedCandidate(doc.id, boosted)", loopAt);
+    assert.ok(resolveAt > loopAt && resolveAt < rejectAt && rejectAt < boostAt, "pairs resolve before the chain, the chain before Boost");
+    for (const record of [
+      "collection(\"likes\")",
+      "/passedUsers",
+      "collection(\"matches\")",
+      "collection(\"blocks\")",
+      "/blockedUsers`",
+      "/blockedUsers/${viewerUid}",
+    ]) {
+      assert.ok(pool.includes(record), `${record} lookup missing`);
     }
   });
 

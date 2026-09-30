@@ -351,7 +351,12 @@ function createFakeFirestore(seed = {}) {
       get: async () => {
         const docs = run(filters, max, orders, cursor);
         meter.reads += Math.max(1, docs.length);
-        meter.queries.push({path, group: isGroup, docs: docs.length});
+        meter.queries.push({
+          path,
+          group: isGroup,
+          docs: docs.length,
+          filters: filters.map(([field, op]) => `${String(field)} ${op}`),
+        });
         docs.forEach((doc) => noteDocRead(doc.ref.path));
         return {docs, empty: docs.length === 0, size: docs.length};
       },

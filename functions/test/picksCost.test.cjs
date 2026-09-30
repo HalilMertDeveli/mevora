@@ -21,6 +21,7 @@ const db = createFakeFirestore();
 installFirebaseAdminStubs({db});
 
 const {PICKS_DAILY_TARGET} = require("../lib/picks/config.js");
+const {loadActiveBoostSessionsFor} = require("../lib/boost/ranking.js");
 const {musicScoreForPair} = require("../lib/spotifyMusic.js");
 const {relationshipScoreForPair} = require("../lib/relationshipMatch.js");
 const lifecycle = require("../lib/picks/lifecycle.js");
@@ -212,6 +213,54 @@ describe("one read per document per request", () => {
     const summaryReads = [...db.stats().byPath.keys()]
       .filter((path) => /^users\/s\d+\/(music|relationshipMatch)\/summary$/.test(path));
     assert.deepEqual(summaryReads, []);
+  });
+});
+
+describe("Boost is looked up for the people on the page, not for everyone", () => {
+  beforeEach(() => db.reset({}));
+
+  it("no open reads the system-wide list of live Boosts", async () => {
+    seedWorld({candidates: 3 * PICKS_DAILY_TARGET, boosts: 40});
+    await awayFromDayBoundary();
+    await callAs(getMevoraPicks, VIEWER);
+    await callAs(getMevoraPicks, VIEWER);
+    const boostQueries = db.stats().queries.filter((query) => query.group && query.path === "boosts");
+    assert.ok(boostQueries.length > 0, "the scan still looks Boosts up");
+    for (const query of boostQueries) {
+      assert.ok(query.filters.includes("userId in"), `unscoped Boost query: ${query.filters}`);
+    }
+  });
+
+  it("a boosted candidate keeps its advantage and its impression is measured", async () => {
+    seedWorld({candidates: PICKS_DAILY_TARGET});
+    const expiresAt = Timestamp.fromMillis(Date.now() + 3_600_000);
+    await db.doc("users/s3/boosts/b-live").set({
+      userId: "s3", status: "active", expiresAt, startedAt: Timestamp.fromMillis(Date.now() - 60_000),
+    });
+    await awayFromDayBoundary();
+    const result = await callAs(getMevoraPicks, VIEWER);
+    const boosted = result.picks.find((item) => item.uid === "s3");
+    assert.ok(boosted, "the boosted candidate is picked");
+    assert.equal(boosted.isBoosted, true);
+    assert.equal(result.picks.filter((item) => item.isBoosted).length, 1);
+    assert.ok(db.paths().some((path) => path.startsWith("users/s3/boostReach/")), "impression recorded");
+  });
+
+  it("falls back to the global list while the (status, userId) index is not deployed", async () => {
+    const expiresAt = Timestamp.fromMillis(Date.now() + 3_600_000);
+    const liveDoc = (id, userId) => ({id, data: () => ({userId, status: "active", expiresAt})});
+    const refusing = {
+      collectionGroup: () => ({
+        where: () => ({
+          where: () => ({get: async () => {
+            throw Object.assign(new Error("FAILED_PRECONDITION: The query requires an index."), {code: 9});
+          }}),
+          get: async () => ({docs: [liveDoc("b1", "a"), liveDoc("b2", "z")]}),
+        }),
+      }),
+    };
+    const sessions = await loadActiveBoostSessionsFor(refusing, ["a", "b"]);
+    assert.deepEqual([...sessions.keys()], ["a"]);
   });
 });
 

@@ -1,0 +1,65 @@
+@page
+@model Mevora.Admin.Web.Pages.Humor.IndexModel
+@{
+    ViewData["Title"] = "Humor";
+}
+<div class="page-head">
+    <div>
+        <h1>Humor Lab moderation</h1>
+        <p>Reported or borderline humor content. Decisions use the existing humor moderation authority.</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+<nav class="tabs" aria-label="Humor status">
+    @foreach (var s in Mevora.Admin.Web.Pages.Humor.IndexModel.Statuses)
+    {
+        <a class="tab @(Model.Status == s ? "active" : "")" href="/Humor?status=@s">@JsonView.Label(s)</a>
+    }
+</nav>
+@{
+    var rows = Model.Result.Items().ToList();
+}
+@if (rows.Count == 0)
+{
+    <p class="muted">Nothing here.</p>
+}
+else
+{
+    <table class="data">
+        <thead><tr><th scope="col">Preview</th><th scope="col">Content</th><th scope="col">Flags</th><th scope="col">Reports</th><th scope="col">Waiting</th><th scope="col"><span class="muted">Decision</span></th></tr></thead>
+        <tbody>
+            @foreach (var h in rows)
+            {
+                var content = h.Get("content");
+                <tr>
+                    <td>@if (content.Str("previewUrl") is { } url) { <img class="thumb" alt="Humor item preview" src="@url" loading="lazy" referrerpolicy="no-referrer" /> }</td>
+                    <td class="small">
+                        <div class="mono">@h.S("contentId")</div>
+                        <div>@JsonView.Label(content.Str("type")) · @JsonView.Label(content.Str("category")) · @content.S("language")</div>
+                        @if (content.Str("textBody") is { } body) { <div class="msg">@body</div> }
+                        <div class="muted">Source: @content.S("provider") · active: @(content.Bool("active") ? "yes" : "no")</div>
+                    </td>
+                    <td class="small">@string.Join(", ", content.Get("safetyFlags").ValueKind == JsonValueKind.Object ? content.Get("safetyFlags").EnumerateObject().Where(f => f.Value.ValueKind == JsonValueKind.True).Select(f => f.Name) : Array.Empty<string>())</td>
+                    <td>@h.S("reportCount", "0")</td>
+                    <td class="nowrap">@h.Age("updatedAt")</td>
+                    <td>
+                        @if (Model.Can("humor.moderate"))
+                        {
+                            <form method="post" asp-page-handler="Decide" class="stack">
+                                <input type="hidden" name="contentId" value="@h.S("contentId")" />
+                                <label class="small" for="n-@h.S("contentId")">Note</label>
+                                <input id="n-@h.S("contentId")" name="note" type="text" maxlength="4000" />
+                                <div class="actions">
+                                    <button type="submit" name="decision" value="approve" class="btn btn-small btn-ok">Approve</button>
+                                    <button type="submit" name="decision" value="reject" class="btn btn-small btn-danger">Reject</button>
+                                    <button type="submit" name="decision" value="escalate" class="btn btn-small">Escalate</button>
+                                </div>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <partial name="_Pager" model="Model.Pager" />
+}

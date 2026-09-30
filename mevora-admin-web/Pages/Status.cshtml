@@ -1,0 +1,12 @@
+@page "{code:int?}"
+@model StatusModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+<div class="@(User.Identity?.IsAuthenticated == true ? "" : "login-wrap")">
+    <div class="card">
+        <h1>@Model.Title</h1>
+        <p>@Model.Message</p>
+        <p><a class="btn" href="@(User.Identity?.IsAuthenticated == true ? "/Dashboard" : "/Login")">Back to the console</a></p>
+    </div>
+</div>

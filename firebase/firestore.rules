@@ -21,8 +21,37 @@ service cloud.firestore {
     }
 
     // Admin access is Auth custom claim only — never a client-writable Firestore field.
+    //
+    // This only governs the legacy read-only grants below (reports, humor
+    // queue, automation). The admin console itself never reads Firestore from
+    // a browser: it goes through server-side admin commands that check the
+    // adminStaff record, MFA and RBAC (functions/src/admin). Support agents
+    // carry the admin claim for the console but have no business reading
+    // moderation data directly, so their role is excluded here.
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.admin == true;
+      return isAuthenticated()
+        && request.auth.token.admin == true
+        && request.auth.token.get('adminRole', 'legacy_admin') != 'support_agent';
+    }
+
+    // A suspended (until its end), banned or deleted account may not reach
+    // other members through a direct client write. Mirrors
+    // effectiveAccountStatus() in functions/src/profileSafety.ts: either the
+    // canonical accountStatus or a legacy flag restricts, and a suspension
+    // with suspendedUntil in the past has ended.
+    function callerAccountActive() {
+      let path = /databases/$(database)/documents/users/$(request.auth.uid);
+      return !exists(path) || accountDataActive(get(path).data);
+    }
+
+    function accountDataActive(account) {
+      let status = account.get('accountStatus', 'active');
+      let suspended = status == 'suspended' || account.get('isSuspended', false) == true;
+      let until = account.get('suspendedUntil', null);
+      return status != 'banned'
+        && status != 'deleted'
+        && account.get('isBanned', false) != true
+        && (!suspended || (until is timestamp && until <= request.time));
     }
 
     function userPrivacyData(userId) {
@@ -813,7 +842,8 @@ service cloud.firestore {
           && !isBlockedPair(request.auth.uid, request.resource.data.receiverId)
           && request.resource.data.type in ['text', 'image', 'gif', 'voice']
           && request.resource.data.get('deleted', false) == false
-          && messageCreatePayloadValid(matchId);
+          && messageCreatePayloadValid(matchId)
+          && callerAccountActive();
         allow update: if isMatchParticipant(matchId)
           && unchanged('senderId')
           && unchanged('receiverId')
@@ -862,7 +892,14 @@ service cloud.firestore {
 
     match /supportTickets/{ticketId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Exactly the fields the app writes (firebase_support_data_source.dart).
+      // Assignment, priority, resolution and escalation are server-owned: a
+      // client cannot pre-set them by adding keys at create time.
       allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly([
+          'userId', 'category', 'subject', 'message', 'attachments',
+          'status', 'createdAt', 'updatedAt'
+        ])
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'open'
         && request.resource.data.category is string
@@ -875,6 +912,27 @@ service cloud.firestore {
         && request.resource.data.attachments is list
         && request.resource.data.attachments.size() <= 3;
       allow update, delete: if false;
+
+      // Support's replies to the member. Written only by the admin backend;
+      // the ticket owner may read the user-visible thread.
+      match /messages/{messageId} {
+        allow read: if isAuthenticated()
+          && resource.data.visibility == 'user'
+          && get(/databases/$(database)/documents/supportTickets/$(ticketId)).data.userId == request.auth.uid;
+        allow create, update, delete: if false;
+      }
+
+      // Staff-only notes. Never readable by any client, the owner included.
+      match /internalNotes/{noteId} {
+        allow read, write: if false;
+      }
+    }
+
+    // Moderation appeals: created and decided only by Cloud Functions
+    // (submitModerationAppeal / admin commands). The member may read their own.
+    match /appeals/{appealId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if false;
     }
 
     match /calls/{callId} {
@@ -1002,6 +1060,45 @@ service cloud.firestore {
     }
 
     match /failedNotifications/{id} {
+      allow read, write: if false;
+    }
+
+    // -----------------------------------------------------------
+    // Admin / Trust & Safety control plane. Server-owned end to end: every
+    // read and write goes through an admin command (Admin SDK) that checks
+    // the adminStaff record, MFA and RBAC. No client — not even one carrying
+    // the admin claim — reads or writes these directly. Stated explicitly so
+    // a future catch-all change cannot open them by accident.
+    // -----------------------------------------------------------
+    match /adminStaff/{uid} {
+      allow read, write: if false;
+    }
+
+    match /moderationCases/{caseId} {
+      allow read, write: if false;
+
+      match /notes/{noteId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /moderationCaseKeys/{keyId} {
+      allow read, write: if false;
+    }
+
+    match /moderationActions/{actionId} {
+      allow read, write: if false;
+    }
+
+    match /adminAuditLog/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /adminUserLookup/{uid} {
+      allow read, write: if false;
+    }
+
+    match /adminRateLimits/{key} {
       allow read, write: if false;
     }
 

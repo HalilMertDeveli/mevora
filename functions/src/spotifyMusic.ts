@@ -38,6 +38,7 @@ import {
   selectionFromProfile,
   toPublicMusicCard,
 } from "./spotifyMusicProfile.js";
+import {assertCallerAccountEligible} from "./accountGuard.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -1144,6 +1145,7 @@ export const getSameTasteProfiles = onCall(
   {enforceAppCheck, region: "europe-west1"},
   async (request) => {
     const uid = requireUid(request);
+    await assertCallerAccountEligible(db, uid);
     const viewerSnap = await db.doc(`users/${uid}/music/summary`).get();
     const viewerTaste = tasteFromSummary(viewerSnap.data());
     if (!viewerTaste || isTasteEmpty(viewerTaste)) {
@@ -1305,6 +1307,7 @@ export const getMatchMusicCompatibility = onCall(
   async (request) => {
     const uid = requireUid(request);
     const matchId = requireMatchId(request.data?.matchId);
+    await assertCallerAccountEligible(db, uid);
     const matchSnap = await db.collection("matches").doc(matchId).get();
     if (!matchSnap.exists || matchSnap.data()?.isActive !== true) {
       return {available: false, reason: "no_match"};

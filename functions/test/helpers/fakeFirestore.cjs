@@ -10,7 +10,14 @@
  * - FieldValue.serverTimestamp / increment / delete / arrayUnion / arrayRemove
  *   are applied, not stubbed;
  * - a transaction must read before it writes, and its writes land atomically
- *   only when the callback resolves (a throw leaves the store untouched).
+ *   only when the callback resolves (a throw leaves the store untouched);
+ * - a JS Date is stored as a Timestamp, as the real SDK does;
+ * - queries support ==, !=, in, array-contains and the range operators,
+ *   several orderBy clauses (including "__name__"), startAfter by values,
+ *   and count() aggregation;
+ * - transactions are optimistic like the real service: a transaction whose
+ *   read documents changed before it commits is re-run (up to 5 attempts),
+ *   so concurrent callers see each other's writes the way they would live.
  *
  * Not a test file (no `.test.cjs` suffix), so testSuiteCoverage ignores it.
  */
@@ -39,6 +46,7 @@ function transformName(value) {
 }
 
 function clone(value) {
+  if (value instanceof Date) return Timestamp.fromDate(value);
   if (Array.isArray(value)) return value.map(clone);
   if (isPlainObject(value)) {
     const out = {};
@@ -122,6 +130,31 @@ function fieldOf(data, fieldPath) {
   return fieldPath.split(".").reduce((acc, key) => (acc == null ? undefined : acc[key]), data);
 }
 
+/** Firestore-ish ordering: null < numbers < strings < timestamps. */
+function sortKey(value) {
+  if (value === null || value === undefined) return [0, 0];
+  if (typeof value === "boolean") return [1, value ? 1 : 0];
+  if (typeof value === "number") return [2, value];
+  if (value instanceof Timestamp) return [4, value.toMillis()];
+  if (value instanceof Date) return [4, value.getTime()];
+  if (typeof value === "string") return [3, value];
+  return [5, String(value)];
+}
+
+function compareValues(a, b) {
+  const [ta, va] = sortKey(a);
+  const [tb, vb] = sortKey(b);
+  if (ta !== tb) return ta < tb ? -1 : 1;
+  return va < vb ? -1 : va > vb ? 1 : 0;
+}
+
+function equalValues(a, b) {
+  if (a instanceof Timestamp || b instanceof Timestamp) {
+    return a != null && b != null && compareValues(a, b) === 0;
+  }
+  return a === b;
+}
+
 function codedError(code, message) {
   const error = new Error(message);
   error.code = code;
@@ -130,6 +163,8 @@ function codedError(code, message) {
 
 function createFakeFirestore(seed = {}) {
   const store = new Map();
+  const versions = new Map();
+  const bump = (path) => versions.set(path, (versions.get(path) ?? 0) + 1);
 
   const reset = (next = {}) => {
     store.clear();
@@ -155,21 +190,25 @@ function createFakeFirestore(seed = {}) {
     const merge = Boolean(options && options.merge);
     const previous = merge ? store.get(ref.path) ?? {} : {};
     store.set(ref.path, applyPatch(previous, data, merge));
+    bump(ref.path);
   };
   const writeUpdate = (ref, data) => {
     if (!store.has(ref.path)) {
       throw codedError(5, `NOT_FOUND: No document to update: ${ref.path}`);
     }
     store.set(ref.path, applyUpdate(store.get(ref.path), data));
+    bump(ref.path);
   };
   const writeCreate = (ref, data) => {
     if (store.has(ref.path)) {
       throw codedError(6, `ALREADY_EXISTS: ${ref.path}`);
     }
     store.set(ref.path, applyPatch({}, data, false));
+    bump(ref.path);
   };
   const writeDelete = (ref) => {
     store.delete(ref.path);
+    bump(ref.path);
   };
 
   function docRef(path) {
@@ -207,45 +246,77 @@ function createFakeFirestore(seed = {}) {
     return queryOver(collectionId, (docPath) => {
       const parts = segments(docPath);
       return parts.length >= 2 && parts[parts.length - 2] === collectionId;
-    });
+    }, true);
   }
 
-  function queryOver(path, inScope) {
-    const build = (filters, max, order) => ({
+  function queryOver(path, inScope, isGroup = false) {
+    const valueFor = (snap, field) => {
+      if (field === "__name__") return isGroup ? snap.ref.path : snap.id;
+      return snap.get(field);
+    };
+    const run = (filters, max, orders, cursor) => {
+      let docs = [];
+      for (const [docPath, data] of store.entries()) {
+        if (!inScope(docPath)) continue;
+        const matches = filters.every(([field, op, value]) => {
+          const actual = fieldOf(data, field);
+          switch (op) {
+          case "==": return equalValues(actual, value);
+          case "!=": return actual !== undefined && !equalValues(actual, value);
+          case "array-contains": return Array.isArray(actual) && actual.includes(value);
+          case "in": return Array.isArray(value) && value.some((v) => equalValues(actual, v));
+          case "<": return actual !== undefined && actual !== null && compareValues(actual, value) < 0;
+          case "<=": return actual !== undefined && actual !== null && compareValues(actual, value) <= 0;
+          case ">": return actual !== undefined && actual !== null && compareValues(actual, value) > 0;
+          case ">=": return actual !== undefined && actual !== null && compareValues(actual, value) >= 0;
+          default: throw new Error(`fakeFirestore: unsupported operator ${op}`);
+          }
+        });
+        if (matches) docs.push(snapshotOf(docRef(docPath)));
+      }
+      docs.sort((a, b) => (a.ref.path < b.ref.path ? -1 : a.ref.path > b.ref.path ? 1 : 0));
+      if (orders.length) {
+        // Like Firestore, ordering on a field excludes documents without it.
+        docs = docs.filter((d) => orders.every(([field]) => field === "__name__" || d.get(field) !== undefined));
+        docs.sort((a, b) => {
+          for (const [field, direction] of orders) {
+            const c = compareValues(valueFor(a, field), valueFor(b, field));
+            if (c !== 0) return direction === "desc" ? -c : c;
+          }
+          return 0;
+        });
+      }
+      if (cursor) {
+        docs = docs.filter((d) => {
+          for (let i = 0; i < orders.length && i < cursor.length; i++) {
+            const [field, direction] = orders[i];
+            const c = compareValues(valueFor(d, field), cursor[i]);
+            if (c !== 0) return direction === "desc" ? c < 0 : c > 0;
+          }
+          return false;
+        });
+      }
+      if (typeof max === "number") docs = docs.slice(0, max);
+      return docs;
+    };
+    const build = (filters, max, orders, cursor) => ({
       path,
-      where: (field, op, value) => build([...filters, [field, op, value]], max, order),
-      select: () => build(filters, max, order),
-      limit: (n) => build(filters, n, order),
-      orderBy: (field, direction = "asc") => build(filters, max, [field, direction]),
+      where: (field, op, value) => build([...filters, [field, op, value]], max, orders, cursor),
+      select: () => build(filters, max, orders, cursor),
+      limit: (n) => build(filters, n, orders, cursor),
+      orderBy: (field, direction = "asc") => build(filters, max, [...orders, [field, direction]], cursor),
+      startAfter: (...values) => build(filters, max, orders, values),
       doc: (id) => docRef(`${path}/${id}`),
+      count: () => ({get: async () => {
+        const n = run(filters, max, orders, cursor).length;
+        return {data: () => ({count: n})};
+      }}),
       get: async () => {
-        let docs = [];
-        for (const [docPath, data] of store.entries()) {
-          if (!inScope(docPath)) continue;
-          const matches = filters.every(([field, op, value]) => {
-            const actual = fieldOf(data, field);
-            if (op === "==") return actual === value;
-            if (op === "array-contains") return Array.isArray(actual) && actual.includes(value);
-            if (op === "in") return Array.isArray(value) && value.includes(actual);
-            throw new Error(`fakeFirestore: unsupported operator ${op}`);
-          });
-          if (matches) docs.push(snapshotOf(docRef(docPath)));
-        }
-        docs.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-        if (order) {
-          const [field, direction] = order;
-          const sign = direction === "desc" ? -1 : 1;
-          docs.sort((a, b) => {
-            const av = a.get(field);
-            const bv = b.get(field);
-            return av < bv ? -sign : av > bv ? sign : 0;
-          });
-        }
-        if (typeof max === "number") docs = docs.slice(0, max);
+        const docs = run(filters, max, orders, cursor);
         return {docs, empty: docs.length === 0, size: docs.length};
       },
     });
-    return build([], undefined, null);
+    return build([], undefined, [], null);
   }
 
   function batch() {
@@ -280,16 +351,26 @@ function createFakeFirestore(seed = {}) {
     };
   }
 
-  async function runTransaction(fn) {
+  async function runTransaction(fn, attempt = 1) {
     const writes = [];
+    const readVersions = new Map();
+    const noteRead = (path) => {
+      if (!readVersions.has(path)) readVersions.set(path, versions.get(path) ?? 0);
+    };
     const tx = {
       async get(refOrQuery) {
         if (writes.length > 0) {
           throw new Error("fakeFirestore: transactions require all reads before all writes");
         }
-        return typeof refOrQuery.where === "function"
-          ? refOrQuery.get()
-          : snapshotOf(refOrQuery);
+        if (typeof refOrQuery.where === "function") {
+          const result = await refOrQuery.get();
+          result.docs.forEach((d) => noteRead(d.ref.path));
+          return result;
+        }
+        noteRead(refOrQuery.path);
+        // Yield like a network read, so concurrent transactions interleave.
+        await Promise.resolve();
+        return snapshotOf(refOrQuery);
       },
       async getAll(...refs) {
         return Promise.all(refs.map((ref) => tx.get(ref)));
@@ -312,6 +393,13 @@ function createFakeFirestore(seed = {}) {
       },
     };
     const result = await fn(tx);
+    const conflicted = [...readVersions].some(([path, version]) => (versions.get(path) ?? 0) !== version);
+    if (conflicted) {
+      if (attempt >= 5) {
+        throw codedError(10, "ABORTED: too much contention");
+      }
+      return runTransaction(fn, attempt + 1);
+    }
     const before = new Map(store);
     try {
       for (const write of writes) write();

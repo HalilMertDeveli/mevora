@@ -8,6 +8,7 @@ import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.
 import {requestIdentityProviderErasure} from "./identity/identityErasure.js";
 import {safeLogMeta} from "./security/logHygiene.js";
 import {scrubDeletedMemberFromPicks} from "./picks/service.js";
+import {purgeTrustSafetyUserData} from "./admin/accountDeletion.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -234,6 +235,10 @@ export const deleteUserAccount = onCall(
     await deleteQuery("reports", "reportedUserId", uid);
     await deleteQuery("humorReports", "reporterId", uid);
     await clearHumorQueueReporter(uid);
+    // Appeals, support threads and the admin lookup row go with the member;
+    // decisions staff took (actions, audit) stay under the retention policy.
+    // Runs before the tickets are deleted: their subcollections do not cascade.
+    await purgeTrustSafetyUserData(db, uid);
     await deleteQuery("supportTickets", "userId", uid);
     await deleteQuery("blocks", "blockerId", uid);
     await deleteQuery("blocks", "blockedUserId", uid);
@@ -259,6 +264,8 @@ export const deleteUserAccount = onCall(
 
     await deletePrefix(`users/${uid}/`);
     await deletePrefix(`profiles/${uid}/`);
+    // Photos a moderator rejected, held server-side for the appeal window.
+    await deletePrefix(`moderation/quarantine/${uid}/`);
 
     for (const path of spotifyIndexDeletionPaths({
       spotifyId,

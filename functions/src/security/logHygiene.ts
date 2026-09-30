@@ -5,7 +5,7 @@
 
 const SENSITIVE_KEY = /^(password|token|accessToken|refreshToken|idToken|otp|phone|phoneNumber|email|latitude|longitude|text|ciphertext|privateKey|authorization)$/i;
 
-function redactString(value: string): string {
+export function redactString(value: string): string {
   return value
     .replace(/\+?\d[\d\s\-()]{7,}\d/g, "[redacted-phone]")
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[redacted-email]")

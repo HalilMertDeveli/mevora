@@ -7,6 +7,9 @@ export const JobStatus = {
   retrying: "retrying",
   manual_review: "manual_review",
   cancelled: "cancelled",
+  // Closed by a human from the admin console after review (see
+  // admin/automation/manualReviewQueue.ts). Never claimed by the drain.
+  resolved: "resolved",
 } as const;
 
 export type JobStatusValue = (typeof JobStatus)[keyof typeof JobStatus];

@@ -1,0 +1,78 @@
+@page
+@model DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var tiles = new (string Key, string Label, string Href, string Css)[]
+    {
+        ("criticalCases", "Critical cases", "/Cases?status=active", "stat stat-critical"),
+        ("highPriorityCases", "High-priority cases", "/Cases?status=active", "stat stat-high"),
+        ("openCases", "Open cases", "/Cases?status=active", "stat"),
+        ("myCases", "Assigned to me", "/Cases?assigned=me", "stat"),
+        ("openReports", "Open user reports", "/Reports", "stat stat-high"),
+        ("photoManualReview", "Photos in manual review", "/Photos", "stat stat-warn"),
+        ("humorReview", "Humor needing review", "/Humor", "stat"),
+        ("verificationInReview", "Verification in review", "/Verification", "stat"),
+        ("verificationReviewCases", "Verification cases", "/Cases?type=VERIFICATION_REVIEW", "stat"),
+        ("automationManualReview", "Automation manual review", "/Automation", "stat stat-warn"),
+        ("openAppeals", "Open appeals", "/Appeals", "stat"),
+        ("openSupportTickets", "Open support tickets", "/Support", "stat"),
+        ("urgentSupportTickets", "Urgent support tickets", "/Support", "stat stat-high"),
+    };
+}
+<div class="page-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p>What needs a human now. Counts reflect only the queues your role can work.</p>
+    </div>
+    <span class="muted small">Updated @Model.Data.When("generatedAt")</span>
+</div>
+<partial name="_Flash" model="Model" />
+
+<section class="stats" aria-label="Queue counters">
+    @foreach (var tile in tiles)
+    {
+        if (Model.Shows(tile.Key))
+        {
+            <a class="@tile.Css" href="@tile.Href">
+                <span class="n">@Model.Count(tile.Key)</span>
+                <span class="l">@tile.Label</span>
+            </a>
+        }
+    }
+</section>
+
+@if (Model.Can("user.read"))
+{
+    <section class="card">
+        <h2>Recent moderation actions</h2>
+        @if (!Model.Data.Arr("recentActions").Any())
+        {
+            <p class="muted">No actions yet.</p>
+        }
+        else
+        {
+            <table class="data">
+                <thead>
+                    <tr><th scope="col">When</th><th scope="col">Action</th><th scope="col">Reason</th><th scope="col">Member</th><th scope="col">By</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Data.Arr("recentActions"))
+                    {
+                        <tr>
+                            <td class="nowrap">@a.When("createdAt")</td>
+                            <td>@JsonView.Label(a.Str("type"))</td>
+                            <td>@JsonView.Label(a.Str("reasonCode"))</td>
+                            <td>
+                                @if (a.Str("targetUserId") is { } target)
+                                {
+                                    <a class="mono" href="/Users/@Uri.EscapeDataString(target)">@target</a>
+                                }
+                            </td>
+                            <td class="mono">@a.S("actorAdminId")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}

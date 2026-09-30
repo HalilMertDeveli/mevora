@@ -1,0 +1,87 @@
+@page "/Appeals/{appealId}"
+@model Mevora.Admin.Web.Pages.Appeals.DetailModel
+@{
+    var a = Model.Appeal;
+    var original = a.Get("originalAction");
+    ViewData["Title"] = "Appeal";
+    var resolved = a.Str("status") == "resolved";
+    var mine = original.Str("actorAdminId") == User.StaffUid();
+}
+<div class="page-head">
+    <div>
+        <h1>Appeal against @JsonView.Label(a.Str("actionType"))</h1>
+        <p class="mono">@Model.AppealId</p>
+    </div>
+    <span class="status status-@a.S("status")">@JsonView.Label(a.Str("status"))</span>
+</div>
+<partial name="_Flash" model="Model" />
+@if (a.ValueKind == JsonValueKind.Object)
+{
+<div class="grid grid-main-side">
+    <div>
+        <section class="card">
+            <h2>The member's appeal</h2>
+            <p><partial name="_UserChip" model='a.Get("user")' /> · current status <span class="status status-@a.S("currentAccountStatus")">@JsonView.Label(a.Str("currentAccountStatus"))</span></p>
+            <div class="msg msg-user">@a.S("reason")</div>
+            <p class="small muted">Filed @a.When("createdAt") via @JsonView.Label(a.Str("source"))</p>
+        </section>
+        <section class="card">
+            <h2>The decision being appealed</h2>
+            <dl class="kv">
+                <dt>Action</dt><dd>@JsonView.Label(original.Str("type")) · <span class="mono small">@original.S("actionId")</span></dd>
+                <dt>Reason</dt><dd>@JsonView.Label(original.Str("reasonCode"))</dd>
+                <dt>Decided</dt><dd>@original.When("createdAt") by <span class="mono">@original.S("actorAdminId")</span></dd>
+                <dt>Expires</dt><dd>@original.When("expiresAt")</dd>
+                <dt>Internal note</dt><dd>@original.S("internalNote")</dd>
+                @if (original.Str("overturnedByActionId") is not null) { <dt>Overturned</dt><dd><span class="badge badge-info">yes</span></dd> }
+            </dl>
+            @if (a.Str("caseId") is { } cid) { <p><a href="/Cases/@cid">Open the appeal case</a></p> }
+        </section>
+        @if (resolved)
+        {
+            <section class="card">
+                <h2>Outcome</h2>
+                <p><strong>@JsonView.Label(a.Str("decision"))</strong> by <span class="mono">@a.S("resolvedBy")</span> on @a.When("resolvedAt")</p>
+                <div class="msg msg-support">@a.Get("resolution").S("userMessage")</div>
+            </section>
+        }
+    </div>
+    <div>
+        @if (!resolved)
+        {
+            <section class="card">
+                <h2>Decide</h2>
+                @if (mine && User.StaffRole() != "super_admin")
+                {
+                    <p class="alert alert-warn">You made the original decision. Another senior moderator must review this appeal.</p>
+                }
+                else
+                {
+                    @if (Model.Can("appeal.assign") && a.Str("assignedTo") != User.StaffUid())
+                    {
+                        <form method="post" asp-page-handler="Assign" class="inline"><button type="submit" class="btn">Assign to me</button></form>
+                    }
+                    @if (Model.Can("appeal.resolve"))
+                    {
+                        <form method="post" asp-page-handler="Resolve" data-confirm="Record this appeal decision? It cannot be changed afterwards.">
+                            <input type="hidden" name="idempotencyKey" value="@Model.FormKey-resolve" />
+                            <fieldset>
+                                <legend>Decision</legend>
+                                <label><input type="radio" name="decision" value="reject" required /> Reject — the decision stands</label>
+                                <label><input type="radio" name="decision" value="accept" /> Accept — overturn it (a suspension or ban is lifted by a new restore action)</label>
+                            </fieldset>
+                            <div class="field"><label for="umsg">Message to the member</label><textarea id="umsg" name="userMessage" maxlength="1000" required></textarea></div>
+                            <div class="field"><label for="inote">Internal note</label><textarea id="inote" name="internalNote" maxlength="4000"></textarea></div>
+                            <button type="submit" class="btn btn-primary">Record decision</button>
+                        </form>
+                        @if (a.Str("actionType") == "REQUIRE_REVERIFICATION")
+                        {
+                            <p class="boundary">Accepting does not make the member verified — only a new provider verification can.</p>
+                        }
+                    }
+                }
+            </section>
+        }
+    </div>
+</div>
+}

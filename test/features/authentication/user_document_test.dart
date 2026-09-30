@@ -50,6 +50,43 @@ void main() {
     expect(entity.profileCompleted, isTrue);
   });
 
+  group('account status mirrors the backend', () {
+    UserDocument read(Map<String, dynamic> account) =>
+        UserDocument.fromAccountAndProfile(uid: 'u1', account: account, profile: const {});
+
+    test('a live suspension is not active, so the session is refused', () {
+      final doc = read({
+        'accountStatus': 'suspended',
+        'isSuspended': true,
+        'suspendedUntil': DateTime.now().add(const Duration(days: 3)),
+      });
+      expect(doc.accountStatus, AccountStatus.suspended);
+      expect(doc.isActive, isFalse);
+      expect(doc.toEntity().isActive, isFalse);
+    });
+
+    test('a suspension without an end date lasts until restored', () {
+      expect(read({'accountStatus': 'suspended'}).accountStatus, AccountStatus.suspended);
+      expect(read({'isSuspended': true}).accountStatus, AccountStatus.suspended);
+    });
+
+    test('a suspension whose end has passed is over', () {
+      final doc = read({
+        'accountStatus': 'suspended',
+        'isSuspended': true,
+        'suspendedUntil': DateTime.now().subtract(const Duration(minutes: 1)),
+      });
+      expect(doc.accountStatus, AccountStatus.active);
+      expect(doc.isActive, isTrue);
+    });
+
+    test('the legacy ban flag wins over an active status string', () {
+      expect(read({'accountStatus': 'active', 'isBanned': true}).accountStatus, AccountStatus.banned);
+      expect(read({'accountStatus': 'deleted'}).accountStatus, AccountStatus.deleted);
+      expect(read({'accountStatus': 'something-new'}).accountStatus, AccountStatus.active);
+    });
+  });
+
   test('email is read from the private account, not the public profile', () {
     final document = UserDocument.fromAccountAndProfile(
       uid: 'user-1',

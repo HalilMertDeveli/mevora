@@ -1,0 +1,57 @@
+@page
+@model Mevora.Admin.Web.Pages.Verification.IndexModel
+@{
+    ViewData["Title"] = "Verification";
+}
+<div class="page-head">
+    <div>
+        <h1>Identity verification</h1>
+        <p>Status reported by the identity provider (Didit). Staff can escalate and — from a member's page — require re-verification.</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+<p class="boundary">The verified badge is granted only by the provider's authenticated result. This console has no "mark verified" control, and MEVORA stores no ID images, selfies, liveness video, MRZ or biometric data to show.</p>
+<nav class="tabs" aria-label="Verification status">
+    @foreach (var f in Mevora.Admin.Web.Pages.Verification.IndexModel.Filters)
+    {
+        <a class="tab @(Model.Filter == f ? "active" : "")" href="/Verification?filter=@f">@JsonView.Label(f)</a>
+    }
+</nav>
+@{
+    var rows = Model.Result.Items().ToList();
+}
+@if (rows.Count == 0)
+{
+    <p class="muted">Nothing in this state.</p>
+}
+else
+{
+    <table class="data">
+        <thead><tr><th scope="col">Member</th><th scope="col">Provider</th><th scope="col">Status</th><th scope="col">Reason</th><th scope="col">Attempts</th><th scope="col">Updated</th><th scope="col"><span class="muted">Action</span></th></tr></thead>
+        <tbody>
+            @foreach (var v in rows)
+            {
+                <tr>
+                    <td><partial name="_UserChip" model='v.Get("user")' /></td>
+                    <td>@v.S("provider")</td>
+                    <td><span class="status status-@v.S("status")">@JsonView.Label(v.Str("status"))</span> @if (v.Bool("reverificationRequired")) { <span class="badge badge-warn">Re-verification required</span> }</td>
+                    <td>@JsonView.Label(v.Str("reason"))</td>
+                    <td>@v.S("attemptCount", "0")</td>
+                    <td class="nowrap">@v.Age("updatedAt")</td>
+                    <td>
+                        @if (Model.Can("verification.escalate"))
+                        {
+                            <form method="post" asp-page-handler="Escalate" class="stack">
+                                <input type="hidden" name="uid" value="@v.S("uid")" />
+                                <label class="small" for="r-@v.S("uid")">Reason</label>
+                                <input id="r-@v.S("uid")" name="reason" type="text" maxlength="500" required />
+                                <button type="submit" class="btn btn-small">Escalate</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <partial name="_Pager" model="Model.Pager" />
+}

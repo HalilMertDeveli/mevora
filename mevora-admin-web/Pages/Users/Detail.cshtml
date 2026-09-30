@@ -1,0 +1,407 @@
+@page "/Users/{uid}"
+@model Mevora.Admin.Web.Pages.Users.DetailModel
+@{
+    var o = Model.Overview;
+    var account = o.Get("account");
+    var auth = o.Get("auth");
+    var profile = o.Get("profile");
+    var verification = o.Get("verification");
+    var safety = o.Get("safety");
+    var subscription = o.Get("subscription");
+    ViewData["Title"] = account.S("displayName", Model.Uid);
+    var isStaff = account.Bool("isStaff");
+}
+<div class="page-head">
+    <div>
+        <h1>@account.S("displayName", "(no name)")</h1>
+        <p class="mono">@Model.Uid</p>
+    </div>
+    <div class="actions">
+        <span class="status status-@Model.Status">@JsonView.Label(Model.Status)</span>
+        @if (o.Bool("isVerified"))
+        {
+            <span class="badge badge-ok">Identity verified</span>
+        }
+        @if (isStaff)
+        {
+            <span class="badge badge-info">Staff · @JsonView.Label(account.Str("staffRole"))</span>
+        }
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+@if (Model.LinkedCaseId is not null)
+{
+    <p class="alert alert-info small">Working case <a class="mono" href="/Cases/@Model.LinkedCaseId">@Model.LinkedCaseId</a> — decisions below are linked to it.</p>
+}
+
+@if (o.ValueKind == JsonValueKind.Object)
+{
+<div class="grid grid-main-side">
+    <div>
+        <section class="card">
+            <h2>Account</h2>
+            <dl class="kv">
+                <dt>Status</dt>
+                <dd>
+                    <span class="status status-@Model.Status">@JsonView.Label(Model.Status)</span>
+                    @if (account.Str("suspendedUntil") is not null)
+                    {
+                        <span class="muted"> until @account.When("suspendedUntil")</span>
+                    }
+                    @if (account.Str("statusReasonCode") is { } src)
+                    {
+                        <span class="muted"> · @JsonView.Label(src)</span>
+                    }
+                </dd>
+                <dt>Warnings</dt><dd>@account.S("warningCount", "0")</dd>
+                <dt>Created</dt><dd>@account.When("createdAt")</dd>
+                <dt>Last active</dt><dd>@account.When("lastActiveAt")</dd>
+                <dt>Sign-in</dt>
+                <dd>
+                    @(auth.Bool("exists") ? (auth.Str("disabled") == "true" ? "Disabled" : "Enabled") : "No Auth record")
+                    · phone verified: @(auth.Bool("phoneVerified") ? "yes" : "no")
+                    · last sign-in @auth.S("lastSignInAt")
+                </dd>
+                <dt>Email</dt><dd class="mono">@auth.S("email")</dd>
+                <dt>Phone</dt><dd class="mono">@auth.S("phone")</dd>
+                @if (o.Bool("sensitiveIncluded"))
+                {
+                    <dt>Providers</dt><dd>@string.Join(", ", auth.Arr("providers").Select(p => p.GetString()))</dd>
+                }
+            </dl>
+            @if (!o.Bool("sensitiveIncluded") && Model.Can("user.read_sensitive"))
+            {
+                <form method="post" asp-page-handler="Reveal" class="field-row">
+                    <div class="field">
+                        <label for="justification">Reveal contact details — reason (recorded in the audit log)</label>
+                        <input id="justification" name="justification" type="text" maxlength="300" required placeholder="e.g. identity check for ticket #…" />
+                    </div>
+                    <button type="submit" class="btn">Reveal</button>
+                </form>
+            }
+            else if (o.Bool("sensitiveIncluded"))
+            {
+                <p class="alert alert-warn small">Contact details shown. This view was recorded as SENSITIVE_PROFILE_VIEWED.</p>
+            }
+        </section>
+
+        <section class="card">
+            <h2>Profile</h2>
+            <dl class="kv">
+                <dt>Completed</dt><dd>@(profile.Bool("profileCompleted") ? "yes" : "no")</dd>
+                <dt>Discoverable</dt><dd>@(profile.Bool("isDiscoverable") ? "yes" : "no")</dd>
+                <dt>Profile moderation</dt><dd><span class="status status-@profile.S("profileModerationStatus", "none")">@JsonView.Label(profile.Str("profileModerationStatus"))</span></dd>
+                <dt>City</dt><dd>@profile.S("city")</dd>
+                <dt>Relationship goal</dt><dd>@JsonView.Label(profile.Str("relationshipGoal"))</dd>
+                <dt>Photos</dt><dd>@profile.S("approvedPhotoCount", "0") approved of @profile.S("photoCount", "0")</dd>
+                <dt>Bio</dt><dd>@profile.S("bio")</dd>
+            </dl>
+            <h3>Photos</h3>
+            <div class="thumbs">
+                @foreach (var p in o.Arr("photos"))
+                {
+                    <figure class="small">
+                        @if (Model.Can("photo.read"))
+                        {
+                            <img class="thumb" alt="Photo @p.S("imageId")" src="/Photos?handler=Preview&uid=@Uri.EscapeDataString(Model.Uid)&imageId=@Uri.EscapeDataString(p.S("imageId", ""))" loading="lazy" />
+                        }
+                        <figcaption><span class="status status-@p.S("status")">@JsonView.Label(p.Str("status"))</span></figcaption>
+                    </figure>
+                }
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Safety</h2>
+            <p>Reports received: <strong>@safety.S("reportsReceivedCount", "?")</strong> · Reports filed: <strong>@safety.S("reportsSubmittedCount", "?")</strong></p>
+            <h3>Recent reports against this member</h3>
+            @if (!safety.Arr("recentReports").Any())
+            {
+                <p class="muted">None.</p>
+            }
+            else
+            {
+                <table class="data">
+                    <thead><tr><th scope="col">When</th><th scope="col">Reason</th><th scope="col">Priority</th><th scope="col">Status</th><th scope="col">Case</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in safety.Arr("recentReports"))
+                        {
+                            <tr>
+                                <td class="nowrap">@r.When("createdAt")</td>
+                                <td>@JsonView.Label(r.Str("reason"))</td>
+                                <td><span class="prio prio-@r.S("priority")">@JsonView.Label(r.Str("priority"))</span></td>
+                                <td><span class="status status-@r.S("status")">@JsonView.Label(r.Str("status"))</span></td>
+                                <td>@if (r.Str("caseId") is { } cid) { <a class="mono" href="/Cases/@cid">open</a> }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            <h3>Open cases</h3>
+            @if (!safety.Arr("openCases").Any())
+            {
+                <p class="muted">None.</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var c in safety.Arr("openCases"))
+                    {
+                        <li><a href="/Cases/@c.S("caseId")">@JsonView.Label(c.Str("type"))</a> · <span class="prio prio-@c.S("priority")">@JsonView.Label(c.Str("priority"))</span> · @JsonView.Label(c.Str("status"))</li>
+                    }
+                </ul>
+            }
+            <h3>Moderation history</h3>
+            @if (!safety.Arr("actions").Any())
+            {
+                <p class="muted">No moderation actions.</p>
+            }
+            else
+            {
+                <table class="data">
+                    <thead><tr><th scope="col">When</th><th scope="col">Action</th><th scope="col">Reason</th><th scope="col">By</th><th scope="col">Notes</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in safety.Arr("actions"))
+                        {
+                            <tr>
+                                <td class="nowrap">@a.When("createdAt")</td>
+                                <td>@JsonView.Label(a.Str("type"))</td>
+                                <td>@JsonView.Label(a.Str("reasonCode"))</td>
+                                <td class="mono">@a.S("actorAdminId")</td>
+                                <td class="small">
+                                    @if (a.Str("expiresAt") is not null) { <span>until @a.When("expiresAt")</span> }
+                                    @if (a.Str("overturnedByActionId") is not null) { <span class="badge badge-info">Overturned</span> }
+                                    @if (a.Str("authSync") is "failed") { <span class="badge badge-danger">Auth sync failed — retry the action</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+
+        <section class="card">
+            <h2>Safety timeline</h2>
+            @if (!Model.Timeline.Arr("events").Any())
+            {
+                <p class="muted">No events.</p>
+            }
+            else
+            {
+                <ol class="timeline">
+                    @foreach (var e in Model.Timeline.Arr("events"))
+                    {
+                        <li>
+                            <div class="t-when">@e.When("at")</div>
+                            <div>@e.S("title")</div>
+                        </li>
+                    }
+                </ol>
+                @if (Model.Timeline.Num("nextBeforeMs") is { } next)
+                {
+                    <a class="btn btn-small" href="/Users/@Uri.EscapeDataString(Model.Uid)?before=@next">Older events</a>
+                }
+            }
+        </section>
+    </div>
+
+    <div>
+        <section class="card">
+            <h2>Actions</h2>
+            @if (isStaff)
+            {
+                <p class="alert alert-info small">This member is staff. Senior staff and super admins are protected from sanctions by the server.</p>
+            }
+
+            @if (Model.Can("user.warn"))
+            {
+                <details>
+                    <summary><strong>Warn</strong></summary>
+                    <form method="post" asp-page-handler="Warn" data-confirm="Issue a warning to this member?">
+                        <input type="hidden" name="idempotencyKey" value="@Model.FormKey-warn" />
+                        <div class="field"><label for="warn-reason">Reason</label>
+                            <select id="warn-reason" name="reasonCode" required>
+                                @foreach (var r in Vocab.ReasonCodes) { <option value="@r">@JsonView.Label(r)</option> }
+                            </select></div>
+                        <div class="field"><label for="warn-msg">Message to the member (optional)</label>
+                            <textarea id="warn-msg" name="userMessage" maxlength="1000"></textarea></div>
+                        <div class="field"><label for="warn-case">Link to case (optional)</label>
+                            <input id="warn-case" name="caseId" type="text" maxlength="128" value="@Model.LinkedCaseId" /></div>
+                        <button type="submit" class="btn">Issue warning</button>
+                    </form>
+                </details>
+            }
+
+            @if (Model.Can("user.suspend") && !Model.IsRestricted)
+            {
+                <details>
+                    <summary><strong>Suspend temporarily</strong></summary>
+                    <form method="post" asp-page-handler="Suspend" data-confirm="Suspend this account? The member keeps sign-in but loses discovery, likes, chat and calls until it ends.">
+                        <input type="hidden" name="idempotencyKey" value="@Model.FormKey-suspend" />
+                        <div class="field"><label for="sus-reason">Reason</label>
+                            <select id="sus-reason" name="reasonCode" required>
+                                @foreach (var r in Vocab.ReasonCodes) { <option value="@r">@JsonView.Label(r)</option> }
+                            </select></div>
+                        <div class="field"><label for="sus-duration">Duration</label>
+                            <select id="sus-duration" name="duration" data-custom-target="sus-custom-wrap" required>
+                                @foreach (var p in Vocab.SuspensionPresets) { <option value="@p.Value">@p.Label</option> }
+                            </select></div>
+                        <div class="field" id="sus-custom-wrap" hidden>
+                            <label for="sus-custom">Custom length (hours, @Vocab.MinSuspensionHours–@Vocab.MaxSuspensionHours)</label>
+                            <input id="sus-custom" name="customHours" type="number" min="@Vocab.MinSuspensionHours" max="@Vocab.MaxSuspensionHours" step="1" />
+                        </div>
+                        <div class="field"><label for="sus-note">Internal note (required, never shown to the member)</label>
+                            <textarea id="sus-note" name="internalNote" maxlength="4000" required></textarea></div>
+                        <div class="field"><label for="sus-case">Link to case (optional)</label>
+                            <input id="sus-case" name="caseId" type="text" maxlength="128" value="@Model.LinkedCaseId" /></div>
+                        <button type="submit" class="btn btn-danger">Suspend account</button>
+                    </form>
+                </details>
+            }
+
+            @if (Model.Can("user.ban") && Model.Status != "banned")
+            {
+                <details class="card-danger">
+                    <summary><strong>Ban permanently</strong></summary>
+                    <form method="post" asp-page-handler="Ban" data-confirm="Permanently ban this account? Sign-in will be disabled and all sessions revoked.">
+                        <input type="hidden" name="idempotencyKey" value="@Model.FormKey-ban" />
+                        <div class="field"><label for="ban-reason">Reason</label>
+                            <select id="ban-reason" name="reasonCode" required>
+                                @foreach (var r in Vocab.ReasonCodes) { <option value="@r">@JsonView.Label(r)</option> }
+                            </select></div>
+                        <div class="field"><label for="ban-note">Internal note (required)</label>
+                            <textarea id="ban-note" name="internalNote" maxlength="4000" required></textarea></div>
+                        <div class="field"><label for="ban-case">Link to case (optional)</label>
+                            <input id="ban-case" name="caseId" type="text" maxlength="128" value="@Model.LinkedCaseId" /></div>
+                        <div class="field"><label for="ban-confirm">Type BAN to confirm</label>
+                            <input id="ban-confirm" name="confirmWord" type="text" autocomplete="off" data-confirm-word="BAN" required /></div>
+                        <button type="submit" class="btn btn-danger">Ban account</button>
+                    </form>
+                </details>
+            }
+
+            @if (Model.Can("user.restore") && Model.IsRestricted)
+            {
+                <details open>
+                    <summary><strong>Restore account</strong></summary>
+                    <form method="post" asp-page-handler="Restore" data-confirm="Lift the current suspension or ban? The original decision stays in the history.">
+                        <input type="hidden" name="idempotencyKey" value="@Model.FormKey-restore" />
+                        <div class="field"><label for="res-reason">Reason</label>
+                            <select id="res-reason" name="reasonCode" required>
+                                @foreach (var r in Vocab.RestoreReasonCodes) { <option value="@r">@JsonView.Label(r)</option> }
+                            </select></div>
+                        <div class="field"><label for="res-note">Internal note (required)</label>
+                            <textarea id="res-note" name="internalNote" maxlength="4000" required></textarea></div>
+                        <button type="submit" class="btn btn-ok">Restore account</button>
+                    </form>
+                </details>
+            }
+
+            @if (Model.Can("verification.require_reverification"))
+            {
+                <details>
+                    <summary><strong>Require re-verification</strong></summary>
+                    <p class="small muted">Removes the verified badge until the member completes a new session with the identity provider. The console can never mark anyone verified.</p>
+                    <form method="post" asp-page-handler="Reverify" data-confirm="Remove the verified badge and require a new identity verification?">
+                        <input type="hidden" name="idempotencyKey" value="@Model.FormKey-reverify" />
+                        <div class="field"><label for="rv-reason">Reason</label>
+                            <select id="rv-reason" name="reasonCode" required>
+                                @foreach (var r in Vocab.ReasonCodes) { <option value="@r">@JsonView.Label(r)</option> }
+                            </select></div>
+                        <div class="field"><label for="rv-note">Internal note (required)</label>
+                            <textarea id="rv-note" name="internalNote" maxlength="4000" required></textarea></div>
+                        <button type="submit" class="btn">Require re-verification</button>
+                    </form>
+                </details>
+            }
+
+            @if (Model.Can("case.assign"))
+            {
+                <details>
+                    <summary><strong>Open a case</strong></summary>
+                    <form method="post" asp-page-handler="OpenCase">
+                        <div class="field"><label for="oc-type">Type</label>
+                            <select id="oc-type" name="type">
+                                @foreach (var t in Vocab.CaseTypes) { <option value="@t">@JsonView.Label(t)</option> }
+                            </select></div>
+                        <div class="field"><label for="oc-reason">Reason code</label>
+                            <select id="oc-reason" name="reasonCode">
+                                @foreach (var r in Vocab.ReasonCodes) { <option value="@r">@JsonView.Label(r)</option> }
+                            </select></div>
+                        <div class="field"><label for="oc-prio">Priority</label>
+                            <select id="oc-prio" name="priority">
+                                <option value="normal">Normal</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
+                            </select></div>
+                        <div class="field"><label for="oc-summary">Summary</label>
+                            <input id="oc-summary" name="summary" type="text" maxlength="300" required /></div>
+                        <button type="submit" class="btn">Open case</button>
+                    </form>
+                </details>
+            }
+        </section>
+
+        <section class="card">
+            <h2>Identity verification</h2>
+            <dl class="kv">
+                <dt>Provider</dt><dd>@verification.S("provider")</dd>
+                <dt>Status</dt><dd><span class="status status-@verification.S("status")">@JsonView.Label(verification.Str("status"))</span></dd>
+                <dt>Reason</dt><dd>@JsonView.Label(verification.Str("reason"))</dd>
+                <dt>Verified at</dt><dd>@verification.When("verifiedAt")</dd>
+                <dt>Updated</dt><dd>@verification.When("updatedAt")</dd>
+                <dt>Attempts</dt><dd>@verification.S("attemptCount", "0")</dd>
+                @if (verification.Bool("reverificationRequired"))
+                {
+                    <dt>Note</dt><dd><span class="badge badge-warn">Re-verification required</span></dd>
+                }
+            </dl>
+            <p class="boundary">MEVORA stores no ID images, selfies, liveness video or biometric data — only the provider's status.</p>
+        </section>
+
+        <section class="card">
+            <h2>Support</h2>
+            @if (!o.Arr("support").Any())
+            {
+                <p class="muted">No tickets.</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var t in o.Arr("support"))
+                    {
+                        <li>
+                            @if (Model.Can("support.read")) { <a href="/Support/@t.S("ticketId")">@t.S("subject")</a> } else { <span>@t.S("subject")</span> }
+                            · <span class="status status-@t.S("status")">@JsonView.Label(t.Str("status")?.ToLowerInvariant())</span>
+                        </li>
+                    }
+                </ul>
+            }
+            <h3>Appeals</h3>
+            @if (!o.Arr("appeals").Any())
+            {
+                <p class="muted">No appeals.</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var a in o.Arr("appeals"))
+                    {
+                        <li><a href="/Appeals/@a.S("appealId")">@JsonView.Label(a.Str("status"))</a> @(a.Str("decision") is { } d ? $"· {d}" : "")</li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="card">
+            <h2>Subscription</h2>
+            <dl class="kv">
+                <dt>Premium</dt><dd>@(subscription.Bool("isPremium") ? "yes" : "no")</dd>
+                <dt>Product</dt><dd>@subscription.S("productId")</dd>
+                <dt>Expires</dt><dd>@subscription.When("expiresAt")</dd>
+            </dl>
+            <p class="boundary">Purchase tokens and billing identifiers never reach the console.</p>
+        </section>
+
+        <p class="boundary">Private conversations are end-to-end encrypted. There is no way to read a member's chats from this console, by design.</p>
+    </div>
+</div>
+}

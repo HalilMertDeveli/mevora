@@ -1,0 +1,20 @@
+@model PagerModel
+@if (!string.IsNullOrEmpty(Model.NextCursor))
+{
+    var query = new Dictionary<string, string?>(Model.RouteValues) {["cursor"] = Model.NextCursor};
+    var href = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(Model.Path, query.Where(kv => kv.Value is not null)!);
+    <nav class="pager" aria-label="Pagination">
+        @if (Model.HasPrevious)
+        {
+            <a class="btn btn-ghost" href="@Model.Path">First page</a>
+        }
+        <a class="btn" href="@href" rel="next">Next page</a>
+    </nav>
+}
+else if (Model.HasPrevious)
+{
+    <nav class="pager" aria-label="Pagination">
+        <a class="btn btn-ghost" href="@Model.Path">First page</a>
+        <span class="muted">End of list</span>
+    </nav>
+}

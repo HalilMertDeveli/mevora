@@ -64,6 +64,8 @@ class UserDocument {
       account['accountStatus'],
       legacyIsBanned: account['isBanned'] as bool?,
       legacyIsActive: account['isActive'] as bool?,
+      legacyIsSuspended: account['isSuspended'] as bool?,
+      suspendedUntil: firestoreDate(account['suspendedUntil']),
     );
     return UserDocument(
       id: uid,

@@ -26,12 +26,12 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
       _firestore.collection(FirestorePaths.matches);
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) {
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) {
     return _matches
         .where('userIds', arrayContains: uid)
         .where('isActive', isEqualTo: true)
         .orderBy('lastMessageAt', descending: true)
-        .limit(40)
+        .limit(limit ?? 40)
         .snapshots()
         .map((snap) {
           return [

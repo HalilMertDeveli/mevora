@@ -90,12 +90,16 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
   final FirebaseFirestore _db;
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) {
-    return _db
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) {
+    Query<Map<String, dynamic>> query = _db
         .collection(FirestorePaths.matches)
         .where('userIds', arrayContains: uid)
         .where('isActive', isEqualTo: true)
-        .orderBy('lastMessageAt', descending: true)
+        .orderBy('lastMessageAt', descending: true);
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+    return query
         .snapshots()
         .map((snap) {
           return snap.docs.map((doc) {

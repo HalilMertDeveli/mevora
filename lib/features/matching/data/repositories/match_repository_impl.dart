@@ -10,8 +10,8 @@ class MatchRepositoryImpl implements MatchRepository, LikeRepository {
   final FirebaseMatchDataSource _dataSource;
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) {
-    return _dataSource.watchMatches(uid);
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) {
+    return _dataSource.watchMatches(uid, limit: limit);
   }
 
   @override

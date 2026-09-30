@@ -169,7 +169,7 @@ S = image bytes served, m = cache misses.
 
 `DECISIONS_DAY ≈ passes · (27 + A) + likes · (33 + A) + matches · ~80` reads.
 With a finite day of T Picks a member can make at most T + ⌈T/4⌉ Picks
-decisions a day (e.g. 3,000 DAU × 10 decisions ≈ 0.9 M reads at A ≈ 5).
+decisions a day (e.g. 3,000 DAU × 10 decisions ≈ 1.0 M reads at A ≈ 5, before match triggers).
 
 ### Chat
 
@@ -195,7 +195,7 @@ decisions a day (e.g. 3,000 DAU × 10 decisions ≈ 0.9 M reads at A ≈ 5).
 
 `IMAGES_DAY ≈ Σ cache misses · S`. For a Picks day, about
 DAU · opens · (T cards + photos opened) · S. For example, 3,000 DAU · 3 opens
-· 10 cards · 250 KB ≈ **22 GB/day of Storage egress**, most of which a 320 px
+· 10 cards · 250 KB ≈ **up to 22 GB/day of Storage egress** when every open is a cold start, most of which a 320 px
 thumbnail (≈ 20–30 KB) and a disk cache would remove.
 
 ### Startup (signed in)

@@ -43,7 +43,7 @@ public static class Vocab
     public static readonly string[] AuditTargetTypes =
     [
         "user", "case", "report", "photo", "humor_content", "support_ticket", "verification",
-        "automation_job", "review_item", "appeal", "staff", "system",
+        "automation_job", "review_item", "appeal", "staff", "app_config", "system",
     ];
 
     public static readonly string[] AuditActions =
@@ -60,6 +60,7 @@ public static class Vocab
         "APPEAL_SUBMITTED", "APPEAL_OPENED_BY_STAFF", "APPEAL_ASSIGNED", "APPEAL_ACCEPTED", "APPEAL_REJECTED",
         "ADMIN_CREATED", "ADMIN_GRANTED", "ADMIN_ROLE_CHANGED", "ADMIN_DISABLED", "ADMIN_ENABLED", "ADMIN_SESSIONS_REVOKED", "ADMIN_ACTIVATION_ISSUED",
         "MAINTENANCE_RUN",
+        "APP_MAINTENANCE_ENABLED", "APP_MAINTENANCE_DISABLED", "APP_MIN_VERSION_CHANGED", "APP_FEATURE_SWITCH_CHANGED", "APP_ANNOUNCEMENT_CHANGED",
     ];
 
     /// <summary>Suspension presets in hours. "custom" lets the moderator enter hours (1–8760).</summary>

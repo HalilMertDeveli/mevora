@@ -1,4 +1,6 @@
+import 'package:mevora/core/routing/app_operations_redirect.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_gate.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 
 /// Pure redirect rules for the authentication gate.
@@ -33,6 +35,7 @@ abstract final class AuthRedirector {
     bool locationGateResolved = true,
     String? journeyRoute,
     bool journeyPending = false,
+    AppOperationsGate operationsGate = AppOperationsGate.normal,
   }) {
     if (allowDesignSystem && location == AppRoutes.designSystem) {
       return null;
@@ -43,6 +46,15 @@ abstract final class AuthRedirector {
     // deep link, restored location, or a hand-typed URL.
     if (location == AppRoutes.qaLogin && !qaLoginEnabled) {
       return AppRoutes.login;
+    }
+
+    // Maintenance and required updates come before sign-in state.
+    final operations = AppOperationsRedirect.evaluate(
+      gate: operationsGate,
+      location: location,
+    );
+    if (operations.decided) {
+      return operations.target;
     }
 
     switch (status) {

@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_profile_details_page.dart';
 import 'package:mevora/features/music/domain/entities/music_track.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
@@ -159,13 +161,20 @@ class _UnconnectedMusicView extends StatelessWidget {
           MevoraBanner(message: error, tone: MevoraTone.error),
         ],
         const SizedBox(height: AppSpacing.xl),
-        MevoraButton(
-          label: l10n.musicConnectCta,
-          icon: MevoraIcons.spotify,
-          size: MevoraButtonSize.large,
-          isLoading: connecting,
-          onPressed: connecting ? null : controller.connectSpotify,
-        ),
+        if (AppOperationsScope.isFeatureEnabled(context, AppFeature.spotify))
+          MevoraButton(
+            label: l10n.musicConnectCta,
+            icon: MevoraIcons.spotify,
+            size: MevoraButtonSize.large,
+            isLoading: connecting,
+            onPressed: connecting ? null : controller.connectSpotify,
+          )
+        else
+          MevoraBanner(
+            key: const Key('spotifyUnavailable'),
+            message: l10n.appOpsSpotifyUnavailable,
+            tone: MevoraTone.warning,
+          ),
       ],
     );
   }

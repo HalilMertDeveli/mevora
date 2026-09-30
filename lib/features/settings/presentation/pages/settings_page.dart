@@ -6,6 +6,8 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/di/verification_scope.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
 import 'package:mevora/features/verification/domain/entities/identity_verification.dart';
 import 'package:mevora/features/verification/presentation/widgets/verified_profile_badge.dart';
 import 'package:mevora/features/settings/presentation/widgets/language_settings_section.dart';
@@ -102,11 +104,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: l10n.linkedAccounts,
                   onTap: () => context.push(AppRoutes.accountSettings),
                 ),
-                SettingsNavTile(
-                  icon: MevoraIcons.boost,
-                  title: l10n.boostHistoryTitle,
-                  onTap: () => context.push(AppRoutes.boost),
-                ),
+                if (AppOperationsScope.isFeatureEnabled(
+                  context,
+                  AppFeature.boost,
+                ))
+                  SettingsNavTile(
+                    icon: MevoraIcons.boost,
+                    title: l10n.boostHistoryTitle,
+                    onTap: () => context.push(AppRoutes.boost),
+                  ),
               ],
             ),
             SettingsSection(

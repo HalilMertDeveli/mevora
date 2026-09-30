@@ -12,6 +12,7 @@ import 'package:mevora/features/compatibility/presentation/widgets/compatibility
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
@@ -19,6 +20,8 @@ import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
+import 'package:mevora/features/app_operations/presentation/widgets/feature_unavailable_view.dart';
 import 'package:mevora/features/boost/presentation/pages/boost_screen.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_button.dart';
 import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
@@ -68,6 +71,9 @@ class _DiscoveryPageState extends State<DiscoveryPage>
   DiscoveryController? _owned;
   MevoraPicksController? _ownedPicks;
   bool _picksStarted = false;
+
+  /// The owner's Picks switch; on unless the operations document says off.
+  bool _picksEnabled = true;
   ProfileUpdateNotifier? _profileUpdates;
   Offset _drag = Offset.zero;
   DiscoverySwipeDirection _swipeDirection = DiscoverySwipeDirection.none;
@@ -132,6 +138,14 @@ class _DiscoveryPageState extends State<DiscoveryPage>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final picksWereEnabled = _picksEnabled;
+    _picksEnabled = AppOperationsScope.isFeatureEnabled(
+      context,
+      AppFeature.picks,
+    );
+    if (_picksEnabled && !picksWereEnabled) {
+      _maybeStartPicks();
+    }
     final updates = SettingsScope.maybeOf(context)?.profileUpdates;
     if (_profileUpdates != updates) {
       _profileUpdates?.removeListener(_onProfileUpdated);
@@ -213,7 +227,10 @@ class _DiscoveryPageState extends State<DiscoveryPage>
   void _maybeStartPicks() {
     final picks = _picks;
     final controller = _controller;
-    if (picks == null || controller == null || _picksStarted) {
+    if (picks == null ||
+        controller == null ||
+        _picksStarted ||
+        !_picksEnabled) {
       return;
     }
     if (controller.state.phase == LocationPromptPhase.explanation ||
@@ -319,10 +336,11 @@ class _DiscoveryPageState extends State<DiscoveryPage>
             ),
           // The daily streak lives on the main daily surface.
           const StreakIndicator(),
-          BoostButton(
-            isActive: state.activeBoost != null,
-            onPressed: () => unawaited(_openBoost(controller)),
-          ),
+          if (AppOperationsScope.isFeatureEnabled(context, AppFeature.boost))
+            BoostButton(
+              isActive: state.activeBoost != null,
+              onPressed: () => unawaited(_openBoost(controller)),
+            ),
           const SizedBox(width: AppSpacing.xs),
         ],
       ),
@@ -435,6 +453,9 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     }
 
     if (_showingPicks) {
+      if (!_picksEnabled) {
+        return const FeatureUnavailableView();
+      }
       return PicksView(
         controller: _picks!,
         onOpenProfile: _openPickProfile,

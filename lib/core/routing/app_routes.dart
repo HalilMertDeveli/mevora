@@ -60,6 +60,10 @@ abstract final class AppRoutes {
   static const String legalPrivacy = '/legal/privacy';
   static const String legalGuidelines = '/legal/guidelines';
 
+  /// Server-driven gates (see AppOperationsRedirect).
+  static const String maintenance = '/maintenance';
+  static const String updateRequired = '/update-required';
+
   static String supportTicketDetailPath(String ticketId) =>
       '/settings/support/tickets/$ticketId';
 

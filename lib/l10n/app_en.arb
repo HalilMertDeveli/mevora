@@ -2251,5 +2251,25 @@
   "humorDailyCompletedBody": "Your humor profile just got a little clearer.",
   "humorDailyNotReadyTitle": "Today's round is being prepared",
   "humorDailyNotReadyBody": "Check back a little later.",
-  "humorDailyLockedBody": "The daily humor round begins once your humor profile is ready."
+  "humorDailyLockedBody": "The daily humor round begins once your humor profile is ready.",
+  "appOpsMaintenanceTitle": "A short maintenance break",
+  "appOpsMaintenanceMessage": "Mevora is briefly down for maintenance. We'll be right back.",
+  "appOpsMaintenanceSupport": "Contact support",
+  "appOpsMaintenanceAccount": "Account settings",
+  "appOpsUpdateRequiredTitle": "Time to update",
+  "appOpsUpdateRequiredMessage": "This version of Mevora is no longer supported. Update the app to keep going.",
+  "appOpsUpdateAction": "Update",
+  "appOpsUpdateFromStore": "Update Mevora from {store}.",
+  "@appOpsUpdateFromStore": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "appOpsGenericStore": "your app store",
+  "appOpsUpdateAvailable": "A new version of Mevora is available.",
+  "appOpsFeatureUnavailableTitle": "Temporarily unavailable",
+  "appOpsFeatureUnavailableMessage": "This feature is taking a short break. Please check back a little later.",
+  "appOpsSpotifyUnavailable": "Connecting Spotify is temporarily unavailable. You can connect it later from the Music tab."
 }

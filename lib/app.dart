@@ -6,6 +6,7 @@ import 'package:mevora/core/analytics/analytics_provider.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
 import 'package:mevora/core/di/discovery_scope.dart';
 import 'package:mevora/core/di/location_scope.dart';
@@ -36,6 +37,8 @@ import 'package:mevora/core/session/session_recovery_controller.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/streak/presentation/controllers/daily_streak_controller.dart';
+import 'package:mevora/features/app_operations/presentation/controllers/app_operations_controller.dart';
+import 'package:mevora/features/app_operations/presentation/widgets/app_operations_banner_host.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/boost/domain/repositories/purchase_repository.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
@@ -82,6 +85,7 @@ class MevoraApp extends StatefulWidget {
     this.settingsServices,
     this.supportServices,
     this.streakServices,
+    this.appOperations,
   });
 
   final AppConfig config;
@@ -109,6 +113,10 @@ class MevoraApp extends StatefulWidget {
   final OnboardingServices? onboardingServices;
   final StreakServices? streakServices;
 
+  /// Maintenance, update gates, announcements and feature switches. Null in
+  /// tests and previews: the app then runs as in normal operation.
+  final AppOperationsController? appOperations;
+
   @override
   State<MevoraApp> createState() => _MevoraAppState();
 }
@@ -134,6 +142,11 @@ class _MevoraAppState extends State<MevoraApp> {
   void initState() {
     super.initState();
     widget.authController.start();
+    // Cached operations state applies at once; the live document follows.
+    // Never awaited — nothing waits on the network for this.
+    widget.appOperations
+      ?..start()
+      ..attachLifecycle();
     _sessionRecovery = SessionRecoveryController(logger: widget.logger)
       ..attach();
     unawaited(_sessionRecovery!.recover(reason: 'cold_start'));
@@ -208,6 +221,7 @@ class _MevoraAppState extends State<MevoraApp> {
           authController: widget.authController,
           locationController: _locationController,
           journey: _journey,
+          appOperations: widget.appOperations,
         );
     final social = widget.socialServices;
     if (social != null) {
@@ -281,6 +295,8 @@ class _MevoraAppState extends State<MevoraApp> {
             return _languageController.locale;
           },
           routerConfig: _router,
+          builder: (context, child) =>
+              AppOperationsBannerHost(child: child ?? const SizedBox.shrink()),
           debugShowCheckedModeBanner: widget.config.showDebugBanner,
         );
       },
@@ -396,6 +412,11 @@ class _MevoraAppState extends State<MevoraApp> {
       child = StreakScope(controller: streak.controller, child: child);
     }
 
+    final operations = widget.appOperations;
+    if (operations != null) {
+      child = AppOperationsScope(controller: operations, child: child);
+    }
+
     return AppScope(
       config: widget.config,
       logger: widget.logger,
@@ -410,6 +431,7 @@ class _MevoraAppState extends State<MevoraApp> {
     widget.authController.removeListener(_syncLanguageUser);
     widget.authController.removeListener(_syncStreakUser);
     widget.streakServices?.controller.detachLifecycle();
+    widget.appOperations?.detachLifecycle();
     widget.authController.removeListener(_syncJourney);
     _journey?.dispose();
     if (_ownsLocationController) {

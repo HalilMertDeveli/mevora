@@ -6,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
 import 'package:mevora/core/services/permissions/permission_status.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
 import 'package:mevora/features/chat/data/services/chat_audio_player.dart';
@@ -219,13 +221,17 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
             actions: [
-              IconButton(
-                tooltip: l10n.videoCall,
-                onPressed: controller.canCall
-                    ? () => unawaited(_startCall())
-                    : null,
-                icon: const Icon(MevoraIcons.video),
-              ),
+              if (AppOperationsScope.isFeatureEnabled(
+                context,
+                AppFeature.calls,
+              ))
+                IconButton(
+                  tooltip: l10n.videoCall,
+                  onPressed: controller.canCall
+                      ? () => unawaited(_startCall())
+                      : null,
+                  icon: const Icon(MevoraIcons.video),
+                ),
               IconButton(
                 tooltip: l10n.more,
                 onPressed: () => unawaited(

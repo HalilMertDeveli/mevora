@@ -170,7 +170,8 @@ function codedError(code, message) {
 function createFakeFirestore(seed = {}) {
   const store = new Map();
   const versions = new Map();
-  const meter = {reads: 0, writes: 0, queries: []};
+  const meter = {reads: 0, writes: 0, queries: [], byPath: new Map()};
+  const noteDocRead = (path) => meter.byPath.set(path, (meter.byPath.get(path) ?? 0) + 1);
   const bump = (path) => {
     versions.set(path, (versions.get(path) ?? 0) + 1);
     meter.writes += 1;
@@ -179,6 +180,7 @@ function createFakeFirestore(seed = {}) {
     meter.reads = 0;
     meter.writes = 0;
     meter.queries = [];
+    meter.byPath = new Map();
   };
 
   const reset = (next = {}) => {
@@ -238,6 +240,7 @@ function createFakeFirestore(seed = {}) {
       id: parts[parts.length - 1],
       get: async () => {
         meter.reads += 1;
+        noteDocRead(ref.path);
         return snapshotOf(ref);
       },
       set: async (data, options) => writeSet(ref, data, options),
@@ -349,6 +352,7 @@ function createFakeFirestore(seed = {}) {
         const docs = run(filters, max, orders, cursor);
         meter.reads += Math.max(1, docs.length);
         meter.queries.push({path, group: isGroup, docs: docs.length});
+        docs.forEach((doc) => noteDocRead(doc.ref.path));
         return {docs, empty: docs.length === 0, size: docs.length};
       },
     });
@@ -405,6 +409,7 @@ function createFakeFirestore(seed = {}) {
         }
         noteRead(refOrQuery.path);
         meter.reads += 1;
+        noteDocRead(refOrQuery.path);
         // Yield like a network read, so concurrent transactions interleave.
         await Promise.resolve();
         return snapshotOf(refOrQuery);
@@ -462,10 +467,17 @@ function createFakeFirestore(seed = {}) {
     runTransaction,
     getAll: async (...refs) => {
       meter.reads += refs.length;
+      refs.forEach((ref) => noteDocRead(ref.path));
       return refs.map((ref) => snapshotOf(ref));
     },
     /** Billing-equivalent reads and writes since the last reset. */
-    stats: () => ({reads: meter.reads, writes: meter.writes, queries: [...meter.queries]}),
+    stats: () => ({
+      reads: meter.reads,
+      writes: meter.writes,
+      queries: [...meter.queries],
+      /** Document path → how many times it was read (fetched or returned by a query). */
+      byPath: new Map(meter.byPath),
+    }),
     resetStats,
   };
 }

@@ -14,6 +14,7 @@ import {
   scanDiscoveryPool,
   withPairDecisions,
   type DiscoveryViewerContext,
+  type RevalidatedCandidate,
 } from "../discoveryPool.js";
 import type {CompatibilityEvidence} from "../compatibility/compatibilityEngine.js";
 import {loadUserHumorProfile} from "../humor/feed.js";
@@ -208,9 +209,11 @@ async function selectFromPool(input: {
   composed: ReturnType<typeof composePicks>;
   cards: Map<string, PickCardSnapshot>;
   scanned: number;
+  /** What the scan read about every candidate it accepted (see DiscoveryPoolScan.accepted). */
+  accepted: Map<string, RevalidatedCandidate>;
 }> {
   const {db} = input;
-  if (input.slots <= 0) return {composed: [], cards: new Map(), scanned: 0};
+  if (input.slots <= 0) return {composed: [], cards: new Map(), scanned: 0, accepted: new Map()};
   // Batch members and cooling-down people are excluded up front, so they cost
   // no per-candidate scoring reads.
   const viewer: DiscoveryViewerContext = {
@@ -274,7 +277,7 @@ async function selectFromPool(input: {
     const item = itemsByUid.get(pick.candidateUid);
     if (item) cards.set(pick.candidateUid, cardSnapshot(item, humorByUid.get(pick.candidateUid) ?? null));
   }
-  return {composed, cards, scanned: items.length};
+  return {composed, cards, scanned: items.length, accepted: scan.accepted};
 }
 
 function newGenerationId(): string {
@@ -394,10 +397,13 @@ export async function servePicks(input: {
   const stored = parseBatch((await ref.get()).data());
   let batch: PicksBatch;
   let delivered: StoredPick[] = [];
+  // Candidates this request has already checked against the full rule chain
+  // (the pool scan that just picked them): not read a second time.
+  let known = new Map<string, RevalidatedCandidate>();
 
   if (!isBatchLive(stored, nowMs)) {
     const {viewer: scanning} = await fullViewer();
-    ({batch, delivered} = await generateOnce({db, ref, viewer: scanning, nowMs, sizing}));
+    ({batch, delivered, known} = await generateOnce({db, ref, viewer: scanning, nowMs, sizing}));
   } else {
     batch = stored as PicksBatch;
   }
@@ -408,11 +414,12 @@ export async function servePicks(input: {
   // checked per pair inside the rule chain either way, so a block hides the
   // Pick on the very next open.
   const active = activePicks(batch);
-  const activeUids = active.map((pick) => pick.candidateUid);
-  if (!full && activeUids.length > 0) {
-    viewer = withPairDecisions(viewer, await loadPairDecisions(db, viewer.uid, activeUids));
+  const toCheck = active.map((pick) => pick.candidateUid).filter((uid) => !known.has(uid));
+  if (!full && toCheck.length > 0) {
+    viewer = withPairDecisions(viewer, await loadPairDecisions(db, viewer.uid, toCheck));
   }
-  const checks = await revalidatePoolCandidates(db, viewer, activeUids, DISCOVERY_MAX_RADIUS_KM);
+  const checks = await revalidatePoolCandidates(db, viewer, toCheck, DISCOVERY_MAX_RADIUS_KM);
+  for (const [uid, check] of known) checks.set(uid, check);
   const outcomes = new Map<string, PickState>();
   for (const pick of active) {
     const check = checks.get(pick.candidateUid);
@@ -432,7 +439,7 @@ export async function servePicks(input: {
   // The scan slot is claimed first, so two opens never pay for the same scan.
   if (delivered.length === 0 && needsTopUp(batch, nowMs) && (await claimTopUpScan(db, ref, batch, nowMs))) {
     const {viewer: scanning} = await fullViewer();
-    const {composed, cards} = await selectFromPool({
+    const {composed, cards, accepted} = await selectFromPool({
       db,
       viewer: scanning,
       exclude: excludedFromSelection(batch, nowMs),
@@ -447,14 +454,10 @@ export async function servePicks(input: {
     batch = replacements.length > 0 ? appendPicks(batch, replacements, nowMs) : markScanned(batch, nowMs);
     delivered = replacements;
     changed = true;
-    if (replacements.length > 0) {
-      const replacementChecks = await revalidatePoolCandidates(
-        db,
-        scanning,
-        replacements.map((pick) => pick.candidateUid),
-        DISCOVERY_MAX_RADIUS_KM,
-      );
-      for (const [uid, check] of replacementChecks) checks.set(uid, check);
+    // The scan that chose them just checked them.
+    for (const pick of replacements) {
+      const check = accepted.get(pick.candidateUid);
+      if (check) checks.set(pick.candidateUid, check);
     }
   }
 
@@ -587,7 +590,7 @@ async function generateOnce(input: {
   viewer: DiscoveryViewerContext;
   nowMs: number;
   sizing: PicksSizing;
-}): Promise<{batch: PicksBatch; delivered: StoredPick[]}> {
+}): Promise<{batch: PicksBatch; delivered: StoredPick[]; known: Map<string, RevalidatedCandidate>}> {
   const {db, ref, viewer, nowMs, sizing} = input;
   const token = newGenerationId();
   const startedAt = Date.now();
@@ -595,7 +598,7 @@ async function generateOnce(input: {
   for (;;) {
     const elapsed = Date.now() - startedAt;
     const claim = await claimGeneration(db, ref, token, nowMs + elapsed);
-    if (claim.kind === "live") return {batch: claim.batch, delivered: []};
+    if (claim.kind === "live") return {batch: claim.batch, delivered: [], known: new Map()};
     if (claim.kind === "acquired") {
       previous = claim.previous;
       break;
@@ -613,7 +616,7 @@ async function generateOnce(input: {
     const cooldowns = cooldownsAfterExpiry(previous, nowMs);
     const exclude = new Set([...excludedFromSelection(previous, nowMs), ...Object.keys(cooldowns)]);
     const generationId = newGenerationId();
-    const {composed, cards} = await selectFromPool({
+    const {composed, cards, accepted} = await selectFromPool({
       db,
       viewer,
       exclude,
@@ -628,9 +631,14 @@ async function generateOnce(input: {
     return await db.runTransaction(async (tx) => {
       const current = parseBatch((await tx.get(ref)).data());
       // Our lease lapsed and another open wrote today's batch first: serve theirs.
-      if (current && isBatchLive(current, nowMs)) return {batch: current, delivered: []};
+      if (current && isBatchLive(current, nowMs)) return {batch: current, delivered: [], known: new Map()};
       tx.set(ref, fresh);
-      return {batch: fresh, delivered: picks};
+      const known = new Map<string, RevalidatedCandidate>();
+      for (const pick of picks) {
+        const check = accepted.get(pick.candidateUid);
+        if (check) known.set(pick.candidateUid, check);
+      }
+      return {batch: fresh, delivered: picks, known};
     });
   } catch (error) {
     await releaseGeneration(db, ref, token);

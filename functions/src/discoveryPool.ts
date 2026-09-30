@@ -1,4 +1,4 @@
-import {FieldPath, type DocumentData, type Firestore} from "firebase-admin/firestore";
+import {FieldPath, type DocumentData, type DocumentSnapshot, type Firestore} from "firebase-admin/firestore";
 import {blockId, canonicalMatchId, likeId} from "./ids.js";
 import {coarseDistanceLabel} from "./geo/coarseDistance.js";
 import {discoveryProfileProjection, resolveProfileAge} from "./profileSafety.js";
@@ -16,10 +16,14 @@ import {
   isWithinDiscoveryRadius,
   type DiscoveryDistanceTier,
 } from "./discoveryFallback.js";
-import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
+import {isActiveForDiscovery} from "./discoveryActivity.js";
 import {musicRankingBonus} from "./musicCompatibility.js";
-import {musicScoreForPair} from "./spotifyMusic.js";
-import {relationshipScoreForPair} from "./relationshipMatch.js";
+import {hasMusicTaste, musicScoreFromSummaries, musicSummaryPath} from "./spotifyMusic.js";
+import {
+  hasRelationshipAnswers,
+  relationshipScoreFromSummaries,
+  relationshipSummaryPath,
+} from "./relationshipMatch.js";
 import {
   calculateCompatibility,
   compatibilityEvidence,
@@ -58,18 +62,38 @@ export async function isBlocked(db: Firestore, a: string, b: string): Promise<bo
   return subA.exists || subB.exists || topA.exists || topB.exists;
 }
 
+/**
+ * Existing documents at `pathOf(uid)` for each uid, fetched in bulk (one
+ * batched get per 100). Missing documents are simply absent from the map.
+ */
+async function loadDocsByUid(
+  db: Firestore,
+  uids: readonly string[],
+  pathOf: (uid: string) => string,
+): Promise<Map<string, DocumentData>> {
+  const out = new Map<string, DocumentData>();
+  const unique = [...new Set(uids.filter(Boolean))];
+  for (let i = 0; i < unique.length; i += 100) {
+    const chunk = unique.slice(i, i + 100);
+    const snaps = await db.getAll(...chunk.map((uid) => db.doc(pathOf(uid))));
+    snaps.forEach((snap, index) => {
+      const data = snap.data();
+      if (data != null) out.set(chunk[index], data);
+    });
+  }
+  return out;
+}
+
+/**
+ * The `users/{uid}` documents, read once each. They carry both the account
+ * state (suspension, deletion, verification) and `lastActiveAt`, so nothing
+ * here reads the same document a second time for activity.
+ */
 export async function loadUserAccounts(
   db: Firestore,
   uids: string[],
 ): Promise<Map<string, DocumentData>> {
-  const unique = [...new Set(uids.filter(Boolean))];
-  const entries = await Promise.all(
-    unique.map(async (uid) => {
-      const snap = await db.doc(`users/${uid}`).get();
-      return [uid, snap.data()] as const;
-    }),
-  );
-  return new Map(entries.filter(([, data]) => data != null) as Array<[string, DocumentData]>);
+  return loadDocsByUid(db, uids, (uid) => `users/${uid}`);
 }
 
 export async function loadBlockedUserIds(db: Firestore, uid: string): Promise<Set<string>> {
@@ -96,20 +120,10 @@ export async function loadUserLocations(
   uids: string[],
 ): Promise<Map<string, {latitude: number; longitude: number}>> {
   const out = new Map<string, {latitude: number; longitude: number}>();
-  const unique = [...new Set(uids)].filter((id) => id.length > 0);
-  for (let i = 0; i < unique.length; i += 30) {
-    const chunk = unique.slice(i, i + 30);
-    const snaps = await Promise.all(chunk.map((id) => db.doc(`userLocation/${id}`).get()));
-    snaps.forEach((snap, index) => {
-      const data = snap.data();
-      if (data?.latitude == null || data?.longitude == null) {
-        return;
-      }
-      out.set(chunk[index], {
-        latitude: Number(data.latitude),
-        longitude: Number(data.longitude),
-      });
-    });
+  const docs = await loadDocsByUid(db, uids, (uid) => `userLocation/${uid}`);
+  for (const [uid, data] of docs) {
+    if (data.latitude == null || data.longitude == null) continue;
+    out.set(uid, {latitude: Number(data.latitude), longitude: Number(data.longitude)});
   }
   return out;
 }
@@ -156,6 +170,12 @@ export interface DiscoveryPoolScan {
   /** Which profile dimensions both sides actually filled in. Server-side only. */
   evidence: Map<string, CompatibilityEvidence>;
   hasViewerLocation: boolean;
+  /**
+   * What the scan read about every candidate it accepted, in the shape
+   * revalidation returns — so a caller serving them in this same request need
+   * not read them again.
+   */
+  accepted: Map<string, RevalidatedCandidate>;
 }
 
 export function hasLocation(origin: DocumentData | undefined): boolean {
@@ -392,7 +412,23 @@ export async function scanDiscoveryPool(
   const {radiusKm, gateKm, pageSize, maxPages} = options;
   const hasViewerLocation = hasLocation(origin);
 
+  // The viewer's side of every pair score, read once per scan rather than
+  // once per candidate. When the viewer has no usable music or relationship
+  // data, every pair score on that dimension is null, so no candidate's
+  // summary is read for it at all.
+  const [viewerMusicSnap, viewerRelationshipSnap] = await Promise.all([
+    db.doc(musicSummaryPath(uid)).get(),
+    db.doc(relationshipSummaryPath(uid)).get(),
+  ]);
+  const viewerMusic = viewerMusicSnap.data();
+  const viewerRelationship = viewerRelationshipSnap.data();
+  const scoresMusic = hasMusicTaste(viewerMusic);
+  const scoresRelationship = hasRelationshipAnswers(viewerRelationship);
+  const accepted = new Map<string, RevalidatedCandidate>();
+
   let pageCursor = options.cursor;
+  // The previous page's last document positions the next page directly.
+  let cursorSnap: DocumentSnapshot | null = null;
   let lastUid: string | null = null;
   let scannedFullPage = false;
   const buckets: DiscoveryPoolBuckets = {
@@ -415,34 +451,47 @@ export async function scanDiscoveryPool(
       .where("profileCompleted", "==", true)
       .orderBy("updatedAt", "desc")
       .limit(pageSize);
-    if (pageCursor) {
-      const cursorSnap = await db.doc(`profiles/${pageCursor}`).get();
-      if (cursorSnap.exists) {
-        query = query.startAfter(cursorSnap);
-      }
+    if (!cursorSnap && pageCursor) {
+      // Only a cursor handed in from outside needs reading.
+      const snap = await db.doc(`profiles/${pageCursor}`).get();
+      if (snap.exists) cursorSnap = snap;
+    }
+    if (cursorSnap) {
+      query = query.startAfter(cursorSnap);
     }
     const profiles = await query.get();
     scannedFullPage = profiles.size === pageSize;
     if (profiles.empty) {
       break;
     }
+    cursorSnap = profiles.docs[profiles.docs.length - 1];
     const candidateUids = profiles.docs.map((doc) => doc.id);
-    const [lastActiveByUid, accountsByUid, preferencesByUid, locationsByUid] = await Promise.all([
-      loadLastActiveAt(db, candidateUids),
+    const [accountsByUid, preferencesByUid, locationsByUid] = await Promise.all([
       loadUserAccounts(db, candidateUids),
       loadPreferencesByUid(db, candidateUids),
       hasViewerLocation ? loadUserLocations(db, candidateUids) : Promise.resolve(new Map()),
     ]);
 
+    // First pass: the rule chain and the hard distance gate. Nothing here
+    // reads per candidate beyond the page's bulk loads above.
+    const survivors: Array<{
+      uid: string;
+      data: DocumentData;
+      tier: DiscoveryDistanceTier;
+      distanceKm: number | null;
+      label: string | null;
+      candidateBoosted: boolean;
+    }> = [];
     for (const doc of profiles.docs) {
       lastUid = doc.id;
       const data = doc.data();
+      const account = accountsByUid.get(doc.id);
       const reject = await candidateRejectReason(db, viewer, {
         uid: doc.id,
         profile: data,
-        account: accountsByUid.get(doc.id),
+        account,
         candidatePrefs: preferencesByUid.get(doc.id),
-        lastActiveAt: lastActiveByUid.get(doc.id),
+        lastActiveAt: account?.lastActiveAt,
       });
       if (reject) {
         bumpReject(reject);
@@ -452,6 +501,7 @@ export async function scanDiscoveryPool(
       let distanceKm: number | null = null;
       let label: string | null = null;
       let tier: DiscoveryDistanceTier = "no_location";
+      let exactKmOf: number | null = null;
       if (hasViewerLocation) {
         const other = locationsByUid.get(doc.id);
         if (other) {
@@ -485,6 +535,7 @@ export async function scanDiscoveryPool(
             maxNearbyKm,
           );
           exactDistanceKm.set(doc.id, exactKm);
+          exactKmOf = exactKm;
           // Tier classification above used the exact value. What leaves the
           // backend is quantised: a 0.1 km figure for a candidate the caller
           // can pick out of the deck is a sharper trilateration oracle than
@@ -499,8 +550,24 @@ export async function scanDiscoveryPool(
         // Viewer has no location → location-independent discovery.
         tier = "no_location";
       }
-      const music = await musicScoreForPair(uid, doc.id);
-      const relationship = await relationshipScoreForPair(uid, doc.id);
+      survivors.push({uid: doc.id, data, tier, distanceKm, label, candidateBoosted});
+      accepted.set(doc.id, {uid: doc.id, rejectReason: null, profile: data, account, exactKm: exactKmOf});
+    }
+
+    // Second pass: pair scores for the survivors only, their summaries read
+    // in bulk — and not at all on a dimension the viewer has no data for.
+    const survivorUids = survivors.map((survivor) => survivor.uid);
+    const [musicByUid, relationshipByUid] = await Promise.all([
+      scoresMusic ? loadDocsByUid(db, survivorUids, musicSummaryPath) : Promise.resolve(new Map()),
+      scoresRelationship
+        ? loadDocsByUid(db, survivorUids, relationshipSummaryPath)
+        : Promise.resolve(new Map()),
+    ]);
+    for (const {uid: candidateUid, data, tier, distanceKm, label, candidateBoosted} of survivors) {
+      const music = scoresMusic ? musicScoreFromSummaries(viewerMusic, musicByUid.get(candidateUid)) : null;
+      const relationship = scoresRelationship
+        ? relationshipScoreFromSummaries(uid, candidateUid, viewerRelationship, relationshipByUid.get(candidateUid))
+        : null;
       const compat = calculateCompatibility({
         viewerProfile,
         candidateProfile: data,
@@ -514,12 +581,12 @@ export async function scanDiscoveryPool(
           : null,
         musicScore: music?.score ?? null,
       });
-      evidence.set(doc.id, compatibilityEvidence(viewerProfile, data));
+      evidence.set(candidateUid, compatibilityEvidence(viewerProfile, data));
       buckets[tier].push({
-        uid: doc.id,
+        uid: candidateUid,
         profile: {
-          ...discoveryProfileProjection({...data, uid: doc.id}),
-          isVerified: accountsByUid.get(doc.id)?.isVerified === true,
+          ...discoveryProfileProjection({...data, uid: candidateUid}),
+          isVerified: accountsByUid.get(candidateUid)?.isVerified === true,
         },
         distanceLabel: label,
         distanceKm,
@@ -578,6 +645,7 @@ export async function scanDiscoveryPool(
     exactDistanceKm,
     evidence,
     hasViewerLocation,
+    accepted,
   };
 }
 
@@ -609,12 +677,11 @@ export async function revalidatePoolCandidates(
     return out;
   }
   const hasViewerLocation = hasLocation(viewer.origin);
-  const [profileSnaps, accountsByUid, preferencesByUid, lastActiveByUid, locationsByUid] =
+  const [profileSnaps, accountsByUid, preferencesByUid, locationsByUid] =
     await Promise.all([
       db.getAll(...unique.map((id) => db.doc(`profiles/${id}`))),
       loadUserAccounts(db, unique),
       loadPreferencesByUid(db, unique),
-      loadLastActiveAt(db, unique),
       hasViewerLocation ? loadUserLocations(db, unique) : Promise.resolve(new Map()),
     ]);
   const profilesByUid = new Map(profileSnaps.map((snap) => [snap.id, snap.data()] as const));
@@ -626,7 +693,7 @@ export async function revalidatePoolCandidates(
       profile,
       account,
       candidatePrefs: preferencesByUid.get(uid),
-      lastActiveAt: lastActiveByUid.get(uid),
+      lastActiveAt: account?.lastActiveAt,
     });
     let exactKm: number | null = null;
     const other = locationsByUid.get(uid);

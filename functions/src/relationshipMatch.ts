@@ -271,18 +271,44 @@ export async function relationshipScoreForPair(
   candidateUid: string,
 ): Promise<ReturnType<typeof scoreRelationshipCompatibility> | null> {
   const [viewer, candidate] = await Promise.all([
-    db.doc(`users/${viewerUid}/relationshipMatch/summary`).get(),
-    db.doc(`users/${candidateUid}/relationshipMatch/summary`).get(),
+    db.doc(relationshipSummaryPath(viewerUid)).get(),
+    db.doc(relationshipSummaryPath(candidateUid)).get(),
   ]);
-  const viewerAnswers = comparableAnswersFromSummary(viewer.data());
-  const candidateAnswers = comparableAnswersFromSummary(candidate.data());
+  return relationshipScoreFromSummaries(viewerUid, candidateUid, viewer.data(), candidate.data());
+}
+
+export function relationshipSummaryPath(uid: string): string {
+  return `users/${uid}/relationshipMatch/summary`;
+}
+
+/**
+ * Whether a relationship summary carries comparable answers. Without them on
+ * the viewer's side every pair score is null, so a pool scan need not read
+ * any candidate's.
+ */
+export function hasRelationshipAnswers(summary: DocumentData | undefined): boolean {
+  return Object.keys(comparableAnswersFromSummary(summary)).length > 0;
+}
+
+/**
+ * The pair score from two summaries the caller already holds — for scans that
+ * load the viewer's summary once and candidates' in bulk. No reads.
+ */
+export function relationshipScoreFromSummaries(
+  viewerUid: string,
+  candidateUid: string,
+  viewerSummary: DocumentData | undefined,
+  candidateSummary: DocumentData | undefined,
+): ReturnType<typeof scoreRelationshipCompatibility> | null {
+  const viewerAnswers = comparableAnswersFromSummary(viewerSummary);
+  const candidateAnswers = comparableAnswersFromSummary(candidateSummary);
   if (Object.keys(viewerAnswers).length === 0 || Object.keys(candidateAnswers).length === 0) {
     return null;
   }
-  const viewerKey = viewer.data()?.compatibilityKey;
-  const candidateKey = candidate.data()?.compatibilityKey;
-  const questionIds = Array.isArray(viewer.data()?.questionIds)
-    ? (viewer.data()?.questionIds as unknown[]).map((id) => String(id))
+  const viewerKey = viewerSummary?.compatibilityKey;
+  const candidateKey = candidateSummary?.compatibilityKey;
+  const questionIds = Array.isArray(viewerSummary?.questionIds)
+    ? (viewerSummary?.questionIds as unknown[]).map((id) => String(id))
     : Object.keys(viewerAnswers).slice(0, 3);
   const rel = scoreRelationshipCompatibility(viewerAnswers, candidateAnswers);
   const keyMatch =

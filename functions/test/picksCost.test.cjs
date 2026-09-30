@@ -21,6 +21,8 @@ const db = createFakeFirestore();
 installFirebaseAdminStubs({db});
 
 const {PICKS_DAILY_TARGET} = require("../lib/picks/config.js");
+const {musicScoreForPair} = require("../lib/spotifyMusic.js");
+const {relationshipScoreForPair} = require("../lib/relationshipMatch.js");
 const lifecycle = require("../lib/picks/lifecycle.js");
 const {getMevoraPicks} = require("../lib/picks/index.js");
 
@@ -133,6 +135,77 @@ describe(`Picks cost per open (target ${PICKS_DAILY_TARGET})`, () => {
       .filter((query) => query.path === "likes" || query.path.endsWith("/passedUsers"))
       .reduce((sum, query) => sum + query.docs, 0);
     assert.equal(historyDocs, 0);
+  });
+});
+
+describe("one read per document per request", () => {
+  beforeEach(() => db.reset({}));
+
+  function musicSummary(extraTrack) {
+    return {
+      spotifyConnected: true,
+      musicProfile: {
+        trackIds: ["t1", "t2", extraTrack],
+        artistIds: ["ar1", "ar2"],
+        genres: ["indie", "rock"],
+        recentTrackIds: ["t1"],
+        recentArtistIds: ["ar1"],
+      },
+      topTracks: [{id: "t1", name: "Song One", artist: "Band"}],
+    };
+  }
+
+  function relationshipSummary(answers) {
+    return {answers};
+  }
+
+  it("generating reads each candidate's documents once, and none again to serve them", async () => {
+    seedWorld({candidates: 3 * PICKS_DAILY_TARGET});
+    await awayFromDayBoundary();
+    const result = await callAs(getMevoraPicks, VIEWER);
+    assert.equal(result.picks.length, PICKS_DAILY_TARGET);
+    const twice = [...db.stats().byPath]
+      .filter(([path, count]) => /^(users|profiles|userPreferences|userLocation)\/s\d+$/.test(path) && count > 1);
+    assert.deepEqual(twice, [], "no candidate document is read twice in one open");
+  });
+
+  it("the viewer's music and relationship summaries are read once per scan, not per candidate", async () => {
+    seedWorld({candidates: 3 * PICKS_DAILY_TARGET});
+    await db.doc(`users/${VIEWER}/music/summary`).set(musicSummary("t9"));
+    await db.doc(`users/${VIEWER}/relationshipMatch/summary`)
+      .set(relationshipSummary({rq_001: "a", rq_002: "b", rq_003: "c"}));
+    for (let i = 0; i < 3 * PICKS_DAILY_TARGET; i++) {
+      await db.doc(`users/s${i}/music/summary`).set(musicSummary(`t${i % 4}`));
+      await db.doc(`users/s${i}/relationshipMatch/summary`)
+        .set(relationshipSummary({rq_001: "a", rq_002: i % 2 ? "b" : "a", rq_003: "c"}));
+    }
+    db.resetStats();
+    await awayFromDayBoundary();
+    const result = await callAs(getMevoraPicks, VIEWER);
+    const reads = db.stats().byPath;
+    assert.equal(reads.get(`users/${VIEWER}/music/summary`), 1);
+    assert.equal(reads.get(`users/${VIEWER}/relationshipMatch/summary`), 1);
+    // Same scores as the one-pair scorers the match screen uses.
+    for (const item of result.picks) {
+      const music = await musicScoreForPair(VIEWER, item.uid);
+      const relationship = await relationshipScoreForPair(VIEWER, item.uid);
+      assert.equal(item.musicCompatibilityScore, music?.score ?? null, `music for ${item.uid}`);
+      assert.equal(item.relationshipCompatibilityScore, relationship?.score ?? null, `relationship for ${item.uid}`);
+    }
+    assert.ok(result.picks.some((item) => item.musicCompatibilityScore !== null), "music was scored");
+  });
+
+  it("a viewer with no music or relationship data costs no candidate summary reads", async () => {
+    seedWorld({candidates: 3 * PICKS_DAILY_TARGET});
+    for (let i = 0; i < 3 * PICKS_DAILY_TARGET; i++) {
+      await db.doc(`users/s${i}/music/summary`).set(musicSummary("t1"));
+    }
+    db.resetStats();
+    await awayFromDayBoundary();
+    await callAs(getMevoraPicks, VIEWER);
+    const summaryReads = [...db.stats().byPath.keys()]
+      .filter((path) => /^users\/s\d+\/(music|relationshipMatch)\/summary$/.test(path));
+    assert.deepEqual(summaryReads, []);
   });
 });
 

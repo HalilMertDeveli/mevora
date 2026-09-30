@@ -40,6 +40,23 @@ function createFakeAuth() {
       for (const u of users.values()) if (u.email === email) return u;
       throw notFound();
     },
+    async createUser(props) {
+      const uid = `auth-created-${users.size + 1}`;
+      // The password is recorded only as "was one set", never its value.
+      calls.push(["createUser", uid, {email: props.email, emailVerified: props.emailVerified, passwordSet: typeof props.password === "string" && props.password.length >= 32}]);
+      users.set(uid, {
+        uid,
+        email: props.email,
+        displayName: props.displayName,
+        disabled: props.disabled === true,
+        emailVerified: props.emailVerified === true,
+        customClaims: {},
+        metadata: {creationTime: new Date(T0).toUTCString(), lastSignInTime: null},
+        providerData: [{providerId: "password"}],
+        multiFactor: {enrolledFactors: []},
+      });
+      return {uid};
+    },
     async getUserByPhoneNumber(phone) {
       for (const u of users.values()) if (u.phoneNumber === phone) return u;
       throw notFound();
@@ -110,7 +127,7 @@ function createAdminWorld(seed = {}) {
   const deps = {db, auth, bucket: () => bucket, now: () => now};
   const env = {bffSecret: BFF_SECRET, allowMissingMfa: false};
 
-  async function addStaff(uid, role, {status = "active", sessionsValidAfter = null} = {}) {
+  async function addStaff(uid, role, {status = "active", sessionsValidAfter = null, isOwner = false} = {}) {
     auth.addUser(uid, {email: `${uid}@mevora.test`, customClaims: {admin: true, adminRole: role}});
     await db.doc(`adminStaff/${uid}`).set({
       uid,
@@ -120,6 +137,7 @@ function createAdminWorld(seed = {}) {
       email: `${uid}@mevora.test`,
       permissionsVersion: 1,
       ...(sessionsValidAfter ? {sessionsValidAfter} : {}),
+      ...(isOwner ? {isOwner: true} : {}),
       createdAt: new Date(T0 - 1000),
     });
   }

@@ -20,6 +20,12 @@ export interface AdminAuthPort {
   }>;
   getUserByEmail(email: string): Promise<{uid: string}>;
   getUserByPhoneNumber(phoneNumber: string): Promise<{uid: string}>;
+  /**
+   * Creates a staff login. The password is a throwaway random value the
+   * server never returns or stores; the new colleague sets their own through
+   * the password-setup email the admin web asks Firebase to send.
+   */
+  createUser(properties: {email: string; displayName?: string; password: string; emailVerified?: boolean; disabled?: boolean}): Promise<{uid: string}>;
   updateUser(uid: string, properties: {disabled?: boolean}): Promise<unknown>;
   revokeRefreshTokens(uid: string): Promise<void>;
   setCustomUserClaims(uid: string, claims: Record<string, unknown> | null): Promise<void>;

@@ -6,23 +6,44 @@
 <div class="page-head">
     <div>
         <h1>Audit log</h1>
-        <p>Append-only. Every staff decision, sensitive view, sign-in and role change. Filter by one field at a time.</p>
+        <p>Append-only. Every staff decision, sensitive view, sign-in and staff change. Combine filters to answer "who did what to whom, and when". Dates are UTC; both ends are included.</p>
     </div>
 </div>
 <partial name="_Flash" model="Model" />
 <form method="get" class="filters">
     <div class="field"><label for="actor">Staff UID</label><input id="actor" name="actor" type="text" value="@Model.Actor" maxlength="128" /></div>
-    <div class="field"><label for="target">Target id</label><input id="target" name="target" type="text" value="@Model.Target" maxlength="300" /></div>
-    <div class="field"><label for="action">Event</label><input id="action" name="action" type="text" value="@Model.Action" maxlength="64" placeholder="e.g. USER_BANNED" /></div>
+    <div class="field"><label for="actorRole">Staff role</label>
+        <select id="actorRole" name="actorRole">
+            <option value="">Any</option>
+            @foreach (var r in Vocab.ActorRoles) { <option value="@r" selected="@(r == Model.ActorRole)">@JsonView.Label(r)</option> }
+        </select></div>
+    <div class="field"><label for="action">Event</label>
+        <select id="action" name="action">
+            <option value="">Any</option>
+            @foreach (var a in Vocab.AuditActions) { <option value="@a" selected="@(a == Model.Action)">@a</option> }
+        </select></div>
+    <div class="field"><label for="targetType">Target type</label>
+        <select id="targetType" name="targetType">
+            <option value="">Any</option>
+            @foreach (var t in Vocab.AuditTargetTypes) { <option value="@t" selected="@(t == Model.TargetType)">@JsonView.Label(t)</option> }
+        </select></div>
+    <div class="field"><label for="target">Target id</label><input id="target" name="target" type="text" value="@Model.Target" maxlength="300" placeholder="user uid, ticket id…" /></div>
+    <div class="field"><label for="caseId">Case</label><input id="caseId" name="caseId" type="text" value="@Model.CaseId" maxlength="128" /></div>
+    <div class="field"><label for="from">From</label><input id="from" name="from" type="date" value="@Model.From" /></div>
+    <div class="field"><label for="to">To</label><input id="to" name="to" type="date" value="@Model.To" /></div>
     <button type="submit" class="btn btn-primary">Filter</button>
     <a class="btn btn-ghost" href="/Audit">Clear</a>
 </form>
 @{
     var rows = Model.Result.Items().ToList();
 }
+@if (Model.Result.Bool("partial"))
+{
+    <p class="alert alert-info small">Searched @Model.Result.Num("scanned") events without filling this page. Use "Next" to keep searching, or narrow the date range.</p>
+}
 @if (rows.Count == 0)
 {
-    <p class="muted">No events.</p>
+    <p class="muted">No events@(Model.Filtered ? " match these filters" : "").</p>
 }
 else
 {
@@ -34,14 +55,28 @@ else
                 <tr>
                     <td class="nowrap">@e.When("createdAt")</td>
                     <td><strong>@e.S("action")</strong></td>
-                    <td class="mono small">@e.S("actorAdminId")<div class="muted">@JsonView.Label(e.Str("actorRole"))</div></td>
-                    <td class="small">@JsonView.Label(e.Str("targetType")) <span class="mono">@e.S("targetId")</span>
-                        @if (e.Str("caseId") is { } cid) { <div><a href="/Cases/@cid">case</a></div> }</td>
+                    <td class="mono small">
+                        @if (e.Str("actorAdminId") is { } actorId && Model.Can("admin.manage_staff") && e.Str("actorRole") != "system")
+                        {
+                            <a href="/Admin/Staff/@Uri.EscapeDataString(actorId)">@actorId</a>
+                        }
+                        else
+                        {
+                            @e.S("actorAdminId")
+                        }
+                        <div class="muted">@JsonView.Label(e.Str("actorRole"))</div></td>
+                    <td class="small">@JsonView.Label(e.Str("targetType"))
+                        @if (e.Str("targetType") == "user" && e.Str("targetId") is { } tu) { <a class="mono" href="/Users/@Uri.EscapeDataString(tu)">@tu</a> }
+                        else { <span class="mono">@e.S("targetId")</span> }
+                        @if (e.Str("caseId") is { } cid) { <div><a href="/Cases/@Uri.EscapeDataString(cid)">case</a></div> }</td>
                     <td class="mono small wrap-anywhere">@e.Get("metadata").GetRawText()</td>
                     <td class="mono small">@e.S("requestId")</td>
                 </tr>
             }
         </tbody>
     </table>
+}
+@if (Model.Result.Str("nextCursor") is not null || Model.Pager.HasPrevious)
+{
     <partial name="_Pager" model="Model.Pager" />
 }

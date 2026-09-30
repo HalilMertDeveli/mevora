@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:mevora/core/analytics/analytics_provider.dart';
 
-/// Relationship Learning product events.
+/// Daily relationship question events.
 ///
-/// Stage, position and the question's dimension only. Never the question id
-/// with its answer: what someone chose stays between them and Mevora.
+/// The set id, position and the question's category only. Never the question
+/// id with its answer: what someone chose stays between them and Mevora.
 class RelationshipLearningAnalytics {
   const RelationshipLearningAnalytics(this._analytics);
 
@@ -23,37 +23,56 @@ class RelationshipLearningAnalytics {
     }
   }
 
-  void started({required bool followUp, required String source}) => unawaited(
-    _log(
-      followUp
-          ? AnalyticsEvents.relationshipLearningFollowUpStarted
-          : AnalyticsEvents.relationshipLearningStarted,
-      {'source': source},
-    ),
+  void shown({required String questionSetId, required String source}) =>
+      unawaited(
+        _log(AnalyticsEvents.dailyQuestionsShown, {
+          'question_set_id': questionSetId,
+          'source': source,
+        }),
+      );
+
+  void resumed({
+    required String questionSetId,
+    required String source,
+    required int answered,
+  }) => unawaited(
+    _log(AnalyticsEvents.dailyQuestionsResumed, {
+      'question_set_id': questionSetId,
+      'source': source,
+      'answered': answered,
+    }),
   );
 
   void answered({
-    required bool followUp,
-    required String dimension,
+    required String questionSetId,
+    required String category,
     required int position,
   }) => unawaited(
-    _log(AnalyticsEvents.relationshipLearningQuestionAnswered, {
-      'stage': followUp ? 'follow_up' : 'initial',
-      'dimension': dimension,
+    _log(AnalyticsEvents.dailyQuestionsAnswered, {
+      'question_set_id': questionSetId,
+      'category': category,
       'position': position,
     }),
   );
 
-  void initialCompleted() => unawaited(
-    _log(AnalyticsEvents.relationshipLearningInitialCompleted, const {}),
-  );
+  void completed({required String questionSetId, required bool firstSet}) =>
+      unawaited(
+        _log(AnalyticsEvents.dailyQuestionsCompleted, {
+          'question_set_id': questionSetId,
+          'first_set': firstSet ? 1 : 0,
+        }),
+      );
 
-  void followUpCompleted() => unawaited(
-    _log(AnalyticsEvents.relationshipLearningFollowUpCompleted, const {}),
-  );
-
-  void followUpSnoozed() => unawaited(
-    _log(AnalyticsEvents.relationshipLearningFollowUpSnoozed, const {}),
+  void skipped({
+    required String questionSetId,
+    required String source,
+    required int answered,
+  }) => unawaited(
+    _log(AnalyticsEvents.dailyQuestionsSkipped, {
+      'question_set_id': questionSetId,
+      'source': source,
+      'answered': answered,
+    }),
   );
 
   void personalizationSwitched({required bool enabled}) => unawaited(

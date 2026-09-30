@@ -39,6 +39,7 @@ import {
   toPublicMusicCard,
 } from "./spotifyMusicProfile.js";
 import {assertCallerAccountEligible} from "./accountGuard.js";
+import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -965,6 +966,7 @@ export function isSyncThrottled(
 
 export const spotifyLinkMusic = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "spotify");
   const code = requireString(request.data?.code, "code");
   const codeVerifier = requireString(request.data?.codeVerifier, "codeVerifier");
   const redirectUri = requireString(request.data?.redirectUri, "redirectUri");
@@ -1035,6 +1037,7 @@ export const getMusicAccount = onCall(
 
 export const syncSpotifyTaste = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "spotify");
   const snap = await db.doc(`users/${uid}/music/summary`).get();
   const last = snap.data()?.lastSyncedAt as {toDate?: () => Date} | undefined;
   const lastDate = last && typeof last.toDate === "function" ? last.toDate() : null;

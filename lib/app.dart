@@ -195,7 +195,7 @@ class _MevoraAppState extends State<MevoraApp> {
         repository: learning,
         humorEnabled: widget.config.featureFlags.humorLabEnabled,
         analytics: widget.analytics,
-      );
+      )..attachLifecycle();
       // Registered before the router's own listener, so the journey is
       // already pending when the router first sees a signed-in member.
       widget.authController.addListener(_syncJourney);

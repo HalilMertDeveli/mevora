@@ -507,6 +507,189 @@
   <data name="Retry re-sends the idempotent provider erasure request. Resolve only with provider confirmation." xml:space="preserve"><value>Yeniden deneme, sağlayıcıya tekrarlanabilir silme isteğini yeniden gönderir. Yalnızca sağlayıcı onayıyla çözüldü olarak kapatın.</value></data>
   <data name="Read-only audit. Findings are judged in adminReviewQueue; the audit is never re-run blindly." xml:space="preserve"><value>Salt okunur denetim. Bulgular adminReviewQueue'da değerlendirilir; denetim körü körüne yeniden çalıştırılmaz.</value></data>
   <data name="No automated retry is defined for this job kind." xml:space="preserve"><value>Bu iş türü için tanımlı otomatik yeniden deneme yok.</value></data>
+  <data name="(you)" xml:space="preserve"><value>(siz)</value></data>
+  <data name="Access disabled and sessions ended. It takes effect on their next request." xml:space="preserve"><value>Erişim kapatıldı ve oturumlar sonlandırıldı. Kişinin bir sonraki isteğinde geçerli olur.</value></data>
+  <data name="Access re-enabled. They sign in again with two-factor authentication." xml:space="preserve"><value>Erişim yeniden açıldı. Kişi iki adımlı doğrulamayla tekrar giriş yapar.</value></data>
+  <data name="Active" xml:space="preserve"><value>Aktif</value></data>
+  <data name="Active members (7 days)" xml:space="preserve"><value>Aktif üyeler (7 gün)</value></data>
+  <data name="Active staff" xml:space="preserve"><value>Aktif personel</value></data>
+  <data name="Activity" xml:space="preserve"><value>Etkinlik</value></data>
+  <data name="Add staff" xml:space="preserve"><value>Personel ekle</value></data>
+  <data name="Add this colleague and email them a password-setup link?" xml:space="preserve"><value>Bu çalışma arkadaşı eklensin ve e-postasına şifre belirleme bağlantısı gönderilsin mi?</value></data>
+  <data name="Added" xml:space="preserve"><value>Eklenme</value></data>
+  <data name="Admin backend" xml:space="preserve"><value>Yönetim sunucusu</value></data>
+  <data name="All staff" xml:space="preserve"><value>Tüm personel</value></data>
+  <data name="All their console sessions were ended. They must sign in again." xml:space="preserve"><value>Tüm konsol oturumları sonlandırıldı. Kişinin tekrar giriş yapması gerekir.</value></data>
+  <data name="All-time counts from the audit log." xml:space="preserve"><value>Denetim kaydındaki tüm zamanların sayıları.</value></data>
+  <data name="An announcement needs a title and a message." xml:space="preserve"><value>Duyurunun bir başlığı ve mesajı olmalı.</value></data>
+  <data name="Announcement" xml:space="preserve"><value>Duyuru</value></data>
+  <data name="Announcement published. The app shows it from its start time until it ends." xml:space="preserve"><value>Duyuru yayımlandı. Uygulama, başlangıç zamanından bitişine kadar gösterir.</value></data>
+  <data name="Announcement turned off." xml:space="preserve"><value>Duyuru kapatıldı.</value></data>
+  <data name="Any" xml:space="preserve"><value>Tümü</value></data>
+  <data name="App control" xml:space="preserve"><value>Uygulama kontrolü</value></data>
+  <data name="Appeals decided" xml:space="preserve"><value>Karara bağlanan itirazlar</value></data>
+  <data name="Append-only. Every staff decision, sensitive view, sign-in and staff change. Combine filters to answer &quot;who did what to whom, and when&quot;. Dates are UTC; both ends are included." xml:space="preserve"><value>Yalnızca ekleme yapılır. Tüm personel kararları, hassas görüntülemeler, girişler ve personel değişiklikleri. "Kim, kime, ne zaman, ne yaptı" sorusunu yanıtlamak için filtreleri birleştirin. Tarihler UTC'dir; iki uç da dahildir.</value></data>
+  <data name="Application status" xml:space="preserve"><value>Uygulama durumu</value></data>
+  <data name="Banned accounts" xml:space="preserve"><value>Banlı hesaplar</value></data>
+  <data name="Below the &lt;strong&gt;minimum&lt;/strong&gt; version the app blocks with “Update required”. Below the &lt;strong&gt;recommended&lt;/strong&gt; version it shows a dismissible update suggestion. Leave empty for no rule." xml:space="preserve"><value>&lt;strong&gt;Minimum&lt;/strong&gt; sürümün altında uygulama “Güncelleme gerekli” ekranıyla kilitlenir. &lt;strong&gt;Önerilen&lt;/strong&gt; sürümün altında kapatılabilir bir güncelleme önerisi gösterir. Kural istemiyorsanız boş bırakın.</value></data>
+  <data name="Boost" xml:space="preserve"><value>Boost</value></data>
+  <data name="Cases resolved" xml:space="preserve"><value>Kapatılan vakalar</value></data>
+  <data name="Change" xml:space="preserve"><value>Değiştir</value></data>
+  <data name="Change role" xml:space="preserve"><value>Rolü değiştir</value></data>
+  <data name="Change this colleague's role? Their current sessions end." xml:space="preserve"><value>Bu çalışma arkadaşının rolü değiştirilsin mi? Mevcut oturumları sona erer.</value></data>
+  <data name="Changes made to their access" xml:space="preserve"><value>Erişiminde yapılan değişiklikler</value></data>
+  <data name="Checked" xml:space="preserve"><value>Kontrol</value></data>
+  <data name="Choose Android or iOS." xml:space="preserve"><value>Android veya iOS seçin.</value></data>
+  <data name="Choose when the announcement ends (UTC, at most 31 days)." xml:space="preserve"><value>Duyurunun ne zaman biteceğini seçin (UTC, en fazla 31 gün).</value></data>
+  <data name="Config revision" xml:space="preserve"><value>Yapılandırma sürümü</value></data>
+  <data name="Controls" xml:space="preserve"><value>Kontroller</value></data>
+  <data name="Disable access" xml:space="preserve"><value>Erişimi kapat</value></data>
+  <data name="Disable this colleague's access and end their sessions?" xml:space="preserve"><value>Bu çalışma arkadaşının erişimi kapatılsın ve oturumları sonlandırılsın mı?</value></data>
+  <data name="Disabled in Firebase Auth" xml:space="preserve"><value>Firebase Auth'ta kapalı</value></data>
+  <data name="Disabled staff" xml:space="preserve"><value>Kapalı personel</value></data>
+  <data name="During maintenance the app shows a maintenance screen. Account deletion, data export, support and legal pages stay reachable; report and block stay available on the backend." xml:space="preserve"><value>Bakım sırasında uygulama bakım ekranı gösterir. Hesap silme, veri dışa aktarma, destek ve yasal sayfalar erişilebilir kalır; raporlama ve engelleme sunucuda çalışmaya devam eder.</value></data>
+  <data name="Each line is a live probe made when this page loaded. Crash and analytics data are not connected to the console." xml:space="preserve"><value>Her satır, bu sayfa yüklendiğinde yapılan canlı bir kontroldür. Çökme ve analitik verileri konsola bağlı değildir.</value></data>
+  <data name="Email this colleague a new password-setup link?" xml:space="preserve"><value>Bu çalışma arkadaşına yeni bir şifre belirleme bağlantısı gönderilsin mi?</value></data>
+  <data name="End all of this colleague's console sessions?" xml:space="preserve"><value>Bu çalışma arkadaşının tüm konsol oturumları sonlandırılsın mı?</value></data>
+  <data name="End all sessions" xml:space="preserve"><value>Tüm oturumları sonlandır</value></data>
+  <data name="End sessions" xml:space="preserve"><value>Oturumları sonlandır</value></data>
+  <data name="Ends (UTC, required, ≤ 31 days)" xml:space="preserve"><value>Bitiş (UTC, zorunlu, ≤ 31 gün)</value></data>
+  <data name="Enrolled: {0}" xml:space="preserve"><value>Kurulu: {0}</value></data>
+  <data name="Enter the colleague's work email and name." xml:space="preserve"><value>Çalışma arkadaşının iş e-postasını ve adını girin.</value></data>
+  <data name="Environment" xml:space="preserve"><value>Ortam</value></data>
+  <data name="Everything they did" xml:space="preserve"><value>Yaptığı her şey</value></data>
+  <data name="Feature" xml:space="preserve"><value>Özellik</value></data>
+  <data name="Feature switches" xml:space="preserve"><value>Özellik anahtarları</value></data>
+  <data name="Firebase emailed them a password-setup link." xml:space="preserve"><value>Firebase, şifre belirleme bağlantısını e-postayla gönderdi.</value></data>
+  <data name="For emergencies. Every switch is ON unless turned off here. Off is enforced by the backend, so an old app version cannot bypass it." xml:space="preserve"><value>Acil durumlar içindir. Burada kapatılmadıkça her anahtar AÇIK'tır. Kapalı durum sunucuda uygulanır; eski bir uygulama sürümü bunu atlatamaz.</value></data>
+  <data name="Give a reason for ending their sessions." xml:space="preserve"><value>Oturumları sonlandırma sebebini yazın.</value></data>
+  <data name="Give a reason; it is kept in the audit log." xml:space="preserve"><value>Bir sebep yazın; denetim kaydında saklanır.</value></data>
+  <data name="Health" xml:space="preserve"><value>Sağlık</value></data>
+  <data name="History of App control changes" xml:space="preserve"><value>Uygulama kontrolü değişiklik geçmişi</value></data>
+  <data name="Humor Lab" xml:space="preserve"><value>Mizah Laboratuvarı</value></data>
+  <data name="Last Firebase sign-in" xml:space="preserve"><value>Son Firebase girişi</value></data>
+  <data name="Last activity" xml:space="preserve"><value>Son etkinlik</value></data>
+  <data name="Last change" xml:space="preserve"><value>Son değişiklik</value></data>
+  <data name="Last console sign-in" xml:space="preserve"><value>Son konsol girişi</value></data>
+  <data name="Last role change" xml:space="preserve"><value>Son rol değişikliği</value></data>
+  <data name="Maintenance" xml:space="preserve"><value>Bakım</value></data>
+  <data name="Maintenance is OFF. The app returns to normal." xml:space="preserve"><value>Bakım KAPALI. Uygulama normale döner.</value></data>
+  <data name="Maintenance is ON. The app shows the maintenance screen within seconds." xml:space="preserve"><value>Bakım AÇIK. Uygulama birkaç saniye içinde bakım ekranını gösterir.</value></data>
+  <data name="Members" xml:space="preserve"><value>Üyeler</value></data>
+  <data name="Message" xml:space="preserve"><value>Mesaj</value></data>
+  <data name="Message (optional, plain text)" xml:space="preserve"><value>Mesaj (isteğe bağlı, düz metin)</value></data>
+  <data name="Message (plain text)" xml:space="preserve"><value>Mesaj (düz metin)</value></data>
+  <data name="Message shown: “{0}”" xml:space="preserve"><value>Gösterilen mesaj: “{0}”</value></data>
+  <data name="Mevora Picks" xml:space="preserve"><value>Mevora Picks</value></data>
+  <data name="Minimum" xml:space="preserve"><value>Minimum</value></data>
+  <data name="Missing" xml:space="preserve"><value>Yok</value></data>
+  <data name="Never" xml:space="preserve"><value>Henüz yok</value></data>
+  <data name="New members (7 days)" xml:space="preserve"><value>Yeni üyeler (7 gün)</value></data>
+  <data name="No announcement." xml:space="preserve"><value>Duyuru yok.</value></data>
+  <data name="No events match these filters." xml:space="preserve"><value>Bu filtrelere uyan olay yok.</value></data>
+  <data name="No staff actions yet." xml:space="preserve"><value>Henüz personel işlemi yok.</value></data>
+  <data name="Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Not enrolled yet — required at next console sign-in" xml:space="preserve"><value>Henüz kurulmadı — bir sonraki konsol girişinde zorunlu</value></data>
+  <data name="Off" xml:space="preserve"><value>Kapalı</value></data>
+  <data name="On" xml:space="preserve"><value>Açık</value></data>
+  <data name="Open the audit log" xml:space="preserve"><value>Denetim kaydını aç</value></data>
+  <data name="Owner" xml:space="preserve"><value>Sahip</value></data>
+  <data name="Photos reviewed" xml:space="preserve"><value>İncelenen fotoğraflar</value></data>
+  <data name="Plain text only: remove &lt; and &gt;." xml:space="preserve"><value>Yalnızca düz metin: &lt; ve &gt; karakterlerini kaldırın.</value></data>
+  <data name="Platform &amp; staff" xml:space="preserve"><value>Platform ve personel</value></data>
+  <data name="Platform counters" xml:space="preserve"><value>Platform sayaçları</value></data>
+  <data name="Publish announcement" xml:space="preserve"><value>Duyuruyu yayımla</value></data>
+  <data name="Publish this announcement to every member?" xml:space="preserve"><value>Bu duyuru tüm üyelere yayımlansın mı?</value></data>
+  <data name="Published" xml:space="preserve"><value>Yayında</value></data>
+  <data name="QA · emulator only" xml:space="preserve"><value>QA · yalnızca emülatör</value></data>
+  <data name="Re-enable access" xml:space="preserve"><value>Erişimi yeniden aç</value></data>
+  <data name="Reachable" xml:space="preserve"><value>Erişilebilir</value></data>
+  <data name="Read-only: only the owner changes App control." xml:space="preserve"><value>Salt okunur: Uygulama kontrolünü yalnızca sahip değiştirir.</value></data>
+  <data name="Reason for {0}" xml:space="preserve"><value>{0} için sebep</value></data>
+  <data name="Reason, e.g. lost laptop" xml:space="preserve"><value>Sebep, örn. kaybolan dizüstü</value></data>
+  <data name="Recent actions" xml:space="preserve"><value>Son işlemler</value></data>
+  <data name="Recent staff actions" xml:space="preserve"><value>Son personel işlemleri</value></data>
+  <data name="Recommended" xml:space="preserve"><value>Önerilen</value></data>
+  <data name="Record" xml:space="preserve"><value>Kayıt</value></data>
+  <data name="Reports resolved" xml:space="preserve"><value>Kapatılan raporlar</value></data>
+  <data name="Revision {0} · changed {1}" xml:space="preserve"><value>Sürüm {0} · değişiklik {1}</value></data>
+  <data name="Role changed to {0}. Their current sessions were ended." xml:space="preserve"><value>Rol {0} olarak değiştirildi. Mevcut oturumları sonlandırıldı.</value></data>
+  <data name="Save {0} rules" xml:space="preserve"><value>{0} kurallarını kaydet</value></data>
+  <data name="Save {0} version rules? Members below the minimum will be blocked until they update." xml:space="preserve"><value>{0} sürüm kuralları kaydedilsin mi? Minimumun altındaki üyeler güncelleyene kadar engellenir.</value></data>
+  <data name="Searched {0} events without filling this page. Use &quot;Next&quot; to keep searching, or narrow the date range." xml:space="preserve"><value>{0} olay tarandı ama bu sayfa dolmadı. Aramaya devam etmek için "Sonraki"yi kullanın veya tarih aralığını daraltın.</value></data>
+  <data name="Seeded by tool/seedEmulatorAdminQa.cjs for role testing. Not an employee." xml:space="preserve"><value>Rol testleri için tool/seedEmulatorAdminQa.cjs ile oluşturuldu. Çalışan değildir.</value></data>
+  <data name="Send password-setup email" xml:space="preserve"><value>Şifre belirleme e-postası gönder</value></data>
+  <data name="Shown" xml:space="preserve"><value>Gösterim</value></data>
+  <data name="Sign-in account" xml:space="preserve"><value>Giriş hesabı</value></data>
+  <data name="Spotify music" xml:space="preserve"><value>Spotify müzik</value></data>
+  <data name="Staff member" xml:space="preserve"><value>Personel</value></data>
+  <data name="Staff role" xml:space="preserve"><value>Personel rolü</value></data>
+  <data name="Starts (UTC, optional)" xml:space="preserve"><value>Başlangıç (UTC, isteğe bağlı)</value></data>
+  <data name="Store link" xml:space="preserve"><value>Mağaza bağlantısı</value></data>
+  <data name="Store link (Google Play / App Store, https)" xml:space="preserve"><value>Mağaza bağlantısı (Google Play / App Store, https)</value></data>
+  <data name="Style" xml:space="preserve"><value>Görünüm</value></data>
+  <data name="Support replies" xml:space="preserve"><value>Destek yanıtları</value></data>
+  <data name="Suspended accounts" xml:space="preserve"><value>Askıdaki hesaplar</value></data>
+  <data name="Take the announcement down?" xml:space="preserve"><value>Duyuru kaldırılsın mı?</value></data>
+  <data name="Target type" xml:space="preserve"><value>Hedef türü</value></data>
+  <data name="That email belongs to a Mevora member account. Staff need a dedicated work email." xml:space="preserve"><value>Bu e-posta bir Mevora üye hesabına ait. Personelin ayrı bir iş e-postası olmalı.</value></data>
+  <data name="The app's operating state: maintenance, version rules, emergency feature switches and a short announcement. Every change is enforced by the backend, reaches the app within seconds and is audited." xml:space="preserve"><value>Uygulamanın çalışma durumu: bakım, sürüm kuralları, acil özellik anahtarları ve kısa bir duyuru. Her değişiklik sunucuda uygulanır, birkaç saniyede uygulamaya ulaşır ve denetim kaydına yazılır.</value></data>
+  <data name="The maintenance message can be at most {0} characters." xml:space="preserve"><value>Bakım mesajı en fazla {0} karakter olabilir.</value></data>
+  <data name="The owner's account is protected. Ownership changes are a separate procedure, not a console action." xml:space="preserve"><value>Sahibin hesabı korumalıdır. Sahiplik değişikliği ayrı bir prosedürdür, konsol işlemi değildir.</value></data>
+  <data name="The owner's account is protected: it cannot be demoted, disabled or signed out from the console. Ownership changes are a separate, deliberate procedure." xml:space="preserve"><value>Sahibin hesabı korumalıdır: konsoldan rolü düşürülemez, kapatılamaz veya oturumu sonlandırılamaz. Sahiplik değişikliği ayrı ve bilinçli bir prosedürdür.</value></data>
+  <data name="The password-setup email could not be sent. Try again shortly." xml:space="preserve"><value>Şifre belirleme e-postası gönderilemedi. Birazdan tekrar deneyin.</value></data>
+  <data name="The staff record is the authority: a change here takes effect on the colleague's next request. Every change is in the audit log." xml:space="preserve"><value>Yetki personel kaydındadır: buradaki bir değişiklik kişinin bir sonraki isteğinde geçerli olur. Her değişiklik denetim kaydındadır.</value></data>
+  <data name="The update link must be the app's Google Play or App Store page (https)." xml:space="preserve"><value>Güncelleme bağlantısı uygulamanın Google Play veya App Store sayfası olmalı (https).</value></data>
+  <data name="This is your own account. Nobody changes their own role or access." xml:space="preserve"><value>Bu sizin hesabınız. Kimse kendi rolünü veya erişimini değiştiremez.</value></data>
+  <data name="This person is already on the staff list. Open their page to change their role or access." xml:space="preserve"><value>Bu kişi zaten personel listesinde. Rolünü veya erişimini değiştirmek için sayfasını açın.</value></data>
+  <data name="Tickets resolved" xml:space="preserve"><value>Çözülen talepler</value></data>
+  <data name="Title" xml:space="preserve"><value>Başlık</value></data>
+  <data name="Title (plain text)" xml:space="preserve"><value>Başlık (düz metin)</value></data>
+  <data name="Title up to {0} and message up to {1} characters." xml:space="preserve"><value>Başlık en fazla {0}, mesaj en fazla {1} karakter olabilir.</value></data>
+  <data name="To" xml:space="preserve"><value>Bitiş</value></data>
+  <data name="Turn announcement off" xml:space="preserve"><value>Duyuruyu kapat</value></data>
+  <data name="Turn maintenance OFF" xml:space="preserve"><value>Bakımı KAPAT</value></data>
+  <data name="Turn maintenance OFF and reopen the app?" xml:space="preserve"><value>Bakım kapatılsın ve uygulama yeniden açılsın mı?</value></data>
+  <data name="Turn maintenance ON" xml:space="preserve"><value>Bakımı AÇ</value></data>
+  <data name="Turn maintenance ON? Members will see the maintenance screen." xml:space="preserve"><value>Bakım açılsın mı? Üyeler bakım ekranını görecek.</value></data>
+  <data name="Turn off" xml:space="preserve"><value>Kapat</value></data>
+  <data name="Turn on" xml:space="preserve"><value>Aç</value></data>
+  <data name="Turn {0} OFF for every member?" xml:space="preserve"><value>{0} tüm üyeler için KAPATILSIN mı?</value></data>
+  <data name="Turn {0} back ON?" xml:space="preserve"><value>{0} yeniden AÇILSIN mı?</value></data>
+  <data name="Two-factor" xml:space="preserve"><value>İki adımlı doğrulama</value></data>
+  <data name="Unknown feature." xml:space="preserve"><value>Bilinmeyen özellik.</value></data>
+  <data name="Unreachable" xml:space="preserve"><value>Erişilemiyor</value></data>
+  <data name="Use the colleague's dedicated work email. You never see or choose their password: Firebase emails them a link to set it, and the console makes them set up two-factor authentication at first sign-in. Super admin cannot be granted here." xml:space="preserve"><value>Çalışma arkadaşının kendine ait iş e-postasını kullanın. Şifresini asla görmez veya seçmezsiniz: Firebase şifre belirleme bağlantısını e-postayla gönderir, konsol da ilk girişte iki adımlı doğrulama kurmasını ister. Süper yönetici rolü buradan verilemez.</value></data>
+  <data name="Users banned" xml:space="preserve"><value>Banlanan kullanıcılar</value></data>
+  <data name="Users restored" xml:space="preserve"><value>Geri açılan kullanıcılar</value></data>
+  <data name="Users suspended" xml:space="preserve"><value>Askıya alınan kullanıcılar</value></data>
+  <data name="Users warned" xml:space="preserve"><value>Uyarılan kullanıcılar</value></data>
+  <data name="Verification actions" xml:space="preserve"><value>Doğrulama işlemleri</value></data>
+  <data name="Version rules" xml:space="preserve"><value>Sürüm kuralları</value></data>
+  <data name="Versions look like 1.4.0." xml:space="preserve"><value>Sürümler 1.4.0 biçiminde olmalı.</value></data>
+  <data name="Video calls" xml:space="preserve"><value>Görüntülü aramalar</value></data>
+  <data name="When off" xml:space="preserve"><value>Kapalıyken</value></data>
+  <data name="Work email" xml:space="preserve"><value>İş e-postası</value></data>
+  <data name="You cannot grant that role. Super admin is never granted from the console, and nobody grants a role at or above their own." xml:space="preserve"><value>Bu rolü veremezsiniz. Süper yönetici konsoldan asla verilmez ve kimse kendi rolüne eşit veya daha yüksek bir rol veremez.</value></data>
+  <data name="by {0}" xml:space="preserve"><value>yapan: {0}</value></data>
+  <data name="no MFA (emulator)" xml:space="preserve"><value>MFA yok (emülatör)</value></data>
+  <data name="none" xml:space="preserve"><value>yok</value></data>
+  <data name="user uid, ticket id…" xml:space="preserve"><value>kullanıcı uid, talep kimliği…</value></data>
+  <data name="{0} active · {1} disabled" xml:space="preserve"><value>{0} aktif · {1} kapalı</value></data>
+  <data name="{0} added as {1} using their existing sign-in. They set up two-factor authentication at their next console sign-in." xml:space="preserve"><value>{0}, mevcut giriş hesabıyla {1} olarak eklendi. Bir sonraki konsol girişinde iki adımlı doğrulamayı kurar.</value></data>
+  <data name="{0} added as {1}. Firebase emailed them a link to set their password; two-factor setup follows at first sign-in." xml:space="preserve"><value>{0}, {1} olarak eklendi. Firebase şifre belirleme bağlantısını e-postayla gönderdi; iki adımlı doğrulama kurulumu ilk girişte yapılır.</value></data>
+  <data name="{0} is now OFF. The backend enforces it immediately; the app updates within seconds." xml:space="preserve"><value>{0} artık KAPALI. Sunucu bunu hemen uygular; uygulama birkaç saniyede güncellenir.</value></data>
+  <data name="{0} is now ON. The backend enforces it immediately; the app updates within seconds." xml:space="preserve"><value>{0} artık AÇIK. Sunucu bunu hemen uygular; uygulama birkaç saniyede güncellenir.</value></data>
+  <data name="{0} version rules saved." xml:space="preserve"><value>{0} sürüm kuralları kaydedildi.</value></data>
+  <data name="{0} was added, but the password-setup email could not be sent. Use &quot;Send password-setup email&quot; on their page." xml:space="preserve"><value>{0} eklendi, ancak şifre belirleme e-postası gönderilemedi. Kişinin sayfasındaki "Şifre belirleme e-postası gönder" düğmesini kullanın.</value></data>
+  <data name="Members cannot start a Boost. Boosts already bought are still credited." xml:space="preserve"><value>Üyeler Boost başlatamaz. Satın alınmış Boost'lar yine de hesaba işlenir.</value></data>
+  <data name="Members cannot start a call. Chat is unaffected." xml:space="preserve"><value>Üyeler arama başlatamaz. Sohbet etkilenmez.</value></data>
+  <data name="Connecting and syncing Spotify pause. Signing in with Spotify keeps working." xml:space="preserve"><value>Spotify bağlama ve eşitleme durur. Spotify ile giriş çalışmaya devam eder.</value></data>
+  <data name="The Humor Lab feed and the daily humor tour are hidden." xml:space="preserve"><value>Mizah Laboratuvarı akışı ve günlük mizah turu gizlenir.</value></data>
+  <data name="The Picks section in Discover is hidden." xml:space="preserve"><value>Keşfet'teki Picks bölümü gizlenir.</value></data>
+  <data name="Firestore" xml:space="preserve"><value>Firestore</value></data>
+  <data name="Authentication" xml:space="preserve"><value>Kimlik doğrulama</value></data>
+  <data name="Storage" xml:space="preserve"><value>Depolama</value></data>
   <data name="code:open" xml:space="preserve"><value>Açık</value></data>
   <data name="code:assigned" xml:space="preserve"><value>Atandı</value></data>
   <data name="code:in_review" xml:space="preserve"><value>İncelemede</value></data>
@@ -729,6 +912,20 @@
   <data name="code:audit.USER_WARNED" xml:space="preserve"><value>Kullanıcı uyarıldı</value></data>
   <data name="code:audit.VERIFICATION_ESCALATED" xml:space="preserve"><value>Doğrulama yükseltildi</value></data>
   <data name="code:audit.VERIFICATION_REVERIFICATION_REQUIRED" xml:space="preserve"><value>Yeniden doğrulama istendi</value></data>
+  <data name="code:env.emulator" xml:space="preserve"><value>Emülatör</value></data>
+  <data name="code:env.production" xml:space="preserve"><value>Canlı</value></data>
+  <data name="code:severity.info" xml:space="preserve"><value>Bilgi</value></data>
+  <data name="code:severity.warning" xml:space="preserve"><value>Uyarı</value></data>
+  <data name="code:system" xml:space="preserve"><value>Sistem</value></data>
+  <data name="code:target.app_config" xml:space="preserve"><value>Uygulama yapılandırması</value></data>
+  <data name="code:audit.ADMIN_CREATED" xml:space="preserve"><value>Personel eklendi</value></data>
+  <data name="code:audit.ADMIN_SESSIONS_REVOKED" xml:space="preserve"><value>Personel oturumları sonlandırıldı</value></data>
+  <data name="code:audit.ADMIN_ACTIVATION_ISSUED" xml:space="preserve"><value>Şifre belirleme bağlantısı gönderildi</value></data>
+  <data name="code:audit.APP_ANNOUNCEMENT_CHANGED" xml:space="preserve"><value>Duyuru değişti</value></data>
+  <data name="code:audit.APP_FEATURE_SWITCH_CHANGED" xml:space="preserve"><value>Özellik anahtarı değişti</value></data>
+  <data name="code:audit.APP_MAINTENANCE_ENABLED" xml:space="preserve"><value>Bakım açıldı</value></data>
+  <data name="code:audit.APP_MAINTENANCE_DISABLED" xml:space="preserve"><value>Bakım kapatıldı</value></data>
+  <data name="code:audit.APP_MIN_VERSION_CHANGED" xml:space="preserve"><value>Sürüm kuralı değişti</value></data>
   <data name="timeline:report_received" xml:space="preserve"><value>Rapor alındı</value></data>
   <data name="timeline:case_opened" xml:space="preserve"><value>Vaka açıldı</value></data>
   <data name="timeline:case_closed" xml:space="preserve"><value>Vaka kapandı</value></data>

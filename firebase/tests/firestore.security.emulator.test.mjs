@@ -1469,15 +1469,27 @@ describe("adaptive personalization — learned weights are server-owned", () => 
 describe("relationship learning — answers are owner-private, derived state server-owned", () => {
   const statePath = (uid) => `users/${uid}/relationshipLearning/state`;
   const state = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     required: true,
-    answers: {rl_pace: {answerId: "a", version: 1, source: "initial", answeredAtMs: 1}},
+    answers: {
+      relationship_daily_contact_v1: {answerId: "all_day", version: 1, dateKey: "2026-09-29", answeredAtMs: 1},
+    },
     initialCompletedAtMs: null,
+  };
+  const setPath = "relationshipDailySets/2026-09-29";
+  const completionPath = (uid) => `users/${uid}/relationshipDaily/2026-09-29`;
+  const set = {
+    dateKey: "2026-09-29",
+    questionSetId: "daily-2026-09-29-s1",
+    scheduleVersion: 1,
+    questions: [{id: "relationship_daily_contact_v1", version: 1}],
   };
 
   beforeEach(async () => {
     await seed(env, async (ctx) => {
       await ctx.firestore().doc(statePath(UID.A)).set(state);
+      await ctx.firestore().doc(setPath).set(set);
+      await ctx.firestore().doc(completionPath(UID.A)).set({dateKey: "2026-09-29", questionCount: 10});
       await ctx.firestore().doc(`users/${UID.A}/personalizationPartners/abc`).set({strengthSpent: 3});
     });
   });
@@ -1496,7 +1508,7 @@ describe("relationship learning — answers are owner-private, derived state ser
   it("no client writes answers or completion directly — only the validated callable", async () => {
     await deny(who.userA.db().doc(statePath(UID.A)).set({...state, initialCompletedAtMs: 1}));
     await deny(who.userA.db().doc(statePath(UID.A)).update({required: false}));
-    await deny(who.userA.db().doc(statePath(UID.A)).update({"answers.rl_evil": {answerId: "a"}}));
+    await deny(who.userA.db().doc(statePath(UID.A)).update({"answers.relationship_evil_v1": {answerId: "a"}}));
     await deny(who.userA.db().doc(statePath(UID.A)).delete());
     await deny(who.userB.db().doc(statePath(UID.A)).set(state));
     await deny(who.userB.db().doc(statePath(UID.B)).set(state));
@@ -1505,10 +1517,29 @@ describe("relationship learning — answers are owner-private, derived state ser
   it("the learning mirror on the relationship summary is not client-writable", async () => {
     await deny(
       who.userA.db().doc(`users/${UID.A}/relationshipMatch/summary`).set(
-        {learningAnswers: {rl_pace: "a"}},
+        {learningAnswers: {relationship_daily_contact_v1: "all_day"}},
         {merge: true},
       ),
     );
+  });
+
+  it("the global daily set is readable by members and writable by nobody", async () => {
+    await allow(who.userA.db().doc(setPath).get());
+    await allow(who.userB.db().doc(setPath).get());
+    await deny(who.anon.db().doc(setPath).get());
+    await deny(who.userA.db().doc(setPath).set({...set, questions: []}));
+    await deny(who.userA.db().doc(setPath).update({questionSetId: "daily-evil"}));
+    await deny(who.userA.db().doc("relationshipDailySets/2026-09-30").set(set));
+    await deny(who.userA.db().doc(setPath).delete());
+  });
+
+  it("daily completion records are owner-read and server-written", async () => {
+    await allow(who.userA.db().doc(completionPath(UID.A)).get());
+    await deny(who.userB.db().doc(completionPath(UID.A)).get());
+    await deny(who.userB.db().collection(`users/${UID.A}/relationshipDaily`).get());
+    await deny(who.userA.db().doc(completionPath(UID.A)).set({dateKey: "2026-09-29"}));
+    await deny(who.userA.db().doc(`users/${UID.A}/relationshipDaily/2026-09-30`).set({dateKey: "2026-09-30"}));
+    await deny(who.userA.db().doc(completionPath(UID.A)).delete());
   });
 
   it("per-person learning budgets are invisible and unwritable, even to their owner", async () => {
@@ -1768,6 +1799,65 @@ describe("humor lab — client access boundaries", () => {
     );
     await deny(who.userA.db().doc("humorModerationQueue/hc_bad").update({status: "approved"}));
     await deny(adminDb().doc("humorModerationQueue/hc_bad").update({status: "approved"}));
+  });
+});
+
+describe("daily humor — manifests and member progress", () => {
+  const adminDb = () => env.authenticatedContext("admin-1", {admin: true}).firestore();
+  const DAY = "2026-09-29";
+
+  beforeEach(async () => {
+    await seed(env, async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`humorDailySets/${DAY}`).set({
+        dayId: DAY,
+        status: "published",
+        version: 1,
+        contentIds: ["hc_1", "hc_2", "hc_3"],
+        categories: ["sarcasm", "dry", "absurd"],
+      });
+      await db.doc(`users/${UID.A}/humorDaily/${DAY}`).set({
+        dayId: DAY,
+        answeredCount: 1,
+        completed: false,
+        answers: {0: {contentId: "hc_1", rating: "funny", skipped: false}},
+      });
+      await db.doc("devClock/humorDaily").set({dayId: "2026-10-01"});
+    });
+  });
+
+  it("the owner reads their own daily answers; peers and signed-out clients cannot", async () => {
+    await allow(who.userA.db().doc(`users/${UID.A}/humorDaily/${DAY}`).get());
+    await deny(who.userB.db().doc(`users/${UID.A}/humorDaily/${DAY}`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/humorDaily/${DAY}`).get());
+    await deny(who.userB.db().collection(`users/${UID.A}/humorDaily`).get());
+  });
+
+  it("no client writes daily progress — completion cannot be claimed", async () => {
+    await deny(
+      who.userA.db().doc(`users/${UID.A}/humorDaily/${DAY}`).set(
+        {answeredCount: 10, completed: true},
+        {merge: true},
+      ),
+    );
+    await deny(who.userA.db().doc(`users/${UID.A}/humorDaily/2026-09-30`).set({completed: true}));
+    await deny(who.userA.db().doc(`users/${UID.A}/humorDaily/${DAY}`).delete());
+    await deny(who.userB.db().doc(`users/${UID.A}/humorDaily/${DAY}`).set({completed: true}));
+  });
+
+  it("members cannot read or write the global manifest; admins read only", async () => {
+    await deny(who.userA.db().doc(`humorDailySets/${DAY}`).get());
+    await deny(who.userA.db().collection("humorDailySets").get());
+    await deny(who.userA.db().doc(`humorDailySets/${DAY}`).set({contentIds: ["mine"]}));
+    await deny(who.userA.db().doc("humorDailySets/2026-09-30").set({status: "published"}));
+    await allow(adminDb().doc(`humorDailySets/${DAY}`).get());
+    await deny(adminDb().doc(`humorDailySets/${DAY}`).update({contentIds: ["x"]}));
+  });
+
+  it("the emulator test clock is out of every client's reach", async () => {
+    await deny(who.userA.db().doc("devClock/humorDaily").get());
+    await deny(who.userA.db().doc("devClock/humorDaily").set({dayId: "2030-01-01"}));
+    await deny(adminDb().doc("devClock/humorDaily").set({dayId: "2030-01-01"}));
   });
 });
 

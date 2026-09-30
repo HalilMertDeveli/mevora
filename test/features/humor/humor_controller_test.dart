@@ -10,6 +10,7 @@ import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
+import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
@@ -81,6 +82,24 @@ class _ScriptedFeedRepository implements HumorRepository {
     required String contentId,
     String reason = 'other',
     String details = '',
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Result<HumorDailySet>> getDailySet() => throw UnimplementedError();
+
+  @override
+  Future<Result<HumorDailySubmitOutcome>> submitDailyResponse({
+    required String dayId,
+    required String contentId,
+    required HumorRating rating,
+    int dwellMs = 0,
+    int replayCount = 0,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Result<HumorDailySubmitOutcome>> skipDailyItem({
+    required String dayId,
+    required String contentId,
   }) => throw UnimplementedError();
 }
 

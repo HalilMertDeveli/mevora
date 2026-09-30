@@ -4,6 +4,14 @@
  * Emulator Suite: staff accounts for every role and members in every state
  * the console has to handle. EMULATOR ONLY — it refuses to run otherwise.
  *
+ * EMULATOR / QA ONLY. These are test identities for role-permission checks,
+ * not Mevora employees; the console badges them "QA · emulator only".
+ *
+ * Owner (only when SUPER_ADMIN_QA_PASSWORD is set in the environment):
+ *   halilmertdeveliii@gmail.com   super_admin, isOwner — the owner's own QA
+ *   login. Its password comes only from that variable; without it the owner
+ *   account is not seeded (there is no default).
+ *
  * Staff (email / password, emulator-only credentials, see STAFF below):
  *   super@mevora.test       super_admin
  *   tsa@mevora.test         trust_safety_admin
@@ -39,6 +47,10 @@ const {createRequire} = require("node:module");
 const PROJECT = process.env.QA_PROJECT_ID || "mevora-d6ed0";
 // Emulator-only password for the seeded staff and member logins.
 const PASSWORD = process.env.ADMIN_QA_PASSWORD || "MevoraAdminQa!2026";
+// The owner's QA login has no default password: it is seeded only when the
+// owner provides one, and the value is never printed.
+const OWNER_QA_PASSWORD = process.env.SUPER_ADMIN_QA_PASSWORD || "";
+const OWNER = {uid: "qa_owner", email: "halilmertdeveliii@gmail.com", role: "super_admin", name: "Halil (Owner)"};
 
 const firestoreHost = process.env.FIRESTORE_EMULATOR_HOST;
 const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
@@ -90,11 +102,11 @@ const now = Date.now();
 const DAY = 24 * 60 * 60 * 1000;
 
 const STAFF = [
-  {uid: "qa_staff_super", email: "super@mevora.test", role: "super_admin", name: "Selin (Super admin)"},
-  {uid: "qa_staff_tsa", email: "tsa@mevora.test", role: "trust_safety_admin", name: "Tolga (T&S admin)"},
-  {uid: "qa_staff_senior", email: "senior@mevora.test", role: "senior_moderator", name: "Sena (Senior moderator)"},
-  {uid: "qa_staff_mod", email: "moderator@mevora.test", role: "moderator", name: "Mert (Moderator)"},
-  {uid: "qa_staff_support", email: "support@mevora.test", role: "support_agent", name: "Sude (Support)"},
+  {uid: "qa_staff_super", email: "super@mevora.test", role: "super_admin", name: "QA Selin (Super admin)"},
+  {uid: "qa_staff_tsa", email: "tsa@mevora.test", role: "trust_safety_admin", name: "QA Tolga (T&S admin)"},
+  {uid: "qa_staff_senior", email: "senior@mevora.test", role: "senior_moderator", name: "QA Sena (Senior moderator)"},
+  {uid: "qa_staff_mod", email: "moderator@mevora.test", role: "moderator", name: "QA Mert (Moderator)"},
+  {uid: "qa_staff_support", email: "support@mevora.test", role: "support_agent", name: "QA Sude (Support)"},
 ];
 
 const MEMBERS = {
@@ -163,6 +175,40 @@ async function resetAuthUser(uid, props) {
     // not there yet
   }
   await auth.createUser({uid, password: PASSWORD, emailVerified: true, ...props});
+}
+
+async function seedOwner() {
+  if (!OWNER_QA_PASSWORD) {
+    console.log(`Owner QA login NOT seeded: set SUPER_ADMIN_QA_PASSWORD to seed ${OWNER.email} (there is no default password).`);
+    return false;
+  }
+  // An emulator-only account may already hold this email under another uid.
+  try {
+    const clash = await auth.getUserByEmail(OWNER.email);
+    if (clash.uid !== OWNER.uid) await auth.deleteUser(clash.uid);
+  } catch (_) {
+    // no such user
+  }
+  try {
+    await auth.deleteUser(OWNER.uid);
+  } catch (_) {
+    // not there yet
+  }
+  await auth.createUser({uid: OWNER.uid, email: OWNER.email, displayName: OWNER.name, password: OWNER_QA_PASSWORD, emailVerified: true});
+  await auth.setCustomUserClaims(OWNER.uid, {admin: true, adminRole: OWNER.role});
+  await db.doc(`adminStaff/${OWNER.uid}`).set({
+    uid: OWNER.uid,
+    role: OWNER.role,
+    status: "active",
+    isOwner: true,
+    displayName: OWNER.name,
+    email: OWNER.email,
+    permissionsVersion: 1,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+    createdBy: "seed",
+  });
+  return true;
 }
 
 async function deleteWhere(collection, field, value) {
@@ -265,11 +311,13 @@ async function main() {
       displayName: s.name,
       email: s.email,
       permissionsVersion: 1,
+      seededFor: "emulator-qa",
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
       createdBy: "seed",
     });
   }
+  const ownerSeeded = await seedOwner();
 
   for (const member of Object.values(MEMBERS)) {
     await purgeMember(member.uid);
@@ -411,7 +459,10 @@ async function main() {
     lastReportedAt: Timestamp.fromMillis(now - 3 * 60 * 60 * 1000), createdAt: Timestamp.fromMillis(now - DAY), updatedAt: Timestamp.fromMillis(now - 3 * 60 * 60 * 1000),
   });
 
-  console.log("\nStaff logins (emulator only), password from ADMIN_QA_PASSWORD or the default in this file:");
+  if (ownerSeeded) {
+    console.log(`\nOwner login (emulator only): ${OWNER.email}  super_admin, owner — password from SUPER_ADMIN_QA_PASSWORD`);
+  }
+  console.log("\nQA staff logins (EMULATOR / QA ONLY), password from ADMIN_QA_PASSWORD or the default in this file:");
   for (const s of STAFF) console.log(`  ${s.email.padEnd(24)} ${s.role}`);
   console.log("\nMembers:", Object.values(MEMBERS).map((m) => m.uid).join(", "));
   console.log("Done.");

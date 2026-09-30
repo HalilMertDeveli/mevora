@@ -147,21 +147,16 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sana rastgele profiller göstermek yerine yarın yeniden bakacağız.';
 
   @override
-  String get learningCardTitle => 'Mevora seni biraz daha tanısın';
+  String get learningCardTitle => 'Bugünün soruları hazır';
 
   @override
-  String learningCardInitialStart(int total) {
-    return '$total kısa soru, sana daha uygun kişileri seçmemize yardım eder.';
+  String learningCardTodayStart(int total) {
+    return 'Bugünün $total kısa sorusu, sana daha uygun kişileri seçmemize yardımcı olacak.';
   }
 
   @override
-  String learningCardInitialResume(int answered, int total) {
+  String learningCardTodayResume(int answered, int total) {
     return '$answered / $total tamamlandı. Kaldığın yerden devam et.';
-  }
-
-  @override
-  String learningCardFollowUp(int count) {
-    return '$count kısa soruyla önerilerini geliştirebilirsin.';
   }
 
   @override
@@ -171,7 +166,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get learningCardResume => 'Devam et';
 
   @override
-  String get learningCardNotNow => 'Şimdi değil';
+  String get learningSkipToday => 'Bugünlük geç';
 
   @override
   String get learningRequiredTitle => 'Önce seni biraz tanıyalım';
@@ -182,11 +177,12 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get learningIntroTitle => 'Mevora seni biraz daha tanısın';
+  String get learningIntroTitle => 'Mevora seni her gün biraz daha tanısın';
 
   @override
-  String get learningIntroBody =>
-      'Verdiğin cevapları sana daha uygun insanları seçebilmek için kullanıyoruz.';
+  String learningIntroBody(int count) {
+    return 'Bugünün $count kısa sorusu, sana daha uygun kişileri seçmemize yardımcı olacak.';
+  }
 
   @override
   String learningIntroMeta(int count) {
@@ -219,28 +215,23 @@ class AppLocalizationsTr extends AppLocalizations {
   String get learningLoadErrorTitle => 'Sorular yüklenemedi.';
 
   @override
-  String get learningDoneTitle => 'Teşekkürler, seni biraz daha tanıdık.';
+  String get learningDoneTitle => 'Bugünlük tamam.';
 
   @override
-  String get learningDoneBody =>
-      'Bundan sonra senin için seçtiğimiz kişiler cevaplarına göre belirlenecek.';
+  String get learningDoneBody => 'Mevora artık seni biraz daha iyi tanıyor.';
 
   @override
   String get learningDoneContinue => 'Devam et';
 
   @override
-  String get learningFollowUpDoneTitle => 'Teşekkürler!';
+  String get learningDoneTomorrow => 'Yarın yeni sorular seni bekliyor.';
 
   @override
-  String get learningFollowUpDoneBody =>
-      'Cevapların, önerilerini sana daha uygun hale getirecek.';
+  String get learningSkippedTitle => 'Tamam, yarın görüşürüz.';
 
   @override
-  String get learningNothingTitle => 'Şimdilik yeni soru yok';
-
-  @override
-  String get learningNothingBody =>
-      'Yeni sorular hazır olduğunda burada göreceksin.';
+  String get learningSkippedBody =>
+      'İstersen bugünün sorularını Profil\'deki Mevora Beni Tanısın bölümünden yine cevaplayabilirsin.';
 
   @override
   String get learningProfileTitle => 'Mevora Beni Tanısın';
@@ -254,7 +245,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get learningAfterHumorBody =>
-      'Şimdi ilişkide senin için nelerin önemli olduğunu öğrenelim.';
+      'Şimdi bugünün sorularıyla ilişkide senin için nelerin önemli olduğunu öğrenelim.';
 
   @override
   String get learningDashboardHeadline => 'Mevora seni ne kadar tanıyor?';
@@ -269,24 +260,30 @@ class AppLocalizationsTr extends AppLocalizations {
       'Cevapların ve profilin, sana daha uygun kişileri seçmemize yardım ediyor.';
 
   @override
-  String learningDashboardResumeInitial(int answered, int total) {
-    return 'Kaldığın yerden devam et ($answered/$total)';
-  }
-
-  @override
-  String learningDashboardContinue(int count) {
+  String learningDashboardThisMonth(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count kısa soruyla devam et',
-      one: '1 kısa soruyla devam et',
+      other: 'Bu ay $count soru cevapladın',
+      one: 'Bu ay 1 soru cevapladın',
+      zero: 'Bu ay henüz soru cevaplamadın',
     );
     return '$_temp0';
   }
 
   @override
-  String get learningDashboardAllAnswered =>
-      'Şimdilik bütün soruları cevapladın. Yenileri hazır olduğunda burada olacak.';
+  String learningDashboardTotals(int total, int days) {
+    return 'Toplam $total cevap · $days gün tamamlandı';
+  }
+
+  @override
+  String learningDashboardToday(int answered, int total) {
+    return 'Bugünün soruları ($answered/$total)';
+  }
+
+  @override
+  String get learningDashboardTodayDone =>
+      'Bugünlük tamam. Yarın yeni sorular gelecek.';
 
   @override
   String get learningDashboardCategoriesTitle => 'Uyum alanları';
@@ -4727,4 +4724,67 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sharedTraitLanguages => 'Diller';
+
+  @override
+  String get humorDailyTitle => 'Bugünün Mizah Turu 🎭';
+
+  @override
+  String get humorDailyBody =>
+      'Her gün birkaç kısa video ile seni biraz daha iyi tanıyoruz.';
+
+  @override
+  String get humorDailySecondary =>
+      'Neye güldüğünü öğrendikçe Mevora seni daha iyi tanır.';
+
+  @override
+  String humorDailyMeta(int count) {
+    return '$count kısa video';
+  }
+
+  @override
+  String get humorDailyStart => 'Başla';
+
+  @override
+  String humorDailyResume(int answered, int total) {
+    return 'Devam et · $answered/$total';
+  }
+
+  @override
+  String get humorDailyDone => 'Bugünlük tamam ✓';
+
+  @override
+  String get humorDailyLater => 'Sonra';
+
+  @override
+  String get humorDailyStartsTomorrow => 'Günlük mizah turun yarın başlıyor.';
+
+  @override
+  String humorDailyProgress(int position, int total) {
+    return '$position/$total';
+  }
+
+  @override
+  String get humorDailyHintStart => 'Bugünün mizah turuna başladık.';
+
+  @override
+  String get humorDailyHintMiddle => 'Biraz daha tanıyoruz 👀';
+
+  @override
+  String get humorDailyHintEnd => 'Son birkaç video.';
+
+  @override
+  String get humorDailyCompletedTitle => 'Bugünlük tamam 🎭';
+
+  @override
+  String get humorDailyCompletedBody => 'Mizah profilin biraz daha netleşti.';
+
+  @override
+  String get humorDailyNotReadyTitle => 'Bugünün turu hazırlanıyor';
+
+  @override
+  String get humorDailyNotReadyBody => 'Biraz sonra yeniden bakabilirsin.';
+
+  @override
+  String get humorDailyLockedBody =>
+      'Günlük mizah turu, mizah profilin hazır olduğunda başlar.';
 }

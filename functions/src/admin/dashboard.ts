@@ -1,8 +1,9 @@
-import type {Query} from "firebase-admin/firestore";
+import {Timestamp, type Query} from "firebase-admin/firestore";
 import {ACTION_COLLECTION} from "./actions/actionTypes.js";
 import {AUDIT_COLLECTION} from "./audit/auditService.js";
 import type {AdminActor} from "./auth/adminAuthorization.js";
 import type {Permission} from "./auth/permissions.js";
+import {STAFF_COLLECTION} from "./auth/adminAuthorization.js";
 import {ACTIVE_CASE_STATUSES, CASE_COLLECTION} from "./cases/caseTypes.js";
 import type {AdminDeps} from "./deps.js";
 import {AdminError} from "./errors.js";
@@ -13,6 +14,8 @@ import {cursorPart, decodeCursor, encodeCursor, iso} from "./validation.js";
  * billed per 1,000 index entries, never a document download — and each is
  * only computed when the caller holds the permission for that queue.
  */
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function count(query: Query): Promise<number | null> {
   try {
@@ -63,6 +66,21 @@ export async function getDashboard(deps: AdminDeps, actor: AdminActor) {
       count(tickets.where("priority", "==", "Urgent").where("status", "in", ["open", "Open", "in_progress", "InProgress"])),
     ]).then(([a, b]) => (a === null && b === null ? null : (a ?? 0) + (b ?? 0)));
   }
+  if (has("user.read")) {
+    // Platform size. count() over the users collection costs one read per
+    // 1,000 index entries, not a document download.
+    const users = db.collection("users");
+    tasks.totalUsers = count(users);
+    tasks.newUsers7d = count(users.where("createdAt", ">=", Timestamp.fromMillis(deps.now() - WEEK_MS)));
+    tasks.activeUsers7d = count(users.where("lastActiveAt", ">=", Timestamp.fromMillis(deps.now() - WEEK_MS)));
+    tasks.suspendedAccounts = count(users.where("accountStatus", "==", "suspended"));
+    tasks.bannedAccounts = count(users.where("accountStatus", "==", "banned"));
+  }
+  if (has("admin.manage_staff")) {
+    const staff = db.collection(STAFF_COLLECTION);
+    tasks.activeStaff = count(staff.where("status", "==", "active"));
+    tasks.disabledStaff = count(staff.where("status", "==", "disabled"));
+  }
   const keys = Object.keys(tasks);
   const values = await Promise.all(keys.map((k) => tasks[k]));
   const counters = Object.fromEntries(keys.map((k, i) => [k, values[i]]));
@@ -79,35 +97,111 @@ export async function getDashboard(deps: AdminDeps, actor: AdminActor) {
       createdAt: iso(doc.get("createdAt")),
     }));
   }
-  return {counters, recentActions, generatedAt: new Date(deps.now()).toISOString()};
+  let recentAdminActions: Array<Record<string, unknown>> = [];
+  if (has("audit.read")) {
+    // Staff actions, not sign-ins: over-fetch a little and drop ADMIN_LOGIN.
+    const snap = await db.collection(AUDIT_COLLECTION).orderBy("createdAt", "desc").limit(25).get();
+    recentAdminActions = snap.docs
+      .filter((doc) => doc.get("action") !== "ADMIN_LOGIN")
+      .slice(0, 10)
+      .map((doc) => ({
+        eventId: doc.id,
+        action: doc.get("action") ?? null,
+        actorAdminId: doc.get("actorAdminId") ?? null,
+        actorRole: doc.get("actorRole") ?? null,
+        targetType: doc.get("targetType") ?? null,
+        targetId: doc.get("targetId") ?? null,
+        createdAt: iso(doc.get("createdAt")),
+      }));
+  }
+  return {counters, recentActions, recentAdminActions, generatedAt: new Date(deps.now()).toISOString()};
 }
 
+export interface AuditFilters {
+  actorAdminId: string | null;
+  actorRole: string | null;
+  action: string | null;
+  targetType: string | null;
+  targetId: string | null;
+  caseId: string | null;
+  /** Inclusive lower bound, epoch ms. */
+  fromMs: number | null;
+  /** Exclusive upper bound, epoch ms. */
+  toMs: number | null;
+}
+
+/** Most selective first: the first present filter runs in Firestore. */
+const PRIMARY_ORDER = ["targetId", "caseId", "actorAdminId", "action", "targetType", "actorRole"] as const;
+const SCAN_BATCH = 100;
+/** Hard ceiling on audit documents read by one list request. */
+export const AUDIT_SCAN_CAP = 500;
+
+/**
+ * The audit log, newest first, filtered by any combination of staff member,
+ * role, action, target type, target, case and date range.
+ *
+ * The most selective equality filter plus the date range run in Firestore
+ * (field + createdAt composite indexes); the remaining filters are applied to
+ * that ordered stream in memory. A request reads at most AUDIT_SCAN_CAP
+ * documents: when it stops early the page is marked `partial` and the cursor
+ * continues exactly where the scan ended, so nothing is skipped or repeated.
+ */
 export async function listAuditEvents(
   deps: AdminDeps,
-  input: {actorAdminId: string | null; targetId: string | null; action: string | null; cursor: unknown; limit: number},
+  input: AuditFilters & {cursor: unknown; limit: number},
 ) {
-  const filters = [input.actorAdminId, input.targetId, input.action].filter(Boolean);
-  if (filters.length > 1) {
-    // One filter at a time keeps every query on a single composite index.
-    throw new AdminError("invalid_argument", "one_filter_at_a_time");
+  if (input.fromMs !== null && input.toMs !== null && input.fromMs >= input.toMs) {
+    throw new AdminError("invalid_argument", "date_range");
   }
-  let q: Query = deps.db.collection(AUDIT_COLLECTION);
-  if (input.actorAdminId) {
-    q = q.where("actorAdminId", "==", input.actorAdminId);
-  } else if (input.targetId) {
-    q = q.where("targetId", "==", input.targetId);
-  } else if (input.action) {
-    q = q.where("action", "==", input.action);
+  const primary = PRIMARY_ORDER.find((field) => input[field] !== null) ?? null;
+  const secondary = PRIMARY_ORDER.filter((field) => field !== primary && input[field] !== null);
+
+  let base: Query = deps.db.collection(AUDIT_COLLECTION);
+  if (primary) {
+    base = base.where(primary, "==", input[primary]);
   }
-  q = q.orderBy("createdAt", "desc").orderBy("__name__", "desc");
-  const after = decodeCursor(input.cursor, 2);
-  if (after) {
-    q = q.startAfter(...after);
+  if (input.fromMs !== null) {
+    base = base.where("createdAt", ">=", Timestamp.fromMillis(input.fromMs));
   }
-  const snap = await q.limit(input.limit).get();
-  const last = snap.docs[snap.docs.length - 1];
+  if (input.toMs !== null) {
+    base = base.where("createdAt", "<", Timestamp.fromMillis(input.toMs));
+  }
+  base = base.orderBy("createdAt", "desc").orderBy("__name__", "desc");
+
+  const matches = (doc: FirebaseFirestore.QueryDocumentSnapshot) =>
+    secondary.every((field) => doc.get(field) === input[field]);
+
+  const items: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+  let after = decodeCursor(input.cursor, 2);
+  let scanned = 0;
+  let exhausted = false;
+  let lastScanned: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+  while (items.length < input.limit && scanned < AUDIT_SCAN_CAP) {
+    // Without secondary filters every read is a hit: read exactly the page.
+    const size = secondary.length ? Math.min(SCAN_BATCH, AUDIT_SCAN_CAP - scanned) : input.limit - items.length;
+    const snap = await (after ? base.startAfter(...after) : base).limit(size).get();
+    scanned += snap.size;
+    for (const doc of snap.docs) {
+      lastScanned = doc;
+      if (matches(doc)) {
+        items.push(doc);
+        if (items.length === input.limit) {
+          break;
+        }
+      }
+    }
+    if (snap.size < size) {
+      exhausted = true;
+      break;
+    }
+    if (lastScanned) {
+      after = [cursorPart(lastScanned.get("createdAt")), lastScanned.id];
+    }
+  }
+  const resumeFrom = items.length === input.limit ? items[items.length - 1] : lastScanned;
+  const more = !exhausted && resumeFrom !== null;
   return {
-    items: snap.docs.map((doc) => ({
+    items: items.map((doc) => ({
       eventId: doc.id,
       action: doc.get("action") ?? null,
       actorAdminId: doc.get("actorAdminId") ?? null,
@@ -120,8 +214,8 @@ export async function listAuditEvents(
       metadata: doc.get("metadata") ?? {},
       createdAt: iso(doc.get("createdAt")),
     })),
-    nextCursor: snap.docs.length === input.limit && last
-      ? encodeCursor([cursorPart(last.get("createdAt")), last.id])
-      : null,
+    nextCursor: more && resumeFrom ? encodeCursor([cursorPart(resumeFrom.get("createdAt")), resumeFrom.id]) : null,
+    partial: more && items.length < input.limit,
+    scanned,
   };
 }

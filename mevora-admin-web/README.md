@@ -36,7 +36,19 @@ dotnet run --project mevora-admin-web --launch-profile emulator
 
 Open http://localhost:5310 and sign in with a seeded staff account
 (`super@`, `tsa@`, `senior@`, `moderator@`, `support@mevora.test`; the
-emulator-only password is in `tool/seedEmulatorAdminQa.cjs`).
+emulator-only password is in `tool/seedEmulatorAdminQa.cjs`). These are
+**EMULATOR / QA ONLY** identities for role testing, badged in the console —
+not employees.
+
+To sign in as the owner (`halilmertdeveliii@gmail.com`, super admin + owner),
+set `$env:SUPER_ADMIN_QA_PASSWORD` to a password of your choice in the seed
+terminal before running the seed. There is no default and the seed never
+prints it; without the variable the owner login is simply not created.
+
+Adding a colleague from Staff → Add staff asks the Auth emulator to "send" a
+password-setup email. The emulator does not deliver mail: open the Emulator
+UI → Authentication, or `GET http://127.0.0.1:9099/emulator/v1/projects/mevora-d6ed0/oobCodes`,
+to follow the link.
 
 `appsettings.Development.json` points at the default emulator ports and uses
 the emulator-only BFF secret that the Functions emulator falls back to. In the

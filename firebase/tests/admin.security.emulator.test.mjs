@@ -35,6 +35,8 @@ const CONTROL_PLANE_DOCS = [
   "adminAuditLog/aud_1",
   "adminUserLookup/user-a",
   "adminRateLimits/staff-1_read",
+  "appOperationsConfig/current",
+  "appOperationsConfigWrites/w_1",
 ];
 
 before(async () => {
@@ -53,6 +55,7 @@ beforeEach(async () => {
     for (const path of CONTROL_PLANE_DOCS) {
       await db.doc(path).set({seeded: true, userId: UID.A, subjectUserId: UID.A, targetUserId: UID.A});
     }
+    await db.doc("appOperationsConfig/public").set({schemaVersion: 1, revision: 1, maintenance: {enabled: false}});
     await db.doc("reports/r1").set({reporterId: UID.B, reportedUserId: UID.A, reason: "spam", status: "open"});
     await db.doc(`appeals/appeal_1`).set({userId: UID.A, status: "open", reason: "please"});
     await db.doc("supportTickets/t1").set({userId: UID.A, status: "open", subject: "Help", message: "..."});
@@ -93,6 +96,22 @@ describe("admin control-plane collections are closed to every client", () => {
     await deny(who.userA.db().collection("adminAuditLog").get());
     await deny(staff("trust_safety_admin").collection("adminAuditLog").get());
     await deny(who.userA.db().collection("adminAuditLog").add({action: "USER_BANNED"}));
+  });
+});
+
+describe("App Control public projection", () => {
+  it("anyone — signed in or not — can read the public projection", async () => {
+    await allow(who.anon.db().doc("appOperationsConfig/public").get());
+    await allow(who.userA.db().doc("appOperationsConfig/public").get());
+  });
+
+  it("nobody can write it, list the collection, or read the full record", async () => {
+    await deny(who.userA.db().doc("appOperationsConfig/public").set({maintenance: {enabled: true}}));
+    await deny(who.anon.db().doc("appOperationsConfig/public").set({maintenance: {enabled: true}}));
+    await deny(staff("super_admin").doc("appOperationsConfig/public").set({features: {boost: false}}, {merge: true}));
+    await deny(who.userA.db().doc("appOperationsConfig/public").delete());
+    await deny(who.userA.db().collection("appOperationsConfig").get());
+    await deny(who.anon.db().doc("appOperationsConfig/current").get());
   });
 });
 

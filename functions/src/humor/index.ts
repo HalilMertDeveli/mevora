@@ -58,6 +58,7 @@ async function requireAdmin(uid: string): Promise<void> {
 
 export const getHumorFeed = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "humorLab");
   const data = (request.data ?? {}) as Record<string, unknown>;
   try {
     const feed = await buildHumorFeed({
@@ -85,6 +86,7 @@ export const getHumorFeed = onCall(callableOptions, async (request) => {
 
 export const submitHumorFeedback = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "humorLab");
   // `rating` may be omitted only for a skip; `saved` is forwarded only when it
   // is an explicit boolean; `gestureHints` is reduced to two booleans.
   const parsed = parseSubmitHumorFeedbackInput(request.data);
@@ -156,6 +158,113 @@ export const getMatchHumorCompatibility = onCall(callableOptions, async (request
     readyA: isHumorCalibrationReady(calibrationA.data(), profileA),
     readyB: isHumorCalibrationReady(calibrationB.data(), profileB),
   });
+});
+
+/**
+ * Today's daily humor set for the caller: the same ten items, in the same
+ * order, for every eligible member on the canonical day. Feed-safe cards,
+ * resumable progress. The server clock picks the day — the client sends
+ * nothing that could choose another one.
+ */
+export const getDailyHumorSet = onCall(callableOptions, async (request) => {
+  const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "humorLab");
+  const {getDailyHumorSetView} = await import("./dailyService.js");
+  try {
+    return await getDailyHumorSetView({db, uid, nowMs: Date.now()});
+  } catch (error) {
+    logger.error("getDailyHumorSet failed", safeLogMeta({uid, error: String(error)}));
+    throw new HttpsError("internal", "daily-unavailable");
+  }
+});
+
+/**
+ * One answer in today's daily set: a rating, or a `media_failed` skip.
+ * Same rating semantics as `submitHumorFeedback`; idempotent per slot.
+ */
+export const submitDailyHumorResponse = onCall(callableOptions, async (request) => {
+  const uid = requireUid(request);
+  await assertAppFeatureAvailable(db, "humorLab");
+  const {DailyResponseRejected, parseDailyResponseInput, submitDailyHumorResponse: submit} =
+    await import("./dailyService.js");
+  const parsed = parseDailyResponseInput(request.data);
+  if (!parsed.ok) {
+    throw new HttpsError("invalid-argument", parsed.field);
+  }
+  try {
+    return await submit({db, uid, nowMs: Date.now(), response: parsed.value});
+  } catch (error) {
+    if (error instanceof DailyResponseRejected) {
+      throw new HttpsError("failed-precondition", error.reason);
+    }
+    const message = String(error);
+    if (message.includes("content-unavailable")) {
+      throw new HttpsError("not-found", "content-unavailable");
+    }
+    logger.error("submitDailyHumorResponse failed", safeLogMeta({uid, error: message}));
+    throw new HttpsError("internal", "daily-unavailable");
+  }
+});
+
+/**
+ * Admin-only: publish (or return) the daily set for a day. Production accepts
+ * only today and tomorrow; any other day works only inside the emulator.
+ */
+export const publishDailyHumorSet = onCall(callableOptions, async (request) => {
+  const uid = requireUid(request);
+  await requireAdmin(uid);
+  const {adminDayAllowed, ensureDailySet, isEmulatorProcess, resolveDailyToday} = await import(
+    "./dailyService.js"
+  );
+  const nowMs = Date.now();
+  const todayId = await resolveDailyToday(db, nowMs);
+  const dayId = request.data?.dayId == null ? todayId : String(request.data.dayId);
+  if (!adminDayAllowed(dayId, todayId, isEmulatorProcess())) {
+    throw new HttpsError("invalid-argument", "dayId");
+  }
+  const result = await ensureDailySet({db, dayId, nowMs, publishedBy: `admin:${uid}`, force: true});
+  return result.status === "published"
+    ? {
+        ok: true,
+        dayId,
+        status: "published",
+        created: result.created,
+        version: result.manifest.version,
+        total: result.manifest.contentIds.length,
+      }
+    : {ok: true, dayId, status: "not_ready", eligiblePoolSize: result.eligiblePoolSize};
+});
+
+/** Admin-only: explicitly replace one slot of a published set (versioned). */
+export const repairDailyHumorSlot = onCall(callableOptions, async (request) => {
+  const uid = requireUid(request);
+  await requireAdmin(uid);
+  const {adminDayAllowed, isEmulatorProcess, repairDailySlot, resolveDailyToday} = await import(
+    "./dailyService.js"
+  );
+  const data = (request.data ?? {}) as Record<string, unknown>;
+  const nowMs = Date.now();
+  const todayId = await resolveDailyToday(db, nowMs);
+  const dayId = String(data.dayId ?? "");
+  if (!adminDayAllowed(dayId, todayId, isEmulatorProcess())) {
+    throw new HttpsError("invalid-argument", "dayId");
+  }
+  const reason = typeof data.reason === "string" ? data.reason.trim() : "";
+  if (!reason) {
+    throw new HttpsError("invalid-argument", "reason");
+  }
+  try {
+    return await repairDailySlot({
+      db,
+      dayId,
+      index: Number(data.index),
+      reason,
+      adminUid: uid,
+      nowMs,
+    });
+  } catch (error) {
+    throw new HttpsError("failed-precondition", String((error as Error).message ?? error));
+  }
 });
 
 export const reportHumorContent = onCall(callableOptions, async (request) => {
@@ -377,6 +486,7 @@ export {
   ratingWeight,
 } from "./profile.js";
 import {assertCallerAccountEligible} from "../accountGuard.js";
+import {assertAppFeatureAvailable} from "../appOperations/appOperationsGate.js";
 export {rankHumorFeed, scoreHumorCandidate} from "./ranking.js";
 export {classifyHumorSafety} from "./moderation.js";
 export {applyHumorAiTagging} from "./aiTagging.js";

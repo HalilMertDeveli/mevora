@@ -1,6 +1,21 @@
 import {REASON_CODES, RESTORE_REASON_CODES, PHOTO_REJECT_REASONS} from "./actions/actionTypes.js";
-import {AUDIT_ACTIONS} from "./audit/auditTypes.js";
-import {ADMIN_ROLES} from "./auth/roles.js";
+import {ANNOUNCEMENT_SEVERITIES, APP_FEATURES, APP_PLATFORMS} from "../appOperations/appOperationsConfig.js";
+import {
+  MESSAGE_MAX,
+  TITLE_MAX,
+  getAppControl,
+  instantOrNull,
+  plainText,
+  storeUrlOrNull,
+  updateAnnouncement,
+  updateFeatureSwitch,
+  updateMaintenanceMode,
+  updateMinimumVersion,
+  versionOrNull,
+} from "./appControl/appControlService.js";
+import {AUDIT_ACTIONS, AUDIT_TARGET_TYPES} from "./audit/auditTypes.js";
+import {requirePermission} from "./auth/adminAuthorization.js";
+import {ADMIN_ROLES, GRANTABLE_ROLES} from "./auth/roles.js";
 import {APPEAL_STATUSES, assignAppeal, getAppeal, listAppeals, openAppealForUser, resolveAppeal} from "./appeals/appealService.js";
 import {listManualReviewJobs, resolveReviewItem, reviewAutomationJob} from "./automation/manualReviewQueue.js";
 import {getCase, listCases} from "./cases/caseQueries.js";
@@ -11,7 +26,17 @@ import {getDashboard, listAuditEvents} from "./dashboard.js";
 import {HUMOR_QUEUE_STATUSES, getHumorReports, listHumorReviews, reviewHumorContent} from "./humor/humorReview.js";
 import {PHOTO_QUEUE_FILTERS, getPhotoPreview, listPhotoReviews, reviewPhoto} from "./photos/photoReview.js";
 import {REPORT_QUEUE_STATUSES, backfillReportPriority, listReports, openCaseForReport, resolveUserReport} from "./reports/reportQueue.js";
-import {getMyStaffProfile, listStaff, recordAdminLogin, setStaffStatus, updateStaffRole} from "./staff/staffService.js";
+import {
+  createStaff,
+  getMyStaffProfile,
+  getStaff,
+  issueStaffActivation,
+  listStaff,
+  recordAdminLogin,
+  revokeStaffSessions,
+  setStaffStatus,
+  updateStaffRole,
+} from "./staff/staffService.js";
 import {
   TICKET_PRIORITIES,
   addSupportNote,
@@ -55,6 +80,22 @@ import {
 
 const NOTE_MAX = 4000;
 const REASON_MAX = 500;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** "YYYY-MM-DD" (UTC) → epoch ms of that midnight plus `addDays`; absent → null. */
+function optionalDay(raw: unknown, field: string, addDays: number): number | null {
+  if (raw === undefined || raw === null || raw === "") {
+    return null;
+  }
+  if (typeof raw !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    throw new AdminError("invalid_argument", field);
+  }
+  const ms = Date.parse(`${raw}T00:00:00Z`);
+  if (Number.isNaN(ms)) {
+    throw new AdminError("invalid_argument", field);
+  }
+  return ms + addDays * DAY_MS;
+}
 
 // --- Session / staff --------------------------------------------------------
 
@@ -90,8 +131,56 @@ export const adminListStaffSpec: AdminCommandSpec<Record<string, never>, unknown
   handler: ({deps}) => listStaff(deps),
 };
 
+export const adminGetStaffSpec: AdminCommandSpec<{targetUid: string}, unknown> = {
+  name: "adminGetStaff",
+  permission: "admin.manage_staff",
+  rateClass: "read",
+  parse: (raw) => ({targetUid: uid(raw.targetUid, "targetUid")}),
+  handler: ({deps}, input) => getStaff(deps, input),
+};
+
+/**
+ * Adds a colleague. Needs admin.manage_roles (it grants a role) on top of the
+ * admin.manage_staff checked by the pipeline. super_admin is not an accepted
+ * role: the parser only knows GRANTABLE_ROLES.
+ */
+export const adminCreateStaffSpec: AdminCommandSpec<
+  {email: string; displayName: string; role: (typeof GRANTABLE_ROLES)[number]; idempotencyKey: string},
+  unknown
+> = {
+  name: "adminCreateStaff",
+  permission: "admin.manage_staff",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    email: text(raw.email, "email", {max: 254, required: true}),
+    displayName: text(raw.displayName, "displayName", {min: 2, max: 80, required: true}),
+    role: oneOf(raw.role, GRANTABLE_ROLES, "role"),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => {
+    requirePermission(actor, "admin.manage_roles");
+    return createStaff(deps, actor, input, requestId);
+  },
+};
+
+export const adminIssueStaffActivationSpec: AdminCommandSpec<{targetUid: string}, unknown> = {
+  name: "adminIssueStaffActivation",
+  permission: "admin.manage_staff",
+  rateClass: "sensitive",
+  parse: (raw) => ({targetUid: uid(raw.targetUid, "targetUid")}),
+  handler: ({deps, actor, requestId}, input) => issueStaffActivation(deps, actor, input, requestId),
+};
+
+export const adminRevokeStaffSessionsSpec: AdminCommandSpec<{targetUid: string; reason: string}, unknown> = {
+  name: "adminRevokeStaffSessions",
+  permission: "admin.manage_staff",
+  rateClass: "sensitive",
+  parse: (raw) => ({targetUid: uid(raw.targetUid, "targetUid"), reason: text(raw.reason, "reason", {max: REASON_MAX, required: true})}),
+  handler: ({deps, actor, requestId}, input) => revokeStaffSessions(deps, actor, input, requestId),
+};
+
 export const adminUpdateStaffRoleSpec: AdminCommandSpec<
-  {targetUid: string | null; email: string | null; role: (typeof ADMIN_ROLES)[number]; displayName: string | null},
+  {targetUid: string | null; email: string | null; role: (typeof GRANTABLE_ROLES)[number]; displayName: string | null},
   unknown
 > = {
   name: "adminUpdateStaffRole",
@@ -103,10 +192,15 @@ export const adminUpdateStaffRoleSpec: AdminCommandSpec<
     if (!targetUid && !email) {
       throw new AdminError("invalid_argument", "target");
     }
+    // super_admin is not in GRANTABLE_ROLES: asking for it is refused as a
+    // grant the console cannot make, not as a malformed request.
+    if (raw.role === "super_admin") {
+      throw new AdminError("role_grant_forbidden");
+    }
     return {
       targetUid,
       email,
-      role: oneOf(raw.role, ADMIN_ROLES, "role"),
+      role: oneOf(raw.role, GRANTABLE_ROLES, "role"),
       displayName: optionalText(raw.displayName, "displayName", 80),
     };
   },
@@ -127,6 +221,81 @@ export const adminEnableStaffSpec: AdminCommandSpec<{targetUid: string; reason: 
   rateClass: "sensitive",
   parse: (raw) => ({targetUid: uid(raw.targetUid, "targetUid"), reason: text(raw.reason, "reason", {max: REASON_MAX, required: true})}),
   handler: ({deps, actor, requestId}, input) => setStaffStatus(deps, actor, {...input, status: "active"}, requestId),
+};
+
+// --- App Control ------------------------------------------------------------
+// Four named changes to the app's operating state, never a generic config
+// write. Each carries the revision it was made against and an idempotency key.
+
+function revision(raw: unknown): number {
+  return integer(raw, "expectedRevision", {min: 0, max: 1_000_000_000});
+}
+
+export const adminGetAppControlSpec: AdminCommandSpec<Record<string, never>, unknown> = {
+  name: "adminGetAppControl",
+  permission: "app_control.read",
+  rateClass: "read",
+  parse: () => ({}),
+  handler: ({deps, actor}) => getAppControl(deps, actor),
+};
+
+export const adminUpdateMaintenanceModeSpec: AdminCommandSpec<Parameters<typeof updateMaintenanceMode>[2], unknown> = {
+  name: "adminUpdateMaintenanceMode",
+  permission: "app_control.write",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    enabled: bool(raw.enabled),
+    message: plainText(raw.message, "message", MESSAGE_MAX, false),
+    expectedRevision: revision(raw.expectedRevision),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => updateMaintenanceMode(deps, actor, input, requestId),
+};
+
+export const adminUpdateMinimumVersionSpec: AdminCommandSpec<Parameters<typeof updateMinimumVersion>[2], unknown> = {
+  name: "adminUpdateMinimumVersion",
+  permission: "app_control.write",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    platform: oneOf(raw.platform, APP_PLATFORMS, "platform"),
+    minimumVersion: versionOrNull(raw.minimumVersion, "minimumVersion"),
+    recommendedVersion: versionOrNull(raw.recommendedVersion, "recommendedVersion"),
+    updateUrl: storeUrlOrNull(raw.updateUrl, "updateUrl"),
+    expectedRevision: revision(raw.expectedRevision),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => updateMinimumVersion(deps, actor, input, requestId),
+};
+
+export const adminUpdateFeatureSwitchSpec: AdminCommandSpec<Parameters<typeof updateFeatureSwitch>[2], unknown> = {
+  name: "adminUpdateFeatureSwitch",
+  permission: "app_control.write",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    feature: oneOf(raw.feature, APP_FEATURES, "feature"),
+    enabled: bool(raw.enabled),
+    reason: text(raw.reason, "reason", {max: REASON_MAX, required: true}),
+    expectedRevision: revision(raw.expectedRevision),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => updateFeatureSwitch(deps, actor, input, requestId),
+};
+
+export const adminUpdateAnnouncementSpec: AdminCommandSpec<Parameters<typeof updateAnnouncement>[2], unknown> = {
+  name: "adminUpdateAnnouncement",
+  permission: "app_control.write",
+  rateClass: "sensitive",
+  parse: (raw) => ({
+    enabled: bool(raw.enabled),
+    title: plainText(raw.title, "title", TITLE_MAX, false),
+    message: plainText(raw.message, "message", MESSAGE_MAX, false),
+    severity: oneOf(raw.severity ?? "info", ANNOUNCEMENT_SEVERITIES, "severity"),
+    startsAtMs: instantOrNull(raw.startsAt, "startsAt"),
+    expiresAtMs: instantOrNull(raw.expiresAt, "expiresAt"),
+    expectedRevision: revision(raw.expectedRevision),
+    idempotencyKey: idempotencyKey(raw.idempotencyKey),
+  }),
+  handler: ({deps, actor, requestId}, input) => updateAnnouncement(deps, actor, input, requestId),
 };
 
 // --- Users ------------------------------------------------------------------
@@ -695,8 +864,14 @@ export const adminListAuditEventsSpec: AdminCommandSpec<Parameters<typeof listAu
   rateClass: "read",
   parse: (raw) => ({
     actorAdminId: optionalUid(raw.actorAdminId, "actorAdminId"),
-    targetId: optionalText(raw.targetId, "targetId", 300),
+    actorRole: optionalOneOf(raw.actorRole, [...ADMIN_ROLES, "system"] as const, "actorRole"),
     action: optionalOneOf(raw.action, AUDIT_ACTIONS, "action"),
+    targetType: optionalOneOf(raw.targetType, AUDIT_TARGET_TYPES, "targetType"),
+    targetId: optionalText(raw.targetId, "targetId", 300),
+    caseId: optionalDocId(raw.caseId, "caseId"),
+    fromMs: optionalDay(raw.from, "from", 0),
+    // "to" names a day and includes it: the bound is the next midnight UTC.
+    toMs: optionalDay(raw.to, "to", 1),
     cursor: raw.cursor,
     limit: pageLimit(raw.limit),
   }),

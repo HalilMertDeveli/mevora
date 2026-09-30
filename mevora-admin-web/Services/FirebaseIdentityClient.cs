@@ -27,6 +27,13 @@ public interface IFirebaseIdentityClient
     Task<TotpEnrollmentStart?> StartTotpEnrollmentAsync(string idToken, string accountLabel, CancellationToken ct);
     Task<FirebaseTokens?> FinalizeTotpEnrollmentAsync(string idToken, string sessionInfo, string code, CancellationToken ct);
     Task<FirebaseTokens?> RefreshAsync(string refreshToken, CancellationToken ct);
+
+    /// <summary>
+    /// Asks Firebase Authentication to email a password-setup (reset) link to
+    /// a staff address. Firebase sends it; the link never reaches this server
+    /// or the screen of whoever triggered it.
+    /// </summary>
+    Task<bool> SendPasswordSetupEmailAsync(string email, CancellationToken ct);
 }
 
 /// <summary>
@@ -133,6 +140,20 @@ public sealed class FirebaseIdentityClient(HttpClient http, IOptions<AdminWebOpt
             return null;
         }
         return TokensFromIdToken(await ReadJson(response, ct));
+    }
+
+    public async Task<bool> SendPasswordSetupEmailAsync(string email, CancellationToken ct)
+    {
+        using var response = await http.PostAsJsonAsync(
+            $"{IdentityBase}/v1/accounts:sendOobCode?key={Key}",
+            new {requestType = "PASSWORD_RESET", email},
+            ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogWarning("staff_password_setup_email_failed status={Status}", (int)response.StatusCode);
+            return false;
+        }
+        return true;
     }
 
     public async Task<FirebaseTokens?> RefreshAsync(string refreshToken, CancellationToken ct)

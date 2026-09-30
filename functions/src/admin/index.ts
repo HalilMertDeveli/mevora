@@ -28,9 +28,20 @@ export const adminGetMyStaffProfile = defineAdminCommand(specs.adminGetMyStaffPr
 export const adminRecordLogin = defineAdminCommand(specs.adminRecordLoginSpec);
 export const adminGetDashboard = defineAdminCommand(specs.adminGetDashboardSpec);
 export const adminListStaff = defineAdminCommand(specs.adminListStaffSpec);
+export const adminGetStaff = defineAdminCommand(specs.adminGetStaffSpec);
+export const adminCreateStaff = defineAdminCommand(specs.adminCreateStaffSpec);
+export const adminIssueStaffActivation = defineAdminCommand(specs.adminIssueStaffActivationSpec);
+export const adminRevokeStaffSessions = defineAdminCommand(specs.adminRevokeStaffSessionsSpec);
 export const adminUpdateStaffRole = defineAdminCommand(specs.adminUpdateStaffRoleSpec);
 export const adminDisableStaff = defineAdminCommand(specs.adminDisableStaffSpec);
 export const adminEnableStaff = defineAdminCommand(specs.adminEnableStaffSpec);
+
+// App Control
+export const adminGetAppControl = defineAdminCommand(specs.adminGetAppControlSpec);
+export const adminUpdateMaintenanceMode = defineAdminCommand(specs.adminUpdateMaintenanceModeSpec);
+export const adminUpdateMinimumVersion = defineAdminCommand(specs.adminUpdateMinimumVersionSpec);
+export const adminUpdateFeatureSwitch = defineAdminCommand(specs.adminUpdateFeatureSwitchSpec);
+export const adminUpdateAnnouncement = defineAdminCommand(specs.adminUpdateAnnouncementSpec);
 
 // Users
 export const adminSearchUsers = defineAdminCommand(specs.adminSearchUsersSpec);

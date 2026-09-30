@@ -105,6 +105,10 @@ describe("account deletion erases humor data", () => {
       [`users/${UID}/humor/calibration`]: {version: 1, completedCount: 15, complete: true},
       [`users/${UID}/humorInteractions/c1`]: {contentId: "c1", rating: "funny"},
       [`users/${UID}/humorInteractions/c2`]: {contentId: "c2", reported: true, skipped: true},
+      [`users/${UID}/humorDaily/2026-09-28`]: {dayId: "2026-09-28", answeredCount: 10, completed: true,
+        answers: {"0": {contentId: "c1", rating: "funny", skipped: false}}},
+      [`users/${UID}/humorDaily/2026-09-29`]: {dayId: "2026-09-29", answeredCount: 3, completed: false},
+      "humorDailySets/2026-09-29": {dayId: "2026-09-29", status: "published", version: 1, contentIds: ["c1"]},
       [`humorReports/${UID}_c1`]: {reporterId: UID, contentId: "c1", details: "mine", status: "open"},
       [`humorReports/${UID}_c2`]: {reporterId: UID, contentId: "c2", status: "resolved"},
       [`humorReports/${OTHER}_c1`]: {reporterId: OTHER, contentId: "c1", status: "open"},
@@ -148,6 +152,8 @@ describe("account deletion erases humor data", () => {
     assert.equal(queue.reportCount, 2);
     assert.equal(db.read("humorModerationQueue/c3").lastReporterId, OTHER);
     assert.equal(db.read("humorContent/c1").active, true);
+    // The global daily manifest holds no member data and outlives any account.
+    assert.deepEqual(db.read("humorDailySets/2026-09-29").contentIds, ["c1"]);
   });
 
   it("verification passes after a real deletion and a retry", async () => {
@@ -164,6 +170,7 @@ describe("account deletion erases humor data", () => {
       [`users/${UID}/humor/summary`]: {vector: {sarcasm: 80}},
       [`users/${UID}/humor/calibration`]: {completedCount: 3},
       [`users/${UID}/humorInteractions/c9`]: {contentId: "c9", rating: "funny"},
+      [`users/${UID}/humorDaily/2026-09-29`]: {dayId: "2026-09-29", answeredCount: 1},
       [`humorReports/${UID}_c9`]: {reporterId: UID, contentId: "c9"},
       "humorModerationQueue/c9": {contentId: "c9", lastReporterId: UID},
     });
@@ -174,6 +181,7 @@ describe("account deletion erases humor data", () => {
       `firestore_remnant:users/${UID}/humor/summary`,
       `firestore_remnant:users/${UID}/humor/calibration`,
       "humor_interactions_remnant",
+      "humor_daily_remnant",
       "humor_reports_remnant",
       "humor_queue_reporter_remnant",
     ]) {

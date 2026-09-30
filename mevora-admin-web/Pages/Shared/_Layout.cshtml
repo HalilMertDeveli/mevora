@@ -19,6 +19,7 @@
         ("/Appeals", "Appeals", "appeal.read"),
         ("/Audit", "Audit log", "audit.read"),
         ("/Admin/Staff", "Staff", "admin.manage_staff"),
+        ("/AppControl", "App control", "app_control.read"),
     };
     var env = AdminOptions.Value.EnvironmentLabel;
     var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -71,6 +72,7 @@
                 <span class="who">
                     <strong>@User.Identity?.Name</strong>
                     <span class="role">@L.Code(User.StaffRole())</span>
+                    @if (User.IsOwner()) { <span class="badge badge-info">@L["Owner"]</span> }
                 </span>
                 <form method="post" action="/Logout" class="inline">
                     @Html.AntiForgeryToken()

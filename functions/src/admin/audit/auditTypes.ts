@@ -55,29 +55,42 @@ export const AUDIT_ACTIONS = [
   "APPEAL_ACCEPTED",
   "APPEAL_REJECTED",
 
+  "ADMIN_CREATED",
   "ADMIN_GRANTED",
   "ADMIN_ROLE_CHANGED",
   "ADMIN_DISABLED",
   "ADMIN_ENABLED",
+  "ADMIN_SESSIONS_REVOKED",
+  "ADMIN_ACTIVATION_ISSUED",
 
   "MAINTENANCE_RUN",
+
+  "APP_MAINTENANCE_ENABLED",
+  "APP_MAINTENANCE_DISABLED",
+  "APP_MIN_VERSION_CHANGED",
+  "APP_FEATURE_SWITCH_CHANGED",
+  "APP_ANNOUNCEMENT_CHANGED",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
-export type AuditTargetType =
-  | "user"
-  | "case"
-  | "report"
-  | "photo"
-  | "humor_content"
-  | "support_ticket"
-  | "verification"
-  | "automation_job"
-  | "review_item"
-  | "appeal"
-  | "staff"
-  | "system";
+export const AUDIT_TARGET_TYPES = [
+  "user",
+  "case",
+  "report",
+  "photo",
+  "humor_content",
+  "support_ticket",
+  "verification",
+  "automation_job",
+  "review_item",
+  "appeal",
+  "staff",
+  "app_config",
+  "system",
+] as const;
+
+export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
 
 export interface AuditEventInput {
   /** Staff uid, or "system" for scheduled work. */

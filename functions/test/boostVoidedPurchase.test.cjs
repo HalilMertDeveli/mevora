@@ -80,8 +80,12 @@ const voidToken = (purchaseToken, overrides = {}) =>
 
 /** A week bought `boughtDaysAgo` days ago, on a Boost that ends in `endsInDays` days. */
 function weekBought({uid = "u1", token, boughtDaysAgo, endsInDays, boostId = "b1", recorded = true, status = "active"}) {
-  const boughtAt = Timestamp.fromMillis(Date.now() - boughtDaysAgo * DAY_MS);
-  const expiresAt = Timestamp.fromMillis(Date.now() + endsInDays * DAY_MS);
+  // One reading of the clock for both ends: with two, a millisecond tick in
+  // between left the Boost 1 ms its purchase did not account for, and voiding
+  // the purchase no longer ended it.
+  const now = Date.now();
+  const boughtAt = Timestamp.fromMillis(now - boughtDaysAgo * DAY_MS);
+  const expiresAt = Timestamp.fromMillis(now + endsInDays * DAY_MS);
   return {
     [ledgerPath(token)]: {
       purchaseId: `android_${sha256(token)}`,

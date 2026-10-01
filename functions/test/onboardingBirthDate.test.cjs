@@ -4,6 +4,7 @@ const {Timestamp} = require("firebase-admin/firestore");
 const {createFakeFirestore} = require("./helpers/fakeFirestore.cjs");
 const {installFirebaseAdminStubs, callAs} = require("./helpers/adminStubs.cjs");
 const {publishedPath} = require("./helpers/faceAnchorHarness.cjs");
+const {bornYearsAgo} = require("./helpers/birthDates.cjs");
 
 // The callable reads getFirestore() once, at module load.
 const db = createFakeFirestore();
@@ -30,11 +31,6 @@ after(() => {
     else process.env[key] = value;
   }
 });
-
-function bornYearsAgo(years, daysAfter = 0) {
-  const today = new Date();
-  return new Date(today.getFullYear() - years, today.getMonth(), today.getDate() + daysAfter);
-}
 
 const ts = (date) => Timestamp.fromDate(date);
 

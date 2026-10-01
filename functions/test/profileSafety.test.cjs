@@ -11,11 +11,7 @@ const {
   MIN_ONBOARDING_AGE,
 } = require("../lib/profileSafety.js");
 const {passesDiscoveryProfileFilters} = require("../lib/discoveryMatching.js");
-
-function birthYearsAgo(years) {
-  const today = new Date();
-  return new Date(today.getFullYear() - years, today.getMonth(), today.getDate());
-}
+const {bornYearsAgo: birthYearsAgo} = require("./helpers/birthDates.cjs");
 
 function adultProfile(overrides = {}) {
   const photos = Array.from({length: 3}, (_, index) => ({

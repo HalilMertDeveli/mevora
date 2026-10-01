@@ -17,9 +17,7 @@ import 'package:mevora/features/profile/presentation/pages/profile_question_answ
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/shared/widgets/mevora_bottom_sheet.dart';
-import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_card.dart';
-import 'package:mevora/shared/widgets/mevora_pill.dart';
 import 'package:mevora/shared/widgets/mevora_section_header.dart';
 
 class ProfileQuestionAnswersSection extends StatefulWidget {
@@ -32,6 +30,7 @@ class ProfileQuestionAnswersSection extends StatefulWidget {
     this.requireMatch = true,
     this.highlightWhenMatched = false,
     this.viewerUid,
+    this.header,
   });
 
   final String uid;
@@ -41,6 +40,9 @@ class ProfileQuestionAnswersSection extends StatefulWidget {
   final bool requireMatch;
   final bool highlightWhenMatched;
   final String? viewerUid;
+
+  /// Shown above the answers, and only when there are answers to show.
+  final Widget? header;
 
   @override
   State<ProfileQuestionAnswersSection> createState() =>
@@ -292,11 +294,9 @@ class _ProfileQuestionAnswersSectionState
         }
         return const SizedBox.shrink();
       }
-      return _OwnerEmptyAnswers(
-        onEdit: widget.showEditAction
-            ? () => context.push(AppRoutes.profileAnswers)
-            : null,
-      );
+      // Nothing to show and, until the member has answers of this kind,
+      // nothing to edit either: no card rather than one that leads nowhere.
+      return const SizedBox.shrink();
     }
 
     final cards = visibleAnswers
@@ -318,6 +318,7 @@ class _ProfileQuestionAnswersSectionState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          ?widget.header,
           MevoraSectionHeader(
             title: widget.highlightWhenMatched
                 ? l10n.chatDiscoverAnswersPrompt
@@ -370,55 +371,6 @@ class _ProfileQuestionAnswersSectionState
         borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
       child: content,
-    );
-  }
-}
-
-class _OwnerEmptyAnswers extends StatelessWidget {
-  const _OwnerEmptyAnswers({this.onEdit});
-
-  final VoidCallback? onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    return MevoraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const MevoraIconBadge(
-                icon: MevoraIcons.questions,
-                tone: MevoraTone.compatibility,
-                size: 40,
-              ),
-              const SizedBox(width: AppSpacing.s12),
-              Expanded(
-                child: Text(
-                  l10n.questionAnswersTitle,
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.s12),
-          Text(l10n.questionAnswersEmpty, style: theme.textTheme.bodyLarge),
-          const SizedBox(height: AppSpacing.xs),
-          Text(l10n.questionAnswersEmptyHint, style: theme.textTheme.bodySmall),
-          if (onEdit != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            MevoraButton(
-              label: l10n.profileAnswersEdit,
-              variant: MevoraButtonVariant.tonal,
-              size: MevoraButtonSize.small,
-              isExpanded: false,
-              onPressed: onEdit,
-            ),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -489,6 +441,73 @@ class _AnswerCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Tells [builder] whether a matched member has answers to show, so an entry
+/// point that would only open an empty sheet is not offered. False until
+/// known.
+class MatchedProfileAnswersAvailability extends StatefulWidget {
+  const MatchedProfileAnswersAvailability({
+    super.key,
+    required this.uid,
+    required this.builder,
+  });
+
+  final String uid;
+  final Widget Function(BuildContext context, bool available) builder;
+
+  @override
+  State<MatchedProfileAnswersAvailability> createState() =>
+      _MatchedProfileAnswersAvailabilityState();
+}
+
+class _MatchedProfileAnswersAvailabilityState
+    extends State<MatchedProfileAnswersAvailability> {
+  var _available = false;
+  String? _lookedUp;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _lookUp();
+  }
+
+  @override
+  void didUpdateWidget(covariant MatchedProfileAnswersAvailability oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.uid != widget.uid) {
+      _available = false;
+      _lookUp();
+    }
+  }
+
+  void _lookUp() {
+    final answers = RelationshipScope.profileAnswersOf(context);
+    final viewerUid = AuthScope.maybeOf(context)?.user?.id;
+    final uid = widget.uid;
+    final key = '$viewerUid:$uid';
+    if (answers == null ||
+        viewerUid == null ||
+        uid.isEmpty ||
+        _lookedUp == key) {
+      return;
+    }
+    _lookedUp = key;
+    unawaited(
+      ProfileQuestionAnswerAccess.hasVisibleAnswers(
+        answers: answers,
+        viewerUid: viewerUid,
+        profileUid: uid,
+      ).then((available) {
+        if (mounted && widget.uid == uid && available != _available) {
+          setState(() => _available = available);
+        }
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context, _available);
 }
 
 /// Opens matched user's question answers from chat.

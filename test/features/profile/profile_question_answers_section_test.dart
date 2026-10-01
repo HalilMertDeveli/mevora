@@ -103,10 +103,12 @@ void main() {
     await tester.pump();
 
     expect(answers.syncCalls, 1);
-    expect(find.text(l10n.questionAnswersTitle), findsOneWidget);
-    expect(find.text(l10n.questionAnswersEmpty), findsOneWidget);
-    expect(find.text(l10n.questionAnswersEmptyHint), findsOneWidget);
-    expect(find.text(l10n.profileAnswersEdit), findsOneWidget);
+    // With nothing to show there is no card: its Edit button used to open an
+    // empty page with nothing to do on it.
+    expect(find.text(l10n.questionAnswersTitle), findsNothing);
+    expect(find.text(l10n.questionAnswersEmpty), findsNothing);
+    expect(find.text(l10n.profileAnswersEdit), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
   testWidgets('owner section shows resolved question and answer cards', (

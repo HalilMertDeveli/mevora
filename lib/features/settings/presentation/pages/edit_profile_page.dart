@@ -426,15 +426,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        ProfileSectionHeader(
-                          title: l10n.profileEditSectionAnswers,
-                          subtitle: l10n.profileEditAnswersSubtitle,
-                        ),
                         ProfileQuestionAnswersSection(
                           uid: uid,
                           isOwner: true,
                           showEditAction: true,
+                          header: Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.lg),
+                            child: ProfileSectionHeader(
+                              title: l10n.profileEditSectionAnswers,
+                              subtitle: l10n.profileEditAnswersSubtitle,
+                            ),
+                          ),
                         ),
                         if (_errorKey != null && !_photoError) ...[
                           const SizedBox(height: AppSpacing.sm),

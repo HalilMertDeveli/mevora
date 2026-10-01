@@ -915,6 +915,7 @@
   "settingsPhotoMaxExceeded": "En fazla 6 fotoğraf ekleyebilirsin.",
   "settingsPhotoPrimaryDeleteBlocked": "Bunu silmeden önce başka bir fotoğrafı birincil yap.",
   "settingsPhotoPrimaryRequired": "Bir birincil fotoğraf seç.",
+  "settingsPhotoStillProcessing": "Bu fotoğraf hâlâ inceleniyor. Biraz sonra tekrar dene.",
   "settingsFirstNameRequired": "Ad gerekli.",
   "settingsFirstNameTooLong": "Ad çok uzun.",
   "settingsLastNameRequired": "Soyad gerekli.",

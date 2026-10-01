@@ -2,6 +2,7 @@ import 'package:mevora/core/constants/firestore_paths.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/profile/domain/repositories/profile_photo_remover.dart';
 import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
 import 'package:mevora/features/settings/domain/repositories/settings_hub_repository.dart';
 import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
@@ -11,11 +12,14 @@ class ProfilePhotoManager {
   ProfilePhotoManager({
     required SettingsHubRepository settingsHub,
     required StorageRepository storage,
+    required ProfilePhotoRemover photoRemover,
   }) : _settingsHub = settingsHub,
-       _storage = storage;
+       _storage = storage,
+       _photoRemover = photoRemover;
 
   final SettingsHubRepository _settingsHub;
   final StorageRepository _storage;
+  final ProfilePhotoRemover _photoRemover;
 
   Future<Result<UserProfile>> addPhoto({
     required UserProfile profile,
@@ -83,17 +87,28 @@ class ProfilePhotoManager {
     if (blockReason != null) {
       return Err(ValidationFailure(blockReason));
     }
-    final target = profile.photos.firstWhere((p) => p.id == photoId);
     final remaining = profile.photos.where((p) => p.id != photoId).toList();
     final nextProfile = profile.copyWith(
       photos: PhotoPolicy.normalize(remaining),
     );
+    // The server takes the photo off the profile and deletes what is stored
+    // for it. Writing the shorter list from here would only do the first.
+    final removal = await _photoRemover.remove(photoId);
+    final failure = removal.failureOrNull;
+    if (failure == null) {
+      return Success(nextProfile);
+    }
+    if (failure is! NotFoundFailure) {
+      return Err(failure);
+    }
+    // A backend from before the server-side delete: remove the photo the way
+    // the app always did. Its published copy stays in storage.
     try {
       await _settingsHub.saveProfile(nextProfile);
     } on Object catch (error) {
       return Err(ValidationFailure(error.toString()));
     }
-    await _storage.deleteProfileImage(ownerUid: profile.uid, imageId: target.id);
+    await _storage.deleteProfileImage(ownerUid: profile.uid, imageId: photoId);
     return Success(nextProfile);
   }
 

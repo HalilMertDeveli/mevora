@@ -12,6 +12,7 @@ abstract final class SettingsStrings {
       'photo_max_exceeded' => l10n.settingsPhotoMaxExceeded,
       'photo_primary_delete_blocked' => l10n.settingsPhotoPrimaryDeleteBlocked,
       'photo_primary_required' => l10n.settingsPhotoPrimaryRequired,
+      'photo_processing' => l10n.settingsPhotoStillProcessing,
       'photo_last_face_anchor' => l10n.faceAnchorLastAnchorDelete,
       'photo_primary_requires_face_anchor' =>
         l10n.faceAnchorPrimaryRequiresVerify,

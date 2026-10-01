@@ -16,6 +16,8 @@ import 'package:mevora/features/settings/data/services/profile_photo_manager.dar
 import 'package:mevora/features/settings/domain/repositories/settings_hub_repository.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
+import '../../helpers/fake_profile_photo_remover.dart';
+
 /// Hub whose profile read is held open until the test releases it, so the page
 /// can be disposed while the load is still in flight — the exact shape of
 /// logout and account deletion.
@@ -59,7 +61,11 @@ class _FakeReauth implements ReauthPort {
 SettingsServices _services(SettingsHubRepository hub) {
   return SettingsServices(
     settingsHub: hub,
-    photoManager: ProfilePhotoManager(settingsHub: hub, storage: _FakeStorage()),
+    photoManager: ProfilePhotoManager(
+      settingsHub: hub,
+      storage: _FakeStorage(),
+      photoRemover: FakeProfilePhotoRemover(),
+    ),
     reauthService: _FakeReauth(),
     photoPicker: const StubProfilePhotoPicker(),
     profileUpdates: ProfileUpdateNotifier(),

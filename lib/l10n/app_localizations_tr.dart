@@ -2305,6 +2305,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsPhotoPrimaryRequired => 'Bir birincil fotoğraf seç.';
 
   @override
+  String get settingsPhotoStillProcessing =>
+      'Bu fotoğraf hâlâ inceleniyor. Biraz sonra tekrar dene.';
+
+  @override
   String get settingsFirstNameRequired => 'Ad gerekli.';
 
   @override

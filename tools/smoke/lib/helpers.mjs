@@ -54,6 +54,8 @@ export async function seedSmokeUser(db, auth, email, label) {
   await db.doc(`users/${uid}`).set({
     uid,
     email,
+    // Private account data: the public profile below carries only the age.
+    birthDate: ADULT_BIRTH_DATE,
     accountStatus: "active",
     isActive: true,
     isBanned: false,
@@ -64,7 +66,6 @@ export async function seedSmokeUser(db, auth, email, label) {
   await db.doc(`profiles/${uid}`).set({
     uid,
     displayName: `Smoke ${label}`,
-    birthDate: ADULT_BIRTH_DATE,
     age: 28,
     gender: label === "A" ? "man" : "woman",
     interestedIn: label === "A" ? "women" : "men",

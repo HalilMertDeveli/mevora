@@ -42,6 +42,11 @@ class SettingsHubRepositoryImpl implements SettingsHubRepository {
   }
 
   @override
+  Future<DateTime?> loadBirthDate(String uid) {
+    return _profileDataSource.fetchBirthDate(uid);
+  }
+
+  @override
   Future<UserPreferences> loadDiscoveryPreferences(String uid) {
     return _profileDataSource.fetchPreferences(uid);
   }

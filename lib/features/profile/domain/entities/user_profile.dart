@@ -104,6 +104,9 @@ class UserProfile {
 
   final String uid;
   final String displayName;
+
+  /// Private to its owner: other members' profiles never carry it, only
+  /// [age]. Set on the owner's own draft from their account document.
   final DateTime? birthDate;
   final int? age;
   final String? gender;

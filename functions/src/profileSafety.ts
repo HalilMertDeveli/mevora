@@ -5,8 +5,7 @@ export const MIN_ONBOARDING_AGE = 18;
 export const MIN_PROFILE_PHOTOS = 3;
 export const MAX_PROFILE_PHOTOS = 6;
 
-export function ageFromBirthDate(birthDate: Date): number {
-  const today = new Date();
+export function ageFromBirthDate(birthDate: Date, today: Date = new Date()): number {
   let years = today.getFullYear() - birthDate.getFullYear();
   const monthDelta = today.getMonth() - birthDate.getMonth();
   if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
@@ -15,6 +14,15 @@ export function ageFromBirthDate(birthDate: Date): number {
   return years;
 }
 
+/**
+ * The age a profile document stands for.
+ *
+ * profiles/{uid} carries `age` only: the server writes it from the member's
+ * private date of birth (profileAge.ts) and a client cannot change it. A
+ * `birthDate` is read here solely for profiles written before the date moved
+ * to users/{uid}, until the backfill has been run; the rules no longer let a
+ * client put one on a profile.
+ */
 export function resolveProfileAge(data: DocumentData | undefined): number | null {
   if (!data) {
     return null;

@@ -1,5 +1,6 @@
 const {describe, it, beforeEach, after} = require("node:test");
 const assert = require("node:assert/strict");
+const {Timestamp} = require("firebase-admin/firestore");
 const {createFakeFirestore} = require("./helpers/fakeFirestore.cjs");
 const {installFirebaseAdminStubs, callAs} = require("./helpers/adminStubs.cjs");
 const {publishedPath, verdict} = require("./helpers/faceAnchorHarness.cjs");
@@ -37,11 +38,16 @@ after(() => {
  */
 function seedMember({uid = UID, photoIds = ["p1", "p2", "p3"], anchors = [], profile = {}, ledger = {}, photos} = {}) {
   const seed = {};
-  seed[`users/${uid}`] = {uid, accountStatus: "active", lastName: "Yılmaz"};
+  // The surname and the date of birth are private account data.
+  seed[`users/${uid}`] = {
+    uid,
+    accountStatus: "active",
+    lastName: "Yılmaz",
+    birthDate: Timestamp.fromDate(new Date(1996, 3, 11)),
+  };
   seed[`profiles/${uid}`] = {
     uid,
     displayName: "Deniz",
-    age: 29,
     gender: "female",
     interestedIn: "male",
     city: "İstanbul",

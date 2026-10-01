@@ -27,6 +27,14 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
+  Future<DateTime?> loadMyBirthDate(String uid) => _dataSource.fetchBirthDate(uid);
+
+  @override
+  Future<void> saveMyBirthDate(String uid, DateTime birthDate) {
+    return _dataSource.saveBirthDate(uid, birthDate);
+  }
+
+  @override
   Future<UserPreferences> loadPreferences(String uid) {
     return _dataSource.fetchPreferences(uid);
   }

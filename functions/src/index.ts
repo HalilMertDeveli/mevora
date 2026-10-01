@@ -5,6 +5,7 @@ export * from "./notifications";
 export * from "./incomingLikes";
 export * from "./premium";
 export {completeOnboarding} from "./onboarding";
+export {profileAgeRollover} from "./profileAgeRollover.js";
 export {enforceProfilePhotoModeration} from "./moderation/profileModerationGuard.js";
 export {prepareSmokeTestUsers, cleanupSmokeTestUsers} from "./smoke/smokeTestUsers.js";
 export {spotifyCompleteAuth} from "./spotifyAuth";

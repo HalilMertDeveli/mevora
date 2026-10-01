@@ -64,6 +64,27 @@ class FirebaseProfileDataSource {
     });
   }
 
+  /// The owner's private date of birth. Like the surname it lives on
+  /// `users/{uid}`: other members see the age the server derives from it on
+  /// `profiles/{uid}`, never the date.
+  Future<DateTime?> fetchBirthDate(String uid) async {
+    final snap = await _accounts.doc(uid).get();
+    return birthDateFrom(snap.data());
+  }
+
+  /// Set once: the rules refuse a different date afterwards.
+  Future<void> saveBirthDate(String uid, DateTime birthDate) {
+    return _accounts.doc(uid).update({
+      'birthDate': Timestamp.fromDate(birthDate),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  static DateTime? birthDateFrom(Map<String, dynamic>? account) {
+    final value = account?['birthDate'];
+    return value is Timestamp ? value.toDate() : null;
+  }
+
   static String? lastNameFrom(Map<String, dynamic>? account) {
     final value = account?['lastName'];
     if (value is! String) {
@@ -122,6 +143,8 @@ class FirebaseProfileDataSource {
   }
 
   UserProfile _profileFrom(String uid, Map<String, dynamic> data) {
+    // Only a profile written before the date moved to the account still has
+    // one here; the owner's is read with [fetchBirthDate].
     final birthDate = firestoreDate(data['birthDate']);
     return UserProfile(
       uid: uid,
@@ -162,15 +185,12 @@ class FirebaseProfileDataSource {
 
   /// Everything this client writes to the member-readable `profiles/{uid}`.
   /// `displayName` is the first name only; the surname is saved separately
-  /// through [saveLastName] and must never be added here.
+  /// through [saveLastName] and must never be added here. Neither must the
+  /// date of birth ([saveBirthDate]) — nor the age, which the server writes.
   static Map<String, dynamic> publicProfileMap(UserProfile profile) {
     return {
       'uid': profile.uid,
       'displayName': profile.displayName,
-      'birthDate': profile.birthDate == null
-          ? null
-          : Timestamp.fromDate(profile.birthDate!),
-      'age': profile.age ?? _ageFrom(profile.birthDate),
       'gender': profile.gender,
       'interestedIn': profile.interestedIn,
       'bio': profile.bio,

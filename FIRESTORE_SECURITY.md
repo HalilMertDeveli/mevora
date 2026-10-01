@@ -61,7 +61,7 @@ Write: owner. Read: owner, or others only when `userPrivacy/{id}.showOnlineStatu
 | Action | Who | Notes |
 | --- | --- | --- |
 | read | any authenticated user | Public dating card only |
-| create / update | owner | `uid` must match (or default to path id). Size limits on name/bio/photos. Forbidden keys: `email`, `phoneNumber`, `password`, `authProviders`, `latitude`, `longitude`, `geohash`, `fcmToken`, `token` |
+| create / update | owner | `uid` must match (or default to path id). Size limits on name/bio/photos. Forbidden keys: `email`, `phoneNumber`, `password`, `authProviders`, `latitude`, `longitude`, `geohash`, `fcmToken`, `token`. `birthDate` and `age` cannot be added or changed by a client: the date of birth is private on `users/{userId}` (set once by the owner) and the age is written by the server — see `docs/PROFILE_BIRTH_DATE_PRIVACY.md` |
 | delete | none | |
 
 ---

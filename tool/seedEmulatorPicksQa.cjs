@@ -243,7 +243,6 @@ async function seed(person) {
     uid,
     displayName,
     gender,
-    birthDate: Timestamp.fromDate(birthDate),
     age,
     bio: "Mevora Picks QA fixture.",
     city: "İstanbul",

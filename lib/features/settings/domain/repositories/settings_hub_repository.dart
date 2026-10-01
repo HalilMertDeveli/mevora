@@ -16,6 +16,10 @@ abstract class SettingsHubRepository {
 
   Future<void> saveLastName(String uid, String lastName);
 
+  /// The member's private date of birth, from their account. It cannot be
+  /// changed after onboarding, so there is no save.
+  Future<DateTime?> loadBirthDate(String uid);
+
   Future<UserPreferences> loadDiscoveryPreferences(String uid);
 
   Future<void> saveDiscoveryPreferences(UserPreferences preferences);

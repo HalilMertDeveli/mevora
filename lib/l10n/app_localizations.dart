@@ -4166,6 +4166,12 @@ abstract class AppLocalizations {
   /// **'Choose a primary photo.'**
   String get settingsPhotoPrimaryRequired;
 
+  /// No description provided for @settingsPhotoStillProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is still being checked. Try again in a moment.'**
+  String get settingsPhotoStillProcessing;
+
   /// No description provided for @settingsFirstNameRequired.
   ///
   /// In en, this message translates to:

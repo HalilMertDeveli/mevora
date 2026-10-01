@@ -25,6 +25,7 @@ import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
 
 import '../../helpers/fake_auth.dart';
+import '../../helpers/fake_profile_photo_remover.dart';
 import '../../helpers/fake_settings_hub_repository.dart';
 
 class _SilentLogger implements AppLogger {
@@ -137,6 +138,7 @@ Future<void> _openEditProfile(WidgetTester tester, _Hub hub) async {
           photoManager: ProfilePhotoManager(
             settingsHub: hub,
             storage: _FakeStorage(),
+            photoRemover: FakeProfilePhotoRemover(),
           ),
           reauthService: _FakeReauth(),
           photoPicker: const StubProfilePhotoPicker(),

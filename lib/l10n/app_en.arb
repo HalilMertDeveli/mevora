@@ -1141,6 +1141,7 @@
   "settingsPhotoMaxExceeded": "You can add up to 6 photos.",
   "settingsPhotoPrimaryDeleteBlocked": "Set another photo as primary before deleting this one.",
   "settingsPhotoPrimaryRequired": "Choose a primary photo.",
+  "settingsPhotoStillProcessing": "This photo is still being checked. Try again in a moment.",
   "settingsFirstNameRequired": "First name is required.",
   "settingsFirstNameTooLong": "First name is too long.",
   "settingsLastNameRequired": "Last name is required.",

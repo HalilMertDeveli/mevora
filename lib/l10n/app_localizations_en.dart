@@ -2330,6 +2330,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPhotoPrimaryRequired => 'Choose a primary photo.';
 
   @override
+  String get settingsPhotoStillProcessing =>
+      'This photo is still being checked. Try again in a moment.';
+
+  @override
   String get settingsFirstNameRequired => 'First name is required.';
 
   @override

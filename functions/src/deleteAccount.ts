@@ -281,6 +281,7 @@ export const deleteUserAccount = onCall(
       db.doc(`users/${uid}/music/summary`),
       db.doc(`users/${uid}/humor/summary`),
       db.doc(`users/${uid}/humor/calibration`),
+      db.doc(`users/${uid}/humor/core`),
       db.doc(`users/${uid}/relationshipMatch/summary`),
       db.doc(`users/${uid}/verification/sumsub`),
       db.doc(`users/${uid}/verification/identity`),

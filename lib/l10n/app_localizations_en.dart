@@ -868,6 +868,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingFirstName => 'First name';
 
   @override
+  String get onboardingLastName => 'Last name';
+
+  @override
+  String get onboardingLastNamePrivate =>
+      'Other members never see your last name.';
+
+  @override
   String get onboardingBirthDate => 'Birthday';
 
   @override
@@ -907,6 +914,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingErrorFirstName => 'Add your first name.';
+
+  @override
+  String get onboardingErrorLastName => 'Add your last name.';
 
   @override
   String get onboardingErrorGender => 'Choose how you identify.';
@@ -2316,6 +2326,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsFirstNameTooLong => 'First name is too long.';
+
+  @override
+  String get settingsLastNameRequired => 'Last name is required.';
+
+  @override
+  String get settingsLastNameTooLong => 'Last name is too long.';
 
   @override
   String get settingsBioTooLong => 'Bio is too long.';
@@ -3831,46 +3847,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cohabitationNo => 'No';
 
   @override
-  String get languageGerman => 'German';
+  String get languageGerman => 'German 🇩🇪';
 
   @override
-  String get languageFrench => 'French';
+  String get languageFrench => 'French 🇫🇷';
 
   @override
-  String get languageSpanish => 'Spanish';
+  String get languageSpanish => 'Spanish 🇪🇸';
 
   @override
-  String get languageItalian => 'Italian';
+  String get languageItalian => 'Italian 🇮🇹';
 
   @override
-  String get languageRussian => 'Russian';
+  String get languageRussian => 'Russian 🇷🇺';
 
   @override
-  String get languageArabic => 'Arabic';
+  String get languageArabic => 'Arabic 🌐';
 
   @override
-  String get languagePersian => 'Persian';
+  String get languagePersian => 'Persian 🌐';
 
   @override
-  String get languageKurdish => 'Kurdish';
+  String get languageKurdish => 'Kurdish 🌐';
 
   @override
-  String get languageGreek => 'Greek';
+  String get languageGreek => 'Greek 🇬🇷';
 
   @override
-  String get languageDutch => 'Dutch';
+  String get languageDutch => 'Dutch 🇳🇱';
 
   @override
-  String get languagePortuguese => 'Portuguese';
+  String get languagePortuguese => 'Portuguese 🇵🇹';
 
   @override
-  String get languageChinese => 'Chinese';
+  String get languageChinese => 'Chinese 🌐';
 
   @override
-  String get languageJapanese => 'Japanese';
+  String get languageJapanese => 'Japanese 🇯🇵';
 
   @override
-  String get languageKorean => 'Korean';
+  String get languageKorean => 'Korean 🇰🇷';
 
   @override
   String get hobbyWorkingOut => 'Working out';

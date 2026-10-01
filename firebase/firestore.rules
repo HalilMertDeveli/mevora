@@ -177,8 +177,10 @@ service cloud.firestore {
     // derived from the only client writers that exist:
     //
     //   users/{uid}      _newAccount / _accountUpdates
-    //                    (firebase_user_data_source.dart) and the location
-    //                    merge in firebase_location_data_source.dart
+    //                    (firebase_user_data_source.dart), the location
+    //                    merge in firebase_location_data_source.dart and the
+    //                    private surname (saveLastName in
+    //                    firebase_profile_data_source.dart)
     //   profiles/{uid}   _newProfileStub, the displayName-only update
     //                    (firebase_user_data_source.dart) and _profileToMap
     //                    (firebase_profile_data_source.dart)
@@ -221,6 +223,7 @@ service cloud.firestore {
         'uid',
         'id',
         'displayName',
+        'lastName',
         'email',
         'phoneNumber',
         'photoUrl',
@@ -231,6 +234,16 @@ service cloud.firestore {
         'lastActiveAt',
         'isActive'
       ]);
+    }
+
+    // The member's surname is private account data. It is accepted here and
+    // nowhere else: profiles/{uid} is readable by every member, and its
+    // allowlists below name no surname key, so a client cannot publish one.
+    function lastNameValid() {
+      return !('lastName' in request.resource.data)
+        || (request.resource.data.lastName is string
+          && request.resource.data.lastName.size() > 0
+          && request.resource.data.lastName.size() <= 50);
     }
 
     // photos stays client-writable on purpose: Firestore rules cannot validate
@@ -407,6 +420,7 @@ service cloud.firestore {
 
       allow update: if isOwner(userId)
         && userUpdateKeysAllowed()
+        && lastNameValid()
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
         && lastActiveAtUnchangedOrServerNow()
         && request.resource.data.get('isBanned', resource.data.get('isBanned', false))

@@ -139,7 +139,7 @@ abstract final class RelationshipLearningParser {
   }
 
   static DailyProgress parseProgress(Map<String, dynamic> data) {
-    final total = firestoreInt(data['total'], 10);
+    final total = firestoreInt(data['total'], 0);
     return DailyProgress(
       dateKey: data['dateKey'] is String ? data['dateKey'] as String : '',
       questionSetId: data['questionSetId'] is String

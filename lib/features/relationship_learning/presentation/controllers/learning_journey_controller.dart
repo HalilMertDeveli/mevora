@@ -10,8 +10,8 @@ import 'package:mevora/features/relationship_learning/domain/repositories/relati
 
 /// Which step a member still owes before the rest of the app, for the router:
 ///
-///   new member:  basic profile (onboarding) → Humor Lab → today's 10 → Picks
-///   every day:   today's 10 (until answered or "Bugünlük geç") → the app
+///   new member:  basic profile (onboarding) → Humor Lab → Q1–Q15 → Picks
+///   every day:   today's five (until answered or "Bugünlük geç") → the app
 ///
 /// The server decides the stage from real facts (calibration, today's
 /// answers, a recorded skip) on its own clock, so the same account always

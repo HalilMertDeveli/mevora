@@ -14,6 +14,8 @@ abstract final class SettingsStrings {
       'photo_primary_required' => l10n.settingsPhotoPrimaryRequired,
       'first_name_required' => l10n.settingsFirstNameRequired,
       'first_name_too_long' => l10n.settingsFirstNameTooLong,
+      'last_name_required' => l10n.settingsLastNameRequired,
+      'last_name_too_long' => l10n.settingsLastNameTooLong,
       'bio_too_long' => l10n.settingsBioTooLong,
       'interests_too_many' => l10n.settingsInterestsTooMany,
       'interests_min_required' => l10n.interestsMinRequired,

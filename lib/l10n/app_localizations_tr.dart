@@ -851,6 +851,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingFirstName => 'Adın';
 
   @override
+  String get onboardingLastName => 'Soyadın';
+
+  @override
+  String get onboardingLastNamePrivate => 'Soyadın diğer üyelere gösterilmez.';
+
+  @override
   String get onboardingBirthDate => 'Doğum tarihin';
 
   @override
@@ -891,6 +897,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingErrorFirstName => 'Adını ekle.';
+
+  @override
+  String get onboardingErrorLastName => 'Soyadını ekle.';
 
   @override
   String get onboardingErrorGender => 'Kendini nasıl tanımladığını seç.';
@@ -2300,6 +2309,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsFirstNameTooLong => 'Ad çok uzun.';
+
+  @override
+  String get settingsLastNameRequired => 'Soyad gerekli.';
+
+  @override
+  String get settingsLastNameTooLong => 'Soyad çok uzun.';
 
   @override
   String get settingsBioTooLong => 'Hakkında metni çok uzun.';
@@ -3821,46 +3836,46 @@ class AppLocalizationsTr extends AppLocalizations {
   String get cohabitationNo => 'İstemiyorum';
 
   @override
-  String get languageGerman => 'Almanca';
+  String get languageGerman => 'Almanca 🇩🇪';
 
   @override
-  String get languageFrench => 'Fransızca';
+  String get languageFrench => 'Fransızca 🇫🇷';
 
   @override
-  String get languageSpanish => 'İspanyolca';
+  String get languageSpanish => 'İspanyolca 🇪🇸';
 
   @override
-  String get languageItalian => 'İtalyanca';
+  String get languageItalian => 'İtalyanca 🇮🇹';
 
   @override
-  String get languageRussian => 'Rusça';
+  String get languageRussian => 'Rusça 🇷🇺';
 
   @override
-  String get languageArabic => 'Arapça';
+  String get languageArabic => 'Arapça 🌐';
 
   @override
-  String get languagePersian => 'Farsça';
+  String get languagePersian => 'Farsça 🌐';
 
   @override
-  String get languageKurdish => 'Kürtçe';
+  String get languageKurdish => 'Kürtçe 🌐';
 
   @override
-  String get languageGreek => 'Yunanca';
+  String get languageGreek => 'Yunanca 🇬🇷';
 
   @override
-  String get languageDutch => 'Hollandaca';
+  String get languageDutch => 'Hollandaca 🇳🇱';
 
   @override
-  String get languagePortuguese => 'Portekizce';
+  String get languagePortuguese => 'Portekizce 🇵🇹';
 
   @override
-  String get languageChinese => 'Çince';
+  String get languageChinese => 'Çince 🌐';
 
   @override
-  String get languageJapanese => 'Japonca';
+  String get languageJapanese => 'Japonca 🇯🇵';
 
   @override
-  String get languageKorean => 'Korece';
+  String get languageKorean => 'Korece 🇰🇷';
 
   @override
   String get hobbyWorkingOut => 'Spor yapmak';

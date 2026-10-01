@@ -5,16 +5,17 @@ import type {PersonalizationDimension} from "../personalization/config.js";
  * relationship question Mevora asks. The client renders what the server
  * sends; it never ships its own copy.
  *
- * Every calendar day ALL members get the same 10 questions from this bank,
- * in the same order (see schedule.ts), so answers are directly comparable:
+ * Every member meets these questions in the same fixed order (see
+ * coreSequence.ts and schedule.ts), so answers are directly comparable:
  * member A and member B answering question X with option Y is a real, shared
  * piece of evidence.
  *
  * Identity is stable and machine-readable:
  *   - question ids are semantic and versioned: relationship_<slug>_v<n>
  *   - option ids are semantic slugs, never display text
- * If a question's MEANING changes, add a new id with the next version and
- * retire the old one (active: false). Never change what an existing id means.
+ * If a question's MEANING or options change, add a new id with the next
+ * version, append it to CORE_SEQUENCE and retire the old one (active: false).
+ * Never change what an existing id means.
  *
  * Each question maps to one compatibility dimension and says how two answers
  * compare:
@@ -29,9 +30,6 @@ import type {PersonalizationDimension} from "../personalization/config.js";
  */
 
 export const LEARNING_CATALOG_VERSION = 2;
-
-/** Questions in every daily set. */
-export const DAILY_QUESTION_COUNT = 10;
 
 export type AnswerType = "choice" | "scale";
 export type ComparisonType = "exact" | "distance" | "matrix" | "none";
@@ -80,9 +78,8 @@ export interface LearningQuestion {
   dimension: PersonalizationDimension;
   category: LearningCategory;
   topic: LearningTopic | null;
+  /** False once retired: never asked again, never compared. */
   active: boolean;
-  /** Can be scheduled into a daily set. */
-  dailyEligible: boolean;
   prompt: LocalizedText;
   options: LearningOption[];
   /** Matrix comparison only: symmetric agreement for non-identical pairs (0..1). */
@@ -122,7 +119,6 @@ function question(spec: {
     category: spec.category,
     topic: spec.topic ?? null,
     active: true,
-    dailyEligible: true,
     prompt: {tr: spec.tr, en: spec.en},
     options: options(spec.options),
     ...(spec.matrix ? {matrix: spec.matrix} : {}),
@@ -153,7 +149,6 @@ function importance(spec: {
     category: spec.category,
     topic: null,
     active: true,
-    dailyEligible: true,
     prompt: {tr: spec.tr, en: spec.en},
     options: options(IMPORTANCE_SCALE),
   };
@@ -750,11 +745,6 @@ export const LEARNING_QUESTION_ID_PATTERN = /^relationship_[a-z0-9_]{2,60}_v[1-9
 export function learningQuestion(id: unknown): LearningQuestion | null {
   if (typeof id !== "string" || !LEARNING_QUESTION_ID_PATTERN.test(id)) return null;
   return BY_ID.get(id) ?? null;
-}
-
-/** Every question that may appear in a daily set, in catalog order. */
-export function dailyEligibleQuestions(): LearningQuestion[] {
-  return LEARNING_QUESTIONS.filter((question) => question.active && question.dailyEligible);
 }
 
 /** True when `answerId` is one of an active question's own options. */

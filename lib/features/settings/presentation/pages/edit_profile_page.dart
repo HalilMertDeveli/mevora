@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
@@ -15,6 +16,7 @@ import 'package:mevora/features/permissions/presentation/pages/permission_prompt
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/services/profile_completion_calculator.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_completion_banner.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_extended_lifestyle_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_height_picker.dart';
@@ -53,11 +55,17 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _bioController = TextEditingController();
   final _cityController = TextEditingController();
 
   final _occupationController = TextEditingController();
   UserProfile? _baseline;
+
+  /// The private surname as last saved. It is loaded from the account, apart
+  /// from the public profile, and stays empty for a legacy account.
+  String _baselineLastName = '';
+  var _lastNameLoaded = false;
   String? _gender;
   String? _interestedIn;
   String? _relationshipGoal;
@@ -74,6 +82,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void dispose() {
     _firstNameController.dispose();
+    _lastNameController.dispose();
     _bioController.dispose();
     _cityController.dispose();
     _occupationController.dispose();
@@ -85,8 +94,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (baseline == null || !_hydrated) {
       return false;
     }
-    return !_profilesEqual(baseline, _buildDraft(baseline));
+    return !_profilesEqual(baseline, _buildDraft(baseline)) ||
+        _lastNameChanged;
   }
+
+  String get _lastName => PersonNameValidator.normalize(_lastNameController.text);
+
+  bool get _lastNameChanged =>
+      _lastNameLoaded && _lastName != _baselineLastName;
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +117,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         final profile = snapshot.data;
         if (profile != null && (!_hydrated || _baseline?.uid != profile.uid)) {
           _hydrate(profile);
+          unawaited(_loadLastName(settings, uid));
         }
         return PopScope(
           canPop: !_hasUnsavedChanges,
@@ -148,6 +164,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         MevoraTextField(
                           controller: _firstNameController,
                           label: l10n.onboardingFirstName,
+                          textCapitalization: TextCapitalization.words,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(
+                              PersonNameValidator.maxFirstNameLength,
+                            ),
+                          ],
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        MevoraTextField(
+                          controller: _lastNameController,
+                          label: l10n.onboardingLastName,
+                          helperText: l10n.onboardingLastNamePrivate,
+                          enabled: _lastNameLoaded && !_saving,
+                          textCapitalization: TextCapitalization.words,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(
+                              PersonNameValidator.maxLastNameLength,
+                            ),
+                          ],
                           onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -375,6 +411,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _hydrated = true;
   }
 
+  Future<void> _loadLastName(SettingsServices settings, String uid) async {
+    String? lastName;
+    try {
+      lastName = await settings.settingsHub.loadLastName(uid);
+    } on Object {
+      lastName = null;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _baselineLastName = lastName ?? '';
+      _lastNameController.text = _baselineLastName;
+      _lastNameLoaded = true;
+    });
+  }
+
   UserProfile _buildDraft(UserProfile profile) {
     return profile.copyWith(
       displayName: _firstNameController.text.trim(),
@@ -465,7 +518,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
   ) async {
     final l10n = AppLocalizations.of(context);
     final next = _buildDraft(profile);
-    final validation = ProfileEditValidator.validateProfile(next);
+    final lastName = _lastName;
+    final validation =
+        ProfileEditValidator.validateProfile(next) ??
+        ProfileEditValidator.validateLastName(
+          lastName,
+          required: _baselineLastName.isNotEmpty,
+        );
     if (validation != null) {
       setState(() => _errorKey = validation);
       return;
@@ -474,12 +533,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _saving = true;
       _errorKey = null;
     });
-    await settings.settingsHub.saveProfile(next);
+    try {
+      // The surname is saved to the private account, never with the profile.
+      if (_lastNameChanged && lastName.isNotEmpty) {
+        await settings.settingsHub.saveLastName(uid, lastName);
+      }
+      await settings.settingsHub.saveProfile(next);
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _errorKey = 'save_failed';
+        });
+      }
+      return;
+    }
     settings.profileUpdates.notifyProfileUpdated(uid);
     if (mounted) {
       setState(() {
         _saving = false;
         _baseline = next;
+        _baselineLastName = lastName;
       });
       ScaffoldMessenger.of(
         context,

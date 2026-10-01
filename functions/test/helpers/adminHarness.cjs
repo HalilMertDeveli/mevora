@@ -110,6 +110,9 @@ function createFakeBucket() {
         async setMetadata(meta) {
           if (files.has(path)) files.get(path).metadata = {...files.get(path).metadata, ...meta};
         },
+        async save(data, options = {}) {
+          files.set(path, {bytes: Buffer.from(data), metadata: {...(options.metadata ?? {}), size: String(data.length)}});
+        },
       };
     },
     async getFiles({prefix}) {

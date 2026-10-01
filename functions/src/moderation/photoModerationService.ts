@@ -16,6 +16,11 @@ import {
   reconcilePhoto,
   writeLedgerEntry,
 } from "./photoModerationLedger.js";
+import {
+  PHOTO_CACHE_CONTROL,
+  firebaseDownloadUrl,
+  publishPhotoVariants,
+} from "./photoVariants.js";
 
 function extensionForContentType(contentType: string | undefined): string {
   const lower = String(contentType ?? "").toLowerCase();
@@ -107,6 +112,8 @@ export async function setPhotoModerationStatus(
       moderatedAt: patch.moderatedAt,
       storagePath: patch.storagePath,
       downloadUrl: patch.downloadUrl,
+      thumbUrl: patch.thumbUrl,
+      cardUrl: patch.cardUrl,
     });
   }
   const profileRef = db.doc(`profiles/${uid}`);
@@ -117,6 +124,20 @@ export async function setPhotoModerationStatus(
   });
 }
 
+export interface PublishedPhoto {
+  destPath: string;
+  downloadUrl: string;
+  /** Null when the variant could not be rendered; clients fall back to downloadUrl. */
+  thumbUrl: string | null;
+  cardUrl: string | null;
+}
+
+/**
+ * Publishes an approved photo: the original is copied byte-for-byte to the
+ * server-only photos/ prefix, and the display variants are rendered from the
+ * same approved bytes. [sourceBuffer] is the buffer moderation already
+ * downloaded; without it the pending object is read once more.
+ */
 export async function publishApprovedPhoto(options: {
   db: Firestore;
   bucket: Bucket;
@@ -124,7 +145,8 @@ export async function publishApprovedPhoto(options: {
   imageId: string;
   sourcePath: string;
   contentType: string | undefined;
-}): Promise<{destPath: string; downloadUrl: string}> {
+  sourceBuffer?: Buffer;
+}): Promise<PublishedPhoto> {
   const extension = extensionForContentType(options.contentType);
   const destPath = `users/${options.uid}/profile/photos/${options.imageId}.${extension}`;
   const source = options.bucket.file(options.sourcePath);
@@ -133,12 +155,37 @@ export async function publishApprovedPhoto(options: {
   const token = randomUUID();
   await dest.setMetadata({
     contentType: options.contentType ?? `image/${extension === "jpg" ? "jpeg" : extension}`,
+    cacheControl: PHOTO_CACHE_CONTROL,
     metadata: {firebaseStorageDownloadTokens: token},
   });
-  const downloadUrl =
-    `https://firebasestorage.googleapis.com/v0/b/${options.bucket.name}/o/` +
-    `${encodeURIComponent(destPath)}?alt=media&token=${token}`;
-  return {destPath, downloadUrl};
+  const downloadUrl = firebaseDownloadUrl(options.bucket.name, destPath, token);
+
+  let sourceBuffer = options.sourceBuffer;
+  if (!sourceBuffer) {
+    try {
+      [sourceBuffer] = await source.download({validation: false});
+    } catch (error) {
+      logger.warn("Approved photo source unreadable; publishing without variants", {
+        uid: options.uid,
+        imageId: options.imageId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  const variants = sourceBuffer
+    ? await publishPhotoVariants({
+      bucket: options.bucket,
+      uid: options.uid,
+      imageId: options.imageId,
+      source: sourceBuffer,
+    })
+    : {};
+  return {
+    destPath,
+    downloadUrl,
+    thumbUrl: variants.thumb?.url ?? null,
+    cardUrl: variants.card?.url ?? null,
+  };
 }
 
 export async function processPendingProfilePhoto(options: {
@@ -180,10 +227,13 @@ export async function processPendingProfilePhoto(options: {
         imageId: options.imageId,
         sourcePath: options.pendingPath,
         contentType: options.contentType,
+        sourceBuffer: buffer,
       });
       await setPhotoModerationStatus(options.db, options.uid, options.imageId, {
         storagePath: published.destPath,
         downloadUrl: published.downloadUrl,
+        thumbUrl: published.thumbUrl,
+        cardUrl: published.cardUrl,
         moderationStatus: "approved",
         moderationReason: result.reason ?? null,
         moderatedAt: FieldValue.serverTimestamp(),

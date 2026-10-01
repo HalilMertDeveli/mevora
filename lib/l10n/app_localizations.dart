@@ -1490,6 +1490,18 @@ abstract class AppLocalizations {
   /// **'First name'**
   String get onboardingFirstName;
 
+  /// No description provided for @onboardingLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get onboardingLastName;
+
+  /// No description provided for @onboardingLastNamePrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Other members never see your last name.'**
+  String get onboardingLastNamePrivate;
+
   /// No description provided for @onboardingBirthDate.
   ///
   /// In en, this message translates to:
@@ -1567,6 +1579,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add your first name.'**
   String get onboardingErrorFirstName;
+
+  /// No description provided for @onboardingErrorLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your last name.'**
+  String get onboardingErrorLastName;
 
   /// No description provided for @onboardingErrorGender.
   ///
@@ -4147,6 +4165,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'First name is too long.'**
   String get settingsFirstNameTooLong;
+
+  /// No description provided for @settingsLastNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name is required.'**
+  String get settingsLastNameRequired;
+
+  /// No description provided for @settingsLastNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name is too long.'**
+  String get settingsLastNameTooLong;
 
   /// No description provided for @settingsBioTooLong.
   ///
@@ -6803,85 +6833,85 @@ abstract class AppLocalizations {
   /// No description provided for @languageGerman.
   ///
   /// In en, this message translates to:
-  /// **'German'**
+  /// **'German 🇩🇪'**
   String get languageGerman;
 
   /// No description provided for @languageFrench.
   ///
   /// In en, this message translates to:
-  /// **'French'**
+  /// **'French 🇫🇷'**
   String get languageFrench;
 
   /// No description provided for @languageSpanish.
   ///
   /// In en, this message translates to:
-  /// **'Spanish'**
+  /// **'Spanish 🇪🇸'**
   String get languageSpanish;
 
   /// No description provided for @languageItalian.
   ///
   /// In en, this message translates to:
-  /// **'Italian'**
+  /// **'Italian 🇮🇹'**
   String get languageItalian;
 
   /// No description provided for @languageRussian.
   ///
   /// In en, this message translates to:
-  /// **'Russian'**
+  /// **'Russian 🇷🇺'**
   String get languageRussian;
 
   /// No description provided for @languageArabic.
   ///
   /// In en, this message translates to:
-  /// **'Arabic'**
+  /// **'Arabic 🌐'**
   String get languageArabic;
 
   /// No description provided for @languagePersian.
   ///
   /// In en, this message translates to:
-  /// **'Persian'**
+  /// **'Persian 🌐'**
   String get languagePersian;
 
   /// No description provided for @languageKurdish.
   ///
   /// In en, this message translates to:
-  /// **'Kurdish'**
+  /// **'Kurdish 🌐'**
   String get languageKurdish;
 
   /// No description provided for @languageGreek.
   ///
   /// In en, this message translates to:
-  /// **'Greek'**
+  /// **'Greek 🇬🇷'**
   String get languageGreek;
 
   /// No description provided for @languageDutch.
   ///
   /// In en, this message translates to:
-  /// **'Dutch'**
+  /// **'Dutch 🇳🇱'**
   String get languageDutch;
 
   /// No description provided for @languagePortuguese.
   ///
   /// In en, this message translates to:
-  /// **'Portuguese'**
+  /// **'Portuguese 🇵🇹'**
   String get languagePortuguese;
 
   /// No description provided for @languageChinese.
   ///
   /// In en, this message translates to:
-  /// **'Chinese'**
+  /// **'Chinese 🌐'**
   String get languageChinese;
 
   /// No description provided for @languageJapanese.
   ///
   /// In en, this message translates to:
-  /// **'Japanese'**
+  /// **'Japanese 🇯🇵'**
   String get languageJapanese;
 
   /// No description provided for @languageKorean.
   ///
   /// In en, this message translates to:
-  /// **'Korean'**
+  /// **'Korean 🇰🇷'**
   String get languageKorean;
 
   /// No description provided for @hobbyWorkingOut.

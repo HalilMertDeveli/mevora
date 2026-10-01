@@ -6,6 +6,7 @@ import 'package:mevora/core/paging/page.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 
 class FirebaseProfileDataSource {
   FirebaseProfileDataSource({
@@ -19,6 +20,9 @@ class FirebaseProfileDataSource {
 
   CollectionReference<Map<String, dynamic>> get _profiles =>
       _firestore.collection(FirestorePaths.profiles);
+
+  CollectionReference<Map<String, dynamic>> get _accounts =>
+      _firestore.collection(FirestorePaths.users);
 
   CollectionReference<Map<String, dynamic>> get _preferences =>
       _firestore.collection(FirestorePaths.userPreferences);
@@ -41,7 +45,31 @@ class FirebaseProfileDataSource {
   }
 
   Future<void> save(UserProfile profile) {
-    return _profiles.doc(profile.uid).set(_profileToMap(profile), SetOptions(merge: true));
+    return _profiles.doc(profile.uid).set(publicProfileMap(profile), SetOptions(merge: true));
+  }
+
+  /// The owner's private surname. It lives on `users/{uid}`, which only its
+  /// owner can read; `profiles/{uid}` is readable by every member and never
+  /// carries it.
+  Future<String?> fetchLastName(String uid) async {
+    final snap = await _accounts.doc(uid).get();
+    return lastNameFrom(snap.data());
+  }
+
+  Future<void> saveLastName(String uid, String lastName) {
+    return _accounts.doc(uid).update({
+      'lastName': PersonNameValidator.normalize(lastName),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  static String? lastNameFrom(Map<String, dynamic>? account) {
+    final value = account?['lastName'];
+    if (value is! String) {
+      return null;
+    }
+    final lastName = PersonNameValidator.normalize(value);
+    return lastName.isEmpty ? null : lastName;
   }
 
   Future<UserPreferences> fetchPreferences(String uid) async {
@@ -131,7 +159,10 @@ class FirebaseProfileDataSource {
     );
   }
 
-  Map<String, dynamic> _profileToMap(UserProfile profile) {
+  /// Everything this client writes to the member-readable `profiles/{uid}`.
+  /// `displayName` is the first name only; the surname is saved separately
+  /// through [saveLastName] and must never be added here.
+  static Map<String, dynamic> publicProfileMap(UserProfile profile) {
     return {
       'uid': profile.uid,
       'displayName': profile.displayName,
@@ -149,6 +180,7 @@ class FirebaseProfileDataSource {
             'storagePath': photo.storagePath,
             'downloadUrl': photo.downloadUrl,
             'thumbUrl': photo.thumbUrl,
+            'cardUrl': photo.cardUrl,
             'moderationStatus': photo.moderationStatus,
             'order': photo.order,
             'isPrimary': photo.isPrimary,
@@ -183,6 +215,7 @@ class FirebaseProfileDataSource {
             storagePath: ((value[i] as Map)['storagePath'] as String?) ?? '',
             downloadUrl: (value[i] as Map)['downloadUrl'] as String?,
             thumbUrl: (value[i] as Map)['thumbUrl'] as String?,
+            cardUrl: (value[i] as Map)['cardUrl'] as String?,
             moderationStatus:
                 ((value[i] as Map)['moderationStatus'] as String?) ?? 'pending',
             order: firestoreInt((value[i] as Map)['order'], i),

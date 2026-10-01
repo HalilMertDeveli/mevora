@@ -110,11 +110,24 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     if (controller == null) {
       return;
     }
+    // Back from the system settings: the permission or the location service
+    // may have been switched on there.
+    final phase = controller.state.phase;
+    final recheckLocation =
+        phase == LocationPromptPhase.permanentlyDenied ||
+        phase == LocationPromptPhase.gpsDisabled;
+    if (recheckLocation) {
+      unawaited(controller.start());
+    }
     if (_showingPicks) {
       // Revalidates the batch: anyone blocked, matched or gone since drops out.
       if (_picksStarted) {
         unawaited(_picks!.load());
       }
+      return;
+    }
+    if (recheckLocation) {
+      // start() loads the deck itself.
       return;
     }
     // Soft refresh after long idle — keep deck if already loaded.
@@ -439,6 +452,10 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         message: l10n.locationSettingsMessage,
         actionLabel: l10n.openSettings,
         onAction: () => unawaited(controller.openSettings()),
+        // Location is optional: refusing it must not lock the member out of
+        // the people already chosen for them.
+        secondaryActionLabel: l10n.continueWithoutLocation,
+        onSecondaryAction: () => unawaited(controller.skipLocation()),
       );
     }
 

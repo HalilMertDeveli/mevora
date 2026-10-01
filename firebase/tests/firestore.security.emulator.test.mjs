@@ -1031,6 +1031,29 @@ describe("messages — participant authorization and E2EE enforcement", () => {
     );
   });
 
+  it("an image message with a non-empty envelope is accepted, an empty ciphertext is not", async () => {
+    const image = {
+      type: "image",
+      imageStoragePath: `users/${UID.A}/chat/${MATCH_AB}/photo.jpg.enc`,
+      mediaKeyCiphertext: "a2V5",
+    };
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/img1`).set(
+        encryptedMessage({senderId: UID.A, receiverId: UID.B, overrides: image}),
+      ),
+    );
+    // What the app sent before the fix: AES-GCM of an empty caption.
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/img2`).set(
+        encryptedMessage({
+          senderId: UID.A,
+          receiverId: UID.B,
+          overrides: {...image, ciphertext: ""},
+        }),
+      ),
+    );
+  });
+
   it("media paths must live under the sender's own storage prefix", async () => {
     await deny(
       who.userA.db().doc(`matches/${MATCH_AB}/messages/p6`).set(

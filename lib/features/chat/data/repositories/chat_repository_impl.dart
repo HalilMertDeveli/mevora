@@ -211,7 +211,7 @@ class ChatRepositoryImpl implements ChatRepository {
           uid: uid,
           matchId: matchId,
           peerUid: receiverId,
-          plaintext: '',
+          plaintext: E2eeConstants.mediaEnvelopePlaintext,
         );
         final sent = await _dataSource.sendEncryptedMessage(
           matchId: matchId,

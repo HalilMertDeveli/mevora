@@ -12,8 +12,20 @@ void main() {
     expect(xml, contains('ACCESS_COARSE_LOCATION'));
     expect(xml, contains('ACCESS_FINE_LOCATION'));
     expect(xml, contains('POST_NOTIFICATIONS'));
-    expect(xml, contains('READ_MEDIA_IMAGES'));
-    expect(xml, contains('READ_MEDIA_VISUAL_USER_SELECTED'));
+    // Gallery picks go through the system photo picker, which needs no
+    // permission; Google Play rejects broad media access for that use.
+    expect(xml, isNot(contains('"android.permission.READ_MEDIA_IMAGES"')));
+    expect(
+      xml,
+      isNot(contains('"android.permission.READ_MEDIA_VISUAL_USER_SELECTED"')),
+    );
+    expect(xml, isNot(contains('"android.permission.READ_MEDIA_VIDEO"')));
+    // No ads: the advertising ID permission that Firebase Analytics merges in
+    // is removed explicitly.
+    expect(
+      xml,
+      contains('"com.google.android.gms.permission.AD_ID" tools:node="remove"'),
+    );
     expect(xml, isNot(contains('ACCESS_BACKGROUND_LOCATION')));
     expect(xml, isNot(contains('FOREGROUND_SERVICE_LOCATION')));
     expect(xml, isNot(contains('READ_EXTERNAL_STORAGE')));
@@ -29,9 +41,7 @@ void main() {
     );
     expect(
       plist,
-      contains(
-        'Mevora uses your microphone for voice and audio features.',
-      ),
+      contains('Mevora uses your microphone for voice and audio features.'),
     );
     expect(
       plist,
@@ -46,7 +56,10 @@ void main() {
       ),
     );
     expect(plist, contains('NSPhotoLibraryUsageDescription'));
-    expect(plist, isNot(contains('NSLocationAlwaysAndWhenInUseUsageDescription')));
+    expect(
+      plist,
+      isNot(contains('NSLocationAlwaysAndWhenInUseUsageDescription')),
+    );
     expect(plist, isNot(contains('NSLocationAlwaysUsageDescription')));
   });
 }

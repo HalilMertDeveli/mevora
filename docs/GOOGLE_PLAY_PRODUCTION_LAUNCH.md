@@ -142,10 +142,10 @@ order — later steps depend on earlier ones. Nothing here can be done by an age
   1. Secrets (each: `firebase functions:secrets:set <NAME> --project <prod>`):
      `SPOTIFY_CLIENT_SECRET`, `DIDIT_API_KEY`, `DIDIT_WEBHOOK_SECRET`, `GIPHY_API_KEY`,
      `ADMIN_BFF_SHARED_SECRET`, and `LIVEKIT_*` only if calls are switched on.
-     `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` comes from step 11: the three functions that bind
-     it (`verifyBoostPurchase`, `verifyPremiumPurchase`, `onPlaySubscriptionNotification`)
-     **cannot be deployed until that secret exists** — deploy everything else now and
-     those three after step 11. A function that binds a secret which does not exist fails
+     `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` comes from step 11: the four functions that bind
+     it (`verifyBoostPurchase`, `verifyPremiumPurchase`, `onPlaySubscriptionNotification`,
+     `reconcileVoidedBoostPurchases`) **cannot be deployed until that secret exists** —
+     deploy everything else now and those four after step 11. A function that binds a secret which does not exist fails
      the deploy; the same holds for `DIDIT_API_KEY` on the account-deletion functions. `SMOKE_TEST_SECRET` is required for the
      deploy to succeed because the smoke callables are exported — set it to a long random
      value and keep it private.
@@ -392,7 +392,7 @@ Play requirements for a dating app, and where each is met:
 | Package | `com.mevora.app` | `ANDROID_PACKAGE_NAME` default; `PREMIUM_ANDROID_PACKAGE_NAME` must be set |
 | Boost products (one-time, consumable) | `mevora_boost_7_days`, `mevora_boost_1_month`, `mevora_boost_1_year` | `lib/features/boost/domain/config/boost_pack_catalog.dart` |
 | Premium subscription | **not defined in code** — the owner chooses. The emulator and tests model `mevora_premium` with base plans `monthly` and `yearly` | `PREMIUM_ANDROID_PRODUCT_IDS=productId:basePlanId,…` in the functions environment **and** as a `--dart-define`, identical in both |
-| Service account key | secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | bound on `verifyBoostPurchase`, `verifyPremiumPurchase`, `onPlaySubscriptionNotification` |
+| Service account key | secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | bound on `verifyBoostPurchase`, `verifyPremiumPurchase`, `onPlaySubscriptionNotification`, `reconcileVoidedBoostPurchases` |
 | RTDN topic | `play-subscription-rtdn` (override: `PREMIUM_RTDN_TOPIC`) | `functions/src/subscription/googleRtdnFunction.ts` |
 
 How a purchase is granted: the app sends the purchase token to the server; the server
@@ -400,11 +400,29 @@ asks Google; only the server writes the entitlement or the boost; Firestore rule
 every client write to those documents. A Boost token is recorded by its own hash, so it
 grants once, for one account. The app completes a purchase only after the server confirms.
 
+A refunded Boost is taken back. When Google voids a Boost purchase — a refund, a
+chargeback, a revoked order — the ledger entry is marked `voided` and what the member has
+not used yet is removed: the days of the Boost that still lie ahead, or the wallet credits
+that are still there. Time already used, and time another purchase paid for, stays; a
+wallet never goes below zero. The entry records what was taken back (`void`), and the
+token can never be granted again. Two paths lead there and both are idempotent:
+
+- the `voidedPurchaseNotification` on the RTDN topic, handled by
+  `onPlaySubscriptionNotification` — it works without Premium being configured;
+- `reconcileVoidedBoostPurchases`, once a day, which asks the Voided Purchases API for the
+  last 29 days. It is the fallback when notifications are not configured or one was
+  missed, and it needs the service account's *View financial data* permission (step 11).
+
+An interrupted Boost purchase — paid, app closed before the server confirmed — is
+submitted again by itself at the next app start or sign-in on Android. *Restore purchases*
+still does the same on demand.
+
 Not built, and worth knowing:
 
-- Boost refunds are not processed: voided one-time purchases are ignored.
-- An interrupted Boost purchase is recovered by the member tapping *Restore purchases*;
-  nothing re-submits it automatically at launch.
+- A purchase left unfinished on a phone is granted to whichever Mevora account next signs
+  in on that phone: Play knows the Google account, not the Mevora one. *Restore
+  purchases* has always behaved this way.
+- The member is not notified when a refunded Boost ends.
 - Promotional subscription offers are never selected; the base price is bought.
 - A license tester's purchase grants a real entitlement (recorded as sandbox).
 
@@ -474,8 +492,11 @@ Run on a phone that installed the build from Play. Record pass / fail for each l
 
 **Purchases** (license tester)
 - [ ] Boost: the three packs show store prices; buying one activates it once.
-- [ ] Buying, then killing the app before confirmation, then *Restore purchases* grants it
-      exactly once.
+- [ ] Buying, then killing the app before confirmation, then opening the app again grants
+      it exactly once, without tapping *Restore purchases*.
+- [ ] Refund a test Boost order in Play Console: within minutes the Boost ends in the app
+      and `purchases/android_…` reads `status: voided` (or within a day, through the
+      sweep, if notifications are not configured).
 - [ ] Premium (if shipped): each plan shows price and period; buying the yearly plan buys
       the yearly plan; *Manage subscription* opens Google Play.
 - [ ] Cancel in Google Play: access remains until the period ends, then stops.
@@ -544,6 +565,7 @@ Branches opened from `main` `7565ebda`, each with a pull request into `preview`:
 | `fix/hide-apple-sign-in-on-android` | A sign-in button that always failed on Android |
 | `fix/smoke-user-random-password` | Smoke-test accounts had a password anyone could derive from the repository; the shared secret was compared in non-constant time |
 | `feat/report-reason-child-safety` | A dedicated *Child safety* report reason, reviewed at the highest priority, in the app and the staff console |
+| `fix/boost-refund-and-purchase-recovery` (from `preview`, on top of the two purchase-integrity branches) | A refunded or charged-back Boost was kept; an interrupted Boost purchase waited for the member to tap *Restore purchases* |
 
 Each pull request carries its own deploy note. All of them need a functions redeploy that
 is owner-run and waits on billing.
@@ -558,7 +580,6 @@ is owner-run and waits on billing.
 | Members stuck in onboarding and banned members have no in-app deletion path | Web route exists; in-app change touches onboarding |
 | No Android notification channel; foreground non-call pushes are dropped | Product decision on channels |
 | Terms acceptance is not recorded or versioned | Needs a small data-model addition |
-| Boost refunds / voided one-time purchases are not processed | Needs the Voided Purchases API or one-time RTDN handling |
 | Remote Config is a stub, so features can only be switched at build time | Feature work |
 | Twelve functions deployed on `mevora-d6ed0` exist on no branch | `docs/DEPLOY_NOTES.md`; irrelevant for Option A |
 | The smoke-test callables are exported to every deploy | Kept: the smoke harness needs them. They refuse without the secret; never share `SMOKE_TEST_SECRET` |

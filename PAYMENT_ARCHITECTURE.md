@@ -137,6 +137,19 @@ The app finishes / consumes a store purchase only after `verifyBoostPurchase` co
 
 “Restore purchases” re-syncs the store, verifies unfinished Boost transactions (Premium subscriptions on the shared store stream are ignored), waits for the server, then reloads Firebase.
 
+On Android the same happens by itself at app start and at sign-in: `PurchaseRepositoryImpl.recoverUnfinishedPurchases()` asks Play for the purchases it still holds unconsumed (`queryPastPurchases`, so nothing is replayed on the shared purchase stream), submits the Boost ones to `verifyBoostPurchase` and completes only those the server confirms. iOS is not asked: StoreKit redelivers unfinished transactions by itself, and asking raises the App Store sign-in prompt.
+
+### Refunds and voided purchases
+
+When Google Play voids a Boost purchase (refund, chargeback, revoked order) the ledger entry becomes `status: voided` and only the unused remainder is taken back, in one transaction (`functions/src/boost/voidedPurchases.ts`):
+
+- a time-boxed Boost loses the part of that purchase's time that is still ahead — the Boost is shortened, or ends (`status: cancelled`, `endedReason: purchase_voided`) when nothing is left. A grant records `boostId` and `boostExpiresAt` on its ledger entry, so stacked purchases are told apart and time another purchase paid for is kept;
+- wallet credits are reduced by at most the pack's size and never below zero.
+
+The entry keeps an audit record under `void` (source, Play order id and reason, what was revoked, the values before and after). A voided entry is never granted again and a second void changes nothing.
+
+It is reached two ways: the `voidedPurchaseNotification` on the RTDN topic (`functions/src/boost/boostRtdn.ts`, routed from `onPlaySubscriptionNotification` before the Premium handler), and the daily `reconcileVoidedBoostPurchases` sweep of the Voided Purchases API (`functions/src/boost/voidedPurchaseSweep.ts`) for anything a notification did not deliver.
+
 A user on a new device with the same Mevora account sees active Boost from Firestore.
 
 ---

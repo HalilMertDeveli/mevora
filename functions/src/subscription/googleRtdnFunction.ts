@@ -17,6 +17,8 @@ import {googleSubscriptionApi} from "./emulatorGoogleSubscriptionApi.js";
 import {PremiumPurchaseStore} from "./premiumPurchaseStore.js";
 import {ownershipRef, type OwnershipRecord} from "./purchaseOwnership.js";
 import {googlePlaySecrets} from "../googlePlayConfig.js";
+import {handleBoostDeveloperNotification} from "../boost/boostRtdn.js";
+import {voidBoostPurchase} from "../boost/voidedPurchases.js";
 
 /**
  * Topic Play publishes to. Configured rather than hardcoded: the topic name is
@@ -62,19 +64,27 @@ export const onPlaySubscriptionNotification = onMessagePublished(
     }
 
     try {
-      const result = await handleDeveloperNotification({
+      // The topic carries every product the app sells. One-time purchases —
+      // Boost — are answered from the Boost ledger; the rest is Premium's.
+      const boost = await handleBoostDeveloperNotification({
         notification,
-        api: googleSubscriptionApi(),
-        owners: new FirestoreOwnerLookup(),
-        persistenceFor: (args) =>
-          new PremiumPurchaseStore({
-            userId: args.userId,
-            purchaseToken: args.purchaseToken,
-            platform: "android",
-            productId: args.productId,
-            linkedPurchaseToken: args.linkedPurchaseToken,
-          }),
+        voidPurchase: (input) => voidBoostPurchase(getFirestore(), input),
       });
+      const result =
+        boost ??
+        (await handleDeveloperNotification({
+          notification,
+          api: googleSubscriptionApi(),
+          owners: new FirestoreOwnerLookup(),
+          persistenceFor: (args) =>
+            new PremiumPurchaseStore({
+              userId: args.userId,
+              purchaseToken: args.purchaseToken,
+              platform: "android",
+              productId: args.productId,
+              linkedPurchaseToken: args.linkedPurchaseToken,
+            }),
+        }));
 
       if (result.outcome === "retry") {
         // Throwing is how this function asks Pub/Sub to redeliver. Everything

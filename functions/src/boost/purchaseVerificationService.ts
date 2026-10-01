@@ -13,6 +13,8 @@ import type {
 export type VerificationDecision =
   | {outcome: "proceed"; purchaseId: string; store: StoreVerificationResult}
   | {outcome: "alreadyProcessed"; purchaseId: string}
+  /** Play voided this purchase; it was revoked and can never be granted again. */
+  | {outcome: "voided"; purchaseId: string}
   | {outcome: "invalidProduct"}
   | {outcome: "invalidUid"}
   | {outcome: "invalidTransaction"}
@@ -54,6 +56,9 @@ export class PurchaseVerificationService {
       }
       if (existing.status === "verified") {
         return {outcome: "alreadyProcessed", purchaseId: existing.purchaseId};
+      }
+      if (existing.status === "voided") {
+        return {outcome: "voided", purchaseId: existing.purchaseId};
       }
     }
 

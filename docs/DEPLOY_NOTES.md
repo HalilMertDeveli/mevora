@@ -169,6 +169,20 @@ Also: the admin console (Turkish label for the new report reason) and Hosting (t
 rewritten policy pages, `/delete-account`, `/child-safety`) — Hosting only after the
 policy texts are approved.
 
+### Boost refunds (`fix/boost-refund-and-purchase-recovery`)
+
+| Functions | Change | Must exist before the deploy |
+|---|---|---|
+| `verifyBoostPurchase` | A grant records the Boost it paid for and until when; a voided purchase is never granted again | As above |
+| `onPlaySubscriptionNotification` | One-time and voided notifications for a Boost token revoke the unused remainder, before the Premium handler and without needing Premium configured | As above. In Play Console the notification content must include one-time products (launch guide, step 11) |
+| `reconcileVoidedBoostPurchases` (**new**, scheduled every 24 hours) | Voided Purchases API sweep: the fallback for a refund no notification delivered | Secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`; the service account needs *View financial data* in Play Console, or every run logs `boost_voided_sweep_incomplete` and revokes nothing. Creates a Cloud Scheduler job, so the project needs billing |
+
+No rules or index change. The three deploy together: an entry written by the old
+`verifyBoostPurchase` is still voided correctly, only less precisely when purchases were
+stacked (it is under-revoked, never over-revoked). Roll back by redeploying the previous
+code; to stop the sweep alone, delete `reconcileVoidedBoostPurchases`. Entries already
+marked `voided` stay voided either way.
+
 No Firestore rules or index change in any of the eleven.
 
 The agent prepares the exact `--only` list at deploy time, from a `main` worktree; the

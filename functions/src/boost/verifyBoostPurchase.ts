@@ -162,6 +162,10 @@ export async function grantBoostPurchase(params: {
   if (decision.outcome === "storeUnavailable") {
     throw new HttpsError("unavailable", "store-unavailable", {reason: "store-unavailable"});
   }
+  if (decision.outcome === "voided") {
+    logger.info("boost_purchase_voided_resubmitted", {userId: uid, purchaseId: decision.purchaseId});
+    throw purchaseVoided();
+  }
 
   const walletRef = db.doc(walletDocPath(uid));
   if (decision.outcome === "alreadyProcessed") {
@@ -208,6 +212,11 @@ export async function grantBoostPurchase(params: {
         boostId: null as string | null,
       };
     }
+    if (again.exists && again.data()?.status === "voided") {
+      // Voided between the lookup and here. Writing a grant over it would
+      // undo the void.
+      return {voided: true as const};
+    }
 
     const activeSnap = await tx.get(db.collection(`users/${uid}/boosts`).where("status", "==", "active"));
     for (const doc of activeSnap.docs) {
@@ -217,7 +226,7 @@ export async function grantBoostPurchase(params: {
       }
     }
 
-    tx.set(purchaseRef, {
+    const ledgerEntry = {
       purchaseId,
       userId: uid,
       productId: payload.productId,
@@ -231,9 +240,10 @@ export async function grantBoostPurchase(params: {
       purchasedAt: Timestamp.fromDate(store.purchasedAt ?? now),
       verifiedAt: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),
-    });
+    };
 
     if (!durationPack) {
+      tx.set(purchaseRef, ledgerEntry);
       const plan = credit.credit({
         boostCount: pack!.boostCount,
         currentBalance,
@@ -260,12 +270,25 @@ export async function grantBoostPurchase(params: {
       durationMs: pack!.durationMs,
       requireBalance: false,
     });
-    if (!("shouldActivate" in grant) || !grant.shouldActivate) {
+    const boostRef = grant.shouldActivate
+      ? grant.extendBoostId
+        ? db.doc(`users/${uid}/boosts/${grant.extendBoostId}`)
+        : db.collection(`users/${uid}/boosts`).doc()
+      : null;
+    // Which Boost this purchase paid for, and where its time ends. A voided
+    // purchase takes back what is still ahead of that point, and nothing else.
+    tx.set(
+      purchaseRef,
+      grant.shouldActivate && boostRef
+        ? {...ledgerEntry, boostId: boostRef.id, boostExpiresAt: Timestamp.fromDate(grant.expiresAt)}
+        : ledgerEntry,
+    );
+    if (!grant.shouldActivate || !boostRef) {
       return {invalidPack: true as const};
     }
-    let boostId = grant.extendBoostId ?? "";
+    const boostId = boostRef.id;
     if (grant.extendBoostId) {
-      tx.update(db.doc(`users/${uid}/boosts/${grant.extendBoostId}`), {
+      tx.update(boostRef, {
         productId: payload.productId,
         purchaseId,
         status: "active",
@@ -273,8 +296,6 @@ export async function grantBoostPurchase(params: {
         updatedAt: FieldValue.serverTimestamp(),
       });
     } else {
-      const boostRef = db.collection(`users/${uid}/boosts`).doc();
-      boostId = boostRef.id;
       tx.set(boostRef, {
         boostId,
         userId: uid,
@@ -302,6 +323,9 @@ export async function grantBoostPurchase(params: {
   }
   if ("invalidPack" in result) {
     throw new HttpsError("invalid-argument", "verification-failed", {reason: "verification-failed"});
+  }
+  if ("voided" in result) {
+    throw purchaseVoided();
   }
 
   // The grant is on the ledger — written just now, or by a call that raced this
@@ -406,7 +430,7 @@ async function findPurchaseLedger(
     productId: String(data.productId ?? ""),
     platform: payload.platform,
     transactionId: String(data.transactionId ?? ""),
-    status: data.status === "verified" ? "verified" : "pending",
+    status: data.status === "verified" || data.status === "voided" ? data.status : "pending",
   });
   const direct = await db.doc(`purchases/${purchaseId}`).get();
   if (direct.exists) {
@@ -449,6 +473,15 @@ async function consumeGrantedPurchase(
 /** A purchase that is already another account's. Says nothing about whose. */
 function purchaseAlreadyRedeemed(): HttpsError {
   return new HttpsError("already-exists", "already-processed", {reason: "already-processed"});
+}
+
+/**
+ * A purchase Play has since voided. The client treats any `invalid-argument`
+ * as a failed verification and leaves the purchase alone, which is right: there
+ * is nothing left to grant.
+ */
+function purchaseVoided(): HttpsError {
+  return new HttpsError("invalid-argument", "purchase-voided", {reason: "purchase-voided"});
 }
 
 export const activateBoost = onCall(callableOptions, async (request) => {

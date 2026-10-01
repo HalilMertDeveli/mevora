@@ -48,6 +48,14 @@ class FakeStorePurchaseDataSource implements StorePurchaseDataSource {
 
   /// What the store redelivers when asked to restore.
   List<StorePurchaseEvent> restoreEvents = const [];
+
+  /// Purchases the store still holds unconsumed from an earlier session.
+  List<StoreTransaction> outstanding = const [];
+  int outstandingQueries = 0;
+  Object? outstandingError;
+
+  /// Holds [buy] open, as the store sheet does while the member decides.
+  Completer<void>? buyGate;
   PurchaseException? buyError;
   final StreamController<StorePurchaseEvent> _events =
       StreamController<StorePurchaseEvent>.broadcast();
@@ -89,12 +97,20 @@ class FakeStorePurchaseDataSource implements StorePurchaseDataSource {
     if (error != null) {
       throw error;
     }
+    await buyGate?.future;
     eventsBeforePurchase.forEach(_events.add);
     _events.add(event);
   }
 
+  /// Makes [complete] fail, as Play does for a purchase it no longer holds.
+  PurchaseException? completeError;
+
   @override
   Future<void> complete(StoreTransaction transaction) async {
+    final error = completeError;
+    if (error != null) {
+      throw error;
+    }
     completed = transaction;
     completions.add(transaction);
   }
@@ -103,6 +119,16 @@ class FakeStorePurchaseDataSource implements StorePurchaseDataSource {
   Future<void> restore() async {
     restored = true;
     restoreEvents.forEach(_events.add);
+  }
+
+  @override
+  Future<List<StoreTransaction>> outstandingPurchases() async {
+    outstandingQueries += 1;
+    final error = outstandingError;
+    if (error != null) {
+      throw error;
+    }
+    return outstanding;
   }
 
   Future<void> dispose() => _events.close();

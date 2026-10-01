@@ -26,6 +26,7 @@ export {
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {reconcileVoidedBoostPurchases} from "./boost/voidedPurchaseSweep.js";
 export {verifyPremiumPurchase} from "./subscription/verifyPremiumPurchase.js";
 export {onPlaySubscriptionNotification} from "./subscription/googleRtdnFunction.js";
 export {getMevoraPicks} from "./picks/index.js";

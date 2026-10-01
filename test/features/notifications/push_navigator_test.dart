@@ -194,4 +194,25 @@ void main() {
     await settle(tester);
     expect(location(), '/chat/m2');
   });
+
+  // What a real cold start does: the session is restored, and the app leaves
+  // the splash by itself, while the first attempt is still in flight. That
+  // attempt was refused from the splash; ending up on Discover must not be
+  // remembered as "refused there".
+  testWidgets('the app leaving the splash mid-attempt does not strand the '
+      'destination', (tester) async {
+    await start(tester, isSignedIn: false);
+
+    navigator.open('/chat/m1');
+    // Not settled yet: the navigator is still waiting on its first attempt.
+    await tester.pump(const Duration(milliseconds: 60));
+    signedIn.value = true;
+    await settle(tester);
+
+    expect(location(), '/chat/m1');
+    expect(navigator.pendingLocation, isNull);
+    router.pop();
+    await tester.pumpAndSettle();
+    expect(location(), '/matches');
+  });
 }

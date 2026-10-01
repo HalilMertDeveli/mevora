@@ -31,11 +31,19 @@ class PushNavigator {
   String? _pending;
   DateTime? _pendingSince;
 
-  /// Where the router sent the last attempt back to. Nothing has changed
-  /// while the app is still there, so trying again would only loop.
+  /// Where the app was when the router refused the last attempt. Nothing has
+  /// changed while it is still there, so trying again would only loop.
   String? _refusedAt;
   var _navigating = false;
   var _listening = false;
+
+  /// Set when an attempt failed only because the app moved meanwhile.
+  var _movedOn = false;
+
+  /// Immediate retries left for the current destination; route changes still
+  /// trigger further attempts once these are used up.
+  var _retriesLeft = _maxImmediateRetries;
+  static const _maxImmediateRetries = 5;
 
   /// The destination still waiting to be opened, if any.
   String? get pendingLocation => _pending;
@@ -44,6 +52,8 @@ class PushNavigator {
     _pending = location;
     _pendingSince = _clock();
     _refusedAt = null;
+    _movedOn = false;
+    _retriesLeft = _maxImmediateRetries;
     unawaited(_drain());
   }
 
@@ -78,7 +88,7 @@ class PushNavigator {
         router.go(parent);
         await _settled(() => _currentLocation() != from);
         if (_currentLocation() != parent) {
-          _refuse();
+          _refuse(from);
           return;
         }
       }
@@ -95,13 +105,16 @@ class PushNavigator {
       if (_currentLocation() == target) {
         _clear();
       } else {
-        _refuse();
+        _refuse(parent ?? from);
       }
     } finally {
       _navigating = false;
-    }
-    if (_pending != null && _pending != target) {
-      unawaited(_drain());
+      // A newer destination arrived, or the app moved on by itself while this
+      // attempt was in flight: go again from where things stand now.
+      if (_pending != null && (_pending != target || _movedOn)) {
+        _movedOn = false;
+        unawaited(_drain());
+      }
     }
   }
 
@@ -113,9 +126,20 @@ class PushNavigator {
     return null;
   }
 
-  void _refuse() {
-    _refusedAt = _currentLocation();
+  /// Records a refused attempt made while the app was at [attemptedFrom].
+  ///
+  /// On a cold start the app leaves the splash on its own while the attempt is
+  /// still in flight. The attempt was judged from the splash, so ending up
+  /// somewhere else says nothing about that place: it is tried again from
+  /// there straight away instead of being remembered as refused.
+  void _refuse(String attemptedFrom) {
     _listen();
+    if (_currentLocation() != attemptedFrom && _retriesLeft > 0) {
+      _retriesLeft -= 1;
+      _movedOn = true;
+      return;
+    }
+    _refusedAt = _currentLocation();
   }
 
   void _listen() {
@@ -134,6 +158,7 @@ class PushNavigator {
     _pending = null;
     _pendingSince = null;
     _refusedAt = null;
+    _movedOn = false;
     if (_listening) {
       _listening = false;
       router.routerDelegate.removeListener(_onRouteChanged);

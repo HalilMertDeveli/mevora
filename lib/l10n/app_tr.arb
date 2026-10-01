@@ -344,6 +344,7 @@
   "onboardingErrorGeneric": "Profilin tamamlanamadı. Lütfen tekrar dene.",
   "onboardingBack": "Geri",
   "onboardingContinue": "Devam et",
+  "onboardingLogoutBody": "Tamamladığın adımlar kaydedildi. Tekrar giriş yaptığında kaldığın yerden devam edersin.",
   "onboardingEducation": "Eğitim",
   "onboardingLifestyle": "Yaşam tarzı",
   "onboardingSmoking": "Sigara",

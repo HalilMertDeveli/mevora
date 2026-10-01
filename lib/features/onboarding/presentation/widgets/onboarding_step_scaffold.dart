@@ -31,6 +31,7 @@ class OnboardingStepScaffold extends StatelessWidget {
     this.showContinue = true,
     this.scrollable = false,
     this.subtitle,
+    this.trailing,
   });
 
   final OnboardingStep step;
@@ -55,6 +56,9 @@ class OnboardingStepScaffold extends StatelessWidget {
 
   /// Supporting line under the question.
   final String? subtitle;
+
+  /// Closes the header row, after the step count - the account menu.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -119,6 +123,7 @@ class OnboardingStepScaffold extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.s12),
               MevoraPill(label: '$current/$total', dense: true),
+              ?trailing,
             ],
           ),
         ),

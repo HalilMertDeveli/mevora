@@ -116,6 +116,40 @@ void main() {
     );
   });
 
+  test('the legal pages stay readable during onboarding', () {
+    const user = AuthUser(id: 'u1');
+    for (final status in <AuthStatus>[
+      const NeedsOnboarding(user),
+      const Authenticated(user),
+    ]) {
+      for (final legal in [
+        AppRoutes.legalTerms,
+        AppRoutes.legalPrivacy,
+        AppRoutes.legalGuidelines,
+      ]) {
+        expect(
+          AuthRedirector.redirect(status: status, location: legal),
+          isNull,
+          reason: '$status $legal',
+        );
+      }
+      // Nothing else opens up: Settings and its account page stay behind
+      // onboarding, which is why the menu on the steps exists.
+      for (final gated in [
+        AppRoutes.settings,
+        AppRoutes.accountSettings,
+        AppRoutes.supportCenter,
+        AppRoutes.discovery,
+      ]) {
+        expect(
+          AuthRedirector.redirect(status: status, location: gated),
+          AppRoutes.onboarding,
+          reason: '$status $gated',
+        );
+      }
+    }
+  });
+
   test('incomplete profiles are gated to onboarding', () {
     const user = AuthUser(id: 'u1', onboardingCompleted: false);
     expect(

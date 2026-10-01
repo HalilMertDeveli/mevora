@@ -179,6 +179,10 @@ abstract final class AuthRedirector {
           ? null
           : AppRoutes.locationPermission;
     }
-    return location == AppRoutes.onboarding ? null : AppRoutes.onboarding;
+    // The legal pages open from the onboarding account menu.
+    return location == AppRoutes.onboarding ||
+            _publicLegalRoutes.contains(location)
+        ? null
+        : AppRoutes.onboarding;
   }
 }

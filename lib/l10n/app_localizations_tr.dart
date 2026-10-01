@@ -966,6 +966,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingContinue => 'Devam et';
 
   @override
+  String get onboardingLogoutBody =>
+      'Tamamladığın adımlar kaydedildi. Tekrar giriş yaptığında kaldığın yerden devam edersin.';
+
+  @override
   String get onboardingEducation => 'Eğitim';
 
   @override

@@ -12,6 +12,7 @@ import {
 import {
   backfillLegacyApproval,
   isPublishedStoragePath,
+  isRemovedByMember,
   ledgerCollection,
   ledgerEntryFromData,
   ledgerRef,
@@ -103,12 +104,31 @@ export async function isSmokeTestAccount(db: Firestore, uid: string): Promise<bo
   return snap.data()?.isSmokeTestUser === true;
 }
 
+export interface PhotoStatusOptions {
+  /**
+   * What to do when the photo is not in profiles/{uid}.photos.
+   *
+   * `append` (the default) is for the upload pipeline: the Storage event runs
+   * before the client has written its array, so the pipeline adds the photo.
+   * `skip` is for a decision about a photo that already had its place on the
+   * profile (admin review): if it is gone, the member took it off, and a
+   * decision is no reason to put it back.
+   */
+  whenAbsent?: "append" | "skip";
+}
+
+export interface PhotoStatusProjection {
+  /** Whether the decision was written onto a photo in profiles/{uid}.photos. */
+  onProfile: boolean;
+}
+
 export async function setPhotoModerationStatus(
   db: Firestore,
   uid: string,
   imageId: string,
   patch: Partial<PhotoRecord>,
-): Promise<void> {
+  options: PhotoStatusOptions = {},
+): Promise<PhotoStatusProjection> {
   // The ledger is the authority; profiles.photos is the client-readable
   // projection of it. Record the decision first so a crash between the two
   // writes leaves the server stricter than the profile, never looser.
@@ -126,17 +146,33 @@ export async function setPhotoModerationStatus(
   }
   const profileRef = db.doc(`profiles/${uid}`);
   const entryRef = ledgerRef(db, uid, imageId);
-  await db.runTransaction(async (tx) => {
+  return db.runTransaction(async (tx) => {
     const [snap, entrySnap] = await Promise.all([tx.get(profileRef), tx.get(entryRef)]);
     // The entry written above is gone again: the member deleted the photo
     // (deleteProfilePhoto) while this decision was on its way. Projecting it
     // would put the photo back on the profile.
     if (patch.moderationStatus && !entrySnap.exists) {
       logger.info("Dropped a moderation result for a photo its owner deleted", {uid, imageId});
-      return;
+      return {onProfile: false};
     }
-    const photos = buildModeratedPhotos(photosFrom(snap.data()), imageId, patch);
+    const existing = photosFrom(snap.data());
+    const onProfile = existing.some((photo) => String(photo.id ?? "") === imageId);
+    // A photo that is on the profile always takes the decision. One that is
+    // not is added only by the pipeline, and never once the member removed it:
+    // the entry outlives the photo for moderation's sake (deleteProfilePhoto),
+    // so the entry existing does not mean the photo should.
+    const removedByMember = entrySnap.exists && isRemovedByMember(ledgerEntryFromData(entrySnap.data() ?? {}));
+    if (!onProfile && (options.whenAbsent === "skip" || removedByMember)) {
+      logger.info("Recorded a moderation result without adding the photo to the profile", {
+        uid,
+        imageId,
+        removedByMember,
+      });
+      return {onProfile: false};
+    }
+    const photos = buildModeratedPhotos(existing, imageId, patch);
     tx.set(profileRef, {photos, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
+    return {onProfile: true};
   });
 }
 
@@ -255,6 +291,18 @@ export async function processPendingProfilePhoto(options: {
         logger.warn("Failed to delete re-uploaded pending photo", {error: String(error)});
       }
       logger.warn("Ignored re-upload of an already moderated photo id", {
+        uid: options.uid,
+        imageId: options.imageId,
+        status: entry.status,
+      });
+      return entry.status;
+    }
+    // The member removed this photo while moderation was holding it. Its
+    // entry and its upload stay for the reviewer, but it is not moderated
+    // again: a redelivered upload event could otherwise approve and publish a
+    // photo that is on no profile, and take it out of the review queue.
+    if (isRemovedByMember(entry)) {
+      logger.info("Skipped moderation of a photo its owner removed", {
         uid: options.uid,
         imageId: options.imageId,
         status: entry.status,

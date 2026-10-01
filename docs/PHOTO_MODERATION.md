@@ -66,6 +66,23 @@ its ledger entry and stored image (`cleanup: "retained"`): the entry is the
 moderation record and what stops the id being uploaded again, and a reviewer
 still needs the image.
 
+The kept entry is stamped `removedByMemberAt`. From then on the photo is never
+put back on the profile: a moderation result for it is recorded on the ledger
+without being added to the array, and a redelivered upload event does not
+moderate it again. When a reviewer later decides it (`adminReviewPhoto`):
+
+| Decision | What happens to a photo the member removed |
+|---|---|
+| Approve | Nothing is published or restored. The stored objects and the ledger entry are deleted — the deletion the member asked for is finished. The approval is still recorded (action + audit, `placement: "removed_by_member"`). |
+| Reject | Quarantined and recorded as for any other photo; the entry stays `rejected`. No rejected photo is added to the profile. |
+
+A review decision never adds a photo to a profile, with or without the stamp:
+it updates the photo if it is in the array and is otherwise only recorded
+(`placement: "not_on_profile"`). Without the stamp nothing is deleted, because
+an id missing from the array is not proof of a removal — it is also what a
+photo looks like between its upload and the client's array write. Only the
+upload pipeline adds a missing photo.
+
 Older app versions still rewrite the array themselves. That keeps working and
 keeps leaving the stored copy behind; calling `deleteProfilePhoto` for such an
 id later removes the leftovers. An app talking to a backend that does not have

@@ -68,10 +68,14 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
         {
             return Task.FromResult(Invalid(L["Pick a rejection reason."], () => Back(filter)));
         }
-        var message = decision switch
+        // An approval only publishes a photo that is still on the profile: one
+        // the member took off is not put back, and the backend says which it was.
+        string Message(JsonElement result) => (decision, result.Str("placement")) switch
         {
-            "approve" => L["Photo approved and published."].Value,
-            "reject" => L["Photo rejected and removed from view."].Value,
+            ("approve", "removed_by_member") => L["Photo approved. The member had removed it, so the kept copy was deleted."].Value,
+            ("approve", "not_on_profile") => L["Photo approved. It is not on the member's profile and was not added back."].Value,
+            ("approve", _) => L["Photo approved and published."].Value,
+            ("reject", _) => L["Photo rejected and removed from view."].Value,
             _ => L["Photo escalated to senior review."].Value,
         };
         return Act("adminReviewPhoto", new
@@ -83,7 +87,7 @@ public sealed class IndexModel(IAdminApiClient api) : AdminPageModel(api)
             internalNote = Clean(internalNote, 4000),
             caseId = Clean(caseId, 128),
             idempotencyKey,
-        }, message, () => Back(filter));
+        }, Message, () => Back(filter));
     }
 
     // After a decision the reviewed photo leaves the queue, so returning to the

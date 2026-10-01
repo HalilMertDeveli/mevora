@@ -78,6 +78,13 @@ export interface LedgerEntry {
   cardUrl?: string | null;
   /** Read-only here: written by the face verification pipeline, never by moderation. */
   faceAnchor?: FaceAnchorLedgerState | null;
+  /**
+   * Read-only here: written by deleteProfilePhoto when the member removes a
+   * photo whose entry moderation keeps (rejected or held for review). The
+   * photo is off the profile for good; only the record and the reviewer's
+   * copy of the image are left. See isRemovedByMember.
+   */
+  removedByMemberAt?: unknown;
 }
 
 export function ledgerRef(db: Firestore, uid: string, imageId: string) {
@@ -140,7 +147,21 @@ export function ledgerEntryFromData(data: Record<string, unknown>): LedgerEntry 
     thumbUrl: (data.thumbUrl ?? null) as string | null,
     cardUrl: (data.cardUrl ?? null) as string | null,
     faceAnchor: parseFaceAnchor(data.faceAnchor),
+    removedByMemberAt: data.removedByMemberAt ?? null,
   };
+}
+
+/**
+ * True when the member removed this photo through the server while moderation
+ * was keeping its record. Nothing may put such a photo back on the profile: a
+ * later decision is recorded, never projected as a new array entry.
+ *
+ * The array alone cannot say this. An id missing from profiles/{uid}.photos is
+ * also what a photo looks like between its upload and the client's array
+ * write, and what a stale whole-array write leaves for a moment.
+ */
+export function isRemovedByMember(entry: LedgerEntry | null | undefined): boolean {
+  return entry?.removedByMemberAt != null;
 }
 
 export function ledgerCollection(db: Firestore, uid: string) {

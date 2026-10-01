@@ -70,6 +70,10 @@ class OnboardingController extends ChangeNotifier {
   final ProfilePhotoPicker _photoPicker;
 
   UserProfile? profile;
+
+  /// The member's private surname. Held beside the draft rather than on it:
+  /// [UserProfile] is the public projection and never carries a surname.
+  String lastName = '';
   OnboardingStep step = OnboardingStep.basicInfo;
   List<OnboardingPhotoDraft> photoDrafts = const [];
   bool isLoading = true;
@@ -97,7 +101,9 @@ class OnboardingController extends ChangeNotifier {
     isLoading = true;
     errorMessage = null;
     _notify();
+    final savedLastName = _loadLastName(user.id);
     final existing = await _repository.loadDraft(user.id);
+    lastName = await savedLastName;
     final draft = (existing ??
             UserProfile(
               uid: user.id,
@@ -107,7 +113,9 @@ class OnboardingController extends ChangeNotifier {
           displayName: _prefillName(existing?.displayName, user.displayName),
         );
     profile = draft;
-    step = draft.onboardingStep == OnboardingStep.complete
+    // A draft started before the surname was collected resumes on the step
+    // that asks for it, instead of failing at the very end.
+    step = draft.onboardingStep == OnboardingStep.complete || lastName.isEmpty
         ? OnboardingStep.basicInfo
         : draft.onboardingStep;
     photoDrafts = _draftsFromProfile(draft);
@@ -122,6 +130,19 @@ class OnboardingController extends ChangeNotifier {
     }
     profile = transform(current);
     _notify();
+  }
+
+  void updateLastName(String value) {
+    lastName = value;
+    _notify();
+  }
+
+  Future<String> _loadLastName(String uid) async {
+    try {
+      return await _repository.loadLastName(uid) ?? '';
+    } on Object {
+      return '';
+    }
   }
 
   Future<Result<void>> continueStep() async {
@@ -152,7 +173,11 @@ class OnboardingController extends ChangeNotifier {
         _fail(PhotoUploadMessages.failed);
         return const Err(ValidationFailure('Profile is not ready yet'));
       }
-      final result = await _repository.saveStep(profile: current, step: step);
+      final result = await _repository.saveStep(
+        profile: current,
+        step: step,
+        lastName: lastName,
+      );
       switch (result) {
         case Success(:final value):
           profile = value;
@@ -192,7 +217,10 @@ class OnboardingController extends ChangeNotifier {
         return upload;
       }
       final withPhotos = profile!.copyWith(photos: _photosFromDrafts());
-      final result = await _repository.complete(withPhotos);
+      final result = await _repository.complete(
+        withPhotos,
+        lastName: lastName,
+      );
       switch (result) {
         case Success(:final value):
           profile = value;

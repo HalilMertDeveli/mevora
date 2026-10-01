@@ -32,6 +32,16 @@ class SettingsHubRepositoryImpl implements SettingsHubRepository {
   Future<void> saveProfile(UserProfile profile) => _profileDataSource.save(profile);
 
   @override
+  Future<String?> loadLastName(String uid) {
+    return _profileDataSource.fetchLastName(uid);
+  }
+
+  @override
+  Future<void> saveLastName(String uid, String lastName) {
+    return _profileDataSource.saveLastName(uid, lastName);
+  }
+
+  @override
   Future<UserPreferences> loadDiscoveryPreferences(String uid) {
     return _profileDataSource.fetchPreferences(uid);
   }

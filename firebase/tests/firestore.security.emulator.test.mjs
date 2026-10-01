@@ -110,6 +110,22 @@ describe("profiles — owner vs unrelated reader", () => {
     await deny(who.userA.db().doc(`profiles/${UID.A}`).update({isVerified: true}));
     await deny(who.userA.db().doc(`profiles/${UID.A}`).update({isAdmin: true}));
   });
+
+  it("a surname can never be written to the public card", async () => {
+    const own = who.userA.db().doc(`profiles/${UID.A}`);
+    for (const key of ["lastName", "firstName", "surname", "familyName"]) {
+      await deny(own.update({[key]: "Develi"}));
+    }
+    // The first name itself stays editable, so the denials above are about
+    // the key, not the document.
+    await allow(own.update({displayName: "Halil"}));
+
+    // Same on create: the stub is accepted, the stub plus a surname is not.
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.C}`).delete());
+    const fresh = who.userC.db().doc(`profiles/${UID.C}`);
+    await deny(fresh.set({uid: UID.C, displayName: "Ada", lastName: "Lovelace"}));
+    await allow(fresh.set({uid: UID.C, displayName: "Ada"}));
+  });
 });
 
 describe("users/{uid} — private account isolation", () => {
@@ -117,6 +133,32 @@ describe("users/{uid} — private account isolation", () => {
     await allow(who.userA.db().doc(`users/${UID.A}`).get());
     await deny(who.userC.db().doc(`users/${UID.A}`).get());
     await deny(who.anon.db().doc(`users/${UID.A}`).get());
+  });
+
+  it("the owner keeps a private surname that no other member can read", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    await allow(own.update({lastName: "Öztürk-Şahin"}));
+    const saved = await own.get();
+    assert.equal(saved.get("lastName"), "Öztürk-Şahin");
+
+    await deny(who.userB.db().doc(`users/${UID.A}`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}`).update({lastName: "Hijacked"}));
+
+    // The public card another member reads has no surname on it.
+    const card = await who.userC.db().doc(`profiles/${UID.A}`).get();
+    assert.equal("lastName" in card.data(), false);
+    assert.equal(JSON.stringify(card.data()).includes("Öztürk"), false);
+  });
+
+  it("a surname must be a non-empty string within the cap", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    await deny(own.update({lastName: ""}));
+    await deny(own.update({lastName: 7}));
+    await deny(own.update({lastName: ["Develi"]}));
+    await deny(own.update({lastName: "a".repeat(51)}));
+    await allow(own.update({lastName: "a".repeat(50)}));
   });
 
   it("moderation and billing state is locked against the owner", async () => {

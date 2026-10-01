@@ -6,6 +6,7 @@ import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart'
 import 'package:mevora/features/onboarding/domain/onboarding_messages.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 
 abstract final class OnboardingValidators {
   static Result<void> validateAge(DateTime? birthDate) {
@@ -21,9 +22,29 @@ abstract final class OnboardingValidators {
     return const Success(null);
   }
 
-  static Result<void> validateBasicInfo(UserProfile profile) {
-    if (profile.displayName.trim().isEmpty) {
-      return const Err(ValidationFailure(OnboardingMessages.firstNameRequired));
+  /// [lastName] is the member's private surname. It is validated here but
+  /// never stored on the public [UserProfile].
+  static Result<void> validateBasicInfo(
+    UserProfile profile, {
+    required String? lastName,
+  }) {
+    switch (PersonNameValidator.validateFirstName(profile.displayName)) {
+      case PersonNameIssue.required:
+        return const Err(
+          ValidationFailure(OnboardingMessages.firstNameRequired),
+        );
+      case PersonNameIssue.tooLong:
+        return const Err(ValidationFailure(OnboardingMessages.firstNameTooLong));
+      case null:
+        break;
+    }
+    switch (PersonNameValidator.validateLastName(lastName)) {
+      case PersonNameIssue.required:
+        return const Err(ValidationFailure(OnboardingMessages.lastNameRequired));
+      case PersonNameIssue.tooLong:
+        return const Err(ValidationFailure(OnboardingMessages.lastNameTooLong));
+      case null:
+        break;
     }
     final ageResult = validateAge(profile.birthDate);
     if (ageResult.isError) {
@@ -104,9 +125,16 @@ abstract final class OnboardingValidators {
     return const Success(null);
   }
 
-  static Result<void> validateStep(OnboardingStep step, UserProfile profile) {
+  static Result<void> validateStep(
+    OnboardingStep step,
+    UserProfile profile, {
+    String? lastName,
+  }) {
     return switch (step) {
-      OnboardingStep.basicInfo => validateBasicInfo(profile),
+      OnboardingStep.basicInfo => validateBasicInfo(
+        profile,
+        lastName: lastName,
+      ),
       OnboardingStep.interests => validateInterests(profile.interests),
       OnboardingStep.education => validateEducation(profile.education),
       OnboardingStep.relationshipGoal =>
@@ -123,12 +151,15 @@ abstract final class OnboardingValidators {
     };
   }
 
-  static Result<void> validateCompletion(UserProfile profile) {
+  static Result<void> validateCompletion(
+    UserProfile profile, {
+    required String? lastName,
+  }) {
     for (final step in OnboardingStep.values) {
       if (step == OnboardingStep.complete) {
         continue;
       }
-      final result = validateStep(step, profile);
+      final result = validateStep(step, profile, lastName: lastName);
       if (result.isError) {
         return result;
       }

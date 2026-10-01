@@ -4,6 +4,9 @@ import 'package:mevora/features/profile/domain/repositories/profile_repository.d
 
 class FakeProfileRepository implements ProfileRepository {
   final Map<String, UserProfile> profiles = {};
+
+  /// Private surnames, kept apart from [profiles] as on the real backend.
+  final Map<String, String> lastNames = {};
   UserPreferences? preferences;
   Page<DiscoveryCard> discovery = const Page(items: []);
 
@@ -18,6 +21,14 @@ class FakeProfileRepository implements ProfileRepository {
   @override
   Future<void> saveMine(UserProfile profile) async {
     profiles[profile.uid] = profile;
+  }
+
+  @override
+  Future<String?> loadMyLastName(String uid) async => lastNames[uid];
+
+  @override
+  Future<void> saveMyLastName(String uid, String lastName) async {
+    lastNames[uid] = lastName.trim();
   }
 
   @override

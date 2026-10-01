@@ -5,6 +5,7 @@ import 'package:mevora/features/settings/domain/repositories/settings_hub_reposi
 
 class FakeSettingsHubRepository implements SettingsHubRepository {
   UserProfile? profile;
+  String? lastName;
   UserPreferences? preferences;
   UserSettings? settings;
   UserPrivacy? privacy;
@@ -21,6 +22,14 @@ class FakeSettingsHubRepository implements SettingsHubRepository {
   @override
   Future<void> saveProfile(UserProfile next) async {
     profile = next;
+  }
+
+  @override
+  Future<String?> loadLastName(String uid) async => lastName;
+
+  @override
+  Future<void> saveLastName(String uid, String next) async {
+    lastName = next;
   }
 
   @override

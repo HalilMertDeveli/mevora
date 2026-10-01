@@ -1490,6 +1490,18 @@ abstract class AppLocalizations {
   /// **'First name'**
   String get onboardingFirstName;
 
+  /// No description provided for @onboardingLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get onboardingLastName;
+
+  /// No description provided for @onboardingLastNamePrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Other members never see your last name.'**
+  String get onboardingLastNamePrivate;
+
   /// No description provided for @onboardingBirthDate.
   ///
   /// In en, this message translates to:
@@ -1567,6 +1579,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add your first name.'**
   String get onboardingErrorFirstName;
+
+  /// No description provided for @onboardingErrorLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your last name.'**
+  String get onboardingErrorLastName;
 
   /// No description provided for @onboardingErrorGender.
   ///
@@ -4147,6 +4165,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'First name is too long.'**
   String get settingsFirstNameTooLong;
+
+  /// No description provided for @settingsLastNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name is required.'**
+  String get settingsLastNameRequired;
+
+  /// No description provided for @settingsLastNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name is too long.'**
+  String get settingsLastNameTooLong;
 
   /// No description provided for @settingsBioTooLong.
   ///

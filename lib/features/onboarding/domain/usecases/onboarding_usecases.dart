@@ -10,8 +10,11 @@ class CompleteOnboarding {
 
   final OnboardingRepository _onboarding;
 
-  Future<Result<UserProfile>> call(UserProfile profile) {
-    return _onboarding.complete(profile);
+  Future<Result<UserProfile>> call(
+    UserProfile profile, {
+    required String? lastName,
+  }) {
+    return _onboarding.complete(profile, lastName: lastName);
   }
 }
 
@@ -38,6 +41,6 @@ class ValidateOnboardingPhotos {
 class ValidateProfileCompletion {
   const ValidateProfileCompletion();
 
-  Result<void> call(UserProfile profile) =>
-      OnboardingValidators.validateCompletion(profile);
+  Result<void> call(UserProfile profile, {required String? lastName}) =>
+      OnboardingValidators.validateCompletion(profile, lastName: lastName);
 }

@@ -8,6 +8,7 @@ import 'package:mevora/features/authentication/domain/auth_messages.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_provider_id.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_session.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 
 abstract class UserRemoteDataSource {
   Stream<UserDocument?> watchUser(String uid);
@@ -255,7 +256,7 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
         final profile = profileSnap.data() ?? const <String, dynamic>{};
         if (!_isPresent(profile['displayName'])) {
           batch.update(profileRef, {
-            'displayName': session.displayName,
+            'displayName': publicFirstName(session),
             'updatedAt': now,
           });
         }
@@ -345,10 +346,17 @@ class FirebaseUserDataSource implements UserRemoteDataSource {
     return updates;
   }
 
+  /// What a sign-in provider's name may seed on the member-readable profile:
+  /// the first name only. Providers hand over a full name ("Halil Develi"),
+  /// and the surname must stay on the private account.
+  static String? publicFirstName(AuthSession session) {
+    return PersonNameValidator.firstNameHint(session.displayName);
+  }
+
   Map<String, dynamic> _newProfileStub(AuthSession session, FieldValue now) {
     return {
       'uid': session.uid,
-      'displayName': session.displayName,
+      'displayName': publicFirstName(session),
       'photos': const <Map<String, dynamic>>[],
       'interests': const <String>[],
       'languages': const <String>[],

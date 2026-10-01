@@ -868,6 +868,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingFirstName => 'First name';
 
   @override
+  String get onboardingLastName => 'Last name';
+
+  @override
+  String get onboardingLastNamePrivate =>
+      'Other members never see your last name.';
+
+  @override
   String get onboardingBirthDate => 'Birthday';
 
   @override
@@ -907,6 +914,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingErrorFirstName => 'Add your first name.';
+
+  @override
+  String get onboardingErrorLastName => 'Add your last name.';
 
   @override
   String get onboardingErrorGender => 'Choose how you identify.';
@@ -2316,6 +2326,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsFirstNameTooLong => 'First name is too long.';
+
+  @override
+  String get settingsLastNameRequired => 'Last name is required.';
+
+  @override
+  String get settingsLastNameTooLong => 'Last name is too long.';
 
   @override
   String get settingsBioTooLong => 'Bio is too long.';

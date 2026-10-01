@@ -9,6 +9,9 @@ abstract final class OnboardingMessages {
   static const birthdayRequired = 'Birthday is required';
   static const underage = 'You must be 18 or older to use Mevora.';
   static const firstNameRequired = 'First name is required';
+  static const firstNameTooLong = 'First name is too long';
+  static const lastNameRequired = 'Last name is required';
+  static const lastNameTooLong = 'Last name is too long';
   static const genderRequired = 'Gender is required';
   static const interestedInRequired = 'Interested in is required';
   static const cityRequired = 'City is required';

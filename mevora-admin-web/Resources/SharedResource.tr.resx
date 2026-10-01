@@ -809,6 +809,7 @@
   <data name="code:PHOTO_APPROVED" xml:space="preserve"><value>Fotoğraf onaylandı</value></data>
   <data name="code:PHOTO_REJECTED" xml:space="preserve"><value>Fotoğraf reddedildi</value></data>
   <data name="code:PHOTO_REMOVED" xml:space="preserve"><value>Fotoğraf kaldırıldı</value></data>
+  <data name="code:child_safety" xml:space="preserve"><value>Çocuk güvenliği</value></data>
   <data name="code:underage" xml:space="preserve"><value>Reşit olmayan</value></data>
   <data name="code:harassment" xml:space="preserve"><value>Taciz</value></data>
   <data name="code:scam" xml:space="preserve"><value>Dolandırıcılık</value></data>

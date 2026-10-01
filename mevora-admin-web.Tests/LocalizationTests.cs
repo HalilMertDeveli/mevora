@@ -118,6 +118,27 @@ public sealed class LocalizationTests
     }
 
     /// <summary>
+    /// A child-safety report (sexual content or behaviour involving a minor) is
+    /// named in the reader's language in the report queue, not shown as a raw code.
+    /// </summary>
+    [Theory]
+    [InlineData("tr", "Çocuk güvenliği")]
+    [InlineData("en", "Child safety")]
+    public async Task Child_safety_report_reason_has_a_label(string culture, string label)
+    {
+        using var factory = new AdminWebFactory {DefaultCulture = culture};
+        var client = factory.Client(AdminWebFactory.Moderator);
+        factory.Api.Responses["adminListReports"] = _ => AdminWebFactory.Json("""
+            {"items":[{"reportId":"r1","reason":"child_safety","status":"open","priority":"critical","description":"d","createdAt":"2026-09-29T10:00:00Z"}],"nextCursor":null}
+            """);
+
+        var html = await client.GetStringAsync("/Reports");
+
+        Assert.Contains(label, html, StringComparison.Ordinal);
+        Assert.DoesNotContain(">child_safety<", html, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Every literal the console looks up must have a Turkish entry, or a Turkish
     /// reader would meet an English sentence. New text fails here until translated.
     /// </summary>

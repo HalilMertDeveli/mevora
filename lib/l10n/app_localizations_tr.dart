@@ -1808,6 +1808,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportFakeProfile => 'Sahte profil';
 
   @override
+  String get reportChildSafety =>
+      'Çocuk güvenliği (reşit olmayan birini içeren cinsel içerik veya davranış)';
+
+  @override
   String get reportUnderage => 'Reşit değil';
 
   @override

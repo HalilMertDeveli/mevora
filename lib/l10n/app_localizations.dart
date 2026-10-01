@@ -3254,6 +3254,12 @@ abstract class AppLocalizations {
   /// **'Fake profile'**
   String get reportFakeProfile;
 
+  /// No description provided for @reportChildSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Child safety concern (sexual content or behaviour involving a minor)'**
+  String get reportChildSafety;
+
   /// No description provided for @reportUnderage.
   ///
   /// In en, this message translates to:

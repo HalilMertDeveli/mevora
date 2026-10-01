@@ -76,6 +76,7 @@ export const adminReviewPhoto = defineAdminCommand(specs.adminReviewPhotoSpec);
 export const adminListHumorReviews = defineAdminCommand(specs.adminListHumorReviewsSpec);
 export const adminGetHumorReports = defineAdminCommand(specs.adminGetHumorReportsSpec);
 export const adminReviewHumorContent = defineAdminCommand(specs.adminReviewHumorContentSpec);
+export const adminListHumorCoreSequence = defineAdminCommand(specs.adminListHumorCoreSequenceSpec);
 
 // Verification (read, escalate, require again — never "mark verified")
 export const adminGetVerification = defineAdminCommand(specs.adminGetVerificationSpec);

@@ -41,6 +41,22 @@ const {getMevoraPicks} = require("../lib/picks/index.js");
 const VIEWER = "viewer";
 const INTERVAL = PICKS_CONFIG.topUpMinIntervalMs;
 
+/**
+ * Noon of the current Picks day (the logical day starts at Istanbul midnight).
+ *
+ * These tests step time forward from "now" by up to seven top-up intervals
+ * (3.5 h). Measured from the real clock, those steps crossed the daily refresh
+ * whenever the suite ran after 20:30 Istanbul time: the batch under test was
+ * regenerated and the assertions failed until midnight — every evening, on
+ * every pull request. From noon no step reaches the end of the day.
+ */
+function testNow() {
+  const offsetMs = PICKS_CONFIG.logicalDayUtcOffsetMinutes * 60_000;
+  const dayMs = 24 * 60 * 60 * 1000;
+  const dayStart = Math.floor((Date.now() + offsetMs) / dayMs) * dayMs - offsetMs;
+  return dayStart + dayMs / 2;
+}
+
 const approvedPhotos = [1, 2, 3].map((n) => ({
   id: `p${n}`,
   downloadUrl: `https://example.test/${n}.jpg`,
@@ -61,7 +77,7 @@ function profile(uid, overrides = {}) {
     relationshipGoal: "longTerm",
     interests: ["hiking", "jazz", "cooking", "chess"],
     lifestyle: ["nonsmoker", "earlybird"],
-    lastActiveAt: Timestamp.fromMillis(Date.now()),
+    lastActiveAt: Timestamp.fromMillis(testNow()),
     updatedAt: 1000,
     ...overrides,
   };
@@ -167,7 +183,7 @@ describe("Picks sizing comes from one place", () => {
 
   it("a batch written before sizing existed keeps its own size until it expires", async () => {
     seedWorld({strong: 20});
-    const nowMs = Date.now();
+    const nowMs = testNow();
     const legacy = lifecycle.newBatch({
       generationId: "legacy",
       nowMs,
@@ -200,7 +216,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     beforeEach(() => seedWorld({strong: 3 * target}));
 
     it(`a new daily batch holds exactly ${target}, even with ${3 * target} strong candidates`, async () => {
-      const result = await serve(Date.now(), sizing);
+      const result = await serve(testNow(), sizing);
       assert.equal(result.status, "ready");
       assert.equal(result.picks.length, target);
       assert.equal(result.targetCount, target);
@@ -212,13 +228,13 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
 
     it("20 strong candidates still yield only the target", async () => {
       seedWorld({strong: 20});
-      const result = await serve(Date.now(), sizing);
+      const result = await serve(testNow(), sizing);
       assert.equal(result.picks.length, Math.min(20, target));
       assert.equal(stored().deliveredCount, Math.min(20, target));
     });
 
     it("passing five Picks at once brings nobody new, however long the member waits today", async () => {
-      const now = Date.now();
+      const now = testNow();
       const first = await serve(now, sizing);
       for (const uid of uidsOf(first).slice(0, 5)) await pass(uid);
       for (const later of [now + 1, now + INTERVAL + 1, now + 3 * INTERVAL + 1]) {
@@ -230,7 +246,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     });
 
     it("a liked slot is not refilled the same day", async () => {
-      const now = Date.now();
+      const now = testNow();
       const first = await serve(now, sizing);
       await like(uidsOf(first)[0]);
       const later = await serve(now + INTERVAL + 1, sizing);
@@ -239,7 +255,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     });
 
     it("a matched slot is not refilled the same day", async () => {
-      const now = Date.now();
+      const now = testNow();
       const first = await serve(now, sizing);
       const partner = uidsOf(first)[0];
       const matchId = [VIEWER, partner].sort().join("_");
@@ -254,7 +270,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     });
 
     it("a Pick lost to a block gets a controlled replacement", async () => {
-      const now = Date.now();
+      const now = testNow();
       const first = await serve(now, sizing);
       const [a, b] = uidsOf(first);
       await block(VIEWER, a);
@@ -267,7 +283,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     });
 
     it(`replacements never take the day past ${target + allowance} people`, async () => {
-      let now = Date.now();
+      let now = testNow();
       const everShown = new Set();
       let result = await serve(now, sizing);
       for (let round = 0; round < 6; round++) {
@@ -284,17 +300,17 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
 
     it("few strong candidates → lowSupply, and weak ones are never used as filler", async () => {
       seedWorld({strong: 3, weak: 3 * target});
-      const result = await serve(Date.now(), sizing);
+      const result = await serve(testNow(), sizing);
       assert.equal(result.status, "lowSupply");
       assert.deepEqual(uidsOf(result).sort(), ["s0", "s1", "s2"]);
       // Waiting for a top-up does not lower the bar either.
-      const later = await serve(Date.now() + INTERVAL + 1, sizing);
+      const later = await serve(testNow() + INTERVAL + 1, sizing);
       assert.deepEqual(uidsOf(later).sort(), ["s0", "s1", "s2"]);
       assert.equal(later.status, "lowSupply");
     });
 
     it("reopening the same day keeps the generation and the order, and writes nothing", async () => {
-      const now = Date.now();
+      const now = testNow();
       const first = await serve(now, sizing);
       db.resetStats();
       for (const later of [now + 1000, now + 2 * INTERVAL]) {
@@ -307,7 +323,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     });
 
     it("the next Istanbul day brings a new batch — not a second earlier", async () => {
-      const now = Date.now();
+      const now = testNow();
       const first = await serve(now, sizing);
       const boundary = lifecycle.nextLogicalDayStartMs(now);
       // Istanbul midnight is 21:00 UTC (UTC+3, no DST).
@@ -323,7 +339,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     });
 
     it("a block hides the Pick at once, from both sides, without waiting for a top-up", async () => {
-      const now = Date.now();
+      const now = testNow();
       const mine = await serve(now, sizing);
       const other = uidsOf(mine)[0];
       // The other member's own Picks contain the viewer (they are the only woman).
@@ -337,7 +353,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     });
 
     it("a block written only by the other side (client subcollection) also hides the Pick", async () => {
-      const now = Date.now();
+      const now = testNow();
       const mine = await serve(now, sizing);
       const other = uidsOf(mine)[1];
       await db.doc(`users/${other}/blockedUsers/${VIEWER}`).set({blockedUserId: VIEWER});
@@ -347,7 +363,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
 
     it("two accounts never share or mix a batch", async () => {
       seedWorld({strong: 3 * target, extraViewers: ["viewer2"]});
-      const now = Date.now();
+      const now = testNow();
       const a = await serve(now, sizing, VIEWER);
       const b = await serve(now, sizing, "viewer2");
       assert.notEqual(a.generationId, b.generationId);
@@ -365,7 +381,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     it(
       "two concurrent opens run one expensive generation",
       async () => {
-        const now = Date.now();
+        const now = testNow();
         const poolPages = () => db.stats().queries.filter((query) => query.path === "profiles").length;
         // Baseline: what one generation scans in this world.
         await serve(now, sizing);
@@ -386,7 +402,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     );
 
     it("a lease left by a crashed generation is taken over once it lapses", async () => {
-      const now = Date.now();
+      const now = testNow();
       await db.doc(picksDocPath(VIEWER)).set({generationLease: {token: "dead", untilMs: now - 1}});
       const result = await serve(now, sizing);
       assert.equal(result.picks.length, target);
@@ -394,7 +410,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     });
 
     it("a failed generation releases its lease so the next open need not wait", async () => {
-      const now = Date.now();
+      const now = testNow();
       const failing = {...db, collection: (path) => {
         if (path === "profiles") throw new Error("pool unavailable");
         return db.collection(path);
@@ -410,7 +426,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
 
     it("a low-supply batch stays short today and never rescans the pool on reopen", async () => {
       seedWorld({strong: 3, weak: 5});
-      const now = Date.now();
+      const now = testNow();
       const first = await serve(now, sizing);
       assert.equal(first.status, "lowSupply");
       // More strong people join later in the day...
@@ -428,7 +444,7 @@ for (const target of PICKS_DAILY_TARGET_OPTIONS) {
     it("an empty replacement scan backs off: 30 min, then 1 h, then 2 h", async () => {
       // Exactly one day's worth of strong people: a replacement finds nobody.
       seedWorld({strong: target});
-      const now = Date.now();
+      const now = testNow();
       const first = await serve(now, sizing);
       await block(VIEWER, uidsOf(first)[0]);
       const pages = () => db.stats().queries.filter((query) => query.path === "profiles").length;

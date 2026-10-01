@@ -22,6 +22,7 @@ import 'package:mevora/core/di/social_services_factory.dart';
 import 'package:mevora/core/di/support_scope.dart';
 import 'package:mevora/core/di/subscription_services_factory.dart';
 import 'package:mevora/core/di/streak_services_factory.dart';
+import 'package:mevora/core/di/face_anchor_services_factory.dart';
 import 'package:mevora/core/di/verification_services_factory.dart';
 import 'package:mevora/core/errors/error_handler.dart';
 import 'package:mevora/core/identity/firebase_auth_uid_source.dart';
@@ -130,6 +131,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
     useEmulatorStore: config.useEmulators,
   );
   final verificationServices = createVerificationServices();
+  final faceAnchorServices = createFaceAnchorServices();
   final subscriptionServices = createSubscriptionServices(
     uidSource: uidSource,
     premiumEnabled: config.featureFlags.premiumEnabled,
@@ -176,6 +178,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
       purchaseRepository: boostServices.purchaseRepository,
       subscriptionServices: subscriptionServices,
       verificationRepository: verificationServices.repository,
+      faceAnchorServices: faceAnchorServices,
       analytics: analytics,
       languageController: languageController,
       permissionService: permissionService,

@@ -14,7 +14,6 @@ const {
   seedAnchorPools,
 } = require("../lib/humor/calibrationSeed.js");
 const calibrationSeedModule = require("../lib/humor/calibrationSeed.js");
-const {buildCalibrationPoolReport} = require("../lib/humor/calibrationPoolReport.js");
 const {
   INTERNAL_HUMOR_SEED,
   parseHumorContent,
@@ -362,78 +361,4 @@ test("an unknown slot id does not silently become a valid anchor", async () => {
   });
   assert.equal(doc.calibration.eligible, true, "still ordinary calibration content");
   assert.equal(doc.calibration.slot, null, "a typo must not create a phantom slot");
-});
-
-// --------------------------------------------------------------------------
-// Pool health report
-// --------------------------------------------------------------------------
-
-test("the pool report calls a fully curated catalog healthy", async () => {
-  const db = await seededCatalog();
-  const report = await buildCalibrationPoolReport(db);
-
-  assert.equal(report.calibrationVersion, HUMOR_CALIBRATION_VERSION);
-  assert.equal(report.healthy, true, report.warnings.join("; "));
-  assert.deepEqual(report.warnings, []);
-  assert.equal(report.anchorSlots.length, ANCHOR_SLOTS.length);
-  for (const slot of report.anchorSlots) {
-    assert.equal(slot.ok, true, `${slot.slotId}: ${slot.warnings.join("; ")}`);
-    assert.ok(slot.measuring >= ANCHOR_POOL_TARGET, slot.slotId);
-    assert.equal(slot.candidates, slot.measuring, `${slot.slotId} has mistagged content`);
-  }
-  assert.deepEqual(report.uncoveredDimensions, []);
-  assert.deepEqual(
-    report.guaranteedAnchorCoverage,
-    [...ANCHOR_SLOTS.map((s) => s.primary)].sort(),
-  );
-  assert.ok(report.openPoolSize >= CALIBRATION_TOTAL - ANCHOR_SLOTS.length);
-});
-
-test("the pool report names the slot when a pool is emptied", async () => {
-  const starved = {};
-  for (const item of seedAnchorPools().get("anchor_social") ?? []) {
-    starved[item.contentId] = {calibrationSlot: null, calibrationEligible: false};
-  }
-  const db = await seededCatalog(starved);
-  const report = await buildCalibrationPoolReport(db);
-
-  assert.equal(report.healthy, false);
-  const social = report.anchorSlots.find((s) => s.slotId === "anchor_social");
-  assert.equal(social.candidates, 0);
-  assert.equal(social.ok, false);
-  assert.ok(
-    report.warnings.some((w) => w.includes("anchor_social")),
-    `warnings did not name the empty slot: ${report.warnings.join("; ")}`,
-  );
-});
-
-test("the pool report flags a slot that cannot rotate", async () => {
-  const candidates = seedAnchorPools().get("anchor_wit") ?? [];
-  const starved = {};
-  for (const item of candidates.slice(1)) {
-    starved[item.contentId] = {calibrationEligible: false, calibrationSlot: null};
-  }
-  const db = await seededCatalog(starved);
-  const report = await buildCalibrationPoolReport(db);
-
-  const wit = report.anchorSlots.find((s) => s.slotId === "anchor_wit");
-  assert.equal(wit.measuring, 1);
-  assert.equal(wit.ok, false);
-  assert.ok(
-    wit.warnings.some((w) => w.includes("rotate")),
-    `expected a rotation warning, got: ${wit.warnings.join("; ")}`,
-  );
-});
-
-test("the pool report ignores inactive and unapproved content", async () => {
-  const first = (seedAnchorPools().get("anchor_meme") ?? [])[0];
-  const db = await seededCatalog({[first.contentId]: {active: false}});
-  const report = await buildCalibrationPoolReport(db);
-
-  const meme = report.anchorSlots.find((s) => s.slotId === "anchor_meme");
-  assert.equal(
-    meme.candidates,
-    ANCHOR_POOL_TARGET - 1,
-    "an inactive item was still counted as an available candidate",
-  );
 });

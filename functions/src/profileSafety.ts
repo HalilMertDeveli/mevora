@@ -98,7 +98,66 @@ export function isProfileDiscoverable(data: DocumentData | undefined): boolean {
   if (moderationStatus === "suspended" || moderationStatus === "rejected" || moderationStatus === "manual_review") {
     return false;
   }
-  return isAdultProfile(data);
+  return isAdultProfile(data) && faceAnchorSatisfied(data);
+}
+
+/**
+ * Whether this profile must have a Face Anchor to be completed.
+ *
+ * A profile already under the rule stays under it. Otherwise the rule applies
+ * to a profile that has not finished onboarding, while enforcement is on. A
+ * member who finished before the rule applied to them is not put under it by
+ * anything they do except verifying a photo. `profileCompleted` is read from
+ * profiles/{uid}, where only the server writes it.
+ */
+export function isFaceAnchorRequiredFor(profile: DocumentData | undefined, enforced: boolean): boolean {
+  if (profile?.faceAnchorRequired === true) {
+    return true;
+  }
+  return enforced && profile?.profileCompleted !== true;
+}
+
+/**
+ * Whether a profile meets the Face Anchor rule: the photo other members see
+ * first is one the server verified against the live account owner.
+ *
+ * Reads only fields a client cannot write. `faceAnchorRequired` and
+ * `faceAnchorPhotoIds` are absent from the profile rules' allowlists and are
+ * written by the server alone, from the moderation ledger.
+ *
+ * A profile that was never put under the rule (completed before Face Anchor
+ * existed, or while enforcement was off) passes: its photos are not treated as
+ * verified, and it is not hidden for lacking a check it was never offered.
+ *
+ * Readers of photos[] disagree on what "first" means — array position, lowest
+ * `order`, the `isPrimary` flag — and all three are client-written until the
+ * reconciling trigger has run. So every candidate for "first" must be an
+ * anchor: whatever a reader picks, it is a verified photo.
+ */
+export function faceAnchorSatisfied(data: DocumentData | undefined): boolean {
+  if (data?.faceAnchorRequired !== true) {
+    return true;
+  }
+  const anchorIds = new Set(
+    (Array.isArray(data.faceAnchorPhotoIds) ? data.faceAnchorPhotoIds : [])
+      .filter((id: unknown): id is string => typeof id === "string" && id.length > 0),
+  );
+  const approved = approvedPhotos(data.photos);
+  if (anchorIds.size === 0 || approved.length === 0) {
+    return false;
+  }
+  const orderOf = (photo: Record<string, unknown>, index: number) =>
+    typeof photo.order === "number" ? photo.order : index;
+  let lowest = approved[0];
+  let lowestOrder = orderOf(lowest, 0);
+  approved.forEach((photo, index) => {
+    if (orderOf(photo, index) < lowestOrder) {
+      lowest = photo;
+      lowestOrder = orderOf(photo, index);
+    }
+  });
+  const firsts = [approved[0], lowest, ...approved.filter((photo) => photo.isPrimary === true)];
+  return firsts.every((photo) => anchorIds.has(String(photo.id ?? "")));
 }
 
 /**

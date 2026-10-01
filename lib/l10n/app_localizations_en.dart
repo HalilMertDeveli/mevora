@@ -1010,7 +1010,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingPhotosHint =>
-      'Add at least 3 photos. Drag to reorder — your first photo is your main one.';
+      'Add at least 3 photos. Your face should be clearly visible in at least one. In the others you can show your hobbies, your travels, your pet or moments from your life.';
 
   @override
   String get onboardingPrimaryPhoto => 'Main photo';
@@ -4109,9 +4109,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorTopVibes => 'Top vibes';
 
   @override
-  String get humorSkipContent => 'Skip';
-
-  @override
   String get humorReport => 'Report';
 
   @override
@@ -4325,7 +4322,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'React to a few short pieces. Your reactions help us understand your sense of humor, so we can show you the humor you share with your matches.';
 
   @override
-  String get humorCalibrationIntroMeta => '15 short pieces · about a minute';
+  String humorCalibrationIntroMeta(int count) {
+    return '$count short pieces · about a minute';
+  }
+
+  @override
+  String get humorCalibrationPausedTitle => 'That\'s it for today';
+
+  @override
+  String get humorCalibrationPausedBody =>
+      'One piece would not play. The rest will be waiting tomorrow, and your humor profile will be completed then.';
+
+  @override
+  String get humorLabCalibratedBody =>
+      'From here on we continue with a few new pieces each day.';
 
   @override
   String get humorCalibrationStart => 'Start';
@@ -4400,9 +4410,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String humorResultContrast(String weakest) {
     return '$weakest does not do much for you.';
   }
-
-  @override
-  String get humorResultKeepGoing => 'Keep shaping your humor profile';
 
   @override
   String get humorResultDone => 'Continue';
@@ -4803,7 +4810,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorDailyHintMiddle => 'Getting to know you a little more 👀';
 
   @override
-  String get humorDailyHintEnd => 'Just a few more videos.';
+  String get humorDailyHintEnd => 'Almost done.';
 
   @override
   String get humorDailyCompletedTitle => 'All done for today 🎭';
@@ -4811,6 +4818,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get humorDailyCompletedBody =>
       'Your humor profile just got a little clearer.';
+
+  @override
+  String get humorDailyCompletedTomorrow =>
+      'A new round will be waiting tomorrow.';
+
+  @override
+  String get humorDailySequenceComplete =>
+      'You have been through everything for now. The round continues when new pieces are added.';
 
   @override
   String get humorDailyNotReadyTitle => 'Today\'s round is being prepared';
@@ -5069,4 +5084,141 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get moderationAppealFailed =>
       'We couldn\'t send your appeal. Check your connection and try again.';
+
+  @override
+  String get faceAnchorRequiredNotice =>
+      'To continue, verify one photo where your face is clearly visible.';
+
+  @override
+  String get faceAnchorVerifyAction => 'Verify your photo';
+
+  @override
+  String get faceAnchorVerifyShort => 'Verify';
+
+  @override
+  String get faceAnchorVerified => 'This photo is verified';
+
+  @override
+  String get faceAnchorVerifiedShort => 'Verified';
+
+  @override
+  String get faceAnchorPending => 'Verification pending';
+
+  @override
+  String get faceAnchorPhotoInReview => 'Photo in review';
+
+  @override
+  String get faceAnchorNotVerified => 'Not verified';
+
+  @override
+  String get faceAnchorRetry => 'Try again';
+
+  @override
+  String get faceAnchorMismatch =>
+      'This photo did not match the selfie you took.';
+
+  @override
+  String get faceAnchorLivenessFailed =>
+      'The liveness check could not be completed. Try again in good light, looking straight at the camera.';
+
+  @override
+  String get faceAnchorPhotoUnclear =>
+      'Your face is not clearly visible on its own in this photo. Choose one that shows only you.';
+
+  @override
+  String get faceAnchorSelfieInvalid =>
+      'That selfie could not be used. Take a new one with your camera and try again.';
+
+  @override
+  String get faceAnchorTechnicalError =>
+      'Verification could not be completed right now. Your photo was not verified; try again shortly.';
+
+  @override
+  String get faceAnchorPrimaryRequiresVerify =>
+      'Verify this photo before making it your main photo.';
+
+  @override
+  String get faceAnchorLastAnchorDelete =>
+      'You can\'t remove your last verified photo. Verify another photo first.';
+
+  @override
+  String get faceAnchorExplainBody =>
+      'We run a short selfie check to make sure your photo is really you.';
+
+  @override
+  String get faceAnchorExplainSteps =>
+      'You\'ll take a selfie with your front camera. It is used only for this check, never appears on your profile and is deleted when the check ends.';
+
+  @override
+  String get faceAnchorConsent =>
+      'I agree to my selfie being processed to compare it with this photo.';
+
+  @override
+  String get faceAnchorTakeSelfie => 'Take a selfie';
+
+  @override
+  String get faceAnchorOpening => 'Getting ready…';
+
+  @override
+  String get faceAnchorCapturing => 'Opening the camera…';
+
+  @override
+  String get faceAnchorUploading => 'Sending your selfie…';
+
+  @override
+  String get faceAnchorVerifying => 'Verifying…';
+
+  @override
+  String get faceAnchorSuccessBody => 'This photo can now be your main photo.';
+
+  @override
+  String get faceAnchorDone => 'Done';
+
+  @override
+  String get faceAnchorChooseAnother => 'Choose another photo';
+
+  @override
+  String get faceAnchorPromptBody =>
+      'Verify one photo where your face is clearly visible to show your profile is really you.';
+
+  @override
+  String get faceAnchorProfileVerifiedTitle => 'Your profile photo is verified';
+
+  @override
+  String get faceAnchorPromptTileSubtitle =>
+      'Verify a photo of your face with a short selfie';
+
+  @override
+  String get faceAnchorErrorUnavailable =>
+      'Photo verification isn\'t available right now. Please try again later.';
+
+  @override
+  String get faceAnchorErrorPhotoNotApproved =>
+      'This photo is still in review. You can verify it once the review is finished.';
+
+  @override
+  String get faceAnchorErrorCooldown => 'Wait a moment and try again.';
+
+  @override
+  String get faceAnchorErrorAttemptLimit =>
+      'You\'ve used today\'s attempts. You can try again tomorrow.';
+
+  @override
+  String get faceAnchorErrorCamera =>
+      'The camera couldn\'t be opened. Check the camera permission and try again.';
+
+  @override
+  String get faceAnchorErrorUpload =>
+      'Your selfie couldn\'t be sent. Check your connection and try again.';
+
+  @override
+  String get faceAnchorErrorInProgress =>
+      'A verification is already running. Please wait for the result.';
+
+  @override
+  String get faceAnchorErrorConsent => 'You need to agree before continuing.';
+
+  @override
+  String get faceAnchorErrorGeneric =>
+      'Verification couldn\'t be started. Please try again.';
 }

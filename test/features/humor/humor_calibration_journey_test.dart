@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/features/humor/data/datasources/mock_humor_data_source.dart';
 import 'package:mevora/features/humor/data/repositories/humor_repository_impl.dart';
-import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/presentation/controllers/humor_controller.dart';
 import 'package:mevora/features/humor/presentation/pages/humor_calibration_intro_page.dart';
@@ -37,7 +36,13 @@ void main() {
 
       final l10n = await AppLocalizations.delegate.load(const Locale('tr'));
       expect(find.text(l10n.humorCalibrationIntroTitle), findsOneWidget);
-      expect(find.text(l10n.humorCalibrationIntroMeta), findsOneWidget);
+      // The number of items is the server's, not a string baked into the app.
+      expect(
+        find.text(
+          l10n.humorCalibrationIntroMeta(MockHumorDataSource.onboardingCount),
+        ),
+        findsOneWidget,
+      );
       expect(find.text(l10n.humorCalibrationStart), findsOneWidget);
       // Skip is offered in two places; either must work.
       expect(find.text(l10n.humorCalibrationSkip), findsWidgets);
@@ -88,7 +93,7 @@ void main() {
       expect(find.text(l10n.humorCalibrationStart), findsNothing);
       expect(
         find.text(
-          l10n.humorCalibrationProgress(4, HumorCalibration.totalInteractions),
+          l10n.humorCalibrationProgress(4, MockHumorDataSource.onboardingCount),
         ),
         findsOneWidget,
       );
@@ -97,9 +102,10 @@ void main() {
   });
 
   group('calibration progress', () {
-    testWidgets('shows N / 15 while calibrating, not the stage', (
+    testWidgets('shows N / total while calibrating, not the stage', (
       tester,
     ) async {
+      const total = MockHumorDataSource.onboardingCount;
       await withFakeNetworkImages(() async {
         final source = MockHumorDataSource();
         final controller = HumorController(
@@ -113,7 +119,7 @@ void main() {
 
         final l10n = await AppLocalizations.delegate.load(const Locale('tr'));
         expect(
-          find.text(l10n.humorCalibrationProgress(0, 15)),
+          find.text(l10n.humorCalibrationProgress(0, total)),
           findsOneWidget,
           reason: 'the title should be the progress during calibration',
         );
@@ -121,7 +127,10 @@ void main() {
 
         await controller.rate(HumorRating.funny);
         await tester.pump(const Duration(milliseconds: 400));
-        expect(find.text(l10n.humorCalibrationProgress(1, 15)), findsOneWidget);
+        expect(
+          find.text(l10n.humorCalibrationProgress(1, total)),
+          findsOneWidget,
+        );
 
         // Stage names must never appear in the UI.
         for (final internal in ['anchor', 'adaptive', 'exploration']) {

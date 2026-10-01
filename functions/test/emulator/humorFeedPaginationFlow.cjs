@@ -24,11 +24,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
   process.exit(2);
 }
 
-const {
-  ANCHOR_SLOTS,
-  CALIBRATION_TOTAL,
-  HUMOR_CALIBRATION_VERSION,
-} = require("../../lib/humor/calibration.js");
+const {CALIBRATION_TOTAL, HUMOR_CALIBRATION_VERSION} = require("../../lib/humor/calibration.js");
 const {listHumorContentPage} = require("../../lib/humor/contentRepository.js");
 const {buildHumorFeed} = require("../../lib/humor/feed.js");
 const {submitHumorFeedbackTx} = require("../../lib/humor/feedback.js");
@@ -537,61 +533,6 @@ step("a cursor prefetch never re-serves what a cold start just re-offered", asyn
   }
   assert.deepEqual([...coldIds, ...prefetchIds].sort(), servedIds.slice(5).sort());
   return `12 re-offered cold, ${prefetchIds.length} more by cursor, 0 duplicates`;
-});
-
-// Last: the curated docs below join the catalog every later step would walk.
-step("calibration reaches an unseen curated item behind a chain of seen ones", async () => {
-  const uid = "qa_feed_calib_chain";
-  const [open, ...covered] = ANCHOR_SLOTS;
-  const chain = await seedSmallCatalog("cc", "tr", 6);
-  const coveredIds = await seedSmallCatalog("cv", "tr", covered.length);
-  const curate = (id, slot) =>
-    db.doc(`humorContent/${id}`).set(
-      {
-        calibrationEligible: true,
-        calibrationSlot: slot.id,
-        calibrationVersion: HUMOR_CALIBRATION_VERSION,
-        humorVector: {[slot.primary]: 0.9},
-        category: slot.primary,
-      },
-      {merge: true},
-    );
-  await Promise.all([
-    ...chain.map((id) => curate(id, open)),
-    ...coveredIds.map((id, i) => curate(id, covered[i])),
-  ]);
-  await db.doc(`users/${uid}/humor/calibration`).set({
-    version: HUMOR_CALIBRATION_VERSION,
-    completedCount: coveredIds.length,
-    ratedContentIds: coveredIds,
-    coveredSlots: covered.map((slot) => slot.id),
-    coveredDimensions: [],
-    degradedCount: 0,
-  });
-  await markInteractions(uid, coveredIds);
-
-  // Each candidate in turn is the only unseen one, which covers every chain
-  // of skipped items the slot's rotation can meet, up to five in a row.
-  for (const unseenId of chain) {
-    const batch = db.batch();
-    for (const id of chain) {
-      const ref = db.doc(`users/${uid}/humorInteractions/${id}`);
-      if (id === unseenId) {
-        batch.delete(ref);
-      } else {
-        batch.set(ref, {contentId: id, skipped: true, rating: null});
-      }
-    }
-    await batch.commit();
-    const result = await buildHumorFeed({db, uid, languages: ["tr"], limit: 12});
-    assert.equal(result.items[0]?.contentId, unseenId, `the unseen ${unseenId} was not reached`);
-    assert.equal(result.items[0].calibrationStage, "anchor");
-    const served = await db.getAll(
-      ...result.items.map((i) => db.doc(`users/${uid}/humorInteractions/${i.contentId}`)),
-    );
-    assert.equal(served.some((snap) => snap.exists), false, "served a seen item");
-  }
-  return `${chain.length}/${chain.length} rotations reached the unseen anchor`;
 });
 
 (async () => {

@@ -35,11 +35,16 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   // can re-create these after the sweep, so they are checked, not assumed.
   `users/${uid}/humor/summary`,
   `users/${uid}/humor/calibration`,
+  // Their Humor Core progress: every rating of the canonical sequence.
+  `users/${uid}/humor/core`,
   // Their own Mevora Picks batch: who they were shown, and why.
   `users/${uid}/mevoraPicks/current`,
   // Daily streak: engagement history. The check-in refuses to write once the
   // account document is gone, but a call in flight is checked, not assumed.
   `users/${uid}/dailyStreak/current`,
+  // Face Anchor attempt state. A verification finishing as the account goes
+  // only ever updates this document, but it is checked, not assumed.
+  `users/${uid}/faceAnchor/state`,
   // The admin console's name-search row; the profile trigger could recreate
   // it if a profile write raced the deletion, so it is checked.
   `adminUserLookup/${uid}`,
@@ -50,6 +55,7 @@ const REMNANT_STORAGE_PREFIXES = (uid: string): string[] => [
   `users/${uid}/`,
   `profiles/${uid}/`,
   `moderation/quarantine/${uid}/`,
+  `face-anchor/pending/${uid}/`,
 ];
 
 /**

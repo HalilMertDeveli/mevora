@@ -24,7 +24,9 @@ import 'package:mevora/shared/widgets/mevora_pill.dart';
 ///
 /// Mirrors the Profile tile: it reads where the user is from the server, and
 /// anyone who has not finished calibration goes through the invitation first,
-/// which explains what the fifteen items are for and offers a way out.
+/// which explains what the items are for and offers a way out. Once the
+/// calibration is done the card leads to the humor profile; new items arrive
+/// through the daily tour card, never through an open-ended feed.
 class HumorLabDiscoverEntry extends StatefulWidget {
   const HumorLabDiscoverEntry({super.key, this.compact = false});
 
@@ -122,7 +124,7 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
   Future<void> _open() async {
     final complete = _calibration?.complete == true;
     await context.push(
-      complete ? AppRoutes.humorLab : AppRoutes.humorCalibration,
+      complete ? AppRoutes.humorResult : AppRoutes.humorCalibration,
     );
     if (mounted) {
       // Progress may have moved while the user was away.
@@ -142,13 +144,16 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
     if (calibration == null || !calibration.started) {
       subtitle = l10n.humorProfileEntryNotStarted;
     } else if (calibration.complete) {
-      subtitle = l10n.humorLabSubtitle;
+      subtitle = l10n.humorProfileEntryComplete;
     } else {
       subtitle = l10n.humorProfileEntryInProgress(
         calibration.completedCount,
         calibration.totalCount,
       );
     }
+    final cta = calibration?.complete == true
+        ? l10n.humorProfileTitle
+        : l10n.humorLabDiscoverCta;
     final p = context.palette;
     if (widget.compact) {
       final progress =
@@ -157,7 +162,7 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
           : '';
       return Semantics(
         button: true,
-        label: '${l10n.humorLabDiscoverCta}. $subtitle',
+        label: '$cta. $subtitle',
         excludeSemantics: true,
         child: Material(
           color: p.humorContainer,
@@ -218,7 +223,7 @@ class _HumorLabDiscoverEntryState extends State<HumorLabDiscoverEntry> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.humorLabDiscoverCta,
+                  cta,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: p.onHumorContainer,
                   ),

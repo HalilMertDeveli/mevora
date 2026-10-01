@@ -11,6 +11,10 @@ import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
 import 'package:mevora/features/humor/domain/services/humor_feed_policy.dart';
 
+// Nothing sent from here chooses content, a position or a day: the server
+// decides what a member rates and when. `contentId` and `dayId` only echo
+// what the server handed out, and it checks them against its own state.
+
 /// Cloud Functions surface for Humor Lab.
 class FunctionsHumorDataSource implements HumorDataSource {
   FunctionsHumorDataSource({required BackendCallable backend})
@@ -179,23 +183,22 @@ class FunctionsHumorDataSource implements HumorDataSource {
   }
 
   /// Missing or malformed calibration data degrades to "not started" rather
-  /// than throwing: an older backend must not break the feed.
+  /// than throwing. The total is the server's: without one there is no count
+  /// to show, and none is made up here.
   HumorCalibration _parseCalibration(Object? raw) {
     if (raw is! Map) {
       return HumorCalibration.empty;
     }
     final map = Map<String, dynamic>.from(raw);
-    final total = firestoreInt(
-      map['totalCount'],
-      HumorCalibration.totalInteractions,
-    );
+    final total = firestoreInt(map['totalCount'], 0);
     return HumorCalibration(
       version: firestoreInt(map['version'], 1),
       stage: HumorCalibration.parseStage(map['stage'] as String?),
       completedCount: firestoreInt(map['completedCount'], 0),
-      totalCount: total <= 0 ? HumorCalibration.totalInteractions : total,
+      totalCount: total < 0 ? 0 : total,
       complete: map['complete'] == true,
       insufficientPool: map['insufficientPool'] == true,
+      continuesTomorrow: map['continuesTomorrow'] == true,
     );
   }
 
@@ -236,13 +239,10 @@ class FunctionsHumorDataSource implements HumorDataSource {
     return UserHumorProfile(
       confidence: _asDouble(data['confidence']),
       interactionCount: interactionCount,
-      // Calibration is authoritative once the server reports it; the
-      // interaction-count heuristic only covers pre-calibration profiles.
+      // The server's calibration state is authoritative.
       profileBuilding: calibration.complete
           ? false
-          : data['profileBuilding'] == true ||
-                calibration.started ||
-                HumorFeedPolicy.isBuilding(interactionCount),
+          : data['profileBuilding'] == true || calibration.started,
       topVibes: top,
       vector: vector,
       exploredCategories: firestoreStringList(data['exploredCategories']),

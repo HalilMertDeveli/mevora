@@ -1,23 +1,32 @@
 # Mevora Humor Lab
 
-Isolated Reels-style humor discovery. Users watch vertical video/image content,
-rate “how funny?”, and build a **UserHumorProfile**.
+Members rate short humor content, “how funny?”, and build a
+**UserHumorProfile**. Everyone rates the same canonical items in the same
+order: fifteen as an initial calibration, then five per logical day — see
+**Humor Core sequence** below.
 
 ## Product entry
 
-- **Discover** promo card (`HumorLabDiscoverEntry`) when `humorLabEnabled`
+- **Discover** card (`HumorLabDiscoverEntry`) when `humorLabEnabled`: the
+  invitation while the calibration is open, the humor profile once it is done,
+  with the "Bugünün Mizah Turu" card above it when a day is available
 - **Profile** tile (same flag)
-- Route: `/humor-lab` overlay — **not** a 5th tab, **not** under Settings
+- Routes: `/humor/calibration` (invitation), `/humor-lab` (the calibration
+  itself), `/humor/result` (the profile), `/humor/daily` (the daily five) —
+  **not** a 5th tab, **not** under Settings
 
 ## Content pipeline
 
 ```text
 Giphy (licensed API, lang=tr) ─► map → relevance filter → dedup ─┐
-Curated Mevora text jokes ───────────────────────────────────────┼─► validate → moderate → tag → humorContent
+Curated clips (hand-picked, calibrationSeed.ts) ─────────────────┼─► validate → moderate → tag → humorContent
                                                                  │
-Flutter vertical feed ◄── getHumorFeed ◄── Firestore
-        │
- submitHumorFeedback → users/{uid}/humorInteractions + humor/summary
+                         curated catalogue ─► Humor Core sequence (explicit order)
+                                                    │
+Flutter ◄── getHumorFeed / getDailyHumorSet ◄───────┘
+   │
+ submitHumorFeedback / submitDailyHumorResponse
+   → users/{uid}/humorInteractions + humor/summary + humor/core
 ```
 
 **No** Instagram / TikTok / YouTube scraping, and no server-side media download.
@@ -28,12 +37,12 @@ Every card is one thing whose parts were made for each other. We never attach
 our own text to someone else's media, and never put a picture behind a joke
 that was not made for it.
 
-- **Curated (Mevora-authored)**: text-only joke cards — `type: "text"`,
-  `media.textBody` = the joke, `downloadUrl` / `thumbUrl` = `null`,
-  `attribution: null`, `sourceTrust: "curated"`. The calibration catalogue in
-  `calibrationSeed.ts` is exactly this. (It used to glue captions onto random
-  picsum stills and four stock clips — a grocery joke over a seascape, a fridge
-  joke under a sword fight. That is gone, and so are those hosts.)
+- **Curated**: the hand-picked catalogue in `calibrationSeed.ts`
+  (`CURATED_GIPHY_CATALOG`) — each entry a GIPHY item chosen by a person, with
+  its own animated image, its own still, its category and humor vector, and
+  the uploader's credit: `hc_gif_<giphyId>`, `sourceTrust: "curated"`. These
+  are the items of the Humor Core sequence. (The text-joke cards an earlier
+  seed wrote are retired — deactivated, never deleted.)
 - **Provider (GIPHY)**: the item's own animated image (a Clip: its own MP4),
   its own still frame as poster, and its own title as caption (cleaned of "GIF", "GIF by …", "by <user>"). An empty,
   generic or uploader-only title becomes `textBody: null` — never invented text.
@@ -54,7 +63,8 @@ only; posters are checked like media.
 - Config: `GIPHY_API_KEY` via `firebase functions:secrets:set GIPHY_API_KEY`
   (emulator: `functions/.secret.local`, added by the owner)
 - Admin sync: `syncHumorFromProvider { language, limit, clips? }` (admin claim + key)
-- Without key: the curated text catalogue still works; nothing else changes
+- Without key: the curated catalogue and the Core sequence work unchanged —
+  they need no key at run time; only candidate search and sync do
 
 **Queries.** Intentional families, Turkish first — `komik tepki`, `komik sahne`,
 `dizi komik`, `film komik`, `komedi`, `kahkaha`, `şaşkınlık`, `sarkazm`, `ironi`,
@@ -114,132 +124,236 @@ counts-only line (never the key or a URL).
 - **K1** — every feed card carries `attribution: {provider, displayName,
   username, sourceUrl, verified} | null` (null for curated content).
   `media.thumbUrl` stays the poster.
-- **K3** — `submitHumorFeedback` accepts `skipReason: "user" | "media_failed"`
-  only with `skipped: true` (anything else becomes `"user"`), stored on the skip
-  marker. A skip still never counts toward calibration or the profile.
+- **K3** — `submitHumorFeedback` accepts `skipReason: "media_failed"` with
+  `skipped: true`: the clip would not play. It is never a rating and never
+  moves the profile. There is no "not interested" skip — a Core entry is a
+  measurement; a plain skip from an older build records nothing.
 
-### Feed language
+## Humor Core sequence
 
-Default preference: `tr` then `en`. App language TR → Turkish content first.
+Every member rates **one canonical sequence** of curated humor items, in the
+same order: V1, V2, V3 … The same progression model as the Relationship Core
+questions.
 
-## Initial calibration
+| When | What the member gets |
+|---|---|
+| **First run** | V1–V15 — the initial calibration |
+| **Every logical day after that** | the next **5** open entries (V16–V20, then V21–V25, …) |
 
-The first **15** rated interactions are a structured calibration milestone,
-served instead of the personalized feed:
+Two members who have each rated thirty Core items have rated the same thirty.
+That is what makes their answers directly comparable.
 
-| Stage | Interactions | Purpose |
-|---|---|---|
-| **Anchor** | 1–6 | Comparable baseline across users, one curated *anchor slot* each |
-| **Adaptive** | 7–12 | Separate a strong signal from its nearest neighbours |
-| **Exploration** | 13–15 | Highest information gain — undercovered / weakly evidenced dims |
+Code: `functions/src/humor/coreSequence.ts` (the order), `coreSchedule.ts`
+(pure rules), `coreService.ts` (Firestore), `dailyService.ts` (the daily
+callables' input and output shapes).
 
-Server-owned state lives at `users/{uid}/humor/calibration` (`calibrationVersion = 1`).
-It sits inside the existing `users/{uid}/humor` collection on purpose, so the
-owner-read/client-write-denied rule and the account-deletion sweep both cover it
-without new rules.
+### Rules
 
-### Not everyone sees the same memes
+- **Same order for everyone.** Nothing about a member — uid, language, earlier
+  answers — changes which item they get. The lifetime profile still *learns*
+  adaptively from the ratings; only the content is fixed.
+- **Fifteen first.** A member who stops after V7 resumes at V8, on any device.
+  The calibration is complete when every one of V1–V15 is rated.
+- **Five a day, and no more.** After the calibration a logical day holds at
+  most `HUMOR_CORE.dailyCount` entries. When they are done the day is done;
+  nothing unlocks tomorrow's.
+- **The first daily five start the next day.** Finishing V15 today never opens
+  V16 today — nobody rates fifteen and five in one sitting.
+- **A day freezes when it is touched.** The first response of a day stores
+  that day's ids on the member's state. Rating V16 therefore cannot pull V21
+  into today, and a restart or a second device sees the same set.
+- **Missed days do not advance.** There is no position counter and no calendar
+  index: today's set is "the first open entries in canonical order". A member
+  away for three days after V20 comes back to V21–V25. A day left unfinished
+  carries over: two of five rated today means the other three lead tomorrow.
+- **The server owns everything.** The logical day (UTC+3, Europe/Istanbul — the
+  boundary Picks and the relationship questions use), the position, today's
+  ids, and whether a response belongs to them are all decided server-side. The
+  client sends only the content id it was shown (and, on the daily call, the
+  day id it was given); both are *checked*, never trusted. An entry that is
+  not in today's set — tomorrow's, an earlier one, anything that is not Core —
+  is refused before anything is learned (`not-in-set`; `slot-replaced` /
+  `day-closed` on the daily call).
+- **Learning is unchanged.** A rating goes through the same feedback
+  transaction as before (`applyHumorFeedbackInTx`): the 1–5 rating, the humor
+  vector update, evidence, confidence, idempotency (same rating again is a
+  no-op; a changed rating of one of *today's* entries replaces the earlier
+  contribution). Fifteen ratings are a first usable profile, not perfect
+  knowledge: confidence keeps growing with every daily five.
 
-An anchor slot is a *measurement role*, not a content id. Multiple curated items
-may fill the same slot; `calibrationFeed.ts` rotates between them with a
-deterministic FNV-1a seed of `uid + version + slot`. Same user ⇒ same item (so an
-interrupted calibration resumes onto it); different users ⇒ different items. No
-`Math.random`, so the selection stays unit-testable.
+### State
 
-### Calibration content system
+`users/{uid}/humor/core` (owner-read, server-write, removed with the rest of
+`users/{uid}/humor` on account deletion):
 
-Curation lives in `functions/src/humor/calibrationSeed.ts`, separate from
-persistence. Each of the six anchor slots carries **four** interchangeable
-candidates, so two users calibrated on the same slot rarely see the same asset.
+```
+answers        { contentId: { rating, dayId, answeredAtMs, source: "core" | "legacy" } }
+waived         { contentId: { reason: "media_failed" | "reported", dayId, atMs } }
+mediaFailures  { contentId: { days[], lastAtMs } }
+initialCompletedAtMs
+today          { dayId, setId, contentIds[], kind: "onboarding" | "core", completedAtMs }
+completedDays, migration
+```
 
-Every anchor candidate must measure its slot's `primary` dimension; a test
-enforces it. A candidate is *not* required to measure the slot's `contrast` —
-an item scoring high on both sarcasm and dry cannot separate them. The contrast
-is what the adaptive stage probes afterwards.
+Progress is *derived* from `answers` against the sequence, so "which is the
+next entry", "is the calibration done", "what is today's set", "is today done"
+and "which exact entry was rated" all have one answer.
 
-**Guaranteed anchor coverage is the six slot primaries**: absurd, cringe, meme,
-sarcasm, situational, wordplay. That is the intersection across every rotation,
-which is what makes two profiles comparable. Deeper pools deliberately traded
-incidental secondary overlap for content variety. The remaining five dimensions
-— dry, silly, teasing, romantic, dark — are reached by the adaptive and
-exploration stages, and a test proves they are not stranded.
+`users/{uid}/humor/calibration` stays the readiness milestone that match
+compatibility, Picks, personalization and the learning journey read
+(`isHumorCalibrationReady`). It still counts ratings one at a time; when the
+Core calibration finishes on fewer ratings (a retired or waived entry) it is
+completed in the same transaction, so a finished member is never seen as
+unready. `calibrationVersion` stays `1`.
 
-The seed is the **QA / development tier**, marked `provider: mevora-qa-seed`.
-Production curation is content-ops work; the architecture is what makes it
-possible without code changes.
+One compact record per completed day goes to `users/{uid}/humorDaily/{dayId}`
+(`schema: "core-1"`). The global `humorDailySets/{dayId}` manifest is no longer
+read or written.
 
-`getHumorCalibrationPoolReport` (admin callable) reports per-slot candidate
-counts, guaranteed coverage, uncovered dimensions and warnings. Calibration
-degrades quietly when a pool runs thin, so this is how a catalog gap becomes
-visible before users hit it.
+### Identity, renditions and versions
 
-### Curation is opt-in
+- **The id is the joke.** A sequence entry's id is its `humorContent` document
+  id and names one measurement: this clip, this joke.
+- **A rendition is not a version.** Swapping the file, the CDN URL or the
+  poster of the *same* clip edits the content document's `media` and keeps the
+  id. The lock fixture deliberately does not record media URLs.
+- **A different joke is a new entry.** A different clip, or a cut that changes
+  what is funny about it, is appended as a new entry with `supersedes`, and
+  the old one is retired in place. Old and new ratings never look like ratings
+  of the same joke.
 
-`humorContent` carries three flat fields — `calibrationEligible`,
-`calibrationSlot`, `calibrationVersion`. All default closed, so bulk-ingested
-Giphy content can never drift into an anchor pool. Only an explicit admin
-`upsertHumorContent` call or the curated internal seed opts an item in; an
-unknown slot id is rejected outright.
+### Retirement and media that will not play
 
-If a pool is short, calibration degrades gracefully: positions are filled from
-ordinary feed content, the gap is reported as `insufficientPool`, and the state
-records a `degradedCount`. Uncurated content **never** claims an anchor slot.
+- **Retiring keeps the place.** A retired entry stays where it is with
+  `active: false` and a `retiredReason`. Ratings of it remain meaningful; it is
+  skipped for everyone who has not rated it and is **never backfilled** — a
+  retired V9 makes the initial calibration fourteen items, not a different
+  fifteen.
+- **A take-down behaves the same.** An entry whose content document is
+  rejected, deactivated or missing is skipped at serve time, so moderation can
+  never dead-end a member. A day that was already frozen shrinks instead.
+- **Media failure is never evidence.** When a clip will not play the client
+  sends a `media_failed` skip. No rating is stored and the profile does not
+  move. The entry is done for today and is offered again first thing on the
+  member's next day; after it has failed on two distinct days it is waived for
+  that member (still no rating, never compared). A calibration paused this way
+  reports `continuesTomorrow`.
+- **Nothing is ever substituted.** A broken or retired entry is not replaced
+  by other content under the same position. Permanent rot is fixed by
+  repairing the rendition or retiring the entry.
+- **A reported entry** is waived for the reporter.
 
-### Calibration ≠ end of learning
+### Freeze
 
-Completing the 15 does not freeze anything. `submitHumorFeedback` keeps updating
-the humor vector, `interactionCount`, `confidence` and explored categories
-indefinitely. `profileBuilding` now means "initial calibration still running",
-not "the profile stopped learning".
+`functions/test/fixtures/humorCoreSequence.lock.json` records every position:
+id, category and humor vector. `humorCoreSequence.test.cjs` fails when a locked
+position moves, changes or disappears, and when an entry is not locked yet.
 
-## Daily set — "Bugünün Mizah Turu"
+```bash
+npm --prefix functions run build
+node tool/lockHumorCoreSequence.cjs             # lock newly appended entries
+node tool/lockHumorCoreSequence.cjs --redraft   # rewrite the lock — draft sequence only
+```
 
-After calibration, every eligible member gets the same ten moving items
-(videos, or provider GIFs shown as animated images) per canonical day, in the
-same order. Code: `functions/src/humor/daily.ts` (pure rules) and
-`dailyService.ts` (Firestore); callables `getDailyHumorSet`,
-`submitDailyHumorResponse`, admin `publishDailyHumorSet` /
-`repairDailyHumorSlot`.
+**The sequence is a draft.** `HUMOR_CORE_RELEASE.released` is `false`: the 36
+entries are the curated clips that were already the calibration catalogue, in
+a provisional order (V1–V6 one per baseline slot, V7–V11 the other five
+dimensions, so the first fifteen cover all eleven). The owner chooses the
+production order. Until then `--redraft` may rewrite the lock; once `released`
+is `true` the lock is append-only.
 
-- **Canonical day**: one global day turning over at midnight Europe/Istanbul
-  (UTC+3, no DST) — the same boundary daily Picks use. The server clock picks
-  it; the client sends nothing that could choose a day.
-- **Manifest** `humorDailySets/{dayId}`: published once, by a transaction
-  (`create` on a missing document), on the first eligible request or by the
-  admin callable. Never reshuffled. Clients cannot read or write it.
-- **Selection**: deterministic from the day and the pool, not personalised.
-  Eligible = active, approved, moving media on an allowed https host, not a QA
-  fixture, signal on its own dimension. Breadth first across the eleven
-  dimensions, at most 2 per dimension, at least 5 dimensions; non-anchor items
-  preferred; items of the previous 2 published days kept out (relaxed a day at
-  a time only if the pool cannot otherwise fill a valid set). A day the pool
-  cannot fill is recorded `not_ready` and re-checked at most every 15 min —
-  never padded.
-- **Pacing**: first set the day after calibration completes
-  (`starts_tomorrow` until then); uncalibrated members are locked
-  (`calibration_incomplete`); existing calibrated members and legacy ready
-  profiles are eligible without redoing calibration. Missed days are missed —
-  no backlog.
-- **Answers** `users/{uid}/humorDaily/{dayId}` (owner-read, server-write):
-  each rating runs through the Humor Lab feedback transaction
-  (`applyHumorFeedbackInTx`) inside the same transaction as the progress
-  write, so the lifetime profile learns at most once per item, a changed
-  rating replaces the earlier contribution, and double taps are no-ops. The
-  only skip is `media_failed` (fills the slot, teaches nothing, never
-  overrides a rating). The last available slot completes the day.
-- **Taken-down items**: a published item that stops being servable drops out
-  of everyone's day (the day shrinks) — replacing it is an explicit,
-  versioned admin repair (`version` + `repairs[]`).
-- **Agreement helper** `dailyResponseAgreement(a, b)`: over content ids both
-  members rated only (missing ≠ neutral), `1 − |wA − wB| / 2` per item, mean
-  as 0–100, `null` below 3 shared items. Standalone — Discover ranking, the
-  compatibility engine and the `getMatchHumorCompatibility` payload (C5) do
-  not read it.
-- **Account deletion** removes `users/{uid}/humorDaily`; the global
-  manifests hold no member data and stay.
-- **Emulator clock**: `devClock/humorDaily {dayId}`, read only when
-  `FUNCTIONS_EMULATOR=true`; rules deny every client. Drive it with
-  `node tool/humorDailyDev.cjs status | publish | clock +1 | clock clear`.
+### GIPHY is a candidate source
+
+Core content is curated only. `humorCoreSequenceProblems` rejects any entry
+that is not a curated catalogue item, and the service serves an entry only
+while its document is `sourceTrust: "curated"`, active and approved.
+
+Provider sync (`syncHumorFromProvider`) and the curator search still exist,
+but what they write (`ext_giphy_*`) is **candidate material**: it can never be
+listed in the sequence, so it never reaches a member. The path to a member is
+
+```text
+provider search → preview → a person selects and tags it → curated catalogue
+               → appended to the Core sequence → locked → served in canonical order
+```
+
+The scheduler takes the sequence as a parameter, so a later curator tool can
+append entries from uploaded MP4s or other licensed sources without changing
+the scheduling rules.
+
+### Members from before the Core sequence
+
+Nothing of theirs is rewritten or deleted. The first time a member touches
+humor after this change their Core state is built once, lazily, from what is
+already stored (`migrateLegacyHumorCoreState`); `migration` records what was
+carried over.
+
+- The lifetime profile (`humor/summary`), the interaction documents and the
+  old `humorDaily/*` days stay exactly as they are.
+- A real rating they already gave to a Core entry counts as that entry
+  answered (`source: "legacy"`) — it is not asked again. An entry they
+  reported is waived. A plain skip resolves nothing.
+- A member whose old calibration was finished is **not** asked to redo
+  fifteen: they take the open entries five a day, starting at V1.
+- A member in the middle of the old calibration continues with what is left
+  of V1–V15.
+- A member who finished the old calibration today, or already did the old
+  daily set today, starts tomorrow.
+
+### What was removed
+
+- The personalised initial fifteen (6 anchor + 6 adaptive + 3 exploration,
+  rotated per uid) and its selectors.
+- The global, algorithmically selected daily set of ten, its manifest, and the
+  admin `publishDailyHumorSet` / `repairDailyHumorSlot` callables.
+- The open-ended feed for members: once the calibration is finished
+  `getHumorFeed` answers "caught up". `buildHumorFeed`'s catalogue walk is
+  kept, unreferenced by any callable, for curator-side browsing.
+
+Kept as they were: `profile.ts`, the feedback functions, `compatibility.ts`,
+moderation, reports and media playback.
+
+### Callables
+
+| Callable | Answer |
+|---|---|
+| `getHumorFeed` | Calibration open: what is left of V1–V15 today. Otherwise empty, `catalogExhausted`. |
+| `submitHumorFeedback` | A rating or `media_failed` skip for one of today's entries. |
+| `getDailyHumorSet` | `ready` with today's entries, or `locked`: `calibration_incomplete`, `starts_tomorrow`, `sequence_complete`. |
+| `submitDailyHumorResponse` | One answer in today's set. |
+| `getHumorProfile` | Profile, with calibration progress from the Core state. |
+| `getHumorCalibrationPoolReport` (admin) | The sequence report: every position and whether it can be served. |
+
+The agreement helper `dailyResponseAgreement(a, b)` compares two members over
+the content ids both rated (missing ≠ neutral; `coreRatedAnswers(state)` gives
+the map). It is standalone: Discover ranking and the compatibility engine do
+not read it.
+
+### Admin console
+
+`/Humor/Core` (permission `humor.read`) lists every position: V-number,
+content id, active or retired, whether members can be given it, category and
+top vector dimensions, provider, preview. It is read-only. There is no command
+that changes the sequence — a change is a commit that passes the freeze test.
+
+### Emulator clock and dev tool
+
+`devClock/humorDaily {dayId}` is read only when `FUNCTIONS_EMULATOR=true`;
+rules deny every client.
+
+```powershell
+$env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
+$env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"      # only to pass an email
+node tool/humorDailyDev.cjs status qa_user_a@mevora.test # where a member stands
+node tool/humorDailyDev.cjs today qa_user_a@mevora.test  # today's entries, with V-numbers
+node tool/humorDailyDev.cjs clock next --all             # one product day forward
+node tool/humorDailyDev.cjs clock clear --all            # back to the real day
+node tool/humorDailyDev.cjs reset qa_user_a@mevora.test --yes   # that member starts at V1 again
+```
+
+`--all` moves the relationship-questions clock too, so both features agree on
+the day. `reset` deletes only that member's `humor`, `humorInteractions` and
+`humorDaily` documents.
 
 ## Feature flag
 
@@ -251,7 +365,10 @@ same order. Code: `functions/src/humor/daily.ts` (pure rules) and
 - Images/memes (GIPHY GIFs as animated WebP/GIF included) via
   `MevoraNetworkImages`: poster + spinner until the first frame, bounded by
   `imageLoadTimeout` (15 s); failure → "Tekrar dene" (once) / "Sonraki"
-- Vertical `PageView` + 5-level rating bar + undo
+- Vertical `PageView` + 5-level rating bar + undo. No skip button: the only
+  way past an item without rating it is "Sonraki" on media that failed
+- Every count on screen ("7 / 15", "2/5") comes from the server; the client
+  keeps no item count of its own
 
 ## Setup
 
@@ -295,9 +412,9 @@ suite)**, the first (default) configuration. Its preLaunchTask runs
    to report all four emulators and for the functions to load.
 3. Seeds the QA users `qa_user_a…d@mevora.test` (only missing ones, so
    existing matches and chats survive) and the curated humor catalogue (36
-   text joke cards, four candidates per anchor slot). Re-seeding is idempotent,
-   never resets anyone's calibration progress, and converts documents an older
-   seed left with stock media into text cards. Then the provider top-up: when
+   curated clips — the whole Core sequence), then prints the sequence report.
+   Re-seeding is idempotent and never resets anyone's progress. Then the
+   provider top-up (candidate material only — it never reaches a member): when
    `functions/.secret.local` declares `GIPHY_API_KEY` (the script checks the
    name only), it calls `syncHumorFromProvider` on the Functions emulator as a
    throwaway emulator admin and prints the counts; otherwise it prints
@@ -328,10 +445,10 @@ firebase emulators:start --config firebase.qa.json --project mevora-d6ed0 --only
 $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
 $env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"
 node tool/seedEmulatorQaUsers.cjs --if-missing  # without the flag: resets every QA user
-node tool/seedEmulatorHumorCatalog.cjs          # catalogue + anchor-slot pool report
+node tool/seedEmulatorHumorCatalog.cjs          # catalogue + Core sequence report
 # optional licensed top-up (needs functions/.secret.local with GIPHY_API_KEY):
 node tool/seedEmulatorHumorCatalog.cjs --provider-topup --functions-host 127.0.0.1:5001
-node tool/humorCalibrationQa.cjs --emulator     # optional end-to-end calibration check
+node tool/humorCalibrationQa.cjs --emulator     # optional end-to-end check of V1–V15
 ```
 
 Or run the whole sequence without the app:

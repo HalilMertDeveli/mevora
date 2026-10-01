@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:mevora/core/constants/firestore_paths.dart';
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
@@ -184,6 +185,9 @@ class FirebaseProfileDataSource {
             'moderationStatus': photo.moderationStatus,
             'order': photo.order,
             'isPrimary': photo.isPrimary,
+            // Round-tripped like cardUrl, and only when true: the server
+            // rewrites it from its own ledger on every profile write.
+            if (photo.isFaceAnchorVerified) 'faceAnchorVerified': true,
           },
       ],
       'interests': profile.interests,
@@ -203,7 +207,11 @@ class FirebaseProfileDataSource {
     };
   }
 
-  List<ProfilePhoto> _photosFrom(Object? value) {
+  /// Exposed for tests: how a stored `photos` array becomes [ProfilePhoto]s.
+  @visibleForTesting
+  static List<ProfilePhoto> photosFromStored(Object? value) => _photosFrom(value);
+
+  static List<ProfilePhoto> _photosFrom(Object? value) {
     if (value is! List) {
       return const [];
     }
@@ -220,6 +228,10 @@ class FirebaseProfileDataSource {
                 ((value[i] as Map)['moderationStatus'] as String?) ?? 'pending',
             order: firestoreInt((value[i] as Map)['order'], i),
             isPrimary: (value[i] as Map)['isPrimary'] as bool? ?? i == 0,
+            // Absent on every photo written before Face Anchor existed, and
+            // absent means not verified. Only the exact boolean counts.
+            isFaceAnchorVerified:
+                (value[i] as Map)['faceAnchorVerified'] == true,
           )
         else if (value[i] is String)
           ProfilePhoto(

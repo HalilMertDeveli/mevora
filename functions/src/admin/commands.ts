@@ -24,6 +24,7 @@ import {CASE_STATUSES, CASE_TYPES, RESOLUTION_CODES} from "./cases/caseTypes.js"
 import type {AdminCommandSpec} from "./command.js";
 import {getDashboard, listAuditEvents} from "./dashboard.js";
 import {HUMOR_QUEUE_STATUSES, getHumorReports, listHumorReviews, reviewHumorContent} from "./humor/humorReview.js";
+import {listHumorCoreSequence} from "./humor/humorCore.js";
 import {PHOTO_QUEUE_FILTERS, getPhotoPreview, listPhotoReviews, reviewPhoto} from "./photos/photoReview.js";
 import {REPORT_QUEUE_STATUSES, backfillReportPriority, listReports, openCaseForReport, resolveUserReport} from "./reports/reportQueue.js";
 import {
@@ -610,6 +611,18 @@ export const adminReviewHumorContentSpec: AdminCommandSpec<Parameters<typeof rev
     note: optionalText(raw.note, "note", NOTE_MAX),
   }),
   handler: ({deps, actor, requestId}, input) => reviewHumorContent(deps, actor, input, requestId),
+};
+
+/**
+ * Read-only: every position of the Humor Core sequence. There is no command
+ * that changes the sequence — its order is code, frozen by a lock fixture.
+ */
+export const adminListHumorCoreSequenceSpec: AdminCommandSpec<Record<string, never>, unknown> = {
+  name: "adminListHumorCoreSequence",
+  permission: "humor.read",
+  rateClass: "read",
+  parse: () => ({}),
+  handler: ({deps}) => listHumorCoreSequence(deps),
 };
 
 // --- Verification -----------------------------------------------------------

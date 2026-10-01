@@ -186,6 +186,9 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/relationshipDaily`),
       deleteCollectionDocs(`users/${uid}/verification`),
       deleteCollectionDocs(`users/${uid}/photoModeration`),
+      // The Face Anchor attempt state. The verdicts themselves live on the
+      // photoModeration entries above.
+      deleteCollectionDocs(`users/${uid}/faceAnchor`),
       deleteCollectionDocs(`users/${uid}/rateLimits`),
       deleteCollectionDocs(`users/${uid}/mevoraPicks`),
       deleteCollectionDocs(`users/${uid}/dailyStreak`),
@@ -266,6 +269,8 @@ export const deleteUserAccount = onCall(
     await deletePrefix(`profiles/${uid}/`);
     // Photos a moderator rejected, held server-side for the appeal window.
     await deletePrefix(`moderation/quarantine/${uid}/`);
+    // A verification selfie that was uploaded and never submitted.
+    await deletePrefix(`face-anchor/pending/${uid}/`);
 
     for (const path of spotifyIndexDeletionPaths({
       spotifyId,
@@ -281,6 +286,7 @@ export const deleteUserAccount = onCall(
       db.doc(`users/${uid}/music/summary`),
       db.doc(`users/${uid}/humor/summary`),
       db.doc(`users/${uid}/humor/calibration`),
+      db.doc(`users/${uid}/humor/core`),
       db.doc(`users/${uid}/relationshipMatch/summary`),
       db.doc(`users/${uid}/verification/sumsub`),
       db.doc(`users/${uid}/verification/identity`),

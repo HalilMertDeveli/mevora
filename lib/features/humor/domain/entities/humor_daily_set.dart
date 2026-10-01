@@ -33,6 +33,9 @@ enum HumorDailyLockedReason {
   /// Calibration finished today; the first daily set arrives tomorrow.
   startsTomorrow,
 
+  /// Every item of the sequence is behind the user; nothing is left to ask.
+  sequenceComplete,
+
   /// Locked for a reason this build does not know.
   unknown;
 
@@ -44,6 +47,8 @@ enum HumorDailyLockedReason {
         return HumorDailyLockedReason.calibrationIncomplete;
       case 'starts_tomorrow':
         return HumorDailyLockedReason.startsTomorrow;
+      case 'sequence_complete':
+        return HumorDailyLockedReason.sequenceComplete;
       default:
         return HumorDailyLockedReason.unknown;
     }
@@ -173,6 +178,10 @@ class HumorDailySet {
 
   bool get startsTomorrow =>
       isLocked && lockedReason == HumorDailyLockedReason.startsTomorrow;
+
+  /// Nothing is left: the user has been through every item there is.
+  bool get sequenceComplete =>
+      isLocked && lockedReason == HumorDailyLockedReason.sequenceComplete;
 
   /// Started but not finished.
   bool get inProgress => isReady && !completed && answeredCount > 0;

@@ -145,14 +145,16 @@ describe("admin photo review — the ledger stays the authority", () => {
     await rejectsWith(w.run(specs.adminReviewPhotoSpec, "mod-2", {uid: "member-1", imageId: "img1", decision: "approve", idempotencyKey: key()}), "photo_already_reviewed");
     // A modified client writes "approved" into its own photos array …
     const forged = [{id: "img1", moderationStatus: "approved", moderatedBy: "admin_review", downloadUrl: "https://evil.example/x.png"}];
-    await reconcilePhotoModeration(w.db, "member-1", forged);
+    await w.db.doc("profiles/member-1").set({photos: forged}, {merge: true});
+    await reconcilePhotoModeration(w.db, "member-1");
     // … and reconciliation puts the ledger's decision back.
     assert.equal(w.db.read("profiles/member-1").photos[0].moderationStatus, "rejected");
   });
 
   it("a client cannot self-approve a photo that is still in review", async () => {
     const w = await world();
-    await reconcilePhotoModeration(w.db, "member-1", [{id: "img1", moderationStatus: "approved"}]);
+    await w.db.doc("profiles/member-1").set({photos: [{id: "img1", moderationStatus: "approved"}]}, {merge: true});
+    await reconcilePhotoModeration(w.db, "member-1");
     assert.equal(w.db.read("profiles/member-1").photos[0].moderationStatus, "manual_review");
   });
 

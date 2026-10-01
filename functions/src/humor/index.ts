@@ -16,12 +16,18 @@ import {
   upsertHumorContentDoc,
   type UpsertHumorContentInput,
 } from "./contentRepository.js";
-import {buildHumorFeed, loadUserHumorProfile} from "./feed.js";
 import {
-  getHumorProfileView,
-  parseSubmitHumorFeedbackInput,
-  submitHumorFeedbackTx,
-} from "./feedback.js";
+  HumorCoreRejected,
+  buildHumorCoreSequenceReport,
+  currentHumorFeedbackResult,
+  getHumorCoreFeedView,
+  getHumorCoreProfileView,
+  submitHumorCoreResponse,
+  toHumorFeedbackResult,
+  waiveReportedHumorCoreItem,
+} from "./coreService.js";
+import {loadUserHumorProfile} from "./feed.js";
+import {parseSubmitHumorFeedbackInput} from "./feedback.js";
 import {isHumorSafetyStatus} from "./moderation.js";
 import {applyHumorAiTagging} from "./aiTagging.js";
 import {
@@ -56,34 +62,33 @@ async function requireAdmin(uid: string): Promise<void> {
   }
 }
 
+/**
+ * The initial calibration: what is left of V1–V15 for the caller today, in the
+ * canonical order every member gets. Nothing in the request selects content —
+ * `languages`, `limit` and `cursor` are accepted from older clients and
+ * ignored. Once the calibration is finished the feed is closed and answers
+ * "caught up": the daily five are the only Core content.
+ */
 export const getHumorFeed = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await assertAppFeatureAvailable(db, "humorLab");
-  const data = (request.data ?? {}) as Record<string, unknown>;
   try {
-    const feed = await buildHumorFeed({
-      db,
-      uid,
-      // Bounded before any work: ≤ 5 language codes of ≤ 8 characters, and a
-      // cursor no longer than a real one can be. Oversized input degrades to
-      // the defaults instead of costing CPU.
-      languages: Array.isArray(data.languages)
-        ? data.languages
-            .slice(0, 5)
-            .map(String)
-            .filter((l) => l.length > 0 && l.length <= 8)
-        : undefined,
-      limit: typeof data.limit === "number" ? data.limit : undefined,
-      cursor:
-        typeof data.cursor === "string" && data.cursor.length <= 512 ? data.cursor : null,
-    });
-    return feed;
+    return await getHumorCoreFeedView({db, uid, nowMs: Date.now()});
   } catch (error) {
     logger.error("getHumorFeed failed", safeLogMeta({uid, error: String(error)}));
     throw new HttpsError("internal", "feed-unavailable");
   }
 });
 
+/**
+ * A rating for one of the caller's Core entries of today, or a `media_failed`
+ * skip. The content id is only checked against the set the server computed:
+ * an entry that is not in it — tomorrow's, an earlier one, anything that is
+ * not Core — is refused with `not-in-set` before anything is learned.
+ *
+ * A plain "not interested" skip records nothing: a Core entry is a
+ * measurement, so it stays open and is asked again.
+ */
 export const submitHumorFeedback = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await assertAppFeatureAvailable(db, "humorLab");
@@ -93,9 +98,29 @@ export const submitHumorFeedback = onCall(callableOptions, async (request) => {
   if (!parsed.ok) {
     throw new HttpsError("invalid-argument", parsed.field);
   }
+  const value = parsed.value;
+  const nowMs = Date.now();
   try {
-    return await submitHumorFeedbackTx({db, uid, ...parsed.value});
+    if (value.skipped && value.skipReason !== "media_failed") {
+      return await currentHumorFeedbackResult({db, uid, nowMs});
+    }
+    const result = await submitHumorCoreResponse({
+      db,
+      uid,
+      nowMs,
+      contentId: value.contentId,
+      rating: value.rating,
+      mediaFailed: value.skipped,
+      dwellMs: value.dwellMs,
+      replayCount: value.replayCount,
+      saved: value.saved,
+      gestureHints: value.gestureHints,
+    });
+    return toHumorFeedbackResult(result);
   } catch (error) {
+    if (error instanceof HumorCoreRejected) {
+      throw new HttpsError("failed-precondition", error.reason);
+    }
     const message = String(error);
     if (message.includes("content-unavailable")) {
       throw new HttpsError("not-found", "content-unavailable");
@@ -109,7 +134,7 @@ export const getHumorProfile = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const detailed = request.data?.detailed === true;
   // MVP: basic always free; detailed allowed (premium gating soft — V2).
-  return getHumorProfileView(db, uid, detailed);
+  return getHumorCoreProfileView({db, uid, nowMs: Date.now(), detailed});
 });
 
 /**
@@ -161,10 +186,10 @@ export const getMatchHumorCompatibility = onCall(callableOptions, async (request
 });
 
 /**
- * Today's daily humor set for the caller: the same ten items, in the same
- * order, for every eligible member on the canonical day. Feed-safe cards,
- * resumable progress. The server clock picks the day — the client sends
- * nothing that could choose another one.
+ * Bugünün Mizah Turu: the caller's next Core entries — at most five a day,
+ * frozen for the day once touched. Feed-safe cards, resumable progress. The
+ * server clock picks the day and the server picks the entries — the client
+ * sends nothing that could choose either.
  */
 export const getDailyHumorSet = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
@@ -179,8 +204,8 @@ export const getDailyHumorSet = onCall(callableOptions, async (request) => {
 });
 
 /**
- * One answer in today's daily set: a rating, or a `media_failed` skip.
- * Same rating semantics as `submitHumorFeedback`; idempotent per slot.
+ * One answer in today's Core set: a rating, or a `media_failed` skip.
+ * Same rating semantics as `submitHumorFeedback`; idempotent per entry.
  */
 export const submitDailyHumorResponse = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
@@ -206,71 +231,23 @@ export const submitDailyHumorResponse = onCall(callableOptions, async (request) 
   }
 });
 
-/**
- * Admin-only: publish (or return) the daily set for a day. Production accepts
- * only today and tomorrow; any other day works only inside the emulator.
- */
-export const publishDailyHumorSet = onCall(callableOptions, async (request) => {
-  const uid = requireUid(request);
-  await requireAdmin(uid);
-  const {adminDayAllowed, ensureDailySet, isEmulatorProcess, resolveDailyToday} = await import(
-    "./dailyService.js"
-  );
-  const nowMs = Date.now();
-  const todayId = await resolveDailyToday(db, nowMs);
-  const dayId = request.data?.dayId == null ? todayId : String(request.data.dayId);
-  if (!adminDayAllowed(dayId, todayId, isEmulatorProcess())) {
-    throw new HttpsError("invalid-argument", "dayId");
-  }
-  const result = await ensureDailySet({db, dayId, nowMs, publishedBy: `admin:${uid}`, force: true});
-  return result.status === "published"
-    ? {
-        ok: true,
-        dayId,
-        status: "published",
-        created: result.created,
-        version: result.manifest.version,
-        total: result.manifest.contentIds.length,
-      }
-    : {ok: true, dayId, status: "not_ready", eligiblePoolSize: result.eligiblePoolSize};
-});
-
-/** Admin-only: explicitly replace one slot of a published set (versioned). */
-export const repairDailyHumorSlot = onCall(callableOptions, async (request) => {
-  const uid = requireUid(request);
-  await requireAdmin(uid);
-  const {adminDayAllowed, isEmulatorProcess, repairDailySlot, resolveDailyToday} = await import(
-    "./dailyService.js"
-  );
-  const data = (request.data ?? {}) as Record<string, unknown>;
-  const nowMs = Date.now();
-  const todayId = await resolveDailyToday(db, nowMs);
-  const dayId = String(data.dayId ?? "");
-  if (!adminDayAllowed(dayId, todayId, isEmulatorProcess())) {
-    throw new HttpsError("invalid-argument", "dayId");
-  }
-  const reason = typeof data.reason === "string" ? data.reason.trim() : "";
-  if (!reason) {
-    throw new HttpsError("invalid-argument", "reason");
-  }
-  try {
-    return await repairDailySlot({
-      db,
-      dayId,
-      index: Number(data.index),
-      reason,
-      adminUid: uid,
-      nowMs,
-    });
-  } catch (error) {
-    throw new HttpsError("failed-precondition", String((error as Error).message ?? error));
-  }
-});
-
 export const reportHumorContent = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   const data = (request.data ?? {}) as Record<string, unknown>;
-  return submitHumorReport(db, uid, data);
+  const result = await submitHumorReport(db, uid, data);
+  try {
+    // A reported Core entry is waived for the reporter, so it cannot hold
+    // their day open. The report itself is already recorded.
+    await waiveReportedHumorCoreItem({
+      db,
+      uid,
+      nowMs: Date.now(),
+      contentId: parseHumorContentId(data.contentId),
+    });
+  } catch (error) {
+    logger.warn("humor core waiver after report failed", safeLogMeta({uid, error: String(error)}));
+  }
+  return result;
 });
 
 export const upsertHumorContent = onCall(callableOptions, async (request) => {
@@ -344,12 +321,15 @@ function parseCalibrationInput(
   return {eligible: true, slot, version: HUMOR_CALIBRATION_VERSION};
 }
 
-/** Admin-only: is the calibration catalog healthy enough to ship? */
+/**
+ * Admin-only: is the Core sequence healthy enough to ship? Every position
+ * with the state of its content document. (The callable keeps its name from
+ * when it reported the calibration pools.)
+ */
 export const getHumorCalibrationPoolReport = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
   await requireAdmin(uid);
-  const {buildCalibrationPoolReport} = await import("./calibrationPoolReport.js");
-  return buildCalibrationPoolReport(db);
+  return buildHumorCoreSequenceReport(db);
 });
 
 export const runHumorModeration = onCall(callableOptions, async (request) => {
@@ -454,7 +434,6 @@ export {syncHumorFromGiphy} from "./ingest.js";
 
 // Re-export pure helpers for tests / future V3 wiring (not used by Discover in MVP).
 export {
-  ADJACENT_DIMENSIONS,
   ANCHOR_INTERACTIONS,
   ANCHOR_SLOTS,
   ADAPTIVE_INTERACTIONS,
@@ -467,17 +446,16 @@ export {
   isAnchorSlotId,
   isCalibrationComplete,
   parseCalibrationState,
-  rotatingIndex,
-  rotatingPick,
-  scoreCalibrationCandidate,
-  selectAdaptiveDimensions,
-  selectExplorationDimensions,
-  stableHash,
   stageForCompletedCount,
-  stageForPosition,
   toCalibrationView,
 } from "./calibration.js";
-export {selectCalibrationItems} from "./calibrationFeed.js";
+export {
+  HUMOR_CORE,
+  HUMOR_CORE_RELEASE,
+  HUMOR_CORE_SEQUENCE,
+  humorCorePosition,
+  humorCoreSequenceProblems,
+} from "./coreSequence.js";
 export {listCalibrationPool, parseCalibrationMeta} from "./contentRepository.js";
 export {humorScoreForPair} from "./compatibility.js";
 export {

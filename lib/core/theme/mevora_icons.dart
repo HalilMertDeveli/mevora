@@ -56,6 +56,12 @@ abstract final class MevoraIcons {
   static const IconData verified = PhosphorIconsFill.sealCheck;
   static const IconData verify = PhosphorIconsRegular.sealCheck;
   static const IconData safety = PhosphorIconsRegular.shieldCheck;
+
+  /// Face Anchor — this one photo is the member. Not the seal above, which is
+  /// about identity verification of the account: different question, different
+  /// mark.
+  static const IconData faceAnchor = PhosphorIconsFill.userCircleCheck;
+  static const IconData faceAnchorVerify = PhosphorIconsRegular.userFocus;
   static const IconData privacy = PhosphorIconsRegular.shield;
   static const IconData insight = PhosphorIconsRegular.sparkle;
   static const IconData questions = PhosphorIconsRegular.chatCircleDots;

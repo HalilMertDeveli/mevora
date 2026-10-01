@@ -11,8 +11,13 @@ const {
   reconcilePhotoModeration,
 } = require("../lib/moderation/photoModerationService.js");
 const {variantPath} = require("../lib/moderation/photoVariants.js");
+const {
+  startFaceAnchorVerification,
+  submitFaceAnchorVerification,
+} = require("../lib/faceAnchor/faceAnchorService.js");
 const {PROCESSING_STALE_MS} = require("../lib/moderation/types.js");
 const {
+  CONSENT,
   JPEG,
   T0,
   createFaceAnchorWorld,
@@ -301,6 +306,30 @@ describe("a moderation result that arrives after the delete", () => {
     assert.equal(refusal.message, "photo_processing");
     assert.equal(w.ledger("fresh").status, "approved");
     assert.ok(ids(w).includes("fresh"));
+  });
+});
+
+describe("a delete racing a Face Anchor verification of the same photo", () => {
+  it("the verification ends without a verdict and does not recreate the ledger entry", async () => {
+    const w = world();
+    const {attemptId} = await startFaceAnchorVerification(w.deps, UID, {photoId: "p2", consentVersion: CONSENT});
+    w.uploadSelfie(attemptId);
+    let release;
+    w.provider.gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    const pending = submitFaceAnchorVerification(w.deps, UID, {attemptId});
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const result = await remove(w, "p2");
+    release();
+
+    assert.deepEqual(result, {photoId: "p2", removed: true, cleanup: "complete"});
+    assert.equal((await pending).status, "error");
+    assert.equal(w.ledger("p2"), undefined);
+    assert.deepEqual(ids(w), ["p1", "p3", "p4"]);
+    assert.equal(w.profile().faceAnchorPhotoIds, undefined);
+    assert.deepEqual(storedFor(w, "p2"), []);
   });
 });
 

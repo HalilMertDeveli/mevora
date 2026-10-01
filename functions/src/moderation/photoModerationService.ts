@@ -125,8 +125,16 @@ export async function setPhotoModerationStatus(
     });
   }
   const profileRef = db.doc(`profiles/${uid}`);
+  const entryRef = ledgerRef(db, uid, imageId);
   await db.runTransaction(async (tx) => {
-    const snap = await tx.get(profileRef);
+    const [snap, entrySnap] = await Promise.all([tx.get(profileRef), tx.get(entryRef)]);
+    // The entry written above is gone again: the member deleted the photo
+    // (deleteProfilePhoto) while this decision was on its way. Projecting it
+    // would put the photo back on the profile.
+    if (patch.moderationStatus && !entrySnap.exists) {
+      logger.info("Dropped a moderation result for a photo its owner deleted", {uid, imageId});
+      return;
+    }
     const photos = buildModeratedPhotos(photosFrom(snap.data()), imageId, patch);
     tx.set(profileRef, {photos, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
   });
@@ -196,6 +204,16 @@ export async function publishApprovedPhoto(options: {
   };
 }
 
+/** A failed lookup counts as "exists": the pipeline then behaves as it always did. */
+async function pendingObjectExists(bucket: Bucket, path: string): Promise<boolean> {
+  try {
+    const [exists] = await bucket.file(path).exists();
+    return exists;
+  } catch {
+    return true;
+  }
+}
+
 export async function processPendingProfilePhoto(options: {
   db: Firestore;
   bucket: Bucket;
@@ -214,6 +232,16 @@ export async function processPendingProfilePhoto(options: {
   // A photo whose object was published but whose status write never landed is
   // not "decided": it is still pending/processing here and the retry proceeds.
   const ledgerSnap = await ledgerRef(options.db, options.uid, options.imageId).get();
+  // The upload is gone before its event was handled: the member removed the
+  // photo (deleteProfilePhoto). Processing it would write the id back into
+  // the profile as a photo with no image behind it.
+  if (!(await pendingObjectExists(options.bucket, options.pendingPath))) {
+    logger.info("Skipped moderation of a pending photo that no longer exists", {
+      uid: options.uid,
+      imageId: options.imageId,
+    });
+    return ledgerSnap.exists ? ledgerEntryFromData(ledgerSnap.data() ?? {}).status : "pending";
+  }
   if (ledgerSnap.exists) {
     const entry = ledgerEntryFromData(ledgerSnap.data() ?? {});
     const published = isPublishedStoragePath(options.uid, entry.storagePath);
@@ -452,18 +480,22 @@ export interface CommittedPhotoInvariants {
  * `profilePatch` rides along on the same profile write. Nothing is written
  * when nothing would change, which is what keeps the profile trigger from
  * looping; an absent profile is never created.
+ *
+ * `photos` is for a caller that changes the array in the same transaction
+ * (deleteProfilePhoto): the invariants are imposed on that array instead of
+ * the stored one, and the result is written if it differs from what is stored.
  */
 export function commitPhotoInvariants(
   tx: Transaction,
   db: Firestore,
   uid: string,
   state: PhotoState,
-  options: {profilePatch?: Record<string, unknown>} = {},
+  options: {profilePatch?: Record<string, unknown>; photos?: PhotoRecord[]} = {},
 ): CommittedPhotoInvariants {
   if (!state.exists) {
     return {changed: false, photos: [], faceAnchorPhotoIds: []};
   }
-  const result = computePhotoInvariants(state.photos, state.ledger);
+  const result = computePhotoInvariants(options.photos ?? state.photos, state.ledger);
   const photosDiffer = photosChanged(state.photos, result.photos);
   const anchorsDiffer = !sameIds(storedFaceAnchorPhotoIds(state.profile), result.faceAnchorPhotoIds);
   const patch = options.profilePatch ?? {};

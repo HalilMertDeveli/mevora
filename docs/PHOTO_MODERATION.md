@@ -28,7 +28,48 @@ pending → processing → approved
 | `functions/src/moderation/profileModerationGuard.ts` | Reconciles `profiles/{uid}.photos` against the server-owned ledger on every profile write |
 | `functions/src/moderation/photoModerationLedger.ts` | The ledger (`users/{uid}/photoModeration/{imageId}`): the authority for moderation status |
 | `functions/src/moderation/photoInvariants.ts` | What the photos array must look like: one id once, the primary photo, the Face Anchor rules |
+| `functions/src/moderation/deleteProfilePhoto.ts` | A member deletes one of their photos: array entry, stored objects, ledger entry |
 | `functions/src/backend.ts` | `onProfilePhotoUploaded` trigger |
+
+## Deleting a photo
+
+The app calls `deleteProfilePhoto({photoId})`. Clients cannot delete anything
+under `photos/` or `thumbs/` (Storage rules), so dropping a photo from
+`profiles/{uid}.photos` only stops the profile mentioning it — the published
+original, both variants and the ledger entry stay behind.
+
+The callable is the only thing that deletes. Nothing reacts to an id leaving the
+array, on purpose: reconciliation puts a removed last Face Anchor back, and a
+stale whole-array client write can drop a photo the next write restores. An id
+missing from the array is not a decision to delete.
+
+1. One transaction refuses the request, or removes the photo from the array,
+   re-imposes the photo invariants on the rest and deletes the ledger entry.
+2. The published original, the `_thumb` and `_card` variants and the pending
+   upload are deleted. If one could not be, the answer is
+   `cleanup: "incomplete"` and the failure is logged; calling again retries.
+
+The ledger entry goes with the array entry because it is what tells the pipeline
+the photo still exists. A moderation result that was on its way when the member
+deleted the photo finds no entry and is dropped (`setPhotoModerationStatus`),
+and an upload whose pending object is already gone is not processed at all —
+either would otherwise write the photo back onto the profile.
+
+| Refusal (`failed-precondition`) | When |
+|---|---|
+| `photo_min_required` | A completed profile would drop below 3 photos |
+| `photo_last_face_anchor` | The photo is the member's only usable Face Anchor — judged on the ledger, so also while a stale write has it missing from the array |
+| `photo_processing` | The moderation pipeline is on this photo right now (under 5 minutes); its result would write the photo back |
+
+A photo that is `rejected` or in `manual_review` leaves the profile but keeps
+its ledger entry and stored image (`cleanup: "retained"`): the entry is the
+moderation record and what stops the id being uploaded again, and a reviewer
+still needs the image.
+
+Older app versions still rewrite the array themselves. That keeps working and
+keeps leaving the stored copy behind; calling `deleteProfilePhoto` for such an
+id later removes the leftovers. An app talking to a backend that does not have
+the callable yet falls back to the same rewrite.
 
 ## Face Anchor
 

@@ -4661,7 +4661,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouLockedCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} people like you'**
+  /// **'{count, plural, =1{1 person likes you} other{{count} people like you}}'**
   String likesYouLockedCount(int count);
 
   /// No description provided for @likesYouLockedMessage.

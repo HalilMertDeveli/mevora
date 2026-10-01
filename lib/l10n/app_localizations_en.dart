@@ -2604,7 +2604,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String likesYouLockedCount(int count) {
-    return '$count people like you';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people like you',
+      one: '1 person likes you',
+    );
+    return '$_temp0';
   }
 
   @override

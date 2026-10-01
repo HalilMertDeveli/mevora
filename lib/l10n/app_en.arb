@@ -1261,7 +1261,7 @@
   },
   "likesYouSeeWhy": "Why this person?",
   "likesYouLockedTitle": "See who's already interested",
-  "likesYouLockedCount": "{count} people like you",
+  "likesYouLockedCount": "{count, plural, =1{1 person likes you} other{{count} people like you}}",
   "@likesYouLockedCount": {
     "placeholders": {
       "count": {

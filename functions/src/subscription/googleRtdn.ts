@@ -19,6 +19,8 @@ import {
 import {premiumCatalogue} from "./productCatalog.js";
 import {SubscriptionEntitlementWriter} from "./entitlementWriter.js";
 import type {EntitlementPersistence} from "./entitlementWriter.js";
+import {PurchaseOwnershipConflict} from "./premiumPurchaseStore.js";
+import {tokenIdentity} from "./purchaseOwnership.js";
 
 /** Shape Play puts in the Pub/Sub message payload. */
 export interface DeveloperNotification {
@@ -48,7 +50,10 @@ export type RtdnOutcome =
   | "rejected"
   /** Nobody has claimed this token yet, so there is no user to write to. */
   | "unattributed"
-  /** Google failed transiently; the message should be retried. */
+  /**
+   * The store could not be asked — it is failing, or Mevora's credential for
+   * it is missing or not authorised. The message should be retried.
+   */
   | "retry";
 
 export interface RtdnResult {
@@ -96,6 +101,29 @@ function eventTimeOf(notification: DeveloperNotification, fallback: Date): Date 
     return fallback;
   }
   return new Date(millis);
+}
+
+/**
+ * How long a message keeps being retried. Redelivery is requested by
+ * throwing, so without an end a message that can never succeed would be
+ * retried for as long as Pub/Sub keeps it.
+ */
+export const RTDN_MAX_RETRY_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * True once a message is older than the retry window. An unreadable time is
+ * treated as fresh: the first delivery must never be dropped for it, and
+ * Pub/Sub's own retention still bounds the retries.
+ */
+export function isTooOldToRetry(
+  publishedAt: string | undefined,
+  now: Date,
+): boolean {
+  const published = Date.parse(publishedAt ?? "");
+  if (!Number.isFinite(published)) {
+    return false;
+  }
+  return now.getTime() - published > RTDN_MAX_RETRY_AGE_MS;
 }
 
 /**
@@ -162,6 +190,11 @@ export async function handleDeveloperNotification(input: {
       // because Google was briefly unavailable.
       return {outcome: "retry", reason: "store_unavailable"};
     }
+    if (verified.error === "unavailable") {
+      // Mevora's credential, not the purchase. Acknowledging here would lose
+      // a renewal or a refund for good while the credential is being fixed.
+      return {outcome: "retry", reason: "store_credentials_unavailable"};
+    }
     return {outcome: "rejected", reason: verified.error};
   }
 
@@ -184,7 +217,19 @@ export async function handleDeveloperNotification(input: {
     linkedPurchaseToken: mapped.linkedPurchaseToken,
   });
   const writer = new SubscriptionEntitlementWriter(persistence, () => now);
-  const result = await writer.apply(mapped.write);
+  let result;
+  try {
+    result = await writer.apply({
+      ...mapped.write,
+      ...tokenIdentity(purchaseToken, mapped.linkedPurchaseToken),
+    });
+  } catch (error) {
+    if (error instanceof PurchaseOwnershipConflict) {
+      // Permanent: redelivery cannot change who owns a token.
+      return {outcome: "rejected", reason: "owned_by_other"};
+    }
+    throw error;
+  }
 
   logger.info("premium: rtdn applied", {
     outcome: result.outcome,

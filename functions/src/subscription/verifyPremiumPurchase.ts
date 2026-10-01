@@ -10,7 +10,22 @@
  * Used for both first purchase and restore — restore is the same evidence
  * arriving again, so it takes the same path rather than a shortcut that could
  * skip verification.
+ *
+ * The answer is also what the client acts on to acknowledge the purchase, and
+ * Play refunds a subscription nobody acknowledges within three days. So the
+ * two kinds of "no" are kept apart:
+ *
+ * - **Could not be verified** (no catalogue, no store credential, the store is
+ *   failing) is thrown as an `HttpsError`. Nothing was decided, the purchase
+ *   stays unacknowledged, and the client presents it again later. Returning
+ *   these as an ordinary result is what once let a misconfigured backend take
+ *   payment for an entitlement it never wrote.
+ * - **Verified and refused** is returned as `ok: false` with a reason.
+ *
+ * Only `ok: true` — the entitlement was written, or is already held — and
+ * `owned_by_other` tell the client the purchase is accounted for.
  */
+import {createHash} from "node:crypto";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {SubscriptionEntitlementWriter} from "./entitlementWriter.js";
@@ -28,12 +43,49 @@ import {type GoogleSubscriptionApi} from "./googleSubscriptionVerifier.js";
 import {googleSubscriptionApi} from "./emulatorGoogleSubscriptionApi.js";
 import {premiumCatalogue} from "./productCatalog.js";
 import {evaluatePremiumAccess} from "./entitlementPolicy.js";
+import {tokenIdentity} from "./purchaseOwnership.js";
+import {googlePlaySecrets} from "../googlePlayConfig.js";
 
 // Same App Check convention as every other callable: enforced in production,
 // relaxed only under the Functions emulator. Premium must not be the one
 // callable that quietly ships without attestation.
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
-const premiumCallable = {enforceAppCheck, region: "europe-west1" as const};
+const premiumCallable = {
+  enforceAppCheck,
+  region: "europe-west1" as const,
+  secrets: googlePlaySecrets,
+};
+
+/**
+ * The account id the app attaches to a Play purchase
+ * (`obfuscatedExternalAccountId`). A hash, because Play forbids anything
+ * personal there, and exactly 64 characters, which is Play's limit.
+ *
+ * Must match `StorePremiumBillingRepository.accountIdFor` in the app.
+ */
+export function premiumAccountId(userId: string): string {
+  return createHash("sha256").update(userId).digest("hex");
+}
+
+/** Nothing could be decided; the client must keep the purchase and retry. */
+function notConfigured(): HttpsError {
+  // Fail closed, and loudly: with no configured products nothing can be
+  // Premium, and someone may be standing at the store sheet right now.
+  logger.error("premium: verification requested but nothing is configured");
+  return new HttpsError("failed-precondition", "premium-not-configured");
+}
+
+function storeUnavailable(error: "transient" | "unavailable"): HttpsError {
+  // `transient`: the store is failing. `unavailable`: Mevora's own store
+  // credential is missing or not authorised. Either way the purchase was not
+  // looked at, so a live entitlement must not be torn down and a new purchase
+  // must not be acknowledged.
+  if (error === "unavailable") {
+    logger.error("premium: store credential missing or not authorised");
+    return new HttpsError("unavailable", "store-credentials-unavailable");
+  }
+  return new HttpsError("unavailable", "store-unavailable");
+}
 
 export interface VerifyPremiumPurchaseResult {
   ok: boolean;
@@ -67,8 +119,7 @@ export async function verifyAndroidPremiumPurchase(input: {
   const packageName = catalogue.androidPackageName;
 
   if (!packageName || catalogue.android.length === 0) {
-    // Fail closed: with no configured products nothing can be Premium.
-    return {ok: false, isPremium: false, status: null, accessUntil: null, reason: "not_configured"};
+    throw notConfigured();
   }
 
   const verified = await input.api.fetchSubscription({
@@ -76,10 +127,8 @@ export async function verifyAndroidPremiumPurchase(input: {
     purchaseToken: input.purchaseToken,
   });
   if (!verified.ok) {
-    if (verified.error === "transient") {
-      // Google is failing. Surfacing this as retryable keeps a live
-      // entitlement from being torn down by an outage.
-      throw new HttpsError("unavailable", "store-unavailable");
+    if (verified.error !== "invalid") {
+      throw storeUnavailable(verified.error);
     }
     return {
       ok: false,
@@ -107,6 +156,26 @@ export async function verifyAndroidPremiumPurchase(input: {
     };
   }
 
+  // The app stamps each purchase with the account that started it. A stamp
+  // naming someone else means this caller is presenting another account's
+  // purchase — the same Play account on a shared device, typically — before
+  // its buyer has claimed it. Refused before anything is claimed or written.
+  // No stamp is accepted: older builds did not set one, and a resubscription
+  // made in the Play Store itself carries none.
+  if (
+    mapped.obfuscatedExternalAccountId &&
+    mapped.obfuscatedExternalAccountId !== premiumAccountId(input.userId)
+  ) {
+    logger.warn("premium: purchase was made for a different account");
+    return {
+      ok: false,
+      isPremium: false,
+      status: null,
+      accessUntil: null,
+      reason: "account_mismatch",
+    };
+  }
+
   const persistence = input.makeStore
     ? input.makeStore({
         userId: input.userId,
@@ -124,7 +193,10 @@ export async function verifyAndroidPremiumPurchase(input: {
 
   try {
     const writer = new SubscriptionEntitlementWriter(persistence, () => now);
-    const result = await writer.apply(mapped.write);
+    const result = await writer.apply({
+      ...mapped.write,
+      ...tokenIdentity(input.purchaseToken, mapped.linkedPurchaseToken),
+    });
     const access = evaluatePremiumAccess(result.state, now);
     return {
       ok: true,
@@ -173,15 +245,15 @@ export async function verifyIosPremiumPurchase(input: {
   const catalogue = premiumCatalogue();
 
   if (!catalogue.iosBundleId || catalogue.ios.length === 0) {
-    return {ok: false, isPremium: false, status: null, accessUntil: null, reason: "not_configured"};
+    throw notConfigured();
   }
 
   const verified = await input.api.fetchSubscription({
     transactionId: input.transactionId,
   });
   if (!verified.ok) {
-    if (verified.error === "transient") {
-      throw new HttpsError("unavailable", "store-unavailable");
+    if (verified.error !== "invalid") {
+      throw storeUnavailable(verified.error);
     }
     return {
       ok: false,
@@ -227,7 +299,10 @@ export async function verifyIosPremiumPurchase(input: {
 
   try {
     const writer = new SubscriptionEntitlementWriter(persistence, () => now);
-    const result = await writer.apply(mapped.write);
+    const result = await writer.apply({
+      ...mapped.write,
+      ...tokenIdentity(ownershipKey),
+    });
     const access = evaluatePremiumAccess(result.state, now);
     return {
       ok: true,

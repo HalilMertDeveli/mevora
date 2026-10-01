@@ -14,6 +14,7 @@ import type {ActiveBoostSnapshot, PurchaseLedger, VerifyBoostRequest} from "./ty
 import {FcmTypes, sendUserPush} from "../notifications.js";
 import {assertCallerAccountEligible} from "../accountGuard.js";
 import {assertAppFeatureAvailable} from "../appOperations/appOperationsGate.js";
+import {googlePlaySecrets} from "../googlePlayConfig.js";
 
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 const callableOptions = {
@@ -114,7 +115,7 @@ async function loadActiveBoostPayload(uid: string) {
   return created.exists ? boostPayload(created.data() ?? {}, live.boostId) : null;
 }
 
-export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
+export const verifyBoostPurchase = onCall({...callableOptions, secrets: googlePlaySecrets}, async (request) => {
   const uid = requireUid(request);
   const payload = parseRequest(request.data);
   const db = getFirestore();

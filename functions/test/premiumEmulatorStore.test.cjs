@@ -193,16 +193,20 @@ describe("emulator test purchase — full server path", () => {
     // FUNCTIONS_EMULATOR unset: the catalogue is empty, so even a token the
     // test store minted is refused before any store is asked.
     const store = memoryStore();
-    const result = await verifyAndroidPremiumPurchase({
-      userId: "qa-user-a",
-      purchaseToken: token("monthly"),
-      api: new EmulatorGoogleSubscriptionApi(() => now),
-      now,
-      makeStore: store.makeStore,
-    });
-
-    assert.equal(result.ok, false);
-    assert.equal(result.reason, "not_configured");
+    await assert.rejects(
+      () =>
+        verifyAndroidPremiumPurchase({
+          userId: "qa-user-a",
+          purchaseToken: token("monthly"),
+          api: new EmulatorGoogleSubscriptionApi(() => now),
+          now,
+          makeStore: store.makeStore,
+        }),
+      (error) => {
+        assert.equal(error.code, "failed-precondition");
+        return true;
+      },
+    );
     assert.equal(store.box.writes, 0);
   });
 });

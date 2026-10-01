@@ -5,6 +5,33 @@ import 'package:mevora/shared/images/mevora_photo_images.dart';
 /// Safe photo helpers. Never hands unknown `mock://` or other non-http
 /// schemes to [NetworkImage] (unsupported URI resolution causes UI jank).
 abstract final class MevoraNetworkImages {
+  static const _productionStorageHost = 'firebasestorage.googleapis.com';
+
+  /// `http://<host>:<port>` of the Storage emulator, set by the bootstrap
+  /// only when the app runs against the Emulator Suite; null otherwise.
+  ///
+  /// The backend builds published photo URLs for the production host even
+  /// under the emulator (photoVariants.ts), so on a device they pointed at a
+  /// bucket that does not hold the file and every approved photo was a
+  /// placeholder. Path and token are the same on both hosts.
+  static String? emulatorStorageOrigin;
+
+  /// [url] as this build can actually fetch it.
+  static String? resolve(String? url) {
+    final origin = emulatorStorageOrigin;
+    if (origin == null || !isStorageDownloadUrl(url)) {
+      return url;
+    }
+    final uri = Uri.parse(url!);
+    if (uri.host != _productionStorageHost) {
+      return url;
+    }
+    final target = Uri.parse(origin);
+    return uri
+        .replace(scheme: target.scheme, host: target.host, port: target.port)
+        .toString();
+  }
+
   static bool isHttpUrl(String? url) {
     if (url == null || url.isEmpty) {
       return false;
@@ -42,7 +69,7 @@ abstract final class MevoraNetworkImages {
       return null;
     }
     if (isStorageDownloadUrl(url)) {
-      return DiskCachedNetworkImage(url!);
+      return DiskCachedNetworkImage(resolve(url)!);
     }
     return NetworkImage(url!);
   }

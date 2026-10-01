@@ -7,6 +7,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/authentication/domain/apple_sign_in_support.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_provider_id.dart';
 import 'package:mevora/features/authentication/presentation/auth_error_text.dart';
 import 'package:mevora/features/authentication/presentation/widgets/auth_error_banner.dart';
@@ -82,14 +83,17 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                 onLink: () =>
                     unawaited(auth.linkProvider(AuthProviderId.google)),
               ),
-              _linkRow(
-                label: 'Apple',
-                icon: MevoraIcons.apple,
-                linked: providers?.apple ?? false,
-                l10n: l10n,
-                onLink: () =>
-                    unawaited(auth.linkProvider(AuthProviderId.apple)),
-              ),
+              // Linking runs Sign in with Apple, which only exists on Apple
+              // platforms. An account already linked there still shows here.
+              if (isAppleSignInSupported || (providers?.apple ?? false))
+                _linkRow(
+                  label: 'Apple',
+                  icon: MevoraIcons.apple,
+                  linked: providers?.apple ?? false,
+                  l10n: l10n,
+                  onLink: () =>
+                      unawaited(auth.linkProvider(AuthProviderId.apple)),
+                ),
               _linkRow(
                 label: 'Spotify',
                 icon: MevoraIcons.spotify,

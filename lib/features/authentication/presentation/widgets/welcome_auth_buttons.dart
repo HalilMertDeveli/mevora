@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/features/authentication/domain/apple_sign_in_support.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/animations/mevora_press_scale.dart';
 
@@ -10,6 +11,9 @@ import 'package:mevora/shared/animations/mevora_press_scale.dart';
 /// Providers are peers, so they share one style — white pill, provider glyph
 /// on the left, label centred. The first is filled ink so the eye has a
 /// starting point without implying the others are second-class.
+///
+/// Apple is offered only where Sign in with Apple can run
+/// ([isAppleSignInSupported]); elsewhere the button could only fail.
 class WelcomeAuthButtons extends StatelessWidget {
   const WelcomeAuthButtons({
     super.key,
@@ -33,7 +37,9 @@ class WelcomeAuthButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isIos = Theme.of(context).platform == TargetPlatform.iOS;
+    final appleSupported = isAppleSignInSupported;
+    final appleFirst =
+        appleSupported && Theme.of(context).platform == TargetPlatform.iOS;
 
     MevoraProviderButton button(
       String id,
@@ -55,16 +61,18 @@ class WelcomeAuthButtons extends StatelessWidget {
       l10n.continueWithGoogle,
       MevoraIcons.google,
       onGoogle,
-      emphasized: !isIos,
+      emphasized: !appleFirst,
     );
     final apple = button(
       'apple',
       l10n.continueWithApple,
       MevoraIcons.apple,
       onApple,
-      emphasized: isIos,
+      emphasized: appleFirst,
     );
-    final ordered = isIos ? [apple, google] : [google, apple];
+    final ordered = appleFirst
+        ? [apple, google]
+        : [google, if (appleSupported) apple];
 
     final buttons = [
       ...ordered,

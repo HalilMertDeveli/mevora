@@ -38,6 +38,7 @@ import {
 } from "./automation/cleanup.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
 import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
+import {withoutExactLocation} from "./privacy/exportLocation.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -367,7 +368,11 @@ export const exportMyData = onCall(callableOptions, async (request) => {
   const verificationData = verification.data();
   const musicData = music.data();
 
-  return {
+  // The account document mirrors the member's position (`location.latitude` /
+  // `location.longitude`, written by the app), and the sections below copy
+  // whole documents. The finished export is filtered rather than each field,
+  // so no section can carry a coordinate or geohash out. City and country stay.
+  return withoutExactLocation({
     exportedAt: new Date().toISOString(),
     uid,
     schemaVersion: 2,
@@ -482,7 +487,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
       updatedAt: d.data().updatedAt ?? d.data().createdAt ?? null,
       // FCM token omitted.
     })),
-  };
+  });
 });
 
 function sanitizeAccountExport(data: DocumentData | undefined): Record<string, unknown> | null {

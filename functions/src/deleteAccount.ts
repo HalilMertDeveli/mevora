@@ -10,6 +10,7 @@ import {diditApiKey} from "./identity/didit/diditConfig.js";
 import {safeLogMeta} from "./security/logHygiene.js";
 import {scrubDeletedMemberFromPicks} from "./picks/service.js";
 import {purgeTrustSafetyUserData} from "./admin/accountDeletion.js";
+import {uidRateLimitPaths} from "./callableRateLimit.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -167,6 +168,8 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/blockedUsers`),
       deleteCollectionDocs(`users/${uid}/passedUsers`),
       deleteCollectionDocs(`users/${uid}/boosts`),
+      // One row per member who saw this profile while it was boosted.
+      deleteCollectionDocs(`users/${uid}/boostReach`),
       deleteCollectionDocs(`users/${uid}/boostWallet`),
       deleteCollectionDocs(`users/${uid}/matchScoreHistory`),
       deleteCollectionDocs(`users/${uid}/matchFeedback`),
@@ -295,6 +298,8 @@ export const deleteUserAccount = onCall(
       db.doc(`users/${uid}/verification/sumsub`),
       db.doc(`users/${uid}/verification/identity`),
       db.doc(`spotifySecrets/${uid}`),
+      // Spotify OAuth rate-limit counters, keyed by this uid.
+      ...uidRateLimitPaths(uid).map((path) => db.doc(path)),
       db.doc(`profiles/${uid}`),
       db.doc(`userPreferences/${uid}`),
       db.doc(`userSettings/${uid}`),

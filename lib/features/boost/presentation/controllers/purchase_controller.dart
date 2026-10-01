@@ -217,7 +217,7 @@ class PurchaseController extends ChangeNotifier {
       case Err(:final failure):
         await _fail(failure);
         return;
-      case Success(:final value):
+      case Success(value: final transaction):
         state = state.copyWith(
           status: PurchaseUiStatus.verifying,
           message: AppStrings.boostVerifying,
@@ -225,11 +225,16 @@ class PurchaseController extends ChangeNotifier {
         notifyListeners();
         final verified = await _verifyBoostPurchase(
           userId: userId,
-          transaction: value,
+          transaction: transaction,
         );
-        await _repository.completeStoreTransaction(value);
         switch (verified) {
           case Success(:final value):
+            // Consume only what the server has granted — a new grant, or its
+            // answer that this purchase is already this member's. An
+            // unconsumed purchase is the only thing that can be verified
+            // again, so a failed verification must leave it in the store for
+            // "restore purchases" to pick up.
+            await _repository.completeStoreTransaction(transaction);
             if (value.boost != null) {
               await _activated(value.boost!);
             } else {

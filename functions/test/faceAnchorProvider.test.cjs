@@ -319,8 +319,13 @@ describe("provider selection — server environment only", () => {
     delete process.env.FACE_ANCHOR_ENFORCEMENT;
     process.env.FUNCTIONS_EMULATOR = "true";
     assert.equal(isFaceAnchorEnforced(), true);
+    // The emulator puts a param's (empty) default into the environment.
+    process.env.FACE_ANCHOR_ENFORCEMENT = "";
+    assert.equal(isFaceAnchorEnforced(), true);
     process.env.FACE_ANCHOR_ENFORCEMENT = "off";
     assert.equal(isFaceAnchorEnforced(), false);
+    process.env.FACE_ANCHOR_ENFORCEMENT = "on";
+    assert.equal(isFaceAnchorEnforced(), true);
   });
 });
 

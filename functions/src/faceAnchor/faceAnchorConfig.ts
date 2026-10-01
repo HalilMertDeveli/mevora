@@ -8,13 +8,17 @@ import {defineString} from "firebase-functions/params";
 /**
  * Whether a new member must have a verified Face Anchor to finish onboarding.
  *
- * Off by default in a deployment, and deliberately so. Turning the rule on
- * before the app that can satisfy it is in members' hands — or before a live
- * verification provider is configured — would stop every sign-up. The owner
- * switches it on once both are true. The emulator defaults to on, so the rule
- * is what gets tested.
+ * `on` or `off`. Left unset it is off in a deployment, and deliberately so:
+ * turning the rule on before the app that can satisfy it is in members' hands
+ * — or before a live verification provider is configured — would stop every
+ * sign-up. The owner switches it on once both are true. Unset in the emulator
+ * it is on, so the rule is what gets tested.
+ *
+ * The default is empty rather than "off" because the Functions emulator copies
+ * a param's default into the environment: "off" would then be indistinguishable
+ * from someone having asked for off.
  */
-export const faceAnchorEnforcement = defineString("FACE_ANCHOR_ENFORCEMENT", {default: "off"});
+export const faceAnchorEnforcement = defineString("FACE_ANCHOR_ENFORCEMENT", {default: ""});
 
 /**
  * Didit declines a face match scoring at or below this (0–100). Didit's own
@@ -49,11 +53,15 @@ function read(envKey: string, param: ReturnType<typeof defineString>, fallback: 
 }
 
 export function isFaceAnchorEnforced(): boolean {
-  if (isEmulatorProcess()) {
-    // On, unless the emulator's own environment says off in so many words.
-    return process.env.FACE_ANCHOR_ENFORCEMENT?.trim().toLowerCase() !== "off";
+  const setting = read("FACE_ANCHOR_ENFORCEMENT", faceAnchorEnforcement, "").toLowerCase();
+  if (setting === "on") {
+    return true;
   }
-  return read("FACE_ANCHOR_ENFORCEMENT", faceAnchorEnforcement, "off").toLowerCase() === "on";
+  if (setting === "off") {
+    return false;
+  }
+  // Unset, or a word that is neither: on in the emulator, off when deployed.
+  return isEmulatorProcess();
 }
 
 function threshold(envKey: string, param: ReturnType<typeof defineString>, fallback: number): number {

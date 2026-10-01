@@ -135,7 +135,7 @@ everybody.
 |---|---|---|---|
 | `DIDIT_API_KEY` | secret | — | Shared with identity verification |
 | `DIDIT_ENVIRONMENT` | param | `sandbox` | Must be `live` for Face Anchor to run |
-| `FACE_ANCHOR_ENFORCEMENT` | param | `off` (emulator: on) | New members must have a Face Anchor to finish onboarding |
+| `FACE_ANCHOR_ENFORCEMENT` | param | unset: off when deployed, on in the emulator | `on` / `off`. New members must have a Face Anchor to finish onboarding |
 | `FACE_ANCHOR_MATCH_THRESHOLD` | param | `50` | Didit declines a match at or below this |
 | `FACE_ANCHOR_LIVENESS_THRESHOLD` | param | `30` | Didit declines liveness at or below this |
 | `FACE_ANCHOR_DAILY_GLOBAL_CAP` | param | `2000` | Billed verifications per UTC day |

@@ -26,7 +26,7 @@ LearningQuestion learningQuestion(
   );
 }
 
-/// Behaves like the server: one global set per day, validates every answer
+/// Behaves like the server: one set per day, validates every answer
 /// against it, stores, completes exactly once, and rejects yesterday's set.
 class FakeRelationshipLearningRepository
     implements RelationshipLearningRepository {

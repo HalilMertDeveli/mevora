@@ -1,7 +1,7 @@
-/// Daily relationship questions — the 10 questions Mevora asks every member
-/// each day so it can choose better people. The server owns the bank, the
-/// day and the set; the client renders what it receives and never ships its
-/// own question copy.
+/// Relationship questions — the Core questions Mevora asks every member in
+/// the same order (fifteen at onboarding, then five a day) so it can choose
+/// better people. The server owns the bank, the order, the day and the set;
+/// the client renders what it receives and never ships its own question copy.
 library;
 
 class LearningOption {
@@ -78,7 +78,7 @@ class DailyProgress {
   const DailyProgress({
     this.dateKey = '',
     this.questionSetId,
-    this.total = 10,
+    this.total = 0,
     this.answered = 0,
     this.completed = false,
     this.skipped = false,
@@ -88,8 +88,11 @@ class DailyProgress {
   /// `YYYY-MM-DD` in Mevora's day (Europe/Istanbul), decided by the server.
   final String dateKey;
 
-  /// The global set the member's answers belong to; null until known.
+  /// The member's set for this day; null until known.
   final String? questionSetId;
+
+  /// How many questions today's set holds: fifteen at onboarding, five a
+  /// day after that, fewer when little is left. Always from the server.
   final int total;
   final int answered;
   final bool completed;
@@ -97,7 +100,7 @@ class DailyProgress {
   /// "Bugünlük geç" was chosen for this day.
   final bool skipped;
 
-  /// False only for a new member's first set, which is part of onboarding.
+  /// False only for a new member's onboarding questions.
   final bool canSkip;
 
   bool get started => answered > 0;
@@ -124,7 +127,7 @@ class LearningSummary {
   /// A member who joined after daily questions shipped.
   final bool required;
 
-  /// A new member's Picks wait for their first completed set.
+  /// A new member's Picks wait for the onboarding questions.
   final bool blocksPicks;
   final bool firstSetCompleted;
 
@@ -142,7 +145,7 @@ class LearningSummary {
   bool get invitesToday => !blocksPicks && !today.completed && !today.skipped;
 }
 
-/// Today's global set: the same ids, versions and order for every member.
+/// The member's set for today, in the order every member meets it.
 class DailyQuestionSet {
   const DailyQuestionSet({
     required this.dateKey,
@@ -159,7 +162,7 @@ class DailyQuestionSet {
   final String dateKey;
   final String questionSetId;
 
-  /// In order, each with the member's answer for today.
+  /// In order, each with the member's answer if they gave one.
   final List<LearningQuestion> questions;
 }
 

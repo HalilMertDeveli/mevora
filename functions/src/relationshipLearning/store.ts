@@ -10,14 +10,13 @@ import {
   type LearningState,
   type ProfileSignals,
 } from "./model.js";
-import {buildDailySet, parseDailySet, type DailySet} from "./schedule.js";
+import {isDateKey, learningDayKey, type DailySet} from "./schedule.js";
 
 /**
- * Firestore side of the daily relationship questions.
+ * Firestore side of the relationship questions.
  *
- *   relationshipDailySets/{dateKey}               the day's global set, written once by the
- *                                                 first request of the day (clients: read-only)
- *   users/{uid}/relationshipLearning/state        answers, today's progress (server-only; owner may read)
+ *   users/{uid}/relationshipLearning/state        answers, today's frozen set and progress
+ *                                                 (server-only; owner may read)
  *   users/{uid}/relationshipDaily/{dateKey}       one record per completed day (server-only; owner may read)
  *   users/{uid}/relationshipMatch/summary         .learningAnswers — comparable answers mirrored for
  *                                                 the pair scorer, so scoring costs no extra read
@@ -25,10 +24,6 @@ import {buildDailySet, parseDailySet, type DailySet} from "./schedule.js";
  * Every member write goes through a callable, so answers are validated and
  * derived state cannot be forged.
  */
-
-export function dailySetPath(dateKey: string): string {
-  return `relationshipDailySets/${dateKey}`;
-}
 
 export function learningStatePath(uid: string): string {
   return `users/${uid}/relationshipLearning/state`;
@@ -43,22 +38,20 @@ export function relationshipSummaryPath(uid: string): string {
 }
 
 /**
- * The global set for `dateKey`: read if it exists, otherwise built from the
- * schedule and written in a transaction where the first writer wins. Every
- * member asking that day therefore gets byte-identical question ids, versions
- * and order, even if the question bank changes later in the day.
+ * Emulator-only clock override: `devClock/relationshipLearning {dateKey}`.
+ * Read only when the process runs inside the Functions emulator, so a
+ * deployed function can never be steered to another day. Clients cannot
+ * write it (rules deny). Moved with tool/relationshipLearningDev.cjs.
  */
-export async function loadOrCreateDailySet(db: Firestore, dateKey: string): Promise<DailySet> {
-  const ref = db.doc(dailySetPath(dateKey));
-  const existing = parseDailySet((await ref.get()).data(), dateKey);
-  if (existing) return existing;
-  return db.runTransaction(async (tx) => {
-    const current = parseDailySet((await tx.get(ref)).data(), dateKey);
-    if (current) return current;
-    const set = buildDailySet(dateKey);
-    tx.set(ref, {...set, createdAt: FieldValue.serverTimestamp()});
-    return set;
-  });
+export const LEARNING_DEV_CLOCK_DOC = "devClock/relationshipLearning";
+
+/** Today's logical day. Server clock; the override applies in the emulator only. */
+export async function resolveLearningDayKey(db: Firestore, nowMs: number): Promise<string> {
+  if (process.env.FUNCTIONS_EMULATOR === "true") {
+    const override = (await db.doc(LEARNING_DEV_CLOCK_DOC).get()).data()?.dateKey;
+    if (isDateKey(override)) return override;
+  }
+  return learningDayKey(nowMs);
 }
 
 export async function loadLearningState(db: Firestore, uid: string): Promise<LearningState> {
@@ -139,9 +132,9 @@ export async function loadProfileSignals(db: Firestore, uid: string): Promise<Pr
 }
 
 /**
- * Marks a member who just finished onboarding as someone whose first Picks
- * wait for their first completed daily set. Create-only: it never touches a
- * member who already has state, and a failure leaves them unblocked.
+ * Marks a member who just finished profile onboarding as someone whose first
+ * Picks wait for the onboarding questions (Q1-Q15). Create-only: it never
+ * touches a member who already has state, and a failure leaves them unblocked.
  */
 export async function markLearningRequired(db: Firestore, uid: string): Promise<void> {
   const ref = db.doc(learningStatePath(uid));
@@ -181,12 +174,11 @@ export function questionPayload(question: LearningQuestion, answerId: string | n
   };
 }
 
-/** Today's set for the client, each question with today's answer (if any). */
+/** Today's set for the client, each question with the member's answer (if any). */
 export function dailySetPayload(set: DailySet, state: LearningState): QuestionPayload[] {
   return set.questions.map((ref) => {
     const question = learningQuestion(ref.id) as LearningQuestion;
     const answer = state.answers[ref.id];
-    const today = answer && answer.dateKey === set.dateKey && answer.version === ref.version;
-    return questionPayload(question, today ? answer.answerId : null);
+    return questionPayload(question, answer?.version === ref.version ? answer.answerId : null);
   });
 }

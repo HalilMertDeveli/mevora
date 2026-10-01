@@ -1,12 +1,12 @@
 /**
  * Relationship questions — every tunable number in one place.
  *
- * Nothing here runs on a clock. The daily set is chosen when the first member
- * of the day asks for it; there is no scheduler, no push and no hourly
- * anything.
+ * Nothing here runs on a clock. A member's set for the day is worked out from
+ * their own answers when they ask for it; there is no scheduler, no push and
+ * no hourly anything.
  */
 
-export const LEARNING_STATE_SCHEMA_VERSION = 2;
+export const LEARNING_STATE_SCHEMA_VERSION = 3;
 
 export const DAILY = {
   /**
@@ -15,10 +15,17 @@ export const DAILY = {
    * device clock or time zone can never move a member into another day.
    */
   utcOffsetMinutes: 180,
-  /** Day 0 of the rotation. Changing it reshuffles every future day. */
-  anchorDateKey: "2026-09-01",
-  /** Bump when the rotation rule changes; part of every questionSetId. */
-  scheduleVersion: 1,
+} as const;
+
+/**
+ * How the Core sequence (coreSequence.ts) is handed out. Both numbers are
+ * product rules, not tuning: see docs/MATCHING_PRODUCT_RULES.md.
+ */
+export const CORE = {
+  /** Q1..Q15 are onboarding: asked first, in order, before the first Picks. */
+  onboardingCount: 15,
+  /** Core questions per logical day after onboarding. Never more. */
+  dailyCount: 5,
 } as const;
 
 /**

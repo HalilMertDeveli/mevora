@@ -4,8 +4,8 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {isAccountEligible} from "../profileSafety.js";
 import {loadDiscoveryViewerBasics} from "../discoveryPool.js";
 import {isLearningBlockingPicks, learningSummary} from "../relationshipLearning/model.js";
-import {learningDayKey} from "../relationshipLearning/schedule.js";
-import {loadLearningState} from "../relationshipLearning/store.js";
+import {memberDailySet} from "../relationshipLearning/schedule.js";
+import {loadLearningState, resolveLearningDayKey} from "../relationshipLearning/store.js";
 import {servePicks} from "./service.js";
 import {assertAppFeatureAvailable} from "../appOperations/appOperationsGate.js";
 import {logger} from "firebase-functions";
@@ -65,11 +65,14 @@ async function openPicks(uid: string, trace: {path: PicksCostPath}): Promise<Rec
   }
   await assertAppFeatureAvailable(db, "picks");
   const nowMs = Date.now();
-  const learningState = await loadLearningState(db, uid);
-  const learning = learningSummary(learningState, learningDayKey(nowMs), nowMs);
+  const [learningState, learningDay] = await Promise.all([
+    loadLearningState(db, uid),
+    resolveLearningDayKey(db, nowMs),
+  ]);
+  const learning = learningSummary(learningState, memberDailySet(learningState, learningDay), nowMs);
   if (isLearningBlockingPicks(learningState)) {
-    // A new member's first Picks wait for their first daily question set:
-    // the set is chosen from their answers, so it is not served without them.
+    // A new member's first Picks wait for the onboarding questions (Q1-Q15):
+    // Picks are chosen from their answers, so none are served without them.
     return {status: "empty", emptyReason: "learningRequired", picks: [], learning};
   }
   // Only what does not grow with history or with the size of Mevora is

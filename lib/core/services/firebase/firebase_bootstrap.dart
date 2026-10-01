@@ -12,6 +12,7 @@ import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/firebase/firebase_options_resolver.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/firebase_options.dart';
+import 'package:mevora/shared/images/mevora_network_images.dart';
 
 /// Initializes Firebase products. UI and feature modules must not call
 /// Firebase APIs directly.
@@ -88,6 +89,8 @@ class FirebaseBootstrap {
       emulators.host,
       emulators.storagePort,
     );
+    MevoraNetworkImages.emulatorStorageOrigin =
+        'http://${emulators.host}:${emulators.storagePort}';
     FirebaseFunctions.instance.useFunctionsEmulator(
       emulators.host,
       emulators.functionsPort,

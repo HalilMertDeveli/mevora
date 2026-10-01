@@ -57,6 +57,8 @@ import 'package:mevora/features/relationship_learning/domain/repositories/relati
 import 'package:mevora/features/relationship_learning/presentation/controllers/learning_journey_controller.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/features/verification/domain/repositories/verification_repository.dart';
+import 'package:mevora/core/di/face_anchor_scope.dart';
+import 'package:mevora/core/di/face_anchor_services_factory.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 class MevoraApp extends StatefulWidget {
@@ -78,6 +80,7 @@ class MevoraApp extends StatefulWidget {
     this.purchaseRepository,
     this.subscriptionServices,
     this.verificationRepository,
+    this.faceAnchorServices,
     this.analytics,
     this.languageController,
     this.permissionService,
@@ -105,6 +108,10 @@ class MevoraApp extends StatefulWidget {
   final PurchaseRepository? purchaseRepository;
   final SubscriptionServices? subscriptionServices;
   final VerificationRepository? verificationRepository;
+
+  /// Face Anchor photo verification. Null in tests and previews: the photo
+  /// screens then do not offer it.
+  final FaceAnchorServices? faceAnchorServices;
   final AnalyticsProvider? analytics;
   final LanguageController? languageController;
   final PermissionService? permissionService;
@@ -402,6 +409,11 @@ class _MevoraAppState extends State<MevoraApp> {
     final verification = widget.verificationRepository;
     if (verification != null) {
       child = VerificationScope(repository: verification, child: child);
+    }
+
+    final faceAnchor = widget.faceAnchorServices;
+    if (faceAnchor != null) {
+      child = FaceAnchorScope(services: faceAnchor, child: child);
     }
 
     final subscription = widget.subscriptionServices;

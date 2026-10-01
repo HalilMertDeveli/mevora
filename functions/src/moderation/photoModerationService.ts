@@ -1,5 +1,5 @@
 import {randomUUID} from "node:crypto";
-import {FieldValue, Timestamp, type Firestore} from "firebase-admin/firestore";
+import {FieldValue, Timestamp, type Firestore, type Transaction} from "firebase-admin/firestore";
 import type {Bucket} from "@google-cloud/storage";
 import {logger} from "firebase-functions";
 import {moderatePhotoBuffer} from "./manualModerationProvider.js";
@@ -11,11 +11,19 @@ import {
 } from "./types.js";
 import {
   backfillLegacyApproval,
-  photoChanged,
-  readLedger,
-  reconcilePhoto,
+  isPublishedStoragePath,
+  ledgerCollection,
+  ledgerEntryFromData,
+  ledgerRef,
   writeLedgerEntry,
+  type LedgerEntry,
 } from "./photoModerationLedger.js";
+import {
+  computePhotoInvariants,
+  photosChanged,
+  sameIds,
+  storedFaceAnchorPhotoIds,
+} from "./photoInvariants.js";
 import {
   PHOTO_CACHE_CONTROL,
   firebaseDownloadUrl,
@@ -197,6 +205,36 @@ export async function processPendingProfilePhoto(options: {
   contentType: string | undefined;
   sizeBytes: number;
 }): Promise<PhotoModerationStatus> {
+  // An imageId is moderated once. Storage rules let the owner write
+  // pending/{imageId} again at any time; running the pipeline on that would
+  // republish different bytes under an id the server has already ruled on —
+  // an approved (or Face Anchor verified) photo swapped for another image, or
+  // a moderator's removal undone by re-uploading. The new bytes are dropped.
+  //
+  // A photo whose object was published but whose status write never landed is
+  // not "decided": it is still pending/processing here and the retry proceeds.
+  const ledgerSnap = await ledgerRef(options.db, options.uid, options.imageId).get();
+  if (ledgerSnap.exists) {
+    const entry = ledgerEntryFromData(ledgerSnap.data() ?? {});
+    const published = isPublishedStoragePath(options.uid, entry.storagePath);
+    const decided =
+      entry.status === "approved" ||
+      (published && (entry.status === "manual_review" || entry.status === "rejected"));
+    if (decided) {
+      try {
+        await options.bucket.file(options.pendingPath).delete({ignoreNotFound: true});
+      } catch (error) {
+        logger.warn("Failed to delete re-uploaded pending photo", {error: String(error)});
+      }
+      logger.warn("Ignored re-upload of an already moderated photo id", {
+        uid: options.uid,
+        imageId: options.imageId,
+        status: entry.status,
+      });
+      return entry.status;
+    }
+  }
+
   const smokeFastPath = await isSmokeTestAccount(options.db, options.uid);
   const attemptsSnap = await options.db.doc(`profiles/${options.uid}`).get();
   const existing = photosFrom(attemptsSnap.data());
@@ -375,6 +413,81 @@ export async function retryStaleProcessingPhotos(db: Firestore, bucket: Bucket):
   return retried;
 }
 
+/** The profile and ledger as one transaction saw them. */
+export interface PhotoState {
+  exists: boolean;
+  profile: Record<string, unknown>;
+  photos: PhotoRecord[];
+  ledger: Map<string, LedgerEntry>;
+}
+
+/**
+ * Reads everything the photo invariants depend on. Firestore transactions
+ * read before they write, so a caller with reads of its own does those, then
+ * this, and only then commitPhotoInvariants.
+ */
+export async function loadPhotoState(tx: Transaction, db: Firestore, uid: string): Promise<PhotoState> {
+  const [profileSnap, ledgerSnap] = await Promise.all([
+    tx.get(db.doc(`profiles/${uid}`)),
+    tx.get(ledgerCollection(db, uid)),
+  ]);
+  const ledger = new Map<string, LedgerEntry>();
+  for (const doc of ledgerSnap.docs) {
+    ledger.set(doc.id, ledgerEntryFromData(doc.data() ?? {}));
+  }
+  const profile = (profileSnap.data() ?? {}) as Record<string, unknown>;
+  return {exists: profileSnap.exists, profile, photos: photosFrom(profile), ledger};
+}
+
+export interface CommittedPhotoInvariants {
+  changed: boolean;
+  photos: PhotoRecord[];
+  faceAnchorPhotoIds: string[];
+}
+
+/**
+ * Queues the writes that bring profiles/{uid}.photos, faceAnchorPhotoIds and
+ * the ledger back in line (photoInvariants.ts).
+ *
+ * `profilePatch` rides along on the same profile write. Nothing is written
+ * when nothing would change, which is what keeps the profile trigger from
+ * looping; an absent profile is never created.
+ */
+export function commitPhotoInvariants(
+  tx: Transaction,
+  db: Firestore,
+  uid: string,
+  state: PhotoState,
+  options: {profilePatch?: Record<string, unknown>} = {},
+): CommittedPhotoInvariants {
+  if (!state.exists) {
+    return {changed: false, photos: [], faceAnchorPhotoIds: []};
+  }
+  const result = computePhotoInvariants(state.photos, state.ledger);
+  const photosDiffer = photosChanged(state.photos, result.photos);
+  const anchorsDiffer = !sameIds(storedFaceAnchorPhotoIds(state.profile), result.faceAnchorPhotoIds);
+  const patch = options.profilePatch ?? {};
+  if (photosDiffer || anchorsDiffer || Object.keys(patch).length > 0) {
+    tx.update(db.doc(`profiles/${uid}`), {
+      ...(photosDiffer ? {photos: result.photos} : {}),
+      ...(anchorsDiffer ? {faceAnchorPhotoIds: result.faceAnchorPhotoIds} : {}),
+      ...patch,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
+  for (const imageId of result.staleAnchorIds) {
+    tx.update(ledgerRef(db, uid, imageId), {
+      faceAnchor: FieldValue.delete(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
+  return {
+    changed: photosDiffer || anchorsDiffer || result.staleAnchorIds.length > 0,
+    photos: result.photos,
+    faceAnchorPhotoIds: result.faceAnchorPhotoIds,
+  };
+}
+
 /**
  * Forces profiles/{uid}.photos to match the server-owned moderation ledger.
  *
@@ -388,42 +501,40 @@ export async function retryStaleProcessingPhotos(db: Firestore, bucket: Bucket):
  * denied to clients by the Firestore rules. Anything not recorded there is
  * unmoderated by definition and is forced back to "pending".
  *
+ * Reads the profile itself, inside a transaction, rather than trusting the
+ * array a trigger event carried: events arrive late and out of order, and an
+ * old array written back would undo a newer write — or, with the Face Anchor
+ * rules, drop a verdict over a photo that was never removed.
+ *
  * Idempotent: a second pass over reconciled photos produces no write, so the
  * onDocumentWritten trigger does not loop.
  */
 export async function reconcilePhotoModeration(
   db: Firestore,
   uid: string,
-  afterPhotos: PhotoRecord[],
   bucket?: Bucket,
 ): Promise<boolean> {
-  if (!afterPhotos.length) {
-    return false;
-  }
-  const ledger = await readLedger(db, uid);
-  let changed = false;
-  const reconciled: PhotoRecord[] = [];
-
-  for (const photo of afterPhotos) {
-    const imageId = String(photo.id ?? "");
-    let entry = ledger.get(imageId) ?? null;
-    if (!entry) {
-      // Photos published by the pipeline before the ledger existed live under
-      // the server-only photos/ prefix; adopt those rather than de-platforming.
-      entry = await backfillLegacyApproval({db, bucket, uid, photo});
+  // Photos published by the pipeline before the ledger existed live under the
+  // server-only photos/ prefix; adopt those rather than de-platforming. The
+  // adoption checks Storage, so it cannot run inside the transaction: the
+  // first pass only finds the candidates and writes nothing while there are any.
+  const first = await db.runTransaction(async (tx) => {
+    const state = await loadPhotoState(tx, db, uid);
+    const candidates = computePhotoInvariants(state.photos, state.ledger).unrecordedPhotos
+      .filter((photo) => isPublishedStoragePath(uid, photo.storagePath));
+    if (state.exists && candidates.length > 0) {
+      return {deferred: true as const, candidates};
     }
-    const next = reconcilePhoto(photo, entry);
-    if (photoChanged(photo, next)) {
-      changed = true;
-    }
-    reconciled.push(next);
+    return {deferred: false as const, changed: commitPhotoInvariants(tx, db, uid, state).changed};
+  });
+  if (!first.deferred) {
+    return first.changed;
   }
-
-  if (changed) {
-    await db.doc(`profiles/${uid}`).set(
-      {photos: reconciled, updatedAt: FieldValue.serverTimestamp()},
-      {merge: true},
-    );
+  for (const photo of first.candidates) {
+    await backfillLegacyApproval({db, bucket, uid, photo});
   }
-  return changed;
+  return db.runTransaction(async (tx) => {
+    const state = await loadPhotoState(tx, db, uid);
+    return commitPhotoInvariants(tx, db, uid, state).changed;
+  });
 }

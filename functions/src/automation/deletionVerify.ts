@@ -42,6 +42,9 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   // Daily streak: engagement history. The check-in refuses to write once the
   // account document is gone, but a call in flight is checked, not assumed.
   `users/${uid}/dailyStreak/current`,
+  // Face Anchor attempt state. A verification finishing as the account goes
+  // only ever updates this document, but it is checked, not assumed.
+  `users/${uid}/faceAnchor/state`,
   // The admin console's name-search row; the profile trigger could recreate
   // it if a profile write raced the deletion, so it is checked.
   `adminUserLookup/${uid}`,
@@ -52,6 +55,7 @@ const REMNANT_STORAGE_PREFIXES = (uid: string): string[] => [
   `users/${uid}/`,
   `profiles/${uid}/`,
   `moderation/quarantine/${uid}/`,
+  `face-anchor/pending/${uid}/`,
 ];
 
 /**

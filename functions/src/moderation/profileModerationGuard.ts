@@ -4,17 +4,13 @@ import {getFirestore} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {logger} from "firebase-functions";
 import {reconcilePhotoModeration} from "./photoModerationService.js";
-import type {PhotoRecord} from "./types.js";
+import {storedFaceAnchorPhotoIds} from "./photoInvariants.js";
 
 if (getApps().length === 0) {
   initializeApp();
 }
 
 const db = getFirestore();
-
-function photosFrom(data: Record<string, unknown> | undefined): PhotoRecord[] {
-  return ((data?.photos as PhotoRecord[] | undefined) ?? []).map((photo) => ({...photo}));
-}
 
 /**
  * Forces profiles/{uid}.photos back onto the server-owned moderation ledger.
@@ -24,6 +20,9 @@ function photosFrom(data: Record<string, unknown> | undefined): PhotoRecord[] {
  * "approved". This trigger is the authority boundary: every write is
  * reconciled against users/{uid}/photoModeration/{imageId}, which clients
  * cannot write. Nothing in the profile document is trusted.
+ *
+ * The same pass imposes the Face Anchor rules (photoInvariants.ts): the last
+ * verified anchor cannot be removed and the primary photo is always one.
  */
 export const enforceProfilePhotoModeration = onDocumentWritten(
   {document: "profiles/{uid}", region: "europe-west1"},
@@ -33,8 +32,10 @@ export const enforceProfilePhotoModeration = onDocumentWritten(
       return;
     }
     const uid = event.params.uid;
-    const afterPhotos = photosFrom(after);
-    if (!afterPhotos.length) {
+    const hasPhotos = Array.isArray(after.photos) && after.photos.length > 0;
+    // An empty array is only interesting when the server knows this profile
+    // has an anchor to put back; faceAnchorPhotoIds is not client-writable.
+    if (!hasPhotos && storedFaceAnchorPhotoIds(after).length === 0) {
       return;
     }
     let bucket;
@@ -48,7 +49,7 @@ export const enforceProfilePhotoModeration = onDocumentWritten(
         error: String(error),
       });
     }
-    const changed = await reconcilePhotoModeration(db, uid, afterPhotos, bucket);
+    const changed = await reconcilePhotoModeration(db, uid, bucket);
     if (changed) {
       logger.warn("Reverted client-written photo moderation state", {uid});
     }

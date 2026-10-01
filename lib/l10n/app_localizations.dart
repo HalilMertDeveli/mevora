@@ -1739,7 +1739,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingPhotosHint.
   ///
   /// In en, this message translates to:
-  /// **'Add at least 3 photos. Drag to reorder — your first photo is your main one.'**
+  /// **'Add at least 3 photos. Your face should be clearly visible in at least one. In the others you can show your hobbies, your travels, your pet or moments from your life.'**
   String get onboardingPhotosHint;
 
   /// No description provided for @onboardingPrimaryPhoto.
@@ -8905,6 +8905,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t send your appeal. Check your connection and try again.'**
   String get moderationAppealFailed;
+
+  /// No description provided for @faceAnchorRequiredNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'To continue, verify one photo where your face is clearly visible.'**
+  String get faceAnchorRequiredNotice;
+
+  /// No description provided for @faceAnchorVerifyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your photo'**
+  String get faceAnchorVerifyAction;
+
+  /// No description provided for @faceAnchorVerifyShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get faceAnchorVerifyShort;
+
+  /// No description provided for @faceAnchorVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is verified'**
+  String get faceAnchorVerified;
+
+  /// No description provided for @faceAnchorVerifiedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get faceAnchorVerifiedShort;
+
+  /// No description provided for @faceAnchorPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification pending'**
+  String get faceAnchorPending;
+
+  /// No description provided for @faceAnchorPhotoInReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo in review'**
+  String get faceAnchorPhotoInReview;
+
+  /// No description provided for @faceAnchorNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not verified'**
+  String get faceAnchorNotVerified;
+
+  /// No description provided for @faceAnchorRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get faceAnchorRetry;
+
+  /// No description provided for @faceAnchorMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo did not match the selfie you took.'**
+  String get faceAnchorMismatch;
+
+  /// No description provided for @faceAnchorLivenessFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The liveness check could not be completed. Try again in good light, looking straight at the camera.'**
+  String get faceAnchorLivenessFailed;
+
+  /// No description provided for @faceAnchorPhotoUnclear.
+  ///
+  /// In en, this message translates to:
+  /// **'Your face is not clearly visible on its own in this photo. Choose one that shows only you.'**
+  String get faceAnchorPhotoUnclear;
+
+  /// No description provided for @faceAnchorSelfieInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That selfie could not be used. Take a new one with your camera and try again.'**
+  String get faceAnchorSelfieInvalid;
+
+  /// No description provided for @faceAnchorTechnicalError.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification could not be completed right now. Your photo was not verified; try again shortly.'**
+  String get faceAnchorTechnicalError;
+
+  /// No description provided for @faceAnchorPrimaryRequiresVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify this photo before making it your main photo.'**
+  String get faceAnchorPrimaryRequiresVerify;
+
+  /// No description provided for @faceAnchorLastAnchorDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t remove your last verified photo. Verify another photo first.'**
+  String get faceAnchorLastAnchorDelete;
+
+  /// No description provided for @faceAnchorExplainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We run a short selfie check to make sure your photo is really you.'**
+  String get faceAnchorExplainBody;
+
+  /// No description provided for @faceAnchorExplainSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll take a selfie with your front camera. It is used only for this check, never appears on your profile and is deleted when the check ends.'**
+  String get faceAnchorExplainSteps;
+
+  /// No description provided for @faceAnchorConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to my selfie being processed to compare it with this photo.'**
+  String get faceAnchorConsent;
+
+  /// No description provided for @faceAnchorTakeSelfie.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a selfie'**
+  String get faceAnchorTakeSelfie;
+
+  /// No description provided for @faceAnchorOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting ready…'**
+  String get faceAnchorOpening;
+
+  /// No description provided for @faceAnchorCapturing.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the camera…'**
+  String get faceAnchorCapturing;
+
+  /// No description provided for @faceAnchorUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending your selfie…'**
+  String get faceAnchorUploading;
+
+  /// No description provided for @faceAnchorVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get faceAnchorVerifying;
+
+  /// No description provided for @faceAnchorSuccessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo can now be your main photo.'**
+  String get faceAnchorSuccessBody;
+
+  /// No description provided for @faceAnchorDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get faceAnchorDone;
+
+  /// No description provided for @faceAnchorChooseAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another photo'**
+  String get faceAnchorChooseAnother;
+
+  /// No description provided for @faceAnchorPromptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify one photo where your face is clearly visible to show your profile is really you.'**
+  String get faceAnchorPromptBody;
+
+  /// No description provided for @faceAnchorProfileVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile photo is verified'**
+  String get faceAnchorProfileVerifiedTitle;
+
+  /// No description provided for @faceAnchorPromptTileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify a photo of your face with a short selfie'**
+  String get faceAnchorPromptTileSubtitle;
+
+  /// No description provided for @faceAnchorErrorUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo verification isn\'t available right now. Please try again later.'**
+  String get faceAnchorErrorUnavailable;
+
+  /// No description provided for @faceAnchorErrorPhotoNotApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is still in review. You can verify it once the review is finished.'**
+  String get faceAnchorErrorPhotoNotApproved;
+
+  /// No description provided for @faceAnchorErrorCooldown.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait a moment and try again.'**
+  String get faceAnchorErrorCooldown;
+
+  /// No description provided for @faceAnchorErrorAttemptLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used today\'s attempts. You can try again tomorrow.'**
+  String get faceAnchorErrorAttemptLimit;
+
+  /// No description provided for @faceAnchorErrorCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera couldn\'t be opened. Check the camera permission and try again.'**
+  String get faceAnchorErrorCamera;
+
+  /// No description provided for @faceAnchorErrorUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Your selfie couldn\'t be sent. Check your connection and try again.'**
+  String get faceAnchorErrorUpload;
+
+  /// No description provided for @faceAnchorErrorInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'A verification is already running. Please wait for the result.'**
+  String get faceAnchorErrorInProgress;
+
+  /// No description provided for @faceAnchorErrorConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to agree before continuing.'**
+  String get faceAnchorErrorConsent;
+
+  /// No description provided for @faceAnchorErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification couldn\'t be started. Please try again.'**
+  String get faceAnchorErrorGeneric;
 }
 
 class _AppLocalizationsDelegate

@@ -332,6 +332,8 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     dailyStreak,
     relationshipLearning,
     relationshipDaily,
+    photoLedger,
+    faceAnchorState,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -356,6 +358,8 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     db.doc(dailyStreakDocPath(uid)).get(),
     db.doc(`users/${uid}/relationshipLearning/state`).get(),
     db.collection(`users/${uid}/relationshipDaily`).limit(400).get(),
+    db.collection(`users/${uid}/photoModeration`).limit(50).get(),
+    db.doc(`users/${uid}/faceAnchor/state`).get(),
   ]);
 
   // Never include exact GPS, Spotify secrets, private keys, or message ciphertext bodies.
@@ -419,6 +423,26 @@ export const exportMyData = onCall(callableOptions, async (request) => {
         // extracted identity fields were never stored here to export.
       }
       : null,
+    // Face Anchor: which profile photos were verified as the member, when the
+    // member agreed to the selfie check, and how the last attempt ended.
+    // There is nothing else to export: the verification selfie is deleted when
+    // the check finishes and no score, face template or provider response is
+    // ever stored.
+    faceAnchor: {
+      verifiedPhotos: photoLedger.docs
+        .filter((d) => d.get("faceAnchor.status") === "verified")
+        .map((d) => ({photoId: d.id, verifiedAt: d.get("faceAnchor.verifiedAt") ?? null})),
+      lastAttempt: faceAnchorState.exists
+        ? {
+          status: faceAnchorState.get("status") ?? null,
+          reason: faceAnchorState.get("reason") ?? null,
+          photoId: faceAnchorState.get("photoId") ?? null,
+          consentVersion: faceAnchorState.get("consentVersion") ?? null,
+          consentAt: faceAnchorState.get("consentAt") ?? null,
+          updatedAt: faceAnchorState.get("updatedAt") ?? null,
+        }
+        : null,
+    },
     questionAnswers: questionAnswers.docs.map((d) => ({id: d.id, ...d.data()})),
     matchIds: matches.docs.map((d) => d.id),
     likesSent: likesFrom.docs.map((d) => ({

@@ -54,6 +54,15 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/matches/$(matchId)).data.isActive == true;
     }
 
+    // The server opens an attempt (startFaceAnchorVerification) before any
+    // selfie may be uploaded; this is that attempt, still waiting, not expired.
+    function isOpenFaceAnchorAttempt(userId, attemptId) {
+      return firestore.exists(/databases/(default)/documents/users/$(userId)/faceAnchor/state)
+        && firestore.get(/databases/(default)/documents/users/$(userId)/faceAnchor/state).data.attemptId == attemptId
+        && firestore.get(/databases/(default)/documents/users/$(userId)/faceAnchor/state).data.status == 'awaiting_selfie'
+        && firestore.get(/databases/(default)/documents/users/$(userId)/faceAnchor/state).data.expiresAtMs > request.time.toMillis();
+    }
+
     // Pending uploads are owner-private until moderation publishes to photos/.
     match /users/{userId}/profile/pending/{imageId} {
       allow read: if isOwner(userId);
@@ -95,6 +104,24 @@ service firebase.storage {
         && isActiveMatch(matchId)
         && isChatMediaOk();
       allow delete: if isOwner(userId);
+    }
+
+    // Face Anchor verification selfie. Biometric, and temporary: the server
+    // reads it once and deletes it when the verification ends.
+    //
+    // Create only, by the owner, and only into the attempt the server has
+    // open for them right now — so an object can exist here only while there
+    // is an attempt that will clean it up. Nobody can read it back, replace it
+    // or delete it from a client: not other members, not the owner.
+    match /face-anchor/pending/{userId}/{attemptId} {
+      // resource == null: an upload over an existing object is still a
+      // "create" to the rules engine, so write-once has to be stated.
+      allow create: if isOwner(userId)
+        && resource == null
+        && isImage()
+        && isSmallEnough()
+        && isOpenFaceAnchorAttempt(userId, attemptId);
+      allow read, update, delete: if false;
     }
 
     match /users/{userId}/support/{ticketId}/{fileId} {

@@ -122,6 +122,34 @@ export function resolveDiditConfig(): DiditRuntimeConfig | null {
   return {apiKey, workflowId, baseUrl, environment, callbackUrl};
 }
 
+/**
+ * Config for the standalone biometric APIs (diditFaceClient.ts).
+ *
+ * Those calls need the API key and nothing else — no workflow, no callback, no
+ * webhook secret — so they are resolved on their own rather than through
+ * resolveDiditConfig, which is null without a workflow id. The environment is
+ * returned for the caller to judge: a sandbox key answers these two APIs with
+ * a canned approval, so it must never be mistaken for a working integration.
+ */
+export function resolveDiditFaceConfig(): {
+  apiKey: string;
+  baseUrl: string;
+  environment: DiditEnvironment;
+} | null {
+  const apiKey = readSecretValue("DIDIT_API_KEY", diditApiKey);
+  const baseUrl = readStringValue("DIDIT_BASE_URL", diditBaseUrl, DEFAULT_DIDIT_BASE_URL);
+  if (!apiKey || !baseUrl) {
+    return null;
+  }
+  return {
+    apiKey,
+    baseUrl,
+    environment: parseDiditEnvironment(
+      readStringValue("DIDIT_ENVIRONMENT", diditEnvironment, "sandbox"),
+    ),
+  };
+}
+
 export function isDiditConfigured(): boolean {
   return resolveDiditConfig() !== null;
 }

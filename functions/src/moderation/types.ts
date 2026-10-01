@@ -25,6 +25,8 @@ export interface PhotoRecord {
   processingError?: string | null;
   order?: number;
   isPrimary?: boolean;
+  /** Server-owned projection of the ledger's Face Anchor verdict; absent unless true. */
+  faceAnchorVerified?: boolean;
 }
 
 export const MAX_PROCESSING_ATTEMPTS = 3;

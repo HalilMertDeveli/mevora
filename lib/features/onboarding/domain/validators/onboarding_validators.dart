@@ -7,6 +7,7 @@ import 'package:mevora/features/onboarding/domain/onboarding_messages.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
+import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 
 abstract final class OnboardingValidators {
   static Result<void> validateAge(DateTime? birthDate) {
@@ -114,13 +115,35 @@ abstract final class OnboardingValidators {
     return const Success(null);
   }
 
-  static Result<void> validatePhotos(List<ProfilePhoto> photos) {
+  /// [requireFaceAnchor] is what the server said about this member: when
+  /// true, one photo must be a verified Face Anchor and the primary photo must
+  /// be one. The other photos need not show the member at all.
+  ///
+  /// This spares the member a round trip; it is not the authority. The server
+  /// checks the same rule against its own records when the profile completes.
+  static Result<void> validatePhotos(
+    List<ProfilePhoto> photos, {
+    bool requireFaceAnchor = false,
+  }) {
     final usable = photos.where((photo) => photo.id.isNotEmpty).length;
     if (usable < OnboardingConfig.minPhotos) {
       return const Err(ValidationFailure(PhotoUploadMessages.minRequired));
     }
     if (usable > OnboardingConfig.maxPhotos) {
       return Err(ValidationFailure(OnboardingMessages.photosTooMany));
+    }
+    if (requireFaceAnchor) {
+      if (!PhotoPolicy.hasFaceAnchor(photos)) {
+        return const Err(
+          ValidationFailure(OnboardingMessages.faceAnchorRequired),
+        );
+      }
+      final primary = photos.where((photo) => photo.isPrimary).firstOrNull;
+      if (primary == null || !primary.isFaceAnchor) {
+        return const Err(
+          ValidationFailure(OnboardingMessages.primaryNotFaceAnchor),
+        );
+      }
     }
     return const Success(null);
   }
@@ -129,6 +152,7 @@ abstract final class OnboardingValidators {
     OnboardingStep step,
     UserProfile profile, {
     String? lastName,
+    bool requireFaceAnchor = false,
   }) {
     return switch (step) {
       OnboardingStep.basicInfo => validateBasicInfo(
@@ -143,7 +167,10 @@ abstract final class OnboardingValidators {
       // Every question here is optional; the step only offers them.
       OnboardingStep.aboutYou => const Success(null),
       OnboardingStep.bio => validateBio(profile.bio),
-      OnboardingStep.photos => validatePhotos(profile.photos),
+      OnboardingStep.photos => validatePhotos(
+        profile.photos,
+        requireFaceAnchor: requireFaceAnchor,
+      ),
       // Spotify is optional: there is nothing to validate, and a member who
       // skips it must still pass completion.
       OnboardingStep.music => const Success(null),
@@ -154,12 +181,18 @@ abstract final class OnboardingValidators {
   static Result<void> validateCompletion(
     UserProfile profile, {
     required String? lastName,
+    bool requireFaceAnchor = false,
   }) {
     for (final step in OnboardingStep.values) {
       if (step == OnboardingStep.complete) {
         continue;
       }
-      final result = validateStep(step, profile, lastName: lastName);
+      final result = validateStep(
+        step,
+        profile,
+        lastName: lastName,
+        requireFaceAnchor: requireFaceAnchor,
+      );
       if (result.isError) {
         return result;
       }

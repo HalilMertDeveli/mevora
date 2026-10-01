@@ -2,6 +2,7 @@ import {type DocumentData, type Firestore} from "firebase-admin/firestore";
 import {interestedInAllows} from "./musicCompatibility.js";
 import {
   countUsableDiscoveryPhotos,
+  faceAnchorSatisfied,
   isAccountEligible,
   isAdultProfile,
   isProfileDiscoverable,
@@ -59,6 +60,9 @@ export function discoveryProfileRejectReason(options: {
       moderationStatus === "manual_review"
     ) {
       return `profile_moderation_${moderationStatus}`;
+    }
+    if (isAdultProfile(data) && !faceAnchorSatisfied(data)) {
+      return "face_anchor_missing";
     }
     return "underage_or_undiscoverable";
   }

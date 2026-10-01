@@ -138,7 +138,11 @@ service cloud.firestore {
           'premium',
           'entitlement',
           'boostStatus',
-          'matchCount'
+          'matchCount',
+          // Face Anchor: which photos the server verified as the member, and
+          // whether this profile is held to the rule. Server-written only.
+          'faceAnchorRequired',
+          'faceAnchorPhotoIds'
         ]);
     }
 
@@ -163,7 +167,11 @@ service cloud.firestore {
           'premium',
           'entitlement',
           'boostStatus',
-          'matchCount'
+          'matchCount',
+          // Face Anchor: which photos the server verified as the member, and
+          // whether this profile is held to the rule. Server-written only.
+          'faceAnchorRequired',
+          'faceAnchorPhotoIds'
         ]);
     }
 
@@ -661,6 +669,17 @@ service cloud.firestore {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
+
+      // Face Anchor verification attempt: its progress and the member's
+      // attempt budget. The owner reads it to show "verifying / verified /
+      // try again" and to resume after a restart. Written only by the
+      // verification callables — a client can never move an attempt along,
+      // let alone mark one verified. It holds no selfie, score or provider
+      // data; the verdict itself is on the photoModeration entry above.
+      match /faceAnchor/{docId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
     }
 
     // -----------------------------------------------------------
@@ -1043,6 +1062,18 @@ service cloud.firestore {
 
     // Emulator-only test clock for the daily humor day. Never client-accessible.
     match /devClock/{docId} {
+      allow read, write: if false;
+    }
+
+    // Emulator-only switches for server-side test doubles (the Face Anchor
+    // fake provider's next outcome). Admin SDK only: if a client could write
+    // here it could choose its own verification result.
+    match /devControl/{docId} {
+      allow read, write: if false;
+    }
+
+    // Daily count of billed face verifications, for the global spend cap.
+    match /faceAnchorUsage/{dayId} {
       allow read, write: if false;
     }
 

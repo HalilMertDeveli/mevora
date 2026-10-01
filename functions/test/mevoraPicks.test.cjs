@@ -32,6 +32,7 @@ const {
   scrubDeletedMemberFromPicks,
   servePicks,
   picksDocPath,
+  preferredRadiusKmFor,
 } = require("../lib/picks/service.js");
 const {loadDiscoveryViewerContext} = require("../lib/discoveryPool.js");
 const {getMevoraPicks} = require("../lib/picks/index.js");
@@ -735,6 +736,64 @@ describe("Mevora Picks service", () => {
     assert.deepEqual(result.picks, []);
   });
 
+});
+
+describe("Picks look inside the viewer's chosen distance first", () => {
+  const TARGET = PICKS_CONFIG.targetCount;
+  const here = {latitude: 41.0, longitude: 29.0};
+  const close = {latitude: 41.03, longitude: 29.0}; // about 3 km
+  const further = {latitude: 41.3, longitude: 29.0}; // about 33 km
+  const closeUids = Array.from({length: TARGET}, (_, i) => `close${i}`);
+  const furtherUids = Array.from({length: TARGET}, (_, i) => `further${i}`);
+
+  /** [closeCount] people nearby, and a full day of stronger matches further out. */
+  async function seedDistances(closeCount, prefs) {
+    seedWorld([
+      ...furtherUids.map((uid) => [uid, {}]),
+      // Still above the floor, but a weaker match than the people further out.
+      ...closeUids.slice(0, closeCount).map((uid) => [uid, {interests: ["hiking", "jazz", "cooking"]}]),
+    ]);
+    await db.doc(`userLocation/${VIEWER}`).set(here);
+    if (prefs) await db.doc(`userPreferences/${VIEWER}`).set(prefs);
+    for (const uid of furtherUids) await db.doc(`userLocation/${uid}`).set(further);
+    for (const uid of closeUids.slice(0, closeCount)) await db.doc(`userLocation/${uid}`).set(close);
+  }
+
+  it("reads the distance from the match preferences, inside the product's limits", () => {
+    assert.equal(preferredRadiusKmFor(undefined), PICKS_CONFIG.preferredRadiusKm);
+    assert.equal(preferredRadiusKmFor({}), PICKS_CONFIG.preferredRadiusKm);
+    assert.equal(preferredRadiusKmFor({maxDistance: 20}), 20);
+    assert.equal(preferredRadiusKmFor({maxDistance: 1}), 1);
+    // Never past the hard ceiling Discover excludes at.
+    assert.equal(preferredRadiusKmFor({maxDistance: 500}), 100);
+    for (const junk of [0, -5, "far", null, Number.NaN]) {
+      assert.equal(preferredRadiusKmFor({maxDistance: junk}), PICKS_CONFIG.preferredRadiusKm);
+    }
+  });
+
+  it("with no distance chosen, everyone inside the default radius competes on the match alone", async () => {
+    await seedDistances(TARGET, null);
+    const result = await serve(Date.now());
+    // Both groups are inside 50 km, so the stronger matches take most of the day.
+    const further = result.picks.filter((p) => p.uid.startsWith("further")).length;
+    assert.equal(result.picks.length, TARGET);
+    assert.ok(further > TARGET / 2, `${further} of ${TARGET} Picks came from further out`);
+  });
+
+  it("a shorter distance puts the people inside it first, ahead of stronger matches further out", async () => {
+    await seedDistances(TARGET, {maxDistance: 10});
+    const result = await serve(Date.now());
+    assert.deepEqual(result.picks.map((p) => p.uid).sort(), [...closeUids].sort());
+  });
+
+  it("reaches beyond the chosen distance only for the places it could not fill", async () => {
+    await seedDistances(3, {maxDistance: 10});
+    const result = await serve(Date.now());
+    const uids = result.picks.map((p) => p.uid);
+    assert.equal(uids.length, TARGET);
+    for (const uid of closeUids.slice(0, 3)) assert.ok(uids.includes(uid), `${uid} is inside the chosen distance`);
+    assert.equal(uids.filter((uid) => uid.startsWith("further")).length, TARGET - 3);
+  });
 });
 
 // ---------------------------------------------------------------------------

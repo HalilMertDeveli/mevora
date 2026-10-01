@@ -1460,7 +1460,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get maxAge => 'En yüksek yaş';
 
   @override
-  String get maxDistance => 'En fazla mesafe';
+  String get maxDistance => 'Tercih edilen mesafe (km)';
+
+  @override
+  String get maxDistanceHint =>
+      'Bu mesafenin içindeki kişiler önce gelir. Yeterli kişi yoksa Mevora 100 km\'ye kadar bakar.';
 
   @override
   String get matchesTitle => 'Eşleşmelerin';

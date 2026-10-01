@@ -192,6 +192,17 @@ function cardSnapshot(
 // Selection against the live pool.
 // ---------------------------------------------------------------------------
 
+/**
+ * The radius Picks look inside first for one viewer: the distance they chose in
+ * their match preferences (`userPreferences.maxDistance`, in km), never past the
+ * Discover hard ceiling. A viewer who has not chosen one gets the default.
+ */
+export function preferredRadiusKmFor(prefs: DocumentData | undefined): number {
+  const chosen = Number(prefs?.maxDistance);
+  if (!Number.isFinite(chosen) || chosen < 1) return PICKS_CONFIG.preferredRadiusKm;
+  return Math.min(chosen, DISCOVERY_MAX_RADIUS_KM);
+}
+
 async function selectFromPool(input: {
   db: Firestore;
   viewer: DiscoveryViewerContext;
@@ -222,7 +233,7 @@ async function selectFromPool(input: {
   };
   const scan = await scanDiscoveryPool(db, viewer, {
     cursor: "",
-    radiusKm: PICKS_CONFIG.preferredRadiusKm,
+    radiusKm: preferredRadiusKmFor(viewer.prefs),
     gateKm: DISCOVERY_MAX_RADIUS_KM,
     pageSize: input.sizing.scanPageSize,
     maxPages: input.sizing.scanMaxPages,

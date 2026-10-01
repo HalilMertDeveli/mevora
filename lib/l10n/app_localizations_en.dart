@@ -1478,7 +1478,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maxAge => 'Maximum age';
 
   @override
-  String get maxDistance => 'Maximum distance';
+  String get maxDistance => 'Preferred distance (km)';
+
+  @override
+  String get maxDistanceHint =>
+      'People inside this distance come first. When there are not enough, Mevora looks further, up to 100 km.';
 
   @override
   String get matchesTitle => 'Your matches';

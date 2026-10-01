@@ -2615,8 +2615,14 @@ abstract class AppLocalizations {
   /// No description provided for @maxDistance.
   ///
   /// In en, this message translates to:
-  /// **'Maximum distance'**
+  /// **'Preferred distance (km)'**
   String get maxDistance;
+
+  /// No description provided for @maxDistanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'People inside this distance come first. When there are not enough, Mevora looks further, up to 100 km.'**
+  String get maxDistanceHint;
 
   /// No description provided for @matchesTitle.
   ///

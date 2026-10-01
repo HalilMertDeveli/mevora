@@ -1,14 +1,11 @@
 import type {Firestore} from "firebase-admin/firestore";
 import {
-  HUMOR_CALIBRATION_VERSION,
   parseCalibrationState,
   toCalibrationView,
   type CalibrationStateView,
 } from "./calibration.js";
-import {selectCalibrationItems} from "./calibrationFeed.js";
 import {
   HUMOR_CONTENT_COLLECTION,
-  listCalibrationPool,
   listHumorContentPage,
   parseHumorContent,
   toFeedSafeContent,
@@ -93,24 +90,6 @@ const MAX_PENDING = 30;
  * changed later (moderation approval, re-activation) under an old `createdAt`.
  */
 const FLOOR_TTL_MS = 24 * 60 * 60 * 1000;
-
-/**
- * The curated pool the calibration selector draws from — the same query
- * `selectCalibrationItems` runs — read here only when a pick turns out to be
- * already seen, to resolve the exclusion for the whole pool in one step.
- */
-const CALIBRATION_POOL_LIMIT = 200;
-
-/**
- * Selection rounds. Normally the first round is the only one: the selector
- * already excludes calibration's own rated ids. A seen pick triggers one exact
- * pool-wide check, after which the next round is fully verified; the third
- * round only guards against the pool changing between reads.
- */
-const CALIBRATION_SELECT_ROUNDS = 3;
-
-/** Derived from the selector itself, so feed.ts depends on nothing else there. */
-type CalibrationSelection = Awaited<ReturnType<typeof selectCalibrationItems>>;
 
 const MAX_CURSOR_LENGTH = 512;
 const MAX_LANGUAGES = 5;
@@ -672,68 +651,12 @@ async function walkCatalog(input: {
 }
 
 /**
- * Calibration picks, verified exactly against the interaction docs.
+ * A page of the catalogue walk, ranked for [uid].
  *
- * The selector only knows the calibration's own rated ids. Content the user
- * rated outside calibration (or before a calibration version reset), skipped
- * or reported is invisible to it, and it is deterministic — so an already-seen
- * pick would come back on every call and calibration could never advance past
- * it.
- *
- * The common case costs one check of the picks themselves. Once a pick turns
- * out to be seen, the user has history in the pool that the calibration state
- * does not know about, so the whole pool is resolved in one bounded getAll
- * (≤ {@link CALIBRATION_POOL_LIMIT} refs) and selection re-runs with every
- * seen item excluded. Re-selecting pick by pick instead would stall on a slot
- * whose rotation meets several seen items in a row. Anything still unverified
- * after the last round is dropped rather than served, and reported.
+ * Not member-facing any more: `getHumorFeed` answers from the Core sequence
+ * (`coreService.ts`), which is the only way content reaches a member. The
+ * walk is kept for curator-side browsing of the catalogue.
  */
-async function selectUnseenCalibrationItems(input: {
-  db: Firestore;
-  uid: string;
-  state: UserHumorCalibrationDoc;
-  profile: UserHumorProfileDoc;
-  languages: string[];
-  limit: number;
-}): Promise<CalibrationSelection & {droppedSeen: number}> {
-  const seen = new Set<string>();
-  const unseen = new Set<string>();
-  /** Looks up the ids not classified yet; returns how many were seen. */
-  const classify = async (ids: readonly string[]): Promise<number> => {
-    const unknown = [...new Set(ids)].filter((id) => !seen.has(id) && !unseen.has(id));
-    const found = await findSeenContentIds(input.db, input.uid, unknown);
-    for (const id of unknown) {
-      (found.has(id) ? seen : unseen).add(id);
-    }
-    return found.size;
-  };
-
-  let poolResolved = false;
-  let selection: CalibrationSelection = {picks: [], unfilled: 0, deficiencies: []};
-  for (let round = 0; round < CALIBRATION_SELECT_ROUNDS; round += 1) {
-    selection = await selectCalibrationItems({
-      ...input,
-      excludeContentIds: new Set(seen),
-    });
-    const newlySeen = await classify(selection.picks.map((pick) => pick.content.contentId));
-    if (newlySeen === 0) {
-      break;
-    }
-    if (!poolResolved) {
-      poolResolved = true;
-      const rated = new Set(input.state.ratedContentIds);
-      const pool = await listCalibrationPool(input.db, {
-        calibrationVersion: HUMOR_CALIBRATION_VERSION,
-        limit: CALIBRATION_POOL_LIMIT,
-      });
-      // Calibration's own rated ids are excluded by the selector already.
-      await classify(pool.map((item) => item.contentId).filter((id) => !rated.has(id)));
-    }
-  }
-  const picks = selection.picks.filter((pick) => unseen.has(pick.content.contentId));
-  return {...selection, picks, droppedSeen: selection.picks.length - picks.length};
-}
-
 export async function buildHumorFeed(input: {
   db: Firestore;
   uid: string;
@@ -764,42 +687,7 @@ export async function buildHumorFeed(input: {
   const summary = summarySnap.exists ? summarySnap.data() : undefined;
   const profile = parseUserHumorProfile(summary);
 
-  // Initial calibration owns the page while it is running. It uses its own
-  // curated selector rather than the personalized ranker, so the structured
-  // 6/6/3 contract cannot be diluted by ranking heuristics.
-  const calibrationPicks = calibrationState.complete
-    ? {picks: [], unfilled: 0, deficiencies: [] as string[], droppedSeen: 0}
-    : await selectUnseenCalibrationItems({
-        db: input.db,
-        uid: input.uid,
-        state: calibrationState,
-        profile,
-        languages,
-        limit,
-      });
-
-  const calibrationView = {
-    ...toCalibrationView(calibrationState),
-    insufficientPool:
-      calibrationPicks.deficiencies.length > 0 || calibrationPicks.droppedSeen > 0,
-  };
-
-  if (!calibrationState.complete && calibrationPicks.picks.length > 0) {
-    const items = calibrationPicks.picks.map((pick) =>
-      toFeedSafeContent(pick.content, pick.stage),
-    );
-    return {
-      items,
-      // Calibration pages are recomputed from server state on every call, so
-      // there is nothing for a cursor to carry.
-      nextCursor: null,
-      catalogExhausted: false,
-      catalogEmpty: false,
-      profileBuilding: true,
-      interactionCount: profile.interactionCount,
-      calibration: calibrationView,
-    };
-  }
+  const calibrationView = {...toCalibrationView(calibrationState), insufficientPool: false};
 
   const langKey = [...languages].sort().join(",");
   const storedRaw = summary?.[FEED_POSITION_FIELD];

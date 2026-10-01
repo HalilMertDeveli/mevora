@@ -3378,7 +3378,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get termsPaidBody =>
-      'Boost ve diğer satın alımlar uygulama mağazası üzerinden işlenir. İadeler mağaza politikalarına tabidir.';
+      'Boost ve Premium uygulama mağazanız üzerinden satın alınır. Boost tek seferlik bir satın alımdır ve yenilenmez. Premium bir aboneliktir: mağaza hesabınızdan iptal edene kadar satın alırken gösterilen fiyatla otomatik olarak yenilenir; iptal ettiğinizde bir sonraki yenileme durur. İadeler, yasa aksini gerektirmedikçe mağaza politikalarına tabidir.';
 
   @override
   String get termsThirdPartyTitle => 'Üçüncü taraf hizmetler';
@@ -3420,7 +3420,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get termsEffectiveBody =>
-      'Bu Koşullar 23 Ağustos 2026 tarihinden itibaren geçerlidir.';
+      'Bu Koşullar 1 Ekim 2026 tarihinden itibaren geçerlidir.';
 
   @override
   String get privacyIntroTitle => 'Giriş';
@@ -3448,28 +3448,35 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacyProfileBody =>
-      'Sağladığınız profil bilgileri ve fotoğraflar Firebase Firestore ve Storage\'da profilinizi göstermek ve eşleşmeyi sağlamak için saklanır.';
+      'Sağladığınız profil bilgileri (ad, doğum tarihi, cinsiyet, kiminle tanışmak istediğiniz, biyografi, tercihler, ilişki yanıtları, mizah puanları ve fotoğraflar) profilinizi göstermek ve eşleşmeyi sağlamak için Firebase Firestore ve Firebase Storage\'da saklanır. Diğer üyeler doğum tarihinizi değil yaşınızı görür; soyadınız gizli kalır.';
+
+  @override
+  String get privacyVerificationTitle => 'Fotoğraf ve kimlik doğrulama';
+
+  @override
+  String get privacyVerificationBody =>
+      'Bir profilin gerçek bir kişiye ait olduğunu doğrulamak için sizden bir özçekim isteyebiliriz. Özçekim, doğrulama sağlayıcımız Didit\'e gönderilir; Didit görüntünün canlı bir kişiye ait olduğunu ve profil fotoğrafınızla eşleştiğini kontrol eder. Biz özçekimi değil kontrolün sonucunu saklarız; özçekim kontrol bittiğinde silinir. Kimlik doğrulama isteğe bağlıdır: seçerseniz Didit kimlik belgenizi ve özçekiminizi doğrudan işler, Mevora yalnızca sonucu saklar.';
 
   @override
   String get privacyLocationTitle => 'Konum bilgisi';
 
   @override
   String get privacyLocationBody =>
-      'İzninizle yaklaşık konum, yakındaki uyumlu kişileri göstermek için kullanılır. Keşfet sonuçlarında tam koordinatlar diğer kullanıcılara açıklanmaz.';
+      'İzninizle cihaz konumunuzu, yakınınızdaki uyumlu kişileri göstermek için kullanırız. Koordinatlarınız bu amaçla sunucularımızda saklanır ve diğer üyelere hiçbir zaman gösterilmez; onlar yalnızca şehrinizi ve yaklaşık mesafeyi görür.';
 
   @override
   String get privacyMessagingTitle => 'Mesajlar ve aramalar';
 
   @override
   String get privacyMessagingBody =>
-      'Sohbet mesajları, sesli notlar, görseller, yazıyor göstergesi ve arama meta verileri hizmeti sunmak için saklanır. Her iki taraf anahtar yayınladığında mesajlar uçtan uca şifrelenebilir.';
+      'Mesaj metinleri, sesli notlar ve görseller uçtan uca şifrelenir: cihazınızda şifrelenir ve sunucularımızda yalnızca bizim okuyamadığımız şifreli hâli saklanır. Mesajları iletebilmek için kimin kime, ne zaman, hangi türde mesaj gönderdiğini ve okunup okunmadığını, ayrıca arama kayıtlarını saklarız.';
 
   @override
   String get privacyMatchingTitle => 'Eşleşme bilgileri';
 
   @override
   String get privacyMatchingBody =>
-      'Beğeniler, geçmeler, eşleşmeler, uyumluluk sinyalleri ve etkileşim geçmişi keşfet ve eşleşmeler için saklanır.';
+      'Beğeniler, geçmeler, eşleşmeler, günlük sorulara verdiğiniz yanıtlar, mizah puanları, uyumluluk sinyalleri ve etkileşim geçmişi keşfet ve eşleşmeler için saklanır.';
 
   @override
   String get privacyPreferencesTitle => 'Kullanıcı tercihleri';
@@ -3490,7 +3497,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacyDeviceBody =>
-      'Push bildirimleri, tanılama ve güvenlik kayıtları için cihaz belirteçleri Firebase altyapısı üzerinden işlenir.';
+      'Push bildirim belirteçlerini ve Firebase Crashlytics ile Google Analytics for Firebase üzerinden, adınıza değil uygulama kurulumuna bağlı çökme raporlarını ve kullanım istatistiklerini işleriz. Mevora reklam göstermez ve reklam kimliğinizi kullanmaz.';
 
   @override
   String get privacyWhyTitle => 'Neden toplanıyor?';
@@ -3511,21 +3518,21 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacyRetentionBody =>
-      'Hesabınız aktifken veriler saklanır. Hesabı sildiğinizde, yasa veya dolandırıcılık önleme gerektirmedikçe ilişkili veriler silinir veya anonimleştirilir.';
+      'Hesabınız aktifken veriler saklanır. Hesabınızı sildiğinizde profiliniz, fotoğraflarınız, mesajlarınız, beğenileriniz, yanıtlarınız ve satın alma kayıtlarınız silinir. Parçası olduğunuz eşleşmeler kapatılır ve artık adınızı ya da fotoğrafınızı göstermez; güvenlik ve moderasyon işlemlerine ait kayıtlar ise üyeleri korumak, dolandırıcılığı önlemek veya yasal yükümlülükleri yerine getirmek için gerektiğinde saklanabilir.';
 
   @override
   String get privacySharingTitle => 'Kimlerle paylaşılabiliyor?';
 
   @override
   String get privacySharingBody =>
-      'Kişisel verileri satmayız. Firebase, uygulama mağazaları, Spotify ve doğrulama sağlayıcılarıyla yalnızca hizmeti sunmak için paylaşırız.';
+      'Kişisel verileri satmayız. Verileri yalnızca Mevora\'yı çalıştırmak için gereken hizmet sağlayıcılarla paylaşırız: Google (Firebase barındırma, kimlik doğrulama, bildirimler, çökme raporları ve analiz; satın alımlar için Google Play), bağlarsanız Spotify, fotoğraf ve kimlik doğrulaması için Didit ve cihazınızın mizah içeriğini doğrudan yüklediği GIPHY.';
 
   @override
   String get privacyRightsTitle => 'Haklarınız';
 
   @override
   String get privacyRightsBody =>
-      'Bölgenize göre erişim, düzeltme, silme veya kısıtlama talep edebilirsiniz. Hesap silme Ayarlar\'da mevcuttur.';
+      'Bölgenize göre erişim, düzeltme, silme veya kısıtlama talep edebilirsiniz. Verilerinizin bir kopyasını Ayarlar → Hesap → Verilerimi indir bölümünden indirebilir, hesabınızı Ayarlar\'dan silebilirsiniz.';
 
   @override
   String get privacyDeletionTitle => 'Verilerinizi silme';
@@ -3539,14 +3546,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacySecurityBody =>
-      'Erişim kontrolleri, aktarım şifrelemesi, isteğe bağlı mesaj şifrelemesi ve Firebase güvenlik kuralları kullanıyoruz. Sorunları destek üzerinden bildirin.';
+      'Erişim kontrolleri, aktarım şifrelemesi, mesaj içeriğinin uçtan uca şifrelenmesi ve Firebase güvenlik kuralları kullanıyoruz. Hiçbir sistem tamamen güvenli değildir; sorunları destek üzerinden bildirin.';
 
   @override
   String get privacyChildrenTitle => 'Çocuklar';
 
   @override
   String get privacyChildrenBody =>
-      'Mevora 18 yaş altı kullanıcılar içindir. Reşit olmayan hesaplar silinir.';
+      'Mevora 18 yaşından küçükler için değildir. 18 yaşından küçük birine ait olduğu anlaşılan hesaplar kapatılır.';
 
   @override
   String get privacyChangesTitle => 'Politika değişiklikleri';

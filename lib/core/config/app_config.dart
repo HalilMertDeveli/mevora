@@ -53,10 +53,7 @@ class AppConfig {
     if (!useEmulators) {
       return false;
     }
-    return const bool.fromEnvironment(
-      'USE_AUTH_EMULATOR',
-      defaultValue: false,
-    );
+    return const bool.fromEnvironment('USE_AUTH_EMULATOR', defaultValue: false);
   }
 
   FirebaseEmulatorConfig get emulatorConfig {
@@ -123,15 +120,29 @@ class AppConfig {
     return 'https://$firebaseProjectId.firebaseapp.com/__/auth/handler';
   }
 
-  String get termsOfServiceUrl => const String.fromEnvironment(
-    'TERMS_URL',
-    defaultValue: 'https://mevora-d6ed0.web.app/terms',
-  );
+  /// Public site that serves the policy pages in `hosting/public`.
+  ///
+  /// Defaults to the Firebase Hosting site of this environment's project, so a
+  /// production build never links to the development project's pages.
+  /// `--dart-define=PUBLIC_SITE_URL=https://…` overrides it once a custom
+  /// domain exists.
+  String get publicSiteUrl {
+    const fromEnv = String.fromEnvironment('PUBLIC_SITE_URL');
+    if (fromEnv.isNotEmpty) {
+      return fromEnv;
+    }
+    return 'https://$firebaseProjectId.web.app';
+  }
 
-  String get privacyPolicyUrl => const String.fromEnvironment(
-    'PRIVACY_URL',
-    defaultValue: 'https://mevora-d6ed0.web.app/privacy',
-  );
+  String get termsOfServiceUrl {
+    const fromEnv = String.fromEnvironment('TERMS_URL');
+    return fromEnv.isNotEmpty ? fromEnv : '$publicSiteUrl/terms';
+  }
+
+  String get privacyPolicyUrl {
+    const fromEnv = String.fromEnvironment('PRIVACY_URL');
+    return fromEnv.isNotEmpty ? fromEnv : '$publicSiteUrl/privacy';
+  }
 
   String get functionsRegion => const String.fromEnvironment(
     'FUNCTIONS_REGION',

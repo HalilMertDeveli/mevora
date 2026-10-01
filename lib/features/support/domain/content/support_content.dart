@@ -66,6 +66,7 @@ class SupportContent {
       LegalSection(title: l10n.privacyDataCollectedTitle, body: l10n.privacyDataCollectedBody),
       LegalSection(title: l10n.privacyAuthTitle, body: l10n.privacyAuthBody),
       LegalSection(title: l10n.privacyProfileTitle, body: l10n.privacyProfileBody),
+      LegalSection(title: l10n.privacyVerificationTitle, body: l10n.privacyVerificationBody),
       LegalSection(title: l10n.privacyLocationTitle, body: l10n.privacyLocationBody),
       LegalSection(title: l10n.privacyMessagingTitle, body: l10n.privacyMessagingBody),
       LegalSection(title: l10n.privacyMatchingTitle, body: l10n.privacyMatchingBody),

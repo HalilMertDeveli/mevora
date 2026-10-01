@@ -102,8 +102,12 @@ class HumorViewState {
   bool get isEmpty => !isLoading && failure == null && items.isEmpty;
   bool get hasMore => nextCursor != null && nextCursor!.isNotEmpty;
 
-  /// True while the user is still working through the structured 15.
+  /// True while the user is still working through the initial calibration.
   bool get isCalibrating => !calibration.complete;
+
+  /// The calibration is paused for today: what is left comes back tomorrow.
+  bool get continuesTomorrow =>
+      !calibration.complete && calibration.continuesTomorrow;
 
   /// The user is past the last loaded card (waiting, failed or at the end).
   bool get atTail => items.isNotEmpty && currentIndex >= items.length;
@@ -312,12 +316,15 @@ class HumorController extends ChangeNotifier {
 
   /// Merge calibration progress that arrived from a non-feed response.
   ///
-  /// Only `getHumorFeed` runs pool selection, so only it knows whether the
-  /// curated pool could fill the remaining positions. The feedback and profile
-  /// payloads carry progress but default `insufficientPool` to false — taking
-  /// them verbatim would silently erase a catalog-deficiency signal.
+  /// Only `getHumorFeed` looks at today's items, so only it knows whether the
+  /// catalogue could provide them and whether the rest waits for tomorrow.
+  /// The feedback and profile payloads carry progress but leave those two
+  /// flags at false — taking them verbatim would silently erase the signal.
   HumorCalibration _withPoolFlag(HumorCalibration next) {
-    return next.copyWith(insufficientPool: _state.calibration.insufficientPool);
+    return next.copyWith(
+      insufficientPool: _state.calibration.insufficientPool,
+      continuesTomorrow: !next.complete && _state.calibration.continuesTomorrow,
+    );
   }
 
   /// Emit calibration analytics for a rating's server-reported effect only.
@@ -441,13 +448,13 @@ class HumorController extends ChangeNotifier {
     }
   }
 
-  /// Move past the card on screen without rating it.
-  Future<void> skip() => _skip();
-
   /// Move past [contentId], whose media could not be played, without rating
   /// it. The server records it as a `media_failed` skip: never a rating,
-  /// never part of calibration, and the item is not served to this user again
-  /// — calibration then hands out a replacement through the usual tail fetch.
+  /// never evidence. Nothing replaces the item — every member rates the same
+  /// ones — so it is simply offered again on the user's next day.
+  ///
+  /// This is the only skip there is: a calibration item is a measurement, so
+  /// there is no "not interested".
   ///
   /// Ignored unless [contentId] is the card on screen, so a late tap from a
   /// card that has already scrolled away can never skip a different item.
@@ -455,10 +462,11 @@ class HumorController extends ChangeNotifier {
     if (_state.current?.contentId != contentId) {
       return Future<void>.value();
     }
-    return _skip(skipReason: HumorSkipReason.mediaFailed);
+    return _skipUnplayable();
   }
 
-  Future<void> _skip({String? skipReason}) async {
+  Future<void> _skipUnplayable() async {
+    const skipReason = HumorSkipReason.mediaFailed;
     final item = _state.current;
     if (item == null || !_state.canAct || _submitting) {
       return;
@@ -483,26 +491,16 @@ class HumorController extends ChangeNotifier {
           canGoBack: true,
           calibration: _withPoolFlag(feedback.calibration),
         );
-        if (skipReason == HumorSkipReason.mediaFailed) {
-          _log(
-            AnalyticsEvents.humorMediaSkipped,
-            parameters: {
-              'content_id': contentId,
-              'reason': HumorSkipReason.mediaFailed,
-            },
-          );
-        } else {
-          _log(
-            AnalyticsEvents.humorContentSkipped,
-            parameters: {'content_id': contentId},
-          );
-        }
+        _log(
+          AnalyticsEvents.humorMediaSkipped,
+          parameters: {'content_id': contentId, 'reason': skipReason},
+        );
       },
       err: (failure) {
         _state = _state.copyWith(isSubmitting: false);
         _reportActionFailure(
           failure,
-          retry: () => _retryOn(contentId, () => _skip(skipReason: skipReason)),
+          retry: () => _retryOn(contentId, _skipUnplayable),
         );
       },
     );
@@ -683,9 +681,9 @@ class HumorController extends ChangeNotifier {
       await _maybePrefetch();
       return;
     }
-    // Past the last loaded card. Calibration pages stop at a stage boundary
-    // and carry no cursor, so this is the normal way to reach the next stage,
-    // not the end of the feed.
+    // Past the last loaded card. Ask the server what is left for today: an
+    // item that was passed without a rating may still be open, and if nothing
+    // is, the answer says whether the calibration continues tomorrow.
     if (fetchAtTail) {
       await _fetchMore();
     }
@@ -746,8 +744,8 @@ class HumorController extends ChangeNotifier {
     }
     feed.when(
       success: (page) {
-        // Calibration pages are recomputed server-side from persisted state,
-        // so a page may legitimately repeat items already in the list.
+        // The page is recomputed server-side from persisted state, so it may
+        // legitimately repeat items already in the list.
         final existing = _state.items.map((item) => item.contentId).toSet();
         final fresh = page.items
             .where((item) => !existing.contains(item.contentId))

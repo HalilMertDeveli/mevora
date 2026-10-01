@@ -4,7 +4,6 @@ import 'package:mevora/features/humor/data/datasources/functions_humor_data_sour
 import 'package:mevora/features/humor/data/datasources/mock_humor_data_source.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
-import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 
 class _FakeBackend implements BackendCallable {
   _FakeBackend(this.response);
@@ -133,13 +132,7 @@ void main() {
     });
 
     test('never invents a peer reading once this side is done', () async {
-      final source = MockHumorDataSource();
-      for (var i = 0; i < 15; i += 1) {
-        await source.submitFeedback(
-          contentId: 'c_$i',
-          rating: HumorRating.funny,
-        );
-      }
+      final source = MockHumorDataSource()..completeCalibration();
       expect(source.calibration.complete, isTrue);
 
       final result = await source.getMatchCompatibility('m_1');

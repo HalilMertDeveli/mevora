@@ -1871,7 +1871,6 @@
   "humorCompatibilitySharedStyles": "Humor styles you share",
   "humorCompatibilityNote": "A light signal from how you each reacted to humor content — not a verdict on the two of you.",
   "humorTopVibes": "Top vibes",
-  "humorSkipContent": "Skip",
   "humorReport": "Report",
   "humorReportSuccess": "Thanks — we'll review this content.",
   "humorHowFunny": "How funny is this?",
@@ -1969,7 +1968,17 @@
   "musicLimitedData": "Spotify is connected, but there isn't much listening history yet.",
   "humorCalibrationIntroTitle": "Let's learn what makes you laugh",
   "humorCalibrationIntroBody": "React to a few short pieces. Your reactions help us understand your sense of humor, so we can show you the humor you share with your matches.",
-  "humorCalibrationIntroMeta": "15 short pieces · about a minute",
+  "humorCalibrationIntroMeta": "{count} short pieces · about a minute",
+  "@humorCalibrationIntroMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "humorCalibrationPausedTitle": "That's it for today",
+  "humorCalibrationPausedBody": "One piece would not play. The rest will be waiting tomorrow, and your humor profile will be completed then.",
+  "humorLabCalibratedBody": "From here on we continue with a few new pieces each day.",
   "humorCalibrationStart": "Start",
   "humorCalibrationSkip": "Skip for now",
   "humorCalibrationResume": "Continue",
@@ -2034,7 +2043,6 @@
       }
     }
   },
-  "humorResultKeepGoing": "Keep shaping your humor profile",
   "humorResultDone": "Continue",
   "humorResultEvolvesNote": "Your profile keeps evolving as you react to new content.",
   "humorResultStrengthHigh": "Strong",
@@ -2251,9 +2259,11 @@
   },
   "humorDailyHintStart": "Today's humor round has begun.",
   "humorDailyHintMiddle": "Getting to know you a little more 👀",
-  "humorDailyHintEnd": "Just a few more videos.",
+  "humorDailyHintEnd": "Almost done.",
   "humorDailyCompletedTitle": "All done for today 🎭",
   "humorDailyCompletedBody": "Your humor profile just got a little clearer.",
+  "humorDailyCompletedTomorrow": "A new round will be waiting tomorrow.",
+  "humorDailySequenceComplete": "You have been through everything for now. The round continues when new pieces are added.",
   "humorDailyNotReadyTitle": "Today's round is being prepared",
   "humorDailyNotReadyBody": "Check back a little later.",
   "humorDailyLockedBody": "The daily humor round begins once your humor profile is ready.",

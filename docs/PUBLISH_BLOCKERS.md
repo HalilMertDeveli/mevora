@@ -26,3 +26,13 @@ Proje–hesap bağlantısı (`billingInfo`) hâlâ `billingEnabled: true` göste
 Sonra gerçek telefonla bir kez test et (`PHONE_AUTH_IMPLEMENTATION.md`): `[PHONE_AUTH] CODE_SENT` görülmeli ve SMS gelmeli.
 
 Ayrıntı: `docs/PHONE_AUTH_ROOT_CAUSE_REPORT.md` (2026-09-29 bölümü), `PHONE_AUTH_IMPLEMENTATION.md` → "Billing is checked before any SMS".
+
+## 2. Mizah Core sırası taslak — nihai sırayı sen seçeceksin (AÇIK)
+
+**Durum (2026-10-01):** Her üyenin aynı sırayla puanladığı Mizah Core sırası (`functions/src/humor/coreSequence.ts`) şu an **taslak**: `HUMOR_CORE_RELEASE.released = false`. İçinde koddaki 36 kürasyonlu klip, geçici bir sırayla duruyor (ilk 15 = kalibrasyon, sonrası günde 5).
+
+**Etkisi — sıra yayınlanmadan canlıya çıkarsa:** üyeler bu geçici sırayı puanlar. Sıra bir kez üyelere gittikten sonra değiştirmek, önce puanlayanlarla sonra puanlayanları karşılaştırılamaz yapar. Ayrıca 36 içerik, yeni bir üyeye yalnızca 15 + dört günlük set (ve bir içerik) yeter.
+
+**Yapılacak (yalnızca proje sahibi):** V1…Vn için nihai içerikleri ve sırayı seç. Sıra kodda güncellenir, `node tool/lockHumorCoreSequence.cjs --redraft` ile kilit yeniden yazılır, sonra `released: true` yapılır; o andan itibaren sıra yalnızca sona ekleme ile büyür.
+
+Ayrıntı: `docs/HUMOR_LAB.md` → "Humor Core sequence".

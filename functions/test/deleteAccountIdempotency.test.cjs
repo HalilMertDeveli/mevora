@@ -103,6 +103,8 @@ describe("account deletion erases humor data", () => {
       [`profiles/${UID}`]: {uid: UID},
       [`users/${UID}/humor/summary`]: {vector: {sarcasm: 80}, interactionCount: 15},
       [`users/${UID}/humor/calibration`]: {version: 1, completedCount: 15, complete: true},
+      [`users/${UID}/humor/core`]: {schemaVersion: 1, answers: {c1: {rating: "funny", dayId: "2026-09-28"}},
+        today: {dayId: "2026-09-29", contentIds: ["c1"], kind: "core"}},
       [`users/${UID}/humorInteractions/c1`]: {contentId: "c1", rating: "funny"},
       [`users/${UID}/humorInteractions/c2`]: {contentId: "c2", reported: true, skipped: true},
       [`users/${UID}/humorDaily/2026-09-28`]: {dayId: "2026-09-28", answeredCount: 10, completed: true,
@@ -169,6 +171,7 @@ describe("account deletion erases humor data", () => {
     db.reset({
       [`users/${UID}/humor/summary`]: {vector: {sarcasm: 80}},
       [`users/${UID}/humor/calibration`]: {completedCount: 3},
+      [`users/${UID}/humor/core`]: {answers: {c9: {rating: "funny"}}},
       [`users/${UID}/humorInteractions/c9`]: {contentId: "c9", rating: "funny"},
       [`users/${UID}/humorDaily/2026-09-29`]: {dayId: "2026-09-29", answeredCount: 1},
       [`humorReports/${UID}_c9`]: {reporterId: UID, contentId: "c9"},
@@ -180,6 +183,7 @@ describe("account deletion erases humor data", () => {
     for (const issue of [
       `firestore_remnant:users/${UID}/humor/summary`,
       `firestore_remnant:users/${UID}/humor/calibration`,
+      `firestore_remnant:users/${UID}/humor/core`,
       "humor_interactions_remnant",
       "humor_daily_remnant",
       "humor_reports_remnant",

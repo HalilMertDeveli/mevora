@@ -10,9 +10,15 @@ import 'package:mevora/features/humor/domain/entities/humor_content.dart';
 import 'package:mevora/features/humor/domain/entities/humor_daily_set.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
-import 'package:mevora/features/humor/domain/services/humor_feed_policy.dart';
+import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
 
 /// In-memory Humor Lab with Turkish-first real playable media URLs.
+///
+/// Mirrors the server contract of the Humor Core sequence, so controllers and
+/// UI behave the same against the mock and the real backend: the catalogue *in
+/// order* is the canonical sequence (the first item is V1), the first
+/// [onboardingCount] are the initial calibration, and afterwards a day holds
+/// at most [dailySetSize] — frozen once touched, never more until [closeDay].
 class MockHumorDataSource implements HumorDataSource {
   MockHumorDataSource({
     List<HumorContent>? seed,
@@ -24,15 +30,36 @@ class MockHumorDataSource implements HumorDataSource {
   }) : _items = List<HumorContent>.from(seed ?? seedCatalog),
        _profile = profile ?? UserHumorProfile.empty;
 
+  /// Items in the initial calibration, as the server's sequence defines it.
+  static const onboardingCount = 15;
+
+  /// Most items in a day after the calibration, matching the server.
+  static const dailySetSize = 5;
+
+  /// Days of failing media after which an item is waived for the user.
+  static const _waiveAfterFailedDays = 2;
+
   final List<HumorContent> _items;
   UserHumorProfile _profile;
 
   /// Real ratings, one per content id — a re-rate replaces, never adds.
   final Map<String, HumorRating> _ratings = {};
 
-  /// Content passed without a rating (skip or report marker). Excluded from
-  /// the feed like a rating, but never counted.
-  final Set<String> _passed = {};
+  /// Items the user is excused from: reported, or media that failed on two
+  /// days. Never a rating.
+  final Set<String> _waived = {};
+
+  /// Days on which an item's media would not play, by content id.
+  final Map<String, Set<String>> _mediaFailedDays = {};
+
+  /// The calibration is behind the user (set on the rating that finished it).
+  var _calibrated = false;
+
+  /// The day that has been touched, and the ids frozen as its set.
+  String? _frozenDay;
+  List<String> _frozenIds = const [];
+  var _frozenOnboarding = false;
+
   var failFeed = false;
   var failFeedback = false;
   var failProfile = false;
@@ -54,11 +81,23 @@ class MockHumorDataSource implements HumorDataSource {
   /// The rating currently stored for [contentId], if any.
   HumorRating? ratingOf(String contentId) => _ratings[contentId];
 
-  /// Content ids passed without a rating.
-  Set<String> get passedContentIds => Set.unmodifiable(_passed);
+  /// Content ids waived for the user (reported, or media failed twice).
+  Set<String> get waivedContentIds => Set.unmodifiable(_waived);
 
-  bool _interacted(String contentId) =>
-      _ratings.containsKey(contentId) || _passed.contains(contentId);
+  /// Content ids whose media failed today: done for today, back tomorrow.
+  Set<String> get deferredContentIds => {
+    for (final entry in _mediaFailedDays.entries)
+      if (entry.value.contains(dailyDayId) && !_resolved(entry.key)) entry.key,
+  };
+
+  /// The canonical order: V1 is the first id.
+  List<String> get sequenceIds => [for (final item in _items) item.contentId];
+
+  /// The ids of the day's set, in order (frozen once the day is touched).
+  List<String> get todayIds => List.unmodifiable(_today().ids);
+
+  bool _resolved(String contentId) =>
+      _ratings.containsKey(contentId) || _waived.contains(contentId);
 
   static const seedCatalog = <HumorContent>[
     HumorContent(
@@ -199,8 +238,7 @@ class MockHumorDataSource implements HumorDataSource {
       thumbUrl: 'https://picsum.photos/seed/mevora-en-1/540/960',
       aspectRatio: 9 / 16,
     ),
-    // Mirrors the calibration alternates added to the backend internal seed so
-    // local QA has enough content to walk a full 15-item calibration.
+    // Enough content to walk the whole initial calibration locally.
     HumorContent(
       contentId: 'hc_tr_img_006',
       type: HumorContentType.meme,
@@ -279,51 +317,205 @@ class MockHumorDataSource implements HumorDataSource {
       thumbUrl: 'https://picsum.photos/seed/mevora-tr-11/540/960',
       aspectRatio: 9 / 16,
     ),
+    // Six more, so the mock sequence holds two full days after calibration.
+    HumorContent(
+      contentId: 'hc_tr_img_017',
+      type: HumorContentType.image,
+      language: 'tr',
+      category: HumorCategory.absurd,
+      humorTags: ['absürt'],
+      textBody: 'Kedi toplantıya katıldı. En mantıklı fikir ondan çıktı.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-17/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-17/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_012',
+      type: HumorContentType.meme,
+      language: 'tr',
+      category: HumorCategory.silly,
+      humorTags: ['saçma'],
+      textBody: 'Çorabın teki yine tatile çıkmış.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-12/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-12/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_013',
+      type: HumorContentType.image,
+      language: 'tr',
+      category: HumorCategory.teasing,
+      humorTags: ['takılma'],
+      textBody: 'Bu kadar hazırlık beş dakikalık bir kahve için miydi?',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-13/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-13/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_014',
+      type: HumorContentType.meme,
+      language: 'tr',
+      category: HumorCategory.romantic,
+      humorTags: ['romantik', 'espri'],
+      textBody: 'Son dilimi sana bıraktım. Evet, bu aşk.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-14/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-14/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_015',
+      type: HumorContentType.image,
+      language: 'tr',
+      category: HumorCategory.dark,
+      humorTags: ['kara mizah'],
+      textBody: 'Spor salonu üyeliğim benden daha çok dinleniyor.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-15b/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-15b/540/960',
+      aspectRatio: 9 / 16,
+    ),
+    HumorContent(
+      contentId: 'hc_tr_img_016',
+      type: HumorContentType.meme,
+      language: 'tr',
+      category: HumorCategory.dry,
+      humorTags: ['kuru'],
+      textBody: 'Toplantı e-posta olabilirdi. E-posta da olmayabilirdi.',
+      downloadUrl: 'https://picsum.photos/seed/mevora-tr-16/1080/1920',
+      thumbUrl: 'https://picsum.photos/seed/mevora-tr-16/540/960',
+      aspectRatio: 9 / 16,
+    ),
   ];
 
-  /// Mirror of the server stage boundaries so local QA walks the same shape.
-  static HumorCalibrationStage _stageFor(int completedCount) {
-    if (completedCount < HumorCalibration.anchorInteractions) {
-      return HumorCalibrationStage.anchor;
-    }
-    if (completedCount <
-        HumorCalibration.anchorInteractions +
-            HumorCalibration.adaptiveInteractions) {
-      return HumorCalibrationStage.adaptive;
-    }
-    if (completedCount < HumorCalibration.totalInteractions) {
-      return HumorCalibrationStage.exploration;
-    }
-    return HumorCalibrationStage.complete;
+  // ---------------------------------------------------------------------------
+  // The canonical sequence
+  // ---------------------------------------------------------------------------
+
+  /// The canonical day. Defaults to today in Europe/Istanbul (UTC+3).
+  String dailyDayId = _istanbulDayId(DateTime.now());
+
+  static String _istanbulDayId(DateTime now) {
+    final local = now.toUtc().add(const Duration(hours: 3));
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${local.year}-${two(local.month)}-${two(local.day)}';
   }
 
-  HumorCalibration get calibration {
-    final done = _completedCalibration;
-    return HumorCalibration(
-      stage: _stageFor(done),
-      completedCount: done,
-      complete: done >= HumorCalibration.totalInteractions,
+  /// Roll the canonical day over to [nextDayId]: a submission for the old
+  /// day is then refused with `day-closed`, and the next load starts fresh.
+  void closeDay(String nextDayId) {
+    dailyDayId = nextDayId;
+  }
+
+  List<HumorContent> get _onboarding =>
+      _items.take(onboardingCount).toList(growable: false);
+
+  bool get _onboardingFinished =>
+      _calibrated ||
+      (_onboarding.isNotEmpty &&
+          _onboarding.every((item) => _resolved(item.contentId)));
+
+  /// Today's set: the frozen ids once the day is touched; before that what is
+  /// left of the calibration, or the first [dailySetSize] open items.
+  ({List<String> ids, bool onboarding}) _today() {
+    if (_frozenDay == dailyDayId) {
+      return (ids: _frozenIds, onboarding: _frozenOnboarding);
+    }
+    if (!_onboardingFinished) {
+      return (
+        ids: [
+          for (final item in _onboarding)
+            if (!_resolved(item.contentId)) item.contentId,
+        ],
+        onboarding: true,
+      );
+    }
+    return (
+      ids: [
+        for (final item in _items)
+          if (!_resolved(item.contentId)) item.contentId,
+      ].take(dailySetSize).toList(),
+      onboarding: false,
     );
   }
 
-  int get _completedCalibration =>
-      _ratings.length > HumorCalibration.totalInteractions
-      ? HumorCalibration.totalInteractions
-      : _ratings.length;
+  /// The first response of a day freezes its set.
+  void _freeze() {
+    if (_frozenDay == dailyDayId) {
+      return;
+    }
+    final set = _today();
+    _frozenDay = dailyDayId;
+    _frozenIds = List.unmodifiable(set.ids);
+    _frozenOnboarding = set.onboarding;
+  }
 
-  /// Last position (exclusive) of the stage [completedCount] is in. A
-  /// calibration page never crosses it, so the next stage is chosen only after
-  /// the current one has been rated — the server contract.
-  static int _stageEnd(int completedCount) {
-    const anchorEnd = HumorCalibration.anchorInteractions;
-    const adaptiveEnd = anchorEnd + HumorCalibration.adaptiveInteractions;
-    if (completedCount < anchorEnd) {
-      return anchorEnd;
+  bool _deferredToday(String contentId) =>
+      !_resolved(contentId) &&
+      (_mediaFailedDays[contentId]?.contains(dailyDayId) ?? false);
+
+  /// Done with [contentId] for today: rated, waived, or media failed today.
+  bool _doneToday(String contentId) =>
+      _resolved(contentId) || _deferredToday(contentId);
+
+  HumorContent _itemOf(String contentId) =>
+      _items.firstWhere((item) => item.contentId == contentId);
+
+  /// A response is only ever accepted for an item of today's set.
+  void _requireInToday(String contentId, {String message = 'not-in-set'}) {
+    if (!_today().ids.contains(contentId)) {
+      throw FirebaseFunctionsException(
+        code: 'failed-precondition',
+        message: message,
+      );
     }
-    if (completedCount < adaptiveEnd) {
-      return adaptiveEnd;
+  }
+
+  void _settle() {
+    if (!_calibrated && _onboardingFinished) {
+      _calibrated = true;
     }
-    return HumorCalibration.totalInteractions;
+  }
+
+  /// Finish the calibration as on an earlier day: V1 … V15 rated, and today
+  /// untouched — so the daily tour is available right away.
+  void completeCalibration({HumorRating rating = HumorRating.funny}) {
+    var added = 0;
+    for (final item in _onboarding) {
+      if (!_resolved(item.contentId)) {
+        _ratings[item.contentId] = rating;
+        added += 1;
+      }
+    }
+    _calibrated = true;
+    final count = _profile.interactionCount + added;
+    _profile = _profile.copyWith(
+      interactionCount: count,
+      confidence: (count / 40).clamp(0.0, 1.0),
+      profileBuilding: false,
+      calibration: calibration,
+    );
+  }
+
+  HumorCalibration get calibration {
+    final total = _onboarding.length;
+    final finished = _onboardingFinished;
+    final today = _today();
+    final paused =
+        !finished &&
+        total > 0 &&
+        today.onboarding &&
+        today.ids.every(_doneToday);
+    return HumorCalibration(
+      stage: finished
+          ? HumorCalibrationStage.complete
+          : HumorCalibrationStage.anchor,
+      completedCount: finished
+          ? total
+          : _onboarding.where((item) => _resolved(item.contentId)).length,
+      totalCount: total,
+      complete: finished,
+      insufficientPool: total == 0,
+      continuesTomorrow: paused,
+    );
   }
 
   @override
@@ -337,81 +529,26 @@ class MockHumorDataSource implements HumorDataSource {
       throw StateError('mock-feed-failed');
     }
     await Future<void>.delayed(const Duration(milliseconds: 40));
-    final pageSize = limit ?? HumorFeedPolicy.pageSize;
-    final preferred = (languages ?? const ['tr', 'en'])
-        .map((l) => l.toLowerCase())
-        .toList();
-    int rank(HumorContent item) {
-      final index = preferred.indexOf(item.language);
-      return index < 0 ? 99 : index;
-    }
-
-    // Stable: equal ranks keep catalog order, so an id cursor stays valid.
-    final ranked = [for (var i = 0; i < _items.length; i += 1) (i, _items[i])]
-      ..sort((a, b) {
-        final byRank = rank(a.$2).compareTo(rank(b.$2));
-        return byRank != 0 ? byRank : a.$1.compareTo(b.$1);
-      });
-    final ordered = [for (final entry in ranked) entry.$2];
-    final open = ordered.where((item) => !_interacted(item.contentId)).toList();
+    // Nothing in the request selects content: the same items, in the same
+    // order, for everyone — the server contract.
     final state = calibration;
-    if (!state.complete) {
-      // Calibration owns the page: content the user has not interacted with,
-      // each tagged with the stage of the position it would occupy, and never
-      // more than what is left of the current stage — the same contract the
-      // server returns, so controller/UI behaviour matches mock and real.
-      final wanted = _stageEnd(state.completedCount) - state.completedCount;
-      final take = wanted < open.length ? wanted : open.length;
-      if (take > 0) {
-        final page = <HumorContent>[
-          for (var i = 0; i < take; i += 1)
-            open[i].copyWithCalibrationStage(
-              _stageFor(state.completedCount + i),
-            ),
-        ];
-        return HumorFeedPage(
-          items: page,
-          nextCursor: null,
-          profileBuilding: true,
-          interactionCount: _profile.interactionCount,
-          calibration: state.copyWith(
-            insufficientPool: open.length < state.remaining,
-          ),
-        );
-      }
-      // Nothing left to serve for calibration: fall through to the ordinary
-      // path exactly as the server does, so the catalog state is reported
-      // rather than hidden behind an empty calibration page.
-    }
-
-    // Mirror the server contract: content the user has not interacted with,
-    // walked in catalog order from an item-id cursor. An index cursor would
-    // skip items, because the unrated list shrinks as the user rates.
-    var start = 0;
-    if (cursor != null && cursor.isNotEmpty) {
-      final at = ordered.indexWhere((item) => item.contentId == cursor);
-      start = at < 0 ? 0 : at + 1;
-    }
-    final page = <HumorContent>[];
-    var last = start - 1;
-    for (var i = start; i < ordered.length && page.length < pageSize; i += 1) {
-      last = i;
-      if (!_interacted(ordered[i].contentId)) {
-        page.add(ordered[i]);
-      }
-    }
-    final moreAfter = ordered
-        .skip(last + 1)
-        .any((item) => !_interacted(item.contentId));
+    final today = _today();
+    final open = !state.complete && today.onboarding
+        ? [
+            for (final id in today.ids)
+              if (!_doneToday(id)) _itemOf(id),
+          ]
+        : const <HumorContent>[];
     return HumorFeedPage(
-      items: page,
-      nextCursor: page.isNotEmpty && moreAfter ? page.last.contentId : null,
-      // Reached through the fall-through above as well, where calibration is
-      // still running — so this tracks the real state rather than assuming.
+      items: open,
+      nextCursor: null,
       profileBuilding: !state.complete,
       interactionCount: _profile.interactionCount,
       calibration: state,
-      catalogExhausted: open.isEmpty && _items.isNotEmpty,
+      // Once the calibration is finished the feed is closed; while it is
+      // paused for today there is nothing more to page through either.
+      catalogExhausted:
+          _items.isNotEmpty && (state.complete || state.continuesTomorrow),
       catalogEmpty: _items.isEmpty,
     );
   }
@@ -421,11 +558,49 @@ class MockHumorDataSource implements HumorDataSource {
     if (failProfile) {
       throw StateError('mock-profile-failed');
     }
-    final state = calibration;
+    // Like the server: the profile carries progress, not the feed-only flags.
+    final state = calibration.copyWith(
+      insufficientPool: false,
+      continuesTomorrow: false,
+    );
     return _profile.copyWith(
       calibration: state,
       profileBuilding: !state.complete,
     );
+  }
+
+  /// One rating for [contentId]: counted once, replaced when it changes.
+  void _rate(String contentId, HumorRating rating) {
+    _freeze();
+    final firstRating = !_ratings.containsKey(contentId);
+    _ratings[contentId] = rating;
+    _waived.remove(contentId);
+    _settle();
+    // Lifetime learning keeps counting past calibration, exactly like the
+    // server: the daily items teach the same profile.
+    final nextCount = _profile.interactionCount + (firstRating ? 1 : 0);
+    final state = calibration;
+    _profile = _profile.copyWith(
+      confidence: (nextCount / 40).clamp(0.0, 1.0),
+      interactionCount: nextCount,
+      profileBuilding: !state.complete,
+      calibration: state,
+    );
+  }
+
+  /// The media of [contentId] would not play: never a rating. Done for today,
+  /// offered again tomorrow, waived after a second failed day.
+  void _mediaFailed(String contentId) {
+    _freeze();
+    if (_resolved(contentId)) {
+      return;
+    }
+    final days = _mediaFailedDays.putIfAbsent(contentId, () => <String>{})
+      ..add(dailyDayId);
+    if (days.length >= _waiveAfterFailedDays) {
+      _waived.add(contentId);
+    }
+    _settle();
   }
 
   @override
@@ -442,23 +617,8 @@ class MockHumorDataSource implements HumorDataSource {
     if (failFeedback) {
       throw StateError('mock-feedback-failed');
     }
-    // Only a real rating counts, once per content. A skip or report marker is
-    // not a rating, so rating that content later is its first rating; rating
-    // it again replaces the earlier rating without counting twice.
-    final firstRating = !_ratings.containsKey(contentId);
-    _ratings[contentId] = rating;
-    _passed.remove(contentId);
-    // Lifetime learning keeps counting past calibration, exactly like the
-    // server: only the calibration milestone freezes at 15.
-    final nextCount = _profile.interactionCount + (firstRating ? 1 : 0);
-    final confidence = (nextCount / 40).clamp(0.0, 1.0);
-    final state = calibration;
-    _profile = _profile.copyWith(
-      confidence: confidence,
-      interactionCount: nextCount,
-      profileBuilding: !state.complete,
-      calibration: state,
-    );
+    _requireInToday(contentId);
+    _rate(contentId, rating);
     return _feedbackResult();
   }
 
@@ -474,10 +634,11 @@ class MockHumorDataSource implements HumorDataSource {
     if (failFeedback) {
       throw StateError('mock-skip-failed');
     }
-    // Never touches the profile, the count or calibration. An existing
-    // rating wins: skipping rated content is a no-op.
-    if (!_ratings.containsKey(contentId)) {
-      _passed.add(contentId);
+    // Only media that would not play is recorded. A plain "not interested"
+    // records nothing: the item is a measurement and stays open.
+    if (skipReason == HumorSkipReason.mediaFailed) {
+      _requireInToday(contentId);
+      _mediaFailed(contentId);
     }
     return _feedbackResult();
   }
@@ -489,7 +650,11 @@ class MockHumorDataSource implements HumorDataSource {
       profileBuilding: !state.complete,
       interactionCount: _profile.interactionCount,
       confidence: _profile.confidence,
-      calibration: state,
+      // Like the server: the feed-only flags are not part of this payload.
+      calibration: state.copyWith(
+        insufficientPool: false,
+        continuesTomorrow: false,
+      ),
     );
   }
 
@@ -518,22 +683,18 @@ class MockHumorDataSource implements HumorDataSource {
     if (failReport) {
       throw StateError('mock-report-failed');
     }
-    // The report marker keeps the content out of the reporter's feed but
-    // never overwrites a rating they already gave.
-    if (!_ratings.containsKey(contentId)) {
-      _passed.add(contentId);
+    // A reported item of today's set is waived for the reporter; a rating
+    // they already gave stands.
+    if (_today().ids.contains(contentId) && !_ratings.containsKey(contentId)) {
+      _freeze();
+      _waived.add(contentId);
+      _settle();
     }
   }
 
   // ---------------------------------------------------------------------------
   // Daily humor ("Bugünün Mizah Turu")
   // ---------------------------------------------------------------------------
-
-  /// Items in a mock day, matching the server's set size.
-  static const dailySetSize = 10;
-
-  /// The canonical day. Defaults to today in Europe/Istanbul (UTC+3).
-  String dailyDayId = _istanbulDayId(DateTime.now());
 
   /// Report `locked` / `starts_tomorrow` once calibration is complete, as the
   /// server does on the day calibration finished.
@@ -551,58 +712,47 @@ class MockHumorDataSource implements HumorDataSource {
   var dailySubmitCalls = 0;
   var dailySkipCalls = 0;
 
-  String? _dailyItemsDay;
-  List<HumorContent> _dailyItems = const [];
-  final Map<int, HumorDailyAnswer> _dailyAnswers = {};
-
-  /// Answers recorded for today's set, by slot index.
-  Map<int, HumorDailyAnswer> get dailyAnswers =>
-      Map.unmodifiable(_dailyAnswers);
-
-  static String _istanbulDayId(DateTime now) {
-    final local = now.toUtc().add(const Duration(hours: 3));
-    String two(int value) => value.toString().padLeft(2, '0');
-    return '${local.year}-${two(local.month)}-${two(local.day)}';
+  /// What is recorded for today's set, by position.
+  Map<int, HumorDailyAnswer> get dailyAnswers {
+    final ids = _today().ids;
+    return Map.unmodifiable({
+      for (var i = 0; i < ids.length; i += 1)
+        if (_doneToday(ids[i]))
+          i: HumorDailyAnswer(
+            index: i,
+            contentId: ids[i],
+            rating: _ratings[ids[i]],
+            skipped: !_ratings.containsKey(ids[i]),
+          ),
+    });
   }
 
-  /// Roll the canonical day over to [nextDayId]: a submission for the old
-  /// day is then refused with `day-closed`, and the next load starts fresh.
-  void closeDay(String nextDayId) {
-    dailyDayId = nextDayId;
-  }
-
-  /// Answer the first [count] slots of today's set, as another session.
+  /// Answer the first [count] items of today's set, as another session.
   void seedDailyProgress(int count) {
-    final items = _ensureDailyItems();
-    for (var i = 0; i < count && i < items.length; i += 1) {
-      _dailyAnswers[i] = HumorDailyAnswer(
-        index: i,
-        contentId: items[i].contentId,
-        rating: HumorRating.funny,
-      );
+    final ids = _today().ids;
+    for (var i = 0; i < count && i < ids.length; i += 1) {
+      _rate(ids[i], HumorRating.funny);
     }
   }
 
-  /// Today's fixed order: content the user has not seen first, then the rest
-  /// of the catalog. Frozen per day, like the server's set.
-  List<HumorContent> _ensureDailyItems() {
-    if (_dailyItemsDay != dailyDayId) {
-      _dailyItemsDay = dailyDayId;
-      _dailyAnswers.clear();
-      final fresh = _items.where((item) => !_interacted(item.contentId));
-      final seen = _items.where((item) => _interacted(item.contentId));
-      _dailyItems = [...fresh, ...seen].take(dailySetSize).toList();
-    }
-    return _dailyItems;
-  }
+  HumorDailySet _locked(HumorDailyLockedReason reason) => HumorDailySet(
+    status: HumorDailyStatus.locked,
+    lockedReason: reason,
+    dayId: dailyDayId,
+  );
 
-  int get _dailyNextIndex {
-    for (var i = 0; i < _dailyItems.length; i += 1) {
-      if (!_dailyAnswers.containsKey(i)) {
-        return i;
-      }
-    }
-    return _dailyItems.length;
+  HumorDailyProgress _dailyProgress({bool alreadyAnswered = false}) {
+    final ids = _today().ids;
+    final done = ids.where(_doneToday).length;
+    final next = ids.indexWhere((id) => !_doneToday(id));
+    return HumorDailyProgress(
+      dayId: dailyDayId,
+      total: ids.length,
+      answeredCount: done,
+      completed: ids.isNotEmpty && done >= ids.length,
+      nextIndex: next < 0 ? ids.length : next,
+      alreadyAnswered: alreadyAnswered,
+    );
   }
 
   @override
@@ -612,37 +762,38 @@ class MockHumorDataSource implements HumorDataSource {
       throw StateError('mock-daily-failed');
     }
     if (!calibration.complete) {
-      return HumorDailySet(
-        status: HumorDailyStatus.locked,
-        lockedReason: HumorDailyLockedReason.calibrationIncomplete,
-        dayId: dailyDayId,
-      );
+      return _locked(HumorDailyLockedReason.calibrationIncomplete);
     }
     if (dailyStartsTomorrow) {
-      return HumorDailySet(
-        status: HumorDailyStatus.locked,
-        lockedReason: HumorDailyLockedReason.startsTomorrow,
-        dayId: dailyDayId,
-      );
+      return _locked(HumorDailyLockedReason.startsTomorrow);
     }
-    final items = _ensureDailyItems();
-    if (dailyNotReady || items.isEmpty) {
+    if (dailyNotReady) {
       return HumorDailySet(
         status: HumorDailyStatus.notReady,
         dayId: dailyDayId,
       );
     }
-    final answered = _dailyAnswers.length;
-    final entries = _dailyAnswers.keys.toList()..sort();
+    final today = _today();
+    if (today.onboarding) {
+      // The calibration was finished today: the daily items start tomorrow.
+      return _locked(HumorDailyLockedReason.startsTomorrow);
+    }
+    if (today.ids.isEmpty) {
+      return _locked(HumorDailyLockedReason.sequenceComplete);
+    }
+    final progress = _dailyProgress();
+    final answers = dailyAnswers;
     return HumorDailySet(
       status: HumorDailyStatus.ready,
       dayId: dailyDayId,
-      total: items.length,
-      answeredCount: answered,
-      completed: answered >= items.length,
-      nextIndex: _dailyNextIndex,
-      items: List.unmodifiable(items),
-      answers: [for (final index in entries) _dailyAnswers[index]!],
+      total: progress.total,
+      answeredCount: progress.answeredCount,
+      completed: progress.completed,
+      nextIndex: progress.nextIndex,
+      items: List.unmodifiable([for (final id in today.ids) _itemOf(id)]),
+      answers: [
+        for (final index in answers.keys.toList()..sort()) answers[index]!,
+      ],
     );
   }
 
@@ -664,25 +815,20 @@ class MockHumorDataSource implements HumorDataSource {
     required String contentId,
   }) async {
     dailySkipCalls += 1;
-    return _answerDaily(dayId, contentId, skipped: true);
+    return _answerDaily(dayId, contentId);
   }
 
-  /// Mirrors the server: idempotent per slot, refused once the day closed.
+  /// Mirrors the server: refused once the day closed or for anything that is
+  /// not one of today's items; idempotent per item; a media skip never
+  /// overrides a rating.
   Future<HumorDailyProgress> _answerDaily(
     String dayId,
     String contentId, {
     HumorRating? rating,
-    bool skipped = false,
   }) async {
     await dailyGate?.future;
     if (failDaily) {
       throw StateError('mock-daily-failed');
-    }
-    if (!calibration.complete) {
-      throw FirebaseFunctionsException(
-        code: 'failed-precondition',
-        message: 'not-eligible',
-      );
     }
     if (dayId != dailyDayId) {
       throw FirebaseFunctionsException(
@@ -690,31 +836,17 @@ class MockHumorDataSource implements HumorDataSource {
         message: 'day-closed',
       );
     }
-    final items = _ensureDailyItems();
-    final index = items.indexWhere((item) => item.contentId == contentId);
-    if (index < 0) {
-      throw FirebaseFunctionsException(
-        code: 'not-found',
-        message: 'content-unavailable',
-      );
-    }
-    final already = _dailyAnswers.containsKey(index);
+    _requireInToday(contentId, message: 'slot-replaced');
+    final already = rating == null
+        ? _doneToday(contentId)
+        : _ratings[contentId] == rating;
     if (!already) {
-      _dailyAnswers[index] = HumorDailyAnswer(
-        index: index,
-        contentId: contentId,
-        rating: rating,
-        skipped: skipped,
-      );
+      if (rating == null) {
+        _mediaFailed(contentId);
+      } else {
+        _rate(contentId, rating);
+      }
     }
-    final answered = _dailyAnswers.length;
-    return HumorDailyProgress(
-      dayId: dailyDayId,
-      total: items.length,
-      answeredCount: answered,
-      completed: answered >= items.length,
-      nextIndex: _dailyNextIndex,
-      alreadyAnswered: already,
-    );
+    return _dailyProgress(alreadyAnswered: already);
   }
 }

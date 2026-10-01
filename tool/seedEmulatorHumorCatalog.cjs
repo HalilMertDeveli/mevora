@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Seeds the curated humor calibration catalogue into the Firebase Emulator
- * Suite, so "Mizahını Keşfet" has content to calibrate on locally.
+ * Seeds the curated humor catalogue into the Firebase Emulator Suite, so the
+ * Humor Core sequence — the first fifteen of "Mizahını Keşfet" and the daily
+ * five of "Bugünün Mizah Turu" — has its content locally. It then prints the
+ * sequence report: every position (V1 …) and whether a member can be given it.
  *
  * It runs exactly what the admin-only `seedInternalHumorContent` callable
  * runs: `seedCalibrationCatalog` from the COMPILED functions output, so the
@@ -28,8 +30,10 @@
  * declares a GIPHY_API_KEY entry (only the NAME is checked; the value is never
  * read into anything, printed or logged), it calls the admin-only
  * `syncHumorFromProvider` callable on the Functions emulator as a throwaway
- * emulator admin and prints the diagnostic counts. Without that entry it
- * prints one line and moves on. Needs FIREBASE_AUTH_EMULATOR_HOST and
+ * emulator admin and prints the diagnostic counts. What it syncs is candidate
+ * material for curation only: a synced item is never part of the Core
+ * sequence, so it never reaches a member. Without that entry it prints one
+ * line and moves on. Needs FIREBASE_AUTH_EMULATOR_HOST and
  * --functions-host (both loopback). A provider failure never fails the seed.
  *
  * Usage, from the repo root (PowerShell):
@@ -136,7 +140,7 @@ function warnIfStale(sourceRelative, compiledRelative) {
 const admin = requireFromFunctions("firebase-admin");
 const {HUMOR_CONTENT_COLLECTION} = requireCompiled("lib/humor/contentRepository.js");
 const {seedCalibrationCatalog} = requireCompiled("lib/humor/calibrationCatalog.js");
-const {buildCalibrationPoolReport} = requireCompiled("lib/humor/calibrationPoolReport.js");
+const {buildHumorCoreSequenceReport} = requireCompiled("lib/humor/coreService.js");
 warnIfStale("src/humor/calibrationSeed.ts", "lib/humor/calibrationSeed.js");
 
 // --------------------------------------------------------------------------
@@ -291,25 +295,29 @@ async function providerTopUpStep() {
     console.warn("  WARNING: the active calibration catalogue is empty");
   }
 
-  const report = await buildCalibrationPoolReport(db);
+  const report = await buildHumorCoreSequenceReport(db);
   console.log(
-    `  anchor-slot pools (calibration v${report.calibrationVersion}, ` +
-      `${report.totalEligible} eligible):`,
+    `  Humor Core sequence (${report.released ? "released" : "DRAFT"}): ` +
+      `${report.total} entries, ${report.servableCount} servable · ` +
+      `first ${report.onboardingCount}, then ${report.dailyCount} a day`,
   );
-  for (const slot of report.anchorSlots) {
+  for (const item of report.items) {
+    const note = !item.active
+      ? `  <-- retired: ${item.retiredReason}`
+      : item.servable
+        ? ""
+        : "  <-- NOT servable";
     console.log(
-      `    ${slot.slotId.padEnd(18)} ${String(slot.candidates).padStart(2)} candidates, ` +
-        `${slot.measuring} measuring ${slot.primary}` +
-        `${slot.ok ? "" : "  <-- cannot rotate"}`,
+      `    V${String(item.position).padStart(2)} ${item.contentId.padEnd(28)} ` +
+        `${String(item.category ?? "-").padEnd(12)}${note}`,
     );
   }
-  console.log(`  open pool (adaptive + exploration): ${report.openPoolSize}`);
   if (report.healthy) {
-    console.log("  pool: healthy — calibration can run its full 15 without degrading");
+    console.log("  sequence: healthy — every entry can be handed out");
   } else {
-    console.warn("  WARNING: pool is NOT healthy — calibration will degrade:");
-    for (const warning of report.warnings) {
-      console.warn(`    - ${warning}`);
+    console.warn("  WARNING: the sequence is NOT healthy:");
+    for (const line of [...report.problems, ...report.warnings]) {
+      console.warn(`    - ${line}`);
     }
   }
 

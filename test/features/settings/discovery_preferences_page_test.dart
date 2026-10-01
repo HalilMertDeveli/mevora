@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
@@ -167,6 +168,19 @@ void main() {
     expect(
       find.textContaining('People inside this distance come first'),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('the explanation wraps instead of being cut off', (tester) async {
+    await _open(tester, FakeSettingsHubRepository());
+
+    final hint = find.textContaining('People inside this distance come first');
+    final paragraph = tester.renderObject<RenderParagraph>(hint);
+    expect(paragraph.didExceedMaxLines, isFalse);
+    // It does not fit on one line here, and gets the lines it needs.
+    expect(
+      tester.getSize(hint).height,
+      greaterThan(paragraph.preferredLineHeight),
     );
   });
 }

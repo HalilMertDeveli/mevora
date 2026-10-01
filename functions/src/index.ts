@@ -38,6 +38,7 @@ export {identityVerificationWebhook} from "./identity/identityVerificationWebhoo
 // Face Anchor: is this profile photo the live account owner? Separate from
 // identity verification above, which answers who the account owner is.
 export {
+  getFaceAnchorRequirements,
   startFaceAnchorVerification,
   submitFaceAnchorVerification,
   faceAnchorSelfieSweep,

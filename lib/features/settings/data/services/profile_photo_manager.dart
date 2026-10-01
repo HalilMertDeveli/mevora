@@ -102,9 +102,21 @@ class ProfilePhotoManager {
     required int oldIndex,
     required int newIndex,
   }) async {
+    final blockReason = PhotoPolicy.reorderBlockReason(
+      profile.photos,
+      oldIndex,
+      newIndex,
+    );
+    if (blockReason != null) {
+      return Err(ValidationFailure(blockReason));
+    }
     final reordered = PhotoPolicy.reorder(profile.photos, oldIndex, newIndex);
     final nextProfile = profile.copyWith(photos: reordered);
-    await _settingsHub.saveProfile(nextProfile);
+    try {
+      await _settingsHub.saveProfile(nextProfile);
+    } on Object catch (error) {
+      return Err(ValidationFailure(error.toString()));
+    }
     return Success(nextProfile);
   }
 
@@ -112,13 +124,23 @@ class ProfilePhotoManager {
     required UserProfile profile,
     required String photoId,
   }) async {
-    if (!profile.photos.any((p) => p.id == photoId)) {
-      return const Err(ValidationFailure('photo_not_found'));
+    // Only a photo verified as the member can be the primary one. The server
+    // imposes the same rule; refusing here just says so before the write.
+    final blockReason = PhotoPolicy.setPrimaryBlockReason(
+      profile.photos,
+      photoId,
+    );
+    if (blockReason != null) {
+      return Err(ValidationFailure(blockReason));
     }
     final nextProfile = profile.copyWith(
       photos: PhotoPolicy.setPrimary(profile.photos, photoId),
     );
-    await _settingsHub.saveProfile(nextProfile);
+    try {
+      await _settingsHub.saveProfile(nextProfile);
+    } on Object catch (error) {
+      return Err(ValidationFailure(error.toString()));
+    }
     return Success(nextProfile);
   }
 }

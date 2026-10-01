@@ -7,11 +7,14 @@ import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/face_anchor_scope.dart';
 import 'package:mevora/core/di/permission_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
+import 'package:mevora/features/face_anchor/presentation/controllers/face_anchor_controller.dart';
+import 'package:mevora/features/face_anchor/presentation/pages/face_anchor_verify_page.dart';
 import 'package:mevora/features/permissions/presentation/pages/permission_prompt_page.dart';
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
@@ -79,6 +82,44 @@ class _EditProfilePageState extends State<EditProfilePage> {
   var _saving = false;
   var _hydrated = false;
 
+  /// Null where Face Anchor is not wired in; the photo list then shows no
+  /// verification state and offers none.
+  FaceAnchorController? _faceAnchor;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final uid = AuthScope.of(context).user?.id;
+    final services = FaceAnchorScope.maybeOf(context);
+    if (uid == null || services == null) {
+      return;
+    }
+    _faceAnchor ??= services.createController()..addListener(_onFaceAnchor);
+    _faceAnchor!.bind(uid);
+  }
+
+  /// A refusal about the photo list (it is shown under the list itself).
+  bool get _photoError => _errorKey?.startsWith('photo_') ?? false;
+
+  void _onFaceAnchor() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _verifyPhoto(ProfilePhoto photo) async {
+    final faceAnchor = _faceAnchor;
+    if (faceAnchor == null) {
+      return;
+    }
+    setState(() => _errorKey = null);
+    await FaceAnchorVerifyPage.show(
+      context,
+      photo: photo,
+      controller: faceAnchor,
+    );
+  }
+
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -86,6 +127,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _bioController.dispose();
     _cityController.dispose();
     _occupationController.dispose();
+    _faceAnchor
+      ?..removeListener(_onFaceAnchor)
+      ..dispose();
     super.dispose();
   }
 
@@ -146,8 +190,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ProfileSectionHeader(
                           title: l10n.profileEditSectionPhotos,
                         ),
+                        // A member with no verified photo yet — anyone who
+                        // joined before Face Anchor — is invited, not forced.
+                        if (_faceAnchor != null &&
+                            _faceAnchor!.requirements.available &&
+                            !PhotoPolicy.hasFaceAnchor(profile.photos)) ...[
+                          MevoraBanner(
+                            title: l10n.faceAnchorVerifyAction,
+                            message: l10n.faceAnchorPromptBody,
+                            icon: MevoraIcons.faceAnchorVerify,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
                         PhotoGridEditor(
                           photos: profile.photos,
+                          faceAnchorStatusOf: _faceAnchor?.statusFor,
+                          onVerify: _faceAnchor == null
+                              ? null
+                              : (photo) => unawaited(_verifyPhoto(photo)),
                           onAdd: () => unawaited(_addPhoto(profile, settings)),
                           onDelete: (id) =>
                               unawaited(_deletePhoto(profile, settings, id)),
@@ -157,6 +217,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           onSetPrimary: (id) =>
                               unawaited(_setPrimary(profile, settings, id)),
                         ),
+                        if (_photoError) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          MevoraBanner(
+                            message: SettingsStrings.validation(
+                              l10n,
+                              _errorKey,
+                            ),
+                            tone: MevoraTone.error,
+                          ),
+                        ],
                         const SizedBox(height: AppSpacing.lg),
                         ProfileSectionHeader(
                           title: l10n.profileEditSectionBasic,
@@ -366,7 +436,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           isOwner: true,
                           showEditAction: true,
                         ),
-                        if (_errorKey != null) ...[
+                        if (_errorKey != null && !_photoError) ...[
                           const SizedBox(height: AppSpacing.sm),
                           MevoraBanner(
                             message: SettingsStrings.validation(
@@ -647,11 +717,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
     int oldIndex,
     int newIndex,
   ) async {
-    await settings.photoManager.reorderPhotos(
+    final result = await settings.photoManager.reorderPhotos(
       profile: profile,
       oldIndex: oldIndex,
       newIndex: newIndex,
     );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _errorKey = result.failureOrNull?.message);
   }
 
   Future<void> _setPrimary(
@@ -659,9 +733,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     SettingsServices settings,
     String photoId,
   ) async {
-    await settings.photoManager.setPrimaryPhoto(
+    final result = await settings.photoManager.setPrimaryPhoto(
       profile: profile,
       photoId: photoId,
     );
+    if (!mounted) {
+      return;
+    }
+    setState(() => _errorKey = result.failureOrNull?.message);
   }
 }

@@ -992,7 +992,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingPhotosHint =>
-      'En az 3 fotoğraf ekle. Sıralamak için sürükle — ilk fotoğraf ana fotoğrafındır.';
+      'En az 3 fotoğraf ekle. En az bir fotoğrafta yüzün net görünmeli. Diğer fotoğraflarında hobilerini, seyahatlerini, evcil hayvanını veya hayatından detayları gösterebilirsin.';
 
   @override
   String get onboardingPrimaryPhoto => 'Ana fotoğraf';
@@ -5051,4 +5051,142 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get moderationAppealFailed =>
       'İtirazın gönderilemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get faceAnchorRequiredNotice =>
+      'Devam etmek için yüzünün net göründüğü bir fotoğrafını doğrula.';
+
+  @override
+  String get faceAnchorVerifyAction => 'Fotoğrafını doğrula';
+
+  @override
+  String get faceAnchorVerifyShort => 'Doğrula';
+
+  @override
+  String get faceAnchorVerified => 'Bu fotoğraf doğrulandı';
+
+  @override
+  String get faceAnchorVerifiedShort => 'Doğrulandı';
+
+  @override
+  String get faceAnchorPending => 'Doğrulama bekleniyor';
+
+  @override
+  String get faceAnchorPhotoInReview => 'Fotoğraf inceleniyor';
+
+  @override
+  String get faceAnchorNotVerified => 'Doğrulanamadı';
+
+  @override
+  String get faceAnchorRetry => 'Tekrar dene';
+
+  @override
+  String get faceAnchorMismatch => 'Bu fotoğraf çektiğin selfie ile eşleşmedi.';
+
+  @override
+  String get faceAnchorLivenessFailed =>
+      'Canlılık doğrulaması tamamlanamadı. Aydınlık bir yerde, doğrudan kameraya bakarak tekrar dene.';
+
+  @override
+  String get faceAnchorPhotoUnclear =>
+      'Bu fotoğrafta yüzün tek başına ve net görünmüyor. Yalnızca senin göründüğün bir fotoğraf seç.';
+
+  @override
+  String get faceAnchorSelfieInvalid =>
+      'Selfie kullanılamadı. Kameranla yeni bir selfie çekip tekrar dene.';
+
+  @override
+  String get faceAnchorTechnicalError =>
+      'Doğrulama şu anda tamamlanamadı. Fotoğrafın doğrulanmadı; biraz sonra tekrar dene.';
+
+  @override
+  String get faceAnchorPrimaryRequiresVerify =>
+      'Bu fotoğrafı ana fotoğraf yapmak için önce doğrula.';
+
+  @override
+  String get faceAnchorLastAnchorDelete =>
+      'Son doğrulanmış fotoğrafını silemezsin. Önce başka bir fotoğrafını doğrula.';
+
+  @override
+  String get faceAnchorExplainBody =>
+      'Fotoğrafının gerçekten sana ait olduğundan emin olmak için kısa bir selfie kontrolü yapıyoruz.';
+
+  @override
+  String get faceAnchorExplainSteps =>
+      'Ön kameranla bir selfie çekeceksin. Selfie yalnızca bu kontrol için kullanılır, profilinde görünmez ve kontrol bitince silinir.';
+
+  @override
+  String get faceAnchorConsent =>
+      'Selfiemin bu fotoğrafla karşılaştırılması için işlenmesini kabul ediyorum.';
+
+  @override
+  String get faceAnchorTakeSelfie => 'Selfie çek';
+
+  @override
+  String get faceAnchorOpening => 'Hazırlanıyor…';
+
+  @override
+  String get faceAnchorCapturing => 'Kamera açılıyor…';
+
+  @override
+  String get faceAnchorUploading => 'Selfie gönderiliyor…';
+
+  @override
+  String get faceAnchorVerifying => 'Doğrulanıyor…';
+
+  @override
+  String get faceAnchorSuccessBody =>
+      'Bu fotoğraf artık ana fotoğrafın olabilir.';
+
+  @override
+  String get faceAnchorDone => 'Tamam';
+
+  @override
+  String get faceAnchorChooseAnother => 'Başka fotoğraf seç';
+
+  @override
+  String get faceAnchorPromptBody =>
+      'Profilinin gerçekten sana ait olduğunu göstermek için yüzünün net göründüğü bir fotoğrafını doğrula.';
+
+  @override
+  String get faceAnchorProfileVerifiedTitle => 'Profil fotoğrafın doğrulandı';
+
+  @override
+  String get faceAnchorPromptTileSubtitle =>
+      'Yüzünün göründüğü bir fotoğrafı kısa bir selfie ile doğrula';
+
+  @override
+  String get faceAnchorErrorUnavailable =>
+      'Fotoğraf doğrulama şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.';
+
+  @override
+  String get faceAnchorErrorPhotoNotApproved =>
+      'Bu fotoğraf hâlâ inceleniyor. İnceleme bitince doğrulayabilirsin.';
+
+  @override
+  String get faceAnchorErrorCooldown => 'Biraz bekleyip tekrar dene.';
+
+  @override
+  String get faceAnchorErrorAttemptLimit =>
+      'Bugünlük deneme hakkın doldu. Yarın tekrar deneyebilirsin.';
+
+  @override
+  String get faceAnchorErrorCamera =>
+      'Kamera açılamadı. Kamera iznini kontrol edip tekrar dene.';
+
+  @override
+  String get faceAnchorErrorUpload =>
+      'Selfie gönderilemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get faceAnchorErrorInProgress =>
+      'Bir doğrulama zaten sürüyor. Lütfen sonucu bekle.';
+
+  @override
+  String get faceAnchorErrorConsent =>
+      'Devam etmek için onay vermen gerekiyor.';
+
+  @override
+  String get faceAnchorErrorGeneric =>
+      'Doğrulama başlatılamadı. Lütfen tekrar dene.';
 }

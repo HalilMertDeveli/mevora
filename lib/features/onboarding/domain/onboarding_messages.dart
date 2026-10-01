@@ -30,6 +30,13 @@ abstract final class OnboardingMessages {
   static final photosTooMany =
       'You can add up to ${OnboardingConfig.maxPhotos} photos';
 
+  /// No photo has been verified as the member yet. Returned by the validators
+  /// and by the completeOnboarding callable (`face-anchor-required`).
+  static const faceAnchorRequired =
+      'Verify a photo that clearly shows your face to continue.';
+  static const primaryNotFaceAnchor =
+      'Your main photo must be a verified photo.';
+
   // Completion failures reported by the completeOnboarding callable.
   static const serverPhotosRequired =
       'Add at least 3 photos to finish onboarding.';

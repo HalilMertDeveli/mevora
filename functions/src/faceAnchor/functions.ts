@@ -8,8 +8,9 @@ import {logger} from "firebase-functions";
 import type {Bucket} from "@google-cloud/storage";
 import {diditApiKey} from "../identity/didit/diditConfig.js";
 import {processPendingProfilePhoto} from "../moderation/photoModerationService.js";
-import {resolveDailyGlobalCap} from "./faceAnchorConfig.js";
-import {SUBMIT_TIMEOUT_SECONDS} from "./faceAnchorRecord.js";
+import {isFaceAnchorRequiredFor} from "../profileSafety.js";
+import {isFaceAnchorEnforced, resolveDailyGlobalCap} from "./faceAnchorConfig.js";
+import {FACE_ANCHOR_CONSENT_VERSION, SUBMIT_TIMEOUT_SECONDS} from "./faceAnchorRecord.js";
 import {
   startFaceAnchorVerification as start,
   submitFaceAnchorVerification as submit,
@@ -122,6 +123,24 @@ export const submitFaceAnchorVerification = onCall(
     return submit(deps(), uid, {attemptId: payload(request).attemptId});
   },
 );
+
+/**
+ * What the app needs before it shows a member the photo step or a
+ * verification prompt: whether they must have a Face Anchor, whether
+ * verification can run at all right now, and the consent wording in force.
+ *
+ * The answer shapes the screen only. Whether a profile may complete is decided
+ * by completeOnboarding, and whether a photo is verified by the pipeline above.
+ */
+export const getFaceAnchorRequirements = onCall(callableOptions, async (request) => {
+  const uid = requireUid(request);
+  const profile = (await db.doc(`profiles/${uid}`).get()).data();
+  return {
+    required: isFaceAnchorRequiredFor(profile, isFaceAnchorEnforced()),
+    available: resolveFaceVerificationProvider(db) !== null,
+    consentVersion: FACE_ANCHOR_CONSENT_VERSION,
+  };
+});
 
 /** Removes verification selfies that outlived their attempt. */
 export const faceAnchorSelfieSweep = onSchedule(

@@ -11,14 +11,18 @@ abstract class OnboardingRepository {
 
   Stream<UserProfile?> watchDraft(String uid);
 
+  /// [requireFaceAnchor]: the server requires this member to have a verified
+  /// Face Anchor photo. Checked here to fail early; the server enforces it.
   Future<Result<UserProfile>> saveStep({
     required UserProfile profile,
     required OnboardingStep step,
     required String? lastName,
+    bool requireFaceAnchor = false,
   });
 
   Future<Result<UserProfile>> complete(
     UserProfile profile, {
     required String? lastName,
+    bool requireFaceAnchor = false,
   });
 }

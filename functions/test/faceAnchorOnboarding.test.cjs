@@ -13,6 +13,8 @@ const savedEnv = {
 };
 const {completeOnboarding} = require("../lib/onboarding.js");
 const {getIncomingLikes} = require("../lib/incomingLikes.js");
+const {getFaceAnchorRequirements} = require("../lib/faceAnchor/functions.js");
+const {FACE_ANCHOR_CONSENT_VERSION} = require("../lib/faceAnchor/faceAnchorRecord.js");
 
 const UID = "new-member";
 
@@ -207,6 +209,45 @@ describe("completeOnboarding — enforcement off", () => {
     await rejects(callAs(completeOnboarding, UID), "last-name-required");
     db.reset({});
     await rejects(callAs(completeOnboarding, UID), "profile-missing");
+  });
+});
+
+describe("getFaceAnchorRequirements — what the app is told", () => {
+  it("requires sign-in", async () => {
+    await assert.rejects(callAs(getFaceAnchorRequirements, null));
+  });
+
+  it("a new member under enforcement: required; no provider configured: unavailable", async () => {
+    setEnforcement("on");
+    db.reset(seedMember());
+    assert.deepEqual(await callAs(getFaceAnchorRequirements, UID), {
+      required: true,
+      available: false,
+      consentVersion: FACE_ANCHOR_CONSENT_VERSION,
+    });
+  });
+
+  it("the emulator has the fake provider and enforces by default", async () => {
+    setEnforcement(undefined);
+    process.env.FUNCTIONS_EMULATOR = "true";
+    db.reset(seedMember());
+    const result = await callAs(getFaceAnchorRequirements, UID);
+    assert.equal(result.required, true);
+    assert.equal(result.available, true);
+  });
+
+  it("a member who finished before the rule is not told it is required", async () => {
+    setEnforcement("on");
+    db.reset(seedMember({profile: {profileCompleted: true}}));
+    assert.equal((await callAs(getFaceAnchorRequirements, UID)).required, false);
+  });
+
+  it("carries nothing a client could use to pick a provider or an outcome", async () => {
+    setEnforcement("on");
+    db.reset(seedMember());
+    const result = await callAs(getFaceAnchorRequirements, UID, {testMode: true, provider: "fake"});
+    assert.deepEqual(Object.keys(result).sort(), ["available", "consentVersion", "required"]);
+    assert.equal(result.available, false);
   });
 });
 

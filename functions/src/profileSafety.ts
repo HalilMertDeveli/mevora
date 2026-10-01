@@ -102,6 +102,22 @@ export function isProfileDiscoverable(data: DocumentData | undefined): boolean {
 }
 
 /**
+ * Whether this profile must have a Face Anchor to be completed.
+ *
+ * A profile already under the rule stays under it. Otherwise the rule applies
+ * to a profile that has not finished onboarding, while enforcement is on. A
+ * member who finished before the rule applied to them is not put under it by
+ * anything they do except verifying a photo. `profileCompleted` is read from
+ * profiles/{uid}, where only the server writes it.
+ */
+export function isFaceAnchorRequiredFor(profile: DocumentData | undefined, enforced: boolean): boolean {
+  if (profile?.faceAnchorRequired === true) {
+    return true;
+  }
+  return enforced && profile?.profileCompleted !== true;
+}
+
+/**
  * Whether a profile meets the Face Anchor rule: the photo other members see
  * first is one the server verified against the live account owner.
  *

@@ -8,6 +8,8 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/boost_scope.dart';
+import 'package:mevora/core/di/face_anchor_scope.dart';
+import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/humor_scope.dart';
 import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
@@ -19,6 +21,10 @@ import 'package:mevora/features/app_operations/domain/app_operations_config.dart
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.dart';
+import 'package:mevora/features/face_anchor/domain/entities/face_anchor_state.dart';
+import 'package:mevora/features/face_anchor/presentation/widgets/face_anchor_entry_tile.dart';
+import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 import 'package:mevora/features/verification/presentation/widgets/verification_entry_tile.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_question_answers_section.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -126,15 +132,88 @@ class ProfileTabPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          MevoraListGroup(
-            title: l10n.profileSectionTrust,
-            children: [
-              const _ProfileVerificationTile(),
-              if (boostEnabled) const _ProfileBoostTile(),
-            ],
-          ),
+          _ProfileTrustGroup(boostEnabled: boostEnabled),
         ],
       ),
+    );
+  }
+}
+
+/// Identity verification, photo verification and Boost.
+///
+/// The photo row appears once the member has a verified photo, or when
+/// verification is on offer and they have none — never as a prompt for
+/// something that cannot be done right now.
+class _ProfileTrustGroup extends StatefulWidget {
+  const _ProfileTrustGroup({required this.boostEnabled});
+
+  final bool boostEnabled;
+
+  @override
+  State<_ProfileTrustGroup> createState() => _ProfileTrustGroupState();
+}
+
+class _ProfileTrustGroupState extends State<_ProfileTrustGroup> {
+  StreamSubscription<UserProfile?>? _profile;
+  String? _subscribedUid;
+  bool? _hasFaceAnchor;
+  FaceAnchorRequirements _requirements = FaceAnchorRequirements.unknown;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final uid = AuthScope.maybeOf(context)?.user?.id;
+    final faceAnchor = FaceAnchorScope.maybeOf(context);
+    final settings = SettingsScope.maybeOf(context);
+    if (uid == null ||
+        faceAnchor == null ||
+        settings == null ||
+        uid == _subscribedUid) {
+      return;
+    }
+    _subscribedUid = uid;
+    unawaited(_profile?.cancel());
+    _profile = settings.settingsHub
+        .watchProfile(uid)
+        .listen(
+          (profile) {
+            if (!mounted || profile == null) {
+              return;
+            }
+            setState(
+              () => _hasFaceAnchor = PhotoPolicy.hasFaceAnchor(profile.photos),
+            );
+          },
+          onError: (_, _) {},
+        );
+    unawaited(
+      faceAnchor.repository.loadRequirements().then((requirements) {
+        if (mounted) {
+          setState(() => _requirements = requirements);
+        }
+      }),
+    );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_profile?.cancel());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final hasAnchor = _hasFaceAnchor;
+    final showFaceAnchor =
+        hasAnchor != null && (hasAnchor || _requirements.available);
+    return MevoraListGroup(
+      title: l10n.profileSectionTrust,
+      children: [
+        const _ProfileVerificationTile(),
+        if (showFaceAnchor) FaceAnchorEntryTile(verified: hasAnchor),
+        if (widget.boostEnabled) const _ProfileBoostTile(),
+      ],
     );
   }
 }

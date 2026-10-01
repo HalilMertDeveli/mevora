@@ -149,6 +149,7 @@
   <data name="Escalated." xml:space="preserve"><value>Yükseltildi.</value></data>
   <data name="Event" xml:space="preserve"><value>Olay</value></data>
   <data name="Expires" xml:space="preserve"><value>Bitiş</value></data>
+  <data name="Face Anchor" xml:space="preserve"><value>Yüz doğrulaması</value></data>
   <data name="File an appeal on a member's behalf" xml:space="preserve"><value>Üye adına itiraz aç</value></data>
   <data name="File appeal" xml:space="preserve"><value>İtiraz aç</value></data>
   <data name="Filed" xml:space="preserve"><value>Gönderim</value></data>
@@ -443,6 +444,7 @@
   <data name="Verification in review" xml:space="preserve"><value>İncelemedeki doğrulamalar</value></data>
   <data name="Verification status" xml:space="preserve"><value>Doğrulama durumu</value></data>
   <data name="Verified" xml:space="preserve"><value>Doğrulanmış</value></data>
+  <data name="Verified as the member. Rejecting it removes their verified photo." xml:space="preserve"><value>Üyenin kendisi olarak doğrulandı. Reddedilirse üyenin doğrulanmış fotoğrafı kalkar.</value></data>
   <data name="Verified at" xml:space="preserve"><value>Doğrulanma</value></data>
   <data name="Verify" xml:space="preserve"><value>Doğrula</value></data>
   <data name="View attachment {0}" xml:space="preserve"><value>Eki görüntüle ({0})</value></data>

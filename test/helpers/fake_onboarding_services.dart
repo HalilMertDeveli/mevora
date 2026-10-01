@@ -18,10 +18,12 @@ class FakeOnboardingRepository implements OnboardingRepository {
   Future<Result<UserProfile>> complete(
     UserProfile profile, {
     required String? lastName,
+    bool requireFaceAnchor = false,
   }) async {
     final validation = OnboardingValidators.validateCompletion(
       profile,
       lastName: lastName,
+      requireFaceAnchor: requireFaceAnchor,
     );
     if (validation.isError) {
       return Err((validation as Err<void>).failure);
@@ -46,6 +48,7 @@ class FakeOnboardingRepository implements OnboardingRepository {
     required UserProfile profile,
     required OnboardingStep step,
     required String? lastName,
+    bool requireFaceAnchor = false,
   }) async {
     if (step == OnboardingStep.basicInfo) {
       savedLastName = lastName?.trim();

@@ -13,6 +13,7 @@ import {
   countApprovedPhotos,
   isAccountEligible,
   isAdultProfile,
+  isFaceAnchorRequiredFor,
   MAX_PROFILE_PHOTOS,
   MIN_ONBOARDING_AGE,
   MIN_PROFILE_PHOTOS,
@@ -132,9 +133,7 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
   // app instead and come under it with their first verified photo. Read from
   // profiles/{uid}: its completion flags are server-written, unlike the copy
   // on users/{uid}.
-  const completedBeforeRule = data.profileCompleted === true && data.faceAnchorRequired !== true;
-  const anchorRequired =
-    data.faceAnchorRequired === true || (isFaceAnchorEnforced() && !completedBeforeRule);
+  const anchorRequired = isFaceAnchorRequiredFor(data, isFaceAnchorEnforced());
 
   const now = FieldValue.serverTimestamp();
   await db.runTransaction(async (tx) => {

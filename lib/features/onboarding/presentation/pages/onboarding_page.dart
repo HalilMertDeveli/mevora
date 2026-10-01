@@ -9,9 +9,13 @@ import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/face_anchor_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/face_anchor/presentation/controllers/face_anchor_controller.dart';
+import 'package:mevora/features/face_anchor/presentation/pages/face_anchor_verify_page.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
+import 'package:mevora/features/face_anchor/domain/entities/face_anchor_state.dart';
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo_grid.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
@@ -44,6 +48,10 @@ class OnboardingPage extends StatefulWidget {
 
 class _OnboardingPageState extends State<OnboardingPage> {
   late final OnboardingController _controller;
+
+  /// Null where Face Anchor is not wired in; the photo step then works as it
+  /// did before, and the server alone decides whether the profile completes.
+  FaceAnchorController? _faceAnchor;
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _cityController = TextEditingController();
@@ -67,6 +75,38 @@ class _OnboardingPageState extends State<OnboardingPage> {
       _initializedUid = uid;
       unawaited(_controller.initialize(user!));
     }
+    if (uid != null) {
+      final services = FaceAnchorScope.maybeOf(context);
+      if (_faceAnchor == null && services != null) {
+        _faceAnchor = services.createController()
+          ..addListener(_syncFaceAnchor);
+      }
+      _faceAnchor?.bind(uid);
+    }
+  }
+
+  /// The server says whether this member needs a verified photo; the photo
+  /// step asks for one only then.
+  void _syncFaceAnchor() {
+    final faceAnchor = _faceAnchor;
+    if (!mounted || faceAnchor == null) {
+      return;
+    }
+    _controller.setFaceAnchorRequired(faceAnchor.requirements.required);
+    setState(() {});
+  }
+
+  Future<void> _verifyPhoto(OnboardingPhotoDraft draft) async {
+    final faceAnchor = _faceAnchor;
+    final photo = draft.remote;
+    if (faceAnchor == null || photo == null) {
+      return;
+    }
+    await FaceAnchorVerifyPage.show(
+      context,
+      photo: photo,
+      controller: faceAnchor,
+    );
   }
 
   @override
@@ -108,6 +148,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (_listenerAttached) {
       _controller.removeListener(_syncFields);
     }
+    _faceAnchor
+      ?..removeListener(_syncFaceAnchor)
+      ..dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _cityController.dispose();
@@ -448,6 +491,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _photosStep(AppLocalizations l10n) {
+    final faceAnchor = _faceAnchor;
     return OnboardingStepScaffold(
       step: OnboardingStep.photos,
       title: l10n.onboardingPhotos,
@@ -467,6 +511,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onRetry: (id) => unawaited(_controller.retryPhotoUpload(id)),
             onRemove: _controller.removePhoto,
             onReorder: _controller.reorderPhotos,
+            needsFaceAnchor: _controller.needsFaceAnchor,
+            faceAnchorStatusOf: faceAnchor == null
+                ? null
+                : (draft) => draft.remote == null
+                      ? FaceAnchorPhotoStatus.none
+                      : faceAnchor.statusFor(draft.remote!),
+            onVerify: faceAnchor == null
+                ? null
+                : (draft) => unawaited(_verifyPhoto(draft)),
           ),
         ],
       ),

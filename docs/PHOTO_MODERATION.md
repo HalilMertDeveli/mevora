@@ -15,6 +15,9 @@ pending → processing → approved
 - Clients upload to `users/{uid}/profile/pending/{imageId}`
 - Clients write `moderationStatus: pending` only
 - Approved photos are published under `users/{uid}/profile/photos/` by Cloud Functions
+- A photo id is moderated once: uploading to `pending/{imageId}` again after a
+  decision is ignored and the new bytes are deleted, so an approved photo cannot
+  be swapped for another image
 
 ## Backend modules
 
@@ -22,8 +25,17 @@ pending → processing → approved
 |------|------|
 | `functions/src/moderation/manualModerationProvider.ts` | Technical validation (type, size, magic bytes, dimensions) |
 | `functions/src/moderation/photoModerationService.ts` | Orchestration, publish, retry, report hook |
-| `functions/src/moderation/profileModerationGuard.ts` | Blocks client-side moderation escalation |
+| `functions/src/moderation/profileModerationGuard.ts` | Reconciles `profiles/{uid}.photos` against the server-owned ledger on every profile write |
+| `functions/src/moderation/photoModerationLedger.ts` | The ledger (`users/{uid}/photoModeration/{imageId}`): the authority for moderation status |
+| `functions/src/moderation/photoInvariants.ts` | What the photos array must look like: one id once, the primary photo, the Face Anchor rules |
 | `functions/src/backend.ts` | `onProfilePhotoUploaded` trigger |
+
+## Face Anchor
+
+Whether a photo is the member themselves is a separate, later question, decided
+by the face verification pipeline and recorded on the same ledger entry. A Face
+Anchor must pass both: moderation approval **and** face verification. Rejecting
+a photo removes its verdict. See `docs/FACE_ANCHOR.md`.
 
 ## Report hook
 
@@ -35,6 +47,6 @@ Add `AIModerationProvider` beside `manualModerationProvider.ts` and route throug
 
 ## Deploy requirements
 
-- Deploy Functions + Firestore rules
+- Deploy Functions + Firestore rules + Storage rules
 - Storage trigger region: `us-east1`
 - Scheduled retry runs inside `retentionCleanup`

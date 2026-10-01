@@ -43,9 +43,27 @@ void main() {
       expect(PhotoPolicy.deleteBlockReason(four, '1'), 'photo_primary_delete_blocked');
     });
 
-    test('sets primary photo', () {
-      final updated = PhotoPolicy.setPrimary(photos, '2');
+    test('sets a verified photo as primary', () {
+      // Only a photo verified as the member may be the primary one.
+      final verified = [
+        photos[0],
+        const ProfilePhoto(
+          id: '2',
+          storagePath: 'b',
+          order: 1,
+          moderationStatus: 'approved',
+          isFaceAnchorVerified: true,
+        ),
+        photos[2],
+      ];
+      final updated = PhotoPolicy.setPrimary(verified, '2');
       expect(updated.firstWhere((p) => p.id == '2').isPrimary, isTrue);
+      expect(updated.where((p) => p.isPrimary), hasLength(1));
+    });
+
+    test('an unverified photo is not made primary', () {
+      final updated = PhotoPolicy.setPrimary(photos, '2');
+      expect(updated.firstWhere((p) => p.isPrimary).id, '1');
     });
   });
 

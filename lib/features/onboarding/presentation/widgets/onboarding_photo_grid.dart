@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/features/face_anchor/domain/entities/face_anchor_state.dart';
+import 'package:mevora/features/face_anchor/presentation/face_anchor_l10n.dart';
+import 'package:mevora/features/face_anchor/presentation/widgets/face_anchor_badge.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_config.dart';
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -24,7 +27,21 @@ class OnboardingPhotoGrid extends StatelessWidget {
     required this.onRetry,
     required this.onRemove,
     required this.onReorder,
+    this.faceAnchorStatusOf,
+    this.onVerify,
+    this.needsFaceAnchor = false,
   });
+
+  /// How each uploaded photo stands with Face Anchor verification. Null where
+  /// verification is not wired in; the grid then looks as it always did.
+  final FaceAnchorPhotoStatus Function(OnboardingPhotoDraft draft)?
+  faceAnchorStatusOf;
+
+  /// Opens verification for a photo.
+  final ValueChanged<OnboardingPhotoDraft>? onVerify;
+
+  /// The member has enough photos but must still verify one to continue.
+  final bool needsFaceAnchor;
 
   final List<OnboardingPhotoDraft> drafts;
   final bool enabled;
@@ -69,6 +86,9 @@ class OnboardingPhotoGrid extends StatelessWidget {
               draft: draft,
               index: index,
               enabled: enabled,
+              faceAnchor:
+                  faceAnchorStatusOf?.call(draft) ?? FaceAnchorPhotoStatus.none,
+              onVerify: onVerify == null ? null : () => onVerify!(draft),
               onRetry: () => onRetry(draft.id),
               onRemove: () => onRemove(draft.id),
             );
@@ -78,6 +98,14 @@ class OnboardingPhotoGrid extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             l10n.photoMinRequired,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: context.palette.warning,
+            ),
+          ),
+        ] else if (needsFaceAnchor) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.faceAnchorRequiredNotice,
             style: theme.textTheme.bodySmall?.copyWith(
               color: context.palette.warning,
             ),
@@ -109,6 +137,8 @@ class _PhotoTile extends StatelessWidget {
     required this.draft,
     required this.index,
     required this.enabled,
+    required this.faceAnchor,
+    required this.onVerify,
     required this.onRetry,
     required this.onRemove,
   });
@@ -116,6 +146,8 @@ class _PhotoTile extends StatelessWidget {
   final OnboardingPhotoDraft draft;
   final int index;
   final bool enabled;
+  final FaceAnchorPhotoStatus faceAnchor;
+  final VoidCallback? onVerify;
   final VoidCallback onRetry;
   final VoidCallback onRemove;
 
@@ -124,6 +156,12 @@ class _PhotoTile extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final percent = (draft.progress * 100).round();
+    final settled = draft.remote != null && !draft.isUploading;
+    final canVerify =
+        settled &&
+        onVerify != null &&
+        (faceAnchor == FaceAnchorPhotoStatus.canVerify ||
+            faceAnchor == FaceAnchorPhotoStatus.notVerified);
     ImageProvider? image;
     final bytes = draft.localBytes;
     if (bytes != null && bytes.isNotEmpty) {
@@ -191,18 +229,33 @@ class _PhotoTile extends StatelessWidget {
             ? l10n.onboardingPrimaryPhoto
             : l10n.onboardingPhotoNumber(index + 1),
       ),
-      subtitle: Text(
-        draft.isUploading
-            ? l10n.photoUploadingPercent(percent)
-            : draft.error != null
-            ? l10n.photoUploadFailed
-            : draft.remote != null
-            ? l10n.photoUploaded
-            : l10n.photoSelected,
-      ),
+      subtitle: settled && faceAnchor == FaceAnchorPhotoStatus.verified
+          ? const Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: FaceAnchorBadge(),
+            )
+          : Text(
+              draft.isUploading
+                  ? l10n.photoUploadingPercent(percent)
+                  : draft.error != null
+                  ? l10n.photoUploadFailed
+                  : draft.remote != null
+                  ? FaceAnchorL10n.photoStatus(l10n, faceAnchor) ??
+                        l10n.photoUploaded
+                  : l10n.photoSelected,
+            ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (canVerify)
+            TextButton(
+              onPressed: enabled ? onVerify : null,
+              child: Text(
+                faceAnchor == FaceAnchorPhotoStatus.notVerified
+                    ? l10n.faceAnchorRetry
+                    : l10n.faceAnchorVerifyShort,
+              ),
+            ),
           if (draft.error != null)
             IconButton(
               tooltip: l10n.photoRetry,

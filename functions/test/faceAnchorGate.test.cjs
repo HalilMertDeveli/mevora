@@ -1,6 +1,10 @@
 const {describe, it} = require("node:test");
 const assert = require("node:assert/strict");
-const {faceAnchorSatisfied, isProfileDiscoverable} = require("../lib/profileSafety.js");
+const {
+  faceAnchorSatisfied,
+  isFaceAnchorRequiredFor,
+  isProfileDiscoverable,
+} = require("../lib/profileSafety.js");
 const {
   discoveryProfileRejectReason,
   profileOnlyRejectReason,
@@ -177,6 +181,27 @@ describe("face anchor gate — members not under the rule", () => {
       reason(profile({faceAnchorRequired: true, faceAnchorPhotoIds: [], profileModerationStatus: "rejected"})),
       "profile_moderation_rejected",
     );
+  });
+});
+
+describe("who must have a Face Anchor", () => {
+  it("a new member, while enforcement is on", () => {
+    assert.equal(isFaceAnchorRequiredFor({}, true), true);
+    assert.equal(isFaceAnchorRequiredFor(undefined, true), true);
+    assert.equal(isFaceAnchorRequiredFor({profileCompleted: false}, true), true);
+  });
+
+  it("nobody new, while enforcement is off", () => {
+    assert.equal(isFaceAnchorRequiredFor({}, false), false);
+    assert.equal(isFaceAnchorRequiredFor({profileCompleted: false}, false), false);
+  });
+
+  it("not a member who finished before the rule", () => {
+    assert.equal(isFaceAnchorRequiredFor({profileCompleted: true}, true), false);
+  });
+
+  it("a member under the rule, whatever the switch says", () => {
+    assert.equal(isFaceAnchorRequiredFor({profileCompleted: true, faceAnchorRequired: true}, false), true);
   });
 });
 

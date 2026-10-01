@@ -38,11 +38,13 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
     required UserProfile profile,
     required OnboardingStep step,
     required String? lastName,
+    bool requireFaceAnchor = false,
   }) async {
     final validation = OnboardingValidators.validateStep(
       step,
       profile,
       lastName: lastName,
+      requireFaceAnchor: requireFaceAnchor,
     );
     if (validation.isError) {
       return Err((validation as Err<void>).failure);
@@ -73,10 +75,12 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   Future<Result<UserProfile>> complete(
     UserProfile profile, {
     required String? lastName,
+    bool requireFaceAnchor = false,
   }) async {
     final validation = OnboardingValidators.validateCompletion(
       profile,
       lastName: lastName,
+      requireFaceAnchor: requireFaceAnchor,
     );
     if (validation.isError) {
       return Err((validation as Err<void>).failure);
@@ -141,7 +145,12 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       if (status == 'approved' ||
           status == 'rejected' ||
           status == 'manual_review') {
-        return photo.copyWith(moderationStatus: status);
+        // The verified flag travels with the status it depends on. Both are
+        // re-imposed by the server either way.
+        return photo.copyWith(
+          moderationStatus: status,
+          isFaceAnchorVerified: server.isFaceAnchorVerified,
+        );
       }
       return photo;
     }).toList(growable: false);
@@ -154,6 +163,9 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
         final details = error.message ?? '';
         if (details.contains('photos-required')) {
           return OnboardingMessages.serverPhotosRequired;
+        }
+        if (details.contains('face-anchor-required')) {
+          return OnboardingMessages.faceAnchorRequired;
         }
         if (details.contains('photos-not-approved')) {
           return OnboardingMessages.serverPhotosInReview;

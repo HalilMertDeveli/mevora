@@ -29,6 +29,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
     BoostProductConfig config = const BoostProductConfig(),
     PurchaseVerificationService? verification,
     DateTime Function()? clock,
+    Duration restoreWindow = const Duration(seconds: 2),
   }) : _store = store,
        _remote = remote,
        _uidSource = uidSource,
@@ -38,7 +39,8 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
        _cache = MemoryCache<String, _CachedBoost>(
          ttl: const Duration(minutes: 2),
        ),
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now,
+       _restoreWindow = restoreWindow;
 
   final StorePurchaseDataSource _store;
   final PurchaseRemoteDataSource _remote;
@@ -47,6 +49,9 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
   final PurchaseVerificationService _verification;
   final MemoryCache<String, _CachedBoost> _cache;
   final DateTime Function() _clock;
+
+  /// How long a restore waits for the store to redeliver its purchases.
+  final Duration _restoreWindow;
 
   @override
   Future<Result<BoostProduct>> getBoostProduct() async {
@@ -113,6 +118,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
                 event.status == StorePurchaseStatus.cancelled ||
                 event.status == StorePurchaseStatus.error,
           )
+          .where((event) => _concernsPurchaseOf(product, event))
           .first;
       await _store.buy(product);
       final event = await pending.timeout(const Duration(minutes: 5));
@@ -146,6 +152,21 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
     } finally {
       _purchaseInFlight = false;
     }
+  }
+
+  /// The store stream is one stream for the whole app: Premium subscriptions
+  /// report on it too. An event that names another product is not this
+  /// purchase — taking it would verify, and then consume, the wrong thing.
+  ///
+  /// A failed or cancelled sheet often names no product at all (Play reports
+  /// it that way), and can only be the sheet that is open.
+  bool _concernsPurchaseOf(BoostProduct product, StorePurchaseEvent event) {
+    final productId = event.transaction?.productId ?? '';
+    if (productId.isEmpty) {
+      return event.status == StorePurchaseStatus.cancelled ||
+          event.status == StorePurchaseStatus.error;
+    }
+    return productId == product.productId;
   }
 
   @override
@@ -284,6 +305,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
         );
       }
       final restored = <String>{};
+      final redeeming = <Future<void>>[];
       final sub = _store.purchaseEvents.listen((event) {
         final transaction = event.transaction;
         if (transaction == null) {
@@ -293,14 +315,22 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
             event.status != StorePurchaseStatus.restored) {
           return;
         }
+        // A restore redelivers everything the store account owns, Premium
+        // subscriptions included. Those are not Boost purchases.
+        if (!_config.isAllowedProductId(transaction.productId)) {
+          return;
+        }
         if (!restored.add(transaction.transactionId)) {
           return;
         }
-        unawaited(_redeemUnfinished(userId, transaction));
+        redeeming.add(_redeemUnfinished(userId, transaction));
       });
       await _store.restore();
-      await Future<void>.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(_restoreWindow);
       await sub.cancel();
+      // Wait for the server's answers, so the Boost read below — and the
+      // reload that follows a restore — sees what was just granted.
+      await Future.wait(redeeming);
       _cache.invalidate(_cacheKeyFor(userId));
       return getActiveBoost(userId);
     } on Object catch (error) {

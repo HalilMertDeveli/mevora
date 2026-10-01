@@ -82,10 +82,10 @@ UI must not import StoreKit, Play Billing, or Firebase.
 `verifyBoostPurchase` is the only writer of purchase fields and Boost `status` / `expiresAt` for store packs.
 
 1. Require Firebase Auth UID. Ignore client `status`, `expiresAt`, `verifiedAt`, `purchaseId`, `userId`.
-2. `PurchaseVerificationService` checks product ID against the catalog, non-empty uid/transaction, and `purchases/{purchaseId}` idempotency (`{platform}_{transactionId}`).
+2. `PurchaseVerificationService` checks product ID against the catalog, non-empty uid/transaction, and `purchases/{purchaseId}` idempotency. The ledger id is never the client's transaction id on Android: it is `android_{sha256(purchaseToken)}`, so one Play token is one entry (iOS: `ios_{transactionId}`, the id the App Store is asked for). Entries written under the old `android_{transactionId}` key are still found by their `purchaseTokenHashOrReference`.
 3. `ApplePurchaseVerifier` calls App Store Server API (`GET /inApps/v1/transactions/{id}`), production then sandbox.
-4. `GooglePurchaseVerifier` calls Play Developer API (`purchases.products.get`) and consumes the token server-side.
-5. Duplicate **verified** transaction → return existing Boost, **do not** add time again.
+4. `GooglePurchaseVerifier` calls Play Developer API (`purchases.products.get`). A token Play reports as already consumed, with no ledger entry, is rejected. The token is consumed server-side only **after** the ledger entry and the grant have committed; a failed consume is retried on the next verification of that token and never grants again.
+5. Duplicate **verified** transaction → return existing Boost, **do not** add time again. The same purchase from **another account** is rejected (`already-exists`).
 6. New verified duration pack → `BoostActivationService` sets `expiresAt = max(now, currentExpiresAt) + pack.duration` using **server time**.
 7. Legacy wallet SKUs still credit `users/{uid}/boostWallet/current`. `activateBoost` consumes one leftover credit (30 minutes) and may stack.
 
@@ -100,7 +100,7 @@ Production secrets (never commit):
 
 ### `purchases/{purchaseId}` (functions write only; owner read)
 
-`purchaseId`, `userId`, `productId`, `durationDays`, `durationMs`, `boostCount`, `platform`, `transactionId`, `purchaseTokenHashOrReference` (**hash**, not raw Play token), `status`, `purchasedAt`, `verifiedAt`, `createdAt`.
+`purchaseId`, `userId`, `productId`, `durationDays`, `durationMs`, `boostCount`, `platform`, `transactionId`, `purchaseTokenHashOrReference` (**hash**, not raw Play token), `status`, `purchasedAt`, `verifiedAt`, `createdAt`, `consumedAt` (set once Play confirms the server-side consume).
 
 No cards, CVV, bank data, or receipts.
 
@@ -131,9 +131,11 @@ Other users cannot read purchases or boosts. Discovery **does not** send `isBoos
 | Platform | Behavior |
 | --- | --- |
 | iOS | Unfinished StoreKit transactions can be recovered. Finished consumables are **not** redelivered. Active Boost is `users/{uid}/boosts` keyed by Firebase UID. |
-| Android | Unconsumed purchases may redeliver. `verifyBoostPurchase` is idempotent; server consumes the token. |
+| Android | Unconsumed purchases may redeliver. `verifyBoostPurchase` is idempotent; server consumes the token after the grant. |
 
-“Restore purchases” re-syncs the store, verifies unfinished transactions, then reloads Firebase.
+The app finishes / consumes a store purchase only after `verifyBoostPurchase` confirms the grant (a new grant, or its “already granted to you” answer). A purchase whose verification failed stays in the store, unconsumed, so it can be verified again.
+
+“Restore purchases” re-syncs the store, verifies unfinished Boost transactions (Premium subscriptions on the shared store stream are ignored), waits for the server, then reloads Firebase.
 
 A user on a new device with the same Mevora account sees active Boost from Firestore.
 

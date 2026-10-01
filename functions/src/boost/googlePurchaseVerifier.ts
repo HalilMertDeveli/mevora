@@ -23,6 +23,9 @@ async function playAccessToken(): Promise<string | null> {
  * Does not trust a client "payment succeeded" flag.
  */
 export class GooglePurchaseVerifier {
+  /** The Play credentials and HTTP client can be swapped, so tests never reach Google. */
+  constructor(private readonly deps: PlayApiDeps = {}) {}
+
   async verify(request: VerifyBoostRequest): Promise<StoreVerificationResult> {
     const token = request.purchaseToken;
     if (!token) {
@@ -39,19 +42,16 @@ export class GooglePurchaseVerifier {
       };
     }
 
-    const access = await playAccessToken();
+    const access = await (this.deps.accessToken ?? playAccessToken)();
     if (!access) {
       logger.warn("Google Play service account missing");
       return {ok: false, productId: request.productId, transactionId: request.transactionId, error: "unavailable"};
     }
 
-    const pkg = BOOST_PRODUCTS.androidPackageName;
-    const url =
-      `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/` +
-      `${encodeURIComponent(pkg)}/purchases/products/${encodeURIComponent(request.productId)}/tokens/${encodeURIComponent(token)}`;
-
     try {
-      const response = await fetch(url, {headers: {Authorization: `Bearer ${access}`}});
+      const response = await (this.deps.fetch ?? fetch)(purchaseUrl(request.productId, token), {
+        headers: {Authorization: `Bearer ${access}`},
+      });
       if (!response.ok) {
         return {
           ok: false,
@@ -69,8 +69,14 @@ export class GooglePurchaseVerifier {
       if (body.purchaseState !== 0) {
         return {ok: false, productId: request.productId, transactionId: request.transactionId, error: "invalid"};
       }
+      // A consumed purchase has been spent. verify() only runs for a token the
+      // ledger has never seen, so this one was consumed without a grant on
+      // record: a replay, or a ledger entry that no longer exists.
+      if (body.consumptionState === 1) {
+        logger.warn("boost_purchase_token_already_consumed", {productId: request.productId});
+        return {ok: false, productId: request.productId, transactionId: request.transactionId, error: "invalid"};
+      }
       const transactionId = body.orderId || request.transactionId;
-      await consume(pkg, request.productId, token, access);
       return {
         ok: true,
         productId: request.productId,
@@ -88,15 +94,49 @@ export class GooglePurchaseVerifier {
       };
     }
   }
+
+  /**
+   * Consumes a purchase on Google Play. Call it only once the grant is on the
+   * ledger: a consumed token can never be verified again, so consuming first
+   * would lose the purchase if the grant then failed.
+   *
+   * Resolves to whether Play confirmed it. Never throws — the grant is already
+   * committed, and the caller retries on the next verification of this token.
+   */
+  async consume(request: VerifyBoostRequest): Promise<boolean> {
+    const token = request.purchaseToken;
+    if (!token) {
+      return false;
+    }
+    try {
+      const access = await (this.deps.accessToken ?? playAccessToken)();
+      if (!access) {
+        return false;
+      }
+      const response = await (this.deps.fetch ?? fetch)(`${purchaseUrl(request.productId, token)}:consume`, {
+        method: "POST",
+        headers: {Authorization: `Bearer ${access}`},
+      });
+      if (!response.ok) {
+        logger.warn("Play consume failed", {status: response.status});
+      }
+      return response.ok;
+    } catch (error) {
+      logger.warn("Play consume skipped", {error: String(error)});
+      return false;
+    }
+  }
 }
 
-async function consume(pkg: string, productId: string, token: string, access: string): Promise<void> {
-  const url =
+export interface PlayApiDeps {
+  accessToken?: () => Promise<string | null>;
+  fetch?: typeof fetch;
+}
+
+function purchaseUrl(productId: string, token: string): string {
+  return (
     `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/` +
-    `${encodeURIComponent(pkg)}/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(token)}:consume`;
-  try {
-    await fetch(url, {method: "POST", headers: {Authorization: `Bearer ${access}`}});
-  } catch (error) {
-    logger.warn("Play consume skipped", {error: String(error)});
-  }
+    `${encodeURIComponent(BOOST_PRODUCTS.androidPackageName)}/purchases/products/` +
+    `${encodeURIComponent(productId)}/tokens/${encodeURIComponent(token)}`
+  );
 }

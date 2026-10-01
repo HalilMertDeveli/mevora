@@ -1,5 +1,6 @@
 import {
   isLedgerFaceAnchor,
+  isSweptWhenUnreferenced,
   photoChanged,
   reconcilePhoto,
   type LedgerEntry,
@@ -131,6 +132,47 @@ export function computePhotoInvariants(
     staleAnchorIds,
     unrecordedPhotos,
   };
+}
+
+/**
+ * Ledger entries whose `unreferencedSince` stamp disagrees with `photos`:
+ * true to set it, false to clear it. `photos` is the array the invariants
+ * produced, so a last anchor that was just put back counts as on the profile.
+ *
+ * The stamp is not a decision to delete. It records since when the photo has
+ * been off the profile, and an id that returns loses it again; only a stamp
+ * that has stood for the whole grace period is acted on (photoOrphanSweep.ts).
+ */
+export function unreferencedStampChanges(
+  photos: PhotoRecord[],
+  ledger: Map<string, LedgerEntry>,
+): Map<string, boolean> {
+  const present = new Set(photos.map(photoId));
+  const changes = new Map<string, boolean>();
+  for (const [imageId, entry] of ledger) {
+    const unreferenced = isSweptWhenUnreferenced(entry) && !present.has(imageId);
+    if (unreferenced !== (entry.unreferencedSince != null)) {
+      changes.set(imageId, unreferenced);
+    }
+  }
+  return changes;
+}
+
+/**
+ * Whether a write to profiles/{uid} can have left anything to reconcile.
+ *
+ * An empty array is only interesting when the server knows this profile has
+ * an anchor to put back (faceAnchorPhotoIds is not client-writable), or when
+ * the write is the one that emptied it: the photos that just left have to be
+ * marked as off the profile.
+ */
+export function profileNeedsReconciling(
+  before: Record<string, unknown> | undefined,
+  after: Record<string, unknown>,
+): boolean {
+  const hasPhotos = (profile: Record<string, unknown> | undefined) =>
+    Array.isArray(profile?.photos) && profile.photos.length > 0;
+  return hasPhotos(after) || storedFaceAnchorPhotoIds(after).length > 0 || hasPhotos(before);
 }
 
 /** True when `next` differs from `before` as an array — length, order or any field. */

@@ -14,6 +14,7 @@ import 'package:mevora/features/authentication/data/services/google_auth_service
 import 'package:mevora/features/authentication/data/services/phone_auth_service.dart';
 import 'package:mevora/features/authentication/data/services/spotify_auth_service.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:mevora/features/chat/e2ee/data/e2ee_secure_key_store.dart';
 import 'package:mevora/features/notifications/data/datasources/firebase_messaging_data_source.dart';
 
 AuthController createAuthController({
@@ -39,6 +40,9 @@ AuthController createAuthController({
       accountDeletionService: AccountDeletionService(
         config: config,
         googleAuthService: google,
+        // The chat key is kept across sign-outs so the conversations stay
+        // readable; a deleted account has none left to read.
+        onAccountDeleted: (uid) => E2eeSecureKeyStore().deletePrivateKey(uid),
       ),
       firebaseAuth: FirebaseAuth.instance,
       onBeforeSignOut: (uid) async {

@@ -22,7 +22,7 @@ class E2eeIdentityBootstrapAdapter implements E2eeIdentityBootstrapPort {
   }
 
   @override
-  Future<void> reset() => _identity.clearLocalIdentity();
+  Future<void> reset() async => _identity.forgetCachedIdentity();
 }
 
 /// Publishes the user's E2EE public key as soon as they sign in so peers can

@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
+import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/boost/data/datasources/store_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/repositories/purchase_repository_impl.dart';
 import 'package:mevora/features/boost/domain/config/boost_product_config.dart';
@@ -12,6 +15,30 @@ import 'package:mevora/features/boost/domain/entities/store_transaction.dart';
 
 import '../../helpers/fake_purchase_repository.dart';
 import '../../helpers/fake_store_purchase.dart';
+
+/// An account that signs in and out while the repository is alive.
+class _Uid implements AuthUidSource {
+  _Uid([this.currentUid]);
+
+  final StreamController<String?> _changes =
+      StreamController<String?>.broadcast(sync: true);
+
+  @override
+  String? currentUid;
+
+  @override
+  Stream<String?> watchUid() => _changes.stream;
+
+  void signIn(String uid) {
+    currentUid = uid;
+    _changes.add(uid);
+  }
+
+  void signOut() {
+    currentUid = null;
+    _changes.add(null);
+  }
+}
 
 void main() {
   late FakeStorePurchaseDataSource store;
@@ -272,6 +299,198 @@ void main() {
       expect(remote.verifyCalls, 1);
       expect(store.completions, hasLength(1));
     });
+  });
+
+  group('a purchase an earlier session paid for but never confirmed', () {
+    const leftOver = StoreTransaction(
+      platform: PurchasePlatform.android,
+      productId: 'com.mevora.app.boost',
+      transactionId: 'GPA.left-over',
+      purchaseToken: 'left-over-token',
+    );
+
+    setUp(() async {
+      // The repository built for every test has made its own start-up check
+      // by now; these tests count the ones they cause.
+      await pumpEventQueue();
+      store.outstandingQueries = 0;
+    });
+
+    /// A repository whose account can change after it is built.
+    PurchaseRepositoryImpl repositoryFor(_Uid account) {
+      return PurchaseRepositoryImpl(
+        store: store,
+        remote: remote,
+        uidSource: account,
+        clock: () => now,
+        restoreWindow: Duration.zero,
+      );
+    }
+
+    test('is submitted to the server and completed once confirmed', () async {
+      final recovering = repositoryFor(_Uid('u1'));
+      store.outstanding = const [leftOver];
+
+      await recovering.recoverUnfinishedPurchases();
+
+      expect(remote.verifyCalls, 1);
+      expect(remote.lastTransaction?.purchaseToken, 'left-over-token');
+      expect(store.completions.map((tx) => tx.transactionId), [
+        'GPA.left-over',
+      ]);
+    });
+
+    test(
+      'asks the store directly and never replays the shared stream',
+      () async {
+        final recovering = repositoryFor(_Uid('u1'));
+        store.outstanding = const [leftOver];
+
+        await recovering.recoverUnfinishedPurchases();
+
+        expect(store.outstandingQueries, 1);
+        expect(store.restored, isFalse);
+      },
+    );
+
+    test('stays unconsumed when the server still cannot confirm', () async {
+      final recovering = repositoryFor(_Uid('u1'));
+      store.outstanding = const [leftOver];
+      remote.verifyError = const PurchaseException(
+        'unavailable',
+        kind: PurchaseErrorKind.storeDown,
+      );
+
+      await recovering.recoverUnfinishedPurchases();
+
+      expect(remote.verifyCalls, 1);
+      expect(store.completions, isEmpty);
+    });
+
+    test('a Premium purchase the store also holds is left alone', () async {
+      final recovering = repositoryFor(_Uid('u1'));
+      store.outstanding = const [
+        StoreTransaction(
+          platform: PurchasePlatform.android,
+          productId: 'mevora_premium',
+          transactionId: 'GPA.premium',
+          purchaseToken: 'premium-token',
+        ),
+      ];
+
+      await recovering.recoverUnfinishedPurchases();
+
+      expect(remote.verifyCalls, 0);
+      expect(store.completions, isEmpty);
+    });
+
+    test('the same purchase listed twice is submitted once', () async {
+      final recovering = repositoryFor(_Uid('u1'));
+      store.outstanding = const [leftOver, leftOver];
+
+      await recovering.recoverUnfinishedPurchases();
+
+      expect(remote.verifyCalls, 1);
+      expect(store.completions, hasLength(1));
+    });
+
+    test('nothing is asked of the store while nobody is signed in', () async {
+      final recovering = repositoryFor(_Uid());
+      store.outstanding = const [leftOver];
+
+      await recovering.recoverUnfinishedPurchases();
+
+      expect(store.outstandingQueries, 0);
+      expect(remote.verifyCalls, 0);
+    });
+
+    test('a store that cannot answer does not break start-up', () async {
+      final recovering = repositoryFor(_Uid('u1'));
+      store.outstandingError = StateError('billing unavailable');
+
+      await recovering.recoverUnfinishedPurchases();
+
+      expect(remote.verifyCalls, 0);
+    });
+
+    test('two overlapping checks submit it once', () async {
+      final recovering = repositoryFor(_Uid('u1'));
+      store.outstanding = const [leftOver];
+      remote.verifyDelay = const Duration(milliseconds: 20);
+
+      await Future.wait([
+        recovering.recoverUnfinishedPurchases(),
+        recovering.recoverUnfinishedPurchases(),
+      ]);
+
+      expect(remote.verifyCalls, 1);
+    });
+
+    test('runs when an account signs in, once per account', () async {
+      final account = _Uid();
+      repositoryFor(account);
+      store.outstanding = const [leftOver];
+
+      account.signIn('u1');
+      await pumpEventQueue();
+      expect(remote.verifyCalls, 1);
+      expect(store.completions, hasLength(1));
+
+      // The same account reported again — a token refresh — is not a sign-in.
+      account.signIn('u1');
+      await pumpEventQueue();
+      expect(store.outstandingQueries, 1);
+
+      account.signOut();
+      await pumpEventQueue();
+      expect(store.outstandingQueries, 1);
+
+      account.signIn('u2');
+      await pumpEventQueue();
+      expect(store.outstandingQueries, 2);
+    });
+
+    test(
+      'runs at app start for an account that is already signed in',
+      () async {
+        store.outstanding = const [leftOver];
+
+        // FakeUidSource reports its account as soon as it is listened to, the
+        // way Firebase Auth does for a restored session.
+        PurchaseRepositoryImpl(
+          store: store,
+          remote: remote,
+          uidSource: FakeUidSource('u1'),
+          clock: () => now,
+        );
+        await pumpEventQueue();
+
+        expect(remote.verifyCalls, 1);
+        expect(remote.lastTransaction?.purchaseToken, 'left-over-token');
+        expect(store.restored, isFalse);
+      },
+    );
+
+    test(
+      'does not take over a purchase that is on screen right now',
+      () async {
+        final recovering = repositoryFor(_Uid('u1'));
+        final product =
+            (await recovering.getBoostProduct() as Success<BoostProduct>).value;
+        store.outstanding = [store.event.transaction!];
+        store.buyGate = Completer<void>();
+
+        final buying = recovering.purchaseBoost(product);
+        await pumpEventQueue();
+        await recovering.recoverUnfinishedPurchases();
+        store.buyGate!.complete();
+        await buying;
+
+        // The purchase flow verifies and completes its own purchase.
+        expect(remote.verifyCalls, 0);
+        expect(store.completions, isEmpty);
+      },
+    );
   });
 
   test('uid mismatch refuses verification', () async {

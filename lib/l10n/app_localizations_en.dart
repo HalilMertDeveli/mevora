@@ -1944,6 +1944,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boostBuy => 'Buy Boost';
 
   @override
+  String get boostOneTimePurchaseNote =>
+      'Boost is a one-time purchase. It does not renew.';
+
+  @override
   String get boostPurchasing => 'Starting purchase...';
 
   @override
@@ -4511,6 +4515,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get premiumRenewsLabel =>
       'Renews automatically. Cancel anytime in the store.';
+
+  @override
+  String get premiumPlanBilledMonthly => 'Billed monthly';
+
+  @override
+  String get premiumPlanBilledYearly => 'Billed yearly';
+
+  @override
+  String premiumPricePerMonth(String price) {
+    return '$price / month';
+  }
+
+  @override
+  String premiumPricePerYear(String price) {
+    return '$price / year';
+  }
+
+  @override
+  String premiumRenewalMonthly(String price) {
+    return 'Your subscription renews automatically every month at $price until you cancel.';
+  }
+
+  @override
+  String premiumRenewalYearly(String price) {
+    return 'Your subscription renews automatically every year at $price until you cancel.';
+  }
+
+  @override
+  String premiumRenewalGeneric(String price) {
+    return 'Your subscription renews automatically at $price each billing period until you cancel.';
+  }
+
+  @override
+  String premiumCancelHow(String store) {
+    return 'Cancel anytime in $store > Subscriptions. You keep Premium until the end of the period you paid for.';
+  }
+
+  @override
+  String get premiumManageSubscription => 'Manage subscription';
+
+  @override
+  String premiumManageSubscriptionFailed(String store) {
+    return 'We couldn\'t open $store. To manage your subscription, go to $store > Subscriptions.';
+  }
 
   @override
   String get musicFollowedArtistsTitle => 'Artists you follow';

@@ -1928,6 +1928,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get boostBuy => 'Boost satın al';
 
   @override
+  String get boostOneTimePurchaseNote =>
+      'Boost tek seferlik bir satın almadır. Kendiliğinden yenilenmez.';
+
+  @override
   String get boostPurchasing => 'Satın alma işlemi başlatılıyor...';
 
   @override
@@ -4496,6 +4500,50 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get premiumRenewsLabel =>
       'Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.';
+
+  @override
+  String get premiumPlanBilledMonthly => 'Aylık faturalanır';
+
+  @override
+  String get premiumPlanBilledYearly => 'Yıllık faturalanır';
+
+  @override
+  String premiumPricePerMonth(String price) {
+    return '$price / ay';
+  }
+
+  @override
+  String premiumPricePerYear(String price) {
+    return '$price / yıl';
+  }
+
+  @override
+  String premiumRenewalMonthly(String price) {
+    return 'Aboneliğin, sen iptal edene kadar her ay $price üzerinden otomatik yenilenir.';
+  }
+
+  @override
+  String premiumRenewalYearly(String price) {
+    return 'Aboneliğin, sen iptal edene kadar her yıl $price üzerinden otomatik yenilenir.';
+  }
+
+  @override
+  String premiumRenewalGeneric(String price) {
+    return 'Aboneliğin, sen iptal edene kadar her fatura döneminde $price üzerinden otomatik yenilenir.';
+  }
+
+  @override
+  String premiumCancelHow(String store) {
+    return 'İstediğin zaman $store > Abonelikler bölümünden iptal edebilirsin. Ödediğin dönemin sonuna kadar Premium açık kalır.';
+  }
+
+  @override
+  String get premiumManageSubscription => 'Aboneliği yönet';
+
+  @override
+  String premiumManageSubscriptionFailed(String store) {
+    return '$store açılamadı. Aboneliğini yönetmek için $store > Abonelikler bölümüne git.';
+  }
 
   @override
   String get musicFollowedArtistsTitle => 'Takip ettiğin sanatçılar';

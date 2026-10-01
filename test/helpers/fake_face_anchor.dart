@@ -55,8 +55,19 @@ class FakeFaceAnchorRepository implements FaceAnchorRepository {
     yield* _states.stream;
   }
 
+  /// How many of the next requirement loads fail to reach the server.
+  var requirementsOutages = 0;
+  var requirementLoads = 0;
+
   @override
-  Future<FaceAnchorRequirements> loadRequirements() async => requirements;
+  Future<FaceAnchorRequirements> loadRequirements() async {
+    requirementLoads += 1;
+    if (requirementsOutages > 0) {
+      requirementsOutages -= 1;
+      return FaceAnchorRequirements.unknown;
+    }
+    return requirements;
+  }
 
   @override
   Future<Result<FaceAnchorAttempt>> startAttempt({

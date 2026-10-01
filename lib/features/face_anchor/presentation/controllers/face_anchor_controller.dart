@@ -41,6 +41,7 @@ class FaceAnchorController extends ChangeNotifier {
     required FaceAnchorRepository repository,
     required LiveSelfieCapture capture,
     this.recoveryDelay = const Duration(seconds: 95),
+    this.requirementsRetryDelay = const Duration(seconds: 5),
   }) : _repository = repository,
        _capture = capture;
 
@@ -51,6 +52,12 @@ class FaceAnchorController extends ChangeNotifier {
   /// about it again. Just past the server's own "this invocation is dead"
   /// threshold, so the question settles an abandoned attempt.
   final Duration recoveryDelay;
+
+  /// How long to wait before asking the server for [requirements] again when
+  /// it could not be reached.
+  final Duration requirementsRetryDelay;
+
+  static const int _maxRequirementsRetries = 5;
 
   FaceAnchorState state = FaceAnchorState.none;
   FaceAnchorRequirements requirements = FaceAnchorRequirements.unknown;
@@ -64,6 +71,8 @@ class FaceAnchorController extends ChangeNotifier {
   String? _busyPhotoId;
   StreamSubscription<FaceAnchorState>? _subscription;
   Timer? _recovery;
+  Timer? _requirementsRetry;
+  var _requirementsRetries = 0;
   var _disposed = false;
 
   bool get isBusy => phase != FaceAnchorPhase.idle;
@@ -78,6 +87,7 @@ class FaceAnchorController extends ChangeNotifier {
       return;
     }
     _uid = uid;
+    _requirementsRetries = 0;
     state = FaceAnchorState.none;
     unawaited(_subscription?.cancel());
     _subscription = _repository
@@ -98,6 +108,26 @@ class FaceAnchorController extends ChangeNotifier {
     }
     requirements = loaded;
     notifyListeners();
+    _scheduleRequirementsRetry();
+  }
+
+  /// An unanswered request leaves [FaceAnchorRequirements.unknown], under
+  /// which verification is not offered at all. A member on a flaky connection
+  /// must not be left without the one action that lets them finish, so the
+  /// question is asked again a few times.
+  void _scheduleRequirementsRetry() {
+    _requirementsRetry?.cancel();
+    _requirementsRetry = null;
+    final answered = requirements.consentVersion > 0;
+    if (answered || _requirementsRetries >= _maxRequirementsRetries) {
+      return;
+    }
+    _requirementsRetries += 1;
+    _requirementsRetry = Timer(requirementsRetryDelay, () {
+      if (!_disposed) {
+        unawaited(refreshRequirements());
+      }
+    });
   }
 
   FaceAnchorPhotoStatus statusFor(ProfilePhoto photo) {
@@ -254,6 +284,7 @@ class FaceAnchorController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _recovery?.cancel();
+    _requirementsRetry?.cancel();
     unawaited(_subscription?.cancel());
     super.dispose();
   }

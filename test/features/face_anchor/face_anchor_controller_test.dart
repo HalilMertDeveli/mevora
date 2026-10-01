@@ -358,6 +358,50 @@ void main() {
     });
   });
 
+  group('requirements', () {
+    test('are asked for again when the server could not be reached', () async {
+      final repo = FakeFaceAnchorRepository()..requirementsOutages = 2;
+      addTearDown(repo.dispose);
+      final controller = FaceAnchorController(
+        repository: repo,
+        capture: FakeLiveSelfieCapture(),
+        requirementsRetryDelay: const Duration(milliseconds: 20),
+      );
+      addTearDown(controller.dispose);
+
+      controller.bind('uid');
+      await _settle();
+      // Unknown: nothing is demanded and nothing is offered.
+      expect(controller.requirements.available, isFalse);
+      expect(controller.statusFor(_approved), FaceAnchorPhotoStatus.none);
+
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(controller.requirements.available, isTrue);
+      expect(controller.requirements.required, isTrue);
+      expect(controller.statusFor(_approved), FaceAnchorPhotoStatus.canVerify);
+      expect(repo.requirementLoads, 3);
+
+      // Answered: no further requests.
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(repo.requirementLoads, 3);
+    });
+
+    test('give up after a few attempts rather than polling forever', () async {
+      final repo = FakeFaceAnchorRepository()..requirementsOutages = 100;
+      addTearDown(repo.dispose);
+      final controller = FaceAnchorController(
+        repository: repo,
+        capture: FakeLiveSelfieCapture(),
+        requirementsRetryDelay: const Duration(milliseconds: 5),
+      );
+      addTearDown(controller.dispose);
+
+      controller.bind('uid');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(repo.requirementLoads, 6);
+    });
+  });
+
   group('how a photo presents itself', () {
     FaceAnchorPhotoStatus resolve(
       ProfilePhoto photo, {

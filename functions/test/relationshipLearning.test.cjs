@@ -14,11 +14,17 @@ let clock = null;
 Date.now = () => clock ?? realNow();
 
 const catalog = require("../lib/relationshipLearning/catalog.js");
-const {ANSWER_WRITE_LIMIT, DECLARED_IMPORTANCE, EVIDENCE} = require("../lib/relationshipLearning/config.js");
+const {ANSWER_WRITE_LIMIT, CORE, DECLARED_IMPORTANCE, EVIDENCE} = require("../lib/relationshipLearning/config.js");
+const {CORE_SEQUENCE, corePosition} = require("../lib/relationshipLearning/coreSequence.js");
 const model = require("../lib/relationshipLearning/model.js");
 const schedule = require("../lib/relationshipLearning/schedule.js");
 const {confidentScore, evidenceConfidence} = require("../lib/relationshipLearning/compare.js");
-const {learningStatePath, markLearningRequired} = require("../lib/relationshipLearning/store.js");
+const {
+  LEARNING_DEV_CLOCK_DOC,
+  learningStatePath,
+  markLearningRequired,
+  resolveLearningDayKey,
+} = require("../lib/relationshipLearning/store.js");
 const {
   getRelationshipLearningState,
   saveDailyRelationshipAnswer,
@@ -129,17 +135,18 @@ describe("question bank", () => {
     }
   });
 
-  it("is large enough for a daily rotation and covers every area", () => {
-    const eligible = catalog.dailyEligibleQuestions();
-    assert.ok(eligible.length >= 60, `${eligible.length} questions`);
+  it("covers every area and asks how much each one matters", () => {
+    const active = catalog.LEARNING_QUESTIONS.filter((q) => q.active);
+    assert.ok(active.length >= 60, `${active.length} questions`);
     for (const category of ["relationship", "communication", "lifestyle", "values", "humor", "music", "interests"]) {
-      assert.ok(eligible.some((q) => q.category === category), `${category} missing`);
+      assert.ok(active.some((q) => q.category === category), `${category} missing`);
     }
     for (const dimension of PERSONALIZATION_DIMENSIONS) {
-      assert.ok(eligible.some((q) => catalog.isImportanceQuestion(q) && q.dimension === dimension),
+      assert.ok(active.some((q) => catalog.isImportanceQuestion(q) && q.dimension === dimension),
         `no importance question for ${dimension}`);
     }
   });
+
 
   it("stays away from diagnosis and sensitive traits", () => {
     const banned = /(attachment|anxious|avoidant|diagnos|disorder|depress|therapy|religio|politic|sexual|health|bağlanma|kaygı|terapi|\bdin\b|siyas|cinsel|sağlık)/i;
@@ -180,15 +187,34 @@ describe("question bank", () => {
   });
 });
 
-describe("global daily set: same for everyone, every day", () => {
-  it("is ten questions, deterministic, with no member input at all", () => {
-    const a = schedule.buildDailySet(TODAY);
-    const b = schedule.buildDailySet(TODAY);
-    assert.deepEqual(a, b);
-    assert.equal(a.questions.length, 10);
-    assert.equal(new Set(a.questions.map((q) => q.id)).size, 10);
-    assert.equal(a.questionSetId, "daily-2026-09-29-s1");
-    assert.equal(schedule.buildDailySet.length, 1, "the day is the only input");
+describe("Core sequence: the same questions in the same order for everyone", () => {
+  const ids = (set) => set.questions.map((q) => q.id);
+  const fresh = () => model.emptyLearningState();
+
+  it("is every question of the bank exactly once, with onboarding all comparable and mixed", () => {
+    assert.equal(new Set(CORE_SEQUENCE).size, CORE_SEQUENCE.length);
+    assert.deepEqual([...CORE_SEQUENCE].sort(), catalog.LEARNING_QUESTIONS.map((q) => q.id).sort());
+    const onboarding = CORE_SEQUENCE.slice(0, CORE.onboardingCount).map(catalog.learningQuestion);
+    assert.equal(onboarding.length, 15);
+    assert.equal(onboarding.some(catalog.isImportanceQuestion), false, "Q1-Q15 are all comparable");
+    assert.ok(new Set(onboarding.map((q) => q.category)).size >= 5, "onboarding mixes areas");
+    const importanceAt = CORE_SEQUENCE
+      .map((id, index) => (catalog.isImportanceQuestion(catalog.learningQuestion(id)) ? index + 1 : null))
+      .filter((position) => position !== null);
+    assert.deepEqual(importanceAt, [20, 25, 30, 35, 40, 45], "one importance question closes each of days 2-7");
+    assert.equal(corePosition("relationship_free_evening_v1"), 1);
+    assert.equal(corePosition("rq_001"), null);
+  });
+
+  it("asks a new member Q1-Q15, whatever the day, with no member input but their answers", () => {
+    const today = schedule.memberDailySet(fresh(), TODAY);
+    const later = schedule.memberDailySet(fresh(), "2026-11-03");
+    assert.equal(today.kind, "onboarding");
+    assert.deepEqual(ids(today), CORE_SEQUENCE.slice(0, 15));
+    assert.deepEqual(ids(later), ids(today), "the join date does not change the questions or their order");
+    assert.notEqual(later.questionSetId, today.questionSetId, "but a set belongs to its day");
+    assert.deepEqual(schedule.memberDailySet(fresh(), TODAY), today, "deterministic");
+    assert.equal(schedule.memberDailySet.length, 2, "answers and the day are the only inputs");
   });
 
   it("uses the Istanbul day on the server clock", () => {
@@ -198,69 +224,154 @@ describe("global daily set: same for everyone, every day", () => {
     assert.equal(schedule.nextLearningDayStartMs(T0), Date.UTC(2026, 8, 29, 21, 0));
   });
 
-  it("brings a fresh set every day and walks the whole bank", () => {
-    const seen = new Set();
-    let previous = null;
-    for (let day = 0; day < 40; day++) {
+  it("then gives five a day in sequence order, never a question twice, until the sequence is finished", () => {
+    let state = answerSet(fresh(), schedule.memberDailySet(fresh(), TODAY));
+    const asked = CORE_SEQUENCE.slice(0, 15);
+    let day = 0;
+    for (;;) {
+      day += 1;
       const dateKey = schedule.learningDayKey(T0 + day * DAY);
-      const ids = schedule.buildDailySet(dateKey).questions.map((q) => q.id);
-      if (previous) assert.equal(ids.some((id) => previous.includes(id)), false, `${dateKey} repeats yesterday`);
-      previous = ids;
-      ids.forEach((id) => seen.add(id));
+      const set = schedule.memberDailySet(state, dateKey);
+      if (set.questions.length === 0) break;
+      assert.equal(set.kind, "core");
+      assert.ok(set.questions.length <= CORE.dailyCount, "never more than five Core questions a day");
+      assert.deepEqual(ids(set), CORE_SEQUENCE.slice(asked.length, asked.length + CORE.dailyCount), dateKey);
+      asked.push(...ids(set));
+      state = answerSet(state, set, first, T0 + day * DAY);
     }
-    assert.equal(seen.size, catalog.dailyEligibleQuestions().length);
+    assert.deepEqual(asked, [...CORE_SEQUENCE], "every question asked once, in order");
+    assert.equal(day, 11, "Q16-Q64 take ten days");
+    assert.deepEqual(schedule.coreProgress(state), {answered: 64, total: 64, exhausted: true});
+    assert.equal(model.journeyStage(state, true, schedule.memberDailySet(state, "2027-01-01")), "done",
+      "a finished sequence leaves nothing to ask");
   });
 
-  it("rejects a tampered stored set instead of trusting it", () => {
-    const set = schedule.buildDailySet(TODAY);
-    assert.deepEqual(schedule.parseDailySet(JSON.parse(JSON.stringify(set)), TODAY), set);
-    assert.equal(schedule.parseDailySet(set, "2026-09-30"), null, "another day");
-    assert.equal(schedule.parseDailySet({...set, questions: set.questions.slice(0, 9)}, TODAY), null);
-    assert.equal(schedule.parseDailySet({...set, questions: [...set.questions.slice(0, 9), set.questions[0]]}, TODAY), null);
-    const wrongVersion = set.questions.map((q, i) => (i === 0 ? {...q, version: 9} : q));
-    assert.equal(schedule.parseDailySet({...set, questions: wrongVersion}, TODAY), null);
-    const unknown = set.questions.map((q, i) => (i === 0 ? {id: "relationship_evil_v1", version: 1} : q));
-    assert.equal(schedule.parseDailySet({...set, questions: unknown}, TODAY), null);
+  it("freezes the day's set with the first answer, so answering never pulls tomorrow's questions in", () => {
+    const onboarded = answerSet(fresh(), schedule.memberDailySet(fresh(), TODAY));
+    assert.deepEqual(ids(schedule.memberDailySet(onboarded, TODAY)), CORE_SEQUENCE.slice(0, 15),
+      "the onboarding day brings no extra five");
+    const dayTwo = schedule.memberDailySet(onboarded, "2026-09-30");
+    assert.deepEqual(ids(dayTwo), CORE_SEQUENCE.slice(15, 20));
+    const two = answerSet(onboarded, dayTwo, first, T0 + DAY, 2);
+    assert.deepEqual(schedule.memberDailySet(two, "2026-09-30"), dayTwo, "same set after two answers");
+    const all = answerSet(two, dayTwo, first, T0 + DAY);
+    assert.deepEqual(schedule.memberDailySet(all, "2026-09-30"), dayTwo, "and after all five");
+    const reread = model.parseLearningState(JSON.parse(JSON.stringify(model.serializeLearningState(all))));
+    assert.deepEqual(schedule.memberDailySet(reread, "2026-09-30"), dayTwo, "survives a round trip through storage");
+    assert.deepEqual(ids(schedule.memberDailySet(all, "2026-10-01")), CORE_SEQUENCE.slice(20, 25));
   });
 
-  it("serves three members the identical set: ids, versions, order and options", async () => {
+  it("does not advance on a skipped or unfinished day: the open questions come back first", () => {
+    const onboarded = answerSet(fresh(), schedule.memberDailySet(fresh(), TODAY));
+    const dayTwo = schedule.memberDailySet(onboarded, "2026-09-30");
+    const partial = answerSet(onboarded, dayTwo, first, T0 + DAY, 2);
+    assert.deepEqual(ids(schedule.memberDailySet(partial, "2026-10-01")), CORE_SEQUENCE.slice(17, 22));
+    const skipped = model.skipToday(onboarded, dayTwo, T0 + DAY).state;
+    assert.deepEqual(ids(schedule.memberDailySet(skipped, "2026-10-01")), CORE_SEQUENCE.slice(15, 20));
+    assert.deepEqual(ids(schedule.memberDailySet(onboarded, "2026-10-20")), CORE_SEQUENCE.slice(15, 20),
+      "days away are not made up for: still five");
+  });
+
+  it("resumes an unfinished onboarding with what is left of Q1-Q15, not with new questions", () => {
+    const required = {...fresh(), required: true};
+    const seven = answerSet(required, schedule.memberDailySet(required, TODAY), first, T0, 7);
+    const nextDay = schedule.memberDailySet(seven, "2026-09-30");
+    assert.equal(nextDay.kind, "onboarding");
+    assert.deepEqual(ids(nextDay), CORE_SEQUENCE.slice(7, 15));
+    assert.equal(model.isLearningBlockingPicks(seven), true);
+    const done = answerSet(seven, nextDay, first, T0 + DAY);
+    assert.equal(done.initialCompletedAtMs, T0 + DAY + 7000);
+    assert.equal(model.isLearningBlockingPicks(done), false);
+    assert.deepEqual(ids(schedule.memberDailySet(done, "2026-10-01")), CORE_SEQUENCE.slice(15, 20));
+  });
+
+  it("lets answers given before the sequence existed keep their place, with no migration", () => {
+    // State as the calendar schedule left it: scattered answers, a completed first set, no frozen ids.
+    const legacy = stateWith({
+      [CORE_SEQUENCE[2]]: first(catalog.learningQuestion(CORE_SEQUENCE[2])),
+      [CORE_SEQUENCE[16]]: first(catalog.learningQuestion(CORE_SEQUENCE[16])),
+      [CORE_SEQUENCE[40]]: first(catalog.learningQuestion(CORE_SEQUENCE[40])),
+    }, "2026-09-20");
+    legacy.initialCompletedAtMs = T0 - 9 * DAY;
+    const set = schedule.memberDailySet(legacy, TODAY);
+    assert.equal(set.kind, "core");
+    assert.deepEqual(ids(set), [0, 1, 3, 4, 5].map((index) => CORE_SEQUENCE[index]), "the first five still open");
+
+    const completedToday = model.parseLearningState({
+      ...model.serializeLearningState(legacy),
+      daily: {dateKey: TODAY, questionSetId: "daily-2026-09-29-s1", completedAtMs: T0},
+    });
+    assert.equal(completedToday.daily.questionIds, null);
+    assert.deepEqual(schedule.memberDailySet(completedToday, TODAY).questions, [], "a day already completed asks nothing more");
+    assert.equal(schedule.memberDailySet(completedToday, "2026-09-30").questions.length, 5);
+  });
+
+  it("skips a retired question without moving any other", () => {
+    const retired = catalog.learningQuestion(CORE_SEQUENCE[3]);
+    retired.active = false;
+    try {
+      const set = schedule.memberDailySet(fresh(), TODAY);
+      assert.equal(set.questions.length, 14);
+      assert.equal(ids(set).includes(retired.id), false);
+      assert.deepEqual(ids(set), CORE_SEQUENCE.slice(0, 15).filter((id) => id !== retired.id));
+      const onboarded = answerSet(fresh(), set);
+      assert.deepEqual(ids(schedule.memberDailySet(onboarded, "2026-09-30")), CORE_SEQUENCE.slice(15, 20));
+    } finally {
+      retired.active = true;
+    }
+  });
+
+  it("serves members who join on different days the identical onboarding: ids, versions, order and options", async () => {
     const payloads = [];
-    for (const [uid, at] of [["me", T0], ["other", T0 + 5 * HOUR], ["third", T0 - 8 * HOUR]]) {
+    for (const [uid, at] of [["me", T0], ["other", T0 + 3 * DAY + 5 * HOUR], ["third", T0 - 8 * HOUR]]) {
       clock = at;
       const state = await callAs(getRelationshipLearningState, uid);
-      payloads.push({
-        questionSetId: state.today.questionSetId,
-        questions: state.today.questions.map(({id, version, options, prompt}) => ({id, version, options, prompt})),
-      });
+      payloads.push(state.today.questions.map(({id, version, options, prompt}) => ({id, version, options, prompt})));
     }
-    assert.equal(payloads[0].questions.length, 10);
+    assert.deepEqual(payloads[0].map((q) => q.id), CORE_SEQUENCE.slice(0, 15));
     assert.deepEqual(payloads[1], payloads[0]);
     assert.deepEqual(payloads[2], payloads[0]);
-    const doc = (await db.doc(`relationshipDailySets/${TODAY}`).get()).data();
-    assert.deepEqual(doc.questions.map((q) => q.id), payloads[0].questions.map((q) => q.id));
+    assert.equal((await db.collection("relationshipDailySets").get()).size, 0, "no global set is written any more");
   });
 
-  it("keeps the stored set for the whole day, even if the bank's rotation changes", async () => {
-    const other = schedule.buildDailySet("2026-10-15");
-    await db.doc(`relationshipDailySets/${TODAY}`).set({...other, dateKey: TODAY, questionSetId: `daily-${TODAY}-s1`});
-    const state = await callAs(getRelationshipLearningState, "me");
-    assert.deepEqual(state.today.questions.map((q) => q.id), other.questions.map((q) => q.id));
+  it("makes two members at different depths share exactly the shorter one's answers", async () => {
+    await answerToday("me");
+    await answerToday("other");
+    for (const day of [1, 2]) {
+      clock = T0 + day * DAY;
+      await answerToday("me");
+    }
+    const mine = (await db.doc("users/me/relationshipMatch/summary").get()).data().learningAnswers;
+    const theirs = (await db.doc("users/other/relationshipMatch/summary").get()).data().learningAnswers;
+    assert.deepEqual(Object.keys(theirs).sort(), CORE_SEQUENCE.slice(0, 15).sort());
+    assert.equal(Object.keys(mine).length, 15 + 4 + 4, "two more days: four comparable answers each");
+    assert.equal((await relationshipScoreForPair("me", "other")).sharedQuestionCount, 15);
   });
 
-  it("replaces a corrupt stored set with the scheduled one", async () => {
-    await db.doc(`relationshipDailySets/${TODAY}`).set({dateKey: TODAY, questions: [{id: "x", version: 1}]});
-    const state = await callAs(getRelationshipLearningState, "me");
-    assert.deepEqual(state.today.questions.map((q) => q.id), schedule.buildDailySet(TODAY).questions.map((q) => q.id));
-  });
-
-  it("brings the next day's set after midnight Istanbul", async () => {
+  it("starts a new day after midnight Istanbul", async () => {
     clock = Date.UTC(2026, 8, 29, 20, 59);
     const late = await callAs(getRelationshipLearningState, "me");
     clock = Date.UTC(2026, 8, 29, 21, 1);
     const next = await callAs(getRelationshipLearningState, "me");
     assert.equal(late.today.dateKey, TODAY);
     assert.equal(next.today.dateKey, "2026-09-30");
-    assert.notDeepEqual(next.today.questions.map((q) => q.id), late.today.questions.map((q) => q.id));
+    assert.notEqual(next.today.questionSetId, late.today.questionSetId);
+    assert.deepEqual(next.today.questions.map((q) => q.id), late.today.questions.map((q) => q.id),
+      "onboarding stays Q1-Q15 until it is answered");
+  });
+
+  it("moves the day with the test clock only inside the Functions emulator", async () => {
+    await db.doc(LEARNING_DEV_CLOCK_DOC).set({dateKey: "2026-12-24"});
+    assert.equal(await resolveLearningDayKey(db, T0), TODAY, "a deployed function never reads it");
+    process.env.FUNCTIONS_EMULATOR = "true";
+    try {
+      assert.equal(await resolveLearningDayKey(db, T0), "2026-12-24");
+      assert.equal((await callAs(getRelationshipLearningState, "me")).today.dateKey, "2026-12-24");
+      await db.doc(LEARNING_DEV_CLOCK_DOC).set({dateKey: "tomorrow"});
+      assert.equal(await resolveLearningDayKey(db, T0), TODAY, "a malformed clock is ignored");
+    } finally {
+      delete process.env.FUNCTIONS_EMULATOR;
+    }
   });
 
   it("has no scheduler anywhere in relationship learning", () => {
@@ -273,7 +384,8 @@ describe("global daily set: same for everyone, every day", () => {
 });
 
 describe("answering today's set: progress, resume and idempotency", () => {
-  const set = schedule.buildDailySet(TODAY);
+  const set = schedule.memberDailySet(model.emptyLearningState(), TODAY);
+  const tomorrowsCore = catalog.learningQuestion(CORE_SEQUENCE[15]);
 
   it("counts progress per answer so a restart resumes where it stopped", () => {
     const four = answerSet(model.emptyLearningState(), set, first, T0, 4);
@@ -285,8 +397,8 @@ describe("answering today's set: progress, resume and idempotency", () => {
   });
 
   it("completes exactly once, and a repeated or changed answer never double counts", () => {
-    let state = answerSet(model.emptyLearningState(), set, first, T0, 9);
-    const lastRef = set.questions[9];
+    let state = answerSet(model.emptyLearningState(), set, first, T0, 14);
+    const lastRef = set.questions[14];
     const lastQuestion = catalog.learningQuestion(lastRef.id);
     const input = {questionSetId: set.questionSetId, questionId: lastRef.id, questionVersion: lastRef.version};
     const done = model.applyDailyAnswer(state, set, {...input, answerId: first(lastQuestion)}, T0 + 99);
@@ -301,21 +413,22 @@ describe("answering today's set: progress, resume and idempotency", () => {
     assert.equal(changedMind.changed, true);
     assert.equal(changedMind.completedTodayNow, false);
     assert.equal(changedMind.state.completedDays, 1);
-    assert.equal(changedMind.state.answerCounts["2026-09"], 10, "a changed answer is not a new one");
-    assert.equal(Object.keys(changedMind.state.answers).length, 10);
+    assert.equal(changedMind.state.answerCounts["2026-09"], 15, "a changed answer is not a new one");
+    assert.equal(Object.keys(changedMind.state.answers).length, 15);
   });
 
-  it("rejects anything outside today's server set", () => {
+  it("rejects anything outside today's set, tomorrow's Core questions included", () => {
     const state = model.emptyLearningState();
     const ref = set.questions[0];
     const question = catalog.learningQuestion(ref.id);
     const ok = {questionSetId: set.questionSetId, questionId: ref.id, questionVersion: ref.version, answerId: first(question)};
     const reason = (input) => model.applyDailyAnswer(state, set, input, T0).reason;
-    assert.equal(reason({...ok, questionSetId: "daily-2026-09-28-s1"}), "stale-set", "yesterday");
-    assert.equal(reason({...ok, questionSetId: "daily-2026-09-30-s1"}), "stale-set", "tomorrow");
+    const setIdOn = (dateKey) => schedule.questionSetIdFor("onboarding", dateKey, set.questions);
+    assert.equal(setIdOn(TODAY), set.questionSetId);
+    assert.equal(reason({...ok, questionSetId: setIdOn("2026-09-28")}), "stale-set", "yesterday");
+    assert.equal(reason({...ok, questionSetId: setIdOn("2026-09-30")}), "stale-set", "tomorrow");
     assert.equal(reason({...ok, questionSetId: "mine"}), "stale-set");
-    const outside = catalog.dailyEligibleQuestions().find((q) => !set.questions.some((r) => r.id === q.id));
-    assert.equal(reason({...ok, questionId: outside.id, answerId: first(outside)}), "not-in-set");
+    assert.equal(reason({...ok, questionId: tomorrowsCore.id, answerId: first(tomorrowsCore)}), "not-in-set");
     assert.equal(reason({...ok, questionVersion: 2}), "wrong-version");
     assert.equal(reason({...ok, questionVersion: "1"}), "wrong-version");
     assert.equal(reason({...ok, answerId: "z"}), "invalid-answer");
@@ -334,10 +447,17 @@ describe("answering today's set: progress, resume and idempotency", () => {
       },
       initialCompletedAtMs: "soon",
       answerCounts: {"2026-09": 3, bad: 9},
+      daily: {
+        dateKey: TODAY,
+        kind: "everything",
+        questionIds: ["relationship_pace_v1", "rq_001", {}, "relationship_pace_v1", "../users/other"],
+      },
     });
     assert.deepEqual(Object.keys(parsed.answers), ["relationship_daily_contact_v1"]);
     assert.equal(parsed.initialCompletedAtMs, null);
     assert.deepEqual(parsed.answerCounts, {"2026-09": 3});
+    assert.deepEqual(parsed.daily.questionIds, ["relationship_pace_v1"], "a frozen set holds known questions only");
+    assert.equal(parsed.daily.kind, null);
   });
 
   it("bounds how many answers one member can write in a window", () => {
@@ -355,19 +475,19 @@ describe("answering today's set: progress, resume and idempotency", () => {
     assert.equal(model.applyDailyAnswer(state, set, input(other), T0 + ANSWER_WRITE_LIMIT.windowMs + 1).ok, true);
   });
 
-  it("accumulates answers across days; each day counts only its own", () => {
+  it("accumulates answers across days", () => {
     let state = answerSet(model.emptyLearningState(), set);
-    const tomorrow = schedule.buildDailySet("2026-09-30");
+    const tomorrow = schedule.memberDailySet(state, "2026-09-30");
     assert.equal(model.answeredToday(state, tomorrow).length, 0);
     assert.equal(model.isDayCompleted(state, "2026-09-30"), false);
     state = answerSet(state, tomorrow, first, T0 + DAY);
     assert.equal(Object.keys(state.answers).length, 20, "yesterday's answers are kept");
     assert.equal(state.completedDays, 2);
     assert.equal(state.answerCounts["2026-09"], 20);
-    assert.equal(state.initialCompletedAtMs, T0 + 9000, "the first set stays the first");
+    assert.equal(state.initialCompletedAtMs, T0 + 14000, "onboarding stays the first set");
   });
 
-  it("lets existing members skip a day, but not a new member's first set", () => {
+  it("lets existing members skip a day, but not a new member's onboarding questions", () => {
     const existing = model.skipToday(model.emptyLearningState(), set, T0);
     assert.equal(existing.ok, true);
     assert.equal(model.isDaySkipped(existing.state, TODAY), true);
@@ -375,13 +495,14 @@ describe("answering today's set: progress, resume and idempotency", () => {
     const fresh = {...model.emptyLearningState(), required: true};
     assert.deepEqual(model.skipToday(fresh, set, T0), {ok: false, reason: "first-set-required"});
     const onboarded = answerSet(fresh, set);
-    assert.equal(model.skipToday(onboarded, schedule.buildDailySet("2026-09-30"), T0 + DAY).ok, true);
+    assert.equal(model.skipToday(onboarded, schedule.memberDailySet(onboarded, "2026-09-30"), T0 + DAY).ok, true);
   });
 
-  it("blocks Picks only for new members before their first set", () => {
+  it("blocks Picks only for new members until Q1-Q15 are answered", () => {
     assert.equal(model.isLearningBlockingPicks(model.emptyLearningState()), false, "existing members never");
     const fresh = {...model.emptyLearningState(), required: true};
     assert.equal(model.isLearningBlockingPicks(fresh), true);
+    assert.equal(model.isLearningBlockingPicks(answerSet(fresh, set, first, T0, 14)), true, "fourteen is not enough");
     assert.equal(model.isLearningBlockingPicks(answerSet(fresh, set)), false);
   });
 });
@@ -394,11 +515,14 @@ describe("daily relationship callables", () => {
     await assert.rejects(callAs(skipTodayRelationshipQuestions, null), /sign-in-required/);
   });
 
-  it("serves today's ten in both languages, with no scoring metadata", async () => {
+  it("serves the onboarding fifteen in both languages, with no scoring metadata", async () => {
     const state = await callAs(getRelationshipLearningState, "me");
-    assert.equal(state.today.total, 10);
+    assert.equal(state.today.kind, "onboarding");
+    assert.equal(state.today.total, 15);
+    assert.equal(state.today.questions.length, 15);
     assert.equal(state.today.answered, 0);
     assert.equal(state.today.completed, false);
+    assert.deepEqual(state.core, {answered: 0, total: 64, exhausted: false});
     const q = state.today.questions[0];
     assert.ok(q.prompt.tr && q.prompt.en && q.version >= 1 && q.category && q.answerType);
     assert.equal(q.answerId, null);
@@ -417,9 +541,11 @@ describe("daily relationship callables", () => {
     }
     clock = T0 + 6 * HOUR;
     const after = await callAs(getRelationshipLearningState, "me");
+    assert.equal(after.today.questionSetId, before.today.questionSetId);
     assert.equal(after.today.answered, 3);
     assert.deepEqual(after.today.questions.slice(0, 3).map((q) => q.answerId), before.today.questions.slice(0, 3).map(last));
     assert.equal(after.today.questions.findIndex((q) => q.answerId === null), 3);
+    assert.equal(after.core.answered, 3);
   });
 
   it("writes only to the caller's own state, whatever the payload claims", async () => {
@@ -437,12 +563,12 @@ describe("daily relationship callables", () => {
     const state = await callAs(getRelationshipLearningState, "me");
     const q = state.today.questions[0];
     const ok = {questionSetId: state.today.questionSetId, questionId: q.id, questionVersion: q.version, answerId: first(q)};
-    const outside = catalog.dailyEligibleQuestions().find((c) => !state.today.questions.some((t) => t.id === c.id));
+    const tomorrowsCore = catalog.learningQuestion(CORE_SEQUENCE[15]);
     for (const payload of [
-      {...ok, questionSetId: "daily-2026-09-28-s1"},
-      {...ok, questionSetId: "daily-2026-09-30-s1"},
+      {...ok, questionSetId: ok.questionSetId.replace(TODAY, "2026-09-28")},
+      {...ok, questionSetId: ok.questionSetId.replace(TODAY, "2026-09-30")},
       {...ok, questionSetId: undefined},
-      {...ok, questionId: outside.id, answerId: first(outside)},
+      {...ok, questionId: tomorrowsCore.id, answerId: first(tomorrowsCore)},
       {...ok, questionVersion: 2},
       {...ok, answerId: "z"},
       {...ok, questionId: "../users/other"},
@@ -468,34 +594,45 @@ describe("daily relationship callables", () => {
     assert.equal(completions, 1);
     const after = await callAs(getRelationshipLearningState, "me");
     assert.equal(after.today.completed, true);
-    assert.equal(after.today.answered, 10);
+    assert.equal(after.today.answered, 15);
+    assert.equal(after.today.questions.length, 15, "the onboarding day brings no extra five");
     assert.equal(after.journeyStage, "done", "the set is not shown again today");
     const record = (await db.doc(`users/me/relationshipDaily/${TODAY}`).get()).data();
     assert.equal(record.questionSetId, state.today.questionSetId);
+    assert.equal(record.kind, "onboarding");
+    assert.equal(record.questionCount, 15);
     assert.equal((await db.collection("users/me/relationshipDaily").get()).size, 1);
     assert.equal((await stored("me")).completedDays, 1);
   });
 
-  it("brings a new set the next day, keeps yesterday's answers, and refuses yesterday's set", async () => {
+  it("brings Q16-Q20 the next day, keeps yesterday's answers, and refuses yesterday's set", async () => {
     await answerToday("me");
     const yesterday = await callAs(getRelationshipLearningState, "me");
     clock = T0 + DAY;
     const today = await callAs(getRelationshipLearningState, "me");
     assert.equal(today.today.dateKey, "2026-09-30");
+    assert.equal(today.today.kind, "core");
+    assert.deepEqual(today.today.questions.map((q) => q.id), CORE_SEQUENCE.slice(15, 20));
     assert.equal(today.today.answered, 0);
     assert.equal(today.journeyStage, "daily");
     const old = yesterday.today.questions[0];
     await assert.rejects(callAs(saveDailyRelationshipAnswer, "me", {
       questionSetId: yesterday.today.questionSetId, questionId: old.id, questionVersion: old.version, answerId: last(old),
     }), /stale-set/);
-    await answerToday("me");
+    const sixth = catalog.learningQuestion(CORE_SEQUENCE[20]);
+    await assert.rejects(callAs(saveDailyRelationshipAnswer, "me", {
+      questionSetId: today.today.questionSetId, questionId: sixth.id, questionVersion: sixth.version, answerId: first(sixth),
+    }), /not-in-set/, "a sixth Core question the same day is refused");
+    const results = await answerToday("me");
+    assert.equal(results[results.length - 1].today.total, 5);
+    assert.equal((await callAs(getRelationshipLearningState, "me")).today.questions.length, 5, "still five after finishing");
     const stateNow = await stored("me");
     assert.equal(Object.keys(stateNow.answers).length, 20);
     assert.equal(stateNow.completedDays, 2);
     assert.equal((await db.collection("users/me/relationshipDaily").get()).size, 2);
   });
 
-  it("skips today for an existing member, and refuses a new member's first set", async () => {
+  it("skips today for an existing member, and refuses a new member's onboarding questions", async () => {
     const skipped = await callAs(skipTodayRelationshipQuestions, "me");
     assert.equal(skipped.today.skipped, true);
     assert.equal((await callAs(getRelationshipLearningState, "me")).journeyStage, "done");
@@ -512,10 +649,10 @@ describe("daily relationship callables", () => {
     await markLearningRequired(db, "me");
     const mine = await stored("me");
     assert.equal(mine.required, false);
-    assert.equal(Object.keys(mine.answers).length, 10);
+    assert.equal(Object.keys(mine.answers).length, 15);
   });
 
-  it("holds a new member's Picks until their first set, never an existing member's", async () => {
+  it("holds a new member's Picks until Q1-Q15 are answered, never an existing member's", async () => {
     const existing = await callAs(getMevoraPicks, "other");
     assert.notEqual(existing.emptyReason, "learningRequired");
     assert.equal(existing.learning.today.dateKey, TODAY);
@@ -524,6 +661,7 @@ describe("daily relationship callables", () => {
     assert.equal(blocked.status, "empty");
     assert.equal(blocked.emptyReason, "learningRequired");
     assert.equal(blocked.learning.blocksPicks, true);
+    assert.equal(blocked.learning.today.total, 15);
     await answerToday("me");
     const open = await callAs(getMevoraPicks, "me");
     assert.notEqual(open.emptyReason, "learningRequired");
@@ -538,7 +676,7 @@ describe("compatibility from daily answers", () => {
     await answerToday("me");
     const summary = (await db.doc("users/me/relationshipMatch/summary").get()).data();
     const mirrored = Object.keys(summary.learningAnswers);
-    assert.equal(mirrored.length, 10);
+    assert.equal(mirrored.length, 15);
     assert.equal(mirrored.includes("relationship_humor_importance_v1"), false);
   });
 
@@ -547,15 +685,15 @@ describe("compatibility from daily answers", () => {
     await answerToday("other", first);
     await answerToday("third", last);
     const alike = await relationshipScoreForPair("me", "other");
-    assert.equal(alike.sharedQuestionCount, 10);
-    assert.equal(alike.alignedCount, 10);
-    assert.equal(alike.score, confidentScore(100, 10));
+    assert.equal(alike.sharedQuestionCount, 15);
+    assert.equal(alike.alignedCount, 15);
+    assert.equal(alike.score, confidentScore(100, 15));
     assert.ok(alike.topTopics.length > 0);
     const apart = scoreRelationshipCompatibility(
       (await db.doc("users/me/relationshipMatch/summary").get()).data().learningAnswers,
       (await db.doc("users/third/relationshipMatch/summary").get()).data().learningAnswers,
     );
-    assert.equal(apart.sharedQuestionCount, 10);
+    assert.equal(apart.sharedQuestionCount, 15);
     assert.ok(apart.score < alike.score);
     assert.ok(apart.score <= 50);
   });
@@ -578,7 +716,7 @@ describe("compatibility from daily answers", () => {
     await answerToday("me");
     await answerToday("other");
     const dayTwo = await relationshipScoreForPair("me", "other");
-    assert.equal(dayTwo.sharedQuestionCount, 20);
+    assert.equal(dayTwo.sharedQuestionCount, 19, "day two adds four comparable answers and one importance answer");
     assert.ok(dayTwo.score > dayOne.score, `${dayTwo.score} > ${dayOne.score}`);
     assert.ok(evidenceConfidence(200) > evidenceConfidence(20));
     assert.equal(confidentScore(100, 0), 50);
@@ -681,24 +819,26 @@ describe("privacy: relationship learning never touches message content", () => {
 describe("journey: basic profile -> humor -> today's questions -> done", () => {
   const {journeyStage} = model;
   const required = () => ({...model.emptyLearningState(), required: true});
+  const setFor = (state, dateKey = TODAY) => schedule.memberDailySet(state, dateKey);
 
-  it("sends a new member to humor, then today's set, then done", () => {
-    assert.equal(journeyStage(required(), false, TODAY), "humor");
-    assert.equal(journeyStage(required(), true, TODAY), "daily");
-    const done = answerSet(required(), schedule.buildDailySet(TODAY));
-    assert.equal(journeyStage(done, true, TODAY), "done");
-    assert.equal(journeyStage(done, true, "2026-09-30"), "daily", "a new day brings a new set");
+  it("sends a new member to humor, then the onboarding questions, then done", () => {
+    assert.equal(journeyStage(required(), false, setFor(required())), "humor");
+    assert.equal(journeyStage(required(), true, setFor(required())), "daily");
+    const done = answerSet(required(), setFor(required()));
+    assert.equal(journeyStage(done, true, setFor(done)), "done");
+    assert.equal(journeyStage(done, true, setFor(done, "2026-09-30")), "daily", "a new day brings the next five");
   });
 
   it("never sends an existing member to humor", () => {
-    assert.equal(journeyStage(model.emptyLearningState(), false, TODAY), "daily");
+    const existing = model.emptyLearningState();
+    assert.equal(journeyStage(existing, false, setFor(existing)), "daily");
   });
 
   it("a humor skip moves on and can never loop back", () => {
     const skipped = {...required(), journey: {humorSkippedAtMs: T0}};
-    assert.equal(journeyStage(skipped, false, TODAY), "daily");
+    assert.equal(journeyStage(skipped, false, setFor(skipped)), "daily");
     const reread = model.parseLearningState(JSON.parse(JSON.stringify(model.serializeLearningState(skipped))));
-    assert.equal(journeyStage(reread, false, TODAY), "daily");
+    assert.equal(journeyStage(reread, false, setFor(reread)), "daily");
   });
 
   it("the humor skip callable records once, and ignores members without a journey", async () => {
@@ -756,12 +896,13 @@ describe("learning dashboard", () => {
     await answerToday("me");
     clock = T0 + DAY;
     const state = await callAs(getRelationshipLearningState, "me");
-    assert.deepEqual(state.overview.totals, {thisMonth: 10, total: 10, completedDays: 1});
-    assert.equal(state.overview.answered.length, 10);
+    assert.deepEqual(state.overview.totals, {thisMonth: 15, total: 15, completedDays: 1});
+    assert.equal(state.overview.answered.length, 15);
     assert.ok(state.overview.answered.every((q) => q.answerId && q.category && q.answeredAtMs && q.version));
+    assert.deepEqual(state.core, {answered: 15, total: 64, exhausted: false});
     clock = Date.UTC(2026, 9, 1, 9, 0);
     const october = await callAs(getRelationshipLearningState, "me");
-    assert.deepEqual(october.overview.totals, {thisMonth: 0, total: 10, completedDays: 1});
+    assert.deepEqual(october.overview.totals, {thisMonth: 0, total: 15, completedDays: 1});
   });
 
   it("edits an earlier answer without counting it again, and never answers anything new", async () => {
@@ -770,7 +911,7 @@ describe("learning dashboard", () => {
     await callAs(updateRelationshipAnswer, "me", {...payload, answerId: "not_important"});
     const after = (await stored("me")).answers.relationship_humor_importance_v1;
     assert.equal(after.answerId, "not_important");
-    assert.equal(after.dateKey, "2026-09-20", "keeps the day it was given for");
+    assert.equal(after.dateKey, "2026-09-20", "keeps the day it was given on");
     assert.equal((await loadPersonalizationContext(db, "me")).declared.humor, DECLARED_IMPORTANCE[1]);
     assert.equal((await stored("me")).answerCounts["2026-09"], undefined, "an edit is not a new answer");
     await assert.rejects(callAs(updateRelationshipAnswer, "me",

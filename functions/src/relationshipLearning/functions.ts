@@ -3,7 +3,7 @@ import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {logger} from "firebase-functions";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {isAccountEligible} from "../profileSafety.js";
-import {DAILY_QUESTION_COUNT, LEARNING_CATALOG_VERSION, learningQuestion} from "./catalog.js";
+import {LEARNING_CATALOG_VERSION, learningQuestion} from "./catalog.js";
 import {
   answerHighlights,
   answerTotals,
@@ -21,15 +21,15 @@ import {
   type LearningState,
   type ProfileSignals,
 } from "./model.js";
-import {learningDayKey} from "./schedule.js";
+import {coreProgress, memberDailySet} from "./schedule.js";
 import {
   dailyCompletionPath,
   dailySetPayload,
   learningStatePath,
-  loadOrCreateDailySet,
   loadProfileSignals,
   questionPayload,
   relationshipSummaryPath,
+  resolveLearningDayKey,
   writeLearningMirror,
   writeLearningState,
 } from "./store.js";
@@ -55,10 +55,11 @@ async function requireEligible(uid: string): Promise<void> {
 }
 
 /**
- * Today's global question set with the member's answers for today (so a
- * restart resumes on the first unanswered question), the progress summary and
- * the dashboard. The day is the SERVER's logical day; nothing the client
- * sends can choose another day or another set.
+ * The member's question set for today with the answers given so far (so a
+ * restart resumes on the first unanswered question), the progress summary,
+ * their place in the Core sequence and the dashboard. The day is the SERVER's
+ * logical day and the set follows from the member's own answers; nothing the
+ * client sends can choose another day or another set.
  */
 export const getRelationshipLearningState = onCall(
   {enforceAppCheck, region: REGION},
@@ -66,23 +67,22 @@ export const getRelationshipLearningState = onCall(
     const uid = requireUid(request.auth?.uid);
     await requireEligible(uid);
     const nowMs = Date.now();
-    const dateKey = learningDayKey(nowMs);
-    const [set, stateSnap, signals] = await Promise.all([
-      loadOrCreateDailySet(db, dateKey),
+    const [dateKey, stateSnap, signals] = await Promise.all([
+      resolveLearningDayKey(db, nowMs),
       db.doc(learningStatePath(uid)).get(),
       loadProfileSignals(db, uid),
     ]);
     const state = stateSnap.exists ? parseLearningState(stateSnap.data()) : emptyLearningState();
-    const summary = learningSummary(state, dateKey, nowMs, {humorCalibrated: signals.humorReady});
+    const set = memberDailySet(state, dateKey);
+    const summary = learningSummary(state, set, nowMs, {humorCalibrated: signals.humorReady});
     return {
       catalogVersion: LEARNING_CATALOG_VERSION,
       ...summary,
       today: {
         ...(summary.today as Record<string, unknown>),
-        questionSetId: set.questionSetId,
-        scheduleVersion: set.scheduleVersion,
         questions: dailySetPayload(set, state),
       },
+      core: coreProgress(state),
       overview: overviewPayload(state, signals, dateKey),
     };
   },
@@ -111,9 +111,10 @@ function rejection(reason: string): HttpsError {
 }
 
 /**
- * Saves one answer to TODAY's global set, exactly once. The set id, question
- * id, question version and option are all checked against the server's set
- * for the server's day. Re-sending the same answer is a no-op, so a retry, a
+ * Saves one answer to the member's set for TODAY, exactly once. The set id,
+ * question id, question version and option are all checked against the set
+ * the server derives for the server's day, inside the same transaction that
+ * writes the answer. Re-sending the same answer is a no-op, so a retry, a
  * double tap or a resumed session cannot duplicate an answer, a count or a
  * completion.
  */
@@ -127,39 +128,41 @@ export const saveDailyRelationshipAnswer = onCall(
     }
     await requireEligible(uid);
     const nowMs = Date.now();
-    const dateKey = learningDayKey(nowMs);
-    const set = await loadOrCreateDailySet(db, dateKey);
+    const dateKey = await resolveLearningDayKey(db, nowMs);
     const stateRef = db.doc(learningStatePath(uid));
     const summaryRef = db.doc(relationshipSummaryPath(uid));
 
-    const result = await db.runTransaction(async (tx) => {
+    const {outcome: result, set} = await db.runTransaction(async (tx) => {
       const [snap, summarySnap] = await Promise.all([tx.get(stateRef), tx.get(summaryRef)]);
       const current = snap.exists ? parseLearningState(snap.data()) : emptyLearningState();
+      const set = memberDailySet(current, dateKey);
       const outcome = applyDailyAnswer(current, set, {
         questionSetId: data.questionSetId,
         questionId: data.questionId,
         questionVersion: data.questionVersion,
         answerId: data.answerId,
       }, nowMs);
-      if (!outcome.ok || !outcome.changed) return outcome;
+      if (!outcome.ok || !outcome.changed) return {outcome, set};
       writeLearningState(tx, db, uid, outcome.state, snap.data());
       writeLearningMirror(tx, db, uid, outcome.state, summarySnap.exists);
       if (outcome.completedTodayNow) {
         tx.set(db.doc(dailyCompletionPath(uid, dateKey)), {
           dateKey,
           questionSetId: set.questionSetId,
-          questionCount: DAILY_QUESTION_COUNT,
+          kind: set.kind,
+          questionCount: set.questions.length,
           firstSet: outcome.firstSetCompletedNow,
           completedAt: FieldValue.serverTimestamp(),
         });
       }
-      return outcome;
+      return {outcome, set};
     });
 
     if (!result.ok) throw rejection(result.reason);
     if (result.completedTodayNow) {
       logger.info("relationshipLearning: daily set completed", {
         questionSetId: set.questionSetId,
+        kind: set.kind,
         firstSet: result.firstSetCompletedNow,
       });
     }
@@ -168,7 +171,7 @@ export const saveDailyRelationshipAnswer = onCall(
       changed: result.changed,
       completedTodayNow: result.completedTodayNow,
       firstSetCompletedNow: result.firstSetCompletedNow,
-      ...learningSummary(result.state, dateKey, nowMs),
+      ...learningSummary(result.state, memberDailySet(result.state, dateKey), nowMs),
     };
   },
 );
@@ -212,8 +215,7 @@ export const updateRelationshipAnswer = onCall(
 
 /**
  * "Bugünlük geç": hides today's set until the next logical day. A new
- * member's first set is part of onboarding and cannot be skipped.
- * Idempotent.
+ * member's onboarding questions cannot be skipped. Idempotent.
  */
 export const skipTodayRelationshipQuestions = onCall(
   {enforceAppCheck, region: REGION},
@@ -221,20 +223,19 @@ export const skipTodayRelationshipQuestions = onCall(
     const uid = requireUid(request.auth?.uid);
     await requireEligible(uid);
     const nowMs = Date.now();
-    const dateKey = learningDayKey(nowMs);
-    const set = await loadOrCreateDailySet(db, dateKey);
+    const dateKey = await resolveLearningDayKey(db, nowMs);
     const ref = db.doc(learningStatePath(uid));
     const result = await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       const current = snap.exists ? parseLearningState(snap.data()) : emptyLearningState();
-      const outcome = skipToday(current, set, nowMs);
+      const outcome = skipToday(current, memberDailySet(current, dateKey), nowMs);
       if (outcome.ok && outcome.state !== current) {
         writeLearningState(tx, db, uid, outcome.state, snap.data());
       }
       return outcome;
     });
     if (!result.ok) throw new HttpsError("failed-precondition", result.reason);
-    return {ok: true, ...learningSummary(result.state, dateKey, nowMs)};
+    return {ok: true, ...learningSummary(result.state, memberDailySet(result.state, dateKey), nowMs)};
   },
 );
 

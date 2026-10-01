@@ -5,7 +5,7 @@ import 'package:mevora/features/relationship_learning/domain/repositories/relati
 
 enum LearningFlowPhase { loading, intro, question, done, skipped, error }
 
-/// Drives today's 10 relationship questions.
+/// Drives today's relationship questions.
 ///
 /// The set, its order and the day come from the server. Every answer is
 /// saved the moment it is chosen, so leaving at question 4 and coming back
@@ -92,14 +92,14 @@ class RelationshipLearningController extends ChangeNotifier {
         _summary = state.summary;
         _set = state.today;
         _questions = List.unmodifiable(state.today.questions);
+        if (state.summary.today.completed) {
+          // Answered already today, or nothing left to ask: no set is shown.
+          _phase = LearningFlowPhase.done;
+          return;
+        }
         if (_questions.isEmpty) {
           _loadError = '';
           _phase = LearningFlowPhase.error;
-          return;
-        }
-        if (state.summary.today.completed) {
-          // Answered once today already: the set is not shown again.
-          _phase = LearningFlowPhase.done;
           return;
         }
         final firstOpen = _questions.indexWhere((q) => !q.isAnswered);

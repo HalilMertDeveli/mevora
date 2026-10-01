@@ -3,9 +3,14 @@ import {
   PERSONALIZATION_DIMENSIONS,
 } from "../personalization/config.js";
 import type {Adjustments} from "../personalization/learner.js";
-import {DAILY_QUESTION_COUNT, isImportanceQuestion, learningQuestion} from "./catalog.js";
+import {isImportanceQuestion, learningQuestion} from "./catalog.js";
 import {ANSWER_WRITE_LIMIT, DECLARED_IMPORTANCE, LEARNING_STATE_SCHEMA_VERSION} from "./config.js";
-import {nextLearningDayStartMs, type DailySet} from "./schedule.js";
+import {
+  hasFinishedOnboarding,
+  nextLearningDayStartMs,
+  type DailySet,
+  type DailySetKind,
+} from "./schedule.js";
 
 /**
  * A member's relationship-question state and the pure rules over it. Nothing
@@ -13,16 +18,16 @@ import {nextLearningDayStartMs, type DailySet} from "./schedule.js";
  * daily set and clock always give the same result.
  *
  * Answers accumulate: every question keeps the member's latest answer, the
- * question version it was given for, and the logical day it was given on.
- * Each daily set counts only answers given on that day, so a question that
- * comes round again in the rotation is answered again.
+ * question version it was given for, and the logical day it was given on. A
+ * question is asked once; an answer in the question's current version means
+ * it is done, whatever day it was given on.
  */
 
 export interface StoredAnswer {
   answerId: string;
   /** The question version the member actually saw. */
   version: number;
-  /** The logical day this answer was given for (its daily set). */
+  /** The logical day this answer was given on. */
   dateKey: string;
   answeredAtMs: number;
 }
@@ -32,16 +37,22 @@ export interface LearningState {
   schemaVersion: number;
   /**
    * True for members who finished onboarding after relationship questions
-   * shipped: their first Picks wait for their first completed daily set.
+   * shipped: their first Picks wait for the onboarding questions (Q1-Q15).
    */
   required: boolean;
   answers: Record<string, StoredAnswer>;
-  /** When the member first completed a daily set. */
+  /** When the member first completed a set — for a new member, onboarding. */
   initialCompletedAtMs: number | null;
-  /** Today's progress markers (the day the member last touched). */
+  /**
+   * The day the member last touched: its frozen set (ids and kind, written
+   * with the first answer or skip of that day) and its progress markers.
+   * `questionIds` is null on state written before the Core sequence.
+   */
   daily: {
     dateKey: string | null;
     questionSetId: string | null;
+    questionIds: string[] | null;
+    kind: DailySetKind | null;
     completedAtMs: number | null;
     skippedAtMs: number | null;
   };
@@ -64,7 +75,14 @@ export function emptyLearningState(): LearningState {
     required: false,
     answers: {},
     initialCompletedAtMs: null,
-    daily: {dateKey: null, questionSetId: null, completedAtMs: null, skippedAtMs: null},
+    daily: {
+      dateKey: null,
+      questionSetId: null,
+      questionIds: null,
+      kind: null,
+      completedAtMs: null,
+      skippedAtMs: null,
+    },
     completedDays: 0,
     answerCounts: {},
     journey: {humorSkippedAtMs: null},
@@ -79,6 +97,12 @@ function positiveMs(value: unknown): number | null {
 
 function dateKeyOrNull(value: unknown): string | null {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
+
+/** A stored frozen set: known question ids only, each once. Null when none was stored. */
+function questionIdsOrNull(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  return [...new Set(value.filter((id): id is string => learningQuestion(id) !== null))];
 }
 
 /**
@@ -113,6 +137,8 @@ export function parseLearningState(raw: unknown): LearningState {
   state.daily = {
     dateKey: dateKeyOrNull(daily.dateKey),
     questionSetId: typeof daily.questionSetId === "string" ? daily.questionSetId : null,
+    questionIds: questionIdsOrNull(daily.questionIds),
+    kind: daily.kind === "onboarding" || daily.kind === "core" ? daily.kind : null,
     completedAtMs: positiveMs(daily.completedAtMs),
     skippedAtMs: positiveMs(daily.skippedAtMs),
   };
@@ -148,18 +174,15 @@ export function serializeLearningState(state: LearningState): Record<string, unk
 // Today.
 // ---------------------------------------------------------------------------
 
-/** Question ids of `set` the member has answered for that day. */
-export function answeredToday(state: LearningState, set: {dateKey: string; questions: {id: string; version: number}[]}): string[] {
+/**
+ * Question ids of `set` the member has answered. A set is only ever made of
+ * questions that were open when the day started, so an answer in the current
+ * version was given while the set was live.
+ */
+export function answeredToday(state: LearningState, set: DailySet): string[] {
   return set.questions
-    .filter((ref) => {
-      const answer = state.answers[ref.id];
-      return answer && answer.dateKey === set.dateKey && answer.version === ref.version;
-    })
+    .filter((ref) => state.answers[ref.id]?.version === ref.version)
     .map((ref) => ref.id);
-}
-
-export function answeredCountFor(state: LearningState, dateKey: string): number {
-  return Object.values(state.answers).filter((answer) => answer.dateKey === dateKey).length;
 }
 
 export function isDayCompleted(state: LearningState, dateKey: string): boolean {
@@ -170,14 +193,14 @@ export function isDaySkipped(state: LearningState, dateKey: string): boolean {
   return state.daily.dateKey === dateKey && state.daily.skippedAtMs !== null;
 }
 
-/** A new member's first set is part of onboarding and cannot be skipped. */
-export function canSkipToday(state: LearningState): boolean {
-  return !(state.required && state.initialCompletedAtMs === null);
+/** Whether the member's daily Picks must wait for the onboarding questions (Q1-Q15). */
+export function isLearningBlockingPicks(state: LearningState): boolean {
+  return state.required && !hasFinishedOnboarding(state);
 }
 
-/** Whether the member's daily Picks must wait for their first completed set. */
-export function isLearningBlockingPicks(state: LearningState): boolean {
-  return state.required && state.initialCompletedAtMs === null;
+/** A new member's onboarding questions cannot be skipped. */
+export function canSkipToday(state: LearningState): boolean {
+  return !isLearningBlockingPicks(state);
 }
 
 /**
@@ -187,38 +210,44 @@ export function isLearningBlockingPicks(state: LearningState): boolean {
  *   every day:   daily (until today's set is done or skipped) -> done
  *
  * Humor counts as passed once calibrated or explicitly skipped, so a skip can
- * never loop. Deterministic: same facts, same stage.
+ * never loop. A day with nothing to ask is done. Deterministic: same facts,
+ * same stage.
  */
 export type JourneyStage = "humor" | "daily" | "done";
 
-export function journeyStage(state: LearningState, humorCalibrated: boolean, dateKey: string): JourneyStage {
+/** Nothing is left to do in `set`: it was completed, or there was nothing to ask. */
+function isSetDone(state: LearningState, set: DailySet): boolean {
+  return set.questions.length === 0 || isDayCompleted(state, set.dateKey);
+}
+
+export function journeyStage(state: LearningState, humorCalibrated: boolean, set: DailySet): JourneyStage {
   if (state.required && !humorCalibrated && state.journey.humorSkippedAtMs === null) return "humor";
-  if (!isDayCompleted(state, dateKey) && !isDaySkipped(state, dateKey)) return "daily";
+  if (!isSetDone(state, set) && !isDaySkipped(state, set.dateKey)) return "daily";
   return "done";
 }
 
 /** The compact progress block other surfaces (Picks, the journey) carry. */
 export function learningSummary(
   state: LearningState,
-  dateKey: string,
+  set: DailySet,
   nowMs: number,
   facts?: {humorCalibrated: boolean},
 ): Record<string, unknown> {
-  const answered = Math.min(DAILY_QUESTION_COUNT, answeredCountFor(state, dateKey));
   return {
     required: state.required,
     blocksPicks: isLearningBlockingPicks(state),
-    firstSetCompleted: state.initialCompletedAtMs !== null,
+    firstSetCompleted: hasFinishedOnboarding(state),
     ...(facts
-      ? {humorCalibrated: facts.humorCalibrated, journeyStage: journeyStage(state, facts.humorCalibrated, dateKey)}
+      ? {humorCalibrated: facts.humorCalibrated, journeyStage: journeyStage(state, facts.humorCalibrated, set)}
       : {}),
     today: {
-      dateKey,
-      questionSetId: state.daily.dateKey === dateKey ? state.daily.questionSetId : null,
-      total: DAILY_QUESTION_COUNT,
-      answered,
-      completed: isDayCompleted(state, dateKey),
-      skipped: isDaySkipped(state, dateKey),
+      dateKey: set.dateKey,
+      questionSetId: set.questionSetId,
+      kind: set.kind,
+      total: set.questions.length,
+      answered: answeredToday(state, set).length,
+      completed: isSetDone(state, set),
+      skipped: isDaySkipped(state, set.dateKey),
       canSkip: canSkipToday(state),
     },
     nextDayStartsAtMs: nextLearningDayStartMs(nowMs),
@@ -254,11 +283,28 @@ function consumeWriteWindow(state: LearningState, nowMs: number): LearningState[
   return {startMs: window.startMs, count: window.count + 1};
 }
 
+/** Today's markers with the set frozen onto them. */
+function frozenDaily(current: LearningState, set: DailySet): LearningState["daily"] {
+  const touchedToday = current.daily.dateKey === set.dateKey;
+  return {
+    dateKey: set.dateKey,
+    questionSetId: set.questionSetId,
+    questionIds: set.questions.map((ref) => ref.id),
+    kind: set.kind,
+    completedAtMs: touchedToday ? current.daily.completedAtMs : null,
+    skippedAtMs: touchedToday ? current.daily.skippedAtMs : null,
+  };
+}
+
 /**
- * Applies one answer to today's set. Everything the client says is checked
- * against the server's set for the server's day: a set id from another day
- * (earlier, later or invented), a question outside the set, a stale version or
- * a foreign option is rejected.
+ * Applies one answer to the member's set for today. Everything the client
+ * says is checked against the server's set for the server's day: a set id
+ * from another day (earlier, later or invented), a question outside the set —
+ * tomorrow's Core questions included — a stale version or a foreign option is
+ * rejected.
+ *
+ * The first answer of the day freezes the set onto the state, so the rest of
+ * the day keeps asking the same questions.
  *
  * Idempotent: re-sending the same answer changes nothing (no write, no second
  * count, no second completion). A different answer to the same question
@@ -282,8 +328,8 @@ export function applyDailyAnswer(
     return {ok: false, reason: "invalid-answer"};
   }
   const existing = current.answers[question.id];
-  const sameDay = existing?.dateKey === set.dateKey && existing.version === question.version;
-  if (sameDay && existing.answerId === input.answerId) {
+  const alreadyAnswered = existing?.version === question.version;
+  if (alreadyAnswered && existing.answerId === input.answerId) {
     return {ok: true, changed: false, state: current, completedTodayNow: false, firstSetCompletedNow: false};
   }
   const window = consumeWriteWindow(current, nowMs);
@@ -301,10 +347,8 @@ export function applyDailyAnswer(
         answeredAtMs: nowMs,
       },
     },
-    daily: current.daily.dateKey === set.dateKey
-      ? {...current.daily, questionSetId: set.questionSetId}
-      : {dateKey: set.dateKey, questionSetId: set.questionSetId, completedAtMs: null, skippedAtMs: null},
-    answerCounts: sameDay
+    daily: frozenDaily(current, set),
+    answerCounts: alreadyAnswered
       ? current.answerCounts
       : {...current.answerCounts, [month]: (current.answerCounts[month] ?? 0) + 1},
     writeWindow: window,
@@ -328,7 +372,7 @@ export function applyDailyAnswer(
  * Changes an EARLIER answer (the learning dashboard). Only questions the
  * member already answered, only in their current version: this is how
  * preferences change over time, never a way to answer questions outside the
- * daily set. The answer keeps the day it was given for.
+ * daily set. The answer keeps the day it was given on.
  */
 export function updateEarlierAnswer(
   current: LearningState,
@@ -359,25 +403,21 @@ export function updateEarlierAnswer(
   };
 }
 
-/** "Bugünlük geç": hides today's set until tomorrow. Not for a new member's first set. */
+/**
+ * "Bugünlük geç": hides today's set until tomorrow. Not for a new member's
+ * onboarding questions. Skipping does not advance the sequence: the questions
+ * left open come back first.
+ */
 export function skipToday(
   current: LearningState,
   set: DailySet,
   nowMs: number,
 ): {ok: false; reason: "first-set-required"} | {ok: true; state: LearningState} {
   if (!canSkipToday(current)) return {ok: false, reason: "first-set-required"};
-  if (isDaySkipped(current, set.dateKey) || isDayCompleted(current, set.dateKey)) {
+  if (isDaySkipped(current, set.dateKey) || isSetDone(current, set)) {
     return {ok: true, state: current};
   }
-  return {
-    ok: true,
-    state: {
-      ...current,
-      daily: current.daily.dateKey === set.dateKey
-        ? {...current.daily, skippedAtMs: nowMs}
-        : {dateKey: set.dateKey, questionSetId: set.questionSetId, completedAtMs: null, skippedAtMs: nowMs},
-    },
-  };
+  return {ok: true, state: {...current, daily: {...frozenDaily(current, set), skippedAtMs: nowMs}}};
 }
 
 // ---------------------------------------------------------------------------

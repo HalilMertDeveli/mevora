@@ -218,6 +218,54 @@ void main() {
     await tester.pump();
     expect(find.text(_en.locationSettingsTitle), findsOneWidget);
   });
+
+  testWidgets('permanently denied permission can be skipped', (tester) async {
+    final location = FakeLocationRepository(
+      permission: LocationPermissionStatus.permanentlyDenied,
+    );
+    final controller = DiscoveryController(
+      uid: 'self',
+      locationRepository: location,
+      discoveryRepository: InMemoryDiscoveryRepository(),
+      skipExplanationIfAlreadyGranted: false,
+    );
+    await tester.pumpWidget(wrap(DiscoveryPage(controller: controller)));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text(_en.openSettings), findsOneWidget);
+
+    await tester.tap(find.text(_en.continueWithoutLocation));
+    await tester.pumpAndSettle();
+
+    expect(find.text(_en.locationSettingsTitle), findsNothing);
+    expect(controller.state.phase, LocationPromptPhase.ready);
+    // Remembered, so the next launch does not ask again.
+    expect(location.flags['self']?.locationOnboardingCompleted, isTrue);
+    expect(location.flags['self']?.locationEnabled, isFalse);
+  });
+
+  testWidgets('coming back from settings with the permission granted leaves '
+      'the denied screen', (tester) async {
+    final location = FakeLocationRepository(
+      permission: LocationPermissionStatus.permanentlyDenied,
+    );
+    final controller = DiscoveryController(
+      uid: 'self',
+      locationRepository: location,
+      discoveryRepository: InMemoryDiscoveryRepository(),
+    );
+    await tester.pumpWidget(wrap(DiscoveryPage(controller: controller)));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text(_en.locationSettingsTitle), findsOneWidget);
+
+    location.permission = LocationPermissionStatus.granted;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+
+    expect(find.text(_en.locationSettingsTitle), findsNothing);
+    expect(controller.state.phase, LocationPromptPhase.ready);
+  });
 }
 
 class _OfflineDiscovery implements DiscoveryRepository {

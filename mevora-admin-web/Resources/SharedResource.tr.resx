@@ -245,6 +245,7 @@
   <data name="None yet." xml:space="preserve"><value>Henüz yok.</value></data>
   <data name="None." xml:space="preserve"><value>Yok.</value></data>
   <data name="Not found" xml:space="preserve"><value>Bulunamadı</value></data>
+  <data name="Not on the member's profile. A decision is recorded, but the photo is not added back." xml:space="preserve"><value>Üyenin profilinde değil. Karar kaydedilir, ancak fotoğraf profile geri eklenmez.</value></data>
   <data name="Not permitted" xml:space="preserve"><value>İzin yok</value></data>
   <data name="Note" xml:space="preserve"><value>Not</value></data>
   <data name="Note (required)" xml:space="preserve"><value>Not (zorunlu)</value></data>
@@ -279,6 +280,8 @@
   <data name="Phone (exact)" xml:space="preserve"><value>Telefon (tam eşleşme)</value></data>
   <data name="Photo" xml:space="preserve"><value>Fotoğraf</value></data>
   <data name="Photo approved and published." xml:space="preserve"><value>Fotoğraf onaylandı ve yayımlandı.</value></data>
+  <data name="Photo approved. It is not on the member's profile and was not added back." xml:space="preserve"><value>Fotoğraf onaylandı. Üyenin profilinde olmadığı için geri eklenmedi.</value></data>
+  <data name="Photo approved. The member had removed it, so the kept copy was deleted." xml:space="preserve"><value>Fotoğraf onaylandı. Üye fotoğrafı kaldırmış olduğu için saklanan kopya silindi.</value></data>
   <data name="Photo escalated to senior review." xml:space="preserve"><value>Fotoğraf kıdemli incelemeye yükseltildi.</value></data>
   <data name="Photo moderation" xml:space="preserve"><value>Fotoğraf moderasyonu</value></data>
   <data name="Photo queue" xml:space="preserve"><value>Fotoğraf kuyruğu</value></data>
@@ -320,6 +323,7 @@
   <data name="Relationship goal" xml:space="preserve"><value>İlişki hedefi</value></data>
   <data name="Release" xml:space="preserve"><value>Bırak</value></data>
   <data name="Remove the verified badge and require a new identity verification?" xml:space="preserve"><value>Doğrulanmış rozeti kaldırılsın ve yeni kimlik doğrulaması istensin mi?</value></data>
+  <data name="Removed by the member. Approving deletes the kept copy; the photo is not put back." xml:space="preserve"><value>Üye tarafından kaldırıldı. Onaylamak saklanan kopyayı siler; fotoğraf profile geri eklenmez.</value></data>
   <data name="Removes the verified badge until the member completes a new session with the identity provider. The console can never mark anyone verified." xml:space="preserve"><value>Üye kimlik sağlayıcıda yeni bir oturumu tamamlayana kadar doğrulanmış rozetini kaldırır. Konsol hiç kimseyi doğrulanmış olarak işaretleyemez.</value></data>
   <data name="Reply sent to the member's ticket." xml:space="preserve"><value>Yanıt üyenin talebine gönderildi.</value></data>
   <data name="Reply to the member" xml:space="preserve"><value>Üyeye yanıt</value></data>

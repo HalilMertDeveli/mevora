@@ -281,6 +281,13 @@ The console never writes `profiles/{uid}.photos`.
 - Reject → image moved to server-only `moderation/quarantine/{uid}/` (kept for
   the appeal window) and removed from view. Rejecting a published photo is
   `PHOTO_REMOVED`. A rejected photo cannot be approved again.
+- A decision never adds a photo to a profile. The queue comes from the ledger,
+  and an entry can outlive its photo (the member removed a photo that was held
+  for review). The result's `placement` says where the decision landed:
+  `on_profile`, `not_on_profile` (recorded only) or `removed_by_member`
+  (recorded only; an approval deletes the kept image and the ledger entry). The
+  queue item carries `onProfile` and `removedByMember` so the reviewer sees it
+  before deciding. Details: `docs/PHOTO_MODERATION.md`.
 - Two reviewers cannot decide at once (review lock); the lock stores an opaque
   token, because the member can read their ledger.
 - Previews are fetched server-side and streamed with `no-store`. No signed URL,

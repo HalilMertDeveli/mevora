@@ -1,10 +1,10 @@
-import type {Firestore} from "firebase-admin/firestore";
+import {Timestamp, type Firestore, type Transaction} from "firebase-admin/firestore";
 import {HttpsError} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {MIN_PROFILE_PHOTOS} from "../profileSafety.js";
 import {dedupePhotos} from "./photoInvariants.js";
-import {isLedgerFaceAnchor, ledgerRef, type LedgerEntry} from "./photoModerationLedger.js";
-import {commitPhotoInvariants, loadPhotoState} from "./photoModerationService.js";
+import {isLedgerFaceAnchor, isRemovedByMember, ledgerRef, type LedgerEntry} from "./photoModerationLedger.js";
+import {commitPhotoInvariants, loadPhotoState, type PhotoState} from "./photoModerationService.js";
 import {PHOTO_VARIANTS, variantPath} from "./photoVariants.js";
 import {PROCESSING_STALE_MS, type PhotoRecord} from "./types.js";
 
@@ -40,7 +40,10 @@ import {PROCESSING_STALE_MS, type PhotoRecord} from "./types.js";
  * A photo that moderation rejected or is holding for review leaves the
  * profile but keeps its ledger entry and whatever is stored: the entry is the
  * moderation record (and what stops the id being uploaded again), and a
- * reviewer still needs the image.
+ * reviewer still needs the image. The entry is stamped `removedByMemberAt`, so
+ * whatever is decided about the photo later is recorded without the photo
+ * being put back — and a reviewer who approves it finishes this deletion
+ * (admin/photos/photoReview.ts, through queueHeldPhotoDeletion below).
  *
  * The array rewrite older clients perform keeps working and keeps leaking; it
  * is not turned into a deletion for the reasons above.
@@ -143,6 +146,47 @@ async function deleteObject(bucket: PhotoDeletionBucket, path: string): Promise<
   return false;
 }
 
+/**
+ * Deletes everything photoObjectPaths names. Resolves to the number of objects
+ * that could not be deleted; calling again retries them.
+ */
+export async function deletePhotoObjects(
+  bucket: PhotoDeletionBucket,
+  uid: string,
+  imageId: string,
+  ledgerPath?: string | null,
+): Promise<number> {
+  const paths = photoObjectPaths(uid, imageId, ledgerPath);
+  const deleted = await Promise.all(paths.map((path) => deleteObject(bucket, path)));
+  return deleted.filter((ok) => !ok).length;
+}
+
+/**
+ * The Firestore half of deleting a photo whose entry moderation was keeping,
+ * queued on the caller's transaction: the entry goes, and so does the array
+ * element if a stale whole-array write has put the id back since the member
+ * removed it. `state` must have been read in that transaction.
+ *
+ * For a reviewer's approval of a photo the member already removed: the
+ * decision is the last thing the entry was kept for. No minimum and no Face
+ * Anchor check here — the member's request passed them when it was made.
+ */
+export function queueHeldPhotoDeletion(
+  tx: Transaction,
+  db: Firestore,
+  uid: string,
+  state: PhotoState,
+  imageId: string,
+): void {
+  // As in deleteProfilePhoto: gone from the ledger the invariants see.
+  state.ledger.delete(imageId);
+  const photos = dedupePhotos(state.photos);
+  if (photos.some((photo) => photoId(photo) === imageId)) {
+    commitPhotoInvariants(tx, db, uid, state, {photos: photosWithout(photos, imageId)});
+  }
+  tx.delete(ledgerRef(db, uid, imageId));
+}
+
 function keptByModeration(entry: LedgerEntry | null): boolean {
   return entry?.status === "rejected" || entry?.status === "manual_review";
 }
@@ -195,6 +239,10 @@ export async function deleteProfilePhoto(
     }
     if (entry && !kept) {
       tx.delete(ledgerRef(db, uid, imageId));
+    } else if (entry && !isRemovedByMember(entry)) {
+      // The record stays; this says the photo does not. `updatedAt` is left
+      // alone: it is the entry's place in the review queue.
+      tx.update(ledgerRef(db, uid, imageId), {removedByMemberAt: Timestamp.fromMillis(nowMs)});
     }
     return {removed: onProfile, entry};
   });
@@ -203,10 +251,7 @@ export async function deleteProfilePhoto(
     return {photoId: imageId, removed, cleanup: "retained"};
   }
 
-  const bucket = deps.bucket();
-  const paths = photoObjectPaths(uid, imageId, entry?.storagePath);
-  const deleted = await Promise.all(paths.map((path) => deleteObject(bucket, path)));
-  const failures = deleted.filter((ok) => !ok).length;
+  const failures = await deletePhotoObjects(deps.bucket(), uid, imageId, entry?.storagePath);
   if (failures > 0) {
     logger.error("Removed profile photo still has stored objects", {uid, imageId, failures});
     return {photoId: imageId, removed, cleanup: "incomplete"};

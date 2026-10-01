@@ -9,6 +9,7 @@ const {
 const {
   processPendingProfilePhoto,
   reconcilePhotoModeration,
+  setPhotoModerationStatus,
 } = require("../lib/moderation/photoModerationService.js");
 const {variantPath} = require("../lib/moderation/photoVariants.js");
 const {
@@ -367,6 +368,104 @@ describe("a photo moderation has ruled on stays on record", () => {
     assert.deepEqual(ids(w), ["p1", "p3", "p4"]);
     assert.equal(w.ledger("p2").status, "manual_review");
     assert.equal(w.bucket.has(publishedPath(UID, "p2")), true);
+  });
+});
+
+describe("a kept record says the member removed the photo", () => {
+  const QUEUED_AT = Timestamp.fromMillis(T0 - 60 * 60 * 1000);
+  const held = (extra = {}) => ({status: "manual_review", reason: "user-report", updatedAt: QUEUED_AT, ...extra});
+  /** Held before it was ever published: only the upload exists. */
+  const heldUnpublished = () => held({storagePath: null, downloadUrl: null});
+  const uploadEvent = (w, id) => ({
+    db: w.db,
+    bucket: w.bucket,
+    uid: UID,
+    imageId: id,
+    pendingPath: pendingPath(id),
+    contentType: "image/jpeg",
+    sizeBytes: 10,
+  });
+
+  it("a photo held for review is marked, without losing its place in the review queue", async () => {
+    const w = world({ledger: {p2: held()}});
+    await remove(w, "p2");
+    const entry = w.ledger("p2");
+    assert.equal(entry.removedByMemberAt.toMillis(), w.now);
+    assert.equal(entry.updatedAt.toMillis(), QUEUED_AT.toMillis());
+    assert.equal(entry.status, "manual_review");
+  });
+
+  it("a rejected photo is marked too", async () => {
+    const w = world({ledger: {p2: {status: "rejected", reason: "nudity"}}});
+    await remove(w, "p2");
+    assert.equal(w.ledger("p2").removedByMemberAt.toMillis(), w.now);
+  });
+
+  it("a deleted photo leaves no record to mark", async () => {
+    const w = world();
+    await remove(w, "p2");
+    assert.equal(w.ledger("p2"), undefined);
+  });
+
+  it("the mark is made once: a repeated call does not move it", async () => {
+    const w = world({ledger: {p2: held()}});
+    await remove(w, "p2");
+    const first = w.ledger("p2").removedByMemberAt.toMillis();
+    w.advance(60 * 1000);
+    w.db.resetStats();
+    const again = await remove(w, "p2");
+    assert.deepEqual(again, {photoId: "p2", removed: false, cleanup: "retained"});
+    assert.equal(w.ledger("p2").removedByMemberAt.toMillis(), first);
+    assert.equal(w.db.stats().writes, 0);
+  });
+
+  it("a photo an older client took out of the array is marked when the member asks again", async () => {
+    const w = world({ledger: {p2: held()}});
+    const photos = w.profile().photos.filter((photo) => photo.id !== "p2");
+    await w.db.doc(`profiles/${UID}`).set({photos}, {merge: true});
+    const result = await remove(w, "p2");
+    assert.deepEqual(result, {photoId: "p2", removed: false, cleanup: "retained"});
+    assert.equal(w.ledger("p2").removedByMemberAt.toMillis(), w.now);
+  });
+
+  it("a decision that arrives afterwards is recorded but does not bring the photo back", async () => {
+    const w = world({ledger: {p2: held()}});
+    await remove(w, "p2");
+    const projection = await setPhotoModerationStatus(w.db, UID, "p2", {
+      moderationStatus: "approved",
+      moderatedBy: "system",
+    });
+    assert.deepEqual(projection, {onProfile: false});
+    assert.equal(w.ledger("p2").status, "approved");
+    assert.deepEqual(ids(w), ["p1", "p3", "p4"]);
+  });
+
+  it("an upload event redelivered afterwards does not moderate it again", async () => {
+    const w = world({ledger: {p2: heldUnpublished()}});
+    await remove(w, "p2");
+    w.db.resetStats();
+    const status = await processPendingProfilePhoto(uploadEvent(w, "p2"));
+    assert.equal(status, "manual_review");
+    assert.equal(w.db.stats().writes, 0);
+    assert.deepEqual(ids(w), ["p1", "p3", "p4"]);
+    // The upload is the only image the reviewer has.
+    assert.equal(w.bucket.has(pendingPath("p2")), true);
+  });
+
+  it("without the mark the pipeline still adds a photo the client has not written yet", async () => {
+    const w = world();
+    w.bucket.put(pendingPath("fresh"), JPEG("fresh"));
+    const projection = await setPhotoModerationStatus(w.db, UID, "fresh", {moderationStatus: "processing"});
+    assert.deepEqual(projection, {onProfile: true});
+    assert.deepEqual(ids(w), [...FOUR, "fresh"]);
+  });
+
+  it("a caller that only updates leaves a missing photo out", async () => {
+    const w = world();
+    const projection = await setPhotoModerationStatus(
+      w.db, UID, "fresh", {moderationStatus: "manual_review"}, {whenAbsent: "skip"});
+    assert.deepEqual(projection, {onProfile: false});
+    assert.deepEqual(ids(w), FOUR);
   });
 });
 

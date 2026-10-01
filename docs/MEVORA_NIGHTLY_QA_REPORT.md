@@ -1,5 +1,7 @@
 # MEVORA NIGHTLY QA REPORT
 
+> **Superseded (2026-10-01).** One nightly run from 2026-08-24. Kept for history. Current launch state: `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`.
+
 **Date:** 2026-08-24 (evening run, UTC+3)  
 **Branch:** `backup/wip-before-device-sync-20260824`  
 **Firebase project:** `mevora-d6ed0`  

@@ -39,6 +39,7 @@ async function fileReport(w, id, {reporter = "reporter-1", reported = "bad-actor
 
 describe("report priority is decided server-side", () => {
   it("maps the production reason whitelist", () => {
+    assert.equal(reportPriority("child_safety").priority, "critical");
     assert.equal(reportPriority("underage").priority, "critical");
     assert.equal(reportPriority("harassment").priority, "high");
     assert.equal(reportPriority("scam").priority, "high");

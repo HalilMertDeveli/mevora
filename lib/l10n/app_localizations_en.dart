@@ -1824,6 +1824,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportFakeProfile => 'Fake profile';
 
   @override
+  String get reportChildSafety =>
+      'Child safety concern (sexual content or behaviour involving a minor)';
+
+  @override
   String get reportUnderage => 'Underage';
 
   @override

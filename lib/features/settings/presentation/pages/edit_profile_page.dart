@@ -105,6 +105,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
   /// A refusal about the photo list (it is shown under the list itself).
   bool get _photoError => _errorKey?.startsWith('photo_') ?? false;
 
+  /// A photo change that went through makes an earlier refusal about the
+  /// photo list out of date.
+  void _clearPhotoError() {
+    if (_photoError) {
+      setState(() => _errorKey = null);
+    }
+  }
+
   void _onFaceAnchor() {
     if (mounted) {
       setState(() {});
@@ -699,7 +707,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
     result.when(
-      success: (_) {},
+      success: (_) => _clearPhotoError(),
       err: (failure) => setState(() => _errorKey = failure.message),
     );
   }
@@ -722,7 +730,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
     result.when(
-      success: (_) {},
+      success: (_) => _clearPhotoError(),
       err: (failure) => setState(() => _errorKey = failure.message),
     );
   }

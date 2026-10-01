@@ -169,16 +169,7 @@ class _ProfileQuestionAnswersSectionState
               });
             }
           },
-          onError: (Object error) {
-            // #region agent log
-            // ignore: avoid_print
-            print(
-              '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"photo-swipe",'
-              '"hypothesisId":"H5","location":"profile_question_answers_section.dart",'
-              '"message":"match_watch_error","data":{"error":"$error"},'
-              '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
-            );
-            // #endregion
+          onError: (_) {
             if (!mounted) {
               return;
             }

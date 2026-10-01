@@ -3,6 +3,7 @@ import 'package:mevora/core/constants/firestore_paths.dart';
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/features/matching/data/unreadable_match.dart';
 import 'package:mevora/features/matching/domain/match_engine.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
@@ -61,9 +62,7 @@ class FirebaseMatchDataSource implements MatchRepository, LikeRepository {
           }
           return _matchFrom(snap.id, snap.data() ?? const {});
         })
-        .handleError((Object error, StackTrace stackTrace) {
-          // Missing match docs must not crash discovery profile photo UI.
-        });
+        .unreadableAsNull();
   }
 
   @override

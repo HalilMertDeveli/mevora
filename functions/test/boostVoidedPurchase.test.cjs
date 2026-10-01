@@ -235,6 +235,22 @@ describe("voided Boost purchase — a time-boxed Boost", () => {
     assert.equal(ledger("new").status, "verified");
   });
 
+  it("a Boost that ended early leaves the next Boost alone", async () => {
+    // An earlier void shortened b1, so it ran out before the date this entry
+    // recorded. The Boost running now belongs to a later purchase.
+    fake.reset({
+      ...weekBought({token: "old", boughtDaysAgo: 5, endsInDays: 4, boostId: "b1", status: "expired"}),
+      ...weekBought({token: "new", boughtDaysAgo: 1, endsInDays: 6, boostId: "b2"}),
+    });
+
+    await voidToken("old");
+
+    const running = fake.read("users/u1/boosts/b2");
+    assert.equal(running.status, "active");
+    near((running.expiresAt.toMillis() - Date.now()) / DAY_MS, 6);
+    assert.equal(ledger("old").void.revokedDurationMs, 0);
+  });
+
   it("two stacked weeks: voiding the first leaves the second week", async () => {
     await buy("u1", "t1");
     await buy("u1", "t2");
@@ -269,8 +285,9 @@ describe("voided Boost purchase — a time-boxed Boost", () => {
 
       const boost = boostOf("u1");
       assert.equal(boost.status, "cancelled", order.join(" then "));
+      // Seven days were left; taking seven more must stop at now, not go past it.
       near((boost.expiresAt.toMillis() - Date.now()) / DAY_MS, 0);
-      assert.ok(boost.expiresAt.toMillis() >= boost.startedAt.toMillis(), "a Boost cannot end before it began");
+      assert.equal(boost.expiresAt.toMillis(), ledger(order[1]).void.boostExpiresAtAfter.toMillis());
     }
   });
 

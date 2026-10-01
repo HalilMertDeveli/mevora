@@ -33,10 +33,18 @@ export interface DeveloperNotification {
     purchaseToken?: string;
     subscriptionId?: string;
   };
+  /** A one-time product — Boost. Handled by `boost/boostRtdn.ts`, never here. */
+  oneTimeProductNotification?: {
+    version?: string;
+    notificationType?: number;
+    purchaseToken?: string;
+    sku?: string;
+  };
   voidedPurchaseNotification?: {
     purchaseToken?: string;
     orderId?: string;
     productType?: number;
+    refundType?: number;
   };
   testNotification?: {version?: string};
 }

@@ -74,6 +74,10 @@ SubscriptionServices createSubscriptionServices({
               backend: backend ?? FirebaseFunctionsCallable(),
               config: productConfig ?? PremiumProductConfig.fromEnvironment(),
               logger: logger,
+              // Stamps each purchase with the account that made it, and
+              // re-verifies purchases left unacknowledged by an earlier
+              // session whenever an account is signed in.
+              uidSource: uidSource,
             ));
 
   return SubscriptionServices(

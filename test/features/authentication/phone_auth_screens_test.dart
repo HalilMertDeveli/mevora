@@ -158,4 +158,27 @@ void main() {
     expect(find.textContaining('firebase_auth'), findsNothing);
     auth.dispose();
   });
+
+  // The number lives in PhoneAuthController, which outlives the screen. An
+  // empty field over a remembered number showed the old digits in the preview
+  // line and validated them on submit.
+  testWidgets(
+    'coming back to the phone screen shows the number already entered',
+    (tester) async {
+      final auth = AuthController(
+        authRepository: FakeAuthRepository(),
+        userDocumentRepository: FakeUserDocumentRepository(),
+        logger: const AppLogger(environment: AppEnvironment.development),
+      );
+      auth.phoneAuth.updateNationalNumber('5551112233');
+
+      await tester.pumpWidget(_harness(auth, const PhoneLoginScreen()));
+      await tester.pump();
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.controller!.text, auth.phoneAuth.formattedNational);
+      expect(field.controller!.text, isNotEmpty);
+      auth.dispose();
+    },
+  );
 }

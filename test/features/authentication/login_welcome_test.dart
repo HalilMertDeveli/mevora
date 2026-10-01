@@ -11,9 +11,12 @@ import 'package:mevora/features/authentication/data/services/auth_analytics.dart
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/authentication/presentation/pages/login_page.dart';
+import 'package:mevora/features/authentication/presentation/widgets/auth_error_banner.dart';
 import 'package:mevora/features/authentication/presentation/widgets/login_hero_background.dart';
 import 'package:mevora/features/authentication/presentation/widgets/welcome_auth_buttons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
 
 import '../../helpers/fake_auth.dart';
 
@@ -294,5 +297,51 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text(_en.continueWithEmail), findsOneWidget);
+  });
+
+  // The email form sits a full screen below the provider buttons. Its error
+  // used to be shown above them, out of sight, so a failed sign-in looked as
+  // if nothing had happened.
+  testWidgets('a failed email sign-in shows its error inside the email form', (
+    tester,
+  ) async {
+    await pumpLogin(tester);
+    final scrollable = find.byType(Scrollable).first;
+
+    await tester.scrollUntilVisible(
+      find.text(_en.continueWithEmail),
+      120,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.text(_en.continueWithEmail));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, _en.email),
+      'someone@mevora.test',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, _en.password),
+      'wrong-password-1',
+    );
+    authRepository.nextFailure = const AuthFailure(
+      'wrong-password',
+      kind: AuthErrorKind.wrongPassword,
+    );
+    await tester.scrollUntilVisible(
+      find.widgetWithText(MevoraButton, _en.signIn),
+      120,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.widgetWithText(MevoraButton, _en.signIn));
+    await tester.pumpAndSettle();
+
+    final banner = find.byType(AuthErrorBanner);
+    expect(banner, findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(MevoraCard), matching: banner),
+      findsOneWidget,
+    );
+    expect(find.text(_en.authWrongPassword), findsOneWidget);
   });
 }

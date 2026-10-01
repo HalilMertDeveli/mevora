@@ -513,12 +513,12 @@ void main() {
   });
 
   group('public profile stays surname-free', () {
-    // Mirrors profileCreateKeysAllowed in firebase/firestore.rules.
+    // Mirrors profileCreateKeysAllowed in firebase/firestore.rules, minus
+    // birthDate and age: the rules keep those keys only so that older builds
+    // can re-send what they loaded, and this client writes neither.
     const publicKeys = {
       'uid',
       'displayName',
-      'birthDate',
-      'age',
       'gender',
       'interestedIn',
       'bio',

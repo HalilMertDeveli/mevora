@@ -122,7 +122,6 @@ async function seedCandidate({uid, gender, seeks, place, traits, age}) {
     qaPicksPool: true,
     displayName: uid.replace("qa_pick_", "Pick ").replace(/_/g, " "),
     gender,
-    birthDate: Timestamp.fromDate(birthDate),
     age,
     bio: "Emulator Picks pool fixture.",
     isDiscoverable: true,

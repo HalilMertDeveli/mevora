@@ -24,8 +24,26 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   final BackendCallable _backend;
   static const _onboardingCallableName = 'completeOnboarding';
 
+  /// The draft, with the member's private date of birth put back on it: the
+  /// public profile it is loaded from does not carry one.
   @override
-  Future<UserProfile?> loadDraft(String uid) => _profiles.getById(uid);
+  Future<UserProfile?> loadDraft(String uid) async {
+    final savedBirthDate = _loadBirthDate(uid);
+    final draft = await _profiles.getById(uid);
+    final birthDate = await savedBirthDate;
+    if (draft == null || birthDate == null) {
+      return draft;
+    }
+    return draft.copyWith(birthDate: birthDate);
+  }
+
+  Future<DateTime?> _loadBirthDate(String uid) async {
+    try {
+      return await _profiles.loadMyBirthDate(uid);
+    } on Object {
+      return null;
+    }
+  }
 
   @override
   Future<String?> loadLastName(String uid) => _profiles.loadMyLastName(uid);
@@ -57,10 +75,12 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       ),
     );
     try {
-      // The surname goes to the private account document, on the step that
-      // collects it. The public profile below never carries it.
+      // The surname and the date of birth go to the private account
+      // document, on the step that collects them. The public profile below
+      // never carries either.
       if (step == OnboardingStep.basicInfo) {
         await _profiles.saveMyLastName(profile.uid, lastName!);
+        await _profiles.saveMyBirthDate(profile.uid, profile.birthDate!);
       }
       await _profiles.saveMine(_clientSafeDraft(draft));
       return Success(draft);

@@ -208,7 +208,6 @@ async function seed(user) {
     uid,
     displayName,
     gender,
-    birthDate: Timestamp.fromDate(birthDate),
     age: 28,
     bio: "Emulator QA fixture.",
     isDiscoverable: true,

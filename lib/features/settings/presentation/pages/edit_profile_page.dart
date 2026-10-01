@@ -69,6 +69,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   /// from the public profile, and stays empty for a legacy account.
   String _baselineLastName = '';
   var _lastNameLoaded = false;
+
+  /// The member's private date of birth, shown locked. Loaded from their
+  /// account: the public profile carries only the age.
+  DateTime? _birthDate;
   String? _gender;
   String? _interestedIn;
   String? _relationshipGoal;
@@ -162,7 +166,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (profile != null && (!_hydrated || _baseline?.uid != profile.uid)) {
           _hydrate(profile);
           unawaited(_loadLastName(settings, uid));
+          unawaited(_loadBirthDate(settings, uid));
         }
+        final birthDate = _birthDate ?? profile?.birthDate;
         return PopScope(
           canPop: !_hasUnsavedChanges,
           onPopInvokedWithResult: (didPop, result) async {
@@ -299,17 +305,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           suffixIcon: const Icon(MevoraIcons.dropdown),
                           onTap: _saving ? null : () => unawaited(_pickCity()),
                         ),
-                        if (profile.birthDate != null) ...[
+                        if (birthDate != null) ...[
                           const SizedBox(height: AppSpacing.md),
                           MevoraListGroup(
                             children: [
                               MevoraListRow(
                                 icon: MevoraIcons.calendar,
                                 title: l10n.onboardingBirthDate,
-                                value: L10nFormat.mediumDate(
-                                  l10n,
-                                  profile.birthDate!,
-                                ),
+                                value: L10nFormat.mediumDate(l10n, birthDate),
                                 subtitle: l10n.settingsBirthDateLocked,
                                 trailing: Icon(
                                   MevoraIcons.lock,
@@ -496,6 +499,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _lastNameController.text = _baselineLastName;
       _lastNameLoaded = true;
     });
+  }
+
+  Future<void> _loadBirthDate(SettingsServices settings, String uid) async {
+    DateTime? birthDate;
+    try {
+      birthDate = await settings.settingsHub.loadBirthDate(uid);
+    } on Object {
+      birthDate = null;
+    }
+    if (!mounted || birthDate == null) {
+      return;
+    }
+    setState(() => _birthDate = birthDate);
   }
 
   UserProfile _buildDraft(UserProfile profile) {

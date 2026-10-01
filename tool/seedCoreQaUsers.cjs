@@ -92,6 +92,17 @@ async function upsertAuthUser(person) {
   return created.uid;
 }
 
+// The date of birth is private account data (users/{uid}); the public profile
+// carries only the age the server derives from it.
+function ageOn(birthDate, today = new Date()) {
+  let years = today.getFullYear() - birthDate.getFullYear();
+  const monthDelta = today.getMonth() - birthDate.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+    years -= 1;
+  }
+  return years;
+}
+
 function photoRecords(uid) {
   return [0, 1, 2].map((i) => {
     const imageId = `qa_photo_${i + 1}`;
@@ -140,6 +151,7 @@ async function seedPerson(person) {
     {
       uid,
       email: person.email,
+      birthDate: admin.firestore.Timestamp.fromDate(person.birthDate),
       isSmokeTestUser: true,
       accountStatus: "active",
       isBanned: false,
@@ -159,7 +171,7 @@ async function seedPerson(person) {
       name: person.displayName,
       bio: "Core dating flow acceptance fixture.",
       gender: person.gender,
-      birthDate: admin.firestore.Timestamp.fromDate(person.birthDate),
+      age: ageOn(person.birthDate),
       city: CITY,
       photos: photos.map((p) => p.record),
       isDiscoverable: true,

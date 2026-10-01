@@ -103,6 +103,17 @@ async function callAs(key, name, data) {
   return {status: res.status, body: json};
 }
 
+// The date of birth is private account data (users/{uid}); the public profile
+// carries only the age the server derives from it.
+function ageOn(birthDate, today = new Date()) {
+  let years = today.getFullYear() - birthDate.getFullYear();
+  const monthDelta = today.getMonth() - birthDate.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+    years -= 1;
+  }
+  return years;
+}
+
 function photoRecords(uid) {
   return [0, 1, 2].map((i) => ({
     id: `mm_photo_${i + 1}`,
@@ -140,6 +151,7 @@ async function seed(db, key) {
   await setDoc(doc(db, `users/${uid}`), {
     uid,
     email: person.email,
+    birthDate: Timestamp.fromDate(person.birthDate),
     isSmokeTestUser: true,
     accountStatus: "active",
     isBanned: false,
@@ -156,7 +168,7 @@ async function seed(db, key) {
     name: person.displayName,
     bio: "Mutual match acceptance fixture.",
     gender: person.gender,
-    birthDate: Timestamp.fromDate(person.birthDate),
+    age: ageOn(person.birthDate),
     city: CITY,
     photos,
     isDiscoverable: true,

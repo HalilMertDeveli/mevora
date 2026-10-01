@@ -45,17 +45,26 @@ Custom crypto primitives are **not** implemented.
 
 | Material | Location |
 |----------|----------|
-| Private identity key | `flutter_secure_storage` (Android Keystore / iOS Keychain) |
+| Private identity key | `flutter_secure_storage` (Android Keystore / iOS Keychain), one entry per member: `mevora_e2ee_private_v{version}_{uid}` |
 | Public identity key | Firestore `users/{uid}/crypto/identity` |
 | Session keys | In-memory cache only (per app session) |
 
 Private keys are never written to Firestore, Storage, logs, or FCM.
 
+The key is stored per member and **stays on the device after sign-out**. Signing
+out used to delete it, and the next sign-in then generated and published a new
+key pair — after which neither side could decrypt any earlier message. Keeping
+it per member also keeps accounts that share a device apart without deleting
+anything. The key is removed when the account is deleted from this device, and
+with the app's data on uninstall. A key written by an older build (one
+un-namespaced entry) is adopted on first start only when its public half is the
+identity that member has published; otherwise it is discarded.
+
 ## 6. Key rotation (v1)
 
 - `keyVersion` field reserved on identity documents.
 - New device without key backup cannot decrypt historical messages (by design).
-- If local private key exists but Firestore identity is missing, the client re-publishes the derived public key (no new key pair).
+- If a local private key exists but the Firestore identity is missing **or holds a different public key** (another install published its own), the client re-publishes the public key derived from the local key (no new key pair): a device can only decrypt with the key it holds.
 
 Full multi-device key backup is **not** implemented in v1.
 

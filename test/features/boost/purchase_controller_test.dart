@@ -93,6 +93,64 @@ void main() {
     expect(controller.state.balance, 0);
   });
 
+  group(
+    'the store purchase is consumed only once the server has granted it',
+    () {
+      test(
+        'a confirmed grant completes the purchase, after the verification',
+        () async {
+          await controller.load();
+          await controller.purchase();
+          expect(repository.steps, ['purchase', 'verify', 'complete']);
+          expect(repository.lastCompleted?.transactionId, 'GPA.1234');
+        },
+      );
+
+      test(
+        'the server answering "already granted to you" completes it too',
+        () async {
+          repository.alreadyProcessed = true;
+          await controller.load();
+          await controller.purchase();
+          expect(controller.state.status, PurchaseUiStatus.success);
+          expect(repository.steps, ['purchase', 'verify', 'complete']);
+        },
+      );
+
+      test('a rejected verification leaves the purchase unconsumed', () async {
+        await controller.load();
+        repository.verifyFailure = const PurchaseFailure(
+          AppStrings.boostVerificationFailed,
+          kind: PurchaseErrorKind.verificationFailed,
+        );
+        await controller.purchase();
+        expect(controller.state.status, PurchaseUiStatus.failed);
+        expect(repository.steps, ['purchase', 'verify']);
+        expect(repository.lastCompleted, isNull);
+      });
+
+      for (final kind in [
+        PurchaseErrorKind.network,
+        PurchaseErrorKind.storeDown,
+      ]) {
+        test(
+          'an unreachable backend (${kind.name}) leaves it unconsumed',
+          () async {
+            await controller.load();
+            repository.verifyFailure = PurchaseFailure(
+              AppStrings.boostNetworkError,
+              kind: kind,
+            );
+            await controller.purchase();
+            expect(controller.state.hasActiveBoost, isFalse);
+            expect(repository.steps, ['purchase', 'verify']);
+            expect(repository.lastCompleted, isNull);
+          },
+        );
+      }
+    },
+  );
+
   test('unavailable store maps to unavailable', () async {
     repository.productFailure = const PurchaseFailure(
       AppStrings.boostStoreUnavailable,

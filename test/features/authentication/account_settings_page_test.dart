@@ -38,7 +38,10 @@ Future<Widget> _routerHarness({
   final router = GoRouter(
     initialLocation: initialLocation,
     routes: [
-      GoRoute(path: AppRoutes.settings, builder: (_, _) => const SettingsPage()),
+      GoRoute(
+        path: AppRoutes.settings,
+        builder: (_, _) => const SettingsPage(),
+      ),
       GoRoute(
         path: AppRoutes.accountSettings,
         builder: (_, _) => const AccountSettingsPage(),
@@ -65,11 +68,13 @@ Future<Widget> _routerHarness({
   );
 }
 
-AuthController _authenticatedAuth() {
-  const user = AuthUser(
+AuthController _authenticatedAuth({
+  AuthProviders providers = const AuthProviders(email: true),
+}) {
+  final user = AuthUser(
     id: 'self',
     email: 'ada@mevora.app',
-    authProviders: AuthProviders(email: true),
+    authProviders: providers,
   );
   final auth = AuthController(
     authRepository: FakeAuthRepository(user: user),
@@ -77,7 +82,7 @@ AuthController _authenticatedAuth() {
     logger: const AppLogger(environment: AppEnvironment.development),
   );
   auth.user = user;
-  auth.status = const Authenticated(user);
+  auth.status = Authenticated(user);
   return auth;
 }
 
@@ -98,10 +103,7 @@ void main() {
   testWidgets('settings exposes linked accounts navigation', (tester) async {
     final auth = _authenticatedAuth();
     await tester.pumpWidget(
-      await _routerHarness(
-        auth: auth,
-        initialLocation: AppRoutes.settings,
-      ),
+      await _routerHarness(auth: auth, initialLocation: AppRoutes.settings),
     );
     await tester.pumpAndSettle();
 
@@ -118,7 +120,66 @@ void main() {
     auth.dispose();
   });
 
-  testWidgets('delete account navigates to login after success', (tester) async {
+  Future<void> pumpAccount(WidgetTester tester, AuthController auth) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      await _routerHarness(
+        auth: auth,
+        initialLocation: AppRoutes.accountSettings,
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  // Linking Apple runs Sign in with Apple, which only exists on Apple
+  // platforms: elsewhere the row would be a button that always fails.
+  testWidgets(
+    'linked accounts do not offer Apple on Android',
+    (tester) async {
+      final auth = _authenticatedAuth();
+      await pumpAccount(tester, auth);
+
+      expect(find.text('Google'), findsOneWidget);
+      expect(find.text('Spotify'), findsOneWidget);
+      expect(find.text('Apple'), findsNothing);
+      auth.dispose();
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+
+  testWidgets(
+    'linked accounts offer Apple on iOS',
+    (tester) async {
+      final auth = _authenticatedAuth();
+      await pumpAccount(tester, auth);
+
+      expect(find.text('Google'), findsOneWidget);
+      expect(find.text('Apple'), findsOneWidget);
+      auth.dispose();
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'an Apple account linked elsewhere still shows as linked on Android',
+    (tester) async {
+      final auth = _authenticatedAuth(
+        providers: const AuthProviders(apple: true),
+      );
+      await pumpAccount(tester, auth);
+
+      expect(find.text('Apple'), findsOneWidget);
+      // Shown as a fact, with nothing to tap: only Apple reads "linked".
+      expect(find.text(_l10n.linked), findsOneWidget);
+      auth.dispose();
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+
+  testWidgets('delete account navigates to login after success', (
+    tester,
+  ) async {
     final auth = _authenticatedAuth();
     await tester.binding.setSurfaceSize(const Size(800, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));

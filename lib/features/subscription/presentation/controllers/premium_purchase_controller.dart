@@ -174,6 +174,15 @@ class PremiumPurchaseController extends ChangeNotifier {
       _set(stage: PremiumPurchaseStage.purchased, clearError: true);
       return;
     }
+    if (result.isPending) {
+      // The payment has not settled. Not a failure to count, and nothing to
+      // show as unlocked: the buy is over, and [reason] says why there is no
+      // answer yet. The entitlement arrives on its own when the money does.
+      _failure = PremiumPurchaseFailure.verificationRejected;
+      _reason = result.reason;
+      _set(stage: PremiumPurchaseStage.failed);
+      return;
+    }
     // Verified and refused. Not a crash and not a grant — say why.
     _track(AnalyticsEvents.premiumPurchaseFailed);
     _failure = PremiumPurchaseFailure.verificationRejected;

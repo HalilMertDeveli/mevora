@@ -3,6 +3,7 @@ import {getFirestore, type Firestore} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {logger} from "firebase-functions";
 import {safeLogMeta} from "../security/logHygiene.js";
+import {uidRateLimitPaths} from "../callableRateLimit.js";
 
 export type DeletionVerifyResult = {
   uid: string;
@@ -48,6 +49,9 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   // The admin console's name-search row; the profile trigger could recreate
   // it if a profile write raced the deletion, so it is checked.
   `adminUserLookup/${uid}`,
+  // Spotify OAuth rate-limit counters keyed by the uid. A sign-in or link
+  // call in flight re-creates one, so they are checked, not assumed.
+  ...uidRateLimitPaths(uid),
 ];
 
 /** Storage prefixes `deleteUserAccount` clears. */
@@ -120,6 +124,19 @@ export async function verifyAccountDeletion(
   }
   if (!humorQueuePointer.empty) {
     issues.push("humor_queue_reporter_remnant");
+  }
+
+  // Boost sessions and their per-viewer reach rows. A Discover page already
+  // in flight writes both in one batch after the sweep, so they are checked.
+  const [boosts, boostReach] = await Promise.all([
+    db.collection(`users/${uid}/boosts`).limit(1).get(),
+    db.collection(`users/${uid}/boostReach`).limit(1).get(),
+  ]);
+  if (!boosts.empty) {
+    issues.push("boosts_remnant");
+  }
+  if (!boostReach.empty) {
+    issues.push("boost_reach_remnant");
   }
 
   // Appeals are the member's own words; they go with the account.

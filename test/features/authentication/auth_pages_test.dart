@@ -63,7 +63,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(_wrap(controller: controller, child: const LoginPage()));
+    await tester.pumpWidget(
+      _wrap(controller: controller, child: const LoginPage()),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text(_l10n.continueWithEmail));
@@ -87,7 +89,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(_wrap(controller: controller, child: const LoginPage()));
+    await tester.pumpWidget(
+      _wrap(controller: controller, child: const LoginPage()),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text(_l10n.continueWithEmail));
@@ -121,7 +125,9 @@ void main() {
       'That email and password combination does not match.',
       kind: AuthErrorKind.wrongPassword,
     );
-    await tester.pumpWidget(_wrap(controller: controller, child: const LoginPage()));
+    await tester.pumpWidget(
+      _wrap(controller: controller, child: const LoginPage()),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text(_l10n.continueWithEmail));
@@ -238,6 +244,50 @@ void main() {
     expect(find.text(_l10n.authEmailInUse), findsOneWidget);
   });
 
+  testWidgets(
+    'register does not offer Continue with Apple on Android',
+    (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _wrap(controller: controller, child: const RegisterPage()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(_l10n.continueWithGoogle), findsOneWidget);
+      expect(find.text(_l10n.continueWithApple), findsNothing);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+
+  testWidgets(
+    'register offers Continue with Apple on iOS',
+    (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _wrap(controller: controller, child: const RegisterPage()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(_l10n.continueWithGoogle), findsOneWidget);
+      expect(find.text(_l10n.continueWithApple), findsOneWidget);
+
+      await tester.ensureVisible(find.text(_l10n.continueWithApple));
+      await tester.tap(find.text(_l10n.continueWithApple));
+      await tester.pump();
+      await tester.pump();
+      expect(authRepository.appleCalled, isTrue);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
   testWidgets('password reset shows a generic success message', (tester) async {
     await tester.pumpWidget(
       _wrap(controller: controller, child: const PasswordResetPage()),
@@ -257,7 +307,9 @@ void main() {
     expect(find.text(_l10n.resetEmailSentMessage), findsOneWidget);
   });
 
-  testWidgets('login shows Mevora branding and provider buttons', (tester) async {
+  testWidgets('login shows Mevora branding and provider buttons', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -271,7 +323,6 @@ void main() {
     expect(find.text('mevora'), findsOneWidget);
     expect(find.text(_l10n.loginSlogan), findsOneWidget);
     expect(find.text(_l10n.continueWithGoogle), findsOneWidget);
-    expect(find.text(_l10n.continueWithApple), findsOneWidget);
     expect(find.text(_l10n.continueWithSpotify), findsOneWidget);
     expect(find.text(_l10n.continueWithPhone), findsOneWidget);
     expect(find.text(_l10n.continueWithEmail), findsOneWidget);
@@ -308,7 +359,10 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         home: Scaffold(
-          body: OtpCodeInput(onChanged: (_) {}, onCompleted: (code) => completed = code),
+          body: OtpCodeInput(
+            onChanged: (_) {},
+            onCompleted: (code) => completed = code,
+          ),
         ),
       ),
     );

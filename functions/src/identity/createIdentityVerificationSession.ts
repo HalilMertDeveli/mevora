@@ -4,7 +4,11 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {safeLogMeta} from "../security/logHygiene.js";
 import {DiditApiError} from "./didit/diditClient.js";
-import {diditSecrets, isDiditConfigured} from "./didit/diditConfig.js";
+import {
+  canDiditGrantVerification,
+  diditSecrets,
+  isDiditConfigured,
+} from "./didit/diditConfig.js";
 import {DiditProvider} from "./didit/diditProvider.js";
 import {ProviderNotConfiguredError} from "./identityVerificationProvider.js";
 import {
@@ -47,6 +51,14 @@ export const createIdentityVerificationSession = onCall(
     if (!isDiditConfigured()) {
       // Fail closed. An unconfigured deployment reports that it cannot
       // verify rather than pretending a session exists.
+      throw new HttpsError("failed-precondition", "verification-not-configured");
+    }
+    if (!canDiditGrantVerification()) {
+      // A sandbox application mocks its analysis, so a session started here
+      // could only end in a verdict that must not count. Refused before
+      // anything is reserved or created — and before a session already in
+      // flight is handed back — with the answer the app already handles.
+      logger.error("identity session refused: sandbox configuration cannot verify in a deployment");
       throw new HttpsError("failed-precondition", "verification-not-configured");
     }
 

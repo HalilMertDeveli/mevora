@@ -51,11 +51,14 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
   });
 
-  test('development Google web client id defaults from FlutterFire public client', () {
-    const config = AppConfig(environment: AppEnvironment.development);
-    expect(config.googleWebClientId, contains('apps.googleusercontent.com'));
-    expect(config.googleWebClientId.startsWith('821220262229-'), isTrue);
-  });
+  test(
+    'development Google web client id defaults from FlutterFire public client',
+    () {
+      const config = AppConfig(environment: AppEnvironment.development);
+      expect(config.googleWebClientId, contains('apps.googleusercontent.com'));
+      expect(config.googleWebClientId.startsWith('821220262229-'), isTrue);
+    },
+  );
 
   group('Spotify OAuth configuration', () {
     // Music was dead in every build that did not come from a .vscode launch
@@ -69,7 +72,8 @@ void main() {
         expect(
           config.spotifyClientId,
           isNotEmpty,
-          reason: 'an empty client ID makes the Music tab report "not configured" and Spotify sign-in impossible',
+          reason:
+              'an empty client ID makes the Music tab report "not configured" and Spotify sign-in impossible',
         );
       });
     }
@@ -91,9 +95,32 @@ void main() {
 
       expect(config.spotifyClientId.length, lessThan(64));
       expect(
-        const bool.fromEnvironment('SPOTIFY_CLIENT_SECRET', defaultValue: false),
+        const bool.fromEnvironment(
+          'SPOTIFY_CLIENT_SECRET',
+          defaultValue: false,
+        ),
         isFalse,
       );
+    });
+  });
+
+  group('public policy URLs', () {
+    test('each environment links to its own project, not to development', () {
+      for (final environment in AppEnvironment.values) {
+        final config = AppConfig(environment: environment);
+        final site = 'https://${config.firebaseProjectId}.web.app';
+
+        expect(config.publicSiteUrl, site);
+        expect(config.termsOfServiceUrl, '$site/terms');
+        expect(config.privacyPolicyUrl, '$site/privacy');
+      }
+    });
+
+    test('production does not point at the development project', () {
+      const config = AppConfig(environment: AppEnvironment.production);
+
+      expect(config.privacyPolicyUrl, isNot(contains('mevora-d6ed0')));
+      expect(config.termsOfServiceUrl, isNot(contains('mevora-d6ed0')));
     });
   });
 }

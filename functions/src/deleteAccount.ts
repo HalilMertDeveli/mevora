@@ -6,9 +6,11 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
 import {requestIdentityProviderErasure} from "./identity/identityErasure.js";
+import {diditApiKey} from "./identity/didit/diditConfig.js";
 import {safeLogMeta} from "./security/logHygiene.js";
 import {scrubDeletedMemberFromPicks} from "./picks/service.js";
 import {purgeTrustSafetyUserData} from "./admin/accountDeletion.js";
+import {uidRateLimitPaths} from "./callableRateLimit.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -132,7 +134,10 @@ export function spotifyIndexDeletionPaths(input: {
   ];
 }
 export const deleteUserAccount = onCall(
-  {enforceAppCheck, region: "europe-west1"},
+  // The Didit key is what lets requestIdentityProviderErasure reach the
+  // provider. Unbound, the secret is never mounted and every erasure reports
+  // `not_configured`, however correctly the key is set on the project.
+  {enforceAppCheck, region: "europe-west1", secrets: [diditApiKey]},
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
@@ -163,6 +168,8 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/blockedUsers`),
       deleteCollectionDocs(`users/${uid}/passedUsers`),
       deleteCollectionDocs(`users/${uid}/boosts`),
+      // One row per member who saw this profile while it was boosted.
+      deleteCollectionDocs(`users/${uid}/boostReach`),
       deleteCollectionDocs(`users/${uid}/boostWallet`),
       deleteCollectionDocs(`users/${uid}/matchScoreHistory`),
       deleteCollectionDocs(`users/${uid}/matchFeedback`),
@@ -291,6 +298,8 @@ export const deleteUserAccount = onCall(
       db.doc(`users/${uid}/verification/sumsub`),
       db.doc(`users/${uid}/verification/identity`),
       db.doc(`spotifySecrets/${uid}`),
+      // Spotify OAuth rate-limit counters, keyed by this uid.
+      ...uidRateLimitPaths(uid).map((path) => db.doc(path)),
       db.doc(`profiles/${uid}`),
       db.doc(`userPreferences/${uid}`),
       db.doc(`userSettings/${uid}`),

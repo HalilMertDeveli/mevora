@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show appFlavor;
 import 'package:mevora/app.dart';
 import 'package:mevora/core/analytics/firebase_analytics_adapter.dart';
 import 'package:mevora/core/analytics/noop_analytics_provider.dart';
@@ -8,6 +9,7 @@ import 'package:mevora/core/cache/image_cache_policy.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
+import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/config/feature_flags.dart';
 import 'package:mevora/core/di/app_operations_scope.dart';
 import 'package:mevora/core/di/boost_services_factory.dart';
@@ -59,6 +61,19 @@ Future<void> bootstrap(AppEnvironment environment) async {
     ),
   );
   final logger = AppLogger(environment: environment);
+
+  // Refuse to run a flavor from another environment's entrypoint — most
+  // importantly a production-flavor build started from lib/main.dart, which
+  // is the development environment.
+  final flavorMismatch = flavorEnvironmentMismatch(
+    flavor: appFlavor,
+    environment: environment,
+  );
+  if (flavorMismatch != null) {
+    logger.error(flavorMismatch);
+    runApp(const MevoraStartupErrorApp());
+    return;
+  }
 
   try {
     await FirebaseBootstrap(logger: logger).initialize(config);

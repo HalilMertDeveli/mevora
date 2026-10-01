@@ -1,15 +1,8 @@
 const {describe, it} = require("node:test");
 const assert = require("node:assert/strict");
 
-const REPORT_REASONS = new Set([
-  "spam",
-  "harassment",
-  "inappropriate_content",
-  "scam",
-  "fake_profile",
-  "underage",
-  "other",
-]);
+// The set reportUser validates against, not a copy of it.
+const {REPORT_REASONS} = require("../lib/admin/reports/reportPriority.js");
 
 describe("report compliance", () => {
   it("accepts the production report reason whitelist", () => {
@@ -20,6 +13,7 @@ describe("report compliance", () => {
       "scam",
       "fake_profile",
       "underage",
+      "child_safety",
       "other",
     ]) {
       assert.equal(REPORT_REASONS.has(reason), true);

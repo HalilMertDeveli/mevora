@@ -11,6 +11,7 @@ class AccountDeletionService {
   AccountDeletionService({
     required AppConfig config,
     required this.googleAuthService,
+    this.onAccountDeleted,
     FirebaseFunctions? functions,
     FirebaseAuth? firebaseAuth,
   }) : _functions =
@@ -19,6 +20,10 @@ class AccountDeletionService {
        _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   final GoogleAuthService googleAuthService;
+
+  /// Runs once the server has confirmed the deletion, before the local
+  /// sign-out: the place to drop what this device still holds for the account.
+  final Future<void> Function(String uid)? onAccountDeleted;
   final FirebaseFunctions _functions;
   final FirebaseAuth _firebaseAuth;
 
@@ -47,6 +52,12 @@ class AccountDeletionService {
           kind: AuthErrorKind.unknown,
           code: payload['code'].toString(),
         );
+      }
+
+      try {
+        await onAccountDeleted?.call(user.uid);
+      } on Object {
+        // Local cleanup is best-effort; the account is already gone.
       }
 
       // Only sign out locally once server deletion is confirmed.

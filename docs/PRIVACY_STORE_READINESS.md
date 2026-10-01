@@ -1,5 +1,7 @@
 # Mevora — Privacy / Store Technical Readiness Checklist
 
+> **Superseded (2026-10-01).** This checklist lists Sumsub and Rive (neither is used) and omits Didit, Face Anchor and GIPHY. Use `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md` for the launch checklist and `docs/PLAY_DATA_SAFETY_INVENTORY.md` for the data inventory and provider list.
+
 **Status:** Technical preparation. Not a claim of KVKK, GDPR, Google Play, or Apple compliance.
 
 ## Technical measures completed (this program)

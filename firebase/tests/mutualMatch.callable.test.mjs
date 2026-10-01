@@ -22,8 +22,14 @@ import {initializeTestEnvironment} from "@firebase/rules-unit-testing";
 import {doc, getDoc, setDoc, Timestamp} from "firebase/firestore";
 
 const PROJECT_ID = "mevora-dev";
-const AUTH_HOST = "127.0.0.1:9099";
-const FUNCTIONS_HOST = "127.0.0.1:5001";
+// Hosts come from the emulator suite's environment when it sets them, so the
+// test can run on a private port block instead of always hitting the defaults
+// (which is whatever suite happens to be listening there).
+const AUTH_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "127.0.0.1:9099";
+const FUNCTIONS_HOST = process.env.MEVORA_FUNCTIONS_EMULATOR_HOST ?? "127.0.0.1:5001";
+const [FIRESTORE_HOST, FIRESTORE_PORT] = (
+  process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080"
+).split(":");
 const REGION = "europe-west1";
 
 // Same coordinates so the pair lands in the nearby tier, as the QA seed does.
@@ -225,7 +231,7 @@ async function priv(fn) {
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: PROJECT_ID,
-    firestore: {host: "127.0.0.1", port: 8080},
+    firestore: {host: FIRESTORE_HOST, port: Number(FIRESTORE_PORT)},
   });
 
   for (const key of Object.keys(people)) {

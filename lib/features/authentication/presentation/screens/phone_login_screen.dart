@@ -26,6 +26,19 @@ class PhoneLoginScreen extends StatefulWidget {
 
 class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
   final _controller = TextEditingController();
+  var _seeded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_seeded) {
+      _seeded = true;
+      // The number outlives this screen in PhoneAuthController. Coming back
+      // with an empty field while the controller still held the old digits
+      // showed them in the preview line and validated them on submit.
+      _controller.text = AuthScope.of(context).phoneAuth.formattedNational;
+    }
+  }
 
   @override
   void dispose() {

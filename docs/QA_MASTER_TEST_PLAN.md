@@ -1,5 +1,7 @@
 # Mevora — QA Master Test Plan
 
+> **Superseded (2026-10-01).** Test plan from 2026-08-23, written against Sumsub and features that were later removed. The device checklist to use is in `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`, §7.
+
 Audit date: 2026-08-23  
 Scope: Flutter client + Firebase (Auth, Firestore, Storage, Cloud Functions)  
 Method: Static analysis, automated tests, code audit, security rules review. **No code changes during audit.**

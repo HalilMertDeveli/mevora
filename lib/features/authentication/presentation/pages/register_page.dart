@@ -164,7 +164,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   isExpanded: false,
                   onPressed: auth.isBusy
                       ? null
-                      : () => context.go(AppRoutes.login),
+                      : () {
+                          auth.clearError();
+                          context.go(AppRoutes.login);
+                        },
                 ),
               ],
             ),

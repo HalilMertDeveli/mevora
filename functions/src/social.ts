@@ -25,7 +25,7 @@ import {FcmTypes, sendUserPush} from "./notifications.js";
 import {SIGNAL_STRENGTHS} from "./personalization/config.js";
 import {recordLearningEventSafely} from "./personalization/store.js";
 import {assertCallerAccountEligible} from "./accountGuard.js";
-import {reportPriority} from "./admin/reports/reportPriority.js";
+import {REPORT_REASONS, reportPriority} from "./admin/reports/reportPriority.js";
 import {intakeUserReport} from "./admin/reports/reportIntake.js";
 import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
 
@@ -53,15 +53,6 @@ const livekitCallable = {
   secrets: [livekitApiKey, livekitApiSecret, livekitUrl],
 };
 
-const REPORT_REASONS = new Set([
-  "spam",
-  "harassment",
-  "inappropriate_content",
-  "scam",
-  "fake_profile",
-  "underage",
-  "other",
-]);
 const MAX_REPORTS_PER_DAY = 20;
 const MAX_REPORT_DESCRIPTION = 2000;
 

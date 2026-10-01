@@ -1,5 +1,6 @@
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/app_environment.dart';
+import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
@@ -47,8 +48,10 @@ DiscoveryServices createDiscoveryServices({
 }
 
 bool _forceMockOnly(AppConfig? config) {
-  const fromEnv = bool.fromEnvironment('USE_MOCK_DISCOVERY');
-  return fromEnv;
+  return mockDataSourceAllowed(
+    define: const bool.fromEnvironment('USE_MOCK_DISCOVERY'),
+    environment: config?.environment,
+  );
 }
 
 /// Lets a QA run see the server's real empty deck.

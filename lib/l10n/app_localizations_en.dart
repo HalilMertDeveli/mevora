@@ -984,6 +984,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingContinue => 'Continue';
 
   @override
+  String get onboardingLogoutBody =>
+      'The steps you\'ve finished are saved. Sign in again to pick up where you left off.';
+
+  @override
   String get onboardingEducation => 'Education';
 
   @override

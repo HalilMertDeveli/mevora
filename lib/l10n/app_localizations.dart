@@ -1688,6 +1688,12 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get onboardingContinue;
 
+  /// No description provided for @onboardingLogoutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The steps you\'ve finished are saved. Sign in again to pick up where you left off.'**
+  String get onboardingLogoutBody;
+
   /// No description provided for @onboardingEducation.
   ///
   /// In en, this message translates to:

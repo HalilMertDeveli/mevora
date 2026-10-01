@@ -563,6 +563,7 @@
   "onboardingErrorGeneric": "We couldn't finish setting up your profile. Please try again.",
   "onboardingBack": "Back",
   "onboardingContinue": "Continue",
+  "onboardingLogoutBody": "The steps you've finished are saved. Sign in again to pick up where you left off.",
   "onboardingEducation": "Education",
   "onboardingLifestyle": "Lifestyle",
   "onboardingSmoking": "Smoking",

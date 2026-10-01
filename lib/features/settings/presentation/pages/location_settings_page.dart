@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/permission_scope.dart';
+import 'package:mevora/core/errors/failure_messages.dart';
+import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/services/permissions/permission_status.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
 import 'package:mevora/features/permissions/presentation/controllers/permission_controller.dart';
@@ -22,6 +25,7 @@ class LocationSettingsPage extends StatefulWidget {
 
 class _LocationSettingsPageState extends State<LocationSettingsPage> {
   var _didBootstrap = false;
+  var _turningOn = false;
 
   @override
   void didChangeDependencies() {
@@ -39,6 +43,46 @@ class _LocationSettingsPageState extends State<LocationSettingsPage> {
 
   PermissionController? get _controller =>
       widget.controller ?? PermissionScope.maybeOf(context)?.controller;
+
+  /// Asks for the permission when it is missing, then stores where the member
+  /// is. The permission alone changes nothing for someone who skipped
+  /// location at the start: their account still says location is off.
+  Future<void> _turnOn(PermissionController controller) async {
+    if (_turningOn) {
+      return;
+    }
+    final location = LocationScope.maybeOf(context)?.controller;
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
+    var status = controller.statuses[PermissionType.location];
+    if (status == null || !status.isUsable) {
+      await PermissionPromptPage.show(
+        context,
+        type: PermissionType.location,
+        controller: controller,
+      );
+      status = await controller.check(PermissionType.location);
+    }
+    if (!mounted || !status.isUsable || location == null) {
+      return;
+    }
+    setState(() => _turningOn = true);
+    final result = await location.turnOnFromSettings();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _turningOn = false);
+    final failure = result.failureOrNull;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          failure == null
+              ? l10n.locationSuccessTitle
+              : L10nErrors.message(l10n, FailureMessages.of(failure)),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,15 +112,10 @@ class _LocationSettingsPageState extends State<LocationSettingsPage> {
                       const SizedBox(height: AppSpacing.lg),
                       MevoraButton(
                         label: l10n.useMyLocation,
-                        onPressed: () {
-                          unawaited(
-                            PermissionPromptPage.show(
-                              context,
-                              type: PermissionType.location,
-                              controller: controller,
-                            ),
-                          );
-                        },
+                        isLoading: _turningOn,
+                        onPressed: _turningOn
+                            ? null
+                            : () => unawaited(_turnOn(controller)),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       MevoraButton(

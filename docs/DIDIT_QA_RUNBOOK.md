@@ -13,9 +13,42 @@ test, and what to look for.
 | Workflow | `b618b6f8-e93f-442d-8e0b-355d29f1d376` — ID Verification + Passive Liveness + Face Match 1:1 + Device & IP |
 | Secrets (`mevora-d6ed0`) | `DIDIT_API_KEY` v2, `DIDIT_WEBHOOK_SECRET` v2 |
 | Functions (europe-west1) | `createIdentityVerificationSession`, `getIdentityVerificationState`, `identityVerificationWebhook` |
+| Sandbox switch | `DIDIT_ALLOW_SANDBOX_VERIFICATION=true` has to be set on `mevora-d6ed0` for any of this to work once the gate is deployed — see the next section. Not set by the change that introduced it. |
 | Webhook destination | `https://europe-west1-mevora-d6ed0.cloudfunctions.net/identityVerificationWebhook`, `status.updated` only |
 | Proven | A real Didit webhook passed signature, freshness, event-type and correlation checks, then was correctly refused with `no_such_user` |
 | QA account | `didit.qa@mevora.test` — uid `ZKuuyBl0pEb2MBmILUcOe45AR9H2`. Password is not in the repo; it is in the team password store, or reset it from the Firebase console. |
+
+## The sandbox switch — set it before testing, and know what it does
+
+Sandbox mocks the analysis, so a deployed backend that is not declared live
+refuses to verify anyone: `createIdentityVerificationSession` answers
+`verification-not-configured` and the webhook drops every approval. That is
+the default, and it is what keeps a deployment left on a sandbox key from
+handing out badges.
+
+This runbook needs the opposite, so the project it runs against has to opt in.
+In the env file the functions deploy reads for `mevora-d6ed0`:
+
+```
+DIDIT_ENVIRONMENT=sandbox
+DIDIT_ALLOW_SANDBOX_VERIFICATION=true
+```
+
+then redeploy `createIdentityVerificationSession` and
+`identityVerificationWebhook`. Only the exact value `true` opts in.
+
+What that buys and what it costs: while the switch is on, **any** account on
+that project that walks through the sandbox flow becomes verified, with no real
+check behind the badge. `mevora-d6ed0` holds real accounts (see below), so the
+switch is a deliberate, temporary state for a QA window there — not a setting
+to leave on. A production project sets `DIDIT_ENVIRONMENT=live` and never sets
+this at all.
+
+If the app shows "Verification is temporarily unavailable" and the logs say
+`identity session refused: sandbox configuration cannot verify in a
+deployment`, the switch is off. If the flow completes but the badge never
+appears and the webhook log says `identity webhook approval dropped`, same
+cause.
 
 ## Why this runs against the real backend, not the Emulator Suite
 
@@ -170,5 +203,8 @@ erased or `identityErasurePending/{uid}` exists with a job behind it.
   anti-spoofing test. Sandbox mocks the provider either way.
 - `sandbox_scenario` is rejected on live applications, so none of this can
   accidentally run against production.
+- The reverse is guarded in code: a deployed backend on a sandbox key verifies
+  nobody unless `DIDIT_ALLOW_SANDBOX_VERIFICATION=true`. Production requires
+  `DIDIT_ENVIRONMENT=live`.
 - Nothing here has been tested on iOS. The deep link is registered
   (`CFBundleURLSchemes` already contains `mevora`), but no iOS run was made.

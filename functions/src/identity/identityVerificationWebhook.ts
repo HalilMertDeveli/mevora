@@ -4,7 +4,11 @@ import {onRequest} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {safeLogMeta} from "../security/logHygiene.js";
 import {DiditApiError} from "./didit/diditClient.js";
-import {diditSecrets, isDiditWebhookConfigured} from "./didit/diditConfig.js";
+import {
+  canDiditGrantVerification,
+  diditSecrets,
+  isDiditWebhookConfigured,
+} from "./didit/diditConfig.js";
 import {DiditProvider} from "./didit/diditProvider.js";
 import {
   ProviderNotConfiguredError,
@@ -30,6 +34,11 @@ const db = getFirestore();
  *
  * Non-granting transitions are applied from the signed event directly: they
  * only ever move a user away from verified, which is the safe direction.
+ *
+ * An approval is dropped outright when the configured Didit application may
+ * not verify anyone (canDiditGrantVerification): a sandbox application mocks
+ * its analysis, so outside the emulator its approval is not evidence of
+ * anything unless the project has explicitly opted in.
  */
 export const identityVerificationWebhook = onRequest(
   {
@@ -85,6 +94,17 @@ export const identityVerificationWebhook = onRequest(
       }
       logger.error("identity webhook parse failed");
       res.status(400).send("Rejected");
+      return;
+    }
+
+    if (grantsVerifiedBadge(event.status) && !canDiditGrantVerification()) {
+      // Acknowledged, not refused: a redelivery meets the same configuration
+      // and the same answer, so asking Didit to retry would only repeat this.
+      // Nothing is written — the member's record keeps whatever state it had
+      // — and the provider is not asked to confirm, because no answer from it
+      // could count. Logged without the member's id.
+      logger.warn("identity webhook approval dropped: sandbox configuration cannot verify in a deployment");
+      res.status(200).json({ok: true, applied: false, skipped: "sandbox_verification_disabled"});
       return;
     }
 

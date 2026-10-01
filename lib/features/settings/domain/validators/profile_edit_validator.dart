@@ -1,6 +1,7 @@
 import 'package:mevora/core/constants/app_constants.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_config.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 
 /// Validates editable profile fields. [UserProfile.birthDate] is immutable
@@ -10,13 +11,24 @@ abstract final class ProfileEditValidator {
   static const int maxInterests = 10;
 
   static String? validateFirstName(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'first_name_required';
+    return switch (PersonNameValidator.validateFirstName(value)) {
+      PersonNameIssue.required => 'first_name_required',
+      PersonNameIssue.tooLong => 'first_name_too_long',
+      null => null,
+    };
+  }
+
+  /// The private surname. [required] is false for an account created before
+  /// it was collected: that member may leave it empty until they add one.
+  static String? validateLastName(String? value, {required bool required}) {
+    if (!required && PersonNameValidator.normalize(value).isEmpty) {
+      return null;
     }
-    if (value.trim().length > 40) {
-      return 'first_name_too_long';
-    }
-    return null;
+    return switch (PersonNameValidator.validateLastName(value)) {
+      PersonNameIssue.required => 'last_name_required',
+      PersonNameIssue.tooLong => 'last_name_too_long',
+      null => null,
+    };
   }
 
   static String? validateBio(String? value) {

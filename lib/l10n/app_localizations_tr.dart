@@ -851,6 +851,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingFirstName => 'Adın';
 
   @override
+  String get onboardingLastName => 'Soyadın';
+
+  @override
+  String get onboardingLastNamePrivate => 'Soyadın diğer üyelere gösterilmez.';
+
+  @override
   String get onboardingBirthDate => 'Doğum tarihin';
 
   @override
@@ -891,6 +897,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingErrorFirstName => 'Adını ekle.';
+
+  @override
+  String get onboardingErrorLastName => 'Soyadını ekle.';
 
   @override
   String get onboardingErrorGender => 'Kendini nasıl tanımladığını seç.';
@@ -2300,6 +2309,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsFirstNameTooLong => 'Ad çok uzun.';
+
+  @override
+  String get settingsLastNameRequired => 'Soyad gerekli.';
+
+  @override
+  String get settingsLastNameTooLong => 'Soyad çok uzun.';
 
   @override
   String get settingsBioTooLong => 'Hakkında metni çok uzun.';

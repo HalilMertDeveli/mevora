@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
@@ -16,6 +17,7 @@ import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/features/music/presentation/widgets/onboarding_music_step.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_height_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_language_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
@@ -43,6 +45,7 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   late final OnboardingController _controller;
   final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _cityController = TextEditingController();
   final _bioController = TextEditingController();
   final _birthDateLabelController = TextEditingController();
@@ -82,6 +85,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (_firstNameController.text != profile.displayName) {
       _firstNameController.text = profile.displayName;
     }
+    if (_lastNameController.text != _controller.lastName) {
+      _lastNameController.text = _controller.lastName;
+    }
     if (_cityController.text != (profile.city ?? '')) {
       _cityController.text = profile.city ?? '';
     }
@@ -103,6 +109,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       _controller.removeListener(_syncFields);
     }
     _firstNameController.dispose();
+    _lastNameController.dispose();
     _cityController.dispose();
     _bioController.dispose();
     _birthDateLabelController.dispose();
@@ -201,9 +208,30 @@ class _OnboardingPageState extends State<OnboardingPage> {
             controller: _firstNameController,
             label: l10n.onboardingFirstName,
             textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.givenName],
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(
+                PersonNameValidator.maxFirstNameLength,
+              ),
+            ],
             onChanged: (value) => _controller.updateDraft(
               (current) => current.copyWith(displayName: value),
             ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          MevoraTextField(
+            controller: _lastNameController,
+            label: l10n.onboardingLastName,
+            helperText: l10n.onboardingLastNamePrivate,
+            textCapitalization: TextCapitalization.words,
+            autofillHints: const [AutofillHints.familyName],
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(
+                PersonNameValidator.maxLastNameLength,
+              ),
+            ],
+            onChanged: _controller.updateLastName,
           ),
           const SizedBox(height: AppSpacing.md),
           MevoraTextField(

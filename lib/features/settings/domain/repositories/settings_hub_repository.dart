@@ -10,6 +10,12 @@ abstract class SettingsHubRepository {
 
   Future<void> saveProfile(UserProfile profile);
 
+  /// The member's private surname: stored on their account, never on the
+  /// public profile. Null for accounts created before it was collected.
+  Future<String?> loadLastName(String uid);
+
+  Future<void> saveLastName(String uid, String lastName);
+
   Future<UserPreferences> loadDiscoveryPreferences(String uid);
 
   Future<void> saveDiscoveryPreferences(UserPreferences preferences);

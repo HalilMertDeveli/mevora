@@ -15,6 +15,15 @@ abstract final class OnboardingErrorL10n {
     if (raw == OnboardingMessages.firstNameRequired) {
       return l10n.onboardingErrorFirstName;
     }
+    if (raw == OnboardingMessages.firstNameTooLong) {
+      return l10n.settingsFirstNameTooLong;
+    }
+    if (raw == OnboardingMessages.lastNameRequired) {
+      return l10n.onboardingErrorLastName;
+    }
+    if (raw == OnboardingMessages.lastNameTooLong) {
+      return l10n.settingsLastNameTooLong;
+    }
     if (raw == OnboardingMessages.genderRequired) {
       return l10n.onboardingErrorGender;
     }

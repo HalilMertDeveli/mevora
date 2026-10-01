@@ -129,6 +129,7 @@ void main() {
     final useCase = CompleteOnboarding(onboarding);
     final incomplete = await useCase(
       const UserProfile(uid: 'u1', displayName: 'Ada'),
+      lastName: 'Lovelace',
     );
     expect(incomplete.isError, isTrue);
 
@@ -156,6 +157,7 @@ void main() {
           ProfilePhoto(id: 'p3', storagePath: 'users/u1/profile/p3'),
         ],
       ),
+      lastName: 'Lovelace',
     );
     expect(ready.isSuccess, isTrue);
     expect(onboarding.saved?.profileCompleted, isTrue);

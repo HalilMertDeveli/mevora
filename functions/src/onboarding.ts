@@ -2,6 +2,7 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
+import {requireOnboardingNames} from "./personName.js";
 import {markLearningRequired} from "./relationshipLearning/store.js";
 import {
   countApprovedPhotos,
@@ -41,7 +42,6 @@ function requireString(value: unknown, field: string): string {
 }
 
 function validateOnboardingProfile(data: DocumentData): void {
-  requireString(data.displayName, "displayName");
   requireString(data.gender, "gender");
   requireString(data.interestedIn, "interestedIn");
   requireString(data.city, "city");
@@ -111,6 +111,8 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
   }
 
   const data = profileSnap.data() ?? {};
+  // First name from the public profile, surname from the private account.
+  requireOnboardingNames(data, accountSnap.data());
   validateOnboardingProfile(data);
 
   const age = resolveProfileAge(data);

@@ -11,6 +11,7 @@ import 'package:mevora/features/onboarding/domain/repositories/onboarding_reposi
 import 'package:mevora/features/onboarding/domain/validators/onboarding_validators.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_repository.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 
 class OnboardingRepositoryImpl implements OnboardingRepository {
   OnboardingRepositoryImpl({
@@ -27,22 +28,38 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   Future<UserProfile?> loadDraft(String uid) => _profiles.getById(uid);
 
   @override
+  Future<String?> loadLastName(String uid) => _profiles.loadMyLastName(uid);
+
+  @override
   Stream<UserProfile?> watchDraft(String uid) => _profiles.watchById(uid);
 
   @override
   Future<Result<UserProfile>> saveStep({
     required UserProfile profile,
     required OnboardingStep step,
+    required String? lastName,
   }) async {
-    final validation = OnboardingValidators.validateStep(step, profile);
+    final validation = OnboardingValidators.validateStep(
+      step,
+      profile,
+      lastName: lastName,
+    );
     if (validation.isError) {
       return Err((validation as Err<void>).failure);
     }
     final nextStep = step.next ?? step;
     final draft = _withLifestyleTags(
-      profile.copyWith(onboardingStep: nextStep),
+      profile.copyWith(
+        displayName: PersonNameValidator.normalize(profile.displayName),
+        onboardingStep: nextStep,
+      ),
     );
     try {
+      // The surname goes to the private account document, on the step that
+      // collects it. The public profile below never carries it.
+      if (step == OnboardingStep.basicInfo) {
+        await _profiles.saveMyLastName(profile.uid, lastName!);
+      }
       await _profiles.saveMine(_clientSafeDraft(draft));
       return Success(draft);
     } on Object {
@@ -53,13 +70,20 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   }
 
   @override
-  Future<Result<UserProfile>> complete(UserProfile profile) async {
-    final validation = OnboardingValidators.validateCompletion(profile);
+  Future<Result<UserProfile>> complete(
+    UserProfile profile, {
+    required String? lastName,
+  }) async {
+    final validation = OnboardingValidators.validateCompletion(
+      profile,
+      lastName: lastName,
+    );
     if (validation.isError) {
       return Err((validation as Err<void>).failure);
     }
     final draft = _withLifestyleTags(
       profile.copyWith(
+        displayName: PersonNameValidator.normalize(profile.displayName),
         onboardingStep: OnboardingStep.complete,
       ),
     );
@@ -139,6 +163,18 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
         }
         if (details.contains('underage')) {
           return OnboardingMessages.underage;
+        }
+        if (details.contains('first-name-required')) {
+          return OnboardingMessages.firstNameRequired;
+        }
+        if (details.contains('first-name-too-long')) {
+          return OnboardingMessages.firstNameTooLong;
+        }
+        if (details.contains('last-name-required')) {
+          return OnboardingMessages.lastNameRequired;
+        }
+        if (details.contains('last-name-too-long')) {
+          return OnboardingMessages.lastNameTooLong;
         }
         if (details.contains('smoking-required') ||
             details.contains('drinking-required') ||

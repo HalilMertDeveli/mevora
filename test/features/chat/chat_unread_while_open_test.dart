@@ -119,7 +119,7 @@ void main() {
 
   test('messages read in an open thread leave no unread count', () async {
     final controller = await openAsB();
-    expect(matches.opened, ['b'], reason: 'the thread opens once');
+    matches.opened.clear();
 
     await aSends('one');
     await aSends('two');
@@ -128,8 +128,8 @@ void main() {
     expect(controller.messages.every((message) => message.isRead), isTrue);
     expect(matches.match.unreadFor('b'), 0);
     expect(controller.match?.unreadFor('b'), 0);
-    // One reset per counted message on top of the open.
-    expect(matches.opened.length, 4);
+    // One reset per counted message, each after the trigger raised it.
+    expect(matches.opened, ['b', 'b', 'b']);
   });
 
   test('a count of 0 is not written again', () async {

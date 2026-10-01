@@ -1,8 +1,7 @@
 const {describe, it} = require("node:test");
 const assert = require("node:assert/strict");
-const {
-  reconcilePhotoModeration,
-} = require("../lib/moderation/photoModerationService.js");
+const moderationService = require("../lib/moderation/photoModerationService.js");
+const {createFakeFirestore} = require("./helpers/fakeFirestore.cjs");
 const {
   isPublishedStoragePath,
   reconcilePhoto,
@@ -13,34 +12,40 @@ const {
 } = require("../lib/profileSafety.js");
 
 const UID = "user-a";
+const PROFILE = `profiles/${UID}`;
 
 /**
- * Minimal Firestore stand-in: just the surface reconcilePhotoModeration uses.
- * `writes` records every document write so a test can assert what the server
- * pushed back onto the profile.
+ * In-memory Firestore seeded with a ledger. `writes` lists every document
+ * that changed after the profile was seeded, so a test can assert what the
+ * server pushed back onto the profile.
  */
 function fakeDb({ledger = {}} = {}) {
-  const writes = [];
-  const ledgerDocs = Object.entries(ledger).map(([id, data]) => ({id, data: () => data}));
-  return {
-    writes,
-    collection(path) {
-      assert.equal(path, `users/${UID}/photoModeration`);
-      return {async get() {
-        return {docs: ledgerDocs};
-      }};
-    },
-    doc(path) {
-      return {
-        async set(data, options) {
-          writes.push({path, data, options});
-        },
-        async get() {
-          return {exists: false, data: () => undefined};
-        },
-      };
-    },
+  const seed = {};
+  for (const [id, data] of Object.entries(ledger)) {
+    seed[`users/${UID}/photoModeration/${id}`] = data;
+  }
+  const db = createFakeFirestore(seed);
+  let baseline = new Map();
+  db.markBaseline = () => {
+    baseline = new Map(db.paths().map((path) => [path, JSON.stringify(db.read(path))]));
   };
+  Object.defineProperty(db, "writes", {
+    get: () => db.paths()
+      .filter((path) => baseline.get(path) !== JSON.stringify(db.read(path)))
+      .map((path) => ({path, data: db.read(path)})),
+  });
+  return db;
+}
+
+/**
+ * Reconciliation reads the profile itself (inside a transaction) instead of
+ * taking the array a trigger event carried. These tests state the array a
+ * client wrote, so it is put on the profile first.
+ */
+async function reconcilePhotoModeration(db, uid, photos, bucket) {
+  await db.doc(`profiles/${uid}`).set({photos});
+  db.markBaseline();
+  return moderationService.reconcilePhotoModeration(db, uid, bucket);
 }
 
 function fakeBucket(existingPaths = []) {
@@ -54,7 +59,7 @@ function fakeBucket(existingPaths = []) {
 }
 
 function photosAfter(db) {
-  const write = db.writes.filter((w) => w.path === `profiles/${UID}`).pop();
+  const write = db.writes.find((w) => w.path === PROFILE);
   return write ? write.data.photos : null;
 }
 

@@ -35,6 +35,13 @@ export {
   getIdentityVerificationState,
 } from "./identity/createIdentityVerificationSession.js";
 export {identityVerificationWebhook} from "./identity/identityVerificationWebhook.js";
+// Face Anchor: is this profile photo the live account owner? Separate from
+// identity verification above, which answers who the account owner is.
+export {
+  startFaceAnchorVerification,
+  submitFaceAnchorVerification,
+  faceAnchorSelfieSweep,
+} from "./faceAnchor/functions.js";
 export {
   getHumorFeed,
   submitHumorFeedback,

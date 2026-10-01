@@ -200,6 +200,113 @@ describe("support attachments", () => {
   });
 });
 
+describe("Face Anchor verification selfie — write-once, unreadable, tied to an open attempt", () => {
+  const ATTEMPT = "attempt-1";
+  const SELFIE_A = `face-anchor/pending/${UID.A}/${ATTEMPT}`;
+  const STATE_A = `users/${UID.A}/faceAnchor/state`;
+  const HOUR = 60 * 60 * 1000;
+
+  /** What startFaceAnchorVerification writes, through the Admin SDK. */
+  const openAttempt = (overrides = {}) => seed(env, async (ctx) => {
+    await ctx.firestore().doc(STATE_A).set({
+      attemptId: ATTEMPT,
+      photoId: "p1",
+      status: "awaiting_selfie",
+      expiresAtMs: Date.now() + HOUR,
+      ...overrides,
+    });
+  });
+  const placeSelfie = (path = SELFIE_A) => seed(env, async (ctx) => {
+    await ctx.storage().ref(path).put(bytes(64), JPEG);
+  });
+
+  it("the owner uploads the selfie for the attempt the server opened", async () => {
+    await openAttempt();
+    await allow(write(who.userA, SELFIE_A, bytes(64), JPEG));
+  });
+
+  it("no attempt, no upload", async () => {
+    await deny(write(who.userA, SELFIE_A, bytes(64), JPEG));
+  });
+
+  it("an attempt id the server did not issue is refused", async () => {
+    await openAttempt();
+    await deny(write(who.userA, `face-anchor/pending/${UID.A}/attempt-2`, bytes(64), JPEG));
+    await deny(write(who.userA, `face-anchor/pending/${UID.A}/anything-else`, bytes(64), JPEG));
+  });
+
+  it("an expired attempt takes no upload", async () => {
+    await openAttempt({expiresAtMs: Date.now() - 1000});
+    await deny(write(who.userA, SELFIE_A, bytes(64), JPEG));
+  });
+
+  it("an attempt that is processing or finished takes no upload", async () => {
+    for (const status of ["processing", "verified", "failed", "expired", "error"]) {
+      await openAttempt({status});
+      await deny(write(who.userA, SELFIE_A, bytes(64), JPEG));
+    }
+  });
+
+  it("nobody uploads into another member's attempt", async () => {
+    await openAttempt();
+    await deny(write(who.userB, SELFIE_A, bytes(64), JPEG));
+    await deny(write(who.userC, SELFIE_A, bytes(64), JPEG));
+    await deny(write(who.anon, SELFIE_A, bytes(64), JPEG));
+  });
+
+  it("a member's own open attempt does not let them write under someone else's uid", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.C}/faceAnchor/state`).set({
+        attemptId: ATTEMPT,
+        status: "awaiting_selfie",
+        expiresAtMs: Date.now() + HOUR,
+      });
+    });
+    await deny(write(who.userC, SELFIE_A, bytes(64), JPEG));
+  });
+
+  it("only images, and only under 5 MB", async () => {
+    await openAttempt();
+    await deny(write(who.userA, SELFIE_A, bytes(64), {contentType: "application/octet-stream"}));
+    await deny(write(who.userA, SELFIE_A, bytes(64), {contentType: "video/mp4"}));
+    await deny(write(who.userA, SELFIE_A, bytes(5 * 1024 * 1024 + 1), JPEG));
+  });
+
+  it("nobody can read a selfie — not other members, not its owner", async () => {
+    await openAttempt();
+    await placeSelfie();
+    await deny(read(who.userA, SELFIE_A));
+    await deny(read(who.userB, SELFIE_A));
+    await deny(read(who.userC, SELFIE_A));
+    await deny(read(who.anon, SELFIE_A));
+    await deny(who.userA.bucket().ref(SELFIE_A).getMetadata());
+    await deny(who.userC.bucket().ref(`face-anchor/pending/${UID.A}`).listAll());
+  });
+
+  it("a selfie cannot be replaced or deleted from a client", async () => {
+    await openAttempt();
+    await placeSelfie();
+    await deny(write(who.userA, SELFIE_A, bytes(64, 2), JPEG));
+    await deny(who.userA.bucket().ref(SELFIE_A).delete());
+    await deny(who.userC.bucket().ref(SELFIE_A).delete());
+  });
+
+  it("the selfie prefix is not a second way to publish profile photos", async () => {
+    await openAttempt();
+    await deny(write(who.userA, `face-anchor/pending/${UID.A}/${ATTEMPT}/nested.jpg`, bytes(64), JPEG));
+    await deny(write(who.userA, `face-anchor/${UID.A}.jpg`, bytes(64), JPEG));
+    await deny(write(who.userA, `face-anchor/verified/${UID.A}/x.jpg`, bytes(64), JPEG));
+  });
+
+  it("profile photo rules are unchanged by an open attempt", async () => {
+    await openAttempt();
+    await allow(write(who.userA, `users/${UID.A}/profile/pending/p9.jpg`, bytes(64), JPEG));
+    await allow(read(who.userB, PHOTOS_A));
+    await deny(write(who.userA, PHOTOS_A, bytes(64), JPEG));
+    await deny(write(who.userA, THUMBS_A, bytes(64), JPEG));
+  });
+});
+
 describe("unknown paths", () => {
   it("writes outside the declared prefixes are denied", async () => {
     await deny(write(who.userA, "random/anything.jpg", bytes(64), JPEG));

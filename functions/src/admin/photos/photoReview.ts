@@ -2,7 +2,9 @@ import {createHash} from "node:crypto";
 import {FieldValue, Timestamp, type Firestore, type Query} from "firebase-admin/firestore";
 import type {Bucket} from "@google-cloud/storage";
 import {
+  isLedgerFaceAnchor,
   isPublishedStoragePath,
+  ledgerEntryFromData,
   ledgerRef,
   readLedger,
 } from "../../moderation/photoModerationLedger.js";
@@ -122,6 +124,10 @@ export async function listPhotoReviews(
         lastProcessingAttempt: iso(photo?.lastProcessingAttempt),
         processingError: typeof photo?.processingError === "string" ? photo.processingError.slice(0, 200) : null,
         isPrimary: photo?.isPrimary === true,
+        // So a reviewer can see that removing this photo takes away the
+        // member's verified anchor. The verdict only — nothing about how it
+        // was reached is stored to show.
+        faceAnchor: isLedgerFaceAnchor(ledgerEntryFromData(data)) ? "verified" : "none",
         user: cards.get(uid) ?? null,
         openReportCount: reportsByUid.get(uid) ?? null,
         lock: data.reviewLock && toMillis(data.reviewLock.at) !== null &&

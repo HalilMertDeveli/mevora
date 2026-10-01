@@ -1957,6 +1957,157 @@ describe("Spotify music — public card vs private taste", () => {
   });
 });
 
+describe("Face Anchor — the verdict and everything around it are server-owned", () => {
+  const STATE_A = `users/${UID.A}/faceAnchor/state`;
+  const LEDGER_A = `users/${UID.A}/photoModeration/p1`;
+  const verified = {status: "verified", provider: "didit", attemptId: "a1", storagePath: `users/${UID.A}/profile/photos/p1.jpg`};
+
+  beforeEach(async () => {
+    await seed(env, async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(STATE_A).set({
+        attemptId: "a1",
+        photoId: "p1",
+        status: "failed",
+        reason: "face_mismatch",
+        attemptCount: 3,
+        expiresAtMs: Date.now() + 60000,
+      });
+      await db.doc(LEDGER_A).set({status: "approved", storagePath: verified.storagePath});
+      await db.doc(`profiles/${UID.A}`).set(
+        {faceAnchorRequired: true, faceAnchorPhotoIds: [], photos: [{id: "p1", order: 0, isPrimary: true}]},
+        {merge: true},
+      );
+      await db.doc("devControl/faceAnchor").set({outcome: "liveness_failed"});
+      await db.doc("faceAnchorUsage/2026-10-01").set({count: 12});
+    });
+  });
+
+  it("the owner reads their own attempt state", async () => {
+    await allow(who.userA.db().doc(STATE_A).get());
+  });
+
+  it("no other member can read an attempt state or the ledger", async () => {
+    for (const actor of [who.userB, who.userC, who.anon]) {
+      await deny(actor.db().doc(STATE_A).get());
+      await deny(actor.db().doc(LEDGER_A).get());
+      await deny(actor.db().collection(`users/${UID.A}/faceAnchor`).get());
+    }
+  });
+
+  it("nobody can read attempt states across members", async () => {
+    await deny(who.userA.db().collectionGroup("faceAnchor").get());
+  });
+
+  it("the owner cannot mark their own attempt verified", async () => {
+    const db = who.userA.db();
+    await deny(db.doc(STATE_A).update({status: "verified", reason: null}));
+    await deny(db.doc(STATE_A).set({status: "verified", attemptId: "a1", photoId: "p1"}));
+    await deny(db.doc(STATE_A).set({status: "verified"}, {merge: true}));
+  });
+
+  it("the owner cannot edit any part of the attempt: budget, expiry, photo, reason", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {attemptCount: 0},
+      {refundCount: 0},
+      {windowStartedAtMs: 0},
+      {lastAttemptAtMs: 0},
+      {expiresAtMs: Date.now() + 86400000},
+      {status: "awaiting_selfie"},
+      {photoId: "p2"},
+      {attemptId: "a2"},
+      {reason: null},
+      {consentVersion: 1},
+    ]) {
+      await deny(db.doc(STATE_A).update(patch));
+    }
+    await deny(db.doc(STATE_A).delete());
+  });
+
+  it("a member cannot create an attempt state for themselves or anyone else", async () => {
+    await deny(who.userB.db().doc(`users/${UID.B}/faceAnchor/state`).set({status: "awaiting_selfie", attemptId: "x"}));
+    await deny(who.userC.db().doc(STATE_A).set({status: "verified"}));
+    await deny(who.userA.db().doc(`users/${UID.A}/faceAnchor/other`).set({status: "verified"}));
+  });
+
+  it("the owner cannot write a verdict onto the ledger", async () => {
+    const db = who.userA.db();
+    await deny(db.doc(LEDGER_A).update({faceAnchor: verified}));
+    await deny(db.doc(LEDGER_A).set({status: "approved", faceAnchor: verified}));
+    await deny(db.doc(`users/${UID.A}/photoModeration/p2`).set({status: "approved", faceAnchor: verified}));
+    await deny(who.userC.db().doc(LEDGER_A).update({faceAnchor: verified}));
+  });
+
+  it("the owner cannot grant themselves an anchor on the profile", async () => {
+    const db = who.userA.db();
+    await deny(db.doc(`profiles/${UID.A}`).update({faceAnchorPhotoIds: ["p1"]}));
+    await deny(db.doc(`profiles/${UID.A}`).update({bio: "hello", faceAnchorPhotoIds: ["p1"]}));
+    await deny(db.doc(`profiles/${UID.A}`).set({faceAnchorPhotoIds: ["p1"]}, {merge: true}));
+  });
+
+  it("the owner cannot take themselves out from under the rule", async () => {
+    const db = who.userA.db();
+    const {deleteField} = await import("firebase/firestore");
+    await deny(db.doc(`profiles/${UID.A}`).update({faceAnchorRequired: false}));
+    await deny(db.doc(`profiles/${UID.A}`).update({faceAnchorRequired: deleteField()}));
+    await deny(db.doc(`profiles/${UID.A}`).update({faceAnchorPhotoIds: deleteField()}));
+    // Replacing the whole document would drop both fields.
+    await deny(db.doc(`profiles/${UID.A}`).set(baseProfile(UID.A)));
+    await deny(db.doc(`profiles/${UID.A}`).delete());
+  });
+
+  it("a new profile cannot be created already carrying the fields", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`profiles/${UID.B}`).delete();
+    });
+    const db = who.userB.db();
+    await deny(db.doc(`profiles/${UID.B}`).set(baseProfile(UID.B, {faceAnchorPhotoIds: ["p1"]})));
+    await deny(db.doc(`profiles/${UID.B}`).set(baseProfile(UID.B, {faceAnchorRequired: false})));
+    await allow(db.doc(`profiles/${UID.B}`).set(baseProfile(UID.B)));
+  });
+
+  it("the projection flag in photos[] is writable but is not the authority", async () => {
+    // Rules cannot see inside array elements, so this write is allowed; the
+    // reconciling trigger removes the flag (functions/test/
+    // faceAnchorInvariants.test.cjs) and nothing that decides eligibility
+    // reads it (faceAnchorGate.test.cjs).
+    await allow(who.userA.db().doc(`profiles/${UID.A}`).update({
+      photos: [{id: "p1", order: 0, isPrimary: true, faceAnchorVerified: true}],
+    }));
+  });
+
+  it("ordinary profile editing still works for a member under the rule", async () => {
+    const db = who.userA.db();
+    await allow(db.doc(`profiles/${UID.A}`).update({bio: "new bio"}));
+    await allow(db.doc(`profiles/${UID.A}`).update({
+      photos: [{id: "p1", order: 0, isPrimary: true}, {id: "p2", order: 1, isPrimary: false}],
+    }));
+  });
+
+  it("the public profile exposes nothing about how verification went", async () => {
+    const snap = await who.userB.db().doc(`profiles/${UID.A}`).get();
+    const keys = Object.keys(snap.data());
+    for (const key of keys) {
+      assert.equal(/score|selfie|liveness|provider|attempt|reason/i.test(key), false, key);
+    }
+    assert.deepEqual(keys.filter((key) => /faceAnchor/.test(key)).sort(), ["faceAnchorPhotoIds", "faceAnchorRequired"]);
+  });
+
+  it("the emulator's outcome switch is unreachable from any client", async () => {
+    for (const actor of [who.userA, who.userC, who.anon]) {
+      await deny(actor.db().doc("devControl/faceAnchor").get());
+      await deny(actor.db().doc("devControl/faceAnchor").set({outcome: "success"}));
+      await deny(actor.db().doc("devControl/faceAnchor").delete());
+    }
+  });
+
+  it("the global usage counter is unreachable from any client", async () => {
+    await deny(who.userA.db().doc("faceAnchorUsage/2026-10-01").get());
+    await deny(who.userA.db().doc("faceAnchorUsage/2026-10-01").set({count: 0}));
+  });
+});
+
 describe("server-owned and unknown paths", () => {
   it("third-party token stores are unreachable from any client", async () => {
     await deny(who.userA.db().doc(`spotifySecrets/${UID.A}`).get());

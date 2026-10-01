@@ -6,6 +6,7 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
 import {requestIdentityProviderErasure} from "./identity/identityErasure.js";
+import {diditApiKey} from "./identity/didit/diditConfig.js";
 import {safeLogMeta} from "./security/logHygiene.js";
 import {scrubDeletedMemberFromPicks} from "./picks/service.js";
 import {purgeTrustSafetyUserData} from "./admin/accountDeletion.js";
@@ -132,7 +133,10 @@ export function spotifyIndexDeletionPaths(input: {
   ];
 }
 export const deleteUserAccount = onCall(
-  {enforceAppCheck, region: "europe-west1"},
+  // The Didit key is what lets requestIdentityProviderErasure reach the
+  // provider. Unbound, the secret is never mounted and every erasure reports
+  // `not_configured`, however correctly the key is set on the project.
+  {enforceAppCheck, region: "europe-west1", secrets: [diditApiKey]},
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {

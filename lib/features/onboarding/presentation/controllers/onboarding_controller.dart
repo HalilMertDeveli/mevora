@@ -117,7 +117,11 @@ class OnboardingController extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> initialize(AuthUser user) async {
+  /// [cityHint] is the city the member already chose at the location step
+  /// ("Choose a city instead"). It fills a draft that has no city yet, so
+  /// they are not asked for it a second time; a city already in the draft
+  /// wins.
+  Future<void> initialize(AuthUser user, {String? cityHint}) async {
     _uid = user.id;
     isLoading = true;
     errorMessage = null;
@@ -132,6 +136,7 @@ class OnboardingController extends ChangeNotifier {
             ))
         .copyWith(
           displayName: _prefillName(existing?.displayName, user.displayName),
+          city: _prefillCity(existing?.city, cityHint),
         );
     profile = draft;
     // A draft started before the surname was collected resumes on the step
@@ -225,6 +230,16 @@ class OnboardingController extends ChangeNotifier {
             .firstOrNull ??
         drafts.firstWhere(isAnchor);
     return [primary, ...drafts.where((draft) => draft.id != primary.id)];
+  }
+
+  /// The hint, when the draft has no city of its own. Null leaves the draft
+  /// as it is.
+  static String? _prefillCity(String? saved, String? hint) {
+    if ((saved ?? '').trim().isNotEmpty) {
+      return null;
+    }
+    final city = hint?.trim() ?? '';
+    return city.isEmpty ? null : city;
   }
 
   void updateDraft(UserProfile Function(UserProfile current) transform) {

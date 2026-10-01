@@ -102,8 +102,15 @@ class FakeStorePurchaseDataSource implements StorePurchaseDataSource {
     _events.add(event);
   }
 
+  /// Makes [complete] fail, as Play does for a purchase it no longer holds.
+  PurchaseException? completeError;
+
   @override
   Future<void> complete(StoreTransaction transaction) async {
+    final error = completeError;
+    if (error != null) {
+      throw error;
+    }
     completed = transaction;
     completions.add(transaction);
   }

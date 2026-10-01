@@ -367,6 +367,31 @@ void main() {
       expect(store.completions, isEmpty);
     });
 
+    test(
+      'the Boost it bought shows at once, even if the store step fails',
+      () async {
+        final recovering = repositoryFor(_Uid('u1'));
+        // The Boost screen was read before the recovery: no Boost, cached.
+        expect((await recovering.getActiveBoost('u1')).valueOrNull, isNull);
+        store.outstanding = const [leftOver];
+        store.completeError = const PurchaseException(
+          'not owned',
+          kind: PurchaseErrorKind.failed,
+        );
+        remote.verifyResult = BoostCreditResult(
+          purchaseId: 'android_hash',
+          productId: 'com.mevora.app.boost',
+          boostCount: 0,
+          balance: 0,
+          boost: active,
+        );
+
+        await recovering.recoverUnfinishedPurchases();
+
+        expect((await recovering.getActiveBoost('u1')).valueOrNull?.boostId, 'b1');
+      },
+    );
+
     test('a Premium purchase the store also holds is left alone', () async {
       final recovering = repositoryFor(_Uid('u1'));
       store.outstanding = const [

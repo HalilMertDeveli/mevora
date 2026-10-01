@@ -5,7 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:mevora/features/boost/data/datasources/in_app_store_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/services/apple_purchase_service.dart';
 import 'package:mevora/features/boost/data/services/google_purchase_service.dart';
-import 'package:mevora/features/boost/domain/entities/store_transaction.dart';
+import 'package:mevora/features/boost/domain/config/boost_product_config.dart';
 
 const String _week = 'mevora_boost_7_days';
 
@@ -42,10 +42,19 @@ class _FakeStore implements InAppPurchase {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Play Billing's own calls, answered from memory.
 class _Google extends GooglePurchaseService {
   _Google(InAppPurchase store) : super(store: store);
 
   final List<PurchaseDetails> consumed = <PurchaseDetails>[];
+  List<PurchaseDetails> held = <PurchaseDetails>[];
+  int queries = 0;
+
+  @override
+  Future<List<PurchaseDetails>> unconsumedPurchases() async {
+    queries += 1;
+    return held;
+  }
 
   @override
   Future<void> consume(PurchaseDetails details) async {
@@ -75,8 +84,6 @@ PurchaseDetails _purchase({
 void main() {
   late _FakeStore store;
   late _Google google;
-  late int queries;
-  late List<PurchaseDetails> held;
 
   InAppStorePurchaseDataSource dataSource(PurchasePlatform platform) {
     return InAppStorePurchaseDataSource(
@@ -84,18 +91,12 @@ void main() {
       apple: ApplePurchaseService(store: store),
       google: google,
       platformOverride: platform,
-      outstandingPurchases: () async {
-        queries += 1;
-        return held;
-      },
     );
   }
 
   setUp(() {
     store = _FakeStore();
     google = _Google(store);
-    queries = 0;
-    held = <PurchaseDetails>[];
   });
 
   tearDown(() async {
@@ -104,7 +105,9 @@ void main() {
 
   group('purchases Play still holds unconsumed', () {
     test('are returned with the token the server verifies', () async {
-      held = <PurchaseDetails>[_purchase(orderId: 'GPA.9', token: 'token-9')];
+      google.held = <PurchaseDetails>[
+        _purchase(orderId: 'GPA.9', token: 'token-9'),
+      ];
       final source = dataSource(PurchasePlatform.android);
 
       final outstanding = await source.outstandingPurchases();
@@ -117,7 +120,7 @@ void main() {
     });
 
     test('a payment that has not settled yet is not one of them', () async {
-      held = <PurchaseDetails>[
+      google.held = <PurchaseDetails>[
         _purchase(token: 'unpaid', status: PurchaseStatus.pending),
         _purchase(orderId: 'GPA.2', token: 'paid'),
       ];
@@ -130,7 +133,7 @@ void main() {
 
     test('can be completed once the server has confirmed them', () async {
       final details = _purchase();
-      held = <PurchaseDetails>[details];
+      google.held = <PurchaseDetails>[details];
       final source = dataSource(PurchasePlatform.android);
 
       final outstanding = await source.outstandingPurchases();
@@ -140,7 +143,7 @@ void main() {
     });
 
     test('are read without replaying the shared purchase stream', () async {
-      held = <PurchaseDetails>[_purchase()];
+      google.held = <PurchaseDetails>[_purchase()];
       final source = dataSource(PurchasePlatform.android);
       final events = <Object>[];
       final sub = source.purchaseEvents.listen(events.add);
@@ -155,22 +158,22 @@ void main() {
 
     test('a store that is not available is not queried', () async {
       store.available = false;
-      held = <PurchaseDetails>[_purchase()];
+      google.held = <PurchaseDetails>[_purchase()];
       final source = dataSource(PurchasePlatform.android);
 
       expect(await source.outstandingPurchases(), isEmpty);
-      expect(queries, 0);
+      expect(google.queries, 0);
     });
   });
 
   test(
     'iOS is never asked: nothing can raise an App Store sign-in prompt',
     () async {
-      held = <PurchaseDetails>[_purchase()];
+      google.held = <PurchaseDetails>[_purchase()];
       final source = dataSource(PurchasePlatform.ios);
 
       expect(await source.outstandingPurchases(), isEmpty);
-      expect(queries, 0);
+      expect(google.queries, 0);
       expect(store.restoreCalls, 0);
       expect(store.availabilityChecks, 0);
     },

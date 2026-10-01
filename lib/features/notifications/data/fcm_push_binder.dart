@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/features/notifications/data/datasources/firebase_messaging_data_source.dart';
+import 'package:mevora/features/notifications/data/push_navigator.dart';
 import 'package:mevora/features/notifications/domain/push_route_resolver.dart';
 
 /// Composition-root FCM binder. Widgets never call FirebaseMessaging.
@@ -16,6 +17,7 @@ class FcmPushBinder {
   final GoRouter router;
   final SocialServices services;
   final FirebaseMessagingDataSource _messaging;
+  late final PushNavigator _navigator = PushNavigator(router: router);
 
   StreamSubscription<String>? _tokenSub;
   StreamSubscription<String?>? _uidSub;
@@ -110,7 +112,7 @@ class FcmPushBinder {
   void _open(Map<String, dynamic> data) {
     final location = PushRouteResolver.fromData(data);
     if (location != null) {
-      router.go(location);
+      _navigator.open(location);
     }
   }
 
@@ -119,5 +121,6 @@ class FcmPushBinder {
     unawaited(_tokenSub?.cancel());
     unawaited(_openedSub?.cancel());
     unawaited(_foregroundSub?.cancel());
+    _navigator.dispose();
   }
 }

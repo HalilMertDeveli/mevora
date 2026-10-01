@@ -1,5 +1,7 @@
 # Mevora QA Recommendations
 
+> **Superseded (2026-10-01).** Recommendations from 2026-08-23, partly implemented and partly obsolete. Current launch state: `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`.
+
 Audit date: 2026-08-23  
 Prioritized by: **Impact × Severity ÷ Effort**
 

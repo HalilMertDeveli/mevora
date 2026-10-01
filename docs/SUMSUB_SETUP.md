@@ -1,5 +1,7 @@
 # Sumsub Profile Verification Setup
 
+> **Superseded (2026-10-01).** Sumsub was replaced by Didit; the Sumsub functions are no longer exported. See `docs/DIDIT_INTEGRATION.md` and `docs/FACE_ANCHOR.md`.
+
 This guide covers sandbox setup for Mevora's Sumsub-powered profile verification.
 **Never commit real credentials.** Use Firebase Functions secrets only.
 

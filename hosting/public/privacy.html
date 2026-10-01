@@ -1,59 +1,291 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mevora Privacy Policy</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #111; }
-    h1 { font-size: 1.75rem; }
-    h2 { margin-top: 1.5rem; font-size: 1.1rem; }
-    a { color: #6c4dff; }
-  </style>
+  <title>Mevora Gizlilik Politikası · Privacy Policy</title>
+  <meta name="description" content="Mevora mobil uygulamasının gizlilik politikası. Privacy Policy of the Mevora mobile app." />
+  <link rel="stylesheet" href="/site.css" />
 </head>
+<!--
+  ENGINEERING DRAFT. This text describes what the Mevora app and backend do as
+  of the date below. It has not been reviewed by a lawyer. The owner must have
+  it approved, and must fill in the data controller's legal identity and
+  address, before the app is published. See docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md.
+-->
 <body>
-  <h1>Mevora Privacy Policy</h1>
-  <p>Effective date: August 23, 2026</p>
-  <p>
-    This page provides the public Privacy Policy for the Mevora mobile app.
-    The full, localized policy is also available inside the app under
-    Settings → Help &amp; Support → Privacy Policy.
-  </p>
-  <h2>What we collect</h2>
-  <p>
-    Depending on how you use Mevora, we may process account identifiers (email,
-    phone, Google/Apple/Spotify sign-in data), profile information, photos,
-    approximate location (with permission), likes/matches, messages and call
-    metadata, notification/device tokens, preferences, optional Spotify music
-    taste signals, and technical logs required to operate Firebase-backed
-    infrastructure.
-  </p>
-  <h2>Why we use data</h2>
-  <p>
-    To authenticate you, show compatible people, deliver matches and messages,
-    improve safety (block/report), provide support, process optional Boost
-    purchases, and comply with legal obligations.
-  </p>
-  <h2>Storage and security</h2>
-  <p>
-    Data is primarily stored in Google Firebase (Firestore, Storage,
-    Authentication, Cloud Functions). Messages may be end-to-end encrypted when
-    both users have published encryption keys. We use access controls and
-    security rules to limit access.
-  </p>
-  <h2>Retention and deletion</h2>
-  <p>
-    We retain data while your account is active. You can permanently delete your
-    account in the app via Settings → Account → Delete Account. Some records may
-    be retained where required by law or fraud prevention.
-  </p>
-  <h2>Your rights and contact</h2>
-  <p>
-    Depending on your region you may request access, correction, or deletion.
-    Contact: <a href="mailto:halilmertdeveliii@gmail.com">halilmertdeveliii@gmail.com</a>
-  </p>
-  <p>
-    Install the Mevora app for the complete policy in Turkish or English.
-  </p>
+  <header class="site">
+    <a class="brand" href="/">Mevora</a>
+    <nav>
+      <a href="/privacy">Gizlilik · Privacy</a>
+      <a href="/terms">Koşullar · Terms</a>
+      <a href="/guidelines">Topluluk · Guidelines</a>
+      <a href="/child-safety">Çocuk Güvenliği · Child Safety</a>
+      <a href="/delete-account">Hesap Silme · Delete Account</a>
+      <a href="/help">Yardım · Help</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="langs"><a href="#tr">Türkçe</a> · <a href="#en">English</a></p>
+
+    <section id="tr" lang="tr">
+      <h1>Mevora Gizlilik Politikası</h1>
+      <p class="meta">Son güncelleme: 1 Ekim 2026</p>
+      <p>
+        Bu politika, Mevora mobil uygulamasını ("Mevora") kullandığınızda kişisel verilerinizin nasıl toplandığını,
+        kullanıldığını, saklandığını ve silindiğini açıklar. Mevora yalnızca 18 yaş ve üzeri yetişkinler içindir.
+      </p>
+
+      <h2>Topladığımız veriler</h2>
+      <h3>Hesap ve kimlik doğrulama</h3>
+      <p>
+        Nasıl giriş yaptığınıza bağlı olarak e-posta adresinizi, telefon numaranızı, giriş sağlayıcısı kimliklerini
+        (Google, Apple, Spotify) ve Firebase Authentication kullanıcı kimliğinizi işleriz.
+      </p>
+      <h3>Profil bilgileri ve fotoğraflar</h3>
+      <p>
+        Adınız, soyadınız, doğum tarihiniz, cinsiyetiniz, kiminle tanışmak istediğiniz, biyografiniz, tercihleriniz,
+        ilişki sorularına verdiğiniz yanıtlar, mizah puanlarınız ve fotoğraflarınız. Diğer üyeler doğum tarihinizi
+        değil yaşınızı görür; soyadınız gizli kalır.
+      </p>
+      <h3>Fotoğraf ve kimlik doğrulama</h3>
+      <p>
+        Bir profilin gerçek bir kişiye ait olduğunu doğrulamak için sizden bir özçekim isteyebiliriz. Özçekim,
+        doğrulama sağlayıcımız Didit'e gönderilir; Didit görüntünün canlı bir kişiye ait olduğunu ve profil
+        fotoğrafınızla eşleştiğini kontrol eder. Biz özçekimi değil kontrolün sonucunu saklarız; özçekim kontrol
+        bittiğinde silinir. Kimlik doğrulama isteğe bağlıdır: seçerseniz Didit kimlik belgenizi ve özçekiminizi
+        doğrudan işler, Mevora yalnızca sonucu saklar.
+      </p>
+      <h3>Konum</h3>
+      <p>
+        İzninizle cihaz konumunuzu, yakınınızdaki uyumlu kişileri göstermek için kullanırız. Koordinatlarınız bu
+        amaçla sunucularımızda saklanır ve diğer üyelere hiçbir zaman gösterilmez; onlar yalnızca şehrinizi ve
+        yaklaşık mesafeyi görür. Konum yalnızca uygulamayı kullanırken alınır, arka planda alınmaz.
+      </p>
+      <h3>Mesajlar ve aramalar</h3>
+      <p>
+        Mesaj metinleri, sesli notlar ve görseller uçtan uca şifrelenir: cihazınızda şifrelenir ve sunucularımızda
+        yalnızca bizim okuyamadığımız şifreli hâli saklanır. Mesajları iletebilmek için kimin kime, ne zaman, hangi
+        türde mesaj gönderdiğini ve okunup okunmadığını, ayrıca arama kayıtlarını saklarız.
+      </p>
+      <h3>Eşleşme ve etkileşimler</h3>
+      <p>
+        Beğeniler, geçmeler, eşleşmeler, günlük sorulara verdiğiniz yanıtlar, mizah puanları, uyumluluk sinyalleri,
+        engellemeler ve yaptığınız bildirimler.
+      </p>
+      <h3>Spotify</h3>
+      <p>
+        Spotify'ı bağlarsanız, bağlı hesap bilgilerinizi ve uyumluluk için kullanılan müzik zevki sinyallerini
+        (en çok dinlediğiniz sanatçılar ve parçalar gibi) saklarız. Profilinizde neyin görüneceğini siz seçersiniz
+        ve Spotify bağlantısını Ayarlar'dan kaldırabilirsiniz.
+      </p>
+      <h3>Satın alımlar</h3>
+      <p>
+        Boost veya Premium satın alırsanız ödemeyi uygulama mağazanız (Google Play) alır. Biz kart bilgilerinizi
+        görmeyiz; satın alımı doğrulamak ve hakkınızı tanımlamak için ürün ve satın alma kaydını saklarız.
+      </p>
+      <h3>Cihaz ve teknik veriler</h3>
+      <p>
+        Push bildirim belirteçlerini ve Firebase Crashlytics ile Google Analytics for Firebase üzerinden, adınıza
+        değil uygulama kurulumuna bağlı çökme raporlarını ve kullanım istatistiklerini işleriz. Mevora reklam
+        göstermez ve reklam kimliğinizi kullanmaz.
+      </p>
+      <h3>Destek ve güvenlik kayıtları</h3>
+      <p>
+        Oluşturduğunuz destek talepleri, yaptığınız veya hakkınızda yapılan bildirimler ve hesabınıza uygulanan
+        moderasyon kararları.
+      </p>
+
+      <h2>Verileri neden kullanıyoruz</h2>
+      <p>
+        Kimliğinizi doğrulamak, size uyumlu kişileri göstermek, eşleşme ve mesajlaşmayı sağlamak, topluluğu güvende
+        tutmak (engelleme, bildirme, moderasyon), destek vermek, satın alımları doğrulamak ve yasal yükümlülükleri
+        yerine getirmek için.
+      </p>
+
+      <h2>Paylaşım</h2>
+      <p>Kişisel verileri satmayız. Verileri yalnızca Mevora'yı çalıştırmak için gereken hizmet sağlayıcılarla paylaşırız:</p>
+      <ul>
+        <li><strong>Google</strong> — Firebase (barındırma, veritabanı, kimlik doğrulama, bildirimler, çökme raporları ve analiz) ve satın alımlar için Google Play.</li>
+        <li><strong>Spotify</strong> — yalnızca Spotify hesabınızı bağlarsanız.</li>
+        <li><strong>Didit</strong> — fotoğraf ve kimlik doğrulaması.</li>
+        <li><strong>GIPHY</strong> — mizah içeriği; cihazınız bu içeriği doğrudan GIPHY'den yükler.</li>
+      </ul>
+      <p>Yasal bir zorunluluk olduğunda veya bir üyenin güvenliği için gerektiğinde yetkili makamlarla da paylaşabiliriz.</p>
+
+      <h2>Saklama ve güvenlik</h2>
+      <p>
+        Veriler öncelikle Google Firebase'de (Firestore, Storage, Authentication, Cloud Functions) saklanır.
+        Erişim kontrolleri, aktarım şifrelemesi, mesaj içeriğinin uçtan uca şifrelenmesi ve Firebase güvenlik
+        kuralları kullanıyoruz. Hiçbir sistem tamamen güvenli değildir.
+      </p>
+
+      <h2>Saklama süresi ve silme</h2>
+      <p>
+        Hesabınız aktifken veriler saklanır. Hesabınızı sildiğinizde profiliniz, fotoğraflarınız, mesajlarınız,
+        beğenileriniz, yanıtlarınız ve satın alma kayıtlarınız silinir. Parçası olduğunuz eşleşmeler kapatılır ve
+        artık adınızı ya da fotoğrafınızı göstermez; güvenlik ve moderasyon işlemlerine ait kayıtlar ise üyeleri
+        korumak, dolandırıcılığı önlemek veya yasal yükümlülükleri yerine getirmek için gerektiğinde saklanabilir.
+        Ayrıntılar ve adımlar: <a href="/delete-account">Hesap silme</a>.
+      </p>
+
+      <h2>Haklarınız</h2>
+      <p>
+        Bölgenize göre (örneğin KVKK veya GDPR kapsamında) verilerinize erişme, düzeltme, silme veya işlemeyi
+        kısıtlama talebinde bulunabilirsiniz. Verilerinizin bir kopyasını uygulamada Ayarlar → Hesap → Verilerimi
+        indir bölümünden indirebilirsiniz. Mesaj içerikleri uçtan uca şifreli olduğu için bu dosyada yer almaz.
+      </p>
+
+      <h2>Çocuklar</h2>
+      <p>
+        Mevora 18 yaşından küçükler için değildir. 18 yaşından küçük birine ait olduğu anlaşılan hesaplar kapatılır.
+        Ayrıca bkz. <a href="/child-safety">Çocuk güvenliği standartları</a>.
+      </p>
+
+      <h2>Değişiklikler</h2>
+      <p>Bu politikayı güncelleyebiliriz. Güncel sürüm her zaman uygulamada ve bu sayfada yer alır.</p>
+
+      <h2>İletişim</h2>
+      <p>
+        Gizlilikle ilgili sorular: <a href="mailto:halilmertdeveliii@gmail.com">halilmertdeveliii@gmail.com</a>
+        veya uygulamada Ayarlar → Yardım ve Destek.
+      </p>
+    </section>
+
+    <section id="en" lang="en">
+      <h1>Mevora Privacy Policy</h1>
+      <p class="meta">Last updated: October 1, 2026</p>
+      <p>
+        This policy explains how the Mevora mobile app ("Mevora") collects, uses, stores and deletes personal data
+        when you use it. Mevora is for adults aged 18 and over only.
+      </p>
+
+      <h2>What we collect</h2>
+      <h3>Account and authentication</h3>
+      <p>
+        Depending on how you sign in, we process your email address, phone number, sign-in provider identifiers
+        (Google, Apple, Spotify) and your Firebase Authentication user ID.
+      </p>
+      <h3>Profile details and photos</h3>
+      <p>
+        Your first name, surname, date of birth, gender, who you want to meet, bio, preferences, your answers to
+        relationship questions, your humor ratings and your photos. Other members see your age, not your date of
+        birth, and your surname stays private.
+      </p>
+      <h3>Photo and identity verification</h3>
+      <p>
+        To confirm that a profile belongs to a real person, we may ask you for a selfie. It is sent to our
+        verification provider, Didit, which checks that it shows a live person and that it matches your profile
+        photo. We keep the result of that check, not the selfie, which is deleted when the check ends. Identity
+        verification is optional: if you choose it, Didit processes your identity document and selfie directly and
+        Mevora stores only the outcome.
+      </p>
+      <h3>Location</h3>
+      <p>
+        With your permission, we use your device location to show compatible people near you. Your coordinates are
+        stored on our servers for that purpose and are never shown to other members, who see only your city and an
+        approximate distance. Location is read only while you use the app, never in the background.
+      </p>
+      <h3>Messages and calls</h3>
+      <p>
+        Message text, voice notes and images are end-to-end encrypted: they are encrypted on your device and our
+        servers store only the encrypted form, which we cannot read. To deliver them we do store who sent a message
+        to whom, when, its type and whether it was read, as well as call records.
+      </p>
+      <h3>Matching and interactions</h3>
+      <p>
+        Likes, passes, matches, your answers to daily questions, humor ratings, compatibility signals, blocks and
+        the reports you file.
+      </p>
+      <h3>Spotify</h3>
+      <p>
+        If you connect Spotify, we store linked account details and the music taste signals used for compatibility
+        (such as your top artists and tracks). You choose what appears on your profile, and you can disconnect
+        Spotify in Settings.
+      </p>
+      <h3>Purchases</h3>
+      <p>
+        If you buy Boost or Premium, your app store (Google Play) takes the payment. We never see your card details;
+        we store the product and purchase record so that we can verify the purchase and apply what you bought.
+      </p>
+      <h3>Device and technical data</h3>
+      <p>
+        We process push notification tokens and, through Firebase Crashlytics and Google Analytics for Firebase,
+        crash reports and usage statistics tied to an app installation, not to your name. Mevora shows no ads and
+        does not use your advertising ID.
+      </p>
+      <h3>Support and safety records</h3>
+      <p>
+        Support requests you create, reports made by or about you, and moderation decisions applied to your account.
+      </p>
+
+      <h2>Why we use data</h2>
+      <p>
+        To authenticate you, show you compatible people, run matching and messaging, keep the community safe
+        (blocking, reporting, moderation), provide support, verify purchases and meet legal obligations.
+      </p>
+
+      <h2>Sharing</h2>
+      <p>We do not sell personal data. We share data only with the service providers needed to operate Mevora:</p>
+      <ul>
+        <li><strong>Google</strong> — Firebase (hosting, database, authentication, notifications, crash reporting and analytics) and Google Play for purchases.</li>
+        <li><strong>Spotify</strong> — only if you connect your Spotify account.</li>
+        <li><strong>Didit</strong> — photo and identity verification.</li>
+        <li><strong>GIPHY</strong> — humor content, which your device loads directly from GIPHY.</li>
+      </ul>
+      <p>We may also share data with the competent authorities where the law requires it or a member's safety depends on it.</p>
+
+      <h2>Storage and security</h2>
+      <p>
+        Data is primarily stored in Google Firebase (Firestore, Storage, Authentication, Cloud Functions). We use
+        access controls, encryption in transit, end-to-end encryption of message content and Firebase security
+        rules. No system is perfectly secure.
+      </p>
+
+      <h2>Retention and deletion</h2>
+      <p>
+        We keep data while your account is active. When you delete your account, your profile, photos, messages,
+        likes, answers and purchase records are deleted. Matches you were part of are closed and no longer show your
+        name or photo, and records of safety and moderation actions may be kept where needed to protect members,
+        prevent fraud or meet legal obligations. Details and steps: <a href="/delete-account">Account deletion</a>.
+      </p>
+
+      <h2>Your rights</h2>
+      <p>
+        Depending on your region (for example under KVKK or the GDPR), you may request access to, correction of,
+        deletion of or restriction of your data. You can download a copy of your data in the app under
+        Settings → Account → Download my data. Message content is end-to-end encrypted and is therefore not part of
+        that file.
+      </p>
+
+      <h2>Children</h2>
+      <p>
+        Mevora is not for anyone under 18. Accounts found to belong to someone under 18 are closed. See also our
+        <a href="/child-safety">Child safety standards</a>.
+      </p>
+
+      <h2>Changes</h2>
+      <p>We may update this policy. The latest version is always available in the app and on this page.</p>
+
+      <h2>Contact</h2>
+      <p>
+        Privacy questions: <a href="mailto:halilmertdeveliii@gmail.com">halilmertdeveliii@gmail.com</a>, or in the
+        app under Settings → Help &amp; Support.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site">
+    <nav>
+      <a href="/privacy">Gizlilik · Privacy</a>
+      <a href="/terms">Koşullar · Terms</a>
+      <a href="/guidelines">Topluluk · Guidelines</a>
+      <a href="/child-safety">Çocuk Güvenliği · Child Safety</a>
+      <a href="/delete-account">Hesap Silme · Delete Account</a>
+      <a href="/help">Yardım · Help</a>
+    </nav>
+    <p>© Mevora</p>
+  </footer>
 </body>
 </html>

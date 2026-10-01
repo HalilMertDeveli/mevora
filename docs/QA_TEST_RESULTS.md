@@ -1,5 +1,7 @@
 # Mevora QA Test Results
 
+> **Superseded (2026-10-01).** Results from 2026-08-23; the suite has since changed completely. Current launch state: `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`.
+
 Audit date: 2026-08-23  
 Auditor role: Senior QA / Mobile QA / Code Auditor  
 **No code modified during this audit.**

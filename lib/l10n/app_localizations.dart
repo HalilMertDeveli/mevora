@@ -6035,7 +6035,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsPaidBody.
   ///
   /// In en, this message translates to:
-  /// **'Boost and other purchases are processed through your app store. Refunds follow the store\'s policies unless required otherwise by law.'**
+  /// **'Boost and Premium are bought through your app store. Boost is a one-time purchase and does not renew. Premium is a subscription: it renews automatically at the price shown when you buy it until you cancel in your store account, and cancelling stops the next renewal. Refunds follow the store\'s policies unless required otherwise by law.'**
   String get termsPaidBody;
 
   /// No description provided for @termsThirdPartyTitle.
@@ -6107,7 +6107,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsEffectiveBody.
   ///
   /// In en, this message translates to:
-  /// **'These Terms are effective as of August 23, 2026.'**
+  /// **'These Terms are effective as of October 1, 2026.'**
   String get termsEffectiveBody;
 
   /// No description provided for @privacyIntroTitle.
@@ -6155,8 +6155,20 @@ abstract class AppLocalizations {
   /// No description provided for @privacyProfileBody.
   ///
   /// In en, this message translates to:
-  /// **'Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.'**
+  /// **'Profile details you provide (first name, date of birth, gender, who you want to meet, bio, preferences, relationship answers, humor ratings and photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching. Other members see your age, not your date of birth, and your surname stays private.'**
   String get privacyProfileBody;
+
+  /// No description provided for @privacyVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo and identity verification'**
+  String get privacyVerificationTitle;
+
+  /// No description provided for @privacyVerificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm that a profile belongs to a real person, we may ask you for a selfie. It is sent to our verification provider, Didit, which checks that it shows a live person and that it matches your profile photo. We keep the result of that check, not the selfie, which is deleted when the check ends. Identity verification is optional: if you choose it, Didit processes your identity document and selfie directly and Mevora stores only the outcome.'**
+  String get privacyVerificationBody;
 
   /// No description provided for @privacyLocationTitle.
   ///
@@ -6167,7 +6179,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyLocationBody.
   ///
   /// In en, this message translates to:
-  /// **'With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.'**
+  /// **'With your permission, we use your device location to show compatible people near you. Your coordinates are stored on our servers for that purpose and are never shown to other members, who see only your city and an approximate distance.'**
   String get privacyLocationBody;
 
   /// No description provided for @privacyMessagingTitle.
@@ -6179,7 +6191,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyMessagingBody.
   ///
   /// In en, this message translates to:
-  /// **'Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.'**
+  /// **'Message text, voice notes and images are end-to-end encrypted: they are encrypted on your device and our servers store only the encrypted form, which we cannot read. To deliver them we do store who sent a message to whom, when, its type and whether it was read, as well as call records.'**
   String get privacyMessagingBody;
 
   /// No description provided for @privacyMatchingTitle.
@@ -6191,7 +6203,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyMatchingBody.
   ///
   /// In en, this message translates to:
-  /// **'Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.'**
+  /// **'Likes, passes, matches, your answers to daily questions, humor ratings, compatibility signals and interaction history are stored to operate discovery and matches.'**
   String get privacyMatchingBody;
 
   /// No description provided for @privacyPreferencesTitle.
@@ -6227,7 +6239,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyDeviceBody.
   ///
   /// In en, this message translates to:
-  /// **'We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.'**
+  /// **'We process push notification tokens and, through Firebase Crashlytics and Google Analytics for Firebase, crash reports and usage statistics tied to an app installation, not to your name. Mevora shows no ads and does not use your advertising ID.'**
   String get privacyDeviceBody;
 
   /// No description provided for @privacyWhyTitle.
@@ -6263,7 +6275,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyRetentionBody.
   ///
   /// In en, this message translates to:
-  /// **'We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.'**
+  /// **'We keep data while your account is active. When you delete your account, your profile, photos, messages, likes, answers and purchase records are deleted. Matches you were part of are closed and no longer show your name or photo, and records of safety and moderation actions may be kept where needed to protect members, prevent fraud or meet legal obligations.'**
   String get privacyRetentionBody;
 
   /// No description provided for @privacySharingTitle.
@@ -6275,7 +6287,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacySharingBody.
   ///
   /// In en, this message translates to:
-  /// **'We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.'**
+  /// **'We do not sell personal data. We share data only with the service providers needed to operate Mevora: Google (Firebase hosting, authentication, notifications, crash reporting and analytics, and Google Play for purchases), Spotify if you connect it, Didit for photo and identity verification, and GIPHY, from which your device loads humor content directly.'**
   String get privacySharingBody;
 
   /// No description provided for @privacyRightsTitle.
@@ -6287,7 +6299,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyRightsBody.
   ///
   /// In en, this message translates to:
-  /// **'Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.'**
+  /// **'Depending on your region, you may request access, correction, deletion, or restriction of your data. You can download a copy of your data in Settings → Account → Download my data, and delete your account in Settings.'**
   String get privacyRightsBody;
 
   /// No description provided for @privacyDeletionTitle.
@@ -6311,7 +6323,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacySecurityBody.
   ///
   /// In en, this message translates to:
-  /// **'We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.'**
+  /// **'We use access controls, encryption in transit, end-to-end encryption of message content, and Firebase security rules. No system is perfectly secure; report issues to support.'**
   String get privacySecurityBody;
 
   /// No description provided for @privacyChildrenTitle.
@@ -6323,7 +6335,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyChildrenBody.
   ///
   /// In en, this message translates to:
-  /// **'Mevora is not for users under 18. We delete accounts identified as underage.'**
+  /// **'Mevora is not for anyone under 18. Accounts found to belong to someone under 18 are closed.'**
   String get privacyChildrenBody;
 
   /// No description provided for @privacyChangesTitle.

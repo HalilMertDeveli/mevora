@@ -3399,7 +3399,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsPaidBody =>
-      'Boost and other purchases are processed through your app store. Refunds follow the store\'s policies unless required otherwise by law.';
+      'Boost and Premium are bought through your app store. Boost is a one-time purchase and does not renew. Premium is a subscription: it renews automatically at the price shown when you buy it until you cancel in your store account, and cancelling stops the next renewal. Refunds follow the store\'s policies unless required otherwise by law.';
 
   @override
   String get termsThirdPartyTitle => 'Third-party services';
@@ -3441,7 +3441,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsEffectiveBody =>
-      'These Terms are effective as of August 23, 2026.';
+      'These Terms are effective as of October 1, 2026.';
 
   @override
   String get privacyIntroTitle => 'Introduction';
@@ -3469,28 +3469,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyProfileBody =>
-      'Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.';
+      'Profile details you provide (first name, date of birth, gender, who you want to meet, bio, preferences, relationship answers, humor ratings and photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching. Other members see your age, not your date of birth, and your surname stays private.';
+
+  @override
+  String get privacyVerificationTitle => 'Photo and identity verification';
+
+  @override
+  String get privacyVerificationBody =>
+      'To confirm that a profile belongs to a real person, we may ask you for a selfie. It is sent to our verification provider, Didit, which checks that it shows a live person and that it matches your profile photo. We keep the result of that check, not the selfie, which is deleted when the check ends. Identity verification is optional: if you choose it, Didit processes your identity document and selfie directly and Mevora stores only the outcome.';
 
   @override
   String get privacyLocationTitle => 'Location data';
 
   @override
   String get privacyLocationBody =>
-      'With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.';
+      'With your permission, we use your device location to show compatible people near you. Your coordinates are stored on our servers for that purpose and are never shown to other members, who see only your city and an approximate distance.';
 
   @override
   String get privacyMessagingTitle => 'Messages and calls';
 
   @override
   String get privacyMessagingBody =>
-      'Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.';
+      'Message text, voice notes and images are end-to-end encrypted: they are encrypted on your device and our servers store only the encrypted form, which we cannot read. To deliver them we do store who sent a message to whom, when, its type and whether it was read, as well as call records.';
 
   @override
   String get privacyMatchingTitle => 'Matching and interactions';
 
   @override
   String get privacyMatchingBody =>
-      'Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.';
+      'Likes, passes, matches, your answers to daily questions, humor ratings, compatibility signals and interaction history are stored to operate discovery and matches.';
 
   @override
   String get privacyPreferencesTitle => 'Settings and preferences';
@@ -3511,7 +3518,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyDeviceBody =>
-      'We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.';
+      'We process push notification tokens and, through Firebase Crashlytics and Google Analytics for Firebase, crash reports and usage statistics tied to an app installation, not to your name. Mevora shows no ads and does not use your advertising ID.';
 
   @override
   String get privacyWhyTitle => 'Why we use data';
@@ -3532,21 +3539,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyRetentionBody =>
-      'We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.';
+      'We keep data while your account is active. When you delete your account, your profile, photos, messages, likes, answers and purchase records are deleted. Matches you were part of are closed and no longer show your name or photo, and records of safety and moderation actions may be kept where needed to protect members, prevent fraud or meet legal obligations.';
 
   @override
   String get privacySharingTitle => 'Sharing';
 
   @override
   String get privacySharingBody =>
-      'We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.';
+      'We do not sell personal data. We share data only with the service providers needed to operate Mevora: Google (Firebase hosting, authentication, notifications, crash reporting and analytics, and Google Play for purchases), Spotify if you connect it, Didit for photo and identity verification, and GIPHY, from which your device loads humor content directly.';
 
   @override
   String get privacyRightsTitle => 'Your rights';
 
   @override
   String get privacyRightsBody =>
-      'Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.';
+      'Depending on your region, you may request access, correction, deletion, or restriction of your data. You can download a copy of your data in Settings → Account → Download my data, and delete your account in Settings.';
 
   @override
   String get privacyDeletionTitle => 'Deleting your data';
@@ -3560,14 +3567,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacySecurityBody =>
-      'We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.';
+      'We use access controls, encryption in transit, end-to-end encryption of message content, and Firebase security rules. No system is perfectly secure; report issues to support.';
 
   @override
   String get privacyChildrenTitle => 'Children';
 
   @override
   String get privacyChildrenBody =>
-      'Mevora is not for users under 18. We delete accounts identified as underage.';
+      'Mevora is not for anyone under 18. Accounts found to belong to someone under 18 are closed.';
 
   @override
   String get privacyChangesTitle => 'Policy changes';

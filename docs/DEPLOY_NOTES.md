@@ -149,3 +149,27 @@ rewritten.
 
 Do not deploy while the sequence is a draft unless that is intended:
 `docs/PUBLISH_BLOCKERS.md`, item 2.
+
+## Launch-readiness changes (2026-10-01): what to deploy, and what must exist first
+
+Eleven branches landed on `preview` on 2026-10-01 (`docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`, §9).
+After `preview` is merged into `main` with the owner's approval, these functions carry
+changed code and need a redeploy on whichever project is production:
+
+| Functions | Change | Must exist before the deploy |
+|---|---|---|
+| `verifyBoostPurchase`, `verifyPremiumPurchase`, `onPlaySubscriptionNotification` | Purchase integrity; RTDN retries; the Play service account is now a bound secret | Secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`. A function that binds a missing secret **fails the deploy**. Remove the same name from any `functions/.env*` file. |
+| `createIdentityVerificationSession`, `identityVerificationWebhook` | A sandbox Didit configuration no longer grants the verified badge on a deployed project | On `mevora-d6ed0` only: `DIDIT_ALLOW_SANDBOX_VERIFICATION=true` in the functions environment, or sandbox identity QA stops working. Never on production. |
+| `deleteUserAccount`, `processAutomationTask`, `automationJobDrain` | Bind `DIDIT_API_KEY` so provider-side erasure can run; delete `boostReach` and the Spotify rate-limit counters | Secret `DIDIT_API_KEY` |
+| `exportMyData` | The export no longer contains coordinates | — |
+| `reportUser` | Accepts the `child_safety` reason | Must be live before an app build that offers the reason |
+| `prepareSmokeTestUsers`, `cleanupSmokeTestUsers` | Random per-run passwords | After the deploy, call `prepareSmokeTestUsers` (or cleanup) once so existing smoke accounts stop accepting the old password |
+
+Also: the admin console (Turkish label for the new report reason) and Hosting (the
+rewritten policy pages, `/delete-account`, `/child-safety`) — Hosting only after the
+policy texts are approved.
+
+No Firestore rules or index change in any of the eleven.
+
+The agent prepares the exact `--only` list at deploy time, from a `main` worktree; the
+owner runs it. On `mevora-d6ed0` the rule at the top of this file still applies.

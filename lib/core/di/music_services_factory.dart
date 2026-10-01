@@ -1,4 +1,5 @@
 import 'package:mevora/core/config/app_config.dart';
+import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/features/authentication/data/services/spotify_auth_service.dart';
@@ -22,7 +23,10 @@ MusicServices createMusicServices({
   if (repository != null) {
     return MusicServices(repository: repository);
   }
-  const mockOnly = bool.fromEnvironment('USE_MOCK_MUSIC');
+  final mockOnly = mockDataSourceAllowed(
+    define: const bool.fromEnvironment('USE_MOCK_MUSIC'),
+    environment: config?.environment,
+  );
   // Falling back to the mock because a dependency happened to be missing is
   // how a build ends up quietly showing invented music to a real member. The
   // fallback stays, so nothing crashes, but a debug build says so out loud.
@@ -39,7 +43,8 @@ MusicServices createMusicServices({
   return MusicServices(
     repository: MusicRepositoryImpl(
       dataSource: FunctionsMusicDataSource(
-        backend: backend ??
+        backend:
+            backend ??
             FirebaseFunctionsCallable(
               region: config?.functionsRegion ?? 'europe-west1',
             ),

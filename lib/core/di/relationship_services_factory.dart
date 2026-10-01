@@ -1,4 +1,5 @@
 import 'package:mevora/core/config/app_config.dart';
+import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/features/profile/data/datasources/firebase_profile_question_answer_data_source.dart';
@@ -38,7 +39,10 @@ RelationshipServices createRelationshipServices({
       profileAnswers: profileAnswers,
     );
   }
-  const mockOnly = bool.fromEnvironment('USE_MOCK_RELATIONSHIP');
+  final mockOnly = mockDataSourceAllowed(
+    define: const bool.fromEnvironment('USE_MOCK_RELATIONSHIP'),
+    environment: config?.environment,
+  );
   if (mockOnly) {
     return RelationshipServices(
       repository: RelationshipRepositoryImpl(

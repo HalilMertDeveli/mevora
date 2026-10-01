@@ -153,7 +153,23 @@ describe("what a viewer is allowed to see", () => {
     ],
     mediumTermArtists: [artist("a1", "Arctic Monkeys", ["indie"])],
   });
-  const published = toPublicGeneralTaste(taste);
+  const published = toPublicGeneralTaste(taste, new Set(["a1", "a2"]));
+
+  it("names only the artists the member chose to show", () => {
+    assert.deepEqual(taste.signatureArtists.map((a) => a.name), ["Arctic Monkeys", "The Weeknd"]);
+    assert.deepEqual(toPublicGeneralTaste(taste, new Set(["a2"])).signatureArtists, ["The Weeknd"]);
+    assert.deepEqual(toPublicGeneralTaste(taste, new Set()).signatureArtists, []);
+    // An id that is not a signature artist adds nothing.
+    assert.deepEqual(toPublicGeneralTaste(taste, new Set(["zz"])).signatureArtists, []);
+  });
+
+  it("keeps genres and counts whatever was chosen", () => {
+    const none = toPublicGeneralTaste(taste, new Set());
+    assert.equal(none.dominantGenre, published.dominantGenre);
+    assert.deepEqual(none.secondaryGenres, published.secondaryGenres);
+    assert.equal(none.stableArtistCount, published.stableArtistCount);
+    assert.equal(none.artistBreadth, published.artistBreadth);
+  });
 
   it("publishes names, never ids", () => {
     const raw = JSON.stringify(published);
@@ -264,7 +280,9 @@ describe("reading a summary back in its published shape", () => {
         longTermArtists: [artist("a1", "Arctic Monkeys", ["indie"])],
         mediumTermArtists: [artist("a1", "Arctic Monkeys", ["indie"])],
       }),
+      new Set(["a1"]),
     );
+    assert.deepEqual(derived.signatureArtists, ["Arctic Monkeys"]);
     assert.deepEqual(readPublicGeneralTaste(derived), derived);
   });
 });

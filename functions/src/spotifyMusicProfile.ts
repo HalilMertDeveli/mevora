@@ -408,7 +408,7 @@ export function buildPublicMusicProfile(input: {
         derivePublicGenres(artists, artistCatalog, input.summary)) :
       [],
     ...(enabled && hasGeneral ?
-      {taste: toPublicGeneralTaste(general)} :
+      {taste: toPublicGeneralTaste(general, new Set(artists.map((artist) => artist.id)))} :
       {}),
   };
 }

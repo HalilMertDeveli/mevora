@@ -211,6 +211,12 @@ export function deriveGeneralMusicTaste(input: {
  *
  * Only names and counts leave the backend — no ids a viewer could use to probe
  * the member's library, no timestamps, nothing from recently played.
+ *
+ * An artist is named only when the member chose to show that artist on their
+ * card (`shownArtistIds`). The signature list is ranked from the whole private
+ * library, and publishing it as it stands would name artists the member left
+ * out of their selection. Genres and counts stay: they describe the taste
+ * without naming anything the member did not pick.
  */
 export type PublicGeneralTaste = {
   dominantGenre: string | null;
@@ -222,11 +228,14 @@ export type PublicGeneralTaste = {
 
 export function toPublicGeneralTaste(
   taste: GeneralMusicTaste,
+  shownArtistIds: ReadonlySet<string>,
 ): PublicGeneralTaste {
   return {
     dominantGenre: taste.dominantGenre,
     secondaryGenres: taste.secondaryGenres.slice(0, 2),
-    signatureArtists: taste.signatureArtists.map((artist) => artist.name),
+    signatureArtists: taste.signatureArtists
+      .filter((artist) => shownArtistIds.has(artist.id))
+      .map((artist) => artist.name),
     stableArtistCount: taste.stableArtistCount,
     artistBreadth: taste.artistBreadth,
   };

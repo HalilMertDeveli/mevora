@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
-import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/core/services/profile/profile_update_notifier.dart';
 import 'package:mevora/core/theme/app_theme.dart';
@@ -16,7 +15,6 @@ import 'package:mevora/features/authentication/domain/repositories/user_document
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
-import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
 import 'package:mevora/features/settings/data/services/profile_photo_manager.dart';
 import 'package:mevora/features/settings/presentation/pages/discovery_preferences_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -35,10 +33,10 @@ class _FakeUserDocs implements UserDocumentRepository {
   dynamic noSuchMethod(Invocation invocation) => Future.value(null);
 }
 
-class _FakeStorage implements StorageRepository {
+/// The page under test never touches photos.
+class _NoPhotoManager implements ProfilePhotoManager {
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      Future<Result<void>>.value(const Success(null));
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 class _FakeReauth implements ReauthPort {
@@ -69,10 +67,7 @@ Widget _page(FakeSettingsHubRepository hub) {
     child: SettingsScope(
       services: SettingsServices(
         settingsHub: hub,
-        photoManager: ProfilePhotoManager(
-          settingsHub: hub,
-          storage: _FakeStorage(),
-        ),
+        photoManager: _NoPhotoManager(),
         reauthService: _FakeReauth(),
         photoPicker: const StubProfilePhotoPicker(),
         profileUpdates: ProfileUpdateNotifier(),

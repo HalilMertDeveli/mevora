@@ -13,6 +13,7 @@ import 'package:mevora/shared/widgets/mevora_text_field.dart';
 
 String reportReasonLabel(AppLocalizations l10n, ReportReason reason) {
   return switch (reason) {
+    ReportReason.childSafety => l10n.reportChildSafety,
     ReportReason.spam => l10n.reportSpam,
     ReportReason.harassment => l10n.reportHarassment,
     ReportReason.inappropriateContent => l10n.reportInappropriate,
@@ -60,11 +61,10 @@ class _ReportPageState extends State<ReportPage> {
         children: [
           for (final reason in ReportReason.values)
             RadioListTile<ReportReason>(
-              title: Text(
-                reportReasonLabel(l10n, reason),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              // No line cap: the child-safety reason spells out what it
+              // covers and must stay readable in full on a narrow phone or
+              // at a large text size. The list scrolls, so it can grow.
+              title: Text(reportReasonLabel(l10n, reason)),
               value: reason,
               groupValue: _reason,
               onChanged: (value) {

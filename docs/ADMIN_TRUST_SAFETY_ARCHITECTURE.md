@@ -228,7 +228,8 @@ open ──▶ assigned ──▶ in_review ──▶ waiting
 - **Resolution** closes the case's open reports and releases the key, so the
   next report opens a fresh case.
 - **Report priority** is set server-side in `reportUser` from the production
-  reason whitelist: underage → critical; harassment, scam, inappropriate
+  reason whitelist: child_safety (sexual content or behaviour involving a
+  minor), underage → critical; harassment, scam, inappropriate
   content → high; fake profile → medium; spam, other → normal.
   `adminBackfillReportPriority` backfills legacy reports.
 

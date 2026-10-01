@@ -225,7 +225,7 @@ FCM for New Match, New Message, Super Like, and Safety notifications. Foreground
 
 Report, Block, Unmatch, Report Message, Report Profile.
 
-Report reasons: Fake Profile, Harassment, Inappropriate Content, Spam, Scam, Underage, Other.
+Report reasons: Child Safety (sexual content or behaviour involving a minor), Underage, Fake Profile, Harassment, Inappropriate Content, Spam, Scam, Other.
 
 Blocking removes the user from discovery and prevents interaction, messaging, profile views, and future recommendations.
 

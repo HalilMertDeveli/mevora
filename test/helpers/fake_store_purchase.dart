@@ -41,10 +41,18 @@ class FakeStorePurchaseDataSource implements StorePurchaseDataSource {
   BoostProduct product;
   List<BoostProduct>? products;
   StorePurchaseEvent event;
+
+  /// Reported by the store before [event], as another product's purchase on
+  /// the shared store stream would be.
+  List<StorePurchaseEvent> eventsBeforePurchase = const [];
+
+  /// What the store redelivers when asked to restore.
+  List<StorePurchaseEvent> restoreEvents = const [];
   PurchaseException? buyError;
   final StreamController<StorePurchaseEvent> _events =
       StreamController<StorePurchaseEvent>.broadcast();
   StoreTransaction? completed;
+  final List<StoreTransaction> completions = <StoreTransaction>[];
   bool restored = false;
 
   @override
@@ -81,17 +89,20 @@ class FakeStorePurchaseDataSource implements StorePurchaseDataSource {
     if (error != null) {
       throw error;
     }
+    eventsBeforePurchase.forEach(_events.add);
     _events.add(event);
   }
 
   @override
   Future<void> complete(StoreTransaction transaction) async {
     completed = transaction;
+    completions.add(transaction);
   }
 
   @override
   Future<void> restore() async {
     restored = true;
+    restoreEvents.forEach(_events.add);
   }
 
   Future<void> dispose() => _events.close();
@@ -115,6 +126,9 @@ class FakePurchaseRemoteDataSource implements PurchaseRemoteDataSource {
   List<BoostPack> catalog;
   List<BoostHistoryEntry> history;
   PurchaseException? verifyError;
+
+  /// How long the backend takes to answer a verification.
+  Duration verifyDelay = Duration.zero;
   PurchaseException? activateError;
   int verifyCalls = 0;
   int activateCalls = 0;
@@ -135,6 +149,9 @@ class FakePurchaseRemoteDataSource implements PurchaseRemoteDataSource {
   }) async {
     verifyCalls += 1;
     lastTransaction = transaction;
+    if (verifyDelay > Duration.zero) {
+      await Future<void>.delayed(verifyDelay);
+    }
     final error = verifyError;
     if (error != null) {
       throw error;

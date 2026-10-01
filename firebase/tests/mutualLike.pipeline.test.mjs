@@ -34,12 +34,18 @@ const B = "pipeline_like_b";
 const likeId = (from, to) => `${from}_${to}`;
 const matchIdFor = (a, b) => [a, b].sort().join("_");
 
+// The emulator suite exports FIRESTORE_EMULATOR_HOST. Honouring it lets the
+// suite run on a private port block; the default is the suite's usual port.
+const [FIRESTORE_HOST, FIRESTORE_PORT] = (
+  process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080"
+).split(":");
+
 let env;
 
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: "mevora-mutual-like",
-    firestore: {host: "127.0.0.1", port: 8080},
+    firestore: {host: FIRESTORE_HOST, port: Number(FIRESTORE_PORT)},
   });
 });
 

@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/boost/data/datasources/store_purchase_data_source.dart';
 import 'package:mevora/features/boost/data/repositories/purchase_repository_impl.dart';
+import 'package:mevora/features/boost/domain/config/boost_product_config.dart';
 import 'package:mevora/features/boost/domain/entities/boost.dart';
 import 'package:mevora/features/boost/domain/entities/boost_credit_result.dart';
 import 'package:mevora/features/boost/domain/entities/boost_product.dart';
@@ -45,6 +47,7 @@ void main() {
       remote: remote,
       uidSource: uid,
       clock: () => now,
+      restoreWindow: Duration.zero,
     );
   });
 
@@ -130,6 +133,145 @@ void main() {
       ((purchased as Err).failure as PurchaseFailure).kind,
       PurchaseErrorKind.cancelled,
     );
+  });
+
+  group('the store stream is shared with Premium', () {
+    // in_app_purchase has one purchase stream for the whole app, so a Premium
+    // subscription reports on the stream the Boost flow listens to.
+    const premium = StoreTransaction(
+      platform: PurchasePlatform.android,
+      productId: 'mevora_premium',
+      transactionId: 'GPA.premium',
+      purchaseToken: 'premium-token',
+    );
+
+    test('a Premium purchase is never taken for the Boost purchase', () async {
+      store.eventsBeforePurchase = const [
+        StorePurchaseEvent(
+          status: StorePurchaseStatus.purchased,
+          transaction: premium,
+        ),
+        StorePurchaseEvent(
+          status: StorePurchaseStatus.restored,
+          transaction: premium,
+        ),
+      ];
+      final product =
+          (await repository.getBoostProduct() as Success<BoostProduct>).value;
+      final purchased = await repository.purchaseBoost(product);
+      expect(purchased, isA<Success<StoreTransaction>>());
+      final tx = (purchased as Success<StoreTransaction>).value;
+      expect(tx.productId, 'com.mevora.app.boost');
+      expect(tx.transactionId, 'GPA.1234');
+    });
+
+    test('a Premium cancellation does not end the Boost purchase', () async {
+      store.eventsBeforePurchase = const [
+        StorePurchaseEvent(
+          status: StorePurchaseStatus.cancelled,
+          transaction: premium,
+          kind: PurchaseErrorKind.cancelled,
+        ),
+      ];
+      final product =
+          (await repository.getBoostProduct() as Success<BoostProduct>).value;
+      final purchased = await repository.purchaseBoost(product);
+      expect(purchased, isA<Success<StoreTransaction>>());
+    });
+
+    test(
+      'a store failure that names no product still ends the Boost purchase',
+      () async {
+        // Play reports a failed or cancelled sheet without a product id.
+        store.event = const StorePurchaseEvent(
+          status: StorePurchaseStatus.error,
+          kind: PurchaseErrorKind.failed,
+        );
+        final product =
+            (await repository.getBoostProduct() as Success<BoostProduct>).value;
+        final purchased = await repository.purchaseBoost(product);
+        expect(
+          ((purchased as Err).failure as PurchaseFailure).kind,
+          PurchaseErrorKind.failed,
+        );
+      },
+    );
+
+    test(
+      'restore never verifies or completes a Premium subscription',
+      () async {
+        store.restoreEvents = const [
+          StorePurchaseEvent(
+            status: StorePurchaseStatus.restored,
+            transaction: premium,
+          ),
+        ];
+        await repository.restorePurchases('u1');
+        expect(remote.verifyCalls, 0);
+        expect(store.completions, isEmpty);
+      },
+    );
+  });
+
+  group('a purchase the server has not confirmed stays in the store', () {
+    const unfinished = StorePurchaseEvent(
+      status: StorePurchaseStatus.restored,
+      transaction: StoreTransaction(
+        platform: PurchasePlatform.android,
+        productId: 'com.mevora.app.boost',
+        transactionId: 'GPA.unfinished',
+        purchaseToken: 'unfinished-token',
+      ),
+    );
+
+    test(
+      'restore submits it to the server and completes it once confirmed',
+      () async {
+        store.restoreEvents = const [unfinished];
+        remote.verifyDelay = const Duration(milliseconds: 20);
+        remote.verifyResult = BoostCreditResult(
+          purchaseId: 'android_hash',
+          productId: 'com.mevora.app.boost',
+          boostCount: 0,
+          balance: 0,
+          boost: active,
+        );
+
+        await repository.restorePurchases('u1');
+
+        // The restore has waited for the server's answer: by the time it
+        // returns, the purchase is verified and only then consumed.
+        expect(remote.verifyCalls, 1);
+        expect(remote.lastTransaction?.purchaseToken, 'unfinished-token');
+        expect(store.completions.map((tx) => tx.transactionId), [
+          'GPA.unfinished',
+        ]);
+      },
+    );
+
+    test(
+      'restore leaves it unconsumed when the server still cannot confirm',
+      () async {
+        store.restoreEvents = const [unfinished];
+        remote.verifyError = const PurchaseException(
+          'unavailable',
+          kind: PurchaseErrorKind.storeDown,
+        );
+
+        final result = await repository.restorePurchases('u1');
+
+        expect(result, isA<Success<Boost?>>());
+        expect(remote.verifyCalls, 1);
+        expect(store.completions, isEmpty);
+      },
+    );
+
+    test('a redelivered purchase is submitted once per restore', () async {
+      store.restoreEvents = const [unfinished, unfinished];
+      await repository.restorePurchases('u1');
+      expect(remote.verifyCalls, 1);
+      expect(store.completions, hasLength(1));
+    });
   });
 
   test('uid mismatch refuses verification', () async {

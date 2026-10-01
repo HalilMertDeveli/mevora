@@ -99,7 +99,8 @@ exists.
 | `DIDIT_API_KEY` | Authenticates MEVORA to Didit | Cloud Functions secret |
 | `DIDIT_WEBHOOK_SECRET` | The destination's `secret_shared_key` | Cloud Functions secret |
 | `DIDIT_WORKFLOW_ID` | Console workflow id | Functions param / env |
-| `DIDIT_ENVIRONMENT` | `sandbox` (default) or `live` | Functions param / env |
+| `DIDIT_ENVIRONMENT` | `sandbox` (default) or `live`. **Production requires `live`** | Functions param / env |
+| `DIDIT_ALLOW_SANDBOX_VERIFICATION` | Empty (default) or exactly `true`. Lets a deployed sandbox application grant the badge. Non-production QA only — see below | Functions param / env |
 | `DIDIT_BASE_URL` | Defaults to `https://verification.didit.me` | Functions param / env |
 | `DIDIT_CALLBACK_URL` | Defaults to `mevora://verify/identity` | Functions param / env |
 
@@ -131,6 +132,66 @@ The default state of this repository today, and it is a supported state:
 Nothing degrades to "assume verified". The failure direction is always away
 from the badge.
 
+## A sandbox application cannot verify in a deployment
+
+A sandbox application mocks its analysis: the document, the liveness check and
+the face match are answered from a script. Its approval says nothing about the
+person holding the phone, so outside the Functions emulator a configuration
+that is not declared live grants no badge:
+
+| Where | `DIDIT_ENVIRONMENT` | `DIDIT_ALLOW_SANDBOX_VERIFICATION` | Can grant the badge |
+|---|---|---|---|
+| Functions emulator | anything | anything | yes — unchanged |
+| Deployed | `live` | anything | yes |
+| Deployed | `sandbox`, or never set | exactly `true` | yes |
+| Deployed | `sandbox`, or never set | anything else, or unset | **no** |
+
+In the last row:
+
+- `createIdentityVerificationSession` throws `failed-precondition` /
+  `verification-not-configured` — the same answer as an unconfigured backend,
+  so the app shows "Verification is temporarily unavailable". Nothing is
+  reserved, no provider session is created, and a session already in flight is
+  not handed back.
+- `identityVerificationWebhook` still authenticates the delivery, then drops
+  an approval: it answers `200` with `skipped: sandbox_verification_disabled`
+  so Didit stops redelivering, writes nothing, does not ask Didit to confirm,
+  and logs `identity webhook approval dropped` with no member identifier.
+- Outcomes that only take the badge away (declined, expired) are still
+  applied. The gate withholds a badge; it is never a reason to keep one.
+- Provider-side erasure is not gated. A sandbox session still has to be
+  deletable.
+
+**Production sets `DIDIT_ENVIRONMENT=live` and never sets
+`DIDIT_ALLOW_SANDBOX_VERIFICATION`.** The switch exists for one case: a
+non-production project that is deployed for real and runs the hosted flow
+against the Didit sandbox for QA (see `docs/DIDIT_QA_RUNBOOK.md`). While it is
+`true`, anyone who completes the sandbox flow on that project gets a badge that
+no real check stands behind — so it belongs only on a project where that is
+acceptable, and it comes off before that project carries real members.
+
+`DIDIT_ENVIRONMENT` is a declaration, not something the code can check
+against the key. Declaring `live` while `DIDIT_API_KEY` belongs to a sandbox
+application defeats the gate; the promotion step is to change both together.
+
+## Which functions hold the API key
+
+A secret reaches a function only when it is listed in that function's
+`secrets` option. Five functions need `DIDIT_API_KEY` for this feature:
+
+| Function | Why |
+|---|---|
+| `createIdentityVerificationSession` | creates and resumes sessions (also holds `DIDIT_WEBHOOK_SECRET`) |
+| `identityVerificationWebhook` | confirms an approval server to server (also holds `DIDIT_WEBHOOK_SECRET`) |
+| `deleteUserAccount` | first attempt at provider-side erasure |
+| `processAutomationTask` | retries an unconfirmed erasure (Cloud Tasks) |
+| `automationJobDrain` | the same retry, from the 15-minute drain |
+
+Without the binding on the last three, erasure reports `not_configured` no
+matter how the key is set, and every deletion ends in manual review.
+`functions/test/identityErasureSecretBinding.test.cjs` pins it. (The Face
+Anchor functions bind the key too; see `docs/FACE_ANCHOR.md`.)
+
 ## Local development
 
 `functions/.env` is read before Secret Manager, so the emulator can run with
@@ -147,7 +208,9 @@ freshness checks are the same code either way.
 Not yet performed — no Didit account exists at the time of writing. When one
 does:
 
-1. Deploy to a sandbox-configured project.
+1. Deploy to a sandbox-configured, non-production project with
+   `DIDIT_ALLOW_SANDBOX_VERIFICATION=true`. Without it the deployed functions
+   refuse to start a session and drop every approval.
 2. Register the webhook destination against the deployed function URL.
 3. Sign in, open Profile → Verify, and complete the hosted flow with Didit's
    sandbox document fixtures. **Never a real identity document.**
@@ -164,9 +227,12 @@ does:
 ## Rollout
 
 1. Land the branches in order (see below), with PR #10 first.
-2. Provision sandbox secrets; deploy; run the procedure above.
+2. Provision sandbox secrets; set `DIDIT_ALLOW_SANDBOX_VERIFICATION=true` on
+   that non-production project; deploy; run the procedure above.
 3. Create the live Didit application and workflow, set `DIDIT_ENVIRONMENT=live`
-   with the live key and a live webhook destination.
+   with the live key and a live webhook destination, and leave
+   `DIDIT_ALLOW_SANDBOX_VERIFICATION` unset. Production must be `live`: on
+   `sandbox` it verifies nobody.
 4. Only once live verification is observed working: remove
    `functions/src/sumsub/` and its Secret Manager entries.
 

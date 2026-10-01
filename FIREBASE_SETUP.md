@@ -6,9 +6,13 @@ Architecture: `FIREBASE_ARCHITECTURE.md`. Security: `FIREBASE_SECURITY.md`. Flav
 
 ## Projects already in this repo
 
+> The development flavor uses **`mevora-d6ed0`** (`lib/firebase_options.dart`). `mevora-dev` is only the
+> project id the emulator commands below run under. Which project is *production* is an open owner
+> decision — see `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`, §1.
+
 | Flavor | projectId | Native config |
 | --- | --- | --- |
-| development | `mevora-dev` | `android/app/src/development/google-services.json`, `ios/flavors/development/GoogleService-Info.plist` |
+| development | `mevora-d6ed0` | `android/app/src/development/google-services.json`, `ios/flavors/development/GoogleService-Info.plist` |
 | staging | `mevora-staging` | `android/app/src/staging/â€¦`, `ios/flavors/staging/â€¦` |
 | production | `mevora-production` | `android/app/src/production/â€¦`, `ios/flavors/production/â€¦` |
 

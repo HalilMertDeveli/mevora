@@ -11,9 +11,12 @@ import 'package:mevora/features/authentication/data/services/auth_analytics.dart
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/authentication/presentation/pages/login_page.dart';
+import 'package:mevora/features/authentication/presentation/widgets/auth_error_banner.dart';
 import 'package:mevora/features/authentication/presentation/widgets/login_hero_background.dart';
 import 'package:mevora/features/authentication/presentation/widgets/welcome_auth_buttons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
+import 'package:mevora/shared/widgets/mevora_card.dart';
 
 import '../../helpers/fake_auth.dart';
 
@@ -118,7 +121,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('welcome screen shows hero, slogan, and five CTAs', (
+  testWidgets('welcome screen shows hero, slogan, and the CTAs', (
     tester,
   ) async {
     await pumpLogin(tester);
@@ -128,12 +131,62 @@ void main() {
     expect(find.text('mevora'), findsOneWidget);
     expect(find.text(_en.loginSlogan), findsOneWidget);
     expect(find.text(_en.continueWithGoogle), findsOneWidget);
-    expect(find.text(_en.continueWithApple), findsOneWidget);
     expect(find.text(_en.continueWithPhone), findsOneWidget);
     expect(find.text(_en.continueWithSpotify), findsOneWidget);
     expect(find.text(_en.continueWithEmail), findsOneWidget);
     expect(analytics.events, contains('login_screen_viewed'));
   });
+
+  // Sign in with Apple only runs on Apple platforms, so the button is only
+  // offered there: on Android it could never succeed.
+  testWidgets(
+    'Android does not offer Continue with Apple',
+    (tester) async {
+      await pumpLogin(tester);
+
+      expect(find.byType(MevoraProviderButton), findsNWidgets(4));
+      expect(find.text(_en.continueWithApple), findsNothing);
+      expect(find.bySemanticsLabel(_en.continueWithApple), findsNothing);
+      // Google stays the emphasized first choice.
+      final first = tester.widget<MevoraProviderButton>(
+        find.byType(MevoraProviderButton).first,
+      );
+      expect(first.label, _en.continueWithGoogle);
+      expect(first.emphasized, isTrue);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+
+  testWidgets(
+    'iOS offers Continue with Apple first and it starts Apple sign-in',
+    (tester) async {
+      await pumpLogin(tester);
+
+      expect(find.byType(MevoraProviderButton), findsNWidgets(5));
+      expect(find.bySemanticsLabel(_en.continueWithApple), findsOneWidget);
+      final first = tester.widget<MevoraProviderButton>(
+        find.byType(MevoraProviderButton).first,
+      );
+      expect(first.label, _en.continueWithApple);
+      expect(first.emphasized, isTrue);
+
+      await tester.tap(find.text(_en.continueWithApple));
+      await tester.pump();
+      await tester.pump();
+      expect(authRepository.appleCalled, isTrue);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'macOS offers Continue with Apple',
+    (tester) async {
+      await pumpLogin(tester);
+
+      expect(find.text(_en.continueWithApple), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
 
   testWidgets('Turkish slogan is localized', (tester) async {
     await pumpLogin(tester, locale: const Locale('tr'));
@@ -144,7 +197,6 @@ void main() {
   testWidgets('provider buttons have semantics labels', (tester) async {
     await pumpLogin(tester);
     expect(find.bySemanticsLabel(_en.continueWithGoogle), findsOneWidget);
-    expect(find.bySemanticsLabel(_en.continueWithApple), findsOneWidget);
     expect(find.bySemanticsLabel(_en.continueWithPhone), findsOneWidget);
     expect(find.bySemanticsLabel(_en.continueWithSpotify), findsOneWidget);
     expect(find.bySemanticsLabel(_en.continueWithEmail), findsOneWidget);
@@ -245,5 +297,51 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text(_en.continueWithEmail), findsOneWidget);
+  });
+
+  // The email form sits a full screen below the provider buttons. Its error
+  // used to be shown above them, out of sight, so a failed sign-in looked as
+  // if nothing had happened.
+  testWidgets('a failed email sign-in shows its error inside the email form', (
+    tester,
+  ) async {
+    await pumpLogin(tester);
+    final scrollable = find.byType(Scrollable).first;
+
+    await tester.scrollUntilVisible(
+      find.text(_en.continueWithEmail),
+      120,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.text(_en.continueWithEmail));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextField, _en.email),
+      'someone@mevora.test',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, _en.password),
+      'wrong-password-1',
+    );
+    authRepository.nextFailure = const AuthFailure(
+      'wrong-password',
+      kind: AuthErrorKind.wrongPassword,
+    );
+    await tester.scrollUntilVisible(
+      find.widgetWithText(MevoraButton, _en.signIn),
+      120,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.widgetWithText(MevoraButton, _en.signIn));
+    await tester.pumpAndSettle();
+
+    final banner = find.byType(AuthErrorBanner);
+    expect(banner, findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(MevoraCard), matching: banner),
+      findsOneWidget,
+    );
+    expect(find.text(_en.authWrongPassword), findsOneWidget);
   });
 }

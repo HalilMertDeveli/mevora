@@ -74,6 +74,18 @@ void main() {
     expect(analytics.events, contains(AnalyticsEvents.premiumPaywallViewed));
   });
 
+  test('a pending payment is not reported as a failed purchase', () async {
+    final billing = StubBilling(plans: const [_plan])
+      ..result = const PremiumVerificationResult.pending();
+    final controller = controllerWith(billing);
+    await controller.loadPlans();
+    await controller.buySelected();
+    expect(
+      analytics.events,
+      isNot(contains(AnalyticsEvents.premiumPurchaseFailed)),
+    );
+  });
+
   test('a successful purchase reports start then success', () async {
     final controller = controllerWith(StubBilling(plans: const [_plan]));
     await controller.loadPlans();

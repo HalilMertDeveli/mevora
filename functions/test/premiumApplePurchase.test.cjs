@@ -283,16 +283,21 @@ describe("Apple premium verification", () => {
 
   it("missing credentials grant nothing", async () => {
     const store = memoryStore();
-    const result = await verifyIosPremiumPurchase({
-      userId: "user-1",
-      transactionId: "1000000000000009",
-      api: api({ok: false, error: "unavailable"}),
-      now,
-      makeStore: store.makeStore,
-    });
-
-    assert.equal(result.ok, false);
-    assert.equal(result.isPremium, false);
+    // Thrown, not answered, so the client keeps the transaction unfinished.
+    await assert.rejects(
+      () =>
+        verifyIosPremiumPurchase({
+          userId: "user-1",
+          transactionId: "1000000000000009",
+          api: api({ok: false, error: "unavailable"}),
+          now,
+          makeStore: store.makeStore,
+        }),
+      (error) => {
+        assert.equal(error.code, "unavailable");
+        return true;
+      },
+    );
     assert.equal(store.box.writes, 0);
   });
 });

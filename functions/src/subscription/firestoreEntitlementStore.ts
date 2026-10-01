@@ -115,6 +115,7 @@ export function fromDocument(
       0,
     eventAt: toDate(data.eventAt),
     isPremium: data.isPremium === true,
+    purchaseTokenKey: toText(data.purchaseTokenKey),
   };
 }
 
@@ -140,6 +141,9 @@ export function toDocument(state: CanonicalSubscription): DocumentData {
     revision: state.revision,
     eventAt: toTimestamp(state.eventAt),
     isPremium: state.isPremium,
+    // Optional on the type; Firestore rejects `undefined`, so it is always
+    // written as a value.
+    purchaseTokenKey: state.purchaseTokenKey ?? null,
     updatedAt: Timestamp.now(),
   };
 }

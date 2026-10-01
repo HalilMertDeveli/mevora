@@ -95,6 +95,22 @@ void main() {
       expect(config.allows(PremiumPlatform.ios, 'premium_ios'), isTrue);
     });
 
+    test('a base plan is matched exactly unless the entry names none', () {
+      const config = PremiumProductConfig(
+        android: [
+          PremiumProductRef(productId: 'premium', basePlanId: 'monthly'),
+          PremiumProductRef(productId: 'premium_any'),
+        ],
+      );
+      const android = PremiumPlatform.android;
+      expect(config.allowsPlan(android, 'premium', 'monthly'), isTrue);
+      expect(config.allowsPlan(android, 'premium', 'yearly'), isFalse);
+      expect(config.allowsPlan(android, 'premium', null), isFalse);
+      expect(config.allowsPlan(android, 'premium_any', 'yearly'), isTrue);
+      expect(config.allowsPlan(android, 'premium_any', null), isTrue);
+      expect(config.allowsPlan(android, 'boost_week', 'monthly'), isFalse);
+    });
+
     test('a Boost SKU is never a Premium product', () {
       const config = PremiumProductConfig(
         android: [PremiumProductRef(productId: 'premium_yearly')],
@@ -138,6 +154,19 @@ void main() {
       expect(controller.stage, PremiumPurchaseStage.failed);
       expect(controller.failure, PremiumPurchaseFailure.verificationRejected);
       expect(controller.reason, 'unknown_product');
+    });
+
+    test('a pending payment ends the buy and can be told apart', () async {
+      final billing = FakeBilling(plans: [_plan('premium')])
+        ..purchaseResult = const PremiumVerificationResult.pending();
+      final controller = PremiumPurchaseController(billing: billing);
+      await controller.loadPlans();
+      await controller.buySelected();
+
+      // Not spinning, not unlocked, and the paywall can act again.
+      expect(controller.isBusy, isFalse);
+      expect(controller.stage, PremiumPurchaseStage.failed);
+      expect(controller.reason, PremiumVerificationResult.pendingReason);
     });
 
     test('ok without isPremium is still not a purchase', () async {

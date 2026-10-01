@@ -85,6 +85,16 @@ export interface CanonicalSubscription {
   eventAt: Date | null;
   /** Derived mirror of effective access; kept for legacy readers. */
   isPremium: boolean;
+  /**
+   * Hash of the store purchase token this state was last written from, or
+   * null when the source carries none (manual grants, documents written
+   * before this was recorded).
+   *
+   * The document is per user, not per purchase, so several tokens can report
+   * into it. This is what lets the writer tell the token the entitlement rests
+   * on apart from an older one the same user also owns.
+   */
+  purchaseTokenKey?: string | null;
 }
 
 /**
@@ -109,6 +119,13 @@ export interface EntitlementWriteInput {
   eventAt?: Date | null;
   /** Verification timestamp; defaults to `now`. */
   verifiedAt?: Date | null;
+  /** Hash of the purchase token this write was verified from. */
+  purchaseTokenKey?: string | null;
+  /**
+   * Hash of the token this purchase replaced (Google `linkedPurchaseToken`).
+   * A successor speaks for the subscription it took over.
+   */
+  supersedesTokenKey?: string | null;
 }
 
 export type EntitlementWriteOutcome =
@@ -116,7 +133,9 @@ export type EntitlementWriteOutcome =
   | "noop"
   | "stale_revision"
   | "stale_event"
-  | "terminal_state";
+  | "terminal_state"
+  /** A lapse reported by a token the entitlement no longer rests on. */
+  | "superseded_token";
 
 export interface EntitlementWriteResult {
   outcome: EntitlementWriteOutcome;

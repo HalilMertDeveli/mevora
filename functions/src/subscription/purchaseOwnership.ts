@@ -98,6 +98,23 @@ export function claimPurchaseTokenTx(
   return {outcome: "claimed", ownerUserId: input.userId};
 }
 
+/**
+ * How an entitlement write names the token it was verified from, and the one
+ * that token replaced. Hashed for the same reason the ledger ids are: the
+ * entitlement document is client-readable and a raw token is a credential.
+ */
+export function tokenIdentity(
+  token: string,
+  linkedPurchaseToken?: string | null,
+): {purchaseTokenKey: string; supersedesTokenKey: string | null} {
+  return {
+    purchaseTokenKey: purchaseTokenKey(token),
+    supersedesTokenKey: linkedPurchaseToken
+      ? purchaseTokenKey(linkedPurchaseToken)
+      : null,
+  };
+}
+
 /** Document reference for a token, for the caller's pre-transaction read. */
 export function ownershipRef(db: Firestore, token: string) {
   return db.doc(`${OWNERSHIP_COLLECTION}/${purchaseTokenKey(token)}`);

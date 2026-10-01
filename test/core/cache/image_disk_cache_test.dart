@@ -39,7 +39,11 @@ void main() {
   setUp(() async {
     dir = await Directory.systemTemp.createTemp('mevora_image_cache_test');
     fetches = 0;
-    now = DateTime(2026, 9, 30, 12);
+    // Start the injected clock at the real time: the cache compares it with
+    // file modification times, which the file system stamps with the wall
+    // clock. A fixed date here drifts away from those stamps and turns the
+    // idle test into a time bomb.
+    now = DateTime.now();
   });
 
   tearDown(() async {
@@ -79,11 +83,15 @@ void main() {
   });
 
   test('evicts the least recently used entries past the size budget', () async {
-    final c = cache(maxBytes: 2500);
     final urls = ['$_storageUrl&n=1', '$_storageUrl&n=2', '$_storageUrl&n=3'];
+    // Fill the directory through a cache with room to spare. A store kicks
+    // off a background trim; under a 2500-byte budget that trim could evict
+    // an entry while this test is still stamping the files below.
+    final filler = cache();
     for (final url in urls) {
-      await c.load(url);
+      await filler.load(url);
     }
+    final c = cache(maxBytes: 2500);
     // Entry 1 was used most recently; entry 2 is the stalest.
     File(
       '${dir.path}/${ImageDiskCache.keyFor(urls[0])}',

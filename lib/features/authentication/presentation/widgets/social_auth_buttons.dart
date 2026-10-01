@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/features/authentication/domain/apple_sign_in_support.dart';
 import 'package:mevora/features/authentication/presentation/widgets/welcome_auth_buttons.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 /// Provider sign-up options on the register page. Shares
 /// [MevoraProviderButton] with the welcome screen so the two entry points
-/// look like one product.
+/// look like one product. Apple follows the same rule as there: offered only
+/// where Sign in with Apple can run.
 class SocialAuthButtons extends StatelessWidget {
   const SocialAuthButtons({
     super.key,
@@ -41,8 +43,10 @@ class SocialAuthButtons extends StatelessWidget {
     return Column(
       children: [
         button('google', l10n.continueWithGoogle, MevoraIcons.google, onGoogle),
-        const SizedBox(height: AppSpacing.sm),
-        button('apple', l10n.continueWithApple, MevoraIcons.apple, onApple),
+        if (isAppleSignInSupported) ...[
+          const SizedBox(height: AppSpacing.sm),
+          button('apple', l10n.continueWithApple, MevoraIcons.apple, onApple),
+        ],
         if (onSpotify != null) ...[
           const SizedBox(height: AppSpacing.sm),
           button(

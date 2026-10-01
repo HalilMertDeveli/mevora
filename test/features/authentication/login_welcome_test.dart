@@ -118,7 +118,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('welcome screen shows hero, slogan, and five CTAs', (
+  testWidgets('welcome screen shows hero, slogan, and the CTAs', (
     tester,
   ) async {
     await pumpLogin(tester);
@@ -128,12 +128,62 @@ void main() {
     expect(find.text('mevora'), findsOneWidget);
     expect(find.text(_en.loginSlogan), findsOneWidget);
     expect(find.text(_en.continueWithGoogle), findsOneWidget);
-    expect(find.text(_en.continueWithApple), findsOneWidget);
     expect(find.text(_en.continueWithPhone), findsOneWidget);
     expect(find.text(_en.continueWithSpotify), findsOneWidget);
     expect(find.text(_en.continueWithEmail), findsOneWidget);
     expect(analytics.events, contains('login_screen_viewed'));
   });
+
+  // Sign in with Apple only runs on Apple platforms, so the button is only
+  // offered there: on Android it could never succeed.
+  testWidgets(
+    'Android does not offer Continue with Apple',
+    (tester) async {
+      await pumpLogin(tester);
+
+      expect(find.byType(MevoraProviderButton), findsNWidgets(4));
+      expect(find.text(_en.continueWithApple), findsNothing);
+      expect(find.bySemanticsLabel(_en.continueWithApple), findsNothing);
+      // Google stays the emphasized first choice.
+      final first = tester.widget<MevoraProviderButton>(
+        find.byType(MevoraProviderButton).first,
+      );
+      expect(first.label, _en.continueWithGoogle);
+      expect(first.emphasized, isTrue);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.android),
+  );
+
+  testWidgets(
+    'iOS offers Continue with Apple first and it starts Apple sign-in',
+    (tester) async {
+      await pumpLogin(tester);
+
+      expect(find.byType(MevoraProviderButton), findsNWidgets(5));
+      expect(find.bySemanticsLabel(_en.continueWithApple), findsOneWidget);
+      final first = tester.widget<MevoraProviderButton>(
+        find.byType(MevoraProviderButton).first,
+      );
+      expect(first.label, _en.continueWithApple);
+      expect(first.emphasized, isTrue);
+
+      await tester.tap(find.text(_en.continueWithApple));
+      await tester.pump();
+      await tester.pump();
+      expect(authRepository.appleCalled, isTrue);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+  );
+
+  testWidgets(
+    'macOS offers Continue with Apple',
+    (tester) async {
+      await pumpLogin(tester);
+
+      expect(find.text(_en.continueWithApple), findsOneWidget);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
 
   testWidgets('Turkish slogan is localized', (tester) async {
     await pumpLogin(tester, locale: const Locale('tr'));
@@ -144,7 +194,6 @@ void main() {
   testWidgets('provider buttons have semantics labels', (tester) async {
     await pumpLogin(tester);
     expect(find.bySemanticsLabel(_en.continueWithGoogle), findsOneWidget);
-    expect(find.bySemanticsLabel(_en.continueWithApple), findsOneWidget);
     expect(find.bySemanticsLabel(_en.continueWithPhone), findsOneWidget);
     expect(find.bySemanticsLabel(_en.continueWithSpotify), findsOneWidget);
     expect(find.bySemanticsLabel(_en.continueWithEmail), findsOneWidget);

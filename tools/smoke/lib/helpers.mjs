@@ -1,3 +1,4 @@
+import {randomBytes} from "node:crypto";
 import {getAuth} from "firebase-admin/auth";
 import {getFirestore, FieldValue} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
@@ -40,13 +41,29 @@ export async function cleanupSmokeUsers(db, auth, emails) {
   }
 }
 
+/**
+ * A throwaway password for a smoke user. The runner works through the Admin
+ * SDK and never signs in, so the value is not kept, printed or returned: it
+ * only has to be something nobody can know. Never derive it from the label,
+ * the email or anything else in this repository.
+ */
+function randomSmokePassword() {
+  return `${randomBytes(32).toString("base64url")}aA1!`;
+}
+
 export async function seedSmokeUser(db, auth, email, label) {
+  const password = randomSmokePassword();
   let user = await auth.getUserByEmail(email).catch(() => null);
-  if (!user) {
+  if (user) {
+    // Left over from a run whose cleanup failed: replace whatever password it
+    // had and end its sessions.
+    await auth.updateUser(user.uid, {emailVerified: true, password});
+    await auth.revokeRefreshTokens(user.uid);
+  } else {
     user = await auth.createUser({
       email,
       emailVerified: true,
-      password: `Smoke!${label}9Mevora`,
+      password,
       displayName: `Smoke User ${label}`,
     });
   }

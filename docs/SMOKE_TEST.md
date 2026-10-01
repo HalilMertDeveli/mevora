@@ -16,7 +16,25 @@
 | `smoke-a@mevora.test` | User A |
 | `smoke-b@mevora.test` | User B |
 
-`users/{uid}.isSmokeTestUser` is server-only. Smoke users only discover other smoke users.
+`users/{uid}.isSmokeTestUser` is server-only (clients cannot set or change it). Smoke users only
+discover other smoke users, and members never see them.
+
+### Passwords
+
+Smoke users have **no fixed password**. Nothing in this repository can be used to sign in as one.
+
+- `prepareSmokeTestUsers` generates a new random password for each user on every call and returns
+  both in its response (`passwords.a`, `passwords.b`) to the caller who presented `SMOKE_TEST_SECRET`.
+  They are not stored or logged anywhere else: keep the response if you need to sign in on a device,
+  and call the function again if you lose it.
+- Calling it again rotates both passwords and ends the users' open sessions, so a password from an
+  earlier run stops working.
+- The backend runner (`tools/smoke/`) works through the Admin SDK and never signs in. It gives the
+  users it creates a random password that it does not keep.
+- `cleanupSmokeTestUsers` deletes both users. Run it when a device session is finished.
+
+After deploying a version that changes these functions, call `prepareSmokeTestUsers` once (or
+`cleanupSmokeTestUsers`) so smoke users created by an older deploy get a new password.
 
 ## Secrets
 
@@ -26,10 +44,17 @@ Set before deploy:
 firebase functions:secrets:set SMOKE_TEST_SECRET --project mevora-production
 ```
 
+Use a long random value (for example `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`)
+and treat it like a credential: whoever holds it can create the smoke users and read their passwords.
+Without a configured secret both smoke functions refuse every call (`smoke-secret-not-configured`);
+a wrong or empty secret is refused with `smoke-secret-invalid`.
+
 ## Run backend smoke
 
+From the repository root:
+
 ```powershell
-cd D:\Mevora\tools\smoke
+cd tools\smoke
 npm install
 $env:GOOGLE_APPLICATION_CREDENTIALS="path\to\service-account.json"
 $env:SMOKE_FIREBASE_PROJECT="mevora-production"

@@ -10,6 +10,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/face_anchor_scope.dart';
+import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/features/authentication/presentation/auth_error_text.dart';
@@ -82,7 +83,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final uid = user?.id;
     if (uid != null && uid != _initializedUid) {
       _initializedUid = uid;
-      unawaited(_controller.initialize(user!));
+      unawaited(
+        _controller.initialize(
+          user!,
+          cityHint: LocationScope.maybeOf(context)?.controller.selectedCity,
+        ),
+      );
     }
     if (uid != null) {
       final services = FaceAnchorScope.maybeOf(context);

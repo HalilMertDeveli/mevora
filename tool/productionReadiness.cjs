@@ -215,13 +215,19 @@ function androidChecks() {
     "no broad media, storage, background-location, contacts or package-visibility permission",
     `declared: ${forbidden.join(", ")}`,
   );
+  const adPermissions = [
+    "com.google.android.gms.permission.AD_ID",
+    "android.permission.ACCESS_ADSERVICES_AD_ID",
+    "android.permission.ACCESS_ADSERVICES_ATTRIBUTION",
+  ].filter(
+    (permission) => !manifest.includes(`"${permission}" tools:node="remove"`),
+  );
   check(
-    /com\.google\.android\.gms\.permission\.AD_ID"\s+tools:node="remove"/.test(
-      manifest,
-    ),
+    adPermissions.length === 0,
     area,
     "advertising ID",
-    "AD_ID permission is removed (no ads; declare 'no advertising ID' in Play Console)",
+    "advertising-ID permissions are removed (no ads; declare 'no advertising ID' in Play Console)",
+    `still merged into the release manifest: ${adPermissions.join(", ")}`,
   );
   check(
     /android:allowBackup="false"/.test(manifest),

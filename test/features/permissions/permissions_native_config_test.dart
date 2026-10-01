@@ -20,12 +20,15 @@ void main() {
       isNot(contains('"android.permission.READ_MEDIA_VISUAL_USER_SELECTED"')),
     );
     expect(xml, isNot(contains('"android.permission.READ_MEDIA_VIDEO"')));
-    // No ads: the advertising ID permission that Firebase Analytics merges in
-    // is removed explicitly.
-    expect(
-      xml,
-      contains('"com.google.android.gms.permission.AD_ID" tools:node="remove"'),
-    );
+    // No ads: the advertising-ID and ad-attribution permissions that Firebase
+    // Analytics merges in are removed explicitly.
+    for (final permission in [
+      'com.google.android.gms.permission.AD_ID',
+      'android.permission.ACCESS_ADSERVICES_AD_ID',
+      'android.permission.ACCESS_ADSERVICES_ATTRIBUTION',
+    ]) {
+      expect(xml, contains('"$permission" tools:node="remove"'));
+    }
     expect(xml, isNot(contains('ACCESS_BACKGROUND_LOCATION')));
     expect(xml, isNot(contains('FOREGROUND_SERVICE_LOCATION')));
     expect(xml, isNot(contains('READ_EXTERNAL_STORAGE')));

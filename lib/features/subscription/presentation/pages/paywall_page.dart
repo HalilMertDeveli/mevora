@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/di/subscription_scope.dart';
+import 'package:mevora/features/subscription/domain/entities/premium_plan.dart';
 import 'package:mevora/features/subscription/domain/repositories/premium_billing_repository.dart';
 import 'package:mevora/features/subscription/presentation/controllers/premium_purchase_controller.dart';
+import 'package:mevora/features/subscription/presentation/widgets/manage_subscription.dart';
+import 'package:mevora/features/subscription/presentation/widgets/purchase_legal_links.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
@@ -27,9 +30,17 @@ import 'package:mevora/shared/widgets/mevora_selectable_tile.dart';
 /// When the scope says Premium, the screen stops selling — whatever the
 /// controller thinks.
 class PaywallPage extends StatefulWidget {
-  const PaywallPage({super.key, required this.controller});
+  const PaywallPage({
+    super.key,
+    required this.controller,
+    this.storeLauncher = launchSubscriptionStore,
+  });
 
   final PremiumPurchaseController controller;
+
+  /// Opens the store's subscription page. Injected so a test can capture the
+  /// link instead of leaving the app.
+  final SubscriptionStoreLauncher storeLauncher;
 
   @override
   State<PaywallPage> createState() => _PaywallPageState();
@@ -51,7 +62,8 @@ class _PaywallPageState extends State<PaywallPage> {
     final l10n = AppLocalizations.of(context);
     // Entitlement, not purchase progress. This is the line that decides
     // whether the user is looking at a paywall at all.
-    final isPremium = SubscriptionScope.isPremiumOf(context);
+    final status = SubscriptionScope.statusOf(context);
+    final isPremium = status.isPremium;
 
     return Scaffold(
       appBar: AppBar(),
@@ -71,12 +83,24 @@ class _PaywallPageState extends State<PaywallPage> {
                 _Hero(isPremium: isPremium),
                 const SizedBox(height: AppSpacing.lg),
                 if (isPremium)
-                  _AlreadyPremium(l10n: l10n)
+                  _AlreadyPremium(
+                    l10n: l10n,
+                    onManage: () => unawaited(
+                      openManageSubscription(
+                        context,
+                        status: status,
+                        launcher: widget.storeLauncher,
+                      ),
+                    ),
+                  )
                 else ...[
                   const _Benefits(),
                   const SizedBox(height: AppSpacing.lg),
                   ..._sellingBody(context, l10n),
                 ],
+                // Terms and Privacy stay reachable in every state, sold or not.
+                const SizedBox(height: AppSpacing.sm),
+                const PurchaseLegalLinks(),
               ],
             );
           },
@@ -153,7 +177,8 @@ class _PaywallPageState extends State<PaywallPage> {
       for (final plan in controller.plans) ...[
         MevoraSelectableTile(
           title: plan.title,
-          subtitle: plan.description,
+          // How often the price is charged, then the store's own description.
+          subtitle: _planSubtitle(l10n, plan),
           // The store's own formatted price, shown verbatim.
           trailing: plan.formattedPrice,
           selected: controller.selected?.planKey == plan.planKey,
@@ -167,15 +192,24 @@ class _PaywallPageState extends State<PaywallPage> {
         size: MevoraButtonSize.large,
         onPressed: controller.selected == null ? null : controller.buySelected,
       ),
+      const SizedBox(height: AppSpacing.md),
+      _RenewalDisclosure(plan: controller.selected),
       const SizedBox(height: AppSpacing.sm),
       _RestoreButton(controller: controller, l10n: l10n),
-      const SizedBox(height: AppSpacing.md),
-      Text(
-        l10n.premiumRenewsLabel,
-        style: Theme.of(context).textTheme.bodySmall,
-        textAlign: TextAlign.center,
-      ),
     ];
+  }
+
+  String _planSubtitle(AppLocalizations l10n, PremiumPlan plan) {
+    final billed = switch (billingPeriodOf(plan)) {
+      PremiumPlanPeriod.monthly => l10n.premiumPlanBilledMonthly,
+      PremiumPlanPeriod.yearly => l10n.premiumPlanBilledYearly,
+      PremiumPlanPeriod.unknown => null,
+    };
+    final description = plan.description.trim();
+    return [
+      billed,
+      if (description.isNotEmpty) description,
+    ].nonNulls.join('\n');
   }
 
   String _failureText(
@@ -195,6 +229,88 @@ class _PaywallPageState extends State<PaywallPage> {
       PremiumPurchaseFailure.transient => l10n.premiumFailed,
       PremiumPurchaseFailure.unknown || null => l10n.premiumFailed,
     };
+  }
+}
+
+/// How often [plan] is billed.
+///
+/// The store repository only recognises English product names, so a plan whose
+/// period it could not read is looked at once more here — base plan id and
+/// Turkish store titles included. A plan that still says nothing stays
+/// [PremiumPlanPeriod.unknown], and the paywall then names no period rather
+/// than guess one.
+@visibleForTesting
+PremiumPlanPeriod billingPeriodOf(PremiumPlan plan) {
+  if (plan.period != PremiumPlanPeriod.unknown) {
+    return plan.period;
+  }
+  final haystack = '${plan.productId} ${plan.basePlanId ?? ''} ${plan.title}'
+      .toLowerCase();
+  bool has(List<String> needles) => needles.any(haystack.contains);
+  if (has(const ['year', 'annual', 'yıllık', 'yillik', '1 yıl', '1 yil'])) {
+    return PremiumPlanPeriod.yearly;
+  }
+  if (has(const ['month', 'aylık', 'aylik', '1 ay'])) {
+    return PremiumPlanPeriod.monthly;
+  }
+  return PremiumPlanPeriod.unknown;
+}
+
+/// What the member agrees to by subscribing, next to the button that does it:
+/// the price and its period, that it renews until cancelled, and where to
+/// cancel. Follows the selected plan, so the sentence always names the price
+/// about to be charged.
+class _RenewalDisclosure extends StatelessWidget {
+  const _RenewalDisclosure({required this.plan});
+
+  final PremiumPlan? plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final plan = this.plan;
+    if (plan == null) {
+      // Nothing is selected, so there is no price to name yet.
+      return Text(
+        l10n.premiumRenewsLabel,
+        style: theme.textTheme.bodySmall,
+        textAlign: TextAlign.center,
+      );
+    }
+    final cancel = l10n.premiumCancelHow(
+      SubscriptionStore.forDevice().brandName,
+    );
+    final price = plan.formattedPrice;
+    final period = billingPeriodOf(plan);
+    final priceLine = switch (period) {
+      PremiumPlanPeriod.monthly => l10n.premiumPricePerMonth(price),
+      PremiumPlanPeriod.yearly => l10n.premiumPricePerYear(price),
+      PremiumPlanPeriod.unknown => price,
+    };
+    final renewal = switch (period) {
+      PremiumPlanPeriod.monthly => l10n.premiumRenewalMonthly(price),
+      PremiumPlanPeriod.yearly => l10n.premiumRenewalYearly(price),
+      PremiumPlanPeriod.unknown => l10n.premiumRenewalGeneric(price),
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          priceLine,
+          key: const Key('paywallSelectedPrice'),
+          style: theme.textTheme.titleSmall,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '$renewal $cancel',
+          key: const Key('paywallRenewalDisclosure'),
+          style: theme.textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
   }
 }
 
@@ -312,16 +428,30 @@ class _Benefits extends StatelessWidget {
 }
 
 class _AlreadyPremium extends StatelessWidget {
-  const _AlreadyPremium({required this.l10n});
+  const _AlreadyPremium({required this.l10n, required this.onManage});
 
   final AppLocalizations l10n;
+  final VoidCallback onManage;
 
   @override
   Widget build(BuildContext context) {
-    return _Notice(
-      success: true,
-      title: l10n.premiumAlreadyActive,
-      body: l10n.premiumRenewsLabel,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Notice(
+          success: true,
+          title: l10n.premiumAlreadyActive,
+          body: l10n.premiumRenewsLabel,
+        ),
+        // The store owns billing: changing or cancelling the plan happens
+        // there, and this is the way in.
+        MevoraButton(
+          key: const Key('paywallManageSubscription'),
+          label: l10n.premiumManageSubscription,
+          variant: MevoraButtonVariant.secondary,
+          onPressed: onManage,
+        ),
+      ],
     );
   }
 }

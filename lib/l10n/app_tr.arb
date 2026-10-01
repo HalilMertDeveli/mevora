@@ -739,6 +739,7 @@
   "boostDuration": "Profilini öne çıkar",
   "boostActivate": "Kalan bakiyeyi kullan",
   "boostBuy": "Boost satın al",
+  "boostOneTimePurchaseNote": "Boost tek seferlik bir satın almadır. Kendiliğinden yenilenmez.",
   "boostPurchasing": "Satın alma işlemi başlatılıyor...",
   "boostVerifying": "Satın alma doğrulanıyor...",
   "boostSuccessTitle": "Boost aktif",
@@ -1873,6 +1874,65 @@
   "premiumAlreadyActive": "Zaten Premium üyesin.",
   "premiumRetry": "Tekrar dene",
   "premiumRenewsLabel": "Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.",
+  "premiumPlanBilledMonthly": "Aylık faturalanır",
+  "premiumPlanBilledYearly": "Yıllık faturalanır",
+  "premiumPricePerMonth": "{price} / ay",
+  "@premiumPricePerMonth": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumPricePerYear": "{price} / yıl",
+  "@premiumPricePerYear": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalMonthly": "Aboneliğin, sen iptal edene kadar her ay {price} üzerinden otomatik yenilenir.",
+  "@premiumRenewalMonthly": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalYearly": "Aboneliğin, sen iptal edene kadar her yıl {price} üzerinden otomatik yenilenir.",
+  "@premiumRenewalYearly": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalGeneric": "Aboneliğin, sen iptal edene kadar her fatura döneminde {price} üzerinden otomatik yenilenir.",
+  "@premiumRenewalGeneric": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumCancelHow": "İstediğin zaman {store} > Abonelikler bölümünden iptal edebilirsin. Ödediğin dönemin sonuna kadar Premium açık kalır.",
+  "@premiumCancelHow": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumManageSubscription": "Aboneliği yönet",
+  "premiumManageSubscriptionFailed": "{store} açılamadı. Aboneliğini yönetmek için {store} > Abonelikler bölümüne git.",
+  "@premiumManageSubscriptionFailed": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
   "musicFollowedArtistsTitle": "Takip ettiğin sanatçılar",
   "musicTopArtistsTitle": "En çok dinlediğin sanatçılar",
   "musicTopTracksTitle": "En çok dinlediğin parçalar",

@@ -959,6 +959,10 @@
   "boostDuration": "Boost your profile",
   "boostActivate": "Use leftover Boost",
   "boostBuy": "Buy Boost",
+  "boostOneTimePurchaseNote": "Boost is a one-time purchase. It does not renew.",
+  "@boostOneTimePurchaseNote": {
+    "description": "Purchase disclosure under the Boost packs: not a subscription."
+  },
   "boostPurchasing": "Starting purchase...",
   "boostVerifying": "Confirming your purchase...",
   "boostSuccessTitle": "Boost is on",
@@ -2105,6 +2109,81 @@
   "premiumRenewsLabel": "Renews automatically. Cancel anytime in the store.",
   "@premiumRenewsLabel": {
     "description": "Auto-renew disclosure required by both stores."
+  },
+  "premiumPlanBilledMonthly": "Billed monthly",
+  "@premiumPlanBilledMonthly": {
+    "description": "Billing period shown on a monthly Premium plan, next to the store price."
+  },
+  "premiumPlanBilledYearly": "Billed yearly",
+  "@premiumPlanBilledYearly": {
+    "description": "Billing period shown on a yearly Premium plan, next to the store price."
+  },
+  "premiumPricePerMonth": "{price} / month",
+  "@premiumPricePerMonth": {
+    "description": "Store price with its billing period. The price is the store's own formatted string.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumPricePerYear": "{price} / year",
+  "@premiumPricePerYear": {
+    "description": "Store price with its billing period. The price is the store's own formatted string.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalMonthly": "Your subscription renews automatically every month at {price} until you cancel.",
+  "@premiumRenewalMonthly": {
+    "description": "Auto-renewal disclosure for the selected monthly plan, shown by the Subscribe button.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalYearly": "Your subscription renews automatically every year at {price} until you cancel.",
+  "@premiumRenewalYearly": {
+    "description": "Auto-renewal disclosure for the selected yearly plan, shown by the Subscribe button.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalGeneric": "Your subscription renews automatically at {price} each billing period until you cancel.",
+  "@premiumRenewalGeneric": {
+    "description": "Auto-renewal disclosure when the store did not say how long the billing period is.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumCancelHow": "Cancel anytime in {store} > Subscriptions. You keep Premium until the end of the period you paid for.",
+  "@premiumCancelHow": {
+    "description": "How to cancel. store is the store's brand name: Google Play or App Store.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumManageSubscription": "Manage subscription",
+  "@premiumManageSubscription": {
+    "description": "Button for Premium members. Opens the store's own subscription page."
+  },
+  "premiumManageSubscriptionFailed": "We couldn't open {store}. To manage your subscription, go to {store} > Subscriptions.",
+  "@premiumManageSubscriptionFailed": {
+    "description": "Shown when the store's subscription page could not be opened.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
   },
   "musicFollowedArtistsTitle": "Artists you follow",
   "musicTopArtistsTitle": "Your top artists",

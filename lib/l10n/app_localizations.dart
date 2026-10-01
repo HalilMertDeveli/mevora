@@ -3476,6 +3476,12 @@ abstract class AppLocalizations {
   /// **'Buy Boost'**
   String get boostBuy;
 
+  /// Purchase disclosure under the Boost packs: not a subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost is a one-time purchase. It does not renew.'**
+  String get boostOneTimePurchaseNote;
+
   /// No description provided for @boostPurchasing.
   ///
   /// In en, this message translates to:
@@ -7969,6 +7975,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Renews automatically. Cancel anytime in the store.'**
   String get premiumRenewsLabel;
+
+  /// Billing period shown on a monthly Premium plan, next to the store price.
+  ///
+  /// In en, this message translates to:
+  /// **'Billed monthly'**
+  String get premiumPlanBilledMonthly;
+
+  /// Billing period shown on a yearly Premium plan, next to the store price.
+  ///
+  /// In en, this message translates to:
+  /// **'Billed yearly'**
+  String get premiumPlanBilledYearly;
+
+  /// Store price with its billing period. The price is the store's own formatted string.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} / month'**
+  String premiumPricePerMonth(String price);
+
+  /// Store price with its billing period. The price is the store's own formatted string.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} / year'**
+  String premiumPricePerYear(String price);
+
+  /// Auto-renewal disclosure for the selected monthly plan, shown by the Subscribe button.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically every month at {price} until you cancel.'**
+  String premiumRenewalMonthly(String price);
+
+  /// Auto-renewal disclosure for the selected yearly plan, shown by the Subscribe button.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically every year at {price} until you cancel.'**
+  String premiumRenewalYearly(String price);
+
+  /// Auto-renewal disclosure when the store did not say how long the billing period is.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically at {price} each billing period until you cancel.'**
+  String premiumRenewalGeneric(String price);
+
+  /// How to cancel. store is the store's brand name: Google Play or App Store.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel anytime in {store} > Subscriptions. You keep Premium until the end of the period you paid for.'**
+  String premiumCancelHow(String store);
+
+  /// Button for Premium members. Opens the store's own subscription page.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription'**
+  String get premiumManageSubscription;
+
+  /// Shown when the store's subscription page could not be opened.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t open {store}. To manage your subscription, go to {store} > Subscriptions.'**
+  String premiumManageSubscriptionFailed(String store);
 
   /// No description provided for @musicFollowedArtistsTitle.
   ///

@@ -408,32 +408,37 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         breakdown: breakdown,
       );
       final me = AuthScope.maybeOf(context)?.user;
-      return MevoraMatchCelebration(
-        leftName: me?.displayName ?? l10n.you,
-        leftImage: MevoraNetworkImages.provider(me?.photoUrl),
-        rightName: match.displayName,
-        rightImage: MevoraNetworkImages.provider(match.cardPhoto),
-        compatibilitySection: WhyYouMatchPanel(
-          breakdown: breakdown,
-          reasons: reasons,
+      return MatchedProfileAnswersAvailability(
+        uid: match.uid,
+        builder: (context, hasAnswers) => MevoraMatchCelebration(
+          leftName: me?.displayName ?? l10n.you,
+          leftImage: MevoraNetworkImages.provider(me?.photoUrl),
+          rightName: match.displayName,
+          rightImage: MevoraNetworkImages.provider(match.cardPhoto),
+          compatibilitySection: WhyYouMatchPanel(
+            breakdown: breakdown,
+            reasons: reasons,
+          ),
+          onSendMessage: () {
+            final matchId = controller.state.matchedMatchId;
+            controller.clearMatch();
+            if (matchId != null && matchId.isNotEmpty) {
+              unawaited(context.push(AppRoutes.chatPath(matchId)));
+            } else {
+              context.go(AppRoutes.matches);
+            }
+          },
+          onViewAnswers: hasAnswers
+              ? () {
+                  final otherUid = match.uid;
+                  controller.clearMatch();
+                  unawaited(
+                    showMatchedProfileAnswersSheet(context, otherUid: otherUid),
+                  );
+                }
+              : null,
+          onKeepExploring: controller.clearMatch,
         ),
-        onSendMessage: () {
-          final matchId = controller.state.matchedMatchId;
-          controller.clearMatch();
-          if (matchId != null && matchId.isNotEmpty) {
-            unawaited(context.push(AppRoutes.chatPath(matchId)));
-          } else {
-            context.go(AppRoutes.matches);
-          }
-        },
-        onViewAnswers: () {
-          final otherUid = match.uid;
-          controller.clearMatch();
-          unawaited(
-            showMatchedProfileAnswersSheet(context, otherUid: otherUid),
-          );
-        },
-        onKeepExploring: controller.clearMatch,
       );
     }
 
@@ -644,28 +649,35 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       candidate: match,
       breakdown: breakdown,
     );
-    return MevoraMatchCelebration(
-      leftName: l10n.you,
-      rightName: match.displayName,
-      rightImage: MevoraNetworkImages.provider(match.cardPhoto),
-      compatibilitySection: WhyYouMatchPanel(
-        breakdown: breakdown,
-        reasons: reasons,
+    return MatchedProfileAnswersAvailability(
+      uid: match.uid,
+      builder: (context, hasAnswers) => MevoraMatchCelebration(
+        leftName: l10n.you,
+        rightName: match.displayName,
+        rightImage: MevoraNetworkImages.provider(match.cardPhoto),
+        compatibilitySection: WhyYouMatchPanel(
+          breakdown: breakdown,
+          reasons: reasons,
+        ),
+        onSendMessage: () {
+          final matchId = picks.state.matchedMatchId;
+          picks.clearMatch();
+          if (matchId != null && matchId.isNotEmpty) {
+            unawaited(context.push(AppRoutes.chatPath(matchId)));
+          } else {
+            context.go(AppRoutes.matches);
+          }
+        },
+        onViewAnswers: hasAnswers
+            ? () {
+                picks.clearMatch();
+                unawaited(
+                  showMatchedProfileAnswersSheet(context, otherUid: match.uid),
+                );
+              }
+            : null,
+        onKeepExploring: picks.clearMatch,
       ),
-      onSendMessage: () {
-        final matchId = picks.state.matchedMatchId;
-        picks.clearMatch();
-        if (matchId != null && matchId.isNotEmpty) {
-          unawaited(context.push(AppRoutes.chatPath(matchId)));
-        } else {
-          context.go(AppRoutes.matches);
-        }
-      },
-      onViewAnswers: () {
-        picks.clearMatch();
-        unawaited(showMatchedProfileAnswersSheet(context, otherUid: match.uid));
-      },
-      onKeepExploring: picks.clearMatch,
     );
   }
 

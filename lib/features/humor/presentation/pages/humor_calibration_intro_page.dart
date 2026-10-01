@@ -210,9 +210,9 @@ class _HumorCalibrationIntroPageState extends State<HumorCalibrationIntroPage> {
                     ),
                   ],
                 )
-              else
+              else if (_calibration.totalCount > 0)
                 Text(
-                  l10n.humorCalibrationIntroMeta,
+                  l10n.humorCalibrationIntroMeta(_calibration.totalCount),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,

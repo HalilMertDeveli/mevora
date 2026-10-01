@@ -4084,9 +4084,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorTopVibes => 'Öne çıkan tarzların';
 
   @override
-  String get humorSkipContent => 'Geç';
-
-  @override
   String get humorReport => 'Şikayet et';
 
   @override
@@ -4297,7 +4294,20 @@ class AppLocalizationsTr extends AppLocalizations {
       'Birkaç kısa içeriğe tepki ver. Verdiğin tepkiler mizah zevkini anlamamıza yardımcı olur; böylece eşleşmelerinle ortak mizahınızı sana gösterebiliriz.';
 
   @override
-  String get humorCalibrationIntroMeta => '15 kısa içerik · yaklaşık 1 dakika';
+  String humorCalibrationIntroMeta(int count) {
+    return '$count kısa içerik · yaklaşık 1 dakika';
+  }
+
+  @override
+  String get humorCalibrationPausedTitle => 'Bugünlük bu kadar';
+
+  @override
+  String get humorCalibrationPausedBody =>
+      'Bir içerik oynatılamadı. Kalanı yarın seni bekliyor; mizah profilin o zaman tamamlanacak.';
+
+  @override
+  String get humorLabCalibratedBody =>
+      'Bundan sonra her gün birkaç yeni içerikle devam ediyoruz.';
 
   @override
   String get humorCalibrationStart => 'Başla';
@@ -4371,9 +4381,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String humorResultContrast(String weakest) {
     return '$weakest ise pek işlemiyor.';
   }
-
-  @override
-  String get humorResultKeepGoing => 'Mizah profilini geliştirmeye devam et';
 
   @override
   String get humorResultDone => 'Devam et';
@@ -4772,13 +4779,20 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorDailyHintMiddle => 'Biraz daha tanıyoruz 👀';
 
   @override
-  String get humorDailyHintEnd => 'Son birkaç video.';
+  String get humorDailyHintEnd => 'Neredeyse bitti.';
 
   @override
   String get humorDailyCompletedTitle => 'Bugünlük tamam 🎭';
 
   @override
   String get humorDailyCompletedBody => 'Mizah profilin biraz daha netleşti.';
+
+  @override
+  String get humorDailyCompletedTomorrow => 'Yarın yeni tur seni bekliyor.';
+
+  @override
+  String get humorDailySequenceComplete =>
+      'Şimdilik tüm içerikleri tamamladın. Yenileri eklendiğinde tur devam edecek.';
 
   @override
   String get humorDailyNotReadyTitle => 'Bugünün turu hazırlanıyor';

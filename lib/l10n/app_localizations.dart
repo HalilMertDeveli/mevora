@@ -7280,12 +7280,6 @@ abstract class AppLocalizations {
   /// **'Top vibes'**
   String get humorTopVibes;
 
-  /// No description provided for @humorSkipContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get humorSkipContent;
-
   /// No description provided for @humorReport.
   ///
   /// In en, this message translates to:
@@ -7625,8 +7619,26 @@ abstract class AppLocalizations {
   /// No description provided for @humorCalibrationIntroMeta.
   ///
   /// In en, this message translates to:
-  /// **'15 short pieces · about a minute'**
-  String get humorCalibrationIntroMeta;
+  /// **'{count} short pieces · about a minute'**
+  String humorCalibrationIntroMeta(int count);
+
+  /// No description provided for @humorCalibrationPausedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s it for today'**
+  String get humorCalibrationPausedTitle;
+
+  /// No description provided for @humorCalibrationPausedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'One piece would not play. The rest will be waiting tomorrow, and your humor profile will be completed then.'**
+  String get humorCalibrationPausedBody;
+
+  /// No description provided for @humorLabCalibratedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'From here on we continue with a few new pieces each day.'**
+  String get humorLabCalibratedBody;
 
   /// No description provided for @humorCalibrationStart.
   ///
@@ -7747,12 +7759,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{weakest} does not do much for you.'**
   String humorResultContrast(String weakest);
-
-  /// No description provided for @humorResultKeepGoing.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep shaping your humor profile'**
-  String get humorResultKeepGoing;
 
   /// No description provided for @humorResultDone.
   ///
@@ -8387,7 +8393,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorDailyHintEnd.
   ///
   /// In en, this message translates to:
-  /// **'Just a few more videos.'**
+  /// **'Almost done.'**
   String get humorDailyHintEnd;
 
   /// No description provided for @humorDailyCompletedTitle.
@@ -8401,6 +8407,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your humor profile just got a little clearer.'**
   String get humorDailyCompletedBody;
+
+  /// No description provided for @humorDailyCompletedTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'A new round will be waiting tomorrow.'**
+  String get humorDailyCompletedTomorrow;
+
+  /// No description provided for @humorDailySequenceComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been through everything for now. The round continues when new pieces are added.'**
+  String get humorDailySequenceComplete;
 
   /// No description provided for @humorDailyNotReadyTitle.
   ///

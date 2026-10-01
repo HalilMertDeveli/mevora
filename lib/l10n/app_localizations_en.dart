@@ -4093,9 +4093,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorTopVibes => 'Top vibes';
 
   @override
-  String get humorSkipContent => 'Skip';
-
-  @override
   String get humorReport => 'Report';
 
   @override
@@ -4309,7 +4306,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'React to a few short pieces. Your reactions help us understand your sense of humor, so we can show you the humor you share with your matches.';
 
   @override
-  String get humorCalibrationIntroMeta => '15 short pieces · about a minute';
+  String humorCalibrationIntroMeta(int count) {
+    return '$count short pieces · about a minute';
+  }
+
+  @override
+  String get humorCalibrationPausedTitle => 'That\'s it for today';
+
+  @override
+  String get humorCalibrationPausedBody =>
+      'One piece would not play. The rest will be waiting tomorrow, and your humor profile will be completed then.';
+
+  @override
+  String get humorLabCalibratedBody =>
+      'From here on we continue with a few new pieces each day.';
 
   @override
   String get humorCalibrationStart => 'Start';
@@ -4384,9 +4394,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String humorResultContrast(String weakest) {
     return '$weakest does not do much for you.';
   }
-
-  @override
-  String get humorResultKeepGoing => 'Keep shaping your humor profile';
 
   @override
   String get humorResultDone => 'Continue';
@@ -4787,7 +4794,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorDailyHintMiddle => 'Getting to know you a little more 👀';
 
   @override
-  String get humorDailyHintEnd => 'Just a few more videos.';
+  String get humorDailyHintEnd => 'Almost done.';
 
   @override
   String get humorDailyCompletedTitle => 'All done for today 🎭';
@@ -4795,6 +4802,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get humorDailyCompletedBody =>
       'Your humor profile just got a little clearer.';
+
+  @override
+  String get humorDailyCompletedTomorrow =>
+      'A new round will be waiting tomorrow.';
+
+  @override
+  String get humorDailySequenceComplete =>
+      'You have been through everything for now. The round continues when new pieces are added.';
 
   @override
   String get humorDailyNotReadyTitle => 'Today\'s round is being prepared';

@@ -1,42 +1,44 @@
-/// Stage of the structured initial humor calibration.
+/// Stage label of the initial humor calibration.
 ///
-/// The server owns progression entirely; this enum only labels what the client
-/// was told. Nothing here may be used to *claim* a stage.
+/// Kept only because the server still sends it for older builds. Nothing is
+/// selected by stage any more — every member rates the same canonical items —
+/// and nothing here may be used to *claim* a stage.
 enum HumorCalibrationStage { anchor, adaptive, exploration, complete }
 
-/// Client view of `users/{uid}/humor/calibration`, as projected by the
-/// Cloud Functions humor API.
+/// Client view of the initial calibration, as projected by the Cloud Functions
+/// humor API: the first run of the canonical Humor Core sequence.
 ///
-/// Carries progress only — never anchor slot ids, coverage internals or the
-/// raw humor vector.
+/// Carries progress only — never content ids, positions or the raw humor
+/// vector. Every number comes from the server; the client knows no count of
+/// its own.
 class HumorCalibration {
   const HumorCalibration({
     this.version = 1,
     this.stage = HumorCalibrationStage.anchor,
     this.completedCount = 0,
-    this.totalCount = totalInteractions,
+    this.totalCount = 0,
     this.complete = false,
     this.insufficientPool = false,
+    this.continuesTomorrow = false,
   });
-
-  /// Initial calibration is 6 anchor + 6 adaptive + 3 exploration.
-  static const int anchorInteractions = 6;
-  static const int adaptiveInteractions = 6;
-  static const int explorationInteractions = 3;
-  static const int totalInteractions =
-      anchorInteractions + adaptiveInteractions + explorationInteractions;
 
   static const empty = HumorCalibration();
 
   final int version;
   final HumorCalibrationStage stage;
   final int completedCount;
+
+  /// How many items the initial calibration has. Zero until the server said.
   final int totalCount;
   final bool complete;
 
-  /// The curated pool could not fill every calibration position. Surfaced so
-  /// QA and analytics can see a catalog gap instead of guessing at a short feed.
+  /// The catalogue could not provide the calibration items. Surfaced so QA
+  /// and analytics can see a catalog gap instead of guessing at a short feed.
   final bool insufficientPool;
+
+  /// Nothing is left to rate today although the calibration is not finished:
+  /// an item whose media failed comes back on the next day.
+  final bool continuesTomorrow;
 
   bool get started => completedCount > 0;
 
@@ -56,6 +58,7 @@ class HumorCalibration {
     int? totalCount,
     bool? complete,
     bool? insufficientPool,
+    bool? continuesTomorrow,
   }) {
     return HumorCalibration(
       version: version ?? this.version,
@@ -64,6 +67,7 @@ class HumorCalibration {
       totalCount: totalCount ?? this.totalCount,
       complete: complete ?? this.complete,
       insufficientPool: insufficientPool ?? this.insufficientPool,
+      continuesTomorrow: continuesTomorrow ?? this.continuesTomorrow,
     );
   }
 
@@ -92,7 +96,8 @@ class HumorCalibration {
       other.completedCount == completedCount &&
       other.totalCount == totalCount &&
       other.complete == complete &&
-      other.insufficientPool == insufficientPool;
+      other.insufficientPool == insufficientPool &&
+      other.continuesTomorrow == continuesTomorrow;
 
   @override
   int get hashCode => Object.hash(
@@ -102,5 +107,6 @@ class HumorCalibration {
     totalCount,
     complete,
     insufficientPool,
+    continuesTomorrow,
   );
 }

@@ -44,9 +44,16 @@ class _UnusedPurchases implements PurchaseRepository {
       throw UnimplementedError('${invocation.memberName}');
 }
 
-/// Ten text-only items, one per category, so no media player is involved.
+/// Items in a day, as the server serves them.
+const _daySize = MockHumorDataSource.dailySetSize;
+
+/// The first item of the day after calibration, in [_textSeed].
+const _firstOfDay = MockHumorDataSource.onboardingCount;
+
+/// A text-only sequence — the calibration items and one day after them — so
+/// no media player is involved.
 final _textSeed = <HumorContent>[
-  for (var i = 0; i < 10; i += 1)
+  for (var i = 0; i < _firstOfDay + _daySize; i += 1)
     HumorContent(
       contentId: 'txt_$i',
       type: HumorContentType.text,
@@ -56,24 +63,18 @@ final _textSeed = <HumorContent>[
     ),
 ];
 
-Future<MockHumorDataSource> _calibratedSource({
-  List<HumorContent>? seed,
-}) async {
-  final source = MockHumorDataSource(seed: seed);
-  for (var i = 0; i < 15; i += 1) {
-    await source.submitFeedback(contentId: 'cal_$i', rating: HumorRating.funny);
-  }
-  return source;
-}
+/// A user who finished calibration on an earlier day, so a day is served.
+MockHumorDataSource _calibratedSource({List<HumorContent>? seed}) =>
+    MockHumorDataSource(seed: seed)..completeCalibration();
 
-HumorDailySet _set({int answered = 0, int total = 10}) => HumorDailySet(
+HumorDailySet _set({int answered = 0, int total = _daySize}) => HumorDailySet(
   status: HumorDailyStatus.ready,
   dayId: '2026-09-29',
   total: total,
   answeredCount: answered,
   completed: answered >= total,
   nextIndex: answered,
-  items: _textSeed,
+  items: _textSeed.take(total).toList(),
 );
 
 Widget _app(
@@ -144,23 +145,24 @@ void main() {
       expect(find.text('Bugünün Mizah Turu 🎭'), findsOneWidget);
       expect(find.text(l10n.humorDailyBody), findsOneWidget);
       expect(find.text(l10n.humorDailySecondary), findsOneWidget);
-      expect(find.text('10 kısa video'), findsOneWidget);
+      expect(find.text('5 kısa video'), findsOneWidget);
+      expect(find.textContaining('10'), findsNothing);
       expect(find.text('Başla'), findsOneWidget);
       expect(find.text('Sonra'), findsOneWidget);
     });
 
-    testWidgets('a started day offers "Devam et · 4/10"', (tester) async {
+    testWidgets('a started day offers "Devam et · 2/5"', (tester) async {
       await tester.pumpWidget(
         _app(
           HumorDailyEntryCard(
-            set: _set(answered: 4),
+            set: _set(answered: 2),
             onStart: () {},
             onDefer: () {},
           ),
         ),
       );
 
-      expect(find.text('Devam et · 4/10'), findsOneWidget);
+      expect(find.text('Devam et · 2/5'), findsOneWidget);
       expect(find.text('Başla'), findsNothing);
     });
 
@@ -171,7 +173,7 @@ void main() {
       await tester.pumpWidget(
         _app(
           HumorDailyEntryCard(
-            set: _set(answered: 10),
+            set: _set(answered: _daySize),
             onStart: () => started += 1,
           ),
         ),
@@ -219,7 +221,7 @@ void main() {
     testWidgets('shows the daily card once calibrated; "Sonra" hides it', (
       tester,
     ) async {
-      final source = await _calibratedSource();
+      final source = _calibratedSource();
       final analytics = _RecordingAnalytics();
       await tester.pumpWidget(
         _app(
@@ -232,16 +234,18 @@ void main() {
 
       expect(find.text(l10n.humorDailyTitle), findsOneWidget);
       expect(find.text(l10n.humorDailyStart), findsOneWidget);
-      expect(find.text(l10n.humorLabDiscoverCta), findsOneWidget);
+      // The other card is the humor profile now — there is no feed to open.
+      expect(find.text(l10n.humorProfileTitle), findsOneWidget);
+      expect(find.text(l10n.humorLabDiscoverCta), findsNothing);
       expect(analytics.events, hasLength(1));
       expect(analytics.events.single.$1, AnalyticsEvents.dailyHumorImpression);
-      expect(analytics.events.single.$2, {'answered': 0, 'total': 10});
+      expect(analytics.events.single.$2, {'answered': 0, 'total': _daySize});
 
       await tester.tap(find.text(l10n.humorDailyLater));
       await _settle(tester);
 
       expect(find.text(l10n.humorDailyTitle), findsNothing);
-      expect(find.text(l10n.humorLabDiscoverCta), findsOneWidget);
+      expect(find.text(l10n.humorProfileTitle), findsOneWidget);
       expect(analytics.events.last.$1, AnalyticsEvents.dailyHumorDeferred);
       expect(analytics.events.last.$2, {'answered': 0});
       expect(analytics.events, hasLength(2), reason: 'impression only once');
@@ -265,7 +269,7 @@ void main() {
     testWidgets('no card and no CTA when the tour starts tomorrow', (
       tester,
     ) async {
-      final source = await _calibratedSource();
+      final source = _calibratedSource();
       source.dailyStartsTomorrow = true;
       await tester.pumpWidget(
         _app(const HumorLabDiscoverEntry(), source: source),
@@ -283,7 +287,7 @@ void main() {
       tester,
     ) async {
       await withFakeNetworkImages(() async {
-        final source = await _calibratedSource(seed: _textSeed);
+        final source = _calibratedSource(seed: _textSeed);
         final controller = HumorDailyController(
           repository: HumorRepositoryImpl(dataSource: source),
         );
@@ -292,10 +296,15 @@ void main() {
         );
         await _settle(tester);
 
-        expect(find.text('1/10'), findsOneWidget);
+        expect(find.text('1/5'), findsOneWidget);
         expect(find.text(l10n.humorDailyHintStart), findsOneWidget);
-        expect(find.text('Metin 0'), findsOneWidget);
-        expect(find.text(l10n.humorSkipContent), findsNothing);
+        // The day starts where the calibration ended.
+        expect(find.text('Metin $_firstOfDay'), findsOneWidget);
+        // No skip: an item is a measurement.
+        for (final label in ['Geç', 'Skip']) {
+          expect(find.text(label), findsNothing);
+        }
+        expect(find.textContaining('/10'), findsNothing);
         for (final label in _categoryLabels(l10n)) {
           expect(find.text(label), findsNothing, reason: label);
         }
@@ -308,8 +317,9 @@ void main() {
         );
         await _settle(tester);
 
-        expect(find.text('2/10'), findsOneWidget);
-        expect(find.text('Metin 1'), findsOneWidget);
+        expect(find.text('2/5'), findsOneWidget);
+        expect(find.text(l10n.humorDailyHintMiddle), findsOneWidget);
+        expect(find.text('Metin ${_firstOfDay + 1}'), findsOneWidget);
         for (final label in _categoryLabels(l10n)) {
           expect(find.text(label), findsNothing, reason: label);
         }
@@ -320,8 +330,8 @@ void main() {
       tester,
     ) async {
       await withFakeNetworkImages(() async {
-        final source = await _calibratedSource(seed: _textSeed);
-        source.seedDailyProgress(9);
+        final source = _calibratedSource(seed: _textSeed);
+        source.seedDailyProgress(_daySize - 1);
         final controller = HumorDailyController(
           repository: HumorRepositoryImpl(dataSource: source),
         );
@@ -330,7 +340,7 @@ void main() {
         );
         await _settle(tester);
 
-        expect(find.text('10/10'), findsOneWidget);
+        expect(find.text('5/5'), findsOneWidget);
         expect(find.text(l10n.humorDailyHintEnd), findsOneWidget);
 
         await tester.tap(
@@ -342,14 +352,67 @@ void main() {
         await _settle(tester);
 
         expect(find.text('Bugünlük tamam 🎭'), findsOneWidget);
-        expect(find.text(l10n.humorDailyCompletedBody), findsOneWidget);
-        expect(find.text(l10n.close), findsOneWidget);
+        expect(
+          find.text(
+            '${l10n.humorDailyCompletedBody} '
+            '${l10n.humorDailyCompletedTomorrow}',
+          ),
+          findsOneWidget,
+        );
         expect(find.byType(HumorRatingBar), findsNothing);
+        // The only way on is out: nothing offers tomorrow's items today.
+        expect(find.byType(MevoraButton), findsOneWidget);
+        expect(find.text(l10n.close), findsOneWidget);
+        expect(find.text(l10n.humorDailyStart), findsNothing);
+        expect(source.dailyAnswers, hasLength(_daySize));
       });
     });
 
+    testWidgets('a member who is through the whole sequence is told so', (
+      tester,
+    ) async {
+      // Nothing after the calibration items: the sequence ends there.
+      final source = _calibratedSource(
+        seed: _textSeed.take(_firstOfDay).toList(),
+      );
+      final controller = HumorDailyController(
+        repository: HumorRepositoryImpl(dataSource: source),
+      );
+      await tester.pumpWidget(
+        _app(HumorDailyPage(controller: controller), source: source),
+      );
+      await _settle(tester);
+
+      expect(find.text(l10n.humorDailySequenceComplete), findsOneWidget);
+      expect(find.byType(HumorRatingBar), findsNothing);
+      expect(find.text(l10n.humorDailyNotReadyTitle), findsNothing);
+    });
+
+    testWidgets('the day after calibration says the tour starts tomorrow', (
+      tester,
+    ) async {
+      final source = MockHumorDataSource(seed: _textSeed);
+      for (final contentId in source.sequenceIds.take(_firstOfDay)) {
+        await source.submitFeedback(
+          contentId: contentId,
+          rating: HumorRating.funny,
+        );
+      }
+      final controller = HumorDailyController(
+        repository: HumorRepositoryImpl(dataSource: source),
+      );
+      await tester.pumpWidget(
+        _app(HumorDailyPage(controller: controller), source: source),
+      );
+      await _settle(tester);
+
+      expect(find.text(l10n.humorDailyStartsTomorrow), findsOneWidget);
+      expect(find.byType(HumorRatingBar), findsNothing);
+      expect(find.textContaining('Metin'), findsNothing);
+    });
+
     testWidgets('not ready is calm, with no filler content', (tester) async {
-      final source = await _calibratedSource(seed: _textSeed);
+      final source = _calibratedSource(seed: _textSeed);
       source.dailyNotReady = true;
       final controller = HumorDailyController(
         repository: HumorRepositoryImpl(dataSource: source),

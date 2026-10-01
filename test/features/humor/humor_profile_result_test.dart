@@ -153,7 +153,9 @@ void main() {
       }
     });
 
-    testWidgets('offers a way onward and a way to keep going', (tester) async {
+    testWidgets('offers a way onward and points at the daily tour', (
+      tester,
+    ) async {
       final source = MockHumorDataSource(
         profile: _profile({HumorCategory.meme: 82}),
       );
@@ -173,7 +175,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final l10n = l10nTr();
-      expect(find.text(l10n.humorResultKeepGoing), findsOneWidget);
+      // The profile keeps learning through the daily tour — there is no
+      // open-ended feed to "keep going" in.
+      expect(find.text(l10n.humorDailyTitle), findsOneWidget);
       await tester.tap(find.text(l10n.humorResultDone));
       await tester.pump();
       expect(done, isTrue);

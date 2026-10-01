@@ -1,6 +1,5 @@
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
-import 'package:mevora/features/humor/domain/services/humor_feed_policy.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 /// Presentation helpers for humor profile sheets (no hardcoded English).
@@ -26,11 +25,6 @@ abstract final class HumorProfileDisplay {
       return l10n.humorProfileTitle;
     }
     return l10n.humorProfileBuilding;
-  }
-
-  static int remainingToReady(UserHumorProfile profile) {
-    final left = HumorFeedPolicy.buildingThreshold - profile.interactionCount;
-    return left < 0 ? 0 : left;
   }
 
   /// Strength bucket for a 0–100 dimension.

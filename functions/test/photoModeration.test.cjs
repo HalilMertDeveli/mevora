@@ -134,6 +134,86 @@ describe("photos array write shape", () => {
     assert.equal(photos[0].moderatedAt, when);
   });
 
+  // An admin approving an already-published photo (a reported member's photo
+  // sent to manual review) publishes nothing new and leaves thumbUrl/cardUrl
+  // undefined: "leave the field as it is", which is how the ledger reads it.
+  // Firestore accepts undefined nowhere in a document, so copying it into the
+  // array element failed the profile write after the ledger already said
+  // approved, and a retry was refused as photo_already_reviewed.
+  const publishedApproval = {
+    moderationStatus: "approved",
+    moderationReason: "admin-approved",
+    moderatedBy: "admin_review",
+    moderatedAt: FieldValue.serverTimestamp(),
+    storagePath: "users/u1/profile/photos/p0.jpg",
+    downloadUrl: "https://example.test/p0.jpg",
+    thumbUrl: undefined,
+    cardUrl: undefined,
+    processingError: null,
+  };
+
+  it("re-approving a published photo survives write validation and keeps its variants", () => {
+    const published = [{
+      id: "p0",
+      order: 0,
+      isPrimary: true,
+      moderationStatus: "manual_review",
+      storagePath: "users/u1/profile/photos/p0.jpg",
+      downloadUrl: "https://example.test/p0.jpg",
+      thumbUrl: "https://example.test/p0_thumb.jpg",
+      cardUrl: "https://example.test/p0_card.jpg",
+    }];
+    const photos = buildModeratedPhotos(published, "p0", publishedApproval);
+    assertWritable(photos);
+    assert.equal(photos[0].moderationStatus, "approved");
+    assert.equal(photos[0].thumbUrl, "https://example.test/p0_thumb.jpg");
+    assert.equal(photos[0].cardUrl, "https://example.test/p0_card.jpg");
+    assert.equal(photos[0].processingError, null);
+  });
+
+  it("an undefined patch value adds no field to a photo that lacks it", () => {
+    for (const imageId of ["p0", "p2"]) {
+      const photos = buildModeratedPhotos(existing, imageId, publishedApproval);
+      assertWritable(photos);
+      const photo = photos.find((entry) => entry.id === imageId);
+      assert.equal("thumbUrl" in photo, false);
+      assert.equal("cardUrl" in photo, false);
+    }
+  });
+
+  // The suites that drive whole callables run on the in-memory double, which
+  // used to store undefined without complaint — so the write above passed
+  // `npm test` and failed only against Firestore. It must refuse what the real
+  // validator refuses, naming the same field.
+  it("the in-memory Firestore double refuses undefined like the real validator", async () => {
+    const {createFakeFirestore} = require("./helpers/fakeFirestore.cjs");
+    const photos = [{id: "p0", thumbUrl: undefined}];
+    const refused = /Cannot use "undefined" as a Firestore value \(found in field "photos\.`0`\.thumbUrl"\)/;
+    assert.throws(() => db.batch().set(db.doc("profiles/u1"), {photos}, {merge: true}), refused);
+
+    const fake = createFakeFirestore({"profiles/u1": {photos: []}});
+    const ref = fake.doc("profiles/u1");
+    await assert.rejects(ref.set({photos}, {merge: true}), refused);
+    await assert.rejects(ref.update({photos}), refused);
+    await assert.rejects(fake.doc("profiles/u2").create({photos}), refused);
+    assert.throws(() => fake.batch().set(ref, {photos}, {merge: true}), refused);
+    await assert.rejects(fake.runTransaction(async (tx) => {
+      await tx.get(ref);
+      tx.set(ref, {photos}, {merge: true});
+    }), refused);
+    assert.deepEqual(fake.read("profiles/u1"), {photos: []});
+    // null and an absent key stay legal.
+    await ref.set({photos: [{id: "p0", thumbUrl: null}]}, {merge: true});
+  });
+
+  it("a null patch value still clears the field", () => {
+    const withVariants = [{id: "p0", order: 0, isPrimary: true, thumbUrl: "https://t", cardUrl: "https://c"}];
+    const photos = buildModeratedPhotos(withVariants, "p0", {thumbUrl: null, cardUrl: null});
+    assertWritable(photos);
+    assert.equal(photos[0].thumbUrl, null);
+    assert.equal(photos[0].cardUrl, null);
+  });
+
   it("report escalation survives write validation", () => {
     const photos = buildReportFlaggedPhotos(existing, "harassment");
     assertWritable(photos);

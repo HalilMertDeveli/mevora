@@ -31,6 +31,7 @@ describe("admin command surface", () => {
       "adminListCases", "adminGetCase", "adminAssignCase", "adminResolveCase", "adminEscalateCase", "adminAddCaseNote",
       "adminListReports", "adminResolveUserReport",
       "adminListPhotoReviews", "adminReviewPhoto",
+      "adminListHumorReviews", "adminReviewHumorContent", "adminListHumorCoreSequence",
       "adminWarnUser", "adminSuspendUser", "adminBanUser", "adminRestoreUser",
       "adminGetVerification", "adminRequireReverification",
       "adminListSupportTickets", "adminGetSupportTicket", "adminAssignSupportTicket", "adminReplySupportTicket", "adminResolveSupportTicket",
@@ -47,6 +48,18 @@ describe("admin command surface", () => {
     const index = fs.readFileSync(path.join(adminSrc, "index.ts"), "utf8");
     for (const spec of allSpecs) {
       assert.match(index, new RegExp(`export const ${spec.name} = defineAdminCommand\\(`), spec.name);
+    }
+  });
+
+  it("can read the Humor Core sequence but has no command that changes it", () => {
+    const core = allSpecs.filter((spec) => /core/i.test(spec.name));
+    assert.deepEqual(core.map((spec) => spec.name), ["adminListHumorCoreSequence"]);
+    assert.equal(core[0].permission, "humor.read");
+    assert.equal(core[0].rateClass, "read");
+    // The order is code, frozen by a lock fixture: no admin module writes it.
+    for (const {file, src} of sources) {
+      assert.doesNotMatch(src, /humor\/core["'`]\)\.(set|update|delete|create)\(/, file);
+      assert.doesNotMatch(src, /HUMOR_CORE_SEQUENCE\s*(\.push|\[|=)/, file);
     }
   });
 

@@ -35,6 +35,8 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   // can re-create these after the sweep, so they are checked, not assumed.
   `users/${uid}/humor/summary`,
   `users/${uid}/humor/calibration`,
+  // Their Humor Core progress: every rating of the canonical sequence.
+  `users/${uid}/humor/core`,
   // Their own Mevora Picks batch: who they were shown, and why.
   `users/${uid}/mevoraPicks/current`,
   // Daily streak: engagement history. The check-in refuses to write once the

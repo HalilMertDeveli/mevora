@@ -29,16 +29,19 @@ Map<String, dynamic> _item(int i) => {
   'calibrationStage': null,
 };
 
-Map<String, dynamic> _ready({int answered = 4, bool completed = false}) => {
+/// Items in a day, as the server serves them.
+const _daySize = 5;
+
+Map<String, dynamic> _ready({int answered = 2, bool completed = false}) => {
   'status': 'ready',
   'lockedReason': null,
   'dayId': '2026-09-29',
   'setVersion': 1,
-  'total': 10,
+  'total': _daySize,
   'answeredCount': answered,
   'completed': completed,
-  'nextIndex': completed ? 10 : answered,
-  'items': [for (var i = 0; i < 10; i += 1) _item(i)],
+  'nextIndex': completed ? _daySize : answered,
+  'items': [for (var i = 0; i < _daySize; i += 1) _item(i)],
   'answers': [
     for (var i = 0; i < answered; i += 1)
       {'index': i, 'contentId': 'c$i', 'rating': 'funny', 'skipped': false},
@@ -77,26 +80,28 @@ void main() {
       expect(set.isReady, isTrue);
       expect(set.dayId, '2026-09-29');
       expect(set.setVersion, 1);
-      expect(set.total, 10);
-      expect(set.answeredCount, 4);
+      expect(set.total, _daySize);
+      expect(set.answeredCount, 2);
       expect(set.completed, isFalse);
-      expect(set.nextIndex, 4);
+      expect(set.nextIndex, 2);
       expect(set.items.map((i) => i.contentId), [
-        for (var i = 0; i < 10; i += 1) 'c$i',
+        for (var i = 0; i < _daySize; i += 1) 'c$i',
       ]);
       expect(set.items.first.type, HumorContentType.video);
       expect(set.items.first.category, HumorCategory.absurd);
       expect(set.items.first.aspectRatio, closeTo(0.5625, 1e-9));
-      expect(set.answers, hasLength(4));
+      expect(set.answers, hasLength(2));
       expect(set.answers.first.rating, HumorRating.funny);
       expect(set.showsEntryCard, isTrue);
       expect(set.inProgress, isTrue);
     });
 
     test('a completed set points past the end', () {
-      final set = HumorDailySet.fromMap(_ready(answered: 10, completed: true));
+      final set = HumorDailySet.fromMap(
+        _ready(answered: _daySize, completed: true),
+      );
       expect(set.completed, isTrue);
-      expect(set.nextIndex, 10);
+      expect(set.nextIndex, _daySize);
       expect(set.showsEntryCard, isTrue);
     });
 
@@ -123,8 +128,32 @@ void main() {
       expect(tomorrow.startsTomorrow, isTrue);
       expect(tomorrow.showsEntryCard, isFalse);
 
+      final finished = HumorDailySet.fromMap({
+        'status': 'locked',
+        'lockedReason': 'sequence_complete',
+      });
+      expect(finished.sequenceComplete, isTrue);
+      expect(finished.startsTomorrow, isFalse);
+      expect(finished.showsEntryCard, isFalse);
+
       final unknown = HumorDailySet.fromMap({'status': 'locked'});
       expect(unknown.lockedReason, HumorDailyLockedReason.unknown);
+      expect(unknown.sequenceComplete, isFalse);
+    });
+
+    test('takes the size of the day from the server, whatever it is', () {
+      for (final size in [1, 3, 5, 7]) {
+        final set = HumorDailySet.fromMap({
+          'status': 'ready',
+          'dayId': '2026-09-29',
+          'total': size,
+          'answeredCount': 0,
+          'nextIndex': 0,
+          'items': [for (var i = 0; i < size; i += 1) _item(i)],
+        });
+        expect(set.total, size);
+        expect(set.items, hasLength(size));
+      }
     });
 
     test('not_ready is calm and empty', () {
@@ -158,21 +187,21 @@ void main() {
       final set = HumorDailySet.fromMap({
         'status': 'ready',
         'dayId': '2026-09-29',
-        'total': '10',
+        'total': '5',
         'answeredCount': 99,
         'nextIndex': -3,
         'items': [
-          for (var i = 0; i < 10; i += 1) _item(i),
+          for (var i = 0; i < _daySize; i += 1) _item(i),
           'junk',
           {'contentId': ''},
         ],
         'answers': ['junk', null],
       });
-      expect(set.total, 10);
-      expect(set.answeredCount, 10, reason: 'clamped to total');
+      expect(set.total, _daySize);
+      expect(set.answeredCount, _daySize, reason: 'clamped to total');
       expect(set.completed, isTrue);
-      expect(set.nextIndex, 10);
-      expect(set.items, hasLength(10));
+      expect(set.nextIndex, _daySize);
+      expect(set.items, hasLength(_daySize));
       expect(set.answers, isEmpty);
     });
   });
@@ -182,16 +211,17 @@ void main() {
       'ok': true,
       'dayId': '2026-09-29',
       'setVersion': 2,
-      'total': 10,
-      'answeredCount': 5,
+      'total': _daySize,
+      'answeredCount': 3,
       'completed': false,
-      'nextIndex': 5,
+      'nextIndex': 3,
       'alreadyAnswered': true,
     });
     expect(progress.dayId, '2026-09-29');
     expect(progress.setVersion, 2);
-    expect(progress.answeredCount, 5);
-    expect(progress.nextIndex, 5);
+    expect(progress.total, _daySize);
+    expect(progress.answeredCount, 3);
+    expect(progress.nextIndex, 3);
     expect(progress.completed, isFalse);
     expect(progress.alreadyAnswered, isTrue);
   });
@@ -202,25 +232,39 @@ void main() {
       HumorDailyCta.start,
     );
     expect(
-      HumorDailyCta.of(HumorDailySet.fromMap(_ready(answered: 4))),
+      HumorDailyCta.of(HumorDailySet.fromMap(_ready(answered: 2))),
       HumorDailyCta.resume,
     );
     expect(
       HumorDailyCta.of(
-        HumorDailySet.fromMap(_ready(answered: 10, completed: true)),
+        HumorDailySet.fromMap(_ready(answered: _daySize, completed: true)),
       ),
       HumorDailyCta.done,
     );
   });
 
-  test('microcopy follows the position', () {
-    expect(HumorDailyHint.of(1, 10), HumorDailyHint.start);
-    expect(HumorDailyHint.of(3, 10), HumorDailyHint.start);
-    expect(HumorDailyHint.of(4, 10), HumorDailyHint.middle);
-    expect(HumorDailyHint.of(7, 10), HumorDailyHint.middle);
-    expect(HumorDailyHint.of(8, 10), HumorDailyHint.end);
-    expect(HumorDailyHint.of(10, 10), HumorDailyHint.end);
+  test('microcopy follows the position through a five-item day', () {
+    expect(HumorDailyHint.of(1, _daySize), HumorDailyHint.start);
+    expect(HumorDailyHint.of(2, _daySize), HumorDailyHint.middle);
+    expect(HumorDailyHint.of(3, _daySize), HumorDailyHint.middle);
+    expect(HumorDailyHint.of(4, _daySize), HumorDailyHint.middle);
+    expect(HumorDailyHint.of(5, _daySize), HumorDailyHint.end);
+  });
+
+  test('microcopy scales with whatever size the server sends', () {
+    // A shorter day (an item was retired or taken down).
+    expect(HumorDailyHint.of(1, 4), HumorDailyHint.start);
+    expect(HumorDailyHint.of(2, 4), HumorDailyHint.middle);
+    expect(HumorDailyHint.of(4, 4), HumorDailyHint.end);
     expect(HumorDailyHint.of(1, 3), HumorDailyHint.start);
+    expect(HumorDailyHint.of(2, 3), HumorDailyHint.middle);
+    expect(HumorDailyHint.of(3, 3), HumorDailyHint.end);
+    expect(HumorDailyHint.of(1, 1), HumorDailyHint.start);
+    // A longer one: a third at each end, never more than three items.
+    expect(HumorDailyHint.of(3, 12), HumorDailyHint.start);
+    expect(HumorDailyHint.of(4, 12), HumorDailyHint.middle);
+    expect(HumorDailyHint.of(9, 12), HumorDailyHint.middle);
+    expect(HumorDailyHint.of(10, 12), HumorDailyHint.end);
   });
 
   group('Functions data source and repository', () {
@@ -232,7 +276,7 @@ void main() {
 
       final result = await repository.getDailySet();
 
-      expect(result.valueOrNull?.total, 10);
+      expect(result.valueOrNull?.total, _daySize);
       expect(backend.calls.single.$1, 'getDailyHumorSet');
       expect(backend.calls.single.$2, isEmpty);
     });
@@ -243,10 +287,10 @@ void main() {
           'ok': true,
           'dayId': '2026-09-29',
           'setVersion': 1,
-          'total': 10,
-          'answeredCount': 5,
+          'total': _daySize,
+          'answeredCount': 4,
           'completed': false,
-          'nextIndex': 5,
+          'nextIndex': 4,
           'alreadyAnswered': false,
         },
       );
@@ -263,9 +307,11 @@ void main() {
 
       final outcome = result.valueOrNull;
       expect(outcome, isA<HumorDailyAccepted>());
-      expect((outcome! as HumorDailyAccepted).progress.nextIndex, 5);
+      expect((outcome! as HumorDailyAccepted).progress.nextIndex, 4);
       final (name, payload) = backend.calls.single;
       expect(name, 'submitDailyHumorResponse');
+      // The day and the item echo what the server handed out. Nothing names a
+      // position, a start index or the items the client would like next.
       expect(payload, {
         'dayId': '2026-09-29',
         'contentId': 'c4',
@@ -277,7 +323,12 @@ void main() {
 
     test('a media failure is the only skip and carries its reason', () async {
       final backend = _Backend(
-        response: {'ok': true, 'dayId': 'd', 'total': 10, 'answeredCount': 1},
+        response: {
+          'ok': true,
+          'dayId': 'd',
+          'total': _daySize,
+          'answeredCount': 1,
+        },
       );
       final repository = HumorRepositoryImpl(
         dataSource: FunctionsHumorDataSource(backend: backend),
@@ -336,28 +387,46 @@ void main() {
   });
 
   group('mock daily day', () {
-    Future<MockHumorDataSource> calibrated() async {
-      final source = MockHumorDataSource();
-      for (var i = 0; i < 15; i += 1) {
-        await source.submitFeedback(
-          contentId: 'cal_$i',
-          rating: HumorRating.funny,
-        );
-      }
-      return source;
-    }
+    MockHumorDataSource calibrated() =>
+        MockHumorDataSource()..completeCalibration();
 
     test('is locked until calibration is complete', () async {
       final set = await MockHumorDataSource().getDailySet();
       expect(set.lockedReason, HumorDailyLockedReason.calibrationIncomplete);
     });
 
-    test('serves ten items and resubmitting a slot is idempotent', () async {
-      final source = await calibrated();
+    test('starts the day after the calibration is finished, never the '
+        'same day', () async {
+      final source = MockHumorDataSource();
+      for (final contentId in source.sequenceIds.take(
+        MockHumorDataSource.onboardingCount,
+      )) {
+        await source.submitFeedback(
+          contentId: contentId,
+          rating: HumorRating.funny,
+        );
+      }
+      expect(source.calibration.complete, isTrue);
+
+      final sameDay = await source.getDailySet();
+      expect(sameDay.startsTomorrow, isTrue);
+      expect(sameDay.items, isEmpty);
+
+      source.closeDay('2099-01-02');
+      final nextDay = await source.getDailySet();
+      expect(nextDay.isReady, isTrue);
+      expect(nextDay.total, _daySize);
+    });
+
+    test('serves five items; the same answer again is idempotent and a '
+        'changed rating replaces it', () async {
+      final source = calibrated();
       final set = await source.getDailySet();
       expect(set.isReady, isTrue);
-      expect(set.total, 10);
-      expect(set.items, hasLength(10));
+      expect(set.total, _daySize);
+      expect(set.items, hasLength(_daySize));
+      expect(MockHumorDataSource.dailySetSize, _daySize);
+      final before = source.profile.interactionCount;
 
       final first = await source.submitDailyResponse(
         dayId: set.dayId,
@@ -367,18 +436,31 @@ void main() {
       final again = await source.submitDailyResponse(
         dayId: set.dayId,
         contentId: set.items.first.contentId,
-        rating: HumorRating.notFunny,
+        rating: HumorRating.funny,
       );
       expect(first.answeredCount, 1);
       expect(first.alreadyAnswered, isFalse);
       expect(again.answeredCount, 1);
       expect(again.nextIndex, 1);
       expect(again.alreadyAnswered, isTrue);
-      expect(source.dailyAnswers[0]!.rating, HumorRating.funny);
+      expect(source.profile.interactionCount, before + 1);
+
+      final changed = await source.submitDailyResponse(
+        dayId: set.dayId,
+        contentId: set.items.first.contentId,
+        rating: HumorRating.notFunny,
+      );
+      expect(changed.answeredCount, 1);
+      expect(source.dailyAnswers[0]!.rating, HumorRating.notFunny);
+      expect(
+        source.profile.interactionCount,
+        before + 1,
+        reason: 'a changed rating replaces, it is not a second rating',
+      );
     });
 
     test('refuses the old day once it has closed', () async {
-      final source = await calibrated();
+      final source = calibrated();
       final set = await source.getDailySet();
       source.closeDay('2099-01-01');
       await expectLater(
@@ -392,6 +474,27 @@ void main() {
             (e) => e.message,
             'message',
             'day-closed',
+          ),
+        ),
+      );
+    });
+
+    test('refuses an item that is not one of today\'s', () async {
+      final source = calibrated();
+      final set = await source.getDailySet();
+      final tomorrow =
+          source.sequenceIds[MockHumorDataSource.onboardingCount + _daySize];
+      await expectLater(
+        source.submitDailyResponse(
+          dayId: set.dayId,
+          contentId: tomorrow,
+          rating: HumorRating.funny,
+        ),
+        throwsA(
+          isA<FirebaseFunctionsException>().having(
+            (e) => e.message,
+            'message',
+            'slot-replaced',
           ),
         ),
       );

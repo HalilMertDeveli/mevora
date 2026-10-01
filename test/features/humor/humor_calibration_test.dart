@@ -6,6 +6,7 @@ import 'package:mevora/features/humor/data/datasources/mock_humor_data_source.da
 import 'package:mevora/features/humor/data/repositories/humor_repository_impl.dart';
 import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
+import 'package:mevora/features/humor/domain/repositories/humor_repository.dart';
 import 'package:mevora/features/humor/presentation/controllers/humor_controller.dart';
 
 /// Records what the client sent and replays a canned Cloud Functions payload.
@@ -32,27 +33,32 @@ void main() {
     return HumorController(repository: HumorRepositoryImpl(dataSource: source));
   }
 
-  group('calibration contract', () {
-    test('stage totals match the 6 / 6 / 3 product contract', () {
-      expect(HumorCalibration.anchorInteractions, 6);
-      expect(HumorCalibration.adaptiveInteractions, 6);
-      expect(HumorCalibration.explorationInteractions, 3);
-      expect(HumorCalibration.totalInteractions, 15);
-    });
+  List<String> idsOf(HumorController controller) =>
+      controller.state.items.map((item) => item.contentId).toList();
 
-    test('progress and remaining stay inside the contract', () {
+  group('calibration contract', () {
+    test('the client knows no item count of its own', () {
       const fresh = HumorCalibration.empty;
       expect(fresh.started, isFalse);
-      expect(fresh.progress, 0);
-      expect(fresh.remaining, 15);
+      expect(fresh.totalCount, 0);
+      expect(fresh.remaining, 0);
+      expect(fresh.continuesTomorrow, isFalse);
+    });
 
-      const mid = HumorCalibration(completedCount: 9, stage: HumorCalibrationStage.adaptive);
+    test('progress and remaining follow the total the server gave', () {
+      const mid = HumorCalibration(completedCount: 9, totalCount: 15);
       expect(mid.started, isTrue);
       expect(mid.progress, closeTo(0.6, 0.0001));
       expect(mid.remaining, 6);
 
+      // A retired item makes the calibration shorter; the client just shows it.
+      const shorter = HumorCalibration(completedCount: 7, totalCount: 14);
+      expect(shorter.progress, closeTo(0.5, 0.0001));
+      expect(shorter.remaining, 7);
+
       const done = HumorCalibration(
         completedCount: 15,
+        totalCount: 15,
         stage: HumorCalibrationStage.complete,
         complete: true,
       );
@@ -61,35 +67,38 @@ void main() {
     });
 
     test('unknown stage strings degrade to anchor rather than throwing', () {
-      expect(HumorCalibration.parseStage('exploration'),
-          HumorCalibrationStage.exploration);
-      expect(HumorCalibration.parseStage('something-new'),
-          HumorCalibrationStage.anchor);
+      expect(
+        HumorCalibration.parseStage('exploration'),
+        HumorCalibrationStage.exploration,
+      );
+      expect(
+        HumorCalibration.parseStage('something-new'),
+        HumorCalibrationStage.anchor,
+      );
       expect(HumorCalibration.parseStage(null), HumorCalibrationStage.anchor);
     });
   });
 
   group('functions data source parsing', () {
-    test('feed carries calibration progress and per-item stage', () async {
+    test('feed carries the server calibration progress', () async {
       final backend = _FakeBackend({
         'getHumorFeed': {
           'items': [
             {
-              'contentId': 'c1',
+              'contentId': 'c7',
               'type': 'meme',
               'language': 'tr',
               'category': 'sarcasm',
               'humorTags': <String>['ironi'],
-              'calibrationStage': 'anchor',
+              'calibrationStage': null,
               'media': {'downloadUrl': 'https://example.test/a.png'},
             },
             {
-              'contentId': 'c2',
+              'contentId': 'c8',
               'type': 'image',
               'language': 'tr',
               'category': 'dry',
               'humorTags': <String>[],
-              'calibrationStage': 'adaptive',
               'media': {'downloadUrl': 'https://example.test/b.png'},
             },
           ],
@@ -100,48 +109,101 @@ void main() {
             'version': 1,
             'stage': 'adaptive',
             'completedCount': 6,
-            'totalCount': 15,
+            'totalCount': 14,
             'complete': false,
             'insufficientPool': false,
+            'continuesTomorrow': false,
           },
-        },
-      });
-      final source = FunctionsHumorDataSource(backend: backend);
-
-      final page = await source.getFeed(languages: const ['tr']);
-
-      expect(page.calibration.stage, HumorCalibrationStage.adaptive);
-      expect(page.calibration.completedCount, 6);
-      expect(page.calibration.totalCount, 15);
-      expect(page.calibration.complete, isFalse);
-      expect(page.items.first.calibrationStage, HumorCalibrationStage.anchor);
-      expect(page.items.first.isCalibrationItem, isTrue);
-      expect(page.items[1].calibrationStage, HumorCalibrationStage.adaptive);
-    });
-
-    test('a backend without calibration data still yields a usable feed', () async {
-      final backend = _FakeBackend({
-        'getHumorFeed': {
-          'items': [
-            {
-              'contentId': 'c1',
-              'type': 'meme',
-              'language': 'tr',
-              'category': 'meme',
-              'media': <String, dynamic>{},
-            },
-          ],
-          'profileBuilding': true,
-          'interactionCount': 2,
         },
       });
       final source = FunctionsHumorDataSource(backend: backend);
 
       final page = await source.getFeed();
 
-      expect(page.items, hasLength(1));
+      expect(page.calibration.completedCount, 6);
+      expect(page.calibration.totalCount, 14);
+      expect(page.calibration.complete, isFalse);
+      expect(page.calibration.continuesTomorrow, isFalse);
+      expect(page.items.map((item) => item.contentId), ['c7', 'c8']);
       expect(page.items.first.calibrationStage, isNull);
-      expect(page.calibration, HumorCalibration.empty);
+    });
+
+    test('a paused calibration is reported as continuing tomorrow', () async {
+      final backend = _FakeBackend({
+        'getHumorFeed': {
+          'items': <Object>[],
+          'catalogExhausted': true,
+          'profileBuilding': true,
+          'interactionCount': 14,
+          'calibration': {
+            'completedCount': 14,
+            'totalCount': 15,
+            'complete': false,
+            'continuesTomorrow': true,
+          },
+        },
+      });
+      final page = await FunctionsHumorDataSource(backend: backend).getFeed();
+
+      expect(page.items, isEmpty);
+      expect(page.calibration.continuesTomorrow, isTrue);
+      expect(page.calibration.complete, isFalse);
+    });
+
+    test(
+      'a backend without calibration data still yields a usable feed',
+      () async {
+        final backend = _FakeBackend({
+          'getHumorFeed': {
+            'items': [
+              {
+                'contentId': 'c1',
+                'type': 'meme',
+                'language': 'tr',
+                'category': 'meme',
+                'media': <String, dynamic>{},
+              },
+            ],
+            'profileBuilding': true,
+            'interactionCount': 2,
+          },
+        });
+        final source = FunctionsHumorDataSource(backend: backend);
+
+        final page = await source.getFeed();
+
+        expect(page.items, hasLength(1));
+        expect(page.items.first.calibrationStage, isNull);
+        expect(page.calibration, HumorCalibration.empty);
+      },
+    );
+
+    test('a missing or broken total is never replaced by a count kept '
+        'on the client', () async {
+      for (final total in <Object?>[null, 0, -3, 'fifteen']) {
+        final backend = _FakeBackend({
+          'getHumorFeed': {
+            'items': <Object>[],
+            'calibration': {'completedCount': 2, 'totalCount': total},
+          },
+        });
+        final page = await FunctionsHumorDataSource(backend: backend).getFeed();
+        expect(page.calibration.totalCount, 0, reason: 'totalCount: $total');
+        expect(page.calibration.completedCount, 2);
+      }
+    });
+
+    test('the feed request carries nothing that selects content', () async {
+      final backend = _FakeBackend({'getHumorFeed': const {}});
+      await FunctionsHumorDataSource(backend: backend).getFeed();
+
+      for (final key in backend.payloads.single.keys) {
+        expect(
+          ['languages', 'limit', 'cursor'],
+          contains(key),
+          reason: 'unexpected request field: $key',
+        );
+      }
     });
 
     test('a completed calibration clears profileBuilding', () async {
@@ -177,6 +239,33 @@ void main() {
       expect(profile.interactionCount, 21);
     });
 
+    test('a profile is building exactly while the server says so', () async {
+      Future<bool> buildingFor(Map<String, dynamic> payload) async {
+        final backend = _FakeBackend({'getHumorProfile': payload});
+        return (await FunctionsHumorDataSource(
+          backend: backend,
+        ).getProfile()).profileBuilding;
+      }
+
+      // No count of ratings decides it on the client.
+      expect(
+        await buildingFor({
+          'interactionCount': 40,
+          'profileBuilding': true,
+          'calibration': {'completedCount': 0, 'totalCount': 15},
+        }),
+        isTrue,
+      );
+      expect(
+        await buildingFor({
+          'interactionCount': 3,
+          'profileBuilding': false,
+          'calibration': {'completedCount': 0, 'totalCount': 15},
+        }),
+        isFalse,
+      );
+    });
+
     test('feedback returns the post-rating calibration state', () async {
       final backend = _FakeBackend({
         'submitHumorFeedback': {
@@ -202,19 +291,19 @@ void main() {
 
       expect(result.calibration.complete, isTrue);
       expect(result.calibration.stage, HumorCalibrationStage.complete);
-      // The client must not send anything calibration-related upward.
+      // The client echoes the item it was shown and its rating — nothing
+      // about where it believes it is in the sequence, and no day.
       final payload = backend.payloads.single;
-      expect(payload.containsKey('calibration'), isFalse);
-      expect(payload.containsKey('stage'), isFalse);
-      expect(payload.containsKey('completedCount'), isFalse);
+      expect(payload.keys.toSet(), {
+        'contentId',
+        'rating',
+        'dwellMs',
+        'replayCount',
+      });
       expect(firestoreInt(payload['dwellMs'], -1), 0);
-      // `saved` is written server-side only when explicitly sent, and there
-      // is no saved-items feature to send it.
-      expect(payload.containsKey('saved'), isFalse);
-      expect(payload.containsKey('skipped'), isFalse);
     });
 
-    test('a skip sends no rating', () async {
+    test('a media skip sends no rating', () async {
       final backend = _FakeBackend({
         'submitHumorFeedback': {
           'ok': true,
@@ -232,10 +321,17 @@ void main() {
       });
       final source = FunctionsHumorDataSource(backend: backend);
 
-      final result = await source.skipContent(contentId: 'c4');
+      final result = await source.skipContent(
+        contentId: 'c4',
+        skipReason: HumorSkipReason.mediaFailed,
+      );
 
       expect(backend.calls, ['submitHumorFeedback']);
-      expect(backend.payloads.single, {'contentId': 'c4', 'skipped': true});
+      expect(backend.payloads.single, {
+        'contentId': 'c4',
+        'skipped': true,
+        'skipReason': 'media_failed',
+      });
       expect(result.calibration.completedCount, 3);
       expect(result.interactionCount, 3);
     });
@@ -246,121 +342,147 @@ void main() {
       final source = MockHumorDataSource();
       final controller = buildController(source);
 
+      expect(controller.state.calibration.totalCount, 0);
       await controller.load();
       expect(controller.state.calibration.completedCount, 0);
-      expect(controller.state.calibration.stage, HumorCalibrationStage.anchor);
+      expect(
+        controller.state.calibration.totalCount,
+        MockHumorDataSource.onboardingCount,
+      );
       expect(controller.state.isCalibrating, isTrue);
-      expect(controller.state.currentStage, HumorCalibrationStage.anchor);
 
       await controller.rate(HumorRating.veryFunny);
       expect(controller.state.calibration.completedCount, 1);
-      expect(controller.state.calibration.stage, HumorCalibrationStage.anchor);
     });
 
-    test('walks anchor → adaptive → exploration → complete', () async {
+    test('shows the canonical items in the canonical order', () async {
       final source = MockHumorDataSource();
       final controller = buildController(source);
       await controller.load();
-
-      final seenStages = <int, HumorCalibrationStage>{};
-      for (var i = 0; i < HumorCalibration.totalInteractions; i += 1) {
-        seenStages[i] = controller.state.calibration.stage;
-        await controller.rate(HumorRating.funny);
-      }
-
-      expect(seenStages[0], HumorCalibrationStage.anchor);
-      expect(seenStages[5], HumorCalibrationStage.anchor);
-      expect(seenStages[6], HumorCalibrationStage.adaptive);
-      expect(seenStages[11], HumorCalibrationStage.adaptive);
-      expect(seenStages[12], HumorCalibrationStage.exploration);
-      expect(seenStages[14], HumorCalibrationStage.exploration);
-
-      expect(controller.state.calibration.complete, isTrue);
-      expect(controller.state.calibration.stage, HumorCalibrationStage.complete);
-      expect(controller.state.isCalibrating, isFalse);
-      expect(controller.state.calibration.completedCount, 15);
-    });
-
-    test('profile keeps learning after calibration completes', () async {
-      final source = MockHumorDataSource();
-      final controller = buildController(source);
-      await controller.load();
-
-      for (var i = 0; i < HumorCalibration.totalInteractions; i += 1) {
-        await controller.rate(HumorRating.funny);
-      }
-      final atCompletion = controller.state.profile;
-      expect(controller.state.calibration.complete, isTrue);
-
-      // Finishing calibration hands off to the result screen without
-      // fetching a page it would throw away; continuing loads the next one.
-      await controller.loadMore();
-      await controller.rate(HumorRating.veryFunny);
 
       expect(
-        controller.state.profile.interactionCount,
-        atCompletion.interactionCount + 1,
-        reason: 'interaction 16 must still count',
+        idsOf(controller),
+        source.sequenceIds.take(MockHumorDataSource.onboardingCount),
       );
-      expect(
-        controller.state.profile.confidence,
-        greaterThan(atCompletion.confidence),
-        reason: 'confidence must keep growing past the calibration milestone',
-      );
-      expect(controller.state.profile.profileBuilding, isFalse);
-      // The milestone itself stays frozen at 15.
-      expect(controller.state.calibration.completedCount, 15);
+      expect(idsOf(controller).toSet().length, idsOf(controller).length);
     });
 
-    test('calibration items are never duplicated across a page', () async {
+    test('every member gets the same items in the same order', () async {
+      final first = buildController(MockHumorDataSource());
+      final second = buildController(MockHumorDataSource());
+      await first.load();
+      await second.load();
+
+      expect(idsOf(first), idsOf(second));
+    });
+
+    test('completes on the last item, and not before', () async {
       final source = MockHumorDataSource();
       final controller = buildController(source);
       await controller.load();
+      final total = controller.state.calibration.totalCount;
 
-      final ids = controller.state.items.map((item) => item.contentId).toList();
-      expect(ids.toSet().length, ids.length);
-      for (final item in controller.state.items) {
-        expect(item.isCalibrationItem, isTrue);
+      for (var i = 0; i < total - 1; i += 1) {
+        await controller.rate(HumorRating.funny);
+        expect(controller.state.calibration.complete, isFalse);
+        expect(controller.state.calibration.completedCount, i + 1);
       }
-    });
-
-    test('insufficientPool survives a rating and a profile refresh', () async {
-      // Pool sufficiency is observed only by the feed. Neither the feedback
-      // response nor the profile response carries it, so every merge that
-      // takes calibration from those payloads must preserve the flag instead
-      // of resetting it to the default false.
-      final source = MockHumorDataSource(
-        seed: MockHumorDataSource.seedCatalog.take(4).toList(),
-      );
-      final controller = buildController(source);
-
-      await controller.load();
-      expect(controller.state.calibration.insufficientPool, isTrue);
-
       await controller.rate(HumorRating.funny);
-      expect(
-        controller.state.calibration.insufficientPool,
-        isTrue,
-        reason: 'a rating must not clear a catalog-deficiency signal',
+
+      expect(controller.state.calibration.complete, isTrue);
+      expect(controller.state.isCalibrating, isFalse);
+      expect(controller.state.calibration.completedCount, total);
+      expect(controller.state.calibrationJustCompleted, isTrue);
+    });
+
+    test('resumes at the item it stopped on', () async {
+      final source = MockHumorDataSource();
+      final first = buildController(source);
+      await first.load();
+      for (var i = 0; i < 7; i += 1) {
+        await first.rate(HumorRating.funny);
+      }
+
+      // A restart, or a second device: only the server knows the position.
+      final resumed = buildController(source);
+      await resumed.load();
+
+      expect(resumed.state.calibration.completedCount, 7);
+      expect(resumed.state.current?.contentId, source.sequenceIds[7]);
+      expect(idsOf(resumed), source.sequenceIds.sublist(7, 15));
+    });
+
+    test(
+      'finishing the calibration opens no further content that day',
+      () async {
+        final source = MockHumorDataSource();
+        final controller = buildController(source);
+        await controller.load();
+        final total = controller.state.calibration.totalCount;
+        for (var i = 0; i < total; i += 1) {
+          await controller.rate(HumorRating.funny);
+        }
+        final atCompletion = controller.state.profile.interactionCount;
+
+        await controller.loadMore();
+
+        expect(controller.state.current, isNull);
+        expect(controller.state.reachedEnd, isTrue);
+        expect(controller.state.catalogExhausted, isTrue);
+        // The next item of the sequence is tomorrow's: the server refuses it.
+        final result = await HumorRepositoryImpl(dataSource: source)
+            .submitFeedback(
+              contentId: source.sequenceIds[total],
+              rating: HumorRating.veryFunny,
+            );
+        expect(result.isError, isTrue);
+        expect(source.profile.interactionCount, atCompletion);
+      },
+    );
+
+    test('an item whose media failed pauses the calibration until '
+        'tomorrow, and the pause survives a rating response and a profile '
+        'refresh', () async {
+      // The pause is observed only by the feed. Neither the feedback
+      // response nor the profile response carries it, so every merge that
+      // takes calibration from those payloads must preserve the flag.
+      final source = MockHumorDataSource(
+        seed: MockHumorDataSource.seedCatalog.take(3).toList(),
       );
+      final controller = buildController(source);
+      await controller.load();
+      final failed = controller.state.current!.contentId;
+
+      await controller.skipUnplayable(failed);
+      await controller.rate(HumorRating.funny);
+      await controller.rate(HumorRating.funny);
+
+      expect(controller.state.continuesTomorrow, isTrue);
+      expect(controller.state.calibration.complete, isFalse);
+      expect(controller.state.calibration.completedCount, 2);
+      expect(controller.state.reachedEnd, isTrue);
+      expect(source.ratingOf(failed), isNull);
 
       await controller.refreshProfile();
-      expect(controller.state.calibration.insufficientPool, isTrue);
+      expect(controller.state.continuesTomorrow, isTrue);
 
-      // Progress itself must still advance normally.
-      expect(controller.state.calibration.completedCount, 1);
+      // The next day brings back exactly the item that failed.
+      source.closeDay('2099-01-02');
+      await controller.load();
+      expect(idsOf(controller), [failed]);
+      expect(controller.state.continuesTomorrow, isFalse);
+      await controller.rate(HumorRating.funny);
+      expect(controller.state.calibration.complete, isTrue);
     });
 
-    test('a short curated pool is reported, not silently padded', () async {
-      // Only four items available for a fifteen-item calibration.
-      final source = MockHumorDataSource(
-        seed: MockHumorDataSource.seedCatalog.take(4).toList(),
-      );
-      final controller = buildController(source);
+    test('an empty catalogue is reported, not shown as a finished '
+        'calibration', () async {
+      final controller = buildController(MockHumorDataSource(seed: const []));
 
       await controller.load();
 
-      expect(controller.state.items, hasLength(4));
+      expect(controller.state.items, isEmpty);
+      expect(controller.state.catalogEmpty, isTrue);
       expect(controller.state.calibration.insufficientPool, isTrue);
       expect(controller.state.calibration.complete, isFalse);
     });

@@ -1650,7 +1650,6 @@
   "humorCompatibilitySharedStyles": "Ortak mizah tarzlarınız",
   "humorCompatibilityNote": "Bu, ikinizin mizah içeriklerine verdiği tepkilerden çıkan hafif bir işaret; ilişkiniz hakkında kesin bir şey söylemez.",
   "humorTopVibes": "Öne çıkan tarzların",
-  "humorSkipContent": "Geç",
   "humorReport": "Şikayet et",
   "humorReportSuccess": "Teşekkürler — bu içeriği inceleyeceğiz.",
   "humorHowFunny": "Ne kadar komik?",
@@ -1748,7 +1747,17 @@
   "musicLimitedData": "Spotify bağlı, ancak henüz fazla dinleme geçmişi yok.",
   "humorCalibrationIntroTitle": "Neye güldüğünü öğrenelim",
   "humorCalibrationIntroBody": "Birkaç kısa içeriğe tepki ver. Verdiğin tepkiler mizah zevkini anlamamıza yardımcı olur; böylece eşleşmelerinle ortak mizahınızı sana gösterebiliriz.",
-  "humorCalibrationIntroMeta": "15 kısa içerik · yaklaşık 1 dakika",
+  "humorCalibrationIntroMeta": "{count} kısa içerik · yaklaşık 1 dakika",
+  "@humorCalibrationIntroMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "humorCalibrationPausedTitle": "Bugünlük bu kadar",
+  "humorCalibrationPausedBody": "Bir içerik oynatılamadı. Kalanı yarın seni bekliyor; mizah profilin o zaman tamamlanacak.",
+  "humorLabCalibratedBody": "Bundan sonra her gün birkaç yeni içerikle devam ediyoruz.",
   "humorCalibrationStart": "Başla",
   "humorCalibrationSkip": "Şimdilik geç",
   "humorCalibrationResume": "Devam et",
@@ -1813,7 +1822,6 @@
       }
     }
   },
-  "humorResultKeepGoing": "Mizah profilini geliştirmeye devam et",
   "humorResultDone": "Devam et",
   "humorResultEvolvesNote": "Yeni içeriklere tepki verdikçe profilin gelişmeye devam eder.",
   "humorResultStrengthHigh": "Güçlü",
@@ -1974,9 +1982,11 @@
   },
   "humorDailyHintStart": "Bugünün mizah turuna başladık.",
   "humorDailyHintMiddle": "Biraz daha tanıyoruz 👀",
-  "humorDailyHintEnd": "Son birkaç video.",
+  "humorDailyHintEnd": "Neredeyse bitti.",
   "humorDailyCompletedTitle": "Bugünlük tamam 🎭",
   "humorDailyCompletedBody": "Mizah profilin biraz daha netleşti.",
+  "humorDailyCompletedTomorrow": "Yarın yeni tur seni bekliyor.",
+  "humorDailySequenceComplete": "Şimdilik tüm içerikleri tamamladın. Yenileri eklendiğinde tur devam edecek.",
   "humorDailyNotReadyTitle": "Bugünün turu hazırlanıyor",
   "humorDailyNotReadyBody": "Biraz sonra yeniden bakabilirsin.",
   "humorDailyLockedBody": "Günlük mizah turu, mizah profilin hazır olduğunda başlar.",

@@ -1,10 +1,10 @@
 /**
- * Seed the curated humor calibration catalog into a cloud project — or the
- * local Firestore emulator — and verify the calibration engine end to end
- * against it.
+ * Seed the curated humor catalogue into a cloud project — or the local
+ * Firestore emulator — and verify the initial calibration (V1–V15 of the Humor
+ * Core sequence) end to end against it.
  *
- * Runs the real server code paths — `seedCalibrationCatalog`, `buildHumorFeed`,
- * `submitHumorFeedbackTx` — against real Firestore. The unit suite proves the
+ * Runs the real server code paths — `seedCalibrationCatalog`,
+ * `getHumorCoreFeedView`, `submitHumorCoreResponse` — against real Firestore. The unit suite proves the
  * policy with an in-memory double and `functions/test/emulator/*` proves it on
  * the emulator; this is the layer that proves the deployed composite indexes,
  * the curation metadata and the transaction line up on an actual project.
@@ -175,25 +175,20 @@ function openFirestore() {
 
 const db = openFirestore();
 
-const {
-  INTERNAL_HUMOR_SEED,
-  listCalibrationPool,
-} = requireCompiled("lib/humor/contentRepository.js");
 const {seedCalibrationCatalog} = requireCompiled("lib/humor/calibrationCatalog.js");
-const {
-  ANCHOR_SLOTS,
-  CALIBRATION_TOTAL,
-  HUMOR_CALIBRATION_VERSION,
-} = requireCompiled("lib/humor/calibration.js");
-const {buildHumorFeed, loadUserHumorCalibration} = requireCompiled("lib/humor/feed.js");
-const {submitHumorFeedbackTx} = requireCompiled("lib/humor/feedback.js");
+const {CALIBRATION_TOTAL} = requireCompiled("lib/humor/calibration.js");
+const {HUMOR_CORE, HUMOR_CORE_SEQUENCE} = requireCompiled("lib/humor/coreSequence.js");
+const core = requireCompiled("lib/humor/coreService.js");
+const {getDailyHumorSetView} = requireCompiled("lib/humor/dailyService.js");
+const {loadUserHumorCalibration} = requireCompiled("lib/humor/feed.js");
 
 // --------------------------------------------------------------------------
 // Harness
 // --------------------------------------------------------------------------
 
 const UID = "qa_humor_calibration";
-const SCRATCH_UIDS = [UID, `${UID}_resume`, `${UID}_rotA`, `${UID}_rotB`];
+const SCRATCH_UIDS = [UID, `${UID}_resume`, `${UID}_twinA`, `${UID}_twinB`];
+const FIRST_FIFTEEN = HUMOR_CORE_SEQUENCE.slice(0, HUMOR_CORE.onboardingCount).map((e) => e.id);
 let failures = 0;
 
 async function step(name, fn) {
@@ -210,9 +205,14 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+const sameIds = (a, b) => a.length === b.length && a.every((id, i) => id === b[i]);
+const feedFor = (uid) => core.getHumorCoreFeedView({db, uid, nowMs: Date.now()});
+const rate = (uid, contentId, rating) =>
+  core.submitHumorCoreResponse({db, uid, nowMs: Date.now(), contentId, rating, mediaFailed: false});
+
 /** Throwaway users must not outlive the run. */
 async function wipe(uid) {
-  for (const sub of ["humor", "humorInteractions"]) {
+  for (const sub of ["humor", "humorInteractions", "humorDaily"]) {
     const snap = await db.collection(`users/${uid}/${sub}`).get();
     await Promise.all(snap.docs.map((d) => d.ref.delete()));
   }
@@ -235,7 +235,7 @@ async function wipeAll() {
   );
 
   if (!verifyOnly) {
-    await step("seed the curated calibration catalog", async () => {
+    await step("seed the curated catalogue", async () => {
       // Same path as the seedInternalHumorContent callable: writes the active
       // catalogue and retires what it replaced (the old text cards).
       const seeded = await seedCalibrationCatalog(db);
@@ -243,162 +243,110 @@ async function wipeAll() {
     });
   }
 
-  await step("every anchor slot has a rotatable pool", async () => {
-    const pool = await listCalibrationPool(db, {
-      calibrationVersion: HUMOR_CALIBRATION_VERSION,
-      limit: 200,
-    });
-    assert(pool.length > 0, "calibration pool is empty — run without --verify-only");
-    const bySlot = new Map();
-    for (const item of pool) {
-      if (item.calibration.slot) {
-        bySlot.set(item.calibration.slot, (bySlot.get(item.calibration.slot) ?? 0) + 1);
-      }
-    }
-    for (const slot of ANCHOR_SLOTS) {
-      const n = bySlot.get(slot.id) ?? 0;
-      assert(n >= 2, `${slot.id} has ${n} candidates — cannot rotate`);
-    }
-    const open = pool.filter((i) => !i.calibration.slot).length;
-    const needed = CALIBRATION_TOTAL - ANCHOR_SLOTS.length;
-    assert(open >= needed, `open pool has ${open}, adaptive + exploration need ${needed}`);
-    return `${pool.length} eligible, ${bySlot.size} slots, open pool ${open}`;
+  await step("every entry of the Core sequence can be handed out", async () => {
+    const report = await core.buildHumorCoreSequenceReport(db);
+    assert(report.total > 0, "the Core sequence is empty");
+    assert(
+      report.healthy,
+      `sequence not healthy — run without --verify-only: ${[...report.problems, ...report.warnings].join("; ")}`,
+    );
+    return `${report.servableCount}/${report.total} servable, ${report.released ? "released" : "draft"}`;
   });
 
-  await step("a fresh user gets a 6 / 6 / 3 calibration page", async () => {
+  await step("a fresh user gets V1–V15 in canonical order", async () => {
     await wipe(UID);
-    const feed = await buildHumorFeed({db, uid: UID, languages: ["tr", "en"], limit: 15});
+    const feed = await feedFor(UID);
     assert(!feed.calibration.complete, "fresh user already complete");
-    assert(feed.calibration.insufficientPool === false, "pool reported insufficient");
-    const stages = feed.items.map((i) => i.calibrationStage);
-    const count = (s) => stages.filter((x) => x === s).length;
-    // A page is either the whole 6/6/3 run or, where pages are bounded to the
-    // current stage, only the six anchors.
-    const stageBounded = feed.items.length === ANCHOR_SLOTS.length;
-    if (stageBounded) {
-      assert(count("anchor") === 6, `stage-bounded page has anchor=${count("anchor")}`);
-    } else {
-      assert(
-        feed.items.length === CALIBRATION_TOTAL,
-        `got ${feed.items.length} items, expected ${CALIBRATION_TOTAL}`,
-      );
-      assert(count("anchor") === 6, `anchor=${count("anchor")}`);
-      assert(count("adaptive") === 6, `adaptive=${count("adaptive")}`);
-      assert(count("exploration") === 3, `exploration=${count("exploration")}`);
-    }
+    assert(feed.catalogEmpty === false, "catalogue reported empty");
     const ids = feed.items.map((i) => i.contentId);
-    assert(new Set(ids).size === ids.length, "duplicate content in calibration");
+    assert(sameIds(ids, FIRST_FIFTEEN), `got ${ids.length} items, not V1–V${CALIBRATION_TOTAL} in order`);
     for (const item of feed.items) {
       assert(!("humorVector" in item), "feed leaked humorVector");
       assert(!("calibrationSlot" in item), "feed leaked the anchor slot");
       assert(!("safetyFlags" in item), "feed leaked safetyFlags");
     }
-    return stageBounded
-      ? "6 anchors (stage-bounded page), no duplicates, no leaks"
-      : "6 anchor, 6 adaptive, 3 exploration, no duplicates, no leaks";
+    return `${ids.length} items, no leaks`;
   });
 
-  await step("rating all 15 completes calibration", async () => {
-    let guard = 0;
-    while (guard < 40) {
-      const feed = await buildHumorFeed({db, uid: UID, languages: ["tr", "en"], limit: 15});
-      if (feed.calibration.complete || feed.items.length === 0) break;
-      await submitHumorFeedbackTx({
-        db,
-        uid: UID,
-        contentId: feed.items[0].contentId,
-        rating: guard % 3 === 0 ? "very_funny" : "funny",
-      });
-      guard += 1;
-    }
-    const state = await loadUserHumorCalibration(db, UID);
-    assert(state.complete, `stuck at ${state.completedCount}/${CALIBRATION_TOTAL}`);
+  await step("two users get the same fifteen", async () => {
+    const [a, b] = [`${UID}_twinA`, `${UID}_twinB`];
+    await wipe(a);
+    await wipe(b);
+    const [fa, fb] = [await feedFor(a), await feedFor(b)];
     assert(
-      state.degradedCount === 0,
-      `${state.degradedCount} positions filled with uncurated content`,
+      sameIds(
+        fa.items.map((i) => i.contentId),
+        fb.items.map((i) => i.contentId),
+      ),
+      "two fresh users were given different content",
     );
-    assert(
-      state.coveredSlots.length === ANCHOR_SLOTS.length,
-      `covered ${state.coveredSlots.length} of ${ANCHOR_SLOTS.length} slots`,
-    );
-    return `slots: ${state.coveredSlots.join(", ")}`;
+    await wipe(a);
+    await wipe(b);
+    return "identical ids, identical order";
   });
 
   await step("interrupting mid-run resumes from server state", async () => {
     const uid = `${UID}_resume`;
     await wipe(uid);
-    const first = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 15});
-    for (const item of first.items.slice(0, 4)) {
-      await submitHumorFeedbackTx({db, uid, contentId: item.contentId, rating: "funny"});
+    for (const id of FIRST_FIFTEEN.slice(0, 4)) {
+      await rate(uid, id, "funny");
     }
-    // A cold client sends no cursor — only persisted state can carry this.
-    const resumed = await buildHumorFeed({db, uid, languages: ["tr", "en"], limit: 15});
+    // A cold client sends nothing — only persisted state can carry this.
+    const resumed = await feedFor(uid);
     assert(
       resumed.calibration.completedCount === 4,
       `resumed at ${resumed.calibration.completedCount}`,
     );
-    // The whole remaining run, or only the remaining anchors on a
-    // stage-bounded page.
-    const remainingAnchors =
-      resumed.items.length === ANCHOR_SLOTS.length - 4 &&
-      resumed.items.every((i) => i.calibrationStage === "anchor");
     assert(
-      resumed.items.length === CALIBRATION_TOTAL - 4 || remainingAnchors,
-      `got ${resumed.items.length} remaining`,
+      sameIds(
+        resumed.items.map((i) => i.contentId),
+        FIRST_FIFTEEN.slice(4),
+      ),
+      `resumed with ${resumed.items.length} items that are not V5–V15`,
     );
-    const state = await loadUserHumorCalibration(db, uid);
-    const rated = new Set(state.ratedContentIds);
-    for (const item of resumed.items) {
-      assert(!rated.has(item.contentId), `re-served ${item.contentId}`);
-    }
     await wipe(uid);
-    return `resumed at 4/${CALIBRATION_TOTAL}, ${resumed.items.length} left, nothing repeated`;
+    return `resumed at 4/${CALIBRATION_TOTAL}, next is V5, nothing repeated`;
   });
 
-  await step("learning continues after the 15th", async () => {
-    const before = (await db.doc(`users/${UID}/humor/summary`).get()).data();
-    const feed = await buildHumorFeed({db, uid: UID, languages: ["tr", "en"], limit: 12});
+  await step("rating all 15 completes calibration", async () => {
+    let result;
+    for (const [index, id] of FIRST_FIFTEEN.entries()) {
+      result = await rate(UID, id, index % 3 === 0 ? "very_funny" : "funny");
+    }
+    assert(result.calibration.complete, `stuck at ${result.calibration.completedCount}`);
+    const state = await loadUserHumorCalibration(db, UID);
+    assert(state.complete, `calibration document at ${state.completedCount}/${CALIBRATION_TOTAL}`);
+    assert(
+      state.degradedCount === 0,
+      `${state.degradedCount} positions counted as degraded`,
+    );
+    const summary = (await db.doc(`users/${UID}/humor/summary`).get()).data();
+    assert(
+      summary.interactionCount === CALIBRATION_TOTAL,
+      `interactionCount ${summary.interactionCount}`,
+    );
+    return `slots: ${state.coveredSlots.join(", ")}`;
+  });
+
+  await step("the feed closes and the daily five wait for the next day", async () => {
+    const feed = await feedFor(UID);
     assert(feed.calibration.complete, "calibration not complete");
     assert(feed.profileBuilding === false, "still reporting building");
-    assert(feed.items.length > 0, "no ordinary content left to learn from");
-    for (const item of feed.items) {
-      assert(!item.calibrationStage, "ordinary feed item labelled as calibration");
+    assert(feed.items.length === 0, `the closed feed served ${feed.items.length} items`);
+    const daily = await getDailyHumorSetView({db, uid: UID, nowMs: Date.now()});
+    assert(
+      daily.status === "locked" && daily.lockedReason === "starts_tomorrow",
+      `daily set is ${daily.status}/${daily.lockedReason} on the calibration day`,
+    );
+    const next = HUMOR_CORE_SEQUENCE[HUMOR_CORE.onboardingCount].id;
+    let refused = false;
+    try {
+      await rate(UID, next, "funny");
+    } catch (error) {
+      refused = error.reason === "not-in-set";
     }
-    await submitHumorFeedbackTx({
-      db,
-      uid: UID,
-      contentId: feed.items[0].contentId,
-      rating: "very_funny",
-    });
-    const after = (await db.doc(`users/${UID}/humor/summary`).get()).data();
-    assert(
-      after.interactionCount === before.interactionCount + 1,
-      `interactionCount ${before.interactionCount} -> ${after.interactionCount}`,
-    );
-    assert(
-      after.confidence > before.confidence,
-      `confidence did not grow: ${before.confidence} -> ${after.confidence}`,
-    );
-    const state = await loadUserHumorCalibration(db, UID);
-    assert(state.completedCount === CALIBRATION_TOTAL, "the milestone moved past 15");
-    return `interactionCount ${before.interactionCount} -> ${after.interactionCount}, milestone frozen at 15`;
-  });
-
-  await step("two users get different anchors from the same slots", async () => {
-    const [a, b] = [`${UID}_rotA`, `${UID}_rotB`];
-    await wipe(a);
-    await wipe(b);
-    const fa = await buildHumorFeed({db, uid: a, languages: ["tr", "en"], limit: 15});
-    const fb = await buildHumorFeed({db, uid: b, languages: ["tr", "en"], limit: 15});
-    const anchors = (f) =>
-      f.items.filter((i) => i.calibrationStage === "anchor").map((i) => i.contentId);
-    const [aa, ab] = [anchors(fa), anchors(fb)];
-    assert(aa.length === 6 && ab.length === 6, "anchor count wrong");
-    const shared = aa.filter((id) => ab.includes(id));
-    assert(shared.length < 6, "both users got an identical anchor set");
-    await wipe(a);
-    await wipe(b);
-    return `${6 - shared.length}/6 anchors differ`;
+    assert(refused, "tomorrow's first entry was accepted today");
+    return "feed closed, daily locked (starts_tomorrow), V16 refused";
   });
 
   await step("no verification state is left behind", async () => {

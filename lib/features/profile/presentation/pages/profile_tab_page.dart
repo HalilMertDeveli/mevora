@@ -484,14 +484,16 @@ class _HumorProfileTileState extends State<_HumorProfileTile> {
       title: l10n.humorLabTitle,
       subtitle: subtitle,
       // An unfinished calibration resumes through the invitation screen so the
-      // user sees where they are before being dropped back into content.
+      // user sees where they are before being dropped back into content. A
+      // finished one opens the humor profile: new items come with the daily
+      // tour, not from here.
       onTap: () => unawaited(_open(calibration?.complete == true)),
     );
   }
 
   Future<void> _open(bool complete) async {
     await context.push(
-      complete ? AppRoutes.humorLab : AppRoutes.humorCalibration,
+      complete ? AppRoutes.humorResult : AppRoutes.humorCalibration,
     );
     if (mounted) {
       // The profile tab stays alive underneath: show the progress made.

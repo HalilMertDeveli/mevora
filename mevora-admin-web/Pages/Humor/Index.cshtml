@@ -10,6 +10,10 @@
     </div>
 </div>
 <partial name="_Flash" model="Model" />
+<nav class="tabs" aria-label="@L["Humor pages"]">
+    <a class="tab active" href="/Humor" aria-current="page">@L["Moderation queue"]</a>
+    <a class="tab" href="/Humor/Core">@L["Core sequence"]</a>
+</nav>
 <nav class="tabs" aria-label="@L["Humor status"]">
     @foreach (var s in Mevora.Admin.Web.Pages.Humor.IndexModel.Statuses)
     {

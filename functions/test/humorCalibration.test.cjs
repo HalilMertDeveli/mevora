@@ -14,15 +14,10 @@ const {
   isAnchorSlotId,
   isCalibrationComplete,
   parseCalibrationState,
-  rotatingIndex,
-  selectAdaptiveDimensions,
-  selectExplorationDimensions,
-  stableHash,
   stageForCompletedCount,
-  stageForPosition,
   toCalibrationView,
 } = require("../lib/humor/calibration.js");
-const {selectCalibrationItems} = require("../lib/humor/calibrationFeed.js");
+const {HUMOR_CORE_SEQUENCE} = require("../lib/humor/coreSequence.js");
 const {
   INTERNAL_HUMOR_SEED,
   parseCalibrationMeta,
@@ -231,7 +226,7 @@ function anchorIdOf(slotId, index = 0) {
 // Stage contract
 // --------------------------------------------------------------------------
 
-test("calibration is 6 anchor + 6 adaptive + 3 exploration = 15", () => {
+test("the calibration milestone keeps its stage boundaries: 6 + 6 + 3 = 15", () => {
   assert.equal(ANCHOR_INTERACTIONS, 6);
   assert.equal(ADAPTIVE_INTERACTIONS, 6);
   assert.equal(EXPLORATION_INTERACTIONS, 3);
@@ -251,12 +246,6 @@ test("stage transitions land exactly on the boundaries", () => {
     "exploration", "exploration", "exploration",
     "complete",
   ]);
-  assert.equal(stageForPosition(0), "anchor");
-  assert.equal(stageForPosition(5), "anchor");
-  assert.equal(stageForPosition(6), "adaptive");
-  assert.equal(stageForPosition(11), "adaptive");
-  assert.equal(stageForPosition(12), "exploration");
-  assert.equal(stageForPosition(14), "exploration");
   assert.equal(isCalibrationComplete(14), false);
   assert.equal(isCalibrationComplete(15), true);
   // Out-of-range input cannot produce a stage outside the contract.
@@ -409,129 +398,6 @@ test("coverage needs real vector mass, not just a declared category", () => {
 });
 
 // --------------------------------------------------------------------------
-// Adaptive + exploration policy
-// --------------------------------------------------------------------------
-
-function profileWith(vector, interactionCount = 6) {
-  const base = defaultUserHumorProfile();
-  return {
-    ...base,
-    vector: {...base.vector, ...vector},
-    interactionCount,
-    confidence: 0.4,
-  };
-}
-
-test("adaptive selection differentiates a strong signal from its neighbours", () => {
-  // Strong positive sarcasm response, sarcasm already measured by an anchor.
-  const dims = selectAdaptiveDimensions({
-    profile: profileWith({sarcasm: 88}),
-    coveredDimensions: ["sarcasm"],
-  });
-  assert.equal(dims.length, ADAPTIVE_INTERACTIONS);
-  // dry / teasing / dark are sarcasm's neighbours and must be probed first.
-  assert.deepEqual(dims.slice(0, 3), ["dry", "teasing", "dark"]);
-  assert.equal(new Set(dims).size, dims.length, "no repeated target dimension");
-
-  // A strong *negative* signal is just as informative and must also be probed.
-  const negative = selectAdaptiveDimensions({
-    profile: profileWith({absurd: 8}),
-    coveredDimensions: ["absurd"],
-  });
-  assert.deepEqual(negative.slice(0, 2), ["silly", "meme"]);
-});
-
-test("adaptive selection is deterministic and stays inside the dimension set", () => {
-  const profile = profileWith({meme: 80, cringe: 22});
-  const first = selectAdaptiveDimensions({profile, coveredDimensions: ["meme"]});
-  const second = selectAdaptiveDimensions({profile, coveredDimensions: ["meme"]});
-  assert.deepEqual(first, second);
-
-  // Flat profile: no signal anywhere, still resolves to six distinct targets.
-  const flat = selectAdaptiveDimensions({
-    profile: defaultUserHumorProfile(),
-    coveredDimensions: [],
-  });
-  assert.equal(flat.length, ADAPTIVE_INTERACTIONS);
-  assert.equal(new Set(flat).size, ADAPTIVE_INTERACTIONS);
-});
-
-test("exploration prioritises undercovered dimensions over strong ones", () => {
-  // Everything is covered except dry / dark / romantic, and those three carry
-  // deliberately different amounts of evidence: dry none, dark a little,
-  // romantic a lot.
-  const profile = profileWith({sarcasm: 95, meme: 92, romantic: 60, dark: 51});
-  const dims = selectExplorationDimensions({
-    profile,
-    coveredDimensions: [
-      "sarcasm",
-      "meme",
-      "silly",
-      "absurd",
-      "situational",
-      "cringe",
-      "teasing",
-      "wordplay",
-    ],
-  });
-  assert.equal(dims.length, EXPLORATION_INTERACTIONS);
-  // The user's strongest categories are already covered — exploration must not
-  // simply re-test them.
-  assert.equal(dims.includes("sarcasm"), false);
-  assert.equal(dims.includes("meme"), false);
-  // Ordered by information gain: weakest evidence first.
-  assert.deepEqual(dims, ["dry", "dark", "romantic"]);
-});
-
-test("exploration falls back to weakest evidence once everything is covered", () => {
-  // No uncovered dimension left: the tie-break must still be evidence-based
-  // rather than re-probing the strongest category. Every dimension is given an
-  // explicit value so "weakest evidence" is unambiguous.
-  const profile = profileWith({
-    sarcasm: 95, // 45
-    absurd: 70, //  20
-    silly: 65, //   15
-    romantic: 52, // 2  ← weakest
-    dark: 60, //    10
-    meme: 90, //    40
-    dry: 40, //     10
-    wordplay: 35, // 15
-    situational: 30, // 20
-    cringe: 25, //  25
-    teasing: 45, //  5  ← second weakest
-  });
-  const dims = selectExplorationDimensions({
-    profile,
-    coveredDimensions: [...require("../lib/humor/categories.js").HUMOR_CATEGORIES],
-  });
-  assert.equal(dims.length, EXPLORATION_INTERACTIONS);
-  assert.equal(dims.includes("sarcasm"), false, "never the strongest signal");
-  assert.equal(dims.includes("meme"), false);
-  // romantic (2) then teasing (5) then dark (10, ahead of dry on the fixed
-  // category order tie-break).
-  assert.deepEqual(dims, ["romantic", "teasing", "dark"]);
-});
-
-// --------------------------------------------------------------------------
-// Deterministic rotation
-// --------------------------------------------------------------------------
-
-test("rotation is deterministic per user and spreads across users", () => {
-  assert.equal(stableHash("abc"), stableHash("abc"));
-  assert.notEqual(stableHash("abc"), stableHash("abd"));
-  assert.equal(rotatingIndex(0, "seed"), -1);
-
-  const seedFor = (uid) => `${uid}:${HUMOR_CALIBRATION_VERSION}:anchor_wit`;
-  assert.equal(rotatingIndex(2, seedFor("u1")), rotatingIndex(2, seedFor("u1")));
-
-  const spread = new Set();
-  for (let i = 0; i < 40; i += 1) {
-    spread.add(rotatingIndex(2, seedFor(`user_${i}`)));
-  }
-  assert.equal(spread.size, 2, "both pool members are reachable across users");
-});
-
-// --------------------------------------------------------------------------
 // Content curation
 // --------------------------------------------------------------------------
 
@@ -640,25 +506,6 @@ test("every anchor candidate measures its slot primary, on every rotation", asyn
   assert.equal(guaranteed.includes("dark"), false);
 });
 
-test("dimensions outside the anchor baseline are picked up by later stages", () => {
-  // The flip side of the anchor contract: anything the baseline does not
-  // guarantee must still be reachable, or those dimensions are stranded.
-  const anchorCovered = [...ANCHOR_SLOTS.map((s) => s.primary)].sort();
-  const profile = profileWith({sarcasm: 88, meme: 80}, 6);
-  const adaptive = selectAdaptiveDimensions({
-    profile,
-    coveredDimensions: anchorCovered,
-  });
-  const exploration = selectExplorationDimensions({
-    profile,
-    coveredDimensions: [...anchorCovered, ...adaptive],
-  });
-  const reached = new Set([...adaptive, ...exploration]);
-  for (const dim of ["teasing", "romantic", "dark"]) {
-    assert.ok(reached.has(dim), `${dim} was never probed after the anchors`);
-  }
-});
-
 test("pool query excludes inactive, unapproved and uncurated content", async () => {
   const inactive = anchorIdOf("anchor_wit");
   const unapproved = anchorIdOf("anchor_absurd");
@@ -681,318 +528,6 @@ test("pool query excludes inactive, unapproved and uncurated content", async () 
   assert.equal(ids.includes(foreignVersion), false, "foreign version excluded");
   // Exactly those four — everything else in the catalogue is served.
   assert.equal(ids.length, INTERNAL_HUMOR_SEED.length - 4);
-});
-
-// --------------------------------------------------------------------------
-// Selection
-// --------------------------------------------------------------------------
-
-/** The first calibration page for a brand-new user: the anchor stage only. */
-async function runFullSelection(uid, db) {
-  return selectCalibrationItems({
-    db,
-    uid,
-    state: defaultCalibrationState(),
-    profile: defaultUserHumorProfile(),
-    languages: ["tr", "en"],
-    limit: CALIBRATION_TOTAL,
-  });
-}
-
-/**
- * A whole calibration run driven page by page, the way the client does it:
- * select a page from server state, rate every card (updating state and
- * profile), select again. `rateFor(content)` plays the user.
- */
-async function runPagedSelection(uid, db, rateFor = () => "neutral") {
-  let state = defaultCalibrationState();
-  let profile = defaultUserHumorProfile();
-  const picks = [];
-  const pages = [];
-  const deficiencies = [];
-  for (let guard = 0; guard < 10 && !state.complete; guard += 1) {
-    const page = await selectCalibrationItems({
-      db,
-      uid,
-      state,
-      profile,
-      languages: ["tr", "en"],
-      limit: CALIBRATION_TOTAL,
-    });
-    deficiencies.push(...page.deficiencies);
-    if (page.picks.length === 0) {
-      break;
-    }
-    pages.push(page.picks.map((p) => p.stage));
-    for (const pick of page.picks) {
-      picks.push(pick);
-      profile = applyFeedbackToProfile({
-        profile,
-        contentVector: pick.content.humorVector,
-        category: pick.content.category,
-        rating: rateFor(pick.content),
-      });
-      state = advanceCalibration({state, content: pick.content});
-    }
-  }
-  return {
-    picks,
-    pages,
-    deficiencies,
-    state,
-    profile,
-    unfilled: CALIBRATION_TOTAL - picks.length,
-  };
-}
-
-test("the first calibration page carries only the anchor stage", async () => {
-  const {picks, unfilled, deficiencies} = await runFullSelection("user_a", seededDb());
-  assert.deepEqual(deficiencies, []);
-  assert.equal(unfilled, 0);
-  // Asked for 15, served 6: adaptive picks must wait for the anchor answers.
-  assert.equal(picks.length, ANCHOR_INTERACTIONS);
-  assert.ok(picks.every((p) => p.stage === "anchor"));
-});
-
-test("a full calibration run is 6/6/3 with no duplicate content", async () => {
-  const {picks, pages, unfilled, deficiencies} = await runPagedSelection(
-    "user_a",
-    seededDb(),
-  );
-  assert.deepEqual(deficiencies, []);
-  assert.equal(unfilled, 0);
-  assert.equal(picks.length, CALIBRATION_TOTAL);
-  // One page per stage, never crossing a boundary.
-  assert.deepEqual(pages.map((p) => p.length), [
-    ANCHOR_INTERACTIONS,
-    ADAPTIVE_INTERACTIONS,
-    EXPLORATION_INTERACTIONS,
-  ]);
-  for (const page of pages) {
-    assert.equal(new Set(page).size, 1, `page spans stages: ${page.join(",")}`);
-  }
-
-  const stages = picks.map((p) => p.stage);
-  assert.equal(stages.filter((s) => s === "anchor").length, ANCHOR_INTERACTIONS);
-  assert.equal(stages.filter((s) => s === "adaptive").length, ADAPTIVE_INTERACTIONS);
-  assert.equal(
-    stages.filter((s) => s === "exploration").length,
-    EXPLORATION_INTERACTIONS,
-  );
-  // Stages must appear in order, never interleaved.
-  assert.deepEqual(stages, [
-    ...Array(ANCHOR_INTERACTIONS).fill("anchor"),
-    ...Array(ADAPTIVE_INTERACTIONS).fill("adaptive"),
-    ...Array(EXPLORATION_INTERACTIONS).fill("exploration"),
-  ]);
-
-  const ids = picks.map((p) => p.content.contentId);
-  assert.equal(new Set(ids).size, ids.length, "no duplicate content in calibration");
-
-  // Every anchor position is filled by curated content carrying a real slot,
-  // and each slot is used at most once.
-  const anchorSlots = picks
-    .filter((p) => p.stage === "anchor")
-    .map((p) => p.content.calibration.slot);
-  assert.equal(new Set(anchorSlots).size, ANCHOR_INTERACTIONS);
-  for (const slot of anchorSlots) {
-    assert.ok(isAnchorSlotId(slot));
-  }
-});
-
-test("different users get different anchors from the same slots", async () => {
-  const a = await runFullSelection("user_alpha", seededDb());
-  const b = await runFullSelection("user_beta_2", seededDb());
-
-  const anchorsOf = (result) =>
-    result.picks
-      .filter((p) => p.stage === "anchor")
-      .map((p) => `${p.content.calibration.slot}:${p.content.contentId}`);
-
-  const slotsA = anchorsOf(a).map((s) => s.split(":")[0]);
-  const slotsB = anchorsOf(b).map((s) => s.split(":")[0]);
-  assert.deepEqual(slotsA, slotsB, "the measured slots stay identical");
-  assert.notDeepEqual(
-    anchorsOf(a),
-    anchorsOf(b),
-    "but the actual content rotates between users",
-  );
-
-  // Same user, same result — this is what makes calibration resumable.
-  const again = await runFullSelection("user_alpha", seededDb());
-  assert.deepEqual(anchorsOf(again), anchorsOf(a));
-});
-
-test("selection resumes mid-calibration from server state alone", async () => {
-  const db = seededDb();
-  const full = await runFullSelection("user_resume", db);
-  const firstFour = full.picks.slice(0, 4);
-
-  let state = defaultCalibrationState();
-  for (const pick of firstFour) {
-    state = advanceCalibration({state, content: pick.content});
-  }
-  assert.equal(state.completedCount, 4);
-  assert.equal(state.stage, "anchor");
-
-  const resumed = await selectCalibrationItems({
-    db,
-    uid: "user_resume",
-    state,
-    profile: defaultUserHumorProfile(),
-    languages: ["tr", "en"],
-    limit: CALIBRATION_TOTAL,
-  });
-  // Stage-bounded: only the two anchor positions left, nothing beyond.
-  assert.equal(resumed.picks.length, ANCHOR_INTERACTIONS - 4);
-  assert.ok(resumed.picks.every((p) => p.stage === "anchor"));
-  // Nothing already rated is offered again.
-  const ratedIds = new Set(state.ratedContentIds);
-  for (const pick of resumed.picks) {
-    assert.equal(ratedIds.has(pick.content.contentId), false);
-  }
-  // The remaining anchors are exactly the slots not yet covered.
-  const remainingSlots = resumed.picks
-    .filter((p) => p.stage === "anchor")
-    .map((p) => p.content.calibration.slot);
-  assert.equal(remainingSlots.length, ANCHOR_INTERACTIONS - 4);
-  for (const slot of remainingSlots) {
-    assert.equal(state.coveredSlots.includes(slot), false);
-  }
-});
-
-test("already-seen content is never served as a calibration item", async () => {
-  const db = seededDb();
-  const baseline = await runFullSelection("user_seen", db);
-  const seen = new Set(baseline.picks.slice(0, 3).map((p) => p.content.contentId));
-
-  const result = await selectCalibrationItems({
-    db,
-    uid: "user_seen",
-    state: defaultCalibrationState(),
-    profile: defaultUserHumorProfile(),
-    languages: ["tr", "en"],
-    limit: CALIBRATION_TOTAL,
-    excludeContentIds: seen,
-  });
-  for (const pick of result.picks) {
-    assert.equal(seen.has(pick.content.contentId), false);
-  }
-  // Slots whose whole pool was consumed still resolve via the alternate item.
-  assert.equal(
-    result.picks.filter((p) => p.stage === "anchor").length,
-    ANCHOR_INTERACTIONS,
-  );
-});
-
-test("an empty pool fails gracefully and reports the deficiency", async () => {
-  const empty = makeDb({});
-  const result = await selectCalibrationItems({
-    db: empty,
-    uid: "user_empty",
-    state: defaultCalibrationState(),
-    profile: defaultUserHumorProfile(),
-    languages: ["tr"],
-    limit: CALIBRATION_TOTAL,
-  });
-  assert.deepEqual(result.picks, []);
-  assert.equal(result.unfilled, ANCHOR_INTERACTIONS);
-  assert.ok(result.deficiencies.length > 0);
-  assert.ok(result.deficiencies[0].startsWith("anchor:"));
-  assert.ok(result.deficiencies.includes("anchor:pool_exhausted"));
-});
-
-test("an exhausted anchor slot does not stop the other slots", async () => {
-  // Remove every candidate for one slot.
-  // Strip the slot tag from *every* candidate of one slot, whatever the pool
-  // depth is — the point is an empty slot, not a specific pair of ids.
-  const {seedAnchorPools} = require("../lib/humor/calibrationSeed.js");
-  const starved = {};
-  for (const item of seedAnchorPools().get("anchor_wordplay") ?? []) {
-    starved[item.contentId] = {calibrationSlot: null};
-  }
-  assert.ok(Object.keys(starved).length > 0, "no anchor_wordplay candidates found");
-
-  const db = seededDb(starved);
-  const result = await selectCalibrationItems({
-    db,
-    uid: "user_partial",
-    state: defaultCalibrationState(),
-    profile: defaultUserHumorProfile(),
-    languages: ["tr", "en"],
-    limit: CALIBRATION_TOTAL,
-  });
-  assert.equal(result.unfilled, 0);
-  assert.deepEqual(result.deficiencies, ["anchor:anchor_wordplay"]);
-  assert.ok(result.picks.every((pick) => pick.stage === "anchor"));
-
-  // The five other slots are still measured by genuine curated anchors…
-  const slots = result.picks
-    .map((pick) => pick.content.calibration.slot)
-    .filter((slot) => isAnchorSlotId(slot));
-  assert.deepEqual(
-    [...slots].sort(),
-    ANCHOR_SLOTS.map((s) => s.id).filter((id) => id !== "anchor_wordplay").sort(),
-  );
-  // …and the gap is filled by the curated item that best measures the
-  // missing slot's primary, which calibration records as a degradation.
-  const standIn = result.picks.find(
-    (pick) => !isAnchorSlotId(pick.content.calibration.slot),
-  );
-  assert.ok(standIn, "the wordplay gap must still be measured");
-  assert.ok(standIn.content.humorVector.wordplay > 0);
-
-  let state = defaultCalibrationState();
-  for (const pick of result.picks) {
-    state = advanceCalibration({state, content: pick.content});
-  }
-  assert.equal(state.completedCount, ANCHOR_INTERACTIONS);
-  assert.equal(state.coveredSlots.length, ANCHOR_INTERACTIONS - 1);
-  assert.equal(state.degradedCount, 1);
-  assert.equal(toCalibrationView(state).degraded, true);
-});
-
-test("language preference is honoured but never empties a slot", async () => {
-  const db = seededDb();
-  // The curated GIF catalogue is mostly English: only some slots have a
-  // Turkish candidate. Those must serve it; the rest must still fill.
-  const turkishSlots = new Set(
-    INTERNAL_HUMOR_SEED.filter((i) => i.language === "tr" && i.calibration?.slot).map(
-      (i) => i.calibration.slot,
-    ),
-  );
-  assert.ok(turkishSlots.size > 0, "precondition: some slot has a Turkish candidate");
-  assert.ok(turkishSlots.size < ANCHOR_SLOTS.length, "precondition: some slot has none");
-  const turkish = await selectCalibrationItems({
-    db,
-    uid: "user_lang",
-    state: defaultCalibrationState(),
-    profile: defaultUserHumorProfile(),
-    languages: ["tr"],
-    limit: ANCHOR_INTERACTIONS,
-  });
-  assert.equal(turkish.picks.length, ANCHOR_INTERACTIONS);
-  for (const pick of turkish.picks) {
-    const slot = pick.content.calibration.slot;
-    if (turkishSlots.has(slot)) {
-      assert.equal(pick.content.language, "tr", `${slot} has Turkish content but served ${pick.content.language}`);
-    }
-  }
-  assert.equal(
-    turkish.picks.filter((pick) => pick.content.language === "tr").length,
-    turkishSlots.size,
-  );
-
-  // A language with no curated content at all must still calibrate.
-  const german = await selectCalibrationItems({
-    db,
-    uid: "user_lang",
-    state: defaultCalibrationState(),
-    profile: defaultUserHumorProfile(),
-    languages: ["de"],
-    limit: ANCHOR_INTERACTIONS,
-  });
-  assert.equal(german.picks.length, ANCHOR_INTERACTIONS);
 });
 
 // --------------------------------------------------------------------------
@@ -1169,8 +704,8 @@ test("feed-safe content carries the stage but never the slot or safety data", ()
 });
 
 // --------------------------------------------------------------------------
-// Engine behaviour end to end: personas through the real selector and the
-// real feedback transaction
+// Engine behaviour end to end: personas through the canonical first fifteen
+// (the Core sequence every member rates) and the real feedback transaction
 // --------------------------------------------------------------------------
 
 const {
@@ -1181,7 +716,6 @@ const {
   parseSubmitHumorFeedbackInput,
 } = require("../lib/humor/feedback.js");
 const {learningRate, YOUNG_LEARNING_RATE} = require("../lib/humor/profile.js");
-const {primaryDimensionOf} = require("../lib/humor/calibration.js");
 const {HUMOR_CATEGORIES} = require("../lib/humor/categories.js");
 
 const seedById = new Map(INTERNAL_HUMOR_SEED.map((item) => [item.contentId, item]));
@@ -1226,43 +760,26 @@ async function interactedIds(db, uid) {
 }
 
 /**
- * The client loop against server state: fetch a page, rate every card
- * through submitHumorFeedbackTx, fetch again — until calibration completes.
+ * V1–V15 in canonical order, each rated through submitHumorFeedbackTx — what
+ * a member's initial calibration is.
  */
 async function calibrateThroughServer(db, uid, rateFor) {
   const picks = [];
-  const pages = [];
   const progress = [];
-  for (let guard = 0; guard < 10; guard += 1) {
-    const state = await loadUserHumorCalibration(db, uid);
-    if (state.complete) {
-      break;
-    }
-    const page = await selectCalibrationItems({
+  for (const entry of HUMOR_CORE_SEQUENCE.slice(0, CALIBRATION_TOTAL)) {
+    const content = parseHumorContent(entry.id, db._store.get(`humorContent/${entry.id}`));
+    const result = await submitHumorFeedbackTx({
       db,
       uid,
-      state,
-      profile: await loadUserHumorProfile(db, uid),
-      languages: ["tr", "en"],
-      limit: 12,
-      excludeContentIds: await interactedIds(db, uid),
+      contentId: entry.id,
+      rating: rateFor(content),
     });
-    assert.ok(page.picks.length > 0, `calibration stalled at ${state.completedCount}`);
-    pages.push(page.picks.map((pick) => pick.stage));
-    for (const pick of page.picks) {
-      const result = await submitHumorFeedbackTx({
-        db,
-        uid,
-        contentId: pick.content.contentId,
-        rating: rateFor(pick.content),
-      });
-      picks.push(pick);
-      progress.push(result.calibration.completedCount);
-    }
+    picks.push({content});
+    progress.push(result.calibration.completedCount);
   }
   const summary = db._store.get(`users/${uid}/humor/summary`);
   const calibration = db._store.get(`users/${uid}/humor/calibration`);
-  return {picks, pages, progress, summary, calibration, vector: summary.vector};
+  return {picks, progress, summary, calibration, vector: summary.vector};
 }
 
 function strongest(vector) {
@@ -1303,7 +820,6 @@ test("a consistent persona gets a visible profile from the 15 calibration rating
     assert.equal(run.calibration.complete, true);
     const ids = run.picks.map((pick) => pick.content.contentId);
     assert.equal(new Set(ids).size, CALIBRATION_TOTAL, "duplicate content in calibration");
-    assert.deepEqual(run.pages.map((page) => page.length), [6, 6, 3]);
     assert.equal(run.calibration.degradedCount, 0);
   }
 
@@ -1354,174 +870,6 @@ test("random ratings stay bounded instead of producing extreme profiles", async 
     });
   }
   assert.ok(Math.abs(profile.vector.sarcasm - 50) < 10, String(profile.vector.sarcasm));
-});
-
-test("the adaptive stage reacts to the anchor answers", async () => {
-  // Same user id — so identical anchor content — answered two ways.
-  const uid = "persona_same_anchors";
-  const adaptiveFor = async (taste) => {
-    const run = await calibrateThroughServer(seededDb(), uid, persona(taste));
-    return {
-      anchors: run.picks.slice(0, 6).map((pick) => pick.content.contentId),
-      adaptive: run.picks.slice(6, 12).map((pick) => pick.content.contentId),
-    };
-  };
-  // The six anchors measure exactly their six primaries, so the five
-  // dimensions they leave unmeasured are probed whatever the answers were;
-  // the answers decide the order (which neighbour of the strongest reaction
-  // is separated first) and what fills the remaining position.
-  const a = await adaptiveFor({sarcasm: 1, silly: -1});
-  const b = await adaptiveFor({wordplay: 1, sarcasm: -1});
-  const c = await adaptiveFor({absurd: 1, cringe: -1});
-  assert.deepEqual(a.anchors, b.anchors, "precondition: the same anchors were shown");
-  assert.deepEqual(a.anchors, c.anchors, "precondition: the same anchors were shown");
-  assert.notDeepEqual(
-    [...a.adaptive].sort(),
-    [...b.adaptive].sort(),
-    "adaptive picks must depend on how the anchors were rated",
-  );
-  assert.notDeepEqual(a.adaptive, c.adaptive, "adaptive order must depend on the answers");
-
-  // The first adaptive probe separates the strongest anchor reaction from
-  // one of its neighbours.
-  const {ADJACENT_DIMENSIONS} = require("../lib/humor/calibration.js");
-  const dimOf = (id) => primaryDimensionOf(seedById.get(id));
-  for (const [run, strongestReaction] of [
-    [a, "sarcasm"],
-    [b, "sarcasm"],
-    [c, "cringe"],
-  ]) {
-    assert.ok(
-      ADJACENT_DIMENSIONS[strongestReaction].includes(dimOf(run.adaptive[0])),
-      `first probe ${dimOf(run.adaptive[0])} is not a neighbour of ${strongestReaction}`,
-    );
-  }
-});
-
-test("after the anchors, no dimension is probed twice", async () => {
-  for (const taste of [{sarcasm: 1, silly: -1}, {absurd: 1, cringe: -1}, {}]) {
-    const run = await calibrateThroughServer(seededDb(), "persona_probe", persona(taste));
-    const probes = run.picks.slice(6).map((pick) => primaryDimensionOf(pick.content));
-    assert.equal(
-      new Set(probes).size,
-      probes.length,
-      `repeated probe for ${JSON.stringify(taste)}: ${probes.join(",")}`,
-    );
-  }
-});
-
-test("a fallback probe excludes what the item measured, not only its target", async () => {
-  // A thin pool: `teasing` has no focused item, only one that is mostly sarcasm.
-  const curated = (contentId, humorVector) =>
-    seedDocFrom({
-      contentId,
-      type: "text",
-      language: "tr",
-      category: Object.keys(humorVector)[0],
-      humorVector,
-      calibration: {eligible: true, slot: null},
-    });
-  const docs = {};
-  for (const [id, vector] of [
-    ["thin_sarcasm_teasing", {sarcasm: 0.9, teasing: 0.6}],
-    ["thin_sarcasm", {sarcasm: 0.9}],
-    ["thin_absurd", {absurd: 0.9}],
-    ["thin_silly", {silly: 0.9}],
-  ]) {
-    docs[`humorContent/${id}`] = curated(id, vector);
-  }
-  const db = makeDb(docs);
-  const uid = "user_thin";
-  const state = {
-    ...defaultCalibrationState(),
-    completedCount: 12,
-    stage: "exploration",
-    ratedContentIds: Array.from({length: 12}, (_, i) => `retired_${i}`),
-    coveredDimensions: HUMOR_CATEGORIES.filter((dim) => dim !== "teasing"),
-  };
-  const select = (from) =>
-    selectCalibrationItems({
-      db,
-      uid,
-      state: from,
-      profile: defaultUserHumorProfile(),
-      languages: ["tr"],
-      limit: 3,
-    });
-
-  const page = await select(state);
-  const ids = page.picks.map((pick) => pick.content.contentId);
-  // teasing can only be probed through the sarcasm-heavy item — which also
-  // measured sarcasm, so sarcasm must not get a second probe on this page.
-  assert.deepEqual(ids, ["thin_sarcasm_teasing", "thin_absurd", "thin_silly"]);
-
-  // A resumed page reaches the same choice from server state alone.
-  const resumed = await select(advanceCalibration({state, content: page.picks[0].content}));
-  assert.deepEqual(
-    resumed.picks.map((pick) => pick.content.contentId),
-    ["thin_absurd", "thin_silly"],
-  );
-});
-
-test("validation re-tests the headline like and dislike with different items", async () => {
-  // Both headline traits are anchor-measured, so each rests on one anchor
-  // until validation re-tests it. (A trait the adaptive stage already probed —
-  // e.g. silly, which no anchor measures — is not re-tested again.)
-  const run = await calibrateThroughServer(
-    seededDb(),
-    "persona_validation",
-    persona({sarcasm: 1, cringe: -1}),
-  );
-  const anchorFor = (dim) =>
-    run.picks.slice(0, 6).find((pick) => primaryDimensionOf(pick.content) === dim);
-  const final = run.picks.slice(12);
-  assert.deepEqual(
-    final.map((pick) => pick.stage),
-    ["exploration", "exploration", "exploration"],
-    "validation stays an exploration-stage card for the client",
-  );
-  const like = final[0];
-  assert.equal(primaryDimensionOf(like.content), "sarcasm");
-  assert.notEqual(like.content.contentId, anchorFor("sarcasm").content.contentId);
-  const dislike = final[1];
-  assert.equal(primaryDimensionOf(dislike.content), "cringe");
-  assert.notEqual(dislike.content.contentId, anchorFor("cringe").content.contentId);
-
-  // Nobody to validate for a neutral user: all three positions explore.
-  const neutral = await calibrateThroughServer(seededDb(), "persona_flat", () => "neutral");
-  const dims = neutral.picks.slice(12).map((pick) => primaryDimensionOf(pick.content));
-  assert.equal(new Set(dims).size, 3);
-});
-
-test("stage pages are bounded for resumed users too", async () => {
-  const db = seededDb();
-  const ids = [];
-  const run = await runPagedSelection("user_bounds", db);
-  for (const pick of run.picks) {
-    ids.push(pick.content);
-  }
-  const at = async (count) => {
-    let state = defaultCalibrationState();
-    for (const content of ids.slice(0, count)) {
-      state = advanceCalibration({state, content});
-    }
-    const page = await selectCalibrationItems({
-      db,
-      uid: "user_bounds",
-      state,
-      profile: defaultUserHumorProfile(),
-      languages: ["tr", "en"],
-      limit: 15,
-    });
-    return page.picks.map((pick) => pick.stage);
-  };
-  assert.deepEqual(await at(0), Array(6).fill("anchor"));
-  assert.deepEqual(await at(5), ["anchor"]);
-  assert.deepEqual(await at(6), Array(6).fill("adaptive"));
-  assert.deepEqual(await at(8), Array(4).fill("adaptive"));
-  assert.deepEqual(await at(12), Array(3).fill("exploration"));
-  assert.deepEqual(await at(13), Array(2).fill("exploration"));
-  assert.deepEqual(await at(15), []);
 });
 
 test("learning continues after calibration, with smaller steps", async () => {
@@ -1638,21 +986,6 @@ test("a skip writes a marker and changes nothing else", async () => {
     statsBefore,
     "content stats untouched",
   );
-
-  // The skipped item is excluded from the next calibration page, and its
-  // slot rotates to another candidate.
-  const page = await selectCalibrationItems({
-    db,
-    uid,
-    state: await loadUserHumorCalibration(db, uid),
-    profile: await loadUserHumorProfile(db, uid),
-    languages: ["tr", "en"],
-    limit: 12,
-    excludeContentIds: await interactedIds(db, uid),
-  });
-  const served = page.picks.map((pick) => pick.content);
-  assert.equal(served.some((c) => c.contentId === ANCHOR_ID), false);
-  assert.ok(served.some((c) => c.calibration.slot === "anchor_wit"), "slot still measured");
 });
 
 test("a skip of already-rated content is a no-op", async () => {

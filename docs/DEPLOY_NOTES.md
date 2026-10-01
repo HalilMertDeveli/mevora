@@ -112,3 +112,40 @@ keep `source: "relationship_test"` and still render as matches, and the
 round documents in production stay until someone decides to archive them.
 Rollback: redeploy the functions from `feature/hourly-global-matching-game` or
 from `main` before this branch.
+
+## Humor Core sequence: what to deploy, and two functions to delete
+
+`feat/humor-core-sequence` replaces the personalised humor calibration and the
+global daily set of ten with one canonical sequence (see `docs/HUMOR_LAB.md`).
+Nothing is deployed by that branch; this is what the owner runs once it is on
+`main`.
+
+Deploy together — the callables keep their names, and the server and the app
+should ship in the same release:
+
+```powershell
+npx.cmd firebase deploy --project mevora-d6ed0 --only functions:getHumorFeed,functions:submitHumorFeedback,functions:getHumorProfile,functions:getDailyHumorSet,functions:submitDailyHumorResponse,functions:reportHumorContent,functions:getHumorCalibrationPoolReport,functions:adminListHumorCoreSequence
+```
+
+No rules or index change: `users/{uid}/humor/core` is covered by the existing
+`match /humor/{docId}` rule and by the account-deletion sweep.
+
+| Deployed function | Status |
+|---|---|
+| `publishDailyHumorSet`, `repairDailyHumorSlot` | Admin callables of the global daily set. Removed from the source: there is no global set any more. |
+
+Delete them after the deploy above:
+
+```powershell
+npx.cmd firebase functions:delete publishDailyHumorSet repairDailyHumorSlot --region europe-west1 --project mevora-d6ed0
+```
+
+Data left behind is not touched: `humorDailySets/*` manifests are simply no
+longer read, and members' old `humorDaily/*` days stay as history. A member's
+`humor/core` document is created the first time they open humor after the
+deploy. Rollback: redeploy the same eight functions from `main` before this
+branch — the old code ignores `humor/core`, and the lifetime profile was never
+rewritten.
+
+Do not deploy while the sequence is a draft unless that is intended:
+`docs/PUBLISH_BLOCKERS.md`, item 2.

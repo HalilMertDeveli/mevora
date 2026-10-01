@@ -1662,6 +1662,33 @@ describe("humor calibration state", () => {
     );
   });
 
+  it("Humor Core progress is the owner's to read and the server's to write", async () => {
+    // `users/{uid}/humor/core` decides which canonical items a member gets
+    // and when. A client that could write it could put itself past the
+    // calibration, pull tomorrow's items into today, or mark items answered.
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/humor/core`).set({
+        schemaVersion: 1,
+        answers: {hc_tr_img_001: {rating: "funny", dayId: "2026-10-01", answeredAtMs: 1, source: "core"}},
+        waived: {},
+        mediaFailures: {},
+        initialCompletedAtMs: null,
+        today: {dayId: "2026-10-01", setId: "onboarding-2026-10-01-x", contentIds: ["hc_tr_img_001"], kind: "onboarding", completedAtMs: null},
+        completedDays: 0,
+      });
+    });
+    const own = who.userA.db().doc(`users/${UID.A}/humor/core`);
+    await allow(own.get());
+    await deny(own.set({initialCompletedAtMs: 1, answers: {}, today: {}}));
+    await deny(own.update({initialCompletedAtMs: 1}));
+    await deny(own.update({"today.contentIds": ["hc_tr_img_099"]}));
+    await deny(own.update({"today.dayId": "2026-10-02"}));
+    await deny(own.delete());
+    await deny(who.userB.db().doc(`users/${UID.A}/humor/core`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/humor/core`).get());
+    await deny(who.userB.db().doc(`users/${UID.B}/humor/core`).set({initialCompletedAtMs: 1}));
+  });
+
   it("clients cannot promote content into an anchor pool", async () => {
     await deny(
       who.userA.db().doc("humorContent/hc_tr_img_001").set(

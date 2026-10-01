@@ -56,8 +56,6 @@ export {
   syncHumorFromProvider,
   getDailyHumorSet,
   submitDailyHumorResponse,
-  publishDailyHumorSet,
-  repairDailyHumorSlot,
   searchHumorProviderCandidates,
 } from "./humor/index.js";
 export {

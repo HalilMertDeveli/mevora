@@ -26,7 +26,7 @@ const {
   toFeedSafeContent,
   upsertHumorContentDoc,
 } = require("../lib/humor/contentRepository.js");
-const {buildCalibrationPoolReport} = require("../lib/humor/calibrationPoolReport.js");
+const {buildHumorCoreSequenceReport} = require("../lib/humor/coreService.js");
 const {ANCHOR_SLOTS, HUMOR_CALIBRATION_VERSION} = require("../lib/humor/calibration.js");
 const {HUMOR_CATEGORIES} = require("../lib/humor/categories.js");
 const {GiphyHumorSource, GIPHY_QUERY_FAMILIES} = require("../lib/humor/giphySource.js");
@@ -297,8 +297,6 @@ describe("seeding the curated GIPHY catalogue", () => {
     const pool = await listCalibrationPool(db, {calibrationVersion: HUMOR_CALIBRATION_VERSION, limit: 200});
     assert.equal(pool.length, 36);
     assert.ok(pool.every((item) => item.contentId.startsWith("hc_gif_") && item.type === "meme"));
-    const report = await buildCalibrationPoolReport(db);
-    assert.equal(report.healthy, true, report.warnings.join("; "));
   });
 
   it("retires every text-joke card — deactivated and un-curated, never deleted", async () => {
@@ -379,9 +377,11 @@ describe("seeding the curated GIPHY catalogue", () => {
     const pool = await listCalibrationPool(db, {calibrationVersion: HUMOR_CALIBRATION_VERSION, limit: 200});
     assert.equal(pool.length, 36);
     assert.ok(pool.every((item) => item.type === "meme" && item.media.textBody === null));
-    const report = await buildCalibrationPoolReport(db);
-    assert.equal(report.healthy, true, report.warnings.join("; "));
-    assert.deepEqual(report.uncoveredDimensions, []);
+    // …and it is exactly what the Core sequence hands out: every position
+    // of the sequence resolves to a seeded, servable document.
+    const report = await buildHumorCoreSequenceReport(db);
+    assert.equal(report.healthy, true, [...report.problems, ...report.warnings].join("; "));
+    assert.equal(report.servableCount, report.total);
 
     // On an empty database it seeds the same 36 and retires nothing.
     const fresh = createFakeFirestore({});

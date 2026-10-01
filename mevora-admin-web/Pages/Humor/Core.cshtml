@@ -1,0 +1,84 @@
+@page
+@model Mevora.Admin.Web.Pages.Humor.CoreModel
+@{
+    ViewData["Title"] = L["Humor Core sequence"].Value;
+    var rows = Model.Result.Items().ToList();
+    var problems = Model.Result.Arr("problems").Concat(Model.Result.Arr("warnings"))
+        .Where(p => p.ValueKind == JsonValueKind.String).Select(p => p.GetString()).ToList();
+}
+<div class="page-head">
+    <div>
+        <h1>@L["Humor Core sequence"]</h1>
+        <p>@L["The one order every member rates humor content in: the first {0} at calibration, then {1} a day. Read-only — the order changes only through a reviewed code change.", Model.Result.S("onboardingCount"), Model.Result.S("dailyCount")]</p>
+    </div>
+</div>
+<partial name="_Flash" model="Model" />
+<nav class="tabs" aria-label="@L["Humor pages"]">
+    <a class="tab" href="/Humor">@L["Moderation queue"]</a>
+    <a class="tab active" href="/Humor/Core" aria-current="page">@L["Core sequence"]</a>
+</nav>
+@if (rows.Count == 0)
+{
+    <p class="muted">@L["Nothing here."]</p>
+}
+else
+{
+    <p class="small">
+        <span class="badge @(Model.Result.Bool("released") ? "badge-ok" : "badge-warn")">@(Model.Result.Bool("released") ? L["Released"] : L["Draft — not released yet"])</span>
+        <span class="badge @(Model.Result.Bool("healthy") ? "badge-ok" : "badge-danger")">@(Model.Result.Bool("healthy") ? L["Every entry can be shown to members"] : L["Some entries cannot be shown to members"])</span>
+        <span class="muted">@L["{0} entries, {1} can be shown", Model.Result.S("total"), Model.Result.S("servableCount")]</span>
+    </p>
+    @if (problems.Count > 0)
+    {
+        <ul class="small">
+            @foreach (var problem in problems)
+            {
+                <li class="mono">@problem</li>
+            }
+        </ul>
+    }
+    <table class="data">
+        <thead><tr><th scope="col">@L["Position"]</th><th scope="col">@L["Preview"]</th><th scope="col">@L["Content"]</th><th scope="col">@L["Core status"]</th><th scope="col">@L["Measures"]</th><th scope="col">@L["Source"]</th><th scope="col">@L["Ratings"]</th></tr></thead>
+        <tbody>
+            @foreach (var e in rows)
+            {
+                var retired = e.Str("coreStatus") == "retired";
+                <tr>
+                    <td class="nowrap">
+                        <strong>V@(e.S("position"))</strong>
+                        <div class="muted small">@(e.Bool("onboarding") ? L["Calibration"] : L["Daily"])</div>
+                    </td>
+                    <td>@if (e.Str("previewUrl") is { } url) { <img class="thumb" alt="@L["Humor item preview"]" src="@url" loading="lazy" referrerpolicy="no-referrer" /> }</td>
+                    <td class="small">
+                        <div class="mono">@e.S("contentId")</div>
+                        <div>@L.Code(e.Str("type"))</div>
+                        @if (e.Str("supersedes") is { Length: > 0 } old) { <div class="muted">@L["Replaces {0}", old]</div> }
+                    </td>
+                    <td class="small">
+                        <span class="badge @(retired ? "badge-danger" : "badge-ok")">@L.Code(e.Str("coreStatus"))</span>
+                        @if (retired && e.Str("retiredReason") is { Length: > 0 } reason) { <div class="muted">@reason</div> }
+                        @if (!retired)
+                        {
+                            <div>
+                                <span class="badge @(e.Bool("servable") ? "badge-ok" : "badge-warn")">@(e.Bool("servable") ? L["Shown to members"] : L["Not shown to members"])</span>
+                            </div>
+                            @if (!e.Bool("servable"))
+                            {
+                                <div class="muted">@(e.Bool("contentExists") ? L["Content state: {0}", L.Code(e.Str("safetyStatus"))] : L["Content document missing"])</div>
+                            }
+                        }
+                    </td>
+                    <td class="small">
+                        <div>@L.Code(e.Str("category"))</div>
+                        <div class="muted mono">@string.Join(" · ", e.Arr("vectorSummary").Where(v => v.ValueKind == JsonValueKind.String).Select(v => v.GetString()))</div>
+                    </td>
+                    <td class="small">
+                        <div>@e.S("provider")</div>
+                        <div class="muted">@L.Code(e.Str("sourceTrust"))</div>
+                    </td>
+                    <td>@e.S("ratingCount", "0")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

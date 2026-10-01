@@ -58,9 +58,9 @@ Map<String, dynamic> _feedItem(String id, Object? attribution) => {
 
 /// Rate [count] catalog items directly on the backend, as another session.
 Future<void> _preRate(MockHumorDataSource source, int count) async {
-  for (final item in MockHumorDataSource.seedCatalog.take(count)) {
+  for (final contentId in source.sequenceIds.take(count)) {
     await source.submitFeedback(
-      contentId: item.contentId,
+      contentId: contentId,
       rating: HumorRating.funny,
     );
   }
@@ -187,11 +187,9 @@ void main() {
         contentId: 'c9',
         skipReason: HumorSkipReason.mediaFailed,
       );
-      await source.skipContent(contentId: 'c10');
 
       expect(backend.payloads, [
         {'contentId': 'c9', 'skipped': true, 'skipReason': 'media_failed'},
-        {'contentId': 'c10', 'skipped': true},
       ]);
       expect(backend.payloads.first.containsKey('rating'), isFalse);
     });
@@ -213,7 +211,8 @@ void main() {
 
       expect(source.skipReasons, [HumorSkipReason.mediaFailed]);
       expect(source.ratingOf(broken), isNull);
-      expect(source.passedContentIds, contains(broken));
+      expect(source.deferredContentIds, contains(broken));
+      expect(source.waivedContentIds, isEmpty);
       expect(source.profile.interactionCount, 0);
       expect(controller.state.calibration.completedCount, 0);
       expect(controller.state.currentIndex, 1);
@@ -231,18 +230,6 @@ void main() {
       );
     });
 
-    test('a plain skip keeps sending no reason', () async {
-      final source = MockHumorDataSource();
-      final controller = HumorController(
-        repository: HumorRepositoryImpl(dataSource: source),
-      );
-      await controller.load();
-
-      await controller.skip();
-
-      expect(source.skipReasons, [null]);
-    });
-
     test('a tap from a card that is no longer on screen is ignored', () async {
       final source = MockHumorDataSource();
       final controller = HumorController(
@@ -257,11 +244,12 @@ void main() {
       expect(controller.state.currentIndex, 0);
     });
 
-    test('an unplayable last calibration item hands out a replacement '
-        'instead of trapping the user', () async {
+    test('an unplayable last calibration item is never replaced by other '
+        'content: the calibration pauses and the same item is back '
+        'tomorrow', () async {
+      const total = MockHumorDataSource.onboardingCount;
       final source = MockHumorDataSource();
-      // One anchor slot left: the page holds exactly one item.
-      await _preRate(source, HumorCalibration.anchorInteractions - 1);
+      await _preRate(source, total - 1);
       final controller = HumorController(
         repository: HumorRepositoryImpl(dataSource: source),
       );
@@ -273,15 +261,41 @@ void main() {
       await controller.skipUnplayable(broken);
 
       expect(source.feedCalls, feedCallsBefore + 1, reason: 'one tail fetch');
-      expect(controller.state.reachedEnd, isFalse);
-      expect(controller.state.currentIndex, 1);
-      final replacement = controller.state.current!;
-      expect(replacement.contentId, isNot(broken));
-      expect(replacement.calibrationStage, HumorCalibrationStage.anchor);
-      expect(
-        controller.state.calibration.completedCount,
-        HumorCalibration.anchorInteractions - 1,
+      // Nothing took its place — everyone rates the same items.
+      expect(controller.state.current, isNull);
+      expect(controller.state.items.map((item) => item.contentId), [broken]);
+      expect(controller.state.continuesTomorrow, isTrue);
+      expect(controller.state.calibration.complete, isFalse);
+      expect(controller.state.calibration.completedCount, total - 1);
+      expect(source.profile.interactionCount, total - 1);
+
+      source.closeDay('2099-01-02');
+      await controller.load();
+      expect(controller.state.current?.contentId, broken);
+      await controller.rate(HumorRating.funny);
+      expect(controller.state.calibration.complete, isTrue);
+    });
+
+    test('media that fails on a second day is waived for the user instead of '
+        'holding the calibration open forever', () async {
+      const total = MockHumorDataSource.onboardingCount;
+      final source = MockHumorDataSource();
+      await _preRate(source, total - 1);
+      final controller = HumorController(
+        repository: HumorRepositoryImpl(dataSource: source),
       );
+      await controller.load();
+      final broken = controller.state.current!.contentId;
+      await controller.skipUnplayable(broken);
+
+      source.closeDay('2099-01-02');
+      await controller.load();
+      await controller.skipUnplayable(broken);
+
+      expect(source.waivedContentIds, contains(broken));
+      expect(source.ratingOf(broken), isNull, reason: 'never a rating');
+      expect(source.calibration.complete, isTrue);
+      expect(source.profile.interactionCount, total - 1);
     });
 
     test('a failed media skip is retried as a media skip', () async {
@@ -347,7 +361,15 @@ void main() {
         expect(source.ratingOf(first.contentId), isNull);
         expect(source.feedbackCalls, 1, reason: 'the skip only, no rating');
         expect(controller.state.currentIndex, 1);
-        expect(find.text(l10n.humorCalibrationProgress(0, 15)), findsOneWidget);
+        expect(
+          find.text(
+            l10n.humorCalibrationProgress(
+              0,
+              MockHumorDataSource.onboardingCount,
+            ),
+          ),
+          findsOneWidget,
+        );
       });
     });
   });

@@ -1,13 +1,12 @@
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
 
-/// Client-side feed / profile thresholds aligned with Cloud Functions.
+/// Client-side feed paging and profile-progress helpers.
+///
+/// There is no item count here: how many items the initial calibration and a
+/// day's tour have is the server's to say.
 abstract final class HumorFeedPolicy {
   static const int pageSize = 12;
   static const int preloadAhead = 3;
-  static const int buildingThreshold = 15;
-
-  static bool isBuilding(int interactionCount) =>
-      interactionCount < buildingThreshold;
 
   static bool shouldPrefetch({
     required int currentIndex,
@@ -21,10 +20,15 @@ abstract final class HumorFeedPolicy {
     return currentIndex >= itemCount - preloadAhead;
   }
 
+  /// How far the initial calibration is, as the server reported it.
   static double buildingProgress(UserHumorProfile profile) {
     if (!profile.profileBuilding) {
       return 1;
     }
-    return (profile.interactionCount / buildingThreshold).clamp(0.0, 1.0);
+    final calibration = profile.calibration;
+    if (calibration.totalCount <= 0) {
+      return 0;
+    }
+    return calibration.progress;
   }
 }

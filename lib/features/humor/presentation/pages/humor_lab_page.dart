@@ -16,7 +16,6 @@ import 'package:mevora/features/humor/presentation/widgets/humor_rating_bar.dart
 import 'package:mevora/features/humor/presentation/widgets/humor_report_sheet.dart';
 import 'package:mevora/features/humor/presentation/widgets/humor_swipe_hints.dart';
 import 'package:mevora/l10n/app_localizations.dart';
-import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
@@ -179,7 +178,7 @@ class _HumorLabPageState extends State<HumorLabPage> {
           final state = controller.state;
           final calibration = state.calibration;
           // Progress is only claimed once the server has said where the user
-          // is — the placeholder state before the first load is not "0 / 15".
+          // is and how many items there are — never from a count kept here.
           final calibrating =
               !state.isLoading &&
               state.failure == null &&
@@ -256,6 +255,7 @@ class _HumorLabPageState extends State<HumorLabPage> {
                   ? _HumorFeedEnd(
                       state: state,
                       onRetry: () => unawaited(controller.load()),
+                      onClose: _close,
                     )
                   : _HumorFeedBody(controller: controller),
             ),
@@ -282,16 +282,46 @@ class _HumorLabPageState extends State<HumorLabPage> {
   }
 }
 
-/// "Nothing (more) to show", in the three ways it can be true.
+/// "Nothing (more) to show", in the ways it can be true.
 class _HumorFeedEnd extends StatelessWidget {
-  const _HumorFeedEnd({required this.state, required this.onRetry});
+  const _HumorFeedEnd({
+    required this.state,
+    required this.onRetry,
+    required this.onClose,
+  });
 
   final HumorViewState state;
   final VoidCallback onRetry;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    if (state.continuesTomorrow) {
+      // An item would not play, so the calibration is not finished — but
+      // there is nothing left to do today. Not an error, and not "all done".
+      return MevoraEmptyState(
+        art: MevoraArt.humor,
+        title: l10n.humorCalibrationPausedTitle,
+        message: l10n.humorCalibrationPausedBody,
+        actionLabel: l10n.close,
+        onAction: onClose,
+      );
+    }
+    if (state.calibration.complete && !state.catalogEmpty) {
+      // The calibration is behind the user. From here on the items come five
+      // a day, in the daily tour — there is no feed to keep scrolling.
+      final router = GoRouter.maybeOf(context);
+      return MevoraEmptyState(
+        art: MevoraArt.success,
+        title: l10n.humorProfileEntryComplete,
+        message: l10n.humorLabCalibratedBody,
+        actionLabel: router == null ? l10n.close : l10n.humorDailyTitle,
+        onAction: router == null
+            ? onClose
+            : () => router.pushReplacement(AppRoutes.humorDaily),
+      );
+    }
     return MevoraEmptyState(
       art: state.catalogExhausted ? MevoraArt.success : MevoraArt.humor,
       title: l10n.humorLabTitle,
@@ -549,16 +579,10 @@ class _HumorFeedBodyState extends State<_HumorFeedBody> {
                   },
                 ),
               ),
-              MevoraButton(
-                label: l10n.humorSkipContent,
-                icon: MevoraIcons.skip,
-                variant: MevoraButtonVariant.ghost,
-                size: MevoraButtonSize.small,
-                isExpanded: false,
-                onPressed: canAct && !state.reachedEnd
-                    ? () => unawaited(controller.skip())
-                    : null,
-              ),
+              // No "skip": every member rates the same items, so each one
+              // is a measurement. Media that will not play has its own "Next"
+              // on the card.
+              const SizedBox(height: AppSpacing.md),
             ],
           ),
         ),
@@ -592,6 +616,16 @@ class _HumorTail extends StatelessWidget {
       return _HumorFeedEnd(
         state: state,
         onRetry: () => unawaited(controller.loadMore()),
+        onClose: () {
+          final router = GoRouter.maybeOf(context);
+          if (router == null) {
+            unawaited(Navigator.of(context).maybePop());
+          } else if (router.canPop()) {
+            router.pop();
+          } else {
+            router.go(AppRoutes.discovery);
+          }
+        },
       );
     }
     if (state.loadMoreFailed) {

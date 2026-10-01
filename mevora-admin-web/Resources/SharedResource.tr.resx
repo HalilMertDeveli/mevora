@@ -168,6 +168,29 @@
   <data name="Hand this ticket to Trust &amp; Safety?" xml:space="preserve"><value>Bu talep Güven ve Güvenlik ekibine devredilsin mi?</value></data>
   <data name="High-priority cases" xml:space="preserve"><value>Yüksek öncelikli vakalar</value></data>
   <data name="Humor" xml:space="preserve"><value>Mizah</value></data>
+  <data name="Humor Core sequence" xml:space="preserve"><value>Mizah Core sırası</value></data>
+  <data name="The one order every member rates humor content in: the first {0} at calibration, then {1} a day. Read-only — the order changes only through a reviewed code change." xml:space="preserve"><value>Her üyenin mizah içeriklerini puanladığı tek sıra: kalibrasyonda ilk {0}, sonra günde {1}. Salt okunur — sıra yalnızca incelenmiş bir kod değişikliğiyle değişir.</value></data>
+  <data name="Humor pages" xml:space="preserve"><value>Mizah sayfaları</value></data>
+  <data name="Moderation queue" xml:space="preserve"><value>Moderasyon kuyruğu</value></data>
+  <data name="Core sequence" xml:space="preserve"><value>Core sırası</value></data>
+  <data name="Released" xml:space="preserve"><value>Yayında</value></data>
+  <data name="Draft — not released yet" xml:space="preserve"><value>Taslak — henüz yayınlanmadı</value></data>
+  <data name="Every entry can be shown to members" xml:space="preserve"><value>Tüm içerikler üyelere gösterilebilir</value></data>
+  <data name="Some entries cannot be shown to members" xml:space="preserve"><value>Bazı içerikler üyelere gösterilemiyor</value></data>
+  <data name="{0} entries, {1} can be shown" xml:space="preserve"><value>{0} içerik, {1} tanesi gösterilebilir</value></data>
+  <data name="Position" xml:space="preserve"><value>Sıra</value></data>
+  <data name="Core status" xml:space="preserve"><value>Core durumu</value></data>
+  <data name="Measures" xml:space="preserve"><value>Ölçtüğü</value></data>
+  <data name="Ratings" xml:space="preserve"><value>Puanlama</value></data>
+  <data name="Calibration" xml:space="preserve"><value>Kalibrasyon</value></data>
+  <data name="Daily" xml:space="preserve"><value>Günlük</value></data>
+  <data name="Replaces {0}" xml:space="preserve"><value>{0} yerine geçer</value></data>
+  <data name="Shown to members" xml:space="preserve"><value>Üyelere gösteriliyor</value></data>
+  <data name="Not shown to members" xml:space="preserve"><value>Üyelere gösterilmiyor</value></data>
+  <data name="Content state: {0}" xml:space="preserve"><value>İçerik durumu: {0}</value></data>
+  <data name="Content document missing" xml:space="preserve"><value>İçerik belgesi yok</value></data>
+  <data name="code:retired" xml:space="preserve"><value>Emekli</value></data>
+  <data name="code:curated" xml:space="preserve"><value>Kürasyonlu</value></data>
   <data name="Humor Lab moderation" xml:space="preserve"><value>Mizah Laboratuvarı moderasyonu</value></data>
   <data name="Humor item preview" xml:space="preserve"><value>Mizah içeriği önizlemesi</value></data>
   <data name="Humor needing review" xml:space="preserve"><value>İnceleme bekleyen mizah</value></data>

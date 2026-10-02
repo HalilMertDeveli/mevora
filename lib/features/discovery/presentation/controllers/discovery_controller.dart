@@ -145,6 +145,7 @@ class DiscoveryController extends ChangeNotifier {
     ViewerProfileLoader? viewerProfileLoader,
     bool skipExplanationIfAlreadyGranted = true,
     this.swipeThreshold = 120,
+    this.locationFlagsTimeout = const Duration(seconds: 8),
     bool loadDeckOnStart = true,
   }) : _deckWanted = loadDeckOnStart,
        _locationRepository = locationRepository,
@@ -196,6 +197,10 @@ class DiscoveryController extends ChangeNotifier {
 
   /// Minimum drag distance (px) before a swipe action fires.
   final double swipeThreshold;
+
+  /// How long the read of the location flags may take before it counts as
+  /// unread. The same patience the app-level location gate has.
+  final Duration locationFlagsTimeout;
 
   PurchaseRepository? get purchaseRepository => _purchaseRepository;
   DiscoveryRepository get discoveryRepository => _discoveryRepository;
@@ -287,11 +292,26 @@ class DiscoveryController extends ChangeNotifier {
   bool get locationFlagsUnresolved =>
       _locationFlagsRead == _LocationFlagsRead.failed;
 
+  /// The stored flags, or null when they could not be read in time.
+  ///
+  /// The read has no deadline of its own: offline, with nothing cached,
+  /// Firestore keeps waiting for the server, and the tab sat on its loading
+  /// state for as long as the phone was offline. An answer that does not come
+  /// is an unread one, handled like a failed read.
+  Future<LocationFlags?> _readLocationFlags() async {
+    try {
+      final result = await _locationRepository
+          .loadLocationFlags(uid)
+          .timeout(locationFlagsTimeout);
+      return result.valueOrNull;
+    } on TimeoutException {
+      return null;
+    }
+  }
+
   Future<void> start() async {
     unawaited(refreshBoost());
-    final flags = (await _locationRepository.loadLocationFlags(
-      uid,
-    )).valueOrNull;
+    final flags = await _readLocationFlags();
     if (flags == null) {
       // A failed read is not "never asked". Asking now would let "Skip for
       // now" store locationEnabled: false over a choice that simply could

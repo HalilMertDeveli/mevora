@@ -65,6 +65,7 @@ void main() {
     DiscoveryController build(
       FakeLocationRepository location, {
       bool skipExplanationIfAlreadyGranted = false,
+      Duration locationFlagsTimeout = const Duration(seconds: 8),
     }) {
       final controller = DiscoveryController(
         uid: 'self',
@@ -79,10 +80,61 @@ void main() {
           ],
         ),
         skipExplanationIfAlreadyGranted: skipExplanationIfAlreadyGranted,
+        locationFlagsTimeout: locationFlagsTimeout,
       );
       addTearDown(controller.dispose);
       return controller;
     }
+
+    test('a flags read that never answers is treated as unread, not waited '
+        'on forever', () async {
+      // Seen on a device: offline with nothing cached, Firestore neither
+      // answered nor failed, and the tab stayed on "Loading" until the
+      // connection came back.
+      final location = _UnreadableFlagsLocationRepository()
+        ..flagsReadable = true
+        ..flags['self'] = _locationOn
+        ..gate = Completer<void>();
+      addTearDown(() => location.gate!.complete());
+      final controller = build(
+        location,
+        locationFlagsTimeout: const Duration(milliseconds: 20),
+      );
+
+      await controller.start().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => fail('start() waited on the flags read'),
+      );
+
+      expect(controller.locationFlagsPending, isFalse);
+      expect(controller.locationFlagsUnresolved, isTrue);
+      expect(controller.state.phase, LocationPromptPhase.ready);
+      expect(location.flagWrites, 0);
+      expect(location.captureCalls, 0);
+    });
+
+    test('a read that timed out is settled by the next refresh', () async {
+      final location = _UnreadableFlagsLocationRepository()
+        ..flagsReadable = true
+        ..flags['self'] = _locationOn
+        ..gate = Completer<void>();
+      final controller = build(
+        location,
+        locationFlagsTimeout: const Duration(milliseconds: 20),
+      );
+      await controller.start();
+      expect(controller.locationFlagsUnresolved, isTrue);
+
+      // The connection is back: the read answers again.
+      location.gate!.complete();
+      location.gate = null;
+      await controller.refresh();
+
+      expect(controller.locationFlagsUnresolved, isFalse);
+      expect(controller.state.phase, LocationPromptPhase.ready);
+      expect(location.flags['self'], _locationOn);
+      expect(location.flagWrites, 0);
+    });
 
     test('a failed flags read is not answered with the location question, '
         'and nothing is saved', () async {

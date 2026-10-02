@@ -1,5 +1,6 @@
 import 'package:mevora/core/constants/app_strings.dart';
 import 'package:mevora/core/errors/failure.dart';
+import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/features/calls/presentation/call_strings.dart';
 import 'package:mevora/features/chat/presentation/chat_strings.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -105,6 +106,7 @@ abstract final class L10nErrors {
     if (raw == CallStrings.unstable) return l10n.connectionUnstable;
     if (raw == CallStrings.failed) return l10n.callFailed;
     if (raw == CallStrings.ended) return l10n.callEnded;
+    if (raw == FailureMapper.unexpectedMessage) return l10n.somethingWentWrong;
     if (raw == AppStrings.networkError) return l10n.networkError;
     if (raw == AppStrings.locationTimeoutMessage) return l10n.locationTimeoutMessage;
     if (raw == AppStrings.locationNetworkMessage) return l10n.locationNetworkMessage;

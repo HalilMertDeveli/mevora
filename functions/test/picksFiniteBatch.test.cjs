@@ -194,7 +194,8 @@ describe("Picks sizing comes from one place", () => {
           candidateUid: uid, rank, pickType: "bestOverall", labels: ["bestOverall"],
           reasons: [], overallScore: 80, isBoosted: false, selectionStrategy: "exploit",
         })),
-        new Map(),
+        // A stored Pick always carries its card; undefined is not a Firestore value.
+        new Map(["s0", "s1", "s2", "s3", "s4", "s5"].map((uid) => [uid, {}])),
         nowMs,
       ),
       cooldowns: {},

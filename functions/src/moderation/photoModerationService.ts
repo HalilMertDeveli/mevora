@@ -48,13 +48,19 @@ function photosFrom(data: Record<string, unknown> | undefined): PhotoRecord[] {
  * patch (moderatedAt, lastProcessingAttempt) to a concrete server-clock
  * Timestamp before it goes into the array. The document-level updatedAt is not
  * inside an array and keeps its sentinel.
+ *
+ * Firestore rejects undefined as well. In a patch it means "leave the field as
+ * it is" — the ledger write reads it the same way — so those keys are dropped
+ * rather than copied over the element; clearing a field takes an explicit null.
  */
 function arraySafePatch(patch: Partial<PhotoRecord>): Partial<PhotoRecord> {
   return Object.fromEntries(
-    Object.entries(patch).map(([key, value]) => [
-      key,
-      value instanceof FieldValue ? Timestamp.now() : value,
-    ]),
+    Object.entries(patch)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [
+        key,
+        value instanceof FieldValue ? Timestamp.now() : value,
+      ]),
   ) as Partial<PhotoRecord>;
 }
 

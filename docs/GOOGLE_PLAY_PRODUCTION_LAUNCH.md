@@ -21,6 +21,22 @@ It prints `PASS` / `FAIL` / `BLOCKED` / `NOT TESTABLE` per item. `FAIL` means th
 repository is wrong. `BLOCKED` means the repository is ready and the item waits on a step
 in §2.
 
+### Production leak guard
+
+Tests, emulator tooling, the demo deck and the QA login stay in the repository, and none
+of it may reach a member or a store reviewer. Three checks hold that line; all three run
+in CI:
+
+| Check | What it covers |
+|---|---|
+| `node tool/productionReadiness.cjs`, section **production leak scan** | Static, over what ships (`lib/` without `lib/core/testing`, `functions/src`, `hosting/public`, the ARB strings): no test double imported or used as a fallback, stand-ins built only in guarded factories, no release logging, no emulator address outside the config, no bypass-style switch, the backend emulator switch compared strictly, emulator-only callables not exported to a deploy, no developer wording in member-facing copy, no comment or draft wording in the public pages, demo portraits in the development flavor only |
+| `test/security/production_leak_guard_test.dart` | Behaviour: for a staging or production configuration every emulator, QA, mock, demo and test-store switch is off, and asking for it does not turn it on; developer routes are closed; a mis-built app refuses to start |
+| `functions/test/productionSurface.test.cjs` | Backend: what a deploy exports, the smoke fast path, the draft humor sequence, what is logged |
+
+It scans production code only, never `test/`, so a fake used by a test is not a finding.
+Every exception is listed in the tool next to the reason it is safe; adding one means
+adding the reason.
+
 ---
 
 ## 1. Decision zero — which Firebase project is production?

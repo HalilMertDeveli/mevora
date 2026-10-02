@@ -132,7 +132,12 @@ Future<void> bootstrap(AppEnvironment environment) async {
   // Demo matches exist for the development demo deck only. Outside it there
   // is no hub, and the social repositories are the real ones with nothing in
   // front of them.
-  final demoAllowed = demoInfrastructureAllowed(environment: environment);
+  // `!kReleaseMode` is written out, not left to the guard: it is a
+  // compile-time constant, so in a release build the compiler can see that
+  // the demo hub is never built and leaves the whole demo layer out of the
+  // binary.
+  final demoAllowed =
+      !kReleaseMode && demoInfrastructureAllowed(environment: environment);
   MevoraPhotoImages.demoPortraitsAvailable = demoAllowed;
   final demoHub = demoAllowed ? DemoSocialHub(uidSource: uidSource) : null;
   final discoveryServices = createDiscoveryServices(

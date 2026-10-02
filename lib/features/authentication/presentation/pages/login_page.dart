@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
@@ -236,21 +237,24 @@ class _LoginPageState extends State<LoginPage>
                       ),
                     ),
                   ),
-                  EmulatorQaLoginPanel(
-                    enabled: !auth.isBusy,
-                    onSignInStarted: auth.beginExternalSignIn,
-                    onUseAccount: (email, password) {
-                      setState(() {
-                        _showEmailForm = true;
-                        _emailController.text = email;
-                        _passwordController.text = password;
-                        _emailError = null;
-                        _passwordError = null;
-                      });
-                      // Goes through the ordinary email sign-in path.
-                      unawaited(_submit());
-                    },
-                  ),
+                  // Not in a release build at all; elsewhere the panel
+                  // decides for itself whether the gate is open.
+                  if (!kReleaseMode)
+                    EmulatorQaLoginPanel(
+                      enabled: !auth.isBusy,
+                      onSignInStarted: auth.beginExternalSignIn,
+                      onUseAccount: (email, password) {
+                        setState(() {
+                          _showEmailForm = true;
+                          _emailController.text = email;
+                          _passwordController.text = password;
+                          _emailError = null;
+                          _passwordError = null;
+                        });
+                        // Goes through the ordinary email sign-in path.
+                        unawaited(_submit());
+                      },
+                    ),
                   if (_showEmailForm) ...[
                     const SizedBox(height: AppSpacing.xl),
                     KeyedSubtree(

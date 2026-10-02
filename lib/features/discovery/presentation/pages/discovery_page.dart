@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mevora/features/compatibility/domain/services/shared_traits.dart';
 import 'package:go_router/go_router.dart';
@@ -577,15 +578,15 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     final current = state.current;
     if (current == null) {
       if (state.hasSeenEveryone) {
+        // The demo deck's own label and action: never in a release build.
+        final demoDeck = !kReleaseMode && state.isMockMode;
         return MevoraEmptyState(
           art: MevoraArt.emptyProfiles,
           title: l10n.discoverySeenEveryoneTitle,
           message: l10n.discoverySeenEveryoneMessage,
-          actionLabel: state.isMockMode ? l10n.restartDemo : l10n.exploreAgain,
+          actionLabel: demoDeck ? l10n.restartDemo : l10n.exploreAgain,
           onAction: () => unawaited(
-            state.isMockMode
-                ? controller.restartDemo()
-                : controller.exploreAgain(),
+            demoDeck ? controller.restartDemo() : controller.exploreAgain(),
           ),
           secondaryActionLabel: l10n.discoveryChangePreferences,
           onSecondaryAction: () => unawaited(_openFilters(controller)),

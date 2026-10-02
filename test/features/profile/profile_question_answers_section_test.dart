@@ -36,8 +36,7 @@ class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
   Stream<List<ProfileQuestionAnswer>> watchAnswers(
     String uid, {
     bool visibleOnly = false,
-  }) =>
-      _controller.stream;
+  }) => _controller.stream;
 
   @override
   Future<Result<void>> syncFromMatching() async {
@@ -49,8 +48,7 @@ class _FakeProfileAnswers implements ProfileQuestionAnswerRepository {
   Future<Result<void>> setVisibility({
     required String questionId,
     required bool isVisible,
-  }) async =>
-      const Success(null);
+  }) async => const Success(null);
 
   void emit(List<ProfileQuestionAnswer> value) => _controller.add(value);
 
@@ -98,7 +96,8 @@ class _SingleMatchRepository implements MatchRepository {
   Stream<Match?> watchMatch(String matchId) => remote.watchMatch(matchId);
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) => const Stream.empty();
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) =>
+      const Stream.empty();
 
   @override
   Future<Match?> getMatch(String matchId) async => null;

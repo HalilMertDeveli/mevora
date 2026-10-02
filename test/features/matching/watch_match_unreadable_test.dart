@@ -34,7 +34,8 @@ class _DeniedRemote implements MatchRepository {
   }
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) => const Stream.empty();
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) =>
+      const Stream.empty();
 
   @override
   Future<Match?> getMatch(String matchId) async => null;

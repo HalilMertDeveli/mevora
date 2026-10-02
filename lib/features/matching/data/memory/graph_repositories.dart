@@ -25,8 +25,13 @@ class GraphMatchRepository implements MatchRepository, LikeRepository, Discovery
   }
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) =>
-      graph.watchMatches(uid);
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) {
+    final all = graph.watchMatches(uid);
+    if (limit == null) {
+      return all;
+    }
+    return all.map((items) => items.take(limit).toList(growable: false));
+  }
 
   @override
   Future<Match?> getMatch(String matchId) async => graph.matches[matchId];

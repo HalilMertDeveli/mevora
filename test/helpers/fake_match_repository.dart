@@ -33,7 +33,8 @@ class FakeMatchRepository
   }
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String userId) => _matchController.stream;
+  Stream<List<MatchListItem>> watchMatches(String userId, {int? limit}) =>
+      _matchController.stream;
 
   @override
   Future<Match?> getMatch(String matchId) async => matches[matchId];

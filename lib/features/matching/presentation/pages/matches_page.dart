@@ -141,10 +141,53 @@ class _MatchesPageState extends State<MatchesPage> {
                         ),
                       ),
                     ],
+                    if (controller.hasMore)
+                      _LoadMoreTrigger(
+                        // Keyed by size so a widened window that is still
+                        // full builds a fresh trigger for the next page.
+                        key: ValueKey(controller.items.length),
+                        onVisible: controller.loadMore,
+                      ),
                   ],
                 ),
         );
       },
+    );
+  }
+}
+
+/// Built lazily by the list, so it first exists when the user scrolls near
+/// the end of the loaded conversations.
+class _LoadMoreTrigger extends StatefulWidget {
+  const _LoadMoreTrigger({super.key, required this.onVisible});
+
+  final VoidCallback onVisible;
+
+  @override
+  State<_LoadMoreTrigger> createState() => _LoadMoreTriggerState();
+}
+
+class _LoadMoreTriggerState extends State<_LoadMoreTrigger> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onVisible();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Center(
+        child: SizedBox.square(
+          dimension: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
     );
   }
 }

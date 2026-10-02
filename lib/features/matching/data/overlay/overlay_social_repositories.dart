@@ -21,7 +21,7 @@ class OverlayMatchRepository implements MatchRepository {
   final DemoSocialHub hub;
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) {
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) {
     final controller = StreamController<List<MatchListItem>>();
     var remoteItems = <MatchListItem>[];
     var localItems = <MatchListItem>[];
@@ -42,10 +42,14 @@ class OverlayMatchRepository implements MatchRepository {
         final bTime = b.match.lastMessageAt ?? b.match.createdAt;
         return bTime.compareTo(aTime);
       });
-      controller.add(merged);
+      controller.add(
+        limit == null || merged.length <= limit
+            ? merged
+            : merged.take(limit).toList(growable: false),
+      );
     }
 
-    final remoteSub = remote.watchMatches(uid).listen(
+    final remoteSub = remote.watchMatches(uid, limit: limit).listen(
       (value) {
         remoteItems = value;
         emit();

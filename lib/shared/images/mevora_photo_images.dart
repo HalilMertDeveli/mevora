@@ -1,8 +1,16 @@
-/// Bundled demo portraits and leftover `mock://` URL mapping.
+/// Demo portraits and the `mock://` URL mapping that goes with them.
 ///
-/// Demo decks use Unsplash License portraits under `assets/images/portraits/`
-/// so discovery cards show real photos instead of letter placeholders.
+/// The development demo deck uses Unsplash License portraits under
+/// `assets/images/portraits/` so its cards show photos instead of letter
+/// placeholders. The files are bundled into the development flavor only
+/// (`pubspec.yaml`), and the mapping below answers only where the demo deck
+/// itself is allowed.
 abstract final class MevoraPhotoImages {
+  /// Whether this build carries the demo portraits. Set once at start-up from
+  /// the same rule that decides whether the demo deck exists; off until then,
+  /// so a build that never says so maps nothing.
+  static bool demoPortraitsAvailable = false;
+
   static const Map<String, String> portraits = {
     'mock-01': 'assets/images/portraits/mock-01.jpg',
     'mock-02': 'assets/images/portraits/mock-02.jpg',
@@ -21,9 +29,11 @@ abstract final class MevoraPhotoImages {
 
   static String? portraitForUid(String uid) => portraits[uid];
 
-  /// Asset path for bundled portraits or leftover `mock://uid/index` URLs.
+  /// Asset path for a demo portrait or a `mock://uid/index` URL — null for
+  /// everything in a build without the demo deck, where a photo is an http
+  /// URL or it is not a photo.
   static String? assetPath(String? url) {
-    if (url == null || url.isEmpty) {
+    if (!demoPortraitsAvailable || url == null || url.isEmpty) {
       return null;
     }
     if (isAssetPath(url)) {

@@ -59,6 +59,12 @@ abstract final class EmulatorQaLogin {
     return config.useAuthEmulator && accounts.isNotEmpty;
   }
 
+  /// The accounts this build may offer under [config]: none at all while the
+  /// gate is closed, whatever was compiled in.
+  static List<EmulatorQaAccount> accountsFor(AppConfig config) {
+    return isEnabled(config) ? accounts : const <EmulatorQaAccount>[];
+  }
+
   /// Signs in with an unsigned custom token, which the Auth emulator accepts.
   ///
   /// Why this exists: password sign-in runs a reCAPTCHA Enterprise pre-flight

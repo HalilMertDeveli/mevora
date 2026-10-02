@@ -2,13 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/core/di/discovery_scope.dart';
+import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/profile/profile_update_notifier.dart';
+import 'package:mevora/core/testing/fake_location_repository.dart';
+import 'package:mevora/core/testing/in_memory_discovery_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/authentication/data/services/reauth_service.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_page.dart';
+import 'package:mevora/features/location/presentation/controllers/location_controller.dart';
 import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
@@ -72,6 +77,26 @@ SettingsServices _services(SettingsHubRepository hub) {
   );
 }
 
+/// The page with the scopes it needs. It has no stand-ins of its own any
+/// more, so the test supplies the discovery and location backends.
+Widget _page(SettingsHubRepository hub, LocationController location) {
+  return DiscoveryScope(
+    repository: InMemoryDiscoveryRepository(),
+    child: LocationScope(
+      repository: location.repository,
+      controller: location,
+      child: SettingsScope(services: _services(hub), child: const DiscoveryPage()),
+    ),
+  );
+}
+
+LocationController _location() {
+  return LocationController(
+    repository: FakeLocationRepository(),
+    successHold: Duration.zero,
+  );
+}
+
 Widget _wrap(Widget child) {
   return MaterialApp(
     theme: AppTheme.light(),
@@ -87,10 +112,10 @@ void main() {
     'a viewer-profile load that finishes after disposal never touches context',
     (tester) async {
       final hub = _SlowHub();
+      final location = _location();
+      addTearDown(location.dispose);
 
-      await tester.pumpWidget(
-        _wrap(SettingsScope(services: _services(hub), child: const DiscoveryPage())),
-      );
+      await tester.pumpWidget(_wrap(_page(hub, location)));
       await tester.pump();
 
       expect(
@@ -136,10 +161,10 @@ void main() {
     tester,
   ) async {
     final hub = _SlowHub();
+    final location = _location();
+    addTearDown(location.dispose);
 
-    await tester.pumpWidget(
-      _wrap(SettingsScope(services: _services(hub), child: const DiscoveryPage())),
-    );
+    await tester.pumpWidget(_wrap(_page(hub, location)));
     await tester.pump();
 
     hub.gate.complete(null);

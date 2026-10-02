@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
@@ -116,10 +117,12 @@ class SocialScopeState extends State<SocialScope> with WidgetsBindingObserver {
     if (uid == _boundUid) {
       return;
     }
-    debugPrint(
-      '[TAB] social uid changed: ${_boundUid ?? 'none'} → ${uid ?? 'none'} '
-      '| restarting matches/incoming listeners',
-    );
+    if (kDebugMode) {
+      debugPrint(
+        '[TAB] social uid changed: ${_boundUid ?? 'none'} → ${uid ?? 'none'} '
+        '| restarting matches/incoming listeners',
+      );
+    }
     _boundUid = uid;
     matchesController.start();
     if (uid != null) {

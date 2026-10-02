@@ -28,7 +28,9 @@ class BackendProfileEngagementReporter implements ProfileEngagementReporter {
     try {
       await _backend.invoke('recordProfileEngagement', engagement);
     } on Object catch (error) {
-      debugPrint('profile engagement not recorded: $error');
+      if (kDebugMode) {
+        debugPrint('profile engagement not recorded: $error');
+      }
     }
   }
 }

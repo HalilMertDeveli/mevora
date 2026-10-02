@@ -58,7 +58,11 @@ flutter:
   generate: true
   uses-material-design: true
   assets:
-    - assets/images/portraits/
+    # Demo portraits for the development demo deck. Not part of a staging or
+    # production build.
+    - path: assets/images/portraits/
+      flavors:
+        - development
   fonts:
     # Full Latin-Extended static instances from Google Fonts (SIL OFL 1.1).
     # See docs/ui/ASSET_LICENSES.md.

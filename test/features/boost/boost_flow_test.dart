@@ -6,7 +6,7 @@ import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/boost/presentation/pages/boost_screen.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_button.dart';
-import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
+import 'package:mevora/core/testing/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_page.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';

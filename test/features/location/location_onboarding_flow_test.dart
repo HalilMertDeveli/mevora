@@ -9,6 +9,7 @@ import 'package:mevora/core/localization/local_language_data_source.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
+import 'package:mevora/core/testing/in_memory_discovery_repository.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:mevora/features/location/domain/entities/location_flags.dart';
@@ -51,6 +52,8 @@ void main() {
         authController: auth,
         locationController: location,
         locationRepository: location.repository,
+        // The main app has no stand-in deck of its own; the shell needs one.
+        discoveryRepository: InMemoryDiscoveryRepository(),
         languageController: language,
         onboardingServices: createFakeOnboardingServices(),
       ),

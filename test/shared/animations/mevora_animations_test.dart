@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/constants/app_durations.dart';
+import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
 import 'package:mevora/shared/animations/mevora_animations.dart';
 import 'package:mevora/shared/art/mevora_mark.dart';
@@ -89,6 +90,113 @@ void main() {
     expect(find.text('You chose each other'), findsOneWidget);
     expect(find.text('NEW MATCH'), findsOneWidget);
     expect(find.text('Back to your picks'), findsOneWidget);
+  });
+
+  testWidgets('a new match can be answered without scrolling on a short '
+      'phone', (tester) async {
+    // 720x1600 at 2.0, less the app bar and the tab bar. With the "why you
+    // match" panel above them, "Say hello" started below the fold.
+    const screen = Size(360, 633);
+    tester.view.physicalSize = screen;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      wrapWithApp(
+        MevoraMatchCelebration(
+          leftName: 'Ada',
+          rightName: 'Mina',
+          compatibilitySection: const SizedBox(
+            key: Key('why-you-match'),
+            height: 420,
+          ),
+          onSendMessage: () {},
+          onKeepExploring: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(AppDurations.match);
+
+    for (final label in ['Say hello', 'Back to your picks']) {
+      final rect = tester.getRect(find.text(label));
+      expect(rect.top, greaterThanOrEqualTo(0), reason: label);
+      expect(rect.bottom, lessThanOrEqualTo(screen.height), reason: label);
+    }
+    // The panel is still there, in the part that scrolls.
+    expect(find.byKey(const Key('why-you-match')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('when everything fits, the actions still follow the copy', (
+    tester,
+  ) async {
+    // Pinned only when they would otherwise be off screen: on a tall phone
+    // with a short panel they must not drop to the bottom edge.
+    const screen = Size(411, 914);
+    tester.view.physicalSize = screen;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      wrapWithApp(
+        MevoraMatchCelebration(
+          leftName: 'Ada',
+          rightName: 'Mina',
+          compatibilitySection: const SizedBox(
+            key: Key('why-you-match'),
+            height: 120,
+          ),
+          onSendMessage: () {},
+          onKeepExploring: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(AppDurations.match);
+
+    final panelBottom = tester
+        .getRect(find.byKey(const Key('why-you-match')))
+        .bottom;
+    final button = tester.getRect(
+      find.widgetWithText(MevoraButton, 'Say hello'),
+    );
+    expect(button.top - panelBottom, closeTo(AppSpacing.xl, 0.5));
+    expect(button.bottom, lessThan(screen.height - 100));
+  });
+
+  testWidgets('a phone on its side scrolls the whole celebration', (
+    tester,
+  ) async {
+    // No room to pin three buttons: nothing may overflow, and the actions
+    // are reached by scrolling, as before.
+    tester.view.physicalSize = const Size(800, 360);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      wrapWithApp(
+        MevoraMatchCelebration(
+          leftName: 'Ada',
+          rightName: 'Mina',
+          compatibilitySection: const SizedBox(height: 300),
+          onSendMessage: () {},
+          onViewAnswers: () {},
+          onKeepExploring: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(AppDurations.match);
+
+    expect(tester.takeException(), isNull);
+    await tester.scrollUntilVisible(
+      find.text('Back to your picks'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Say hello'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('like burst plays once without looping', (tester) async {

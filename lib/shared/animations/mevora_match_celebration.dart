@@ -95,110 +95,158 @@ class _MevoraMatchCelebrationState extends State<MevoraMatchCelebration>
     final width = MediaQuery.sizeOf(context).width;
     final portrait = (width * 0.32).clamp(104.0, 148.0);
 
+    final actions = FadeTransition(
+      opacity: _copy,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.onSendMessage != null)
+            MevoraButton(
+              label: l10n.startChat,
+              icon: MevoraIcons.message,
+              size: MevoraButtonSize.large,
+              onPressed: widget.onSendMessage,
+            ),
+          if (widget.onViewAnswers != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            MevoraButton(
+              label: l10n.matchViewAnswers,
+              variant: MevoraButtonVariant.secondary,
+              onPressed: widget.onViewAnswers,
+            ),
+          ],
+          if (widget.onKeepExploring != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            MevoraButton(
+              label: l10n.keepSwiping,
+              variant: MevoraButtonVariant.ghost,
+              onPressed: widget.onKeepExploring,
+            ),
+          ],
+        ],
+      ),
+    );
+
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding,
-          AppSpacing.xl,
-          AppSpacing.screenPadding,
-          AppSpacing.lg,
-        ),
-        child: Column(
-          children: [
-            Semantics(
-              label: '${widget.leftName} · ${widget.rightName}',
-              child: SizedBox(
-                height: portrait + AppSpacing.md,
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, _) => _Portraits(
-                    size: portrait,
-                    approach: _approach.value,
-                    seal: _seal.value,
-                    leftName: widget.leftName,
-                    rightName: widget.rightName,
-                    leftImage: widget.leftImage,
-                    rightImage: widget.rightImage,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The actions stay on screen under the scrolling part: with the
+          // "why you match" panel above them they started below the fold on
+          // a short phone, and a new match had to be scrolled to be answered.
+          // Where pinning them would leave the rest almost no room — a phone
+          // on its side, enlarged text — everything scrolls together, as it
+          // always did.
+          final pinActions =
+              constraints.maxHeight >= _minHeightToPinActions &&
+              MediaQuery.textScalerOf(context).scale(1) <= 1.3;
+          return Column(
+            children: [
+              // Loose, not expanded: when everything fits, the actions follow
+              // the copy as before instead of dropping to the bottom edge.
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.screenPadding,
+                    AppSpacing.xl,
+                    AppSpacing.screenPadding,
+                    pinActions ? AppSpacing.md : AppSpacing.lg,
+                  ),
+                  child: Column(
+                    children: [
+                      Semantics(
+                        label: '${widget.leftName} · ${widget.rightName}',
+                        child: SizedBox(
+                          height: portrait + AppSpacing.md,
+                          child: AnimatedBuilder(
+                            animation: _controller,
+                            builder: (context, _) => _Portraits(
+                              size: portrait,
+                              approach: _approach.value,
+                              seal: _seal.value,
+                              leftName: widget.leftName,
+                              rightName: widget.rightName,
+                              leftImage: widget.leftImage,
+                              rightImage: widget.rightImage,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      FadeTransition(
+                        opacity: _copy,
+                        child: SlideTransition(
+                          position: Tween(
+                            begin: const Offset(0, 0.08),
+                            end: Offset.zero,
+                          ).animate(_copy),
+                          child: Column(
+                            children: [
+                              Text(
+                                LocaleCasing.upper(
+                                  l10n.itsAMatchHeadline,
+                                  Localizations.localeOf(context),
+                                ),
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: context.palette.match,
+                                  letterSpacing: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Semantics(
+                                header: true,
+                                liveRegion: true,
+                                child: Text(
+                                  l10n.matchCelebrationLead,
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.headlineLarge,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Text(
+                                l10n.matchCelebrationInsight,
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: context.palette.textSecondary,
+                                ),
+                              ),
+                              if (widget.compatibilitySection != null) ...[
+                                const SizedBox(height: AppSpacing.lg),
+                                widget.compatibilitySection!,
+                              ],
+                              if (!pinActions) ...[
+                                const SizedBox(height: AppSpacing.xl),
+                                actions,
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            FadeTransition(
-              opacity: _copy,
-              child: SlideTransition(
-                position: Tween(
-                  begin: const Offset(0, 0.08),
-                  end: Offset.zero,
-                ).animate(_copy),
-                child: Column(
-                  children: [
-                    Text(
-                      LocaleCasing.upper(
-                        l10n.itsAMatchHeadline,
-                        Localizations.localeOf(context),
-                      ),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: context.palette.match,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Semantics(
-                      header: true,
-                      liveRegion: true,
-                      child: Text(
-                        l10n.matchCelebrationLead,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.headlineLarge,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      l10n.matchCelebrationInsight,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: context.palette.textSecondary,
-                      ),
-                    ),
-                    if (widget.compatibilitySection != null) ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      widget.compatibilitySection!,
-                    ],
-                    const SizedBox(height: AppSpacing.xl),
-                    if (widget.onSendMessage != null)
-                      MevoraButton(
-                        label: l10n.startChat,
-                        icon: MevoraIcons.message,
-                        size: MevoraButtonSize.large,
-                        onPressed: widget.onSendMessage,
-                      ),
-                    if (widget.onViewAnswers != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      MevoraButton(
-                        label: l10n.matchViewAnswers,
-                        variant: MevoraButtonVariant.secondary,
-                        onPressed: widget.onViewAnswers,
-                      ),
-                    ],
-                    if (widget.onKeepExploring != null) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      MevoraButton(
-                        label: l10n.keepSwiping,
-                        variant: MevoraButtonVariant.ghost,
-                        onPressed: widget.onKeepExploring,
-                      ),
-                    ],
-                  ],
+              if (pinActions)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenPadding,
+                    AppSpacing.md,
+                    AppSpacing.screenPadding,
+                    AppSpacing.lg,
+                  ),
+                  child: actions,
                 ),
-              ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }
+
+  /// Three buttons need about 190 dp; under this height pinning them would
+  /// leave the portraits and the copy less than half the screen.
+  static const double _minHeightToPinActions = 420;
 }
 
 class _Portraits extends StatelessWidget {

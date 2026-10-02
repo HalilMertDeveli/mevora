@@ -550,6 +550,8 @@ function profile(uid, overrides = {}) {
     relationshipGoal: "longTerm",
     interests: ["hiking", "jazz", "cooking", "chess"],
     lifestyle: ["nonsmoker", "earlybird"],
+    // The real clock on purpose: the pool's activity filter and the activity
+    // score measure this against Date.now(), not against the serve time.
     lastActiveAt: Timestamp.fromMillis(Date.now()),
     updatedAt: 1000,
     ...overrides,
@@ -568,6 +570,17 @@ function seedWorld(candidates) {
   db.reset(seed);
 }
 
+/**
+ * The clock the service tests run at: 09:00 in Istanbul on a fixed day.
+ *
+ * Picks are dealt per Istanbul day, and these tests reopen them a top-up
+ * interval later. Measured from the real clock, that step crossed midnight
+ * whenever the suite ran between 23:30 and 00:00 Istanbul time: the next
+ * day's batch was dealt and the assertions failed. From a fixed morning every
+ * same-day step stays inside the day, whenever the suite runs.
+ */
+const NOW = Date.UTC(2026, 9, 1, 6, 0);
+
 async function serve(nowMs) {
   const {viewer, boostSessions} = await loadDiscoveryViewerContext(db, VIEWER, {uid: VIEWER});
   return servePicks({db, viewer, boostSessions, nowMs});
@@ -582,7 +595,7 @@ describe("Mevora Picks service", () => {
   });
 
   it("serves a curated batch of the daily target with real reasons, and the same batch on reopen", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     assert.equal(first.status, "ready");
     assert.equal(first.targetCount, TARGET);
     assert.equal(first.picks.length, TARGET);
@@ -592,79 +605,79 @@ describe("Mevora Picks service", () => {
       assert.equal(item.uid === VIEWER, false);
       assert.equal("latitude" in item, false);
     }
-    const again = await serve(Date.now());
+    const again = await serve(NOW);
     assert.equal(again.generationId, first.generationId);
     assert.deepEqual(again.picks.map((p) => p.uid), first.picks.map((p) => p.uid));
-    assert.deepEqual(db.read("pickFunnelDaily/" + new Date().toISOString().slice(0, 10)).delivered, TARGET);
+    assert.deepEqual(db.read("pickFunnelDaily/" + new Date(NOW).toISOString().slice(0, 10)).delivered, TARGET);
   });
 
   it("like and pass remove Picks; a passed person never comes back", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const [liked, passed] = first.picks.map((p) => p.uid);
     await db.doc(`likes/${VIEWER}_${liked}`).set({fromUserId: VIEWER, toUserId: liked, action: "like"});
-    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: liked, decision: "liked"});
+    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: liked, decision: "liked", nowMs: NOW});
     await db.doc(`users/${VIEWER}/passedUsers/${passed}`).set({toUserId: passed});
-    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: passed, decision: "passed"});
-    const after = await serve(Date.now());
+    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: passed, decision: "passed", nowMs: NOW});
+    const after = await serve(NOW);
     const uids = after.picks.map((p) => p.uid);
     assert.equal(uids.includes(liked), false);
     assert.equal(uids.includes(passed), false);
     // Even a brand-new batch a day later does not bring them back.
-    const nextDay = await serve(Date.now() + DAY_MS + 1);
+    const nextDay = await serve(NOW + DAY_MS + 1);
     assert.notEqual(nextDay.generationId, first.generationId);
     assert.equal(nextDay.picks.some((p) => p.uid === liked || p.uid === passed), false);
   });
 
   it("deciding does not buy more people: today's set stays finite", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     assert.equal(first.picks.length, TARGET);
-    assert.equal(first.dayKey, lifecycle.logicalDayKey(Date.now()));
+    assert.equal(first.dayKey, lifecycle.logicalDayKey(NOW));
     for (const item of first.picks.slice(0, 3)) {
       await db.doc(`users/${VIEWER}/passedUsers/${item.uid}`).set({toUserId: item.uid});
-      await recordPickDecision({db, viewerUid: VIEWER, candidateUid: item.uid, decision: "passed"});
+      await recordPickDecision({db, viewerUid: VIEWER, candidateUid: item.uid, decision: "passed", nowMs: NOW});
     }
     // Well past the top-up interval, and two unused candidates remain in the pool.
-    const later = await serve(Date.now() + PICKS_CONFIG.topUpMinIntervalMs + 1);
+    const later = await serve(NOW + PICKS_CONFIG.topUpMinIntervalMs + 1);
     assert.equal(later.generationId, first.generationId);
     assert.equal(later.picks.length, TARGET - 3);
     assert.deepEqual(later.picks.map((p) => p.uid), first.picks.slice(3).map((p) => p.uid));
   });
 
   it("a Pick that stops being eligible is replaced from the same day's pool", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const blocked = first.picks[0].uid;
     await db.doc(`blocks/${VIEWER}_${blocked}`).set({blockerId: VIEWER, blockedUserId: blocked});
-    const later = await serve(Date.now() + PICKS_CONFIG.topUpMinIntervalMs + 1);
+    const later = await serve(NOW + PICKS_CONFIG.topUpMinIntervalMs + 1);
     assert.equal(later.generationId, first.generationId);
     assert.equal(later.picks.some((p) => p.uid === blocked), false);
     assert.equal(later.picks.length, TARGET);
   });
 
   it("a blocked or deleted member disappears on the next request", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const [blocked, deleted] = first.picks.map((p) => p.uid);
     await db.doc(`blocks/${VIEWER}_${blocked}`).set({blockerId: VIEWER, blockedUserId: blocked});
     await db.doc(`profiles/${deleted}`).delete();
-    const after = await serve(Date.now());
+    const after = await serve(NOW);
     const uids = after.picks.map((p) => p.uid);
     assert.equal(uids.includes(blocked), false);
     assert.equal(uids.includes(deleted), false);
   });
 
   it("a matched member does not reappear, and the match carries its Pick attribution", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const partner = first.picks[0].uid;
     const matchId = [VIEWER, partner].sort().join("_");
     await db.doc(`matches/${matchId}`).set({userIds: [VIEWER, partner].sort(), isActive: true});
-    await attributePickMatch({db, matchRef: db.doc(`matches/${matchId}`), uidA: VIEWER, uidB: partner});
+    await attributePickMatch({db, matchRef: db.doc(`matches/${matchId}`), uidA: VIEWER, uidB: partner, nowMs: NOW});
     const match = db.read(`matches/${matchId}`);
     assert.equal(match.introducedByPick[VIEWER].pickType, first.picks[0].pick.pickType);
     assert.equal(match.introducedByPick[VIEWER].generationId, first.generationId);
     const stored = lifecycle.parseBatch(db.read(picksDocPath(VIEWER)));
     assert.equal(stored.picks.find((p) => p.candidateUid === partner).state, "matched");
-    const after = await serve(Date.now());
+    const after = await serve(NOW);
     assert.equal(after.picks.some((p) => p.uid === partner), false);
-    const day = db.read("pickFunnelDaily/" + new Date().toISOString().slice(0, 10));
+    const day = db.read("pickFunnelDaily/" + new Date(NOW).toISOString().slice(0, 10));
     assert.equal(day.mutualMatch, 1);
   });
 
@@ -677,14 +690,14 @@ describe("Mevora Picks service", () => {
       ["w1", {relationshipGoal: "casual", interests: ["x9"], lifestyle: ["smoker"]}],
       ["w2", {relationshipGoal: "casual", interests: ["x8"], lifestyle: ["nightowl"]}],
     ]);
-    const result = await serve(Date.now());
+    const result = await serve(NOW);
     assert.deepEqual(result.picks.map((p) => p.uid).sort(), ["s1", "s2", "s3"]);
     assert.equal(result.status, "lowSupply");
   });
 
   it("0 candidates → an intentional empty state", async () => {
     seedWorld([]);
-    const result = await serve(Date.now());
+    const result = await serve(NOW);
     assert.equal(result.status, "empty");
     assert.equal(result.emptyReason, "noCandidates");
     assert.deepEqual(result.picks, []);
@@ -692,29 +705,29 @@ describe("Mevora Picks service", () => {
 
   it("once every Pick is decided, the empty state says so", async () => {
     seedWorld([["only", {}]]);
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     assert.equal(first.picks.length, 1);
     await db.doc(`users/${VIEWER}/passedUsers/only`).set({toUserId: "only"});
-    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: "only", decision: "passed"});
-    const after = await serve(Date.now());
+    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: "only", decision: "passed", nowMs: NOW});
+    const after = await serve(NOW);
     assert.equal(after.status, "empty");
     assert.equal(after.emptyReason, "allDecided");
   });
 
   it("undecided Picks rest after their batch expires instead of recycling", async () => {
     seedWorld([["a1", {}], ["a2", {}]]);
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     assert.equal(first.picks.length, 2);
-    const nextDay = await serve(Date.now() + DAY_MS + 1);
+    const nextDay = await serve(NOW + DAY_MS + 1);
     assert.equal(nextDay.picks.length, 0);
     const later = await serve(
-      Date.now() + DAY_MS * 2 + PICKS_CONFIG.expiredCooldownMs + 2,
+      NOW + DAY_MS * 2 + PICKS_CONFIG.expiredCooldownMs + 2,
     );
     assert.equal(later.picks.length, 2);
   });
 
   it("account deletion scrubs the member from other people's Picks", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const gone = first.picks[0].uid;
     const scrubbed = await scrubDeletedMemberFromPicks(db, gone);
     assert.equal(scrubbed, 1);

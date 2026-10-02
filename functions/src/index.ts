@@ -8,6 +8,7 @@ export {completeOnboarding} from "./onboarding";
 export {profileAgeRollover} from "./profileAgeRollover.js";
 export {enforceProfilePhotoModeration} from "./moderation/profileModerationGuard.js";
 export {deleteProfilePhoto} from "./moderation/deleteProfilePhotoFunction.js";
+export {profilePhotoOrphanSweep} from "./moderation/photoOrphanSweepFunction.js";
 export {prepareSmokeTestUsers, cleanupSmokeTestUsers} from "./smoke/smokeTestUsers.js";
 export {spotifyCompleteAuth} from "./spotifyAuth";
 export {

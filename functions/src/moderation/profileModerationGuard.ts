@@ -4,7 +4,7 @@ import {getFirestore} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {logger} from "firebase-functions";
 import {reconcilePhotoModeration} from "./photoModerationService.js";
-import {storedFaceAnchorPhotoIds} from "./photoInvariants.js";
+import {profileNeedsReconciling} from "./photoInvariants.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -22,7 +22,9 @@ const db = getFirestore();
  * cannot write. Nothing in the profile document is trusted.
  *
  * The same pass imposes the Face Anchor rules (photoInvariants.ts): the last
- * verified anchor cannot be removed and the primary photo is always one.
+ * verified anchor cannot be removed and the primary photo is always one. It
+ * also marks the ledger entries of photos that left the array, which is what
+ * the orphan sweep goes by (photoOrphanSweep.ts).
  */
 export const enforceProfilePhotoModeration = onDocumentWritten(
   {document: "profiles/{uid}", region: "europe-west1"},
@@ -32,10 +34,7 @@ export const enforceProfilePhotoModeration = onDocumentWritten(
       return;
     }
     const uid = event.params.uid;
-    const hasPhotos = Array.isArray(after.photos) && after.photos.length > 0;
-    // An empty array is only interesting when the server knows this profile
-    // has an anchor to put back; faceAnchorPhotoIds is not client-writable.
-    if (!hasPhotos && storedFaceAnchorPhotoIds(after).length === 0) {
+    if (!profileNeedsReconciling(event.data?.before?.data(), after)) {
       return;
     }
     let bucket;

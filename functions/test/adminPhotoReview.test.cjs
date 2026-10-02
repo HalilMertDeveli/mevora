@@ -125,6 +125,56 @@ describe("admin photo review — the ledger stays the authority", () => {
     assert.equal(w.db.read("profiles/member-1").photos[0].downloadUrl, null);
   });
 
+  // A report sends every photo of the member back to manual review while it
+  // stays published. Approving one publishes nothing new, so the decision
+  // carries no variant URLs. Those used to reach profiles.photos as undefined,
+  // which Firestore refuses: the ledger said approved, the profile stayed in
+  // manual_review, no action or audit record was written and a retry answered
+  // photo_already_reviewed.
+  it("approving an already-published (reported) photo keeps its variants and completes the decision", async () => {
+    const w = await world({published: true});
+    const storagePath = "users/member-1/profile/photos/img1.png";
+    const downloadUrl = "https://firebasestorage.googleapis.com/v0/b/x/o/p?alt=media&token=t";
+    await w.db.doc("users/member-1/photoModeration/img1").set({thumbUrl: "https://t", cardUrl: "https://c"}, {merge: true});
+    await w.db.doc("profiles/member-1").set({
+      photos: [{
+        id: "img1",
+        storagePath,
+        downloadUrl,
+        thumbUrl: "https://t",
+        cardUrl: "https://c",
+        order: 0,
+        isPrimary: true,
+        moderationStatus: "manual_review",
+      }],
+    }, {merge: true});
+
+    const result = await w.run(specs.adminReviewPhotoSpec, "mod-1", {uid: "member-1", imageId: "img1", decision: "approve", idempotencyKey: key()});
+    assert.equal(result.status, "approved");
+
+    const profile = w.db.read("profiles/member-1");
+    const photo = profile.photos[0];
+    assert.equal(photo.moderationStatus, "approved");
+    assert.equal(photo.storagePath, storagePath);
+    assert.equal(photo.downloadUrl, downloadUrl);
+    assert.equal(photo.thumbUrl, "https://t");
+    assert.equal(photo.cardUrl, "https://c");
+    for (const [field, value] of Object.entries(photo)) {
+      assert.notEqual(value, undefined, `photos[0].${field} is undefined`);
+    }
+    assert.equal(profile.profileModerationStatus, "approved");
+
+    const ledger = w.db.read("users/member-1/photoModeration/img1");
+    assert.equal(ledger.status, "approved");
+    assert.equal(ledger.thumbUrl, "https://t");
+    assert.equal(ledger.cardUrl, "https://c");
+    assert.equal(ledger.reviewLock, undefined);
+    assert.equal(ledger.decisionActionId, result.actionId);
+    assert.ok(w.bucket.files.has(storagePath), "the published object is left where it is");
+    assert.equal(w.db.read(`moderationActions/${result.actionId}`).type, "PHOTO_APPROVED");
+    assert.ok(w.db.paths().some((p) => p.startsWith("adminAuditLog/") && w.db.read(p).action === "PHOTO_APPROVED"));
+  });
+
   it("removing a published photo also deletes its display variants", async () => {
     const w = await world({published: true});
     w.bucket.put("users/member-1/profile/thumbs/img1_thumb.jpg", PORTRAIT);

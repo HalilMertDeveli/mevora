@@ -12,6 +12,10 @@
  * - a transaction must read before it writes, and its writes land atomically
  *   only when the callback resolves (a throw leaves the store untouched);
  * - a JS Date is stored as a Timestamp, as the real SDK does;
+ * - a write carrying undefined anywhere in its data (a map field, an array
+ *   element) is refused, as the real SDK does without
+ *   ignoreUndefinedProperties; seeds passed to the factory / reset() are not
+ *   writes and are not checked;
  * - queries support ==, !=, in, array-contains and the range operators,
  *   filters on the document id (FieldPath.documentId() / "__name__": ids for
  *   a collection, full paths for a collection group, or references);
@@ -79,6 +83,29 @@ function resolveTransform(value, previous) {
     }
     default:
       throw new Error(`fakeFirestore: unsupported transform ${transformName(value)}`);
+  }
+}
+
+/**
+ * The real SDK refuses undefined anywhere in the data of a write (no suite
+ * turns on ignoreUndefinedProperties, and neither does functions/src), naming
+ * the field the way this does.
+ */
+function assertNoUndefined(value, fieldPath = "") {
+  if (value === undefined) {
+    throw new Error(
+      "Value for argument \"data\" is not a valid Firestore document. " +
+        `Cannot use "undefined" as a Firestore value (found in field "${fieldPath}").`,
+    );
+  }
+  if (Array.isArray(value)) {
+    value.forEach((element, index) => {
+      assertNoUndefined(element, fieldPath ? `${fieldPath}.\`${index}\`` : `\`${index}\``);
+    });
+  } else if (isPlainObject(value)) {
+    for (const [key, child] of Object.entries(value)) {
+      assertNoUndefined(child, fieldPath ? `${fieldPath}.${key}` : key);
+    }
   }
 }
 
@@ -243,11 +270,28 @@ function createFakeFirestore(seed = {}) {
         noteDocRead(ref.path);
         return snapshotOf(ref);
       },
-      set: async (data, options) => writeSet(ref, data, options),
-      update: async (data) => writeUpdate(ref, data),
-      create: async (data) => writeCreate(ref, data),
+      set: async (data, options) => {
+        assertNoUndefined(data);
+        writeSet(ref, data, options);
+      },
+      update: async (data) => {
+        assertNoUndefined(data);
+        writeUpdate(ref, data);
+      },
+      create: async (data) => {
+        assertNoUndefined(data);
+        writeCreate(ref, data);
+      },
       delete: async () => writeDelete(ref),
       collection: (sub) => collectionRef(`${path}/${sub}`),
+      // The containing collection, as far as `ref.parent.parent?.id` needs it.
+      get parent() {
+        return {
+          id: parts[parts.length - 2],
+          path: parts.slice(0, -1).join("/"),
+          parent: parts.length > 2 ? docRef(parts.slice(0, -2).join("/")) : null,
+        };
+      },
     };
     return ref;
   }
@@ -368,14 +412,17 @@ function createFakeFirestore(seed = {}) {
     const ops = [];
     return {
       set(ref, data, options) {
+        assertNoUndefined(data);
         ops.push(() => writeSet(ref, data, options));
         return this;
       },
       update(ref, data) {
+        assertNoUndefined(data);
         ops.push(() => writeUpdate(ref, data));
         return this;
       },
       create(ref, data) {
+        assertNoUndefined(data);
         ops.push(() => writeCreate(ref, data));
         return this;
       },
@@ -423,14 +470,17 @@ function createFakeFirestore(seed = {}) {
         return Promise.all(refs.map((ref) => tx.get(ref)));
       },
       set(ref, data, options) {
+        assertNoUndefined(data);
         writes.push(() => writeSet(ref, data, options));
         return tx;
       },
       update(ref, data) {
+        assertNoUndefined(data);
         writes.push(() => writeUpdate(ref, data));
         return tx;
       },
       create(ref, data) {
+        assertNoUndefined(data);
         writes.push(() => writeCreate(ref, data));
         return tx;
       },

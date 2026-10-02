@@ -13,6 +13,7 @@ import {
   backfillLegacyApproval,
   isPublishedStoragePath,
   isRemovedByMember,
+  isSweptWhenUnreferenced,
   ledgerCollection,
   ledgerEntryFromData,
   ledgerRef,
@@ -24,6 +25,7 @@ import {
   photosChanged,
   sameIds,
   storedFaceAnchorPhotoIds,
+  unreferencedStampChanges,
 } from "./photoInvariants.js";
 import {
   PHOTO_CACHE_CONTROL,
@@ -48,13 +50,19 @@ function photosFrom(data: Record<string, unknown> | undefined): PhotoRecord[] {
  * patch (moderatedAt, lastProcessingAttempt) to a concrete server-clock
  * Timestamp before it goes into the array. The document-level updatedAt is not
  * inside an array and keeps its sentinel.
+ *
+ * Firestore rejects undefined as well. In a patch it means "leave the field as
+ * it is" — the ledger write reads it the same way — so those keys are dropped
+ * rather than copied over the element; clearing a field takes an explicit null.
  */
 function arraySafePatch(patch: Partial<PhotoRecord>): Partial<PhotoRecord> {
   return Object.fromEntries(
-    Object.entries(patch).map(([key, value]) => [
-      key,
-      value instanceof FieldValue ? Timestamp.now() : value,
-    ]),
+    Object.entries(patch)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [
+        key,
+        value instanceof FieldValue ? Timestamp.now() : value,
+      ]),
   ) as Partial<PhotoRecord>;
 }
 
@@ -161,8 +169,15 @@ export async function setPhotoModerationStatus(
     // not is added only by the pipeline, and never once the member removed it:
     // the entry outlives the photo for moderation's sake (deleteProfilePhoto),
     // so the entry existing does not mean the photo should.
-    const removedByMember = entrySnap.exists && isRemovedByMember(ledgerEntryFromData(entrySnap.data() ?? {}));
+    const entry = entrySnap.exists ? ledgerEntryFromData(entrySnap.data() ?? {}) : null;
+    const removedByMember = isRemovedByMember(entry);
     if (!onProfile && (options.whenAbsent === "skip" || removedByMember)) {
+      // No profile write follows, so no reconciliation will mark this photo
+      // as off the profile. It is marked here, or an approved photo that is
+      // on no profile would never be collected (photoOrphanSweep.ts).
+      if (isSweptWhenUnreferenced(entry) && entry?.unreferencedSince == null) {
+        tx.update(entryRef, {unreferencedSince: FieldValue.serverTimestamp()});
+      }
       logger.info("Recorded a moderation result without adding the photo to the profile", {
         uid,
         imageId,
@@ -529,6 +544,12 @@ export interface CommittedPhotoInvariants {
  * when nothing would change, which is what keeps the profile trigger from
  * looping; an absent profile is never created.
  *
+ * The same pass keeps `unreferencedSince` on the ledger: set on an entry whose
+ * photo is not in the resulting array, cleared when the photo is back. Those
+ * are ledger writes, so they neither count as a change nor fire the trigger,
+ * and they leave `updatedAt` alone — it is the entry's place in the review
+ * queue.
+ *
  * `photos` is for a caller that changes the array in the same transaction
  * (deleteProfilePhoto): the invariants are imposed on that array instead of
  * the stored one, and the result is written if it differs from what is stored.
@@ -559,6 +580,11 @@ export function commitPhotoInvariants(
     tx.update(ledgerRef(db, uid, imageId), {
       faceAnchor: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
+  for (const [imageId, unreferenced] of unreferencedStampChanges(result.photos, state.ledger)) {
+    tx.update(ledgerRef(db, uid, imageId), {
+      unreferencedSince: unreferenced ? FieldValue.serverTimestamp() : FieldValue.delete(),
     });
   }
   return {

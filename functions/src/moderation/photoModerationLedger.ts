@@ -85,6 +85,12 @@ export interface LedgerEntry {
    * copy of the image are left. See isRemovedByMember.
    */
   removedByMemberAt?: unknown;
+  /**
+   * Read-only here: set by commitPhotoInvariants while the photo is not in
+   * profiles/{uid}.photos and cleared when it is back. How long it has been
+   * set is what the orphan sweep goes by (photoOrphanSweep.ts).
+   */
+  unreferencedSince?: unknown;
 }
 
 export function ledgerRef(db: Firestore, uid: string, imageId: string) {
@@ -148,7 +154,17 @@ export function ledgerEntryFromData(data: Record<string, unknown>): LedgerEntry 
     cardUrl: (data.cardUrl ?? null) as string | null,
     faceAnchor: parseFaceAnchor(data.faceAnchor),
     removedByMemberAt: data.removedByMemberAt ?? null,
+    unreferencedSince: data.unreferencedSince ?? null,
   };
+}
+
+/**
+ * True for an entry whose photo is deleted once it has been off the profile
+ * for long enough (photoOrphanSweep.ts). A rejected or held photo is not: its
+ * entry is the moderation record and stays, on the profile or off it.
+ */
+export function isSweptWhenUnreferenced(entry: LedgerEntry | null | undefined): boolean {
+  return entry?.status === "approved" || entry?.status === "pending" || entry?.status === "processing";
 }
 
 /**

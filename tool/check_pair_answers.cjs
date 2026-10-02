@@ -70,7 +70,7 @@ const full = scoreRelationshipCompatibility(a, b);
 console.log("full", full);
 
 const farExact = {
-  uid: "hilal",
+  uid: "aligned",
   relationshipAlignedCount: full.alignedCount,
   distanceKm: 0.09,
   compatibilityScore: 70,

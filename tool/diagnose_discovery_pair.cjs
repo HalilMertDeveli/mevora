@@ -1,6 +1,17 @@
 /**
  * Diagnose why two users cannot discover each other.
  * Uses Firebase CLI tokens from configstore (no ADC required).
+ *
+ * READS THE LIVE PROJECT (mevora-d6ed0), not an emulator: profile, preferences,
+ * location, account and relationship answers of each uid you pass. It only
+ * sends GET requests and writes nothing. The output is real member data
+ * (names, coordinates): do not paste it into a PR, an issue or a commit.
+ *
+ * The uids are arguments on purpose: a member's uid does not belong in a
+ * tracked file.
+ *
+ * Usage:
+ *   node tool/diagnose_discovery_pair.cjs <uid> <uid> [<uid> ...]
  */
 const fs = require("fs");
 const path = require("path");
@@ -278,18 +289,21 @@ function simulateFilter(viewer, candidate) {
   };
 }
 
+const USAGE =
+  "usage: node tool/diagnose_discovery_pair.cjs <uid> <uid> [<uid> ...]\n" +
+  `Reads the LIVE project ${PROJECT} (read-only). One uid prints only that member's snapshot.`;
+
 async function main() {
-  const token = loadAccessToken();
   const uids = process.argv.slice(2);
-  const defaultUids = [
-    "F7CYZWNik3RGv3xQTZRLKWsMnTd2", // Ahmet (woman)
-    "CKLxiWTBtoXik888Wzqicqeuj6t2", // Hilal (man)
-    "i4tBpHo08NfJbSUCNHgYDTagEuv1", // HMD (man)
-    "tnXYzkFf1tM8vaRkBgBQlE5jh6U2", // Halil
-  ];
-  const targets = uids.length ? uids : defaultUids;
+  // Before the token is read: an option such as --help must not be looked up
+  // as if it were a member.
+  if (uids.length === 0 || uids.some((uid) => uid.startsWith("-"))) {
+    console.error(USAGE);
+    process.exit(2);
+  }
+  const token = loadAccessToken();
   const users = [];
-  for (const uid of targets) {
+  for (const uid of uids) {
     users.push(await diagnoseUser(token, uid));
   }
   console.log("=== USER SNAPSHOTS ===");

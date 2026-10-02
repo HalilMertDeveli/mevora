@@ -152,3 +152,18 @@ not one" above.
 `node tool/productionReadiness.cjs` checks the guards, the signing material
 (presence only, never the values) and whether the production
 `google-services.json` carries a certificate hash.
+
+### What is inside the release build
+
+A release build does not contain the demo deck, the demo matches, the QA login
+page or the design gallery — the compiler leaves them out (`kReleaseMode`
+guards, pinned by `test/security/release_build_excludes_dev_code_test.dart`).
+To check the compiled output itself, which needs no keystore:
+
+```bash
+flutter assemble --output=.tmp/aot_release -dTargetPlatform=android-arm64 -dBuildMode=release -dTargetFile=lib/main_production.dart -dFlavor=production -dTreeShakeIcons=false android_aot_bundle_release_android-arm64
+node tool/productionBinaryScan.cjs .tmp/aot_release/arm64-v8a/app.so
+```
+
+The scan also takes the signed release APK. A debug or profile build is the
+wrong input — only release mode removes the code — and the scan says so.

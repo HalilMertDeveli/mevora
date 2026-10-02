@@ -27,17 +27,19 @@ MusicServices createMusicServices({
     define: const bool.fromEnvironment('USE_MOCK_MUSIC'),
     environment: config?.environment,
   );
-  // Falling back to the mock because a dependency happened to be missing is
-  // how a build ends up quietly showing invented music to a real member. The
-  // fallback stays, so nothing crashes, but a debug build says so out loud.
-  assert(
-    mockOnly || spotifyAuthService != null,
-    'createMusicServices needs a SpotifyAuthService unless USE_MOCK_MUSIC is '
-    'set; without one the music feature silently serves fixtures.',
-  );
-  if (mockOnly || spotifyAuthService == null) {
+  if (mockOnly) {
     return MusicServices(
       repository: MusicRepositoryImpl(dataSource: MockMusicDataSource()),
+    );
+  }
+  // Falling back to the mock because a dependency happened to be missing is
+  // how a build ends up quietly showing invented music to a real member. An
+  // assert said so in debug only; in a release build the fallback was silent.
+  // There is no fallback now: the wiring is wrong, and that is an error.
+  if (spotifyAuthService == null) {
+    throw StateError(
+      'createMusicServices needs a SpotifyAuthService unless USE_MOCK_MUSIC '
+      'is set in a development build.',
     );
   }
   return MusicServices(

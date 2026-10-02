@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/config/app_config.dart';
@@ -38,6 +40,24 @@ void main() {
   group('6. no QA credentials exist in a production configuration', () {
     test('no accounts are compiled in without the dart-defines', () {
       expect(EmulatorQaLogin.accounts, isEmpty);
+    });
+
+    test('a closed gate offers no account, whatever was compiled in', () {
+      for (final environment in AppEnvironment.values) {
+        expect(
+          EmulatorQaLogin.accountsFor(configFor(environment)),
+          isEmpty,
+          reason: '$environment',
+        );
+      }
+    });
+
+    test('the QA page fills its fields only through the gate', () {
+      final source = File(
+        'lib/features/authentication/presentation/pages/qa_login_page.dart',
+      ).readAsStringSync();
+      expect(source, contains('EmulatorQaLogin.accountsFor('));
+      expect(source, isNot(contains('EmulatorQaLogin.accounts;')));
     });
 
     test('the gate is closed for every environment without credentials', () {

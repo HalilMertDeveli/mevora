@@ -1,4 +1,4 @@
-const {describe, it} = require("node:test");
+const {afterEach, beforeEach, describe, it} = require("node:test");
 const assert = require("node:assert/strict");
 const {FieldValue} = require("firebase-admin/firestore");
 const {
@@ -310,6 +310,18 @@ describe("photo invariants — no trigger loop", () => {
 });
 
 describe("a moderated photo id cannot be re-uploaded", () => {
+  // These fixture bytes are approved by the smoke fast path, which exists only
+  // in the emulator process — so that is the process these tests run as.
+  let savedEmulatorFlag;
+  beforeEach(() => {
+    savedEmulatorFlag = process.env.FUNCTIONS_EMULATOR;
+    process.env.FUNCTIONS_EMULATOR = "true";
+  });
+  afterEach(() => {
+    if (savedEmulatorFlag === undefined) delete process.env.FUNCTIONS_EMULATOR;
+    else process.env.FUNCTIONS_EMULATOR = savedEmulatorFlag;
+  });
+
   function pending(w, imageId, bytes) {
     const path = `users/${UID}/profile/pending/${imageId}.jpg`;
     w.bucket.put(path, bytes);

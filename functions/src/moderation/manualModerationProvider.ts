@@ -109,7 +109,11 @@ export async function moderatePhotoBuffer(options: {
   buffer: Buffer;
   smokeFastPath?: boolean;
 }): Promise<ModerationResult> {
-  if (options.smokeFastPath) {
+  // Approving without looking at the bytes is for the emulator's smoke run
+  // only. Checked here as well as by the caller, because this is the one
+  // place a photo is approved unchecked: outside the emulator process the
+  // option is ignored and the upload goes through every check below.
+  if (options.smokeFastPath && process.env.FUNCTIONS_EMULATOR === "true") {
     return {status: "approved", reason: "smoke-test-fast-path"};
   }
 

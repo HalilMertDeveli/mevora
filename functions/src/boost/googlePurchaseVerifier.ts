@@ -1,4 +1,5 @@
 import {logger} from "firebase-functions";
+import {safeErrorMeta} from "../security/logHygiene.js";
 import {BOOST_PRODUCTS} from "./config.js";
 import {sha256} from "./hash.js";
 import type {StoreVerificationResult, VerifyBoostRequest} from "./types.js";
@@ -85,7 +86,8 @@ export class GooglePurchaseVerifier {
         purchasedAt: body.purchaseTimeMillis ? new Date(Number(body.purchaseTimeMillis)) : new Date(),
       };
     } catch (error) {
-      logger.warn("Google Play verification unavailable", {error: String(error)});
+      // Never the raw error text: the request URL carries the purchase token.
+      logger.warn("Google Play verification unavailable", {error: safeErrorMeta(error, [token])});
       return {
         ok: false,
         productId: request.productId,
@@ -122,7 +124,7 @@ export class GooglePurchaseVerifier {
       }
       return response.ok;
     } catch (error) {
-      logger.warn("Play consume skipped", {error: String(error)});
+      logger.warn("Play consume skipped", {error: safeErrorMeta(error, [token])});
       return false;
     }
   }
@@ -181,7 +183,7 @@ export class GooglePurchaseVerifier {
       }
       return {ok: true, purchases, nextPageToken: body.tokenPagination?.nextPageToken || null};
     } catch (error) {
-      logger.warn("Play voided purchases list unavailable", {error: String(error)});
+      logger.warn("Play voided purchases list unavailable", {error: safeErrorMeta(error)});
       return {ok: false, error: "unavailable"};
     }
   }

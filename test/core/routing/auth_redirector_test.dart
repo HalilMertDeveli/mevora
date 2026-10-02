@@ -214,7 +214,28 @@ void main() {
         status: const Unauthenticated(),
         location: AppRoutes.designSystem,
       ),
-      AppRoutes.login,
+      AppRoutes.splash,
+    );
+  });
+
+  test('a signed-in member cannot open the design system either', () {
+    // It used to fall through to the ordinary rules, and those let a
+    // signed-in member stay on any route that is not an auth page.
+    const user = AuthUser(id: 'u1', profileCompleted: true);
+    expect(
+      AuthRedirector.redirect(
+        status: const Authenticated(user),
+        location: AppRoutes.designSystem,
+      ),
+      AppRoutes.splash,
+    );
+    expect(
+      AuthRedirector.redirect(
+        status: const Authenticated(user),
+        location: AppRoutes.designSystem,
+        allowDesignSystem: true,
+      ),
+      isNull,
     );
   });
 

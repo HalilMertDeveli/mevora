@@ -21,6 +21,22 @@ It prints `PASS` / `FAIL` / `BLOCKED` / `NOT TESTABLE` per item. `FAIL` means th
 repository is wrong. `BLOCKED` means the repository is ready and the item waits on a step
 in §2.
 
+### Production leak guard
+
+Tests, emulator tooling, the demo deck and the QA login stay in the repository, and none
+of it may reach a member or a store reviewer. Three checks hold that line; all three run
+in CI:
+
+| Check | What it covers |
+|---|---|
+| `node tool/productionReadiness.cjs`, section **production leak scan** | Static, over what ships (`lib/` without `lib/core/testing`, `functions/src`, `hosting/public`, the ARB strings): no test double imported or used as a fallback, stand-ins built only in guarded factories, no release logging, no emulator address outside the config, no bypass-style switch, the backend emulator switch compared strictly, emulator-only callables not exported to a deploy, no developer wording in member-facing copy, no comment or draft wording in the public pages, demo portraits in the development flavor only |
+| `test/security/production_leak_guard_test.dart` | Behaviour: for a staging or production configuration every emulator, QA, mock, demo and test-store switch is off, and asking for it does not turn it on; developer routes are closed; a mis-built app refuses to start |
+| `functions/test/productionSurface.test.cjs` | Backend: what a deploy exports, the smoke fast path, the draft humor sequence, what is logged |
+
+It scans production code only, never `test/`, so a fake used by a test is not a finding.
+Every exception is listed in the tool next to the reason it is safe; adding one means
+adding the reason.
+
 ---
 
 ## 1. Decision zero — which Firebase project is production?
@@ -146,9 +162,9 @@ order — later steps depend on earlier ones. Nothing here can be done by an age
      it (`verifyBoostPurchase`, `verifyPremiumPurchase`, `onPlaySubscriptionNotification`,
      `reconcileVoidedBoostPurchases`) **cannot be deployed until that secret exists** —
      deploy everything else now and those four after step 11. A function that binds a secret which does not exist fails
-     the deploy; the same holds for `DIDIT_API_KEY` on the account-deletion functions. `SMOKE_TEST_SECRET` is required for the
-     deploy to succeed because the smoke callables are exported — set it to a long random
-     value and keep it private.
+     the deploy; the same holds for `DIDIT_API_KEY` on the account-deletion functions. `SMOKE_TEST_SECRET` is **not** needed:
+     the smoke callables are emulator-only and are not part of a deploy
+     (`docs/DEPLOY_NOTES.md` → "Emulator-only callables").
   2. `functions/.env.<prod>` (not committed): `SPOTIFY_CLIENT_ID`, `DIDIT_WORKFLOW_ID`,
      `DIDIT_ENVIRONMENT=live`, `FACE_ANCHOR_ENFORCEMENT=on`,
      `PREMIUM_ANDROID_PACKAGE_NAME=com.mevora.app`, `PREMIUM_ANDROID_PRODUCT_IDS=…`
@@ -435,9 +451,12 @@ Humor is off in release builds by default, and the sequence is a draft:
 all third-party GIFs loaded from GIPHY. Thirty-six clips last a new member the first
 fifteen plus about four days.
 
-`released` is **not** a runtime switch — nothing stops the draft from being served. The
-only thing keeping it away from members is the build flag. Once members have rated a
-sequence it can only grow at the end, so do not ship humor before the sequence is final.
+While `released` is `false` a deployed backend serves no Core content: the feed answers
+an empty catalogue, the daily set stays locked and a rating is refused (`not-in-set`).
+Only the emulator hands out the draft. The build flag is the second barrier: with humor
+switched on before the release, members would see an empty Humor Lab, not the draft. Once
+members have rated a sequence it can only grow at the end, so do not release it before it
+is final.
 
 Owner procedure:
 
@@ -582,7 +601,7 @@ is owner-run and waits on billing.
 | Terms acceptance is not recorded or versioned | Needs a small data-model addition |
 | Remote Config is a stub, so features can only be switched at build time | Feature work |
 | Twelve functions deployed on `mevora-d6ed0` exist on no branch | `docs/DEPLOY_NOTES.md`; irrelevant for Option A |
-| The smoke-test callables are exported to every deploy | Kept: the smoke harness needs them. They refuse without the secret; never share `SMOKE_TEST_SECRET` |
+| Four emulator-only callables (`prepareSmokeTestUsers`, `cleanupSmokeTestUsers`, `searchHumorProviderCandidates`, `debugPersonalizationRanking`) may still be live on `mevora-d6ed0` from earlier deploys | No longer in the deploy surface, and `SMOKE_TEST_SECRET` is no longer needed. Deleting the live copies is an owner decision: `docs/DEPLOY_NOTES.md` → "Emulator-only callables" |
 | No staff sanction code specific to child sexual abuse material | Add with the reporting procedure (step 12) |
 | Promotional subscription offers, and a dedicated "purchase pending" message on the paywall | Small follow-ups to the Premium work |
 | Legacy launcher PNGs and the iOS icon still show a placeholder "M" | Needs the final artwork |

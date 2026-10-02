@@ -16,8 +16,10 @@ class LocationScope extends InheritedWidget {
 
   static LocationScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<LocationScope>();
-    assert(scope != null, 'LocationScope not found in the widget tree');
-    return scope!;
+    if (scope == null) {
+      throw StateError('LocationScope not found in the widget tree');
+    }
+    return scope;
   }
 
   static LocationScope? maybeOf(BuildContext context) {

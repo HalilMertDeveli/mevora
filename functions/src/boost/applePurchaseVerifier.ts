@@ -1,5 +1,6 @@
 import {createPrivateKey, sign} from "node:crypto";
 import {logger} from "firebase-functions";
+import {safeErrorMeta} from "../security/logHygiene.js";
 import {BOOST_PRODUCTS} from "./config.js";
 import {sha256} from "./hash.js";
 import type {StoreVerificationResult, VerifyBoostRequest} from "./types.js";
@@ -101,7 +102,10 @@ export class ApplePurchaseVerifier {
         purchasedAt: info.purchaseDate ? new Date(Number(info.purchaseDate)) : new Date(),
       };
     } catch (error) {
-      logger.warn("Apple verification unavailable", {error: String(error)});
+      // Never the raw error text: the request URL carries the transaction id.
+      logger.warn("Apple verification unavailable", {
+        error: safeErrorMeta(error, [request.transactionId, request.signedTransaction, request.receiptData]),
+      });
       return {
         ok: false,
         productId: request.productId,

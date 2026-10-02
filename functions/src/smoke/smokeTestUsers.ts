@@ -23,8 +23,21 @@ const callableOptions = {
 export const SMOKE_USER_A_EMAIL = "smoke-a@mevora.test";
 export const SMOKE_USER_B_EMAIL = "smoke-b@mevora.test";
 
-export function isSmokeTestUser(data: Record<string, unknown> | undefined): boolean {
-  return data?.isSmokeTestUser === true;
+// The discovery rule lives in its own module so a deployed backend can apply
+// it without loading these callables; re-exported for existing importers.
+export {isSmokeTestUser, passesSmokeDiscoveryIsolation} from "./smokeIsolation.js";
+
+/**
+ * The smoke callables create email-verified accounts and hand back their
+ * passwords, so they exist for the emulator only. `index.ts` does not export
+ * them to a deploy; this refuses as well, before the secret is even looked
+ * at, in case a function left over from an earlier deploy is still live or
+ * the export gate is ever loosened.
+ */
+function requireEmulatorProcess(): void {
+  if (process.env.FUNCTIONS_EMULATOR !== "true") {
+    throw new HttpsError("failed-precondition", "emulator-only");
+  }
 }
 
 function sha256(value: string): Buffer {
@@ -107,6 +120,7 @@ async function deleteSmokeUserData(uid: string): Promise<void> {
  * in Firebase Auth and in this response; they are never stored or logged.
  */
 export const prepareSmokeTestUsers = onCall(callableOptions, async (request) => {
+  requireEmulatorProcess();
   requireSmokeSecret(request.data?.secret);
   const auth = getAuth();
 
@@ -167,6 +181,7 @@ export const prepareSmokeTestUsers = onCall(callableOptions, async (request) => 
 });
 
 export const cleanupSmokeTestUsers = onCall(callableOptions, async (request) => {
+  requireEmulatorProcess();
   requireSmokeSecret(request.data?.secret);
   const auth = getAuth();
   const emails = [SMOKE_USER_A_EMAIL, SMOKE_USER_B_EMAIL];
@@ -182,15 +197,3 @@ export const cleanupSmokeTestUsers = onCall(callableOptions, async (request) => 
   }
   return {ok: true, deleted};
 });
-
-export function passesSmokeDiscoveryIsolation(
-  viewerAccount: Record<string, unknown> | undefined,
-  candidateAccount: Record<string, unknown> | undefined,
-): boolean {
-  const viewerSmoke = isSmokeTestUser(viewerAccount);
-  const candidateSmoke = isSmokeTestUser(candidateAccount);
-  if (!viewerSmoke && !candidateSmoke) {
-    return true;
-  }
-  return viewerSmoke && candidateSmoke;
-}

@@ -17,6 +17,7 @@
  */
 import {createPrivateKey, sign} from "node:crypto";
 import {logger} from "firebase-functions";
+import {safeErrorMeta} from "../security/logHygiene.js";
 import {premiumCatalogue} from "./productCatalog.js";
 import type {
   AppleRenewalInfo,
@@ -170,7 +171,10 @@ export class AppStoreServerApi implements AppleSubscriptionApi {
       try {
         response = await fetch(url, {headers: {Authorization: `Bearer ${jwt}`}});
       } catch (error) {
-        logger.warn("premium: App Store request failed", {error});
+        // Never the raw error: the request URL carries the transaction id.
+        logger.warn("premium: App Store request failed", {
+          error: safeErrorMeta(error, [input.transactionId]),
+        });
         return {ok: false, error: "transient"};
       }
 
@@ -191,7 +195,9 @@ export class AppStoreServerApi implements AppleSubscriptionApi {
       try {
         body = (await response.json()) as StatusResponse;
       } catch (error) {
-        logger.warn("premium: App Store returned unreadable JSON", {error});
+        logger.warn("premium: App Store returned unreadable JSON", {
+          error: safeErrorMeta(error, [input.transactionId]),
+        });
         return {ok: false, error: "transient"};
       }
 

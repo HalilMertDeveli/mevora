@@ -1,5 +1,5 @@
+import 'package:flutter/foundation.dart';
 import 'package:mevora/core/config/app_config.dart';
-import 'package:mevora/core/config/app_environment.dart';
 import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/network/backend_callable.dart';
@@ -21,26 +21,41 @@ DiscoveryServices createDiscoveryServices({
   DemoSocialHub? demoHub,
   String Function()? currentUid,
 }) {
-  final local = MockDiscoveryRepository(
+  // A release build has no demo deck to choose. Said first and with a
+  // compile-time constant, so the demo repository, its profiles and their
+  // portraits are not compiled into a store binary at all.
+  if (kReleaseMode) {
+    return DiscoveryServices(
+      discoveryRepository: DiscoveryRepositoryImpl(
+        backend: backend ?? FirebaseFunctionsCallable(),
+      ),
+    );
+  }
+
+  // The demo deck is built only for a build that may use it. A missing
+  // config counts as production here as everywhere else: the real backend,
+  // an honest empty deck, and no demo profile anywhere near it.
+  MockDiscoveryRepository demoDeck() => MockDiscoveryRepository(
     demoHub: demoHub,
     currentUid: currentUid ?? () => demoHub?.uidSource.currentUid ?? 'self',
   );
   if (_forceMockOnly(config)) {
-    return DiscoveryServices(discoveryRepository: local);
+    return DiscoveryServices(discoveryRepository: demoDeck());
   }
 
   final remote = DiscoveryRepositoryImpl(
     backend: backend ?? FirebaseFunctionsCallable(),
   );
   final allowDemo =
-      (config?.environment.isDevelopment ?? true) && !_demoDiscoveryDisabled();
+      demoInfrastructureAllowed(environment: config?.environment) &&
+      !_demoDiscoveryDisabled();
   if (!allowDemo) {
     return DiscoveryServices(discoveryRepository: remote);
   }
   return DiscoveryServices(
     discoveryRepository: HybridDiscoveryRepository(
       remote: remote,
-      local: local,
+      local: demoDeck(),
       allowDemoFallback: true,
       currentUid: currentUid ?? () => demoHub?.uidSource.currentUid ?? 'self',
     ),

@@ -260,7 +260,10 @@ entries are the curated clips that were already the calibration catalogue, in
 a provisional order (V1–V6 one per baseline slot, V7–V11 the other five
 dimensions, so the first fifteen cover all eleven). The owner chooses the
 production order. Until then `--redraft` may rewrite the lock; once `released`
-is `true` the lock is append-only.
+is `true` the lock is append-only. A draft is handed out by the emulator only:
+a deployed backend serves no Core content until the sequence is released
+(`isHumorCoreServed` in `coreService.ts`) — the feed answers an empty
+catalogue, the daily set stays locked and a response is refused `not-in-set`.
 
 ### GIPHY is a candidate source
 

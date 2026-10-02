@@ -10,7 +10,16 @@ String? localizeAuthError(AppLocalizations l10n, AuthController auth) {
   if (kind != null) {
     return L10nErrors.auth(l10n, kind);
   }
-  return auth.errorMessage;
+  final message = auth.errorMessage;
+  if (message == null) {
+    return null;
+  }
+  if (message == AuthController.sessionUnverifiedMessage) {
+    return l10n.authSessionUnverified;
+  }
+  // A message without a kind was written by the data layer in one language.
+  // Known ones are mapped to the member's language; the rest pass through.
+  return L10nErrors.message(l10n, message);
 }
 
 String? localizePhoneError(AppLocalizations l10n, PhoneAuthState state) {

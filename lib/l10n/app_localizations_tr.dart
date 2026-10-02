@@ -523,9 +523,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notFound => 'Bunu bulamadık.';
 
   @override
-  String get comingSoon => 'Mevora\'nın bu kısmı henüz hazır değil.';
-
-  @override
   String get notAllowed => 'Bu işlem için yetkin yok.';
 
   @override
@@ -747,7 +744,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authAppVerification =>
-      'Uygulama doğrulaması tamamlanamadı. İnternet bağlantını kontrol et, gerçek bir cihazda dene ve birkaç saniye sonra yeniden dene.';
+      'Cihaz doğrulaması tamamlanamadı. İnternet bağlantını kontrol et, birkaç saniye bekle ve yeni bir kod iste.';
 
   @override
   String get authInvalidOtp => 'Doğrulama kodu hatalı.';
@@ -759,6 +756,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get authSessionExpired =>
       'Oturumun süresi doldu. Lütfen numarayı tekrar gir.';
+
+  @override
+  String get authSessionUnverified =>
+      'Oturum doğrulanamadı. Lütfen tekrar giriş yap.';
 
   @override
   String get authTooManyAttempts =>
@@ -799,11 +800,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authNotConfigured =>
-      'Telefon ile giriş henüz Firebase’de etkin değil.';
+      'Telefonla giriş şu anda kullanılamıyor. Lütfen başka bir giriş yöntemi kullan.';
 
   @override
   String get authBillingNotEnabled =>
-      'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.';
+      'Şu anda doğrulama kodu gönderemiyoruz. Lütfen daha sonra tekrar dene veya başka bir giriş yöntemi kullan.';
 
   @override
   String get authInvalidEmail => 'Geçerli bir e-posta adresi gir.';
@@ -1265,10 +1266,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get discoveryFiltersTitle => 'Tercihlerin';
-
-  @override
-  String get discoveryFiltersHint =>
-      'Filtreler yerel olarak kaydedilir. Sunucu tarafı filtreleme sonraki güncellemede gelecek.';
 
   @override
   String get applyFilters => 'Filtreleri uygula';
@@ -2490,9 +2487,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Artık konuşmaya başlayabilirsiniz. İşte sizi yakınlaştıran şeyler.';
 
   @override
-  String get demoProfileBadge => 'Örnek';
-
-  @override
   String sharedHobbiesCount(int count) {
     return '$count ortak ilgi alanı';
   }
@@ -2579,7 +2573,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get musicNetwork => 'İnternet bağlantını kontrol et ve tekrar dene.';
 
   @override
-  String get musicNotConfigured => 'Spotify bu sürümde henüz yapılandırılmadı.';
+  String get musicNotConfigured =>
+      'Spotify şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.';
 
   @override
   String get musicConnectError =>

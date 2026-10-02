@@ -1,3 +1,17 @@
+/**
+ * Says whether a match, likes or passes exist between two members, counts the
+ * deployed functions and lists the discovery, photo, profile and match ones.
+ * Uses Firebase CLI tokens from configstore (no ADC required).
+ *
+ * READS THE LIVE PROJECT (mevora-d6ed0), not an emulator. It only sends GET
+ * requests and writes nothing.
+ *
+ * The uids are arguments on purpose: a member's uid does not belong in a
+ * tracked file.
+ *
+ * Usage:
+ *   node tool/check_match_and_functions.cjs <uid> <uid>
+ */
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
@@ -41,10 +55,20 @@ function request(method, url, token, body) {
   });
 }
 
+const USAGE =
+  "usage: node tool/check_match_and_functions.cjs <uid> <uid>\n" +
+  `Reads the LIVE project ${PROJECT} (read-only).`;
+
 async function main() {
+  const args = process.argv.slice(2);
+  // Before the token is read: an option such as --help must not be looked up
+  // as if it were a member.
+  if (args.length !== 2 || args.some((uid) => uid.startsWith("-"))) {
+    console.error(USAGE);
+    process.exit(2);
+  }
+  const [a, b] = args;
   const token = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8")).tokens.access_token;
-  const a = "F7CYZWNik3RGv3xQTZRLKWsMnTd2";
-  const b = "CKLxiWTBtoXik888Wzqicqeuj6t2";
   const matchId = [a, b].sort().join("_");
 
   const docs = [

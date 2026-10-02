@@ -33,10 +33,18 @@ class _QaLoginPageState extends State<QaLoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  bool _prefilled = false;
+
   @override
-  void initState() {
-    super.initState();
-    final accounts = EmulatorQaLogin.accounts;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_prefilled) {
+      return;
+    }
+    _prefilled = true;
+    // Only behind the gate: with it closed nothing is put into the fields,
+    // not even into a page the router would never show.
+    final accounts = EmulatorQaLogin.accountsFor(AppScope.of(context).config);
     if (accounts.isNotEmpty) {
       _emailController.text = accounts.first.email;
       _passwordController.text = accounts.first.password;

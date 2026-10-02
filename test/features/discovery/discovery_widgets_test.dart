@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mevora/shared/images/mevora_photo_images.dart';
 import 'package:mevora/features/compatibility/presentation/widgets/compatibility_signal.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
@@ -7,7 +8,7 @@ import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
-import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
+import 'package:mevora/core/testing/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
@@ -78,6 +79,9 @@ void main() {
   testWidgets('demo profile cards show a portrait, not a numeral placeholder', (
     tester,
   ) async {
+    // Only a build with the demo deck maps the demo portraits.
+    MevoraPhotoImages.demoPortraitsAvailable = true;
+    addTearDown(() => MevoraPhotoImages.demoPortraitsAvailable = false);
     await tester.pumpWidget(
       wrap(
         const SizedBox(

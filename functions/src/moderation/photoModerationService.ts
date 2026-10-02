@@ -326,7 +326,13 @@ export async function processPendingProfilePhoto(options: {
     }
   }
 
-  const smokeFastPath = await isSmokeTestAccount(options.db, options.uid);
+  // The fast path exists for the emulator's smoke run, whose fixture is not a
+  // real photo. In a deployed backend the flag is not even read: a
+  // smoke-flagged account's upload gets the same checks as anyone's, so the
+  // flag can never be a way around moderation there.
+  const smokeFastPath =
+    process.env.FUNCTIONS_EMULATOR === "true" &&
+    (await isSmokeTestAccount(options.db, options.uid));
   const attemptsSnap = await options.db.doc(`profiles/${options.uid}`).get();
   const existing = photosFrom(attemptsSnap.data());
   const current = existing.find((photo) => photo.id === options.imageId);

@@ -182,6 +182,15 @@ const core = requireCompiled("lib/humor/coreService.js");
 const {getDailyHumorSetView} = requireCompiled("lib/humor/dailyService.js");
 const {loadUserHumorCalibration} = requireCompiled("lib/humor/feed.js");
 
+// The service hands out a draft Core sequence only as the Functions emulator
+// process (`isHumorCoreServed`); a deployed backend serves none of it until
+// the owner releases it. This tool runs the service in its own process to
+// prove the catalogue, the indexes and the transaction, so it runs as the
+// emulator process against either target. The only other thing the flag
+// switches on in this code is the dev clock document, which this tool never
+// writes.
+process.env.FUNCTIONS_EMULATOR = "true";
+
 // --------------------------------------------------------------------------
 // Harness
 // --------------------------------------------------------------------------
@@ -250,7 +259,10 @@ async function wipeAll() {
       report.healthy,
       `sequence not healthy — run without --verify-only: ${[...report.problems, ...report.warnings].join("; ")}`,
     );
-    return `${report.servableCount}/${report.total} servable, ${report.released ? "released" : "draft"}`;
+    return (
+      `${report.servableCount}/${report.total} servable, ` +
+      (report.released ? "released" : "draft — a deployed backend serves none of it until released")
+    );
   });
 
   await step("a fresh user gets V1–V15 in canonical order", async () => {

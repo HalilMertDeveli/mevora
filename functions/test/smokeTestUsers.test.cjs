@@ -1,4 +1,4 @@
-const {beforeEach, describe, it} = require("node:test");
+const {after, beforeEach, describe, it} = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -6,11 +6,15 @@ const {createFakeFirestore} = require("./helpers/fakeFirestore.cjs");
 const {installFirebaseAdminStubs, callAs} = require("./helpers/adminStubs.cjs");
 
 /**
- * The smoke-test callables are exported to every deploy and take no Firebase
- * auth: a shared secret is the whole gate. They used to create email-verified
- * accounts whose password was a template written in this repository, so
- * anyone who could read the source could sign in as a smoke user on any
- * project where the pair existed.
+ * The smoke-test callables take no Firebase auth: a shared secret is their
+ * gate. They used to be exported to every deploy, and to create
+ * email-verified accounts whose password was a template written in this
+ * repository, so anyone who could read the source could sign in as a smoke
+ * user on any project where the pair existed.
+ *
+ * They are emulator-only now (not exported to a deploy, and refusing outside
+ * the emulator process — both pinned in productionSurface.test.cjs), so every
+ * test here runs as the emulator process.
  *
  * What is pinned here:
  * - the password is random per run, never the old template, and only ever
@@ -92,9 +96,15 @@ async function rejectsWith(promise, code, message) {
 const prepare = (data) => callAs(prepareSmokeTestUsers, null, data);
 const cleanup = (data) => callAs(cleanupSmokeTestUsers, null, data);
 
+const savedEmulatorFlag = process.env.FUNCTIONS_EMULATOR;
 beforeEach(() => {
   auth = createFakeAuth();
   process.env.SMOKE_TEST_SECRET = SECRET;
+  process.env.FUNCTIONS_EMULATOR = "true";
+});
+after(() => {
+  if (savedEmulatorFlag === undefined) delete process.env.FUNCTIONS_EMULATOR;
+  else process.env.FUNCTIONS_EMULATOR = savedEmulatorFlag;
 });
 
 describe("smoke callables: the shared secret", () => {

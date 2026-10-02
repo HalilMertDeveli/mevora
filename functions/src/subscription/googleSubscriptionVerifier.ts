@@ -10,6 +10,7 @@
  * https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2/get
  */
 import {logger} from "firebase-functions";
+import {safeErrorMeta} from "../security/logHygiene.js";
 import type {GoogleSubscriptionPurchase} from "./googleSubscriptionMapper.js";
 
 export type GoogleVerifyFailure =
@@ -88,7 +89,10 @@ export class PlayDeveloperApi implements GoogleSubscriptionApi {
         headers: {Authorization: `Bearer ${access}`},
       });
     } catch (error) {
-      logger.warn("premium: Google Play request failed", {error});
+      // Never the raw error: the request URL carries the purchase token.
+      logger.warn("premium: Google Play request failed", {
+        error: safeErrorMeta(error, [input.purchaseToken]),
+      });
       return {ok: false, error: "transient"};
     }
 
@@ -112,7 +116,9 @@ export class PlayDeveloperApi implements GoogleSubscriptionApi {
       const purchase = (await response.json()) as GoogleSubscriptionPurchase;
       return {ok: true, purchase};
     } catch (error) {
-      logger.warn("premium: Google Play returned unreadable JSON", {error});
+      logger.warn("premium: Google Play returned unreadable JSON", {
+        error: safeErrorMeta(error, [input.purchaseToken]),
+      });
       return {ok: false, error: "transient"};
     }
   }

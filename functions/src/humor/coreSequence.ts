@@ -48,7 +48,9 @@ export const HUMOR_CORE = {
  * Whether the owner has released this order to members.
  *
  * While `false` the sequence is a draft: the lock tool may rewrite the lock
- * wholesale (`--redraft`) so the order can still be reviewed and changed.
+ * wholesale (`--redraft`) so the order can still be reviewed and changed,
+ * and only the emulator hands it out — a deployed backend serves no Core
+ * content (`isHumorCoreServed` in `coreService.ts`).
  * Once `true` the lock is append-only and `--redraft` refuses to run.
  */
 export const HUMOR_CORE_RELEASE = {released: false} as const;

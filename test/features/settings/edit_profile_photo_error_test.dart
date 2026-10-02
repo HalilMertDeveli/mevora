@@ -181,8 +181,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(_en.addPhotoGallery));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(_en.permissionAllow));
-    await tester.pumpAndSettle();
+    // Photo access is already granted here, so the picker opens directly:
+    // no "Mevora needs access to your photos" page in between.
+    expect(find.text(_en.permissionPhotosDescription), findsNothing);
 
     expect(photos.added, 1);
     expect(find.text(_en.settingsPhotoMinRequired), findsNothing);

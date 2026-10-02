@@ -32,13 +32,28 @@ class PermissionPromptPage extends StatefulWidget {
     bool mandatory = false,
     PermissionController? controller,
   }) async {
+    final resolved = controller ?? PermissionScope.maybeOf(context)?.controller;
+    // The pre-prompt explains a request that is about to happen. When the
+    // member has already allowed it — or the platform needs no permission at
+    // all, as with the Android photo picker — there is no request to explain,
+    // and "Mevora needs access to…" in front of every photo is simply wrong.
+    if (resolved != null) {
+      final current = await resolved.check(type);
+      if (current.isUsable) {
+        return current.isLimited
+            ? PermissionFlowOutcome.limited
+            : PermissionFlowOutcome.granted;
+      }
+      if (!context.mounted) {
+        return PermissionFlowOutcome.skipped;
+      }
+    }
     final result = await Navigator.of(context).push<PermissionFlowOutcome>(
       MevoraPageTransitions.route(
         builder: (_) => PermissionPromptPage(
           type: type,
           mandatory: mandatory,
-          controller:
-              controller ?? PermissionScope.maybeOf(context)?.controller,
+          controller: resolved,
         ),
       ),
     );

@@ -119,10 +119,14 @@ function seed(db, entries) {
   }
 }
 
+// The sequence is a draft (HUMOR_CORE_RELEASE.released === false), and a draft
+// is handed out by the emulator process only. Everything below is about
+// serving it, so the suite runs as the emulator; what a deployed backend does
+// with a draft is pinned in productionSurface.test.cjs.
 let savedEmulatorFlag;
 beforeEach(() => {
   savedEmulatorFlag = process.env.FUNCTIONS_EMULATOR;
-  delete process.env.FUNCTIONS_EMULATOR;
+  process.env.FUNCTIONS_EMULATOR = "true";
 });
 afterEach(() => {
   if (savedEmulatorFlag === undefined) delete process.env.FUNCTIONS_EMULATOR;
@@ -406,8 +410,11 @@ describe("server authority", () => {
     const db = await seededDb();
     await calibrate(db, "uA");
     seed(db, {"devClock/humorDaily": {dayId: dayId(2)}});
+    // A deployed backend never reads the override: it is still today there.
+    delete process.env.FUNCTIONS_EMULATOR;
     assert.equal(await daily.resolveDailyToday(db, NOW), TODAY);
     const locked = await daily.getDailyHumorSetView({db, uid: "uA", nowMs: NOW});
+    assert.equal(locked.dayId, TODAY);
     assert.equal(locked.lockedReason, "starts_tomorrow");
 
     process.env.FUNCTIONS_EMULATOR = "true";

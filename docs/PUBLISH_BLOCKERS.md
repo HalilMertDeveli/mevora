@@ -43,9 +43,9 @@ Ayrıntı: `docs/PHONE_AUTH_ROOT_CAUSE_REPORT.md` (2026-09-29 bölümü), `PHONE
 
 **Durum (2026-10-01):** Her üyenin aynı sırayla puanladığı Mizah Core sırası (`functions/src/humor/coreSequence.ts`) şu an **taslak**: `HUMOR_CORE_RELEASE.released = false`. İçinde koddaki 36 kürasyonlu klip, geçici bir sırayla duruyor (ilk 15 = kalibrasyon, sonrası günde 5). 36 klibin 33'ü İngilizce, 3'ü Türkçe etiketli; hepsi GIPHY'den yüklenen üçüncü taraf GIF.
 
-**Dikkat:** `released` bir çalışma zamanı anahtarı **değil**. Bu bayrak `false` iken de taslak sıra üyelere sunulur; onu üyelerden uzak tutan tek şey, Mizah'ın yayın derlemesinde varsayılan olarak kapalı olması (`--dart-define=HUMOR_LAB_ENABLED=true` verilmedikçe).
+**Dikkat:** Bu bayrak `false` iken dağıtılmış (canlı) sunucu hiçbir Core içeriği sunmaz: akış "içerik yok" döner, günlük set kilitli kalır, gönderilen puan `not-in-set` ile reddedilir. Taslak sırayı yalnızca emülatör sunar (QA ve inceleme için). İkinci engel, Mizah'ın yayın derlemesinde varsayılan olarak kapalı olmasıdır (`--dart-define=HUMOR_LAB_ENABLED=true` verilmedikçe).
 
-**Etkisi — sıra yayınlanmadan Mizah açık bir sürüm çıkarsa:** üyeler bu geçici sırayı puanlar. Sıra bir kez üyelere gittikten sonra değiştirmek, önce puanlayanlarla sonra puanlayanları karşılaştırılamaz yapar. Ayrıca 36 içerik, yeni bir üyeye yalnızca 15 + dört günlük set (ve bir içerik) yeter.
+**Etkisi — sıra yayınlanmadan Mizah açık bir sürüm çıkarsa:** üyeler taslak sırayı puanlayamaz; Mizah Laboratuvarı boş görünür ve mizah uyumu hesaplanamaz. Sıra `released: true` ile üyelere gittikten sonra değiştirmek, önce puanlayanlarla sonra puanlayanları karşılaştırılamaz yapar. Ayrıca 36 içerik, yeni bir üyeye yalnızca 15 + dört günlük set (ve bir içerik) yeter.
 
 **Yapılacak (yalnızca proje sahibi):** V1…Vn için nihai içerikleri ve sırayı seç. Sıra kodda güncellenir, `node tool/lockHumorCoreSequence.cjs --redraft` ile kilit yeniden yazılır, sonra `released: true` yapılır **ve** `functions/test/humorCoreSequence.test.cjs` içindeki `released === false` beklentisi çevrilir; o andan itibaren sıra yalnızca sona ekleme ile büyür.
 

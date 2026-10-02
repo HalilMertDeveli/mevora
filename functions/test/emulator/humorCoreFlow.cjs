@@ -46,6 +46,13 @@ const {submitHumorFeedbackTx} = require("../../lib/humor/feedback.js");
 initializeApp({projectId: process.env.GCLOUD_PROJECT || "demo-humor-qa"});
 const db = getFirestore();
 
+// This flow calls the compiled service in its own process, standing in for
+// the Functions emulator. The Core sequence is a draft, and a draft is handed
+// out by the emulator process only (`isHumorCoreServed`), so the whole flow
+// runs as that process. The dev clock is therefore honoured from the first
+// step; the run starts by clearing any override an earlier run left behind.
+process.env.FUNCTIONS_EMULATOR = "true";
+
 const NOW = Date.now();
 const TODAY = canonicalDayId(NOW);
 const DAY = 24 * 60 * 60 * 1000;
@@ -336,8 +343,8 @@ step("changing today's rating replaces it instead of stacking", async () => {
 });
 
 step("a member from before the sequence keeps everything and starts at V1, five a day", async () => {
+  // Back to the real day: with no override the server clock decides.
   await db.doc(DAILY_DEV_CLOCK_DOC).delete();
-  delete process.env.FUNCTIONS_EMULATOR;
   const uid = "qa_core_legacy";
   await db.doc(`users/${uid}/humor/calibration`).set({
     version: 1,
@@ -412,6 +419,7 @@ step("account deletion removes Core progress through the existing humor sweep", 
 
 (async () => {
   let failed = 0;
+  await db.doc(DAILY_DEV_CLOCK_DOC).delete();
   for (const [name, fn] of steps) {
     try {
       const detail = await fn();

@@ -31,7 +31,7 @@ import {
   type CalibrationStateView,
 } from "./calibration.js";
 import {normalizeHumorVector} from "./categories.js";
-import {resolveDailyToday} from "./clock.js";
+import {isEmulatorProcess, resolveDailyToday} from "./clock.js";
 import {isHumorCalibrationReady} from "./compatibility.js";
 import {
   HUMOR_CONTENT_COLLECTION,
@@ -103,6 +103,21 @@ function coreServable(content: HumorContentDoc | null | undefined): content is H
   );
 }
 
+/**
+ * Whether this process hands out Core content at all.
+ *
+ * Until the owner releases the sequence (`HUMOR_CORE_RELEASE`) its order is a
+ * draft that may still be rewritten, and a rating taken against a draft
+ * position would not mean what the released position means. So a deployed
+ * backend serves nothing from a draft. The emulator keeps serving it: that is
+ * where the draft is reviewed and where QA and the humor suites run.
+ */
+export function isHumorCoreServed(
+  release: {readonly released: boolean} = HUMOR_CORE_RELEASE,
+): boolean {
+  return release.released || isEmulatorProcess();
+}
+
 async function loadContents(
   db: Firestore,
   ids: readonly string[],
@@ -141,6 +156,15 @@ async function resolveMemberSet(
   sequence: readonly HumorCoreEntry[],
 ): Promise<ResolvedSet> {
   const contents = new Map<string, HumorContentDoc | null>();
+  // Not served here (a draft sequence in a deployed backend): every entry is
+  // unavailable, exactly as if its content had been taken down. The callers
+  // need no case of their own — the feed reports an empty catalogue, the daily
+  // set stays locked and a response is `not-in-set` before anything is
+  // learned — and no content document is read.
+  if (!isHumorCoreServed()) {
+    const withheld = new Set(sequence.map((entry) => entry.id));
+    return {set: memberCoreSet(state, dayId, sequence, withheld), contents, unavailable: withheld};
+  }
   const unavailable = new Set<string>();
   for (let round = 0; round <= sequence.length; round += 1) {
     const set = memberCoreSet(state, dayId, sequence, unavailable);

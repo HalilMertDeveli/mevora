@@ -89,7 +89,7 @@ export async function seedSmokeUser(db, auth, email, label) {
     city: "Istanbul",
     education: "bachelors",
     relationshipGoal: "long_term",
-    bio: "Smoke test profile for controlled production verification.",
+    bio: "Smoke test profile for emulator verification.",
     interests: ["music", "travel", "food"],
     lifestyleProfile: {
       smoking: "never",

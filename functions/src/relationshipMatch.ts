@@ -1,6 +1,7 @@
 import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
+import {logger} from "firebase-functions";
 import {
   answersFromSummary,
   comparableAnswersFromSummary,
@@ -21,14 +22,6 @@ const callableOptions = {
   invoker: "public" as const,
   enforceAppCheck,
 };
-
-function relDebug(message: string, extra?: unknown): void {
-  if (extra === undefined) {
-    console.log(`[RELATIONSHIP_DEBUG] ${message}`);
-    return;
-  }
-  console.log(`[RELATIONSHIP_DEBUG] ${message}`, extra);
-}
 
 function requireUid(request: CallableRequest): string {
   const uid = request.auth?.uid;
@@ -112,7 +105,6 @@ export const saveRelationshipAnswer = onCall(
       const uid = requireUid(request);
       const questionId = String(request.data?.questionId ?? "");
       const answerId = normalizeAnswerId(request.data?.answerId) ?? String(request.data?.answerId ?? "");
-      relDebug(`Question answers submitted ${questionId}=${answerId}`);
       if (!isValidRelationshipAnswer(questionId, answerId)) {
         throw new HttpsError("invalid-argument", "invalid-relationship-answer");
       }
@@ -129,7 +121,6 @@ export const saveRelationshipAnswer = onCall(
             answerId,
           });
         }
-        relDebug("Answer unchanged");
         return snapshotPayload(current);
       }
       current[questionId] = answerId;
@@ -178,13 +169,18 @@ export const saveRelationshipAnswer = onCall(
           {merge: true},
         );
       });
-      relDebug("Answers saved successfully");
       return snapshotPayload(current);
     } catch (error) {
-      const err = error as {code?: string; message?: string};
-      relDebug(
-        `FirebaseException ${err.code ?? "unknown"}: ${err.message ?? String(error)}`,
-      );
+      // A refusal this callable raised itself (bad input, signed out) is the
+      // caller's answer, not an incident. Anything else is logged by its code
+      // only: the message of a failed write can name the document, and the
+      // answer a member gave is never written to a log.
+      if (!(error instanceof HttpsError)) {
+        logger.error("saveRelationshipAnswer failed", {
+          uid: request.auth?.uid ?? null,
+          code: (error as {code?: unknown})?.code ?? "unknown",
+        });
+      }
       throw error;
     }
   },
@@ -227,7 +223,6 @@ export const syncProfileQuestionAnswers = onCall(
       );
     }
     await batch.commit();
-    relDebug(`Profile question answers synced: ${entries.length}`);
     return {synced: entries.length};
   },
 );
@@ -292,7 +287,9 @@ export function hasRelationshipAnswers(summary: DocumentData | undefined): boole
 
 /**
  * The pair score from two summaries the caller already holds — for scans that
- * load the viewer's summary once and candidates' in bulk. No reads.
+ * load the viewer's summary once and candidates' in bulk. No reads, and
+ * nothing is logged: a pair's answers and how they compare are private to the
+ * two members. The uids are part of the signature for the callers only.
  */
 export function relationshipScoreFromSummaries(
   viewerUid: string,
@@ -307,40 +304,15 @@ export function relationshipScoreFromSummaries(
   }
   const viewerKey = viewerSummary?.compatibilityKey;
   const candidateKey = candidateSummary?.compatibilityKey;
-  const questionIds = Array.isArray(viewerSummary?.questionIds)
-    ? (viewerSummary?.questionIds as unknown[]).map((id) => String(id))
-    : Object.keys(viewerAnswers).slice(0, 3);
   const rel = scoreRelationshipCompatibility(viewerAnswers, candidateAnswers);
   const keyMatch =
     typeof viewerKey === "string" &&
     typeof candidateKey === "string" &&
     viewerKey.length > 0 &&
     viewerKey === candidateKey;
-  if (keyMatch) {
-    relDebug(
-      `User ${viewerUid} vs ${candidateUid}: exact compatibilityKey → treat as 3/3 session match`,
-    );
-  }
-  const debugIds =
-    questionIds.length === 3 ? questionIds : Object.keys(viewerAnswers).filter((id) => candidateAnswers[id] != null).slice(0, 3);
-  for (const questionId of debugIds) {
-    const match =
-      (normalizeAnswerId(viewerAnswers[questionId]) ?? viewerAnswers[questionId]) ===
-      (normalizeAnswerId(candidateAnswers[questionId]) ?? candidateAnswers[questionId]);
-    relDebug(
-      `User ${viewerUid} vs ${candidateUid} ${questionId}: ${match ? "MATCH" : "NO MATCH"} ` +
-        `(${viewerAnswers[questionId]} vs ${candidateAnswers[questionId]})`,
-    );
-  }
   const alignedForRank = keyMatch
     ? Math.max(rel.alignedCount, 3)
     : rel.alignedCount;
-  relDebug(
-    `User ${viewerUid} vs ${candidateUid}: ${alignedForRank}/${rel.sharedQuestionCount} ` +
-      `score=${keyMatch ? 100 : rel.score}% FINAL PRIORITY: ${
-        alignedForRank >= 3 ? "VERY HIGH" : alignedForRank === 2 ? "HIGH" : alignedForRank === 1 ? "MEDIUM" : "LOW"
-      }`,
-  );
   if (alignedForRank <= 0) {
     return null;
   }

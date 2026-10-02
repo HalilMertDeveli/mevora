@@ -267,14 +267,18 @@ describe("searchHumorProviderCandidates callable", () => {
     assert.deepEqual(result, {ok: false, configured: false});
   });
 
-  it("binds the GIPHY secret and is exported from the functions entry point", () => {
+  it("binds the GIPHY secret and is exported only through the emulator-only gate", () => {
     const src = fs.readFileSync(path.join(__dirname, "..", "src", "humor", "index.ts"), "utf8");
     const start = src.indexOf("export const searchHumorProviderCandidates");
     assert.ok(start > 0);
     const options = src.slice(start, src.indexOf("async (request)", start));
     assert.match(options, /secrets:\s*\[giphyApiKey\]/);
+    // Not a deployed function: index.ts never names it, and reaches it only
+    // through emulatorOnly.ts, which it loads in the emulator process alone.
     const entry = fs.readFileSync(path.join(__dirname, "..", "src", "index.ts"), "utf8");
-    assert.match(entry, /searchHumorProviderCandidates,\s*\n?\s*\}\s*from\s*"\.\/humor\/index\.js"/);
+    assert.equal(entry.includes("searchHumorProviderCandidates"), false);
+    const emulatorOnly = fs.readFileSync(path.join(__dirname, "..", "src", "emulatorOnly.ts"), "utf8");
+    assert.match(emulatorOnly, /export \{searchHumorProviderCandidates\} from "\.\/humor\/index\.js"/);
   });
 });
 

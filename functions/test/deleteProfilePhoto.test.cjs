@@ -1,4 +1,4 @@
-const {describe, it} = require("node:test");
+const {afterEach, beforeEach, describe, it} = require("node:test");
 const assert = require("node:assert/strict");
 const {Timestamp} = require("firebase-admin/firestore");
 const {
@@ -249,6 +249,18 @@ describe("a photo the pipeline is working on", () => {
 });
 
 describe("a moderation result that arrives after the delete", () => {
+  // These fixture bytes are approved by the smoke fast path, which exists only
+  // in the emulator process — so that is the process these tests run as.
+  let savedEmulatorFlag;
+  beforeEach(() => {
+    savedEmulatorFlag = process.env.FUNCTIONS_EMULATOR;
+    process.env.FUNCTIONS_EMULATOR = "true";
+  });
+  afterEach(() => {
+    if (savedEmulatorFlag === undefined) delete process.env.FUNCTIONS_EMULATOR;
+    else process.env.FUNCTIONS_EMULATOR = savedEmulatorFlag;
+  });
+
   /** Runs `action` just before the nth transaction the pipeline opens. */
   function beforeTransaction(w, nth, action) {
     const run = w.db.runTransaction.bind(w.db);

@@ -47,7 +47,7 @@ export class SmokeReporter {
 
   render() {
     const lines = [
-      "MEVORA PRODUCTION SMOKE TEST",
+      "MEVORA SMOKE TEST",
       "",
       `Environment: ${this.environment}`,
       `Firebase: ${this.firebaseProject}`,

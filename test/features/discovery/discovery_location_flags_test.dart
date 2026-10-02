@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
+import 'package:mevora/core/services/location/geo_position.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
@@ -31,6 +32,19 @@ class _UnreadableFlagsLocationRepository extends FakeLocationRepository {
 
   /// When set, a flags read waits for this before answering.
   Completer<void>? gate;
+
+  /// When set, storing a position waits for this before answering — what a
+  /// Firestore write does while the phone is offline.
+  Completer<void>? persistGate;
+
+  @override
+  Future<Result<void>> persistOwnerLocation({
+    required String uid,
+    required GeoPosition position,
+  }) async {
+    await persistGate?.future;
+    return super.persistOwnerLocation(uid: uid, position: position);
+  }
 
   @override
   Future<Result<LocationFlags>> loadLocationFlags(String uid) async {
@@ -111,6 +125,37 @@ void main() {
       expect(controller.state.phase, LocationPromptPhase.ready);
       expect(location.flagWrites, 0);
       expect(location.captureCalls, 0);
+    });
+
+    test('a position that cannot be stored does not hold the tab', () async {
+      // The device symptom: a member whose permission is granted but whose
+      // flags are not marked complete has the position captured at start. The
+      // write never came back offline, and neither did start().
+      final location = _UnreadableFlagsLocationRepository()
+        ..flagsReadable = true
+        ..persistGate = Completer<void>();
+      addTearDown(() => location.persistGate!.complete());
+      final controller = build(
+        location,
+        skipExplanationIfAlreadyGranted: true,
+        locationFlagsTimeout: const Duration(milliseconds: 20),
+      );
+
+      final started = controller.start();
+      // While the position is being settled there is no question to answer.
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      expect(controller.locationFlagsPending, isFalse);
+      expect(controller.settlingGrantedLocation, isTrue);
+
+      await started.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => fail('start() waited on the location write'),
+      );
+
+      expect(controller.settlingGrantedLocation, isFalse);
+      expect(controller.state.phase, LocationPromptPhase.ready);
+      expect(controller.state.candidates, isNotEmpty);
+      expect(location.flagWrites, 0);
     });
 
     test('a read that timed out is settled by the next refresh', () async {

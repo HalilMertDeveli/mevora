@@ -198,8 +198,8 @@ class DiscoveryController extends ChangeNotifier {
   /// Minimum drag distance (px) before a swipe action fires.
   final double swipeThreshold;
 
-  /// How long the read of the location flags may take before it counts as
-  /// unread. The same patience the app-level location gate has.
+  /// How long the tab waits on a location read or write before it goes on
+  /// without it. The same patience the app-level location gate has.
   final Duration locationFlagsTimeout;
 
   PurchaseRepository? get purchaseRepository => _purchaseRepository;
@@ -292,6 +292,14 @@ class DiscoveryController extends ChangeNotifier {
   bool get locationFlagsUnresolved =>
       _locationFlagsRead == _LocationFlagsRead.failed;
 
+  bool _settlingGrantedLocation = false;
+
+  /// Location is being settled without a question: the permission is already
+  /// granted, so [start] captures the position itself. Until it is done the
+  /// phase is still the default "explanation", and the page must not offer
+  /// that question in the meantime.
+  bool get settlingGrantedLocation => _settlingGrantedLocation;
+
   /// The stored flags, or null when they could not be read in time.
   ///
   /// The read has no deadline of its own: offline, with nothing cached,
@@ -336,7 +344,12 @@ class DiscoveryController extends ChangeNotifier {
     final gpsOn = await _locationRepository.isGpsEnabled();
     if (permission == LocationPermissionStatus.granted && gpsOn) {
       if (_skipExplanationIfAlreadyGranted) {
-        await _captureAndLoad();
+        _settlingGrantedLocation = true;
+        try {
+          await _captureAndLoad();
+        } finally {
+          _settlingGrantedLocation = false;
+        }
         return;
       }
     }
@@ -817,12 +830,20 @@ class DiscoveryController extends ChangeNotifier {
     switch (result) {
       case Success(:final value):
         if (_locationSync.shouldPersist(value)) {
-          final persisted = await _locationRepository.persistOwnerLocation(
-            uid: uid,
-            position: value,
-          );
-          if (persisted.isSuccess) {
-            _locationSync.markPersisted(value);
+          // Storing the position is not what the member is waiting for.
+          // Offline the write neither completes nor fails, and the tab sat on
+          // its loading state for as long as the phone was offline. After
+          // [locationFlagsTimeout] the tab goes on; the position is not
+          // marked as stored, so the next capture sends it again.
+          try {
+            final persisted = await _locationRepository
+                .persistOwnerLocation(uid: uid, position: value)
+                .timeout(locationFlagsTimeout);
+            if (persisted.isSuccess) {
+              _locationSync.markPersisted(value);
+            }
+          } on TimeoutException {
+            // Nothing to undo: see above.
           }
         }
       case Err(:final failure):

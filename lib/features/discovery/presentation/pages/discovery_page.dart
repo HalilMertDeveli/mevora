@@ -467,10 +467,12 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     }
 
     if (state.phase == LocationPromptPhase.explanation) {
-      if (controller.locationFlagsPending) {
-        // Whether the member was ever asked is not known yet. Offering "Skip
-        // for now" before the flags are read could switch location off for a
-        // member who had already turned it on.
+      if (controller.locationFlagsPending ||
+          controller.settlingGrantedLocation) {
+        // Whether the member was ever asked is not known yet — or it is, and
+        // the position is being captured without a question because the
+        // permission is already granted. Offering "Skip for now" in either
+        // case could switch location off for a member who has it on.
         return const MevoraLoading.page();
       }
       return LocationPermissionScreen(

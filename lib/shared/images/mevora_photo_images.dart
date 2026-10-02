@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Demo portraits and the `mock://` URL mapping that goes with them.
 ///
 /// The development demo deck uses Unsplash License portraits under
@@ -33,7 +35,9 @@ abstract final class MevoraPhotoImages {
   /// everything in a build without the demo deck, where a photo is an http
   /// URL or it is not a photo.
   static String? assetPath(String? url) {
-    if (!demoPortraitsAvailable || url == null || url.isEmpty) {
+    // The constant comes first so a release build drops the mapping, and the
+    // portrait paths with it.
+    if (kReleaseMode || !demoPortraitsAvailable || url == null || url.isEmpty) {
       return null;
     }
     if (isAssetPath(url)) {

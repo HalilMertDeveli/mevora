@@ -118,13 +118,17 @@ GoRouter createAppRouter({
           child: const LoginPage(),
         ),
       ),
-      GoRoute(
-        path: AppRoutes.qaLogin,
-        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
-          key: state.pageKey,
-          child: const QaLoginPage(),
+      // Developer routes are not part of a release build: the route does not
+      // exist there and its page is not compiled in. In other builds the
+      // redirector still decides who may open it.
+      if (!kReleaseMode)
+        GoRoute(
+          path: AppRoutes.qaLogin,
+          pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+            key: state.pageKey,
+            child: const QaLoginPage(),
+          ),
         ),
-      ),
       GoRoute(
         path: AppRoutes.premium,
         pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
@@ -572,13 +576,14 @@ GoRouter createAppRouter({
           child: const PrivacyPermissionsPage(),
         ),
       ),
-      GoRoute(
-        path: AppRoutes.designSystem,
-        pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
-          key: state.pageKey,
-          child: DesignSystemPage(config: config),
+      if (!kReleaseMode)
+        GoRoute(
+          path: AppRoutes.designSystem,
+          pageBuilder: (context, state) => MevoraPageTransitions.fadeSlide(
+            key: state.pageKey,
+            child: DesignSystemPage(config: config),
+          ),
         ),
-      ),
     ],
   );
 }

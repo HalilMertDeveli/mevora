@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
@@ -20,6 +21,17 @@ DiscoveryServices createDiscoveryServices({
   DemoSocialHub? demoHub,
   String Function()? currentUid,
 }) {
+  // A release build has no demo deck to choose. Said first and with a
+  // compile-time constant, so the demo repository, its profiles and their
+  // portraits are not compiled into a store binary at all.
+  if (kReleaseMode) {
+    return DiscoveryServices(
+      discoveryRepository: DiscoveryRepositoryImpl(
+        backend: backend ?? FirebaseFunctionsCallable(),
+      ),
+    );
+  }
+
   // The demo deck is built only for a build that may use it. A missing
   // config counts as production here as everywhere else: the real backend,
   // an honest empty deck, and no demo profile anywhere near it.

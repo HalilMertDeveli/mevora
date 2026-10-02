@@ -12,6 +12,7 @@ import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/onboarding/domain/onboarding_messages.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
+import 'package:mevora/features/profile/domain/repositories/profile_photo_remover.dart';
 import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
 import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 
@@ -62,13 +63,16 @@ class OnboardingController extends ChangeNotifier {
     required OnboardingRepository repository,
     required StorageRepository storage,
     required ProfilePhotoPicker photoPicker,
+    ProfilePhotoRemover? photoRemover,
   }) : _repository = repository,
        _storage = storage,
-       _photoPicker = photoPicker;
+       _photoPicker = photoPicker,
+       _photoRemover = photoRemover;
 
   final OnboardingRepository _repository;
   final StorageRepository _storage;
   final ProfilePhotoPicker _photoPicker;
+  final ProfilePhotoRemover? _photoRemover;
 
   UserProfile? profile;
 
@@ -117,7 +121,11 @@ class OnboardingController extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> initialize(AuthUser user) async {
+  /// [cityHint] is the city the member already chose at the location step
+  /// ("Choose a city instead"). It fills a draft that has no city yet, so
+  /// they are not asked for it a second time; a city already in the draft
+  /// wins.
+  Future<void> initialize(AuthUser user, {String? cityHint}) async {
     _uid = user.id;
     isLoading = true;
     errorMessage = null;
@@ -132,6 +140,7 @@ class OnboardingController extends ChangeNotifier {
             ))
         .copyWith(
           displayName: _prefillName(existing?.displayName, user.displayName),
+          city: _prefillCity(existing?.city, cityHint),
         );
     profile = draft;
     // A draft started before the surname was collected resumes on the step
@@ -225,6 +234,16 @@ class OnboardingController extends ChangeNotifier {
             .firstOrNull ??
         drafts.firstWhere(isAnchor);
     return [primary, ...drafts.where((draft) => draft.id != primary.id)];
+  }
+
+  /// The hint, when the draft has no city of its own. Null leaves the draft
+  /// as it is.
+  static String? _prefillCity(String? saved, String? hint) {
+    if ((saved ?? '').trim().isNotEmpty) {
+      return null;
+    }
+    final city = hint?.trim() ?? '';
+    return city.isEmpty ? null : city;
   }
 
   void updateDraft(UserProfile Function(UserProfile current) transform) {
@@ -473,6 +492,12 @@ class OnboardingController extends ChangeNotifier {
     errorMessage = null;
     _syncPhotosToProfile();
     _notify();
+    // An uploaded photo is stored on the server; the list saved with the next
+    // step would only stop mentioning it. Best effort: the draft is the
+    // member's list either way.
+    if (target?.remote != null) {
+      unawaited(_photoRemover?.remove(id));
+    }
   }
 
   /// Moves a photo. Once a photo is verified, the first position is the

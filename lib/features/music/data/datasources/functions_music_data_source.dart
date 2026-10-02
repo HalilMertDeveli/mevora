@@ -1,5 +1,7 @@
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
+import 'package:mevora/features/discovery/data/parsers/discovery_candidate_parser.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/music/data/datasources/music_data_source.dart';
 import 'package:mevora/features/music/domain/entities/match_music_compatibility.dart';
@@ -333,40 +335,24 @@ class FunctionsMusicDataSource implements MusicDataSource {
     return stats;
   }
 
+  /// A same-taste entry carries the public card Discover and Picks receive, so
+  /// it goes through their parser: photo objects, the primary photo's
+  /// variants, relationship goal, verification and published Music Taste all
+  /// arrive the same way. Only the score is named differently here.
   DiscoveryCandidate? _parseCandidate(Map<String, dynamic> raw) {
-    final uid = raw['uid'] as String?;
-    if (uid == null || uid.isEmpty) {
-      return null;
-    }
-    final profile = raw['profile'] is Map
-        ? Map<String, dynamic>.from(raw['profile'] as Map)
-        : raw;
-    profile.remove('latitude');
-    profile.remove('longitude');
-    profile.remove('geohash');
-    final photosRaw = profile['photos'];
-    final photos = <String>[];
-    if (photosRaw is List) {
-      for (final item in photosRaw) {
-        if (item is String) {
-          photos.add(item);
-        }
-      }
-    }
     final musicScore = firestoreInt(raw['musicScore'], 0);
-    return DiscoveryCandidate(
-      uid: uid,
-      displayName: (profile['displayName'] as String?) ?? '',
-      age: firestoreInt(profile['age'], 0),
-      photos: photos,
-      city: profile['city'] as String?,
-      bio: profile['bio'] as String?,
-      gender: profile['gender'] as String?,
-      interests: firestoreStringList(profile['interests']),
-      compatibilityScore: firestoreInt(raw['compatibilityScore'], 0),
-      musicCompatibilityScore: musicScore == 0 ? null : musicScore,
-      compatibilityReasons: firestoreStringList(raw['compatibilityReasons']),
-      sharedInterests: firestoreStringList(raw['sharedInterests']),
+    final candidate = DiscoveryCandidateParser.parse({
+      ...raw,
+      'musicCompatibilityScore': musicScore == 0 ? null : musicScore,
+    });
+    if (candidate == null || candidate.hasCompatibilityScore) {
+      return candidate;
+    }
+    // This callable scores the music overlap only. Left at the parser's
+    // default, the profile opened from a same-taste row says "Calculating..."
+    // about an overall score that nothing is calculating.
+    return candidate.copyWith(
+      compatibilityStatus: CompatibilityDisplayStatus.unavailable,
     );
   }
 }

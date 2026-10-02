@@ -13,6 +13,7 @@ import 'package:mevora/shared/widgets/mevora_text_field.dart';
 
 String reportReasonLabel(AppLocalizations l10n, ReportReason reason) {
   return switch (reason) {
+    ReportReason.childSafety => l10n.reportChildSafety,
     ReportReason.spam => l10n.reportSpam,
     ReportReason.harassment => l10n.reportHarassment,
     ReportReason.inappropriateContent => l10n.reportInappropriate,
@@ -60,11 +61,10 @@ class _ReportPageState extends State<ReportPage> {
         children: [
           for (final reason in ReportReason.values)
             RadioListTile<ReportReason>(
-              title: Text(
-                reportReasonLabel(l10n, reason),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              // No line cap: the child-safety reason spells out what it
+              // covers and must stay readable in full on a narrow phone or
+              // at a large text size. The list scrolls, so it can grow.
+              title: Text(reportReasonLabel(l10n, reason)),
               value: reason,
               groupValue: _reason,
               onChanged: (value) {
@@ -123,23 +123,48 @@ class _ReportPageState extends State<ReportPage> {
       return;
     }
     setState(() => _sending = false);
-    final block = await MevoraDialog.show(
-      context,
-      title: l10n.offerBlockTitle,
-      message: l10n.offerBlockMessage,
-      confirmLabel: l10n.block,
-    );
-    if (block == true && mounted) {
-      await SocialScope.of(context).safetyRepository.blockUser(
-        userId: widget.userId,
-        matchId: widget.matchId,
+    await _offerBlock(l10n);
+    if (mounted) {
+      context.pop();
+    }
+  }
+
+  /// The report is filed by now, so nothing here may send it again. A block
+  /// that fails is said out loud and offered again: a member who was told
+  /// nothing would leave believing the other person is blocked.
+  Future<void> _offerBlock(AppLocalizations l10n) async {
+    var failed = false;
+    while (mounted) {
+      final block = await MevoraDialog.show(
+        context,
+        title: l10n.offerBlockTitle,
+        message: failed ? l10n.blockFailedMessage : l10n.offerBlockMessage,
+        confirmLabel: failed ? l10n.tryAgain : l10n.block,
       );
+      if (block != true || !mounted) {
+        return;
+      }
+      setState(() => _sending = true);
+      try {
+        await SocialScope.of(context).safetyRepository.blockUser(
+          userId: widget.userId,
+          matchId: widget.matchId,
+        );
+      } on Object {
+        if (!mounted) {
+          return;
+        }
+        setState(() => _sending = false);
+        failed = true;
+        continue;
+      }
+      if (!mounted) {
+        return;
+      }
       await BoostScope.maybeOf(context)?.analytics?.logEvent(
         AnalyticsEvents.userBlocked,
       );
-    }
-    if (mounted) {
-      context.pop();
+      return;
     }
   }
 }

@@ -16,12 +16,26 @@ class PremiumVerificationResult {
     : ok = false,
       isPremium = false;
 
+  /// The store accepted the order but the payment has not settled (cash,
+  /// bank transfer). Nothing was verified because nothing has been paid; the
+  /// purchase is verified on its own once it is.
+  const PremiumVerificationResult.pending()
+    : ok = false,
+      isPremium = false,
+      reason = pendingReason;
+
+  /// [reason] of a purchase that is waiting on its payment.
+  static const String pendingReason = 'purchase_pending';
+
   final bool ok;
   final bool isPremium;
 
-  /// Backend's machine-readable refusal: `not_configured`, `owned_by_other`,
-  /// `unknown_product`, and so on.
+  /// Backend's machine-readable refusal: `owned_by_other`, `unknown_product`,
+  /// and so on — or [pendingReason], which is the store's, not the backend's.
   final String? reason;
+
+  /// Not a refusal and not a grant: the payment is still outstanding.
+  bool get isPending => reason == pendingReason;
 }
 
 /// Why a purchase did not complete, in terms the paywall can speak.

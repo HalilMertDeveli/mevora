@@ -45,7 +45,11 @@ class VerificationController extends ChangeNotifier {
   /// the UI actually renders.
   bool awaitingReturn = false;
 
-  bool get isBusy => phase != VerificationUiPhase.idle;
+  /// Work is in flight. A failed start is over, not in flight: counting
+  /// [VerificationUiPhase.error] as busy left the screen on its progress
+  /// indicator with no button to try again.
+  bool get isBusy =>
+      phase != VerificationUiPhase.idle && phase != VerificationUiPhase.error;
 
   bool get canStart =>
       !isBusy &&

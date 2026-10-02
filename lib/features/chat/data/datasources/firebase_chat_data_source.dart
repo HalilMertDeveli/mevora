@@ -39,7 +39,12 @@ class FirebaseChatDataSource implements ChatRepository {
         .snapshots()
         .map((snap) {
           final items = [
-            for (final doc in snap.docs) _fromMap(doc.id, doc.data()),
+            for (final doc in snap.docs)
+              _fromMap(
+                doc.id,
+                doc.data(),
+                pendingWrite: doc.metadata.hasPendingWrites,
+              ),
           ];
           return items.reversed.toList(growable: false);
         });
@@ -168,17 +173,11 @@ class FirebaseChatDataSource implements ChatRepository {
       if (mediaUrl != null) 'mediaUrl': mediaUrl,
       if (durationMs != null) 'durationMs': durationMs,
     };
+    // The match preview (lastMessage, lastMessageAt, unread count) is written
+    // by the sendMessageNotification trigger, after the rate limit and block
+    // checks. A client write here duplicated it: one more write per message,
+    // re-read by both participants' inbox listeners.
     await ref.set(payload);
-    final preview = switch (type) {
-      MessageType.image => '📷',
-      MessageType.voice => '🎤',
-      _ => encrypted ? '🔒' : text,
-    };
-    await _firestore.collection(FirestorePaths.matches).doc(matchId).set({
-      'lastMessage': preview,
-      'lastMessageAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
     return ChatMessage(
       id: ref.id,
       senderId: senderId,
@@ -278,7 +277,11 @@ class FirebaseChatDataSource implements ChatRepository {
     await batch.commit();
   }
 
-  ChatMessage _fromMap(String id, Map<String, dynamic> data) {
+  ChatMessage _fromMap(
+    String id,
+    Map<String, dynamic> data, {
+    bool pendingWrite = false,
+  }) {
     final encryptedPayload = E2eeEncryptedPayload.fromFirestore(data);
     final mediaEnvelope = E2eeMediaEnvelopeFields.fromFirestore(data);
     final encrypted = encryptedPayload != null || mediaEnvelope != null;
@@ -290,6 +293,11 @@ class FirebaseChatDataSource implements ChatRepository {
       type: MessageTypeX.fromFirestore(data['type'] as String?),
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
+          // A message this device wrote but the server has not acknowledged
+          // has no createdAt yet. Read as the epoch it was shown as sent at
+          // 02:00 for as long as the device stayed offline.
+          : pendingWrite
+          ? DateTime.now()
           : DateTime.fromMillisecondsSinceEpoch(0),
       status: MessageStatusX.fromFirestore(data['status'] as String?),
       isRead: data['isRead'] == true,

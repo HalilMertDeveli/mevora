@@ -1,5 +1,7 @@
 # Sumsub Profile Verification Setup
 
+> **Superseded (2026-10-01).** Sumsub was replaced by Didit; the Sumsub functions are no longer exported. See `docs/DIDIT_INTEGRATION.md` and `docs/FACE_ANCHOR.md`.
+
 This guide covers sandbox setup for Mevora's Sumsub-powered profile verification.
 **Never commit real credentials.** Use Firebase Functions secrets only.
 
@@ -140,7 +142,7 @@ Set secrets per Firebase project (dev/staging/production). Never commit values t
 
 ## Age verification (future)
 
-Mevora enforces 18+ at onboarding via `birthDate` (`MIN_ONBOARDING_AGE = 18` in `profileSafety.ts`).
+Mevora enforces 18+ at onboarding via the private `users/{uid}.birthDate` (`MIN_ONBOARDING_AGE = 18` in `profileSafety.ts`).
 Sumsub profile verification currently covers liveness + face match only.
 If a Sumsub level adds document-based age checks, wire results through the same webhook
 → `users/{uid}/verification/sumsub` path. Do not expose age claims in UI until configured.

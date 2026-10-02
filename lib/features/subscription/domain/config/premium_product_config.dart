@@ -44,6 +44,21 @@ class PremiumProductConfig {
     return forPlatform(platform).any((ref) => ref.productId == productId);
   }
 
+  /// Whether a plan the store describes is one this build sells. Same rule as
+  /// the backend catalogue: an entry with a base plan matches that base plan
+  /// only, an entry without one matches every base plan of the product.
+  bool allowsPlan(
+    PremiumPlatform platform,
+    String productId,
+    String? basePlanId,
+  ) {
+    return forPlatform(platform).any(
+      (ref) =>
+          ref.productId == productId &&
+          (ref.basePlanId == null || ref.basePlanId == basePlanId),
+    );
+  }
+
   static List<PremiumProductRef> _parse(String raw) {
     final trimmed = raw.trim();
     if (trimmed.isEmpty) {

@@ -10,6 +10,7 @@ import 'package:mevora/features/profile/data/datasources/firebase_profile_data_s
 import 'package:mevora/features/profile/data/datasources/firebase_storage_data_source.dart';
 import 'package:mevora/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:mevora/features/profile/data/repositories/storage_repository_impl.dart';
+import 'package:mevora/features/profile/data/services/callable_profile_photo_remover.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_repository.dart';
 import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
 
@@ -56,6 +57,7 @@ OnboardingServices createOnboardingServices({
     repository: onboardingRepository,
     storage: storageRepository,
     photoPicker: picker,
+    photoRemover: CallableProfilePhotoRemover(backend: callable),
   );
   return OnboardingServices(
     profileRepository: profileRepository,

@@ -12,6 +12,17 @@ export const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 export const RATE_LIMIT_MAX = 20;
 
 /**
+ * The counters whose document id is a member's uid: the Spotify sign-in
+ * (`spotify_<uid>`, spotifyAuth.ts) and link (`spotify_link_<uid>`,
+ * spotifyMusic.ts) budgets. Nothing expires them, so account deletion removes
+ * them and its verification checks them. A key added for a signed-in caller
+ * belongs here too.
+ */
+export function uidRateLimitPaths(uid: string): string[] {
+  return [`authRateLimits/spotify_${uid}`, `authRateLimits/spotify_link_${uid}`];
+}
+
+/**
  * Decides what a fixed-window counter should do next.
  *
  * Kept pure so the window edges and the refusal are testable without a

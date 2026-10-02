@@ -49,6 +49,12 @@ class _LoginPageState extends State<LoginPage>
   String? _passwordError;
   bool _viewLogged = false;
 
+  /// Whether the error on screen came from the email form. That form sits a
+  /// full screen below the provider buttons, so its error has to be shown
+  /// next to it: above the buttons it is out of sight and the sign-in looks
+  /// as if nothing happened.
+  bool _errorFromEmailForm = false;
+
   @override
   void initState() {
     super.initState();
@@ -199,18 +205,26 @@ class _LoginPageState extends State<LoginPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (error != null) ...[
+                          if (error != null && !_errorFromEmailForm) ...[
                             AuthErrorBanner(message: error),
                             const SizedBox(height: AppSpacing.md),
                           ],
                           WelcomeAuthButtons(
                             enabled: !auth.isBusy,
                             busyProvider: busyProvider,
-                            onGoogle: () => unawaited(auth.signInWithGoogle()),
-                            onApple: () => unawaited(auth.signInWithApple()),
+                            onGoogle: () {
+                              setState(() => _errorFromEmailForm = false);
+                              unawaited(auth.signInWithGoogle());
+                            },
+                            onApple: () {
+                              setState(() => _errorFromEmailForm = false);
+                              unawaited(auth.signInWithApple());
+                            },
                             onPhone: () => context.push(AppRoutes.phone),
-                            onSpotify: () =>
-                                unawaited(auth.signInWithSpotify()),
+                            onSpotify: () {
+                              setState(() => _errorFromEmailForm = false);
+                              unawaited(auth.signInWithSpotify());
+                            },
                             onEmail: () => unawaited(_revealEmailForm()),
                           ),
                           AuthLegalFooter(
@@ -249,6 +263,7 @@ class _LoginPageState extends State<LoginPage>
                         passwordError: _passwordError,
                         busy: auth.isBusy,
                         emailLoading: auth.isBusy && busyProvider == 'email',
+                        error: _errorFromEmailForm ? error : null,
                         onToggleObscure: () {
                           setState(() => _obscurePassword = !_obscurePassword);
                         },
@@ -264,7 +279,12 @@ class _LoginPageState extends State<LoginPage>
                         onForgotPassword: () =>
                             context.push(AppRoutes.passwordReset),
                         onSubmit: () => unawaited(_submit()),
-                        onCreateAccount: () => context.go(AppRoutes.register),
+                        onCreateAccount: () {
+                          // The register screen shows the same controller's
+                          // error; a failed sign-in is not its business.
+                          auth.clearError();
+                          context.go(AppRoutes.register);
+                        },
                       ),
                     ),
                   ],
@@ -284,6 +304,7 @@ class _LoginPageState extends State<LoginPage>
     setState(() {
       _emailError = emailError;
       _passwordError = passwordError;
+      _errorFromEmailForm = true;
     });
     if (emailError != null || passwordError != null) {
       return;
@@ -304,6 +325,7 @@ class _EmailSignInPanel extends StatelessWidget {
     required this.passwordError,
     required this.busy,
     required this.emailLoading,
+    required this.error,
     required this.onToggleObscure,
     required this.onClearFieldErrors,
     required this.onForgotPassword,
@@ -318,6 +340,9 @@ class _EmailSignInPanel extends StatelessWidget {
   final String? passwordError;
   final bool busy;
   final bool emailLoading;
+
+  /// The failed email sign-in, shown right above the button that caused it.
+  final String? error;
   final VoidCallback onToggleObscure;
   final VoidCallback onClearFieldErrors;
   final VoidCallback onForgotPassword;
@@ -383,6 +408,10 @@ class _EmailSignInPanel extends StatelessWidget {
                 onPressed: busy ? null : onForgotPassword,
               ),
             ),
+            if (error != null) ...[
+              AuthErrorBanner(message: error!),
+              const SizedBox(height: AppSpacing.sm),
+            ],
             MevoraButton(
               label: l10n.signIn,
               isLoading: emailLoading,

@@ -269,16 +269,21 @@ class _ChatPageState extends State<ChatPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (controller.otherUid.isNotEmpty)
-                        MevoraContextRow(
-                          icon: MevoraIcons.questions,
-                          tone: MevoraTone.compatibility,
-                          title: l10n.chatDiscoverAnswersPrompt,
-                          onTap: () => unawaited(
-                            showMatchedProfileAnswersSheet(
-                              context,
-                              otherUid: controller.otherUid,
-                            ),
-                          ),
+                        MatchedProfileAnswersAvailability(
+                          uid: controller.otherUid,
+                          builder: (context, available) => available
+                              ? MevoraContextRow(
+                                  icon: MevoraIcons.questions,
+                                  tone: MevoraTone.compatibility,
+                                  title: l10n.chatDiscoverAnswersPrompt,
+                                  onTap: () => unawaited(
+                                    showMatchedProfileAnswersSheet(
+                                      context,
+                                      otherUid: controller.otherUid,
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
                         ),
                       MatchMusicCompatibilityBanner(
                         matchId: controller.matchId,

@@ -5,7 +5,10 @@ export * from "./notifications";
 export * from "./incomingLikes";
 export * from "./premium";
 export {completeOnboarding} from "./onboarding";
+export {profileAgeRollover} from "./profileAgeRollover.js";
 export {enforceProfilePhotoModeration} from "./moderation/profileModerationGuard.js";
+export {deleteProfilePhoto} from "./moderation/deleteProfilePhotoFunction.js";
+export {profilePhotoOrphanSweep} from "./moderation/photoOrphanSweepFunction.js";
 export {prepareSmokeTestUsers, cleanupSmokeTestUsers} from "./smoke/smokeTestUsers.js";
 export {spotifyCompleteAuth} from "./spotifyAuth";
 export {
@@ -26,6 +29,7 @@ export {
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {reconcileVoidedBoostPurchases} from "./boost/voidedPurchaseSweep.js";
 export {verifyPremiumPurchase} from "./subscription/verifyPremiumPurchase.js";
 export {onPlaySubscriptionNotification} from "./subscription/googleRtdnFunction.js";
 export {getMevoraPicks} from "./picks/index.js";

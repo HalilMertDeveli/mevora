@@ -4,6 +4,7 @@ import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
 import 'package:mevora/features/matching/data/memory/graph_repositories.dart';
+import 'package:mevora/features/matching/data/unreadable_match.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
@@ -20,7 +21,7 @@ class OverlayMatchRepository implements MatchRepository {
   final DemoSocialHub hub;
 
   @override
-  Stream<List<MatchListItem>> watchMatches(String uid) {
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit}) {
     final controller = StreamController<List<MatchListItem>>();
     var remoteItems = <MatchListItem>[];
     var localItems = <MatchListItem>[];
@@ -41,10 +42,14 @@ class OverlayMatchRepository implements MatchRepository {
         final bTime = b.match.lastMessageAt ?? b.match.createdAt;
         return bTime.compareTo(aTime);
       });
-      controller.add(merged);
+      controller.add(
+        limit == null || merged.length <= limit
+            ? merged
+            : merged.take(limit).toList(growable: false),
+      );
     }
 
-    final remoteSub = remote.watchMatches(uid).listen(
+    final remoteSub = remote.watchMatches(uid, limit: limit).listen(
       (value) {
         remoteItems = value;
         emit();
@@ -90,7 +95,7 @@ class OverlayMatchRepository implements MatchRepository {
       yield* hub.matches.watchMatch(matchId);
       return;
     }
-    yield* remote.watchMatch(matchId).handleError((Object error, StackTrace stackTrace) {});
+    yield* remote.watchMatch(matchId).unreadableAsNull();
   }
 
   @override

@@ -1688,6 +1688,12 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get onboardingContinue;
 
+  /// No description provided for @onboardingLogoutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The steps you\'ve finished are saved. Sign in again to pick up where you left off.'**
+  String get onboardingLogoutBody;
+
   /// No description provided for @onboardingEducation.
   ///
   /// In en, this message translates to:
@@ -2615,8 +2621,14 @@ abstract class AppLocalizations {
   /// No description provided for @maxDistance.
   ///
   /// In en, this message translates to:
-  /// **'Maximum distance'**
+  /// **'Preferred distance (km)'**
   String get maxDistance;
+
+  /// No description provided for @maxDistanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'People inside this distance come first. When there are not enough, Mevora looks further, up to 100 km.'**
+  String get maxDistanceHint;
 
   /// No description provided for @matchesTitle.
   ///
@@ -3224,6 +3236,12 @@ abstract class AppLocalizations {
   /// **'Blocking stops new messages, matches, and calls.'**
   String get offerBlockMessage;
 
+  /// No description provided for @blockFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t block this person. Check your connection and try again.'**
+  String get blockFailedMessage;
+
   /// No description provided for @reportSpam.
   ///
   /// In en, this message translates to:
@@ -3253,6 +3271,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fake profile'**
   String get reportFakeProfile;
+
+  /// No description provided for @reportChildSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Child safety concern (sexual content or behaviour involving a minor)'**
+  String get reportChildSafety;
 
   /// No description provided for @reportUnderage.
   ///
@@ -3475,6 +3499,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Buy Boost'**
   String get boostBuy;
+
+  /// Purchase disclosure under the Boost packs: not a subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost is a one-time purchase. It does not renew.'**
+  String get boostOneTimePurchaseNote;
 
   /// No description provided for @boostPurchasing.
   ///
@@ -4154,6 +4184,12 @@ abstract class AppLocalizations {
   /// **'Choose a primary photo.'**
   String get settingsPhotoPrimaryRequired;
 
+  /// No description provided for @settingsPhotoStillProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is still being checked. Try again in a moment.'**
+  String get settingsPhotoStillProcessing;
+
   /// No description provided for @settingsFirstNameRequired.
   ///
   /// In en, this message translates to:
@@ -4219,6 +4255,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your account uses Google Sign-In. Password changes are managed by Google.'**
   String get settingsGooglePasswordMessage;
+
+  /// No description provided for @settingsNoPasswordMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has no password. You sign in with your phone number or a linked account.'**
+  String get settingsNoPasswordMessage;
 
   /// No description provided for @settingsBirthDateLocked.
   ///
@@ -4649,7 +4691,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouLockedCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} people like you'**
+  /// **'{count, plural, =1{1 person likes you} other{{count} people like you}}'**
   String likesYouLockedCount(int count);
 
   /// No description provided for @likesYouLockedMessage.
@@ -6023,7 +6065,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsPaidBody.
   ///
   /// In en, this message translates to:
-  /// **'Boost and other purchases are processed through your app store. Refunds follow the store\'s policies unless required otherwise by law.'**
+  /// **'Boost and Premium are bought through your app store. Boost is a one-time purchase and does not renew. Premium is a subscription: it renews automatically at the price shown when you buy it until you cancel in your store account, and cancelling stops the next renewal. Refunds follow the store\'s policies unless required otherwise by law.'**
   String get termsPaidBody;
 
   /// No description provided for @termsThirdPartyTitle.
@@ -6095,7 +6137,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsEffectiveBody.
   ///
   /// In en, this message translates to:
-  /// **'These Terms are effective as of August 23, 2026.'**
+  /// **'These Terms are effective as of October 1, 2026.'**
   String get termsEffectiveBody;
 
   /// No description provided for @privacyIntroTitle.
@@ -6143,8 +6185,20 @@ abstract class AppLocalizations {
   /// No description provided for @privacyProfileBody.
   ///
   /// In en, this message translates to:
-  /// **'Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.'**
+  /// **'Profile details you provide (first name, date of birth, gender, who you want to meet, bio, preferences, relationship answers, humor ratings and photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching. Other members see your age, not your date of birth, and your surname stays private.'**
   String get privacyProfileBody;
+
+  /// No description provided for @privacyVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo and identity verification'**
+  String get privacyVerificationTitle;
+
+  /// No description provided for @privacyVerificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm that a profile belongs to a real person, we may ask you for a selfie. It is sent to our verification provider, Didit, which checks that it shows a live person and that it matches your profile photo. We keep the result of that check, not the selfie, which is deleted when the check ends. Identity verification is optional: if you choose it, Didit processes your identity document and selfie directly and Mevora stores only the outcome.'**
+  String get privacyVerificationBody;
 
   /// No description provided for @privacyLocationTitle.
   ///
@@ -6155,7 +6209,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyLocationBody.
   ///
   /// In en, this message translates to:
-  /// **'With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.'**
+  /// **'With your permission, we use your device location to show compatible people near you. Your coordinates are stored on our servers for that purpose and are never shown to other members, who see only your city and an approximate distance.'**
   String get privacyLocationBody;
 
   /// No description provided for @privacyMessagingTitle.
@@ -6167,7 +6221,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyMessagingBody.
   ///
   /// In en, this message translates to:
-  /// **'Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.'**
+  /// **'Message text, voice notes and images are end-to-end encrypted: they are encrypted on your device and our servers store only the encrypted form, which we cannot read. To deliver them we do store who sent a message to whom, when, its type and whether it was read, as well as call records.'**
   String get privacyMessagingBody;
 
   /// No description provided for @privacyMatchingTitle.
@@ -6179,7 +6233,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyMatchingBody.
   ///
   /// In en, this message translates to:
-  /// **'Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.'**
+  /// **'Likes, passes, matches, your answers to daily questions, humor ratings, compatibility signals and interaction history are stored to operate discovery and matches.'**
   String get privacyMatchingBody;
 
   /// No description provided for @privacyPreferencesTitle.
@@ -6215,7 +6269,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyDeviceBody.
   ///
   /// In en, this message translates to:
-  /// **'We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.'**
+  /// **'We process push notification tokens and, through Firebase Crashlytics and Google Analytics for Firebase, crash reports and usage statistics tied to an app installation, not to your name. Mevora shows no ads and does not use your advertising ID.'**
   String get privacyDeviceBody;
 
   /// No description provided for @privacyWhyTitle.
@@ -6251,7 +6305,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyRetentionBody.
   ///
   /// In en, this message translates to:
-  /// **'We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.'**
+  /// **'We keep data while your account is active. When you delete your account, your profile, photos, messages, likes, answers and purchase records are deleted. Matches you were part of are closed and no longer show your name or photo, and records of safety and moderation actions may be kept where needed to protect members, prevent fraud or meet legal obligations.'**
   String get privacyRetentionBody;
 
   /// No description provided for @privacySharingTitle.
@@ -6263,7 +6317,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacySharingBody.
   ///
   /// In en, this message translates to:
-  /// **'We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.'**
+  /// **'We do not sell personal data. We share data only with the service providers needed to operate Mevora: Google (Firebase hosting, authentication, notifications, crash reporting and analytics, and Google Play for purchases), Spotify if you connect it, Didit for photo and identity verification, and GIPHY, from which your device loads humor content directly.'**
   String get privacySharingBody;
 
   /// No description provided for @privacyRightsTitle.
@@ -6275,7 +6329,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyRightsBody.
   ///
   /// In en, this message translates to:
-  /// **'Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.'**
+  /// **'Depending on your region, you may request access, correction, deletion, or restriction of your data. You can download a copy of your data in Settings → Account → Download my data, and delete your account in Settings.'**
   String get privacyRightsBody;
 
   /// No description provided for @privacyDeletionTitle.
@@ -6299,7 +6353,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacySecurityBody.
   ///
   /// In en, this message translates to:
-  /// **'We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.'**
+  /// **'We use access controls, encryption in transit, end-to-end encryption of message content, and Firebase security rules. No system is perfectly secure; report issues to support.'**
   String get privacySecurityBody;
 
   /// No description provided for @privacyChildrenTitle.
@@ -6311,7 +6365,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyChildrenBody.
   ///
   /// In en, this message translates to:
-  /// **'Mevora is not for users under 18. We delete accounts identified as underage.'**
+  /// **'Mevora is not for anyone under 18. Accounts found to belong to someone under 18 are closed.'**
   String get privacyChildrenBody;
 
   /// No description provided for @privacyChangesTitle.
@@ -6475,6 +6529,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Height'**
   String get profileHeightLabel;
+
+  /// No description provided for @profileHeightPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your height'**
+  String get profileHeightPlaceholder;
 
   /// No description provided for @profileHeightCm.
   ///
@@ -7969,6 +8029,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Renews automatically. Cancel anytime in the store.'**
   String get premiumRenewsLabel;
+
+  /// Billing period shown on a monthly Premium plan, next to the store price.
+  ///
+  /// In en, this message translates to:
+  /// **'Billed monthly'**
+  String get premiumPlanBilledMonthly;
+
+  /// Billing period shown on a yearly Premium plan, next to the store price.
+  ///
+  /// In en, this message translates to:
+  /// **'Billed yearly'**
+  String get premiumPlanBilledYearly;
+
+  /// Store price with its billing period. The price is the store's own formatted string.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} / month'**
+  String premiumPricePerMonth(String price);
+
+  /// Store price with its billing period. The price is the store's own formatted string.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} / year'**
+  String premiumPricePerYear(String price);
+
+  /// Auto-renewal disclosure for the selected monthly plan, shown by the Subscribe button.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically every month at {price} until you cancel.'**
+  String premiumRenewalMonthly(String price);
+
+  /// Auto-renewal disclosure for the selected yearly plan, shown by the Subscribe button.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically every year at {price} until you cancel.'**
+  String premiumRenewalYearly(String price);
+
+  /// Auto-renewal disclosure when the store did not say how long the billing period is.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically at {price} each billing period until you cancel.'**
+  String premiumRenewalGeneric(String price);
+
+  /// How to cancel. store is the store's brand name: Google Play or App Store.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel anytime in {store} > Subscriptions. You keep Premium until the end of the period you paid for.'**
+  String premiumCancelHow(String store);
+
+  /// Button for Premium members. Opens the store's own subscription page.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription'**
+  String get premiumManageSubscription;
+
+  /// Shown when the store's subscription page could not be opened.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t open {store}. To manage your subscription, go to {store} > Subscriptions.'**
+  String premiumManageSubscriptionFailed(String store);
 
   /// No description provided for @musicFollowedArtistsTitle.
   ///

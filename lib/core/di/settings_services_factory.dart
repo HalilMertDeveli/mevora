@@ -1,3 +1,5 @@
+import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/core/network/firebase_functions_callable.dart';
 import 'package:mevora/core/services/profile/profile_update_notifier.dart';
 import 'package:mevora/features/onboarding/data/services/image_picker_profile_photo_picker.dart';
 import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.dart';
@@ -5,6 +7,7 @@ import 'package:mevora/features/authentication/data/services/reauth_service.dart
 import 'package:mevora/features/profile/data/datasources/firebase_profile_data_source.dart';
 import 'package:mevora/features/profile/data/datasources/firebase_storage_data_source.dart';
 import 'package:mevora/features/profile/data/repositories/storage_repository_impl.dart';
+import 'package:mevora/features/profile/data/services/callable_profile_photo_remover.dart';
 import 'package:mevora/features/settings/data/datasources/firebase_settings_data_source.dart';
 import 'package:mevora/features/settings/data/repositories/settings_hub_repository_impl.dart';
 import 'package:mevora/features/settings/data/services/profile_photo_manager.dart';
@@ -29,6 +32,7 @@ class SettingsServices {
 SettingsServices createSettingsServices({
   required ReauthPort reauthService,
   ProfilePhotoPicker? photoPicker,
+  BackendCallable? backend,
 }) {
   final profileDataSource = FirebaseProfileDataSource();
   final settingsDataSource = FirebaseSettingsDataSource();
@@ -44,6 +48,9 @@ SettingsServices createSettingsServices({
     photoManager: ProfilePhotoManager(
       settingsHub: settingsHub,
       storage: storage,
+      photoRemover: CallableProfilePhotoRemover(
+        backend: backend ?? FirebaseFunctionsCallable(),
+      ),
     ),
     reauthService: reauthService,
     photoPicker: photoPicker ?? ImagePickerProfilePhotoPicker(),

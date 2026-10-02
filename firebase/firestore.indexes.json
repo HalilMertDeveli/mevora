@@ -500,6 +500,14 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "photoModeration",
+      "fieldPath": "unreferencedSince",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
+    {
       "collectionGroup": "mevoraPicks",
       "fieldPath": "candidateUids",
       "indexes": [

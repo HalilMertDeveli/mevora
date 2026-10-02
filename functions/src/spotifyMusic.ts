@@ -17,7 +17,8 @@ import {
   type MusicTaste,
   type NamedMusicItem,
 } from "./musicCompatibility.js";
-import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
+import {isActiveForDiscovery} from "./discoveryActivity.js";
+import {isAccountEligible, isProfileDiscoverable, publicProfileProjection} from "./profileSafety.js";
 import {isUserPremium} from "./premium.js";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
 import {
@@ -1176,14 +1177,22 @@ export const getSameTasteProfiles = onCall(
       }
       otherUids.push(otherUid);
     }
-    const lastActiveByUid = await loadLastActiveAt(db, otherUids);
+    // One read per candidate account answers both questions asked of it:
+    // recently active, and in good standing.
+    const accountByUid = new Map<string, DocumentData | undefined>();
+    const accountRefs = [...new Set(otherUids)].map((id) => db.doc(`users/${id}`));
+    for (const snap of accountRefs.length ? await db.getAll(...accountRefs) : []) {
+      accountByUid.set(snap.id, snap.data());
+    }
     const scored: Array<Record<string, unknown>> = [];
     for (const doc of musicSnap.docs) {
       const otherUid = doc.ref.parent.parent?.id;
       if (!otherUid || otherUid === uid || blocked.has(otherUid) || passed.has(otherUid)) {
         continue;
       }
-      if (!isActiveForDiscovery(lastActiveByUid.get(otherUid))) continue;
+      const otherAccount = accountByUid.get(otherUid);
+      if (!isAccountEligible(otherAccount)) continue;
+      if (!isActiveForDiscovery(otherAccount?.lastActiveAt)) continue;
       const otherTaste = tasteFromSummary(doc.data());
       if (!otherTaste || isTasteEmpty(otherTaste)) continue;
       const music = scoreMusicCompatibility(viewerTaste, otherTaste);
@@ -1193,9 +1202,10 @@ export const getSameTasteProfiles = onCall(
         ...catalogFromSummary(doc.data()),
       ]);
       const otherProfile = await db.doc(`profiles/${otherUid}`).get();
-      if (!otherProfile.exists) continue;
-      const data = otherProfile.data() ?? {};
-      if (data.isDiscoverable === false) continue;
+      // The same line Discover and Picks hold: a complete, discoverable
+      // profile that moderation is not holding back.
+      const data = otherProfile.data();
+      if (!data || !isProfileDiscoverable(data)) continue;
       const otherPrefs = (await db.doc(`userPreferences/${otherUid}`).get()).data() ?? {};
       if (!interestedInAllows(prefs.interestedIn, data.gender)) continue;
       if (!interestedInAllows(otherPrefs.interestedIn, viewerGender)) continue;
@@ -1212,16 +1222,9 @@ export const getSameTasteProfiles = onCall(
         sharedRecentTrackCount: enriched.sharedRecentTracks.length,
         musicInsights: enriched.insights,
         musicBreakdown: enriched.breakdown,
-        profile: {
-          uid: otherUid,
-          displayName: data.displayName ?? "",
-          age: data.age ?? null,
-          gender: data.gender ?? null,
-          bio: data.bio ?? null,
-          photos: data.photos ?? [],
-          interests: data.interests ?? [],
-          city: data.city ?? null,
-        },
+        // Approved photos only — a pending or rejected one never leaves
+        // the owner's own view.
+        profile: publicProfileProjection({...data, uid: otherUid}),
       });
     }
     scored.sort((a, b) => Number(b.musicScore) - Number(a.musicScore));

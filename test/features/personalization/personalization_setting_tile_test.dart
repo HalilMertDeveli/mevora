@@ -21,6 +21,7 @@ import 'package:mevora/features/settings/presentation/widgets/personalization_se
 import 'package:mevora/l10n/app_localizations.dart';
 
 import '../../helpers/fake_auth.dart';
+import '../../helpers/fake_profile_photo_remover.dart';
 import '../../helpers/fake_settings_hub_repository.dart';
 
 class _SilentLogger implements AppLogger {
@@ -68,6 +69,7 @@ Widget _wrap(Widget child, FakeSettingsHubRepository hub, {Locale? locale}) {
         photoManager: ProfilePhotoManager(
           settingsHub: hub,
           storage: _NoStorage(),
+          photoRemover: FakeProfilePhotoRemover(),
         ),
         reauthService: _NoReauth(),
         photoPicker: const StubProfilePhotoPicker(),

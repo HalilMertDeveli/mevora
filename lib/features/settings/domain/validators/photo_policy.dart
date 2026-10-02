@@ -21,6 +21,10 @@ abstract final class PhotoPolicy {
       'photo_primary_requires_face_anchor';
   static const String notFound = 'photo_not_found';
 
+  /// Server-only: the photo is being moderated right now and cannot be
+  /// deleted until that finishes.
+  static const String stillProcessing = 'photo_processing';
+
   static bool canAdd(int currentCount) => currentCount < maxPhotos;
 
   static bool hasFaceAnchor(List<ProfilePhoto> photos) =>

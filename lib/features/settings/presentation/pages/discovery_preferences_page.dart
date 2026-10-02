@@ -29,6 +29,7 @@ class _DiscoveryPreferencesPageState extends State<DiscoveryPreferencesPage> {
   String? _relationshipGoal;
   String? _errorKey;
   var _saving = false;
+  var _hydrated = false;
 
   @override
   void dispose() {
@@ -50,7 +51,9 @@ class _DiscoveryPreferencesPageState extends State<DiscoveryPreferencesPage> {
       future: settings.settingsHub.loadDiscoveryPreferences(uid),
       builder: (context, snapshot) {
         final prefs = snapshot.data;
-        if (prefs != null && _minAgeController.text == '18' && prefs.minAge != 18) {
+        // Once, from what is stored: every field, whatever the stored ages are.
+        if (prefs != null && !_hydrated) {
+          _hydrated = true;
           _minAgeController.text = '${prefs.minAge}';
           _maxAgeController.text = '${prefs.maxAge}';
           _distanceController.text = '${prefs.maxDistance}';
@@ -78,6 +81,7 @@ class _DiscoveryPreferencesPageState extends State<DiscoveryPreferencesPage> {
                 MevoraTextField(
                   controller: _distanceController,
                   label: l10n.maxDistance,
+                  helperText: l10n.maxDistanceHint,
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: AppSpacing.md),

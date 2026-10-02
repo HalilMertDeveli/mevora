@@ -32,6 +32,7 @@ import 'package:mevora/features/settings/presentation/pages/settings_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import '../../helpers/fake_auth.dart';
+import '../../helpers/fake_profile_photo_remover.dart';
 import '../../helpers/fake_settings_hub_repository.dart';
 
 class _SilentLogger implements AppLogger {
@@ -114,6 +115,7 @@ SettingsServices _services() {
     photoManager: ProfilePhotoManager(
       settingsHub: hub,
       storage: _FakeStorage(),
+      photoRemover: FakeProfilePhotoRemover(),
     ),
     reauthService: _FakeReauth(),
     photoPicker: const StubProfilePhotoPicker(),
@@ -281,6 +283,58 @@ void main() {
 
     expect(find.text('Passwords do not match.'), findsOneWidget);
   });
+
+  for (final (name, providers, expected, other) in [
+    (
+      'a phone account',
+      const AuthProviders(phone: true),
+      'This account has no password. You sign in with your phone number or a '
+          'linked account.',
+      'Your account uses Google Sign-In. Password changes are managed by '
+          'Google.',
+    ),
+    (
+      'a Google account',
+      const AuthProviders(google: true),
+      'Your account uses Google Sign-In. Password changes are managed by '
+          'Google.',
+      'This account has no password. You sign in with your phone number or a '
+          'linked account.',
+    ),
+  ]) {
+    testWidgets('change password tells $name why there is no form', (
+      tester,
+    ) async {
+      // A member who signed up with a phone number was told their account
+      // "uses Google Sign-In".
+      final user = AuthUser(id: 'u1', authProviders: providers);
+      final auth = AuthController(
+        authRepository: FakeAuthRepository(user: user),
+        userDocumentRepository: _FakeUserDocs(),
+        logger: _SilentLogger(),
+      );
+      auth.user = user;
+      auth.status = Authenticated(user);
+
+      await tester.pumpWidget(
+        AuthScope(
+          controller: auth,
+          child: MaterialApp(
+            theme: AppTheme.light(),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const ChangePasswordPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(expected), findsOneWidget);
+      expect(find.text(other), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+    });
+  }
 
   testWidgets('logout confirm dialog appears', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);

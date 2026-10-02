@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:mevora/core/errors/failure.dart';
@@ -13,6 +12,7 @@ import 'package:mevora/features/authentication/domain/entities/auth_status.dart'
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/domain/entities/phone_challenge.dart';
 import 'package:mevora/features/authentication/domain/entities/phone_auth_state.dart';
+import 'package:mevora/features/authentication/domain/entities/restored_session_check.dart';
 import 'package:mevora/features/authentication/data/services/auth_analytics.dart';
 import 'package:mevora/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:mevora/features/authentication/domain/repositories/user_document_repository.dart';
@@ -25,10 +25,12 @@ class AuthController extends ChangeNotifier {
     required UserDocumentRepository userDocumentRepository,
     required AppLogger logger,
     AuthAnalytics? analytics,
+    Duration deletedAccountSettleDelay = const Duration(seconds: 10),
   }) : _authRepository = authRepository,
        _userDocumentRepository = userDocumentRepository,
        _logger = logger,
-       _analytics = analytics ?? const NoOpAuthAnalytics() {
+       _analytics = analytics ?? const NoOpAuthAnalytics(),
+       _deletedAccountSettleDelay = deletedAccountSettleDelay {
     phoneAuth = PhoneAuthController(
       sendPhoneVerificationCode: SendPhoneVerificationCode(_authRepository),
       verifyPhoneCode: VerifyPhoneCode(_authRepository),
@@ -46,7 +48,14 @@ class AuthController extends ChangeNotifier {
   final UserDocumentRepository _userDocumentRepository;
   final AppLogger _logger;
   final AuthAnalytics _analytics;
+
+  /// How long after an account document disappears the Auth account is asked
+  /// about again, see [_mayCreateAccountDocument].
+  final Duration _deletedAccountSettleDelay;
   late final PhoneAuthController phoneAuth;
+
+  static const String _sessionUnverifiedMessage =
+      'Oturum doğrulanamadı. Lütfen tekrar giriş yapın.';
 
   StreamSubscription<AuthSnapshot>? _subscription;
   Timer? _resendTimer;
@@ -115,8 +124,18 @@ class AuthController extends ChangeNotifier {
           // Sign-in flows already upsert the user document.
           status = const Authenticating();
         } else {
+          // Read before the status changes: a member this process already
+          // had a document for is one whose document was just deleted.
+          final documentVanished = user?.id == uid;
           if (status is Unauthenticated || status is AuthInitializing) {
             status = const Authenticating();
+          }
+          if (!await _mayCreateAccountDocument(
+            uid,
+            generation,
+            documentVanished: documentVanished,
+          )) {
+            return;
           }
           try {
             await _userDocumentRepository
@@ -136,8 +155,7 @@ class AuthController extends ChangeNotifier {
             }
             // Do not leave Authenticating forever (login buttons stay disabled).
             user = null;
-            errorMessage =
-                'Oturum doğrulanamadı. Lütfen tekrar giriş yapın.';
+            errorMessage = _sessionUnverifiedMessage;
             status = AuthenticationError(errorMessage!);
             notifyListeners();
             unawaited(_authRepository.signOut());
@@ -168,6 +186,81 @@ class AuthController extends ChangeNotifier {
             : Authenticated(user);
     }
     notifyListeners();
+  }
+
+  /// Whether the missing account document of the session [uid] may be
+  /// created. Settles the session itself when it may not.
+  ///
+  /// This is the path for a session nobody just signed in to — restored from
+  /// the device, or already running when its document disappeared. Such a
+  /// session can belong to an account that no longer exists: the server
+  /// deletes the documents and the Auth account, the device signs out only
+  /// afterwards, and if the app dies in between (or the account is deleted
+  /// from another device) the cached ID token still passes the security
+  /// rules for up to an hour. Creating the document then brings a deleted
+  /// account back as an empty one. So Firebase Auth is asked first:
+  ///
+  ///  * the account exists — create the document, as before;
+  ///  * the session is over (account deleted or disabled, tokens revoked) —
+  ///    the repository has already cleared this device; end on the sign-in
+  ///    screen with no error, since nothing failed from the member's side;
+  ///  * no answer (offline, timeout) — create nothing and do not sign out.
+  ///    A real member whose document is missing lands on the sign-in screen
+  ///    with the "could not verify" message and keeps the session, so the
+  ///    next launch with a connection finishes the job without a new
+  ///    sign-in. Creating blindly is the one outcome that cannot be undone,
+  ///    and signing out would cost a real member the session for being
+  ///    offline (it used to: the document write failed and signed them out).
+  ///
+  /// [documentVanished] is the stricter case: the document was there in this
+  /// process and is gone. Only account deletion removes it, and the server
+  /// deletes the Auth account last, after calls to outside providers, so
+  /// "the account exists" may be seconds out of date. It is asked again
+  /// after [_deletedAccountSettleDelay] before the document is re-created.
+  Future<bool> _mayCreateAccountDocument(
+    String uid,
+    int generation, {
+    required bool documentVanished,
+  }) async {
+    var check = await _verifyRestoredSession(uid);
+    if (documentVanished && check == RestoredSessionCheck.accountExists) {
+      await Future<void>.delayed(_deletedAccountSettleDelay);
+      if (_disposed || generation != _generation || _actionInFlight) {
+        return false;
+      }
+      check = await _verifyRestoredSession(uid);
+    }
+    if (_disposed || generation != _generation || _actionInFlight) {
+      // A newer snapshot or a sign-in owns the session now.
+      return false;
+    }
+    switch (check) {
+      case RestoredSessionCheck.accountExists:
+        return true;
+      case RestoredSessionCheck.sessionClosed:
+        _resetToLoggedOut();
+        notifyListeners();
+        return false;
+      case RestoredSessionCheck.unverified:
+        user = null;
+        errorMessage = _sessionUnverifiedMessage;
+        status = AuthenticationError(errorMessage!);
+        notifyListeners();
+        return false;
+    }
+  }
+
+  Future<RestoredSessionCheck> _verifyRestoredSession(String uid) async {
+    try {
+      return await _authRepository.verifyRestoredSession(uid);
+    } on Object catch (error, stackTrace) {
+      _logger.error(
+        'Failed to verify restored session',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return RestoredSessionCheck.unverified;
+    }
   }
 
   /// Whether a profile snapshot for [uid] must be ignored as a late echo of
@@ -267,16 +360,6 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<Result<void>> signInWithGoogle() async {
-    // #region agent log
-    _logDebug(
-      'auth_controller_google_signin_start',
-      hypothesisId: 'GAUTH_FLOW',
-      data: <String, Object?>{
-        'hasUserBefore': user != null,
-        'statusBefore': status.runtimeType.toString(),
-      },
-    );
-    // #endregion
     await _analytics.googleLoginStarted();
     final result = await _run(
       _authRepository.signInWithGoogle,
@@ -285,30 +368,8 @@ class AuthController extends ChangeNotifier {
     );
     switch (result) {
       case Success<void>():
-        // #region agent log
-        _logDebug(
-          'auth_controller_google_signin_success',
-          hypothesisId: 'GAUTH_FLOW',
-          data: <String, Object?>{
-            'hasUserAfter': user != null,
-            'statusAfter': status.runtimeType.toString(),
-          },
-        );
-        // #endregion
         await _analytics.googleLoginSuccess();
       case Err<void>(:final failure):
-        // #region agent log
-        _logDebug(
-          'auth_controller_google_signin_failure',
-          hypothesisId: 'GAUTH_FLOW',
-          data: <String, Object?>{
-            'failureType': failure.runtimeType.toString(),
-            'failureMessage': failure.message,
-            'errorKind': errorKind?.name,
-            'statusAfter': status.runtimeType.toString(),
-          },
-        );
-        // #endregion
         if (failure is AuthFailure &&
             (failure.isCancelled || failure.kind == AuthErrorKind.cancelled)) {
           await _analytics.googleLoginCancelled();
@@ -318,34 +379,6 @@ class AuthController extends ChangeNotifier {
     }
     return result;
   }
-
-  // #region agent log
-  void _logDebug(
-    String message, {
-    String hypothesisId = 'GAUTH_FLOW',
-    Map<String, Object?> data = const <String, Object?>{},
-  }) {
-    if (!kDebugMode) {
-      return;
-    }
-    try {
-      final entry = <String, Object?>{
-        'sessionId': '80971b',
-        'runId': 'google-signin',
-        'hypothesisId': hypothesisId,
-        'location': 'auth_controller.dart',
-        'message': message,
-        'data': data,
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-      };
-      // Visible in `flutter run` output from physical devices.
-      // ignore: avoid_print
-      print('[GAUTH_DEBUG] ${jsonEncode(entry)}');
-    } on Object {
-      // Ignore logging errors.
-    }
-  }
-  // #endregion
 
   Future<Result<void>> signInWithApple() {
     return _run(

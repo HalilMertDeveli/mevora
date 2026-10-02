@@ -5,6 +5,7 @@ import {onTaskDispatched} from "firebase-functions/v2/tasks";
 import {logger} from "firebase-functions";
 import {JobStatus} from "./types.js";
 import {processJobById} from "./runner.js";
+import {diditApiKey} from "../identity/didit/diditConfig.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -14,6 +15,15 @@ const db = getFirestore();
 const REGION = "europe-west1";
 
 /**
+ * Both functions below run `identity_provider_erasure` jobs — the retry of a
+ * provider-side erasure that account deletion could not confirm. That call
+ * authenticates with the Didit API key, and a secret reaches a function only
+ * when it is listed here: without it the retry answers `not_configured`
+ * forever and every erasure ends in manual review.
+ */
+const JOB_SECRETS = [diditApiKey];
+
+/**
  * Cloud Tasks target for `enqueueCloudTask`. Must stay named
  * `processAutomationTask` — the queue path in `tasksEnqueue.ts` is built from
  * this function name.
@@ -21,6 +31,7 @@ const REGION = "europe-west1";
 export const processAutomationTask = onTaskDispatched(
   {
     region: REGION,
+    secrets: JOB_SECRETS,
     retryConfig: {
       maxAttempts: 5,
       minBackoffSeconds: 10,
@@ -46,7 +57,7 @@ export const processAutomationTask = onTaskDispatched(
  * retries. Jobs flagged `requiresHumanReview` are left for an admin.
  */
 export const automationJobDrain = onSchedule(
-  {schedule: "every 15 minutes", region: REGION},
+  {schedule: "every 15 minutes", region: REGION, secrets: JOB_SECRETS},
   async () => {
     const [queued, retrying] = await Promise.all([
       db

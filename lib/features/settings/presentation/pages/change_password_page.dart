@@ -51,7 +51,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           child: googleOnly
               ? Text(l10n.settingsGooglePasswordMessage)
               : !hasEmailProvider
-              ? Text(l10n.settingsGooglePasswordMessage)
+              // A phone, Spotify or Apple account: there is no password, and
+              // Google has nothing to do with it.
+              ? Text(l10n.settingsNoPasswordMessage)
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

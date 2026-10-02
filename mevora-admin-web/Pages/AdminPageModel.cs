@@ -55,12 +55,15 @@ public abstract class AdminPageModel(IAdminApiClient api) : PageModel
     }
 
     /// <summary>Runs one decision, flashes the outcome, and redirects.</summary>
-    protected async Task<IActionResult> Act(string command, object payload, string success, Func<IActionResult>? redirect = null)
+    protected Task<IActionResult> Act(string command, object payload, string success, Func<IActionResult>? redirect = null) =>
+        Act(command, payload, _ => success, redirect);
+
+    /// <summary>As above, for a confirmation that depends on what the backend did.</summary>
+    protected async Task<IActionResult> Act(string command, object payload, Func<JsonElement, string> success, Func<IActionResult>? redirect = null)
     {
         try
         {
-            await Api.CallAsync(command, payload, HttpContext.RequestAborted);
-            Flash = success;
+            Flash = success(await Api.CallAsync(command, payload, HttpContext.RequestAborted));
         }
         catch (AdminApiException error)
         {

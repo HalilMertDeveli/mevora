@@ -1,5 +1,7 @@
 # Mevora Production Readiness Assessment
 
+> **Superseded (2026-10-01).** Snapshot from 2026-08-23. Its two release blockers (account deletion unreachable, Spotify functions not exported) are fixed, and it describes Sumsub, which Didit replaced. Current launch state: `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`.
+
 Audit date: 2026-08-23  
 Overall verdict: **NOT READY**
 

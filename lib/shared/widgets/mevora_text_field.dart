@@ -81,6 +81,8 @@ class MevoraTextField extends StatelessWidget {
         labelText: label,
         hintText: hint,
         helperText: helperText,
+        // A helper sentence wraps instead of ending in an ellipsis.
+        helperMaxLines: 3,
         errorText: errorText,
         prefixIcon: prefixIcon == null ? null : Icon(prefixIcon),
         suffixIcon: suffixIcon,

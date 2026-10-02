@@ -21,7 +21,7 @@ this profile photo the person holding the account?" and has its own mark.
 | 3–6 photos; secondary photos need not show the member | unchanged |
 | A profile under the rule has at least one Face Anchor | `completeOnboarding`, `isProfileDiscoverable` |
 | The primary photo is a Face Anchor, first in the array, `order: 0` | `moderation/photoInvariants.ts` |
-| The last Face Anchor cannot be removed | `moderation/photoInvariants.ts` (it is restored) |
+| The last Face Anchor cannot be removed | `moderation/photoInvariants.ts` (it is restored); `moderation/deleteProfilePhoto.ts` (the delete is refused); `moderation/photoOrphanSweep.ts` (it is never swept) |
 | A removed anchor does not stay verified | `moderation/photoInvariants.ts` |
 | A rejected photo loses its verdict; a photo held in review is not usable while held | `photoModerationLedger.ts` |
 | An already moderated photo id cannot be re-uploaded with other bytes | `processPendingProfilePhoto` |

@@ -65,8 +65,23 @@ class ChatController extends ChangeNotifier {
   Timer? _typingDebounce;
   Timer? _typingIdle;
   bool _typingSent = false;
+
+  /// Incoming messages already being marked read, so the local snapshot a
+  /// receipt write produces does not send the same receipt again.
+  final Set<String> _acknowledged = {};
   double? uploadProgress;
   bool recording = false;
+
+  /// Set by the first message snapshot: until then "nothing unread is loaded"
+  /// says nothing about the thread.
+  bool _messagesLoaded = false;
+  bool _clearingUnread = false;
+  bool _unreadMovedWhileClearing = false;
+  bool _disposed = false;
+
+  /// The unread count a failed reset left behind. It is not retried until the
+  /// count moves, so a refused write cannot loop on its own rollback snapshot.
+  int? _unreadClearFailedAt;
 
   String? get uid => _uidSource.currentUid;
 
@@ -121,6 +136,7 @@ class ChatController extends ChangeNotifier {
         if (value != null) {
           match = value;
           notifyListeners();
+          unawaited(_clearUnreadWhileOpen());
         }
       }, onError: (_) {});
     } on Object {
@@ -134,7 +150,14 @@ class ChatController extends ChangeNotifier {
       blocked = false;
     }
     try {
-      await _matches.markOpened(matchId, current);
+      // Opening an already-read thread changes nothing on the match doc;
+      // writing anyway re-fires both participants' inbox listeners.
+      final opened = match;
+      if (opened == null ||
+          opened.unreadFor(current) > 0 ||
+          opened.isNewFor[current] != false) {
+        await _matches.markOpened(matchId, current);
+      }
     } on Object {
       // Demo matches and offline clients still open the thread.
     }
@@ -161,7 +184,9 @@ class ChatController extends ChangeNotifier {
           message: value.last,
         );
       }
+      _messagesLoaded = true;
       unawaited(_acknowledge(value));
+      unawaited(_clearUnreadWhileOpen());
       notifyListeners();
     }, onError: (_) {});
     _typingSub = _chat.watchTyping(matchId).listen((value) {
@@ -227,13 +252,69 @@ class ChatController extends ChangeNotifier {
       return;
     }
     final incoming = value
-        .where((message) => message.receiverId == current && !message.isRead)
+        .where(
+          (message) =>
+              message.receiverId == current &&
+              !message.isRead &&
+              !_acknowledged.contains(message.id),
+        )
         .toList(growable: false);
     if (incoming.isEmpty) {
       return;
     }
-    await _chat.markDelivered(matchId, incoming);
-    await _chat.markRead(matchId, incoming);
+    final ids = [for (final message in incoming) message.id];
+    _acknowledged.addAll(ids);
+    // Read implies delivered: one batch sets status 'read', isRead and
+    // readAt, the same end state the delivered-then-read pair produced.
+    try {
+      await _chat.markRead(matchId, incoming);
+    } on Object {
+      // Let the next snapshot retry these.
+      _acknowledged.removeAll(ids);
+    }
+  }
+
+  /// The server counts every incoming message as unread, including the ones
+  /// this open thread marks read as they arrive, and [start] resets the count
+  /// only once. Bring the viewer's count back to 0 when the match doc shows
+  /// otherwise: no write while it already is 0, and none before the loaded
+  /// incoming messages are read.
+  ///
+  /// Runs on every match and message snapshot because the count is raised by
+  /// a trigger, usually after the message itself has been acknowledged.
+  Future<void> _clearUnreadWhileOpen() async {
+    final current = uid;
+    if (current == null || !_messagesLoaded || _disposed) {
+      return;
+    }
+    if (_clearingUnread) {
+      _unreadMovedWhileClearing = true;
+      return;
+    }
+    final unread = match?.unreadFor(current) ?? 0;
+    if (unread <= 0 || unread == _unreadClearFailedAt) {
+      return;
+    }
+    final unreadLoaded = messages.any(
+      (message) => message.receiverId == current && !message.isRead,
+    );
+    if (unreadLoaded) {
+      return;
+    }
+    _clearingUnread = true;
+    _unreadMovedWhileClearing = false;
+    try {
+      await _matches.markOpened(matchId, current);
+      _unreadClearFailedAt = null;
+    } on Object {
+      _unreadClearFailedAt = unread;
+    } finally {
+      _clearingUnread = false;
+    }
+    // A message counted while the reset was on its way is still on the doc.
+    if (_unreadMovedWhileClearing) {
+      unawaited(_clearUnreadWhileOpen());
+    }
   }
 
   Future<void> loadOlder() async {
@@ -298,8 +379,13 @@ class ChatController extends ChangeNotifier {
         matchId: matchId,
         message: sent,
       );
-      _typingSent = false;
-      unawaited(_chat.setTyping(matchId: matchId, isTyping: false));
+      // A pending debounce would flag typing again after the send.
+      _typingDebounce?.cancel();
+      _typingIdle?.cancel();
+      if (_typingSent) {
+        _typingSent = false;
+        unawaited(_chat.setTyping(matchId: matchId, isTyping: false));
+      }
       sending = false;
       notifyListeners();
       return const Success(null);
@@ -384,6 +470,7 @@ class ChatController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _typingDebounce?.cancel();
     _typingIdle?.cancel();
     unawaited(_messageSub?.cancel());

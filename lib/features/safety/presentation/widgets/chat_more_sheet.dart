@@ -99,10 +99,21 @@ Future<void> _block(BuildContext context, ChatController controller) async {
     confirmLabel: l10n.block,
     confirmVariant: MevoraButtonVariant.destructive,
   );
-  if (ok == true && context.mounted) {
+  if (ok != true || !context.mounted) {
+    return;
+  }
+  try {
     await SocialScope.of(context).safetyRepository.blockUser(
       userId: controller.otherUid,
       matchId: controller.matchId,
     );
+  } on Object {
+    // Said out loud: a member who is told nothing leaves believing the other
+    // person is blocked.
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.blockFailedMessage)));
+    }
   }
 }

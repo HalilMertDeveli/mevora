@@ -111,6 +111,46 @@ void main() {
       );
     });
 
+    test('stays on an allowed page whatever gate is pending', () {
+      // Found in the final acceptance run: "Why is my account restricted?"
+      // ended on "Page Not Found — redirect loop detected /onboarding/location
+      // => /account-restricted => /onboarding/location". An allowed page fell
+      // through to the location gate, and the gate is not an allowed page.
+      final incomplete = Authenticated(
+        const AuthUser(
+          id: 'user-2',
+        ).copyWith(isActive: false, accountStatus: AccountStatus.suspended),
+      );
+      for (final location in const [
+        AppRoutes.accountRestricted,
+        AppRoutes.moderationStatus,
+        AppRoutes.supportCenter,
+        AppRoutes.accountSettings,
+        AppRoutes.legalPrivacy,
+      ]) {
+        expect(
+          _redirect(_suspended, location, needsLocationOnboarding: true),
+          isNull,
+          reason: '$location with the location gate pending',
+        );
+        expect(
+          _redirect(_suspended, location, locationGateResolved: false),
+          isNull,
+          reason: '$location before the location gate is read',
+        );
+        expect(
+          _redirect(_suspended, location, journeyRoute: AppRoutes.humorLab),
+          isNull,
+          reason: '$location with a first-run step pending',
+        );
+        expect(
+          _redirect(incomplete, location),
+          isNull,
+          reason: '$location with onboarding unfinished',
+        );
+      }
+    });
+
     test('allow-list does not match look-alike paths', () {
       expect(
         AuthRedirector.restrictedAccountAllows('/settings/supportx'),

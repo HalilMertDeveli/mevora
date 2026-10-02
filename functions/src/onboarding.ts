@@ -8,11 +8,12 @@ import {isPublishedStoragePath} from "./moderation/photoModerationLedger.js";
 import {commitPhotoInvariants, loadPhotoState} from "./moderation/photoModerationService.js";
 import type {PhotoRecord} from "./moderation/types.js";
 import {requireOnboardingNames} from "./personName.js";
+import {accountBirthFields, memberBirthDate} from "./profileAge.js";
 import {markLearningRequired} from "./relationshipLearning/store.js";
 import {
+  ageFromBirthDate,
   countApprovedPhotos,
   isAccountEligible,
-  isAdultProfile,
   isFaceAnchorRequiredFor,
   MAX_PROFILE_PHOTOS,
   MIN_ONBOARDING_AGE,
@@ -47,7 +48,7 @@ function requireString(value: unknown, field: string): string {
   return text;
 }
 
-function validateOnboardingProfile(data: DocumentData): void {
+function validateOnboardingProfile(data: DocumentData, age: number | null): void {
   requireString(data.gender, "gender");
   requireString(data.interestedIn, "interestedIn");
   requireString(data.city, "city");
@@ -85,7 +86,7 @@ function validateOnboardingProfile(data: DocumentData): void {
     requireString(value, field);
   }
 
-  if (!isAdultProfile(data)) {
+  if (age === null || age < MIN_ONBOARDING_AGE) {
     throw new HttpsError("failed-precondition", "underage");
   }
 
@@ -121,10 +122,19 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
   const data = profileSnap.data() ?? {};
   // First name from the public profile, surname from the private account.
   requireOnboardingNames(data, accountSnap.data());
-  validateOnboardingProfile(data);
-
-  const age = resolveProfileAge(data);
-  if (age === null || age < MIN_ONBOARDING_AGE) {
+  // The date of birth is private account data: users/{uid} is owner-only,
+  // profiles/{uid} is not. The age below is the only thing derived from it
+  // that reaches the profile, and it is written here, never by the client —
+  // an `age` already on the profile counts only for a member who completed
+  // before the date moved, whose profile the server itself last wrote.
+  const birthDate = memberBirthDate(accountSnap.data(), data);
+  const age = birthDate
+    ? ageFromBirthDate(birthDate.toDate())
+    : data.profileCompleted === true
+      ? resolveProfileAge(data)
+      : null;
+  validateOnboardingProfile(data, age);
+  if (age === null) {
     throw new HttpsError("failed-precondition", "underage");
   }
 
@@ -172,6 +182,9 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
       profileModerationStatus,
       onboardingStep: "complete",
       ...(anchorRequired ? {faceAnchorRequired: true} : {}),
+      // A date an older app build left on the profile moves to the account
+      // below, in this same transaction.
+      ...("birthDate" in data ? {birthDate: FieldValue.delete()} : {}),
     };
     // photos[] is no longer written back from here: the array read above the
     // transaction could be stale and would undo the reconciling trigger. A
@@ -183,6 +196,9 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
       tx.update(db.doc(`profiles/${uid}`), {...completion, updatedAt: now});
     } else {
       commitPhotoInvariants(tx, db, uid, photoState, {profilePatch: completion});
+    }
+    if (birthDate) {
+      tx.set(db.doc(`users/${uid}`), accountBirthFields(birthDate, new Date()), {merge: true});
     }
   });
   await db.doc(`users/${uid}`).set(

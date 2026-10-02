@@ -33,6 +33,17 @@ class GooglePurchaseService {
     }
   }
 
+  /// What Play holds for this account: purchases that were never consumed,
+  /// and its subscriptions. Unlike [restoreUnconsumed] it answers the caller
+  /// alone, instead of replaying every purchase to every listener of the
+  /// shared purchase stream.
+  Future<List<PurchaseDetails>> unconsumedPurchases() async {
+    final addition = _store
+        .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>();
+    final response = await addition.queryPastPurchases();
+    return response.pastPurchases;
+  }
+
   Future<void> restoreUnconsumed() async {
     try {
       await _store.restorePurchases();

@@ -75,6 +75,12 @@ jobs:
       - run: flutter --version
       - name: flutter pub get
         run: flutter pub get
+      - name: Release readiness (static, read-only)
+        # Signing guards, restricted permissions, production Firebase wiring,
+        # mock/emulator gating, policy pages, committed secrets. A FAIL breaks
+        # the job; BLOCKED items wait on the owner (signing key, Play Console,
+        # billing) and do not. See docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md.
+        run: node tool/productionReadiness.cjs
       - name: flutter analyze
         run: flutter analyze
       # Explicit "test" argument: it pins the gate to the whole test/ tree so a

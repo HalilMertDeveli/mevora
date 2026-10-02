@@ -15,9 +15,14 @@ plugins {
  *   2. environment variables   — for CI, where secrets are injected
  *
  * Nothing here is ever committed: no keystore, no passwords, no defaults.
- * When the material is absent `releaseSigning` stays null, development and
- * staging keep building debug-signed, and productionRelease fails loudly
- * (see the productionRelease guard at the bottom of this file).
+ * Only the production flavor is ever signed with it. Development and staging
+ * releases stay debug-signed even when the material is present: development
+ * shares the production applicationId, so a release-signed development build
+ * would be an uploadable `com.mevora.app` artifact wired to the development
+ * backend.
+ *
+ * When the material is absent `releaseSigning` stays null and productionRelease
+ * fails loudly (see the productionRelease guards at the bottom of this file).
  */
 data class ReleaseSigning(
     val storeFile: File,
@@ -101,26 +106,6 @@ android {
         versionName = flutter.versionName
     }
 
-    flavorDimensions += "environment"
-    productFlavors {
-        create("development") {
-            dimension = "environment"
-            // Same applicationId as the Firebase Android app with OAuth SHA-1 registered.
-            versionNameSuffix = "-dev"
-            resValue("string", "app_name", "Mevora Dev")
-        }
-        create("staging") {
-            dimension = "environment"
-            applicationIdSuffix = ".staging"
-            versionNameSuffix = "-staging"
-            resValue("string", "app_name", "Mevora Staging")
-        }
-        create("production") {
-            dimension = "environment"
-            resValue("string", "app_name", "Mevora")
-        }
-    }
-
     signingConfigs {
         val signing = releaseSigning
         if (signing != null) {
@@ -133,26 +118,85 @@ android {
         }
     }
 
+    // Release signing is chosen per flavor, not per build type. The release
+    // build type sets no signing config (see buildTypes below), so each
+    // flavor's own choice applies to its release variant; debug variants are
+    // always debug-signed by the debug build type.
+    val debugKeystore = signingConfigs.getByName("debug")
+    val productionKeystore = if (releaseSigning != null) {
+        signingConfigs.getByName("release")
+    } else {
+        // Never used by a build: the productionRelease guard at the bottom of
+        // this file fails first.
+        null
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("development") {
+            dimension = "environment"
+            // Same applicationId as the Firebase Android app with OAuth SHA-1 registered.
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Mevora Dev")
+            // Debug-signed on purpose: `flutter run --release` works with no
+            // signing material, and the artifact can never be uploaded to Play.
+            signingConfig = debugKeystore
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            resValue("string", "app_name", "Mevora Staging")
+            signingConfig = debugKeystore
+        }
+        create("production") {
+            dimension = "environment"
+            resValue("string", "app_name", "Mevora")
+            signingConfig = productionKeystore
+        }
+    }
+
     buildTypes {
         release {
-            // Development and staging release builds stay debug-signed so
-            // `flutter run --release` keeps working without signing material.
-            // productionRelease is guarded below and fails instead.
-            signingConfig = if (releaseSigning != null) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            // Deliberately no signing config: one set here overrides the
+            // flavor's and would sign every flavor's release with the same key.
+            signingConfig = null
+        }
+    }
+}
+
+// A production release must never be silently debug-signed, and must never
+// carry another environment's Dart entrypoint.
+//
+// The checks run once the task graph is known, so they fail in seconds and
+// only when a production release was actually requested — every other
+// variant still configures and builds on a machine with no signing material.
+// The doFirst backstop covers the case where the graph hook is skipped.
+val productionReleaseTasks = setOf(
+    "assembleProductionRelease",
+    "bundleProductionRelease",
+    "packageProductionRelease",
+)
+
+fun guardProductionRelease(message: String) {
+    gradle.taskGraph.whenReady {
+        val requested = allTasks.any { task ->
+            task.project == project && task.name in productionReleaseTasks
+        }
+        if (requested) {
+            throw GradleException(message)
+        }
+    }
+
+    afterEvaluate {
+        productionReleaseTasks.forEach { taskName ->
+            tasks.findByName(taskName)?.doFirst {
+                throw GradleException(message)
             }
         }
     }
 }
 
-// A production release must never be silently debug-signed.
-//
-// The check runs once the task graph is known, so it fails in seconds and
-// only when a production release was actually requested — every other
-// variant still configures and builds on a machine with no signing material.
-// The doFirst backstop covers the case where the graph hook is skipped.
 if (releaseSigning == null) {
     val problem = releaseSigningProblem
     val message = buildString {
@@ -166,28 +210,26 @@ if (releaseSigning == null) {
         appendLine("Refusing to sign a production release with the debug keystore.")
         append("See docs/ANDROID_RELEASE_SIGNING.md for setup.")
     }
-    val guardedTasks = setOf(
-        "assembleProductionRelease",
-        "bundleProductionRelease",
-        "packageProductionRelease",
+    guardProductionRelease(message)
+}
+
+// The flavor picks the native Firebase configuration; the Dart entrypoint
+// picks the environment. Nothing else ties the two together, and Flutter's
+// default entrypoint (lib/main.dart) is the DEVELOPMENT environment: without
+// `-t lib/main_production.dart` a production-signed bundle would start with
+// development options, the App Check debug provider and analytics off.
+val productionEntrypoint = "lib/main_production.dart"
+val flutterTarget = (project.findProperty("target") as String?)
+    ?.replace('\\', '/')
+    ?: "lib/main.dart"
+if (!flutterTarget.endsWith(productionEntrypoint)) {
+    guardProductionRelease(
+        buildString {
+            appendLine("A production release must be built from $productionEntrypoint, not $flutterTarget.")
+            appendLine("Run: flutter build appbundle --flavor production -t $productionEntrypoint --release")
+            append("See docs/ANDROID_RELEASE_SIGNING.md.")
+        },
     )
-
-    gradle.taskGraph.whenReady {
-        val requested = allTasks.any { task ->
-            task.project == project && task.name in guardedTasks
-        }
-        if (requested) {
-            throw GradleException(message)
-        }
-    }
-
-    afterEvaluate {
-        guardedTasks.forEach { taskName ->
-            tasks.findByName(taskName)?.doFirst {
-                throw GradleException(message)
-            }
-        }
-    }
 }
 
 flutter {

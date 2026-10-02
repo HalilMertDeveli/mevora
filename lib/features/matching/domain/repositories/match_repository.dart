@@ -24,7 +24,9 @@ class PresenceWatch {
 }
 
 abstract class MatchRepository {
-  Stream<List<MatchListItem>> watchMatches(String uid);
+  /// Active matches, most recent conversation first. [limit] caps the live
+  /// window; null means every match.
+  Stream<List<MatchListItem>> watchMatches(String uid, {int? limit});
 
   Future<Match?> getMatch(String matchId);
 

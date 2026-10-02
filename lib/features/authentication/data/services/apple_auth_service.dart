@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/constants/app_strings.dart';
 import 'package:mevora/core/errors/app_exception.dart';
 import 'package:mevora/features/authentication/data/mappers/auth_error_mapper.dart';
 import 'package:mevora/features/authentication/data/pkce.dart';
+import 'package:mevora/features/authentication/domain/apple_sign_in_support.dart';
 import 'package:mevora/features/authentication/domain/auth_messages.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_provider_id.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_session.dart';
@@ -22,7 +22,7 @@ class AppleAuthService {
   Future<AuthSession> link() => _authenticate(link: true);
 
   Future<AuthSession> _authenticate({required bool link}) async {
-    if (!_isApplePlatform) {
+    if (!isAppleSignInSupported) {
       throw const AuthException(
         AppStrings.appleSignInUnavailable,
         kind: AuthErrorKind.notConfigured,
@@ -45,10 +45,9 @@ class AppleAuthService {
         );
       }
 
-      final oauth = OAuthProvider('apple.com').credential(
-        idToken: identityToken,
-        rawNonce: rawNonce,
-      );
+      final oauth = OAuthProvider(
+        'apple.com',
+      ).credential(idToken: identityToken, rawNonce: rawNonce);
       final UserCredential result;
       if (link) {
         final current = _firebaseAuth.currentUser;
@@ -112,10 +111,5 @@ class AppleAuthService {
       persistEmail: apple.email != null && apple.email!.isNotEmpty,
       isNewUser: result.additionalUserInfo?.isNewUser ?? false,
     );
-  }
-
-  bool get _isApplePlatform {
-    return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
   }
 }

@@ -117,6 +117,8 @@ export const PICKS_CONFIG = {
    * Picks come from inside the viewer's preferred radius first, and reach
    * beyond it (never past the Discover hard ceiling) only when the preferred
    * radius cannot fill the batch with candidates who clear the quality floor.
+   * This is the default: a viewer's own choice in their match preferences
+   * replaces it (see `preferredRadiusKmFor` in service.ts).
    */
   preferredRadiusKm: 50,
 } as const;

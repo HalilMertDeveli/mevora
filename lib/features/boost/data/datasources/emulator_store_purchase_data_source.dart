@@ -58,6 +58,10 @@ class EmulatorStorePurchaseDataSource implements StorePurchaseDataSource {
         .toList(growable: false);
   }
 
+  /// A test purchase is delivered and verified in one go; none is left over.
+  @override
+  Future<List<StoreTransaction>> outstandingPurchases() async => const [];
+
   @override
   Future<void> buy(BoostProduct product) async {
     _sequence += 1;

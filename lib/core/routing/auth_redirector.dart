@@ -57,9 +57,18 @@ abstract final class AuthRedirector {
       return operations.target;
     }
 
-    final restriction = _accountRestrictionRedirect(status, location);
-    if (restriction != null) {
-      return restriction;
+    // A suspended member's whole app is the restricted screen and what it
+    // links to, so the decision ends here. Falling through to the gates below
+    // (onboarding, location, first-run steps) sent an allowed page to a gate
+    // and the gate back to the restricted screen: a redirect loop.
+    if (status is Authenticated && status.user.isSuspended) {
+      return restrictedAccountAllows(location)
+          ? null
+          : AppRoutes.accountRestricted;
+    }
+    if (status is Authenticated && location == AppRoutes.accountRestricted) {
+      // Restored by staff: back into the normal flow.
+      return AppRoutes.splash;
     }
 
     switch (status) {
@@ -128,27 +137,11 @@ abstract final class AuthRedirector {
     }
   }
 
-  /// Restricted-account gate. A suspended member stays signed in but only
-  /// reaches the restricted screen and what it links to: their moderation
-  /// record and appeals, support, the legal pages, and account deletion /
-  /// data export. When staff restore the account the user document flips to
-  /// active and the member is released back into the normal flow.
-  static String? _accountRestrictionRedirect(
-    AuthStatus status,
-    String location,
-  ) {
-    final suspended = status is Authenticated && status.user.isSuspended;
-    if (!suspended) {
-      return status is Authenticated && location == AppRoutes.accountRestricted
-          ? AppRoutes.splash
-          : null;
-    }
-    return restrictedAccountAllows(location)
-        ? null
-        : AppRoutes.accountRestricted;
-  }
-
-  /// Routes a suspended member may open.
+  /// Routes a suspended member may open. A suspended member stays signed in
+  /// but only reaches the restricted screen and what it links to: their
+  /// moderation record and appeals, support, the legal pages, and account
+  /// deletion / data export. When staff restore the account the user document
+  /// flips to active and the member is released back into the normal flow.
   static bool restrictedAccountAllows(String location) {
     return location == AppRoutes.accountRestricted ||
         location == AppRoutes.moderationStatus ||
@@ -179,6 +172,10 @@ abstract final class AuthRedirector {
           ? null
           : AppRoutes.locationPermission;
     }
-    return location == AppRoutes.onboarding ? null : AppRoutes.onboarding;
+    // The legal pages open from the onboarding account menu.
+    return location == AppRoutes.onboarding ||
+            _publicLegalRoutes.contains(location)
+        ? null
+        : AppRoutes.onboarding;
   }
 }

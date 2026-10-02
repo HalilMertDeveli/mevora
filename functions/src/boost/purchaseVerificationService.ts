@@ -1,4 +1,5 @@
 import {purchaseDocId} from "./config.js";
+import {sha256} from "./hash.js";
 import type {BoostPack} from "./catalog.js";
 import type {ApplePurchaseVerifier} from "./applePurchaseVerifier.js";
 import type {GooglePurchaseVerifier} from "./googlePurchaseVerifier.js";
@@ -12,6 +13,8 @@ import type {
 export type VerificationDecision =
   | {outcome: "proceed"; purchaseId: string; store: StoreVerificationResult}
   | {outcome: "alreadyProcessed"; purchaseId: string}
+  /** Play voided this purchase; it was revoked and can never be granted again. */
+  | {outcome: "voided"; purchaseId: string}
   | {outcome: "invalidProduct"}
   | {outcome: "invalidUid"}
   | {outcome: "invalidTransaction"}
@@ -43,13 +46,19 @@ export class PurchaseVerificationService {
       return {outcome: "invalidProduct"};
     }
 
-    const purchaseId = purchaseDocId(platform, request.transactionId);
+    const purchaseId = purchaseLedgerId(request);
+    if (!purchaseId) {
+      return {outcome: "invalidTransaction"};
+    }
     if (existing) {
       if (existing.userId !== uid) {
-        return {outcome: "duplicateOtherUser", purchaseId};
+        return {outcome: "duplicateOtherUser", purchaseId: existing.purchaseId};
       }
       if (existing.status === "verified") {
-        return {outcome: "alreadyProcessed", purchaseId};
+        return {outcome: "alreadyProcessed", purchaseId: existing.purchaseId};
+      }
+      if (existing.status === "voided") {
+        return {outcome: "voided", purchaseId: existing.purchaseId};
       }
     }
 
@@ -63,4 +72,29 @@ export class PurchaseVerificationService {
     }
     return {outcome: "proceed", purchaseId, store};
   }
+
+  /**
+   * Consumes the store purchase behind a grant that is already on the ledger.
+   * Resolves to whether the store confirmed it; never throws.
+   */
+  async consume(request: VerifyBoostRequest): Promise<boolean> {
+    // An App Store consumable is finished by the client; there is nothing to do here.
+    return request.platform === "android" ? this.google.consume(request) : false;
+  }
+}
+
+/**
+ * The ledger identity of a store purchase: `purchases/{id}`.
+ *
+ * On Android it is the hash of the Play purchase token — the one value Google
+ * verifies and that a client cannot vary. The transaction id in the request is
+ * whatever the client chose to send, so keying on it let one token be granted
+ * once per invented id. On iOS the transaction id is the identity itself: the
+ * App Store is asked for exactly that transaction.
+ */
+export function purchaseLedgerId(request: VerifyBoostRequest): string | null {
+  if (request.platform === "ios") {
+    return request.transactionId?.trim() ? purchaseDocId("ios", request.transactionId) : null;
+  }
+  return request.purchaseToken ? purchaseDocId("android", sha256(request.purchaseToken)) : null;
 }

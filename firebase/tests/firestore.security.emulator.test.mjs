@@ -126,6 +126,57 @@ describe("profiles — owner vs unrelated reader", () => {
     await deny(fresh.set({uid: UID.C, displayName: "Ada", lastName: "Lovelace"}));
     await allow(fresh.set({uid: UID.C, displayName: "Ada"}));
   });
+
+  it("a date of birth can never be written to the public card", async () => {
+    const own = who.userA.db().doc(`profiles/${UID.A}`);
+    await deny(own.update({birthDate: new Date("1996-04-01")}));
+    await deny(own.set({birthDate: new Date("1996-04-01"), bio: "hi"}, {merge: true}));
+    await deny(own.update({birthDate: "1996-04-01"}));
+    await deny(own.update({dateOfBirth: new Date("1996-04-01")}));
+
+    // Same on create.
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.C}`).delete());
+    const fresh = who.userC.db().doc(`profiles/${UID.C}`);
+    await deny(fresh.set({uid: UID.C, displayName: "Ada", birthDate: new Date("1996-04-01")}));
+    await allow(fresh.set({uid: UID.C, displayName: "Ada"}));
+  });
+
+  it("the age on the public card is the server's: the owner cannot set or move it", async () => {
+    const own = who.userA.db().doc(`profiles/${UID.A}`);
+    // Not yet set by the server: the owner cannot claim one.
+    await deny(own.update({age: 30}));
+
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.A}`).update({age: 30}));
+    await deny(own.update({age: 24}));
+    await deny(own.update({age: 31, bio: "hi"}));
+    const {deleteField} = await import("firebase/firestore");
+    await deny(own.update({age: deleteField()}));
+
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.C}`).delete());
+    await deny(who.userC.db().doc(`profiles/${UID.C}`).set({uid: UID.C, displayName: "Ada", age: 30}));
+  });
+
+  it("an app build from before the change can still save the rest of a profile", async () => {
+    // It re-sends the values it loaded: no date of birth, the stored age.
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.A}`).update({age: 30}));
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).set(
+        {birthDate: null, age: 30, bio: "Books and long walks.", updatedAt: new Date()},
+        {merge: true},
+      ),
+    );
+  });
+
+  it("a date of birth still on a card from before the change cannot be altered there", async () => {
+    const legacy = new Date("1996-04-01T00:00:00Z");
+    await seed(env, (ctx) =>
+      ctx.firestore().doc(`profiles/${UID.A}`).update({birthDate: legacy, age: 30}));
+    const own = who.userA.db().doc(`profiles/${UID.A}`);
+    // An old build re-sending what it loaded is harmless.
+    await allow(own.set({birthDate: legacy, age: 30, bio: "hi"}, {merge: true}));
+    await deny(own.update({birthDate: new Date("1990-04-01T00:00:00Z")}));
+    await deny(own.update({birthDate: null}));
+  });
 });
 
 describe("users/{uid} — private account isolation", () => {
@@ -159,6 +210,47 @@ describe("users/{uid} — private account isolation", () => {
     await deny(own.update({lastName: ["Develi"]}));
     await deny(own.update({lastName: "a".repeat(51)}));
     await allow(own.update({lastName: "a".repeat(50)}));
+  });
+
+  it("the owner keeps a private date of birth that no other member can read", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    const birthDate = new Date("1996-04-01T00:00:00Z");
+    await allow(own.update({birthDate, updatedAt: new Date()}));
+    const saved = await own.get();
+    assert.equal(saved.get("birthDate").toMillis(), birthDate.getTime());
+
+    await deny(who.userB.db().doc(`users/${UID.A}`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}`).update({birthDate}));
+
+    // The public card another member reads carries no date of birth.
+    const card = await who.userC.db().doc(`profiles/${UID.A}`).get();
+    assert.equal("birthDate" in card.data(), false);
+  });
+
+  it("a date of birth is set once, as a past timestamp", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    await deny(own.update({birthDate: "1996-04-01"}));
+    await deny(own.update({birthDate: 828316800000}));
+    await deny(own.update({birthDate: null}));
+    await deny(own.update({birthDate: new Date(Date.now() + 86400000)}));
+
+    const birthDate = new Date("1996-04-01T00:00:00Z");
+    await allow(own.update({birthDate}));
+    // Re-sending the same value is a no-op; anything else is refused.
+    await allow(own.update({birthDate, lastName: "Lovelace"}));
+    await deny(own.update({birthDate: new Date("1990-04-01T00:00:00Z")}));
+    const {deleteField} = await import("firebase/firestore");
+    await deny(own.update({birthDate: deleteField()}));
+    // The rest of the account stays editable afterwards.
+    await allow(own.update({lastName: "Byron", updatedAt: new Date()}));
+  });
+
+  it("the age roll-over marker is server-written only", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    await deny(own.update({ageRolloverAt: new Date()}));
+    await deny(own.update({birthDate: new Date("1996-04-01T00:00:00Z"), ageRolloverAt: new Date()}));
   });
 
   it("moderation and billing state is locked against the owner", async () => {
@@ -603,8 +695,6 @@ describe("legitimate client flows still work", () => {
         {
           uid: UID.A,
           displayName: "Ada",
-          birthDate: new Date("1996-04-01"),
-          age: 30,
           gender: "female",
           interestedIn: ["male"],
           bio: "Books and long walks.",
@@ -1027,6 +1117,29 @@ describe("messages — participant authorization and E2EE enforcement", () => {
     await deny(
       who.userA.db().doc(`matches/${MATCH_AB}/messages/p5`).set(
         encryptedMessage({senderId: UID.A, receiverId: UID.C}),
+      ),
+    );
+  });
+
+  it("an image message with a non-empty envelope is accepted, an empty ciphertext is not", async () => {
+    const image = {
+      type: "image",
+      imageStoragePath: `users/${UID.A}/chat/${MATCH_AB}/photo.jpg.enc`,
+      mediaKeyCiphertext: "a2V5",
+    };
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/img1`).set(
+        encryptedMessage({senderId: UID.A, receiverId: UID.B, overrides: image}),
+      ),
+    );
+    // What the app sent before the fix: AES-GCM of an empty caption.
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/img2`).set(
+        encryptedMessage({
+          senderId: UID.A,
+          receiverId: UID.B,
+          overrides: {...image, ciphertext: ""},
+        }),
       ),
     );
   });

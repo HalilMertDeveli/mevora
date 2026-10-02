@@ -21,6 +21,7 @@ import 'package:mevora/features/boost/presentation/widgets/boost_active_badge.da
 import 'package:mevora/features/boost/presentation/widgets/boost_results_panel.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_history_list.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_pack_sheet.dart';
+import 'package:mevora/features/subscription/presentation/widgets/purchase_legal_links.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/shared/art/mevora_motion.dart';
@@ -247,12 +248,21 @@ class _ProductView extends StatelessWidget {
           products: products,
           onSelect: (product) => unawaited(controller.purchase(product)),
         ),
+        // Said beside the prices: a pack is paid for once and is not a
+        // subscription.
+        Text(
+          l10n.boostOneTimePurchaseNote,
+          key: const Key('boostOneTimePurchaseNote'),
+          style: theme.textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: AppSpacing.sm),
         MevoraButton(
           label: l10n.restorePurchases,
           onPressed: () => unawaited(controller.restore()),
           variant: MevoraButtonVariant.ghost,
         ),
+        const PurchaseLegalLinks(),
         const SizedBox(height: AppSpacing.lg),
         BoostHistoryList(entries: state.history),
       ],

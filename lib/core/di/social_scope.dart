@@ -132,7 +132,7 @@ class SocialScopeState extends State<SocialScope> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      matchesController.start();
+      matchesController.resume();
     }
   }
 

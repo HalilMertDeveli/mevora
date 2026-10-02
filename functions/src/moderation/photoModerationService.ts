@@ -12,6 +12,8 @@ import {
 import {
   backfillLegacyApproval,
   isPublishedStoragePath,
+  isRemovedByMember,
+  isSweptWhenUnreferenced,
   ledgerCollection,
   ledgerEntryFromData,
   ledgerRef,
@@ -23,6 +25,7 @@ import {
   photosChanged,
   sameIds,
   storedFaceAnchorPhotoIds,
+  unreferencedStampChanges,
 } from "./photoInvariants.js";
 import {
   PHOTO_CACHE_CONTROL,
@@ -47,13 +50,19 @@ function photosFrom(data: Record<string, unknown> | undefined): PhotoRecord[] {
  * patch (moderatedAt, lastProcessingAttempt) to a concrete server-clock
  * Timestamp before it goes into the array. The document-level updatedAt is not
  * inside an array and keeps its sentinel.
+ *
+ * Firestore rejects undefined as well. In a patch it means "leave the field as
+ * it is" — the ledger write reads it the same way — so those keys are dropped
+ * rather than copied over the element; clearing a field takes an explicit null.
  */
 function arraySafePatch(patch: Partial<PhotoRecord>): Partial<PhotoRecord> {
   return Object.fromEntries(
-    Object.entries(patch).map(([key, value]) => [
-      key,
-      value instanceof FieldValue ? Timestamp.now() : value,
-    ]),
+    Object.entries(patch)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [
+        key,
+        value instanceof FieldValue ? Timestamp.now() : value,
+      ]),
   ) as Partial<PhotoRecord>;
 }
 
@@ -103,12 +112,31 @@ export async function isSmokeTestAccount(db: Firestore, uid: string): Promise<bo
   return snap.data()?.isSmokeTestUser === true;
 }
 
+export interface PhotoStatusOptions {
+  /**
+   * What to do when the photo is not in profiles/{uid}.photos.
+   *
+   * `append` (the default) is for the upload pipeline: the Storage event runs
+   * before the client has written its array, so the pipeline adds the photo.
+   * `skip` is for a decision about a photo that already had its place on the
+   * profile (admin review): if it is gone, the member took it off, and a
+   * decision is no reason to put it back.
+   */
+  whenAbsent?: "append" | "skip";
+}
+
+export interface PhotoStatusProjection {
+  /** Whether the decision was written onto a photo in profiles/{uid}.photos. */
+  onProfile: boolean;
+}
+
 export async function setPhotoModerationStatus(
   db: Firestore,
   uid: string,
   imageId: string,
   patch: Partial<PhotoRecord>,
-): Promise<void> {
+  options: PhotoStatusOptions = {},
+): Promise<PhotoStatusProjection> {
   // The ledger is the authority; profiles.photos is the client-readable
   // projection of it. Record the decision first so a crash between the two
   // writes leaves the server stricter than the profile, never looser.
@@ -125,10 +153,41 @@ export async function setPhotoModerationStatus(
     });
   }
   const profileRef = db.doc(`profiles/${uid}`);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(profileRef);
-    const photos = buildModeratedPhotos(photosFrom(snap.data()), imageId, patch);
+  const entryRef = ledgerRef(db, uid, imageId);
+  return db.runTransaction(async (tx) => {
+    const [snap, entrySnap] = await Promise.all([tx.get(profileRef), tx.get(entryRef)]);
+    // The entry written above is gone again: the member deleted the photo
+    // (deleteProfilePhoto) while this decision was on its way. Projecting it
+    // would put the photo back on the profile.
+    if (patch.moderationStatus && !entrySnap.exists) {
+      logger.info("Dropped a moderation result for a photo its owner deleted", {uid, imageId});
+      return {onProfile: false};
+    }
+    const existing = photosFrom(snap.data());
+    const onProfile = existing.some((photo) => String(photo.id ?? "") === imageId);
+    // A photo that is on the profile always takes the decision. One that is
+    // not is added only by the pipeline, and never once the member removed it:
+    // the entry outlives the photo for moderation's sake (deleteProfilePhoto),
+    // so the entry existing does not mean the photo should.
+    const entry = entrySnap.exists ? ledgerEntryFromData(entrySnap.data() ?? {}) : null;
+    const removedByMember = isRemovedByMember(entry);
+    if (!onProfile && (options.whenAbsent === "skip" || removedByMember)) {
+      // No profile write follows, so no reconciliation will mark this photo
+      // as off the profile. It is marked here, or an approved photo that is
+      // on no profile would never be collected (photoOrphanSweep.ts).
+      if (isSweptWhenUnreferenced(entry) && entry?.unreferencedSince == null) {
+        tx.update(entryRef, {unreferencedSince: FieldValue.serverTimestamp()});
+      }
+      logger.info("Recorded a moderation result without adding the photo to the profile", {
+        uid,
+        imageId,
+        removedByMember,
+      });
+      return {onProfile: false};
+    }
+    const photos = buildModeratedPhotos(existing, imageId, patch);
     tx.set(profileRef, {photos, updatedAt: FieldValue.serverTimestamp()}, {merge: true});
+    return {onProfile: true};
   });
 }
 
@@ -196,6 +255,16 @@ export async function publishApprovedPhoto(options: {
   };
 }
 
+/** A failed lookup counts as "exists": the pipeline then behaves as it always did. */
+async function pendingObjectExists(bucket: Bucket, path: string): Promise<boolean> {
+  try {
+    const [exists] = await bucket.file(path).exists();
+    return exists;
+  } catch {
+    return true;
+  }
+}
+
 export async function processPendingProfilePhoto(options: {
   db: Firestore;
   bucket: Bucket;
@@ -214,6 +283,16 @@ export async function processPendingProfilePhoto(options: {
   // A photo whose object was published but whose status write never landed is
   // not "decided": it is still pending/processing here and the retry proceeds.
   const ledgerSnap = await ledgerRef(options.db, options.uid, options.imageId).get();
+  // The upload is gone before its event was handled: the member removed the
+  // photo (deleteProfilePhoto). Processing it would write the id back into
+  // the profile as a photo with no image behind it.
+  if (!(await pendingObjectExists(options.bucket, options.pendingPath))) {
+    logger.info("Skipped moderation of a pending photo that no longer exists", {
+      uid: options.uid,
+      imageId: options.imageId,
+    });
+    return ledgerSnap.exists ? ledgerEntryFromData(ledgerSnap.data() ?? {}).status : "pending";
+  }
   if (ledgerSnap.exists) {
     const entry = ledgerEntryFromData(ledgerSnap.data() ?? {});
     const published = isPublishedStoragePath(options.uid, entry.storagePath);
@@ -227,6 +306,18 @@ export async function processPendingProfilePhoto(options: {
         logger.warn("Failed to delete re-uploaded pending photo", {error: String(error)});
       }
       logger.warn("Ignored re-upload of an already moderated photo id", {
+        uid: options.uid,
+        imageId: options.imageId,
+        status: entry.status,
+      });
+      return entry.status;
+    }
+    // The member removed this photo while moderation was holding it. Its
+    // entry and its upload stay for the reviewer, but it is not moderated
+    // again: a redelivered upload event could otherwise approve and publish a
+    // photo that is on no profile, and take it out of the review queue.
+    if (isRemovedByMember(entry)) {
+      logger.info("Skipped moderation of a photo its owner removed", {
         uid: options.uid,
         imageId: options.imageId,
         status: entry.status,
@@ -452,18 +543,28 @@ export interface CommittedPhotoInvariants {
  * `profilePatch` rides along on the same profile write. Nothing is written
  * when nothing would change, which is what keeps the profile trigger from
  * looping; an absent profile is never created.
+ *
+ * The same pass keeps `unreferencedSince` on the ledger: set on an entry whose
+ * photo is not in the resulting array, cleared when the photo is back. Those
+ * are ledger writes, so they neither count as a change nor fire the trigger,
+ * and they leave `updatedAt` alone — it is the entry's place in the review
+ * queue.
+ *
+ * `photos` is for a caller that changes the array in the same transaction
+ * (deleteProfilePhoto): the invariants are imposed on that array instead of
+ * the stored one, and the result is written if it differs from what is stored.
  */
 export function commitPhotoInvariants(
   tx: Transaction,
   db: Firestore,
   uid: string,
   state: PhotoState,
-  options: {profilePatch?: Record<string, unknown>} = {},
+  options: {profilePatch?: Record<string, unknown>; photos?: PhotoRecord[]} = {},
 ): CommittedPhotoInvariants {
   if (!state.exists) {
     return {changed: false, photos: [], faceAnchorPhotoIds: []};
   }
-  const result = computePhotoInvariants(state.photos, state.ledger);
+  const result = computePhotoInvariants(options.photos ?? state.photos, state.ledger);
   const photosDiffer = photosChanged(state.photos, result.photos);
   const anchorsDiffer = !sameIds(storedFaceAnchorPhotoIds(state.profile), result.faceAnchorPhotoIds);
   const patch = options.profilePatch ?? {};
@@ -479,6 +580,11 @@ export function commitPhotoInvariants(
     tx.update(ledgerRef(db, uid, imageId), {
       faceAnchor: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
+    });
+  }
+  for (const [imageId, unreferenced] of unreferencedStampChanges(result.photos, state.ledger)) {
+    tx.update(ledgerRef(db, uid, imageId), {
+      unreferencedSince: unreferenced ? FieldValue.serverTimestamp() : FieldValue.delete(),
     });
   }
   return {

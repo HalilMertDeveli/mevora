@@ -13,6 +13,10 @@ class MatchesController extends ChangeNotifier {
   /// A message within this window counts as an active conversation.
   static const Duration activeConversationWindow = Duration(minutes: 30);
 
+  /// Conversations kept live at once. Scrolling past them widens the window
+  /// by another page, so an inbox never listens to every match it has.
+  static const int pageSize = 30;
+
   MatchesController({
     required MatchRepository matchRepository,
     required PresenceRepository presenceRepository,
@@ -36,8 +40,13 @@ class MatchesController extends ChangeNotifier {
   List<MatchListItem> items = const [];
   bool loading = true;
   String? error;
+  int _limit = pageSize;
+  String? _listeningUid;
 
   String? get uid => _uidSource.currentUid;
+
+  /// The live window is full, so older conversations may exist beyond it.
+  bool get hasMore => items.length >= _limit;
 
   int get mutualLikeCount =>
       items.where((item) => !item.match.isRelationshipTest).length;
@@ -85,24 +94,58 @@ class MatchesController extends ChangeNotifier {
   void start() {
     final current = uid;
     unawaited(_subscription?.cancel());
+    _subscription = null;
     _clearPresenceSubscriptions();
+    _limit = pageSize;
+    _listeningUid = current;
     if (current == null) {
       items = const [];
       loading = false;
       notifyListeners();
       return;
     }
-    _subscription = _matchRepository.watchMatches(current).listen((value) {
-      items = value;
-      loading = false;
-      error = null;
-      _syncPresenceSubscriptions(value);
-      notifyListeners();
-    }, onError: (_) {
-      error = MatchingError.generic;
-      loading = false;
-      notifyListeners();
-    });
+    _listen(current);
+  }
+
+  /// App came back to the foreground. Healthy listeners keep running — the
+  /// SDK reconnects them and replays only what changed — so this restarts
+  /// just the ones that failed, instead of re-reading the whole inbox and
+  /// every partner's presence on each resume.
+  void resume() {
+    final current = uid;
+    if (current != _listeningUid || _subscription == null || error != null) {
+      start();
+      return;
+    }
+    _syncPresenceSubscriptions(items);
+  }
+
+  /// Widens the live window by one page. The query is replaced, not
+  /// stacked, so the inbox stays one listener however far it scrolls.
+  void loadMore() {
+    final current = uid;
+    if (current == null || loading || !hasMore) {
+      return;
+    }
+    _limit += pageSize;
+    unawaited(_subscription?.cancel());
+    _listen(current);
+  }
+
+  void _listen(String current) {
+    _subscription = _matchRepository
+        .watchMatches(current, limit: _limit)
+        .listen((value) {
+          items = value;
+          loading = false;
+          error = null;
+          _syncPresenceSubscriptions(value);
+          notifyListeners();
+        }, onError: (_) {
+          error = MatchingError.generic;
+          loading = false;
+          notifyListeners();
+        });
   }
 
   PresenceStatus presenceFor(String otherUserId) {
@@ -115,19 +158,35 @@ class MatchesController extends ChangeNotifier {
   void _syncPresenceSubscriptions(List<MatchListItem> value) {
     final otherIds = value.map((item) => item.otherUserId).toSet();
     for (final otherId in otherIds) {
+      // A failed listener is dropped so the next sync (a new snapshot or a
+      // resume) opens it again; healthy ones are never reopened.
       _presenceSubs.putIfAbsent(otherId, () {
-        return _presenceRepository.watch(otherId).listen((watch) {
+        late final StreamSubscription<PresenceWatch> sub;
+        sub = _presenceRepository.watch(otherId).listen((watch) {
           _presenceByUid[otherId] = watch;
           notifyListeners();
-        }, onError: (_) {});
+        }, onError: (_) {
+          if (identical(_presenceSubs[otherId], sub)) {
+            _presenceSubs.remove(otherId);
+          }
+          unawaited(sub.cancel());
+        });
+        return sub;
       });
       final hub = _settingsHub;
       if (hub != null) {
         _privacySubs.putIfAbsent(otherId, () {
-          return hub.watchPrivacy(otherId).listen((privacy) {
+          late final StreamSubscription<UserPrivacy> sub;
+          sub = hub.watchPrivacy(otherId).listen((privacy) {
             _privacyByUid[otherId] = privacy;
             notifyListeners();
-          }, onError: (_) {});
+          }, onError: (_) {
+            if (identical(_privacySubs[otherId], sub)) {
+              _privacySubs.remove(otherId);
+            }
+            unawaited(sub.cancel());
+          });
+          return sub;
         });
       }
     }

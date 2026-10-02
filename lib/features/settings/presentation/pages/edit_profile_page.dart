@@ -15,9 +15,11 @@ import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
 import 'package:mevora/features/face_anchor/presentation/controllers/face_anchor_controller.dart';
 import 'package:mevora/features/face_anchor/presentation/pages/face_anchor_verify_page.dart';
+import 'package:mevora/features/permissions/domain/permission_flow_outcome.dart';
 import 'package:mevora/features/permissions/presentation/pages/permission_prompt_page.dart';
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
 import 'package:mevora/features/profile/domain/services/profile_completion_calculator.dart';
 import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_completion_banner.dart';
@@ -69,6 +71,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   /// from the public profile, and stays empty for a legacy account.
   String _baselineLastName = '';
   var _lastNameLoaded = false;
+
+  /// The member's private date of birth, shown locked. Loaded from their
+  /// account: the public profile carries only the age.
+  DateTime? _birthDate;
   String? _gender;
   String? _interestedIn;
   String? _relationshipGoal;
@@ -79,6 +85,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Set<String> _hobbies = {};
   ProfileLifestyle _lifestyle = const ProfileLifestyle();
   String? _errorKey;
+  final _scrollController = ScrollController();
   var _saving = false;
   var _hydrated = false;
 
@@ -98,8 +105,56 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _faceAnchor!.bind(uid);
   }
 
-  /// A refusal about the photo list (it is shown under the list itself).
+  /// A refusal about the photo list (it is shown at the top of the list).
   bool get _photoError => _errorKey?.startsWith('photo_') ?? false;
+
+  /// What to say about a photo that could not be picked or uploaded, as a
+  /// photo-list message — or nothing, when the member simply closed the
+  /// picker. The raw failure text used to fall through to "Something went
+  /// wrong" beside the Save button, for a cancel as much as for a failure.
+  static String? _photoFailureKey(String? message) {
+    if (message == null || message == PhotoUploadMessages.noneSelected) {
+      return null;
+    }
+    if (message.startsWith('photo_')) {
+      return message;
+    }
+    return message == PhotoUploadMessages.invalidFile
+        ? 'photo_invalid_file'
+        : 'photo_upload_failed';
+  }
+
+  /// Records the outcome of a photo action and makes sure a refusal is seen.
+  ///
+  /// The reason is shown above the photos. A member who opened the menu of
+  /// the fifth photo on a small phone has that spot scrolled out of view, so
+  /// a refusal there looked like a tap that did nothing: bring it back.
+  void _showPhotoOutcome(String? errorKey) {
+    setState(() => _errorKey = errorKey);
+    if (!_photoError) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) {
+        return;
+      }
+      unawaited(
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        ),
+      );
+    });
+  }
+
+  /// A photo change that went through makes an earlier refusal about the
+  /// photo list out of date.
+  void _clearPhotoError() {
+    if (_photoError) {
+      setState(() => _errorKey = null);
+    }
+  }
 
   void _onFaceAnchor() {
     if (mounted) {
@@ -127,6 +182,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _bioController.dispose();
     _cityController.dispose();
     _occupationController.dispose();
+    _scrollController.dispose();
     _faceAnchor
       ?..removeListener(_onFaceAnchor)
       ..dispose();
@@ -162,7 +218,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (profile != null && (!_hydrated || _baseline?.uid != profile.uid)) {
           _hydrate(profile);
           unawaited(_loadLastName(settings, uid));
+          unawaited(_loadBirthDate(settings, uid));
         }
+        final birthDate = _birthDate ?? profile?.birthDate;
         return PopScope(
           canPop: !_hasUnsavedChanges,
           onPopInvokedWithResult: (didPop, result) async {
@@ -180,6 +238,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ? const MevoraLoading.page()
                 : SafeArea(
                     child: ListView(
+                      controller: _scrollController,
                       padding: const EdgeInsets.all(AppSpacing.screenPadding),
                       children: [
                         ProfileCompletionBanner(
@@ -190,6 +249,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ProfileSectionHeader(
                           title: l10n.profileEditSectionPhotos,
                         ),
+                        // Above the photos, not under them: under a list of
+                        // five or six it is below the fold on a small phone.
+                        if (_photoError) ...[
+                          MevoraBanner(
+                            message: SettingsStrings.validation(
+                              l10n,
+                              _errorKey,
+                            ),
+                            tone: MevoraTone.error,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
                         // A member with no verified photo yet — anyone who
                         // joined before Face Anchor — is invited, not forced.
                         if (_faceAnchor != null &&
@@ -217,16 +288,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           onSetPrimary: (id) =>
                               unawaited(_setPrimary(profile, settings, id)),
                         ),
-                        if (_photoError) ...[
-                          const SizedBox(height: AppSpacing.sm),
-                          MevoraBanner(
-                            message: SettingsStrings.validation(
-                              l10n,
-                              _errorKey,
-                            ),
-                            tone: MevoraTone.error,
-                          ),
-                        ],
                         const SizedBox(height: AppSpacing.lg),
                         ProfileSectionHeader(
                           title: l10n.profileEditSectionBasic,
@@ -299,17 +360,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           suffixIcon: const Icon(MevoraIcons.dropdown),
                           onTap: _saving ? null : () => unawaited(_pickCity()),
                         ),
-                        if (profile.birthDate != null) ...[
+                        if (birthDate != null) ...[
                           const SizedBox(height: AppSpacing.md),
                           MevoraListGroup(
                             children: [
                               MevoraListRow(
                                 icon: MevoraIcons.calendar,
                                 title: l10n.onboardingBirthDate,
-                                value: L10nFormat.mediumDate(
-                                  l10n,
-                                  profile.birthDate!,
-                                ),
+                                value: L10nFormat.mediumDate(l10n, birthDate),
                                 subtitle: l10n.settingsBirthDateLocked,
                                 trailing: Icon(
                                   MevoraIcons.lock,
@@ -426,15 +484,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                        ProfileSectionHeader(
-                          title: l10n.profileEditSectionAnswers,
-                          subtitle: l10n.profileEditAnswersSubtitle,
-                        ),
                         ProfileQuestionAnswersSection(
                           uid: uid,
                           isOwner: true,
                           showEditAction: true,
+                          header: Padding(
+                            padding: const EdgeInsets.only(top: AppSpacing.lg),
+                            child: ProfileSectionHeader(
+                              title: l10n.profileEditSectionAnswers,
+                              subtitle: l10n.profileEditAnswersSubtitle,
+                            ),
+                          ),
                         ),
                         if (_errorKey != null && !_photoError) ...[
                           const SizedBox(height: AppSpacing.sm),
@@ -496,6 +556,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _lastNameController.text = _baselineLastName;
       _lastNameLoaded = true;
     });
+  }
+
+  Future<void> _loadBirthDate(SettingsServices settings, String uid) async {
+    DateTime? birthDate;
+    try {
+      birthDate = await settings.settingsHub.loadBirthDate(uid);
+    } on Object {
+      birthDate = null;
+    }
+    if (!mounted || birthDate == null) {
+      return;
+    }
+    setState(() => _birthDate = birthDate);
   }
 
   UserProfile _buildDraft(UserProfile profile) {
@@ -656,11 +729,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final type = picked == 'camera'
         ? PermissionType.camera
         : PermissionType.photos;
-    await PermissionPromptPage.show(
+    final outcome = await PermissionPromptPage.show(
       context,
       type: type,
       controller: permission,
     );
+    if (!mounted) {
+      return;
+    }
+    // Without the camera permission there is no camera to open. Opening it
+    // anyway failed, and the member who had just said no was told "Photo
+    // could not be uploaded". The gallery needs no permission, so it goes on.
+    if (picked == 'camera' && !outcome.isUsable) {
+      return;
+    }
     final photo = picked == 'camera'
         ? await settings.photoPicker.pickFromCamera()
         : await settings.photoPicker.pickFromGallery();
@@ -668,7 +750,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
     if (photo.isError) {
-      setState(() => _errorKey = photo.failureOrNull?.message);
+      _showPhotoOutcome(_photoFailureKey(photo.failureOrNull?.message));
       return;
     }
     final pickedPhoto = photo.valueOrNull!;
@@ -683,8 +765,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
     result.when(
-      success: (_) {},
-      err: (failure) => setState(() => _errorKey = failure.message),
+      success: (_) => _clearPhotoError(),
+      err: (failure) =>
+          _showPhotoOutcome(_photoFailureKey(failure.message)),
     );
   }
 
@@ -695,7 +778,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   ) async {
     final block = PhotoPolicy.deleteBlockReason(profile.photos, photoId);
     if (block != null) {
-      setState(() => _errorKey = block);
+      _showPhotoOutcome(block);
       return;
     }
     final result = await settings.photoManager.deletePhoto(
@@ -706,8 +789,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
     result.when(
-      success: (_) {},
-      err: (failure) => setState(() => _errorKey = failure.message),
+      success: (_) => _clearPhotoError(),
+      err: (failure) => _showPhotoOutcome(failure.message),
     );
   }
 
@@ -725,7 +808,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (!mounted) {
       return;
     }
-    setState(() => _errorKey = result.failureOrNull?.message);
+    _showPhotoOutcome(result.failureOrNull?.message);
   }
 
   Future<void> _setPrimary(
@@ -740,6 +823,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (!mounted) {
       return;
     }
-    setState(() => _errorKey = result.failureOrNull?.message);
+    _showPhotoOutcome(result.failureOrNull?.message);
   }
 }

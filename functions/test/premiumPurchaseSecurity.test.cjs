@@ -138,9 +138,16 @@ describe("premium purchase — the client cannot grant itself Premium", () => {
     process.env.PREMIUM_ANDROID_PACKAGE_NAME = "";
     process.env.PREMIUM_ANDROID_PRODUCT_IDS = "";
     try {
-      const {result, store} = await run();
-      assert.equal(result.ok, false);
-      assert.equal(result.reason, "not_configured");
+      // Thrown, not answered: an answer is something a client may acknowledge
+      // the purchase on, and nothing was verified here.
+      const store = memoryStore();
+      await assert.rejects(
+        () => run({store}),
+        (error) => {
+          assert.equal(error.code, "failed-precondition");
+          return true;
+        },
+      );
       assert.equal(store.box.writes, 0);
     } finally {
       process.env.PREMIUM_ANDROID_PACKAGE_NAME = pkg;

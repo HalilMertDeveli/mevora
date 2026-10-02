@@ -6,6 +6,7 @@ import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_provider_id.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_status.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
+import 'package:mevora/features/authentication/domain/entities/restored_session_check.dart';
 import 'package:mevora/features/authentication/presentation/controllers/auth_controller.dart';
 
 import '../../helpers/fake_auth.dart';
@@ -265,6 +266,210 @@ void main() {
 
       expect(controller.status, isA<Unauthenticated>());
       expect(controller.user, isNull);
+    });
+  });
+
+  // Found in the final acceptance run: an account deleted on the server while
+  // the device kept its cached session came back as a "zombie" — the app
+  // re-created users/{uid} and profiles/{uid} on the next launch.
+  group('a restored session whose account document is missing', () {
+    Future<void> settle() async {
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    test('creates nothing and ends signed out when the account is gone', () async {
+      authRepository
+        ..restoredPendingUid = 'deleted-1'
+        ..restoredSessionCheck = RestoredSessionCheck.sessionClosed;
+
+      controller.start();
+      await settle();
+
+      expect(authRepository.verifiedSessions, ['deleted-1']);
+      expect(documents.ensureCalls, 0);
+      expect(controller.status, isA<Unauthenticated>());
+      expect(controller.user, isNull);
+      // Nothing went wrong from the member's side: no banner on sign-in.
+      expect(controller.errorMessage, isNull);
+      expect(controller.errorKind, isNull);
+    });
+
+    test('creates the document when the account still exists', () async {
+      authRepository.restoredPendingUid = 'user-1';
+
+      controller.start();
+      await settle();
+
+      expect(authRepository.verifiedSessions, ['user-1']);
+      expect(documents.ensureCalls, 1);
+      expect(documents.ensured?.id, 'user-1');
+      expect(controller.status, isA<Authenticating>());
+      expect(authRepository.signOutCalls, 0);
+    });
+
+    test(
+      'creates nothing and keeps the session when the check cannot run',
+      () async {
+        authRepository
+          ..restoredPendingUid = 'user-1'
+          ..restoredSessionCheck = RestoredSessionCheck.unverified;
+
+        controller.start();
+        await settle();
+
+        expect(documents.ensureCalls, 0);
+        // Offline is not a reason to lose the session: the next launch with
+        // a connection checks again.
+        expect(authRepository.signOutCalls, 0);
+        expect(authRepository.signedOut, isFalse);
+        // The sign-in screen stays usable instead of a spinner.
+        expect(controller.status, isA<AuthenticationError>());
+        expect(controller.errorMessage, isNotNull);
+        expect(controller.user, isNull);
+      },
+    );
+
+    test('is not checked during an explicit sign-in', () async {
+      controller.start();
+      await settle();
+      authRepository
+        ..googleDelay = const Duration(milliseconds: 30)
+        ..restoredSessionCheck = RestoredSessionCheck.sessionClosed;
+
+      final signIn = controller.signInWithGoogle();
+      // Firebase has the session, the sign-in flow has not written the
+      // document yet.
+      authRepository.emitPending('google-1');
+      await settle();
+      final result = await signIn;
+
+      expect(result, isA<Success<void>>());
+      expect(authRepository.verifiedSessions, isEmpty);
+      // The flow creates the document itself; the controller adds nothing.
+      expect(documents.ensureCalls, 0);
+      expect(controller.status, isA<NeedsOnboarding>());
+      expect(controller.user?.id, 'google-1');
+    });
+
+    test('is not checked while the same process deletes the account', () async {
+      const user = AuthUser(
+        id: 'user-1',
+        onboardingCompleted: true,
+        profileCompleted: true,
+      );
+      authRepository.user = user;
+      documents.complete = true;
+      controller.start();
+      await settle();
+      expect(controller.status, isA<Authenticated>());
+
+      var signedOutTransitions = 0;
+      var wasSignedOut = false;
+      controller.addListener(() {
+        final isSignedOut = controller.status is Unauthenticated;
+        if (isSignedOut && !wasSignedOut) {
+          signedOutTransitions += 1;
+        }
+        wasSignedOut = isSignedOut;
+      });
+
+      authRepository.signOutDelay = const Duration(milliseconds: 30);
+      final deletion = controller.deleteAccount();
+      // The server deletes users/{uid} before the call returns.
+      authRepository.emitPending('user-1');
+      await settle();
+      final result = await deletion;
+      await settle();
+
+      expect(result, isA<Success<void>>());
+      expect(authRepository.verifiedSessions, isEmpty);
+      expect(documents.ensureCalls, 0);
+      expect(controller.status, isA<Unauthenticated>());
+      expect(controller.user, isNull);
+      expect(controller.errorMessage, isNull);
+      expect(signedOutTransitions, 1);
+    });
+  });
+
+  // The server deletes the documents first and the Auth account last, so a
+  // session that watches its document disappear (the account is being
+  // deleted from another device, or the app was restarted mid-deletion) can
+  // still be told "the account exists" for a moment.
+  group('an account document that disappears under a running session', () {
+    const user = AuthUser(
+      id: 'user-1',
+      onboardingCompleted: true,
+      profileCompleted: true,
+    );
+    const settleDelay = Duration(milliseconds: 20);
+    late AuthController waiting;
+
+    setUp(() {
+      waiting = AuthController(
+        authRepository: authRepository,
+        userDocumentRepository: documents,
+        logger: const AppLogger(environment: AppEnvironment.development),
+        deletedAccountSettleDelay: settleDelay,
+      );
+    });
+
+    tearDown(() => waiting.dispose());
+
+    Future<void> signedIn() async {
+      authRepository.user = user;
+      documents.complete = true;
+      waiting.start();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(waiting.status, isA<Authenticated>());
+    }
+
+    test('is not re-created while the deletion may still be running', () async {
+      await signedIn();
+      authRepository.restoredSessionChecks.addAll([
+        RestoredSessionCheck.accountExists,
+        RestoredSessionCheck.sessionClosed,
+      ]);
+
+      authRepository.emitPending('user-1');
+      await Future<void>.delayed(Duration.zero);
+      // The first answer alone must not be trusted.
+      expect(authRepository.verifiedSessions, ['user-1']);
+      expect(documents.ensureCalls, 0);
+
+      await Future<void>.delayed(settleDelay * 3);
+
+      expect(authRepository.verifiedSessions, ['user-1', 'user-1']);
+      expect(documents.ensureCalls, 0);
+      expect(waiting.status, isA<Unauthenticated>());
+      expect(waiting.user, isNull);
+      expect(waiting.errorMessage, isNull);
+    });
+
+    test('is re-created once the account is confirmed to be still there', () async {
+      await signedIn();
+
+      authRepository.emitPending('user-1');
+      await Future<void>.delayed(settleDelay * 3);
+
+      expect(authRepository.verifiedSessions, ['user-1', 'user-1']);
+      expect(documents.ensureCalls, 1);
+      expect(documents.ensured?.id, 'user-1');
+      expect(authRepository.signOutCalls, 0);
+    });
+
+    test('ends at once when the account is already gone', () async {
+      await signedIn();
+      authRepository.restoredSessionCheck = RestoredSessionCheck.sessionClosed;
+
+      authRepository.emitPending('user-1');
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(authRepository.verifiedSessions, ['user-1']);
+      expect(documents.ensureCalls, 0);
+      expect(waiting.status, isA<Unauthenticated>());
     });
   });
 

@@ -5,6 +5,7 @@ import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/di/settings_scope.dart';
 import 'package:mevora/core/di/settings_services_factory.dart';
 import 'package:mevora/core/errors/result.dart';
+import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/core/services/profile/profile_update_notifier.dart';
 import 'package:mevora/core/theme/app_theme.dart';
@@ -24,6 +25,7 @@ import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
 
 import '../../helpers/fake_auth.dart';
+import '../../helpers/fake_profile_photo_remover.dart';
 import '../../helpers/fake_settings_hub_repository.dart';
 
 class _SilentLogger implements AppLogger {
@@ -69,24 +71,24 @@ class _Hub extends FakeSettingsHubRepository {
 }
 
 UserProfile _profile() {
-  return UserProfile(
+  return const UserProfile(
     uid: 'u1',
     displayName: 'Halil',
-    birthDate: DateTime(1995, 5, 5),
+    age: 31,
     gender: 'man',
     interestedIn: 'women',
     city: 'İstanbul',
     bio: 'Coffee, books, and long walks.',
-    interests: const ['music', 'travel', 'food'],
+    interests: ['music', 'travel', 'food'],
     education: 'bachelors',
     relationshipGoal: 'long_term',
-    lifestyleProfile: const ProfileLifestyle(
+    lifestyleProfile: ProfileLifestyle(
       smoking: 'never',
       drinking: 'never',
       exercise: 'regularly',
       pets: 'dog',
     ),
-    photos: const [
+    photos: [
       ProfilePhoto(id: '1', storagePath: 'a', isPrimary: true),
       ProfilePhoto(id: '2', storagePath: 'b', order: 1, isPrimary: false),
       ProfilePhoto(id: '3', storagePath: 'c', order: 2, isPrimary: false),
@@ -136,6 +138,7 @@ Future<void> _openEditProfile(WidgetTester tester, _Hub hub) async {
           photoManager: ProfilePhotoManager(
             settingsHub: hub,
             storage: _FakeStorage(),
+            photoRemover: FakeProfilePhotoRemover(),
           ),
           reauthService: _FakeReauth(),
           photoPicker: const StubProfilePhotoPicker(),
@@ -270,6 +273,30 @@ void main() {
       expect(hub.lastNameSaves, isEmpty);
       expect(hub.profileSaves, isEmpty);
       expect(hub.lastName, 'Develi');
+    });
+
+    testWidgets('the locked date of birth comes from the private account', (
+      tester,
+    ) async {
+      final hub = _Hub()
+        ..profile = _profile()
+        ..birthDate = DateTime(1995, 5, 5);
+      await _openEditProfile(tester, hub);
+
+      expect(find.text(l10n.settingsBirthDateLocked), findsOneWidget);
+      expect(
+        find.text(L10nFormat.mediumDate(l10n, DateTime(1995, 5, 5))),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('an account with no date of birth shows no such row', (
+      tester,
+    ) async {
+      final hub = _Hub()..profile = _profile();
+      await _openEditProfile(tester, hub);
+
+      expect(find.text(l10n.settingsBirthDateLocked), findsNothing);
     });
   });
 }

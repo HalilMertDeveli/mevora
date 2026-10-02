@@ -12,7 +12,12 @@ class PresenceLifecycleController with WidgetsBindingObserver {
   }) : _presence = presenceRepository,
        _uidSource = uidSource;
 
-  static const Duration heartbeatInterval = Duration(seconds: 30);
+  /// Liveness only: going online and offline are written explicitly on
+  /// resume and pause. The beat exists for an app that dies without a
+  /// pause, and every beat is re-read by each partner's open listener.
+  /// Viewers treat a beat older than PresenceSubtitle.staleAfter as
+  /// offline, which must stay above two intervals.
+  static const Duration heartbeatInterval = Duration(seconds: 60);
 
   final PresenceRepository _presence;
   final AuthUidSource _uidSource;
@@ -74,39 +79,28 @@ class PresenceLifecycleController with WidgetsBindingObserver {
 
   Future<void> _goOnline() async {
     final uid = _uid;
-    if (uid == null || !_foreground) {
+    // Already online with a beat running: an auth-state replay or an
+    // inactive → resumed flicker (notification shade) changes nothing.
+    if (uid == null || !_foreground || _heartbeat != null) {
       return;
     }
     _startHeartbeat();
     try {
       await _presence.setOnline(uid);
-      // #region agent log
-      // ignore: avoid_print
-      print(
-        '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"post-fix",'
-        '"hypothesisId":"H6","location":"presence_lifecycle_controller.dart",'
-        '"message":"presence_set_online_ok","data":{"uidLen":${uid.length}},'
-        '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
-      );
-      // #endregion
-    } on Object catch (error) {
-      // #region agent log
-      // ignore: avoid_print
-      print(
-        '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"post-fix",'
-        '"hypothesisId":"H6","location":"presence_lifecycle_controller.dart",'
-        '"message":"presence_set_online_error","data":{"error":"$error"},'
-        '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
-      );
-      // #endregion
+    } on Object {
       // Chat must keep working when presence writes fail.
     }
   }
 
   Future<void> _goOffline() async {
+    // The beat runs exactly while this client has said it is online. Android
+    // reports hidden and paused on the way out and hidden again on the way
+    // back, so without this every background trip wrote offline two or three
+    // times.
+    final wasOnline = _heartbeat != null;
     _stopHeartbeat();
     final uid = _uid;
-    if (uid == null) {
+    if (uid == null || !wasOnline) {
       return;
     }
     try {
@@ -130,7 +124,8 @@ class PresenceLifecycleController with WidgetsBindingObserver {
 
   void _startHeartbeat() {
     _heartbeat?.cancel();
-    unawaited(_heartbeatNow());
+    // No immediate beat: setOnline right after this already stamps
+    // updatedAt, so a second write would only fan out twice.
     _heartbeat = Timer.periodic(heartbeatInterval, (_) {
       unawaited(_heartbeatNow());
     });

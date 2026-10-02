@@ -32,7 +32,9 @@
       { "source": "/privacy", "destination": "/privacy.html" },
       { "source": "/terms", "destination": "/terms.html" },
       { "source": "/guidelines", "destination": "/guidelines.html" },
-      { "source": "/help", "destination": "/help.html" }
+      { "source": "/help", "destination": "/help.html" },
+      { "source": "/delete-account", "destination": "/delete-account.html" },
+      { "source": "/child-safety", "destination": "/child-safety.html" }
     ]
   },
   "emulators": {

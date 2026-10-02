@@ -8,6 +8,9 @@
 //   node tool/productionReadiness.cjs --json     machine-readable output
 //   node tool/productionReadiness.cjs --strict   exit 1 on BLOCKED as well
 //
+// The "production leak scan" section checks that test, QA, demo and emulator
+// code cannot reach a member: see leakChecks() below.
+//
 // It reads files in this checkout and nothing else. It never writes, never
 // deploys, never prints a secret value, and never touches a Firebase project
 // (the optional --online check is a single read-only billing lookup).
@@ -682,6 +685,316 @@ function secretChecks() {
   );
 }
 
+// ------------------------------------------------- Production leak scan --
+//
+// Test, QA, demo and emulator code stays in the repository; this makes sure
+// none of it can reach a member or a store reviewer. It reads the code that
+// ships — lib/ (without lib/core/testing), functions/src, the public pages
+// and the member-facing strings — and nothing under test/, so a test double
+// used by a test is never a finding.
+//
+// Every allowance below names the file and says why it is safe. To add one,
+// add the reason with it.
+
+function walk(rel, extension, out = []) {
+  const dir = path.join(ROOT, rel);
+  if (!fs.existsSync(dir)) return out;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const child = `${rel}/${entry.name}`;
+    if (entry.isDirectory()) {
+      walk(child, extension, out);
+    } else if (entry.name.endsWith(extension)) {
+      out.push(child);
+    }
+  }
+  return out;
+}
+
+// Stand-ins that product code may build, and why each cannot reach a member.
+const STAND_IN_SITES = {
+  "lib/core/di/demo_social_hub.dart":
+    "the demo hub itself; bootstrap builds it only when demoInfrastructureAllowed",
+  "lib/core/di/discovery_services_factory.dart":
+    "demo deck, behind mockDataSourceAllowed / demoInfrastructureAllowed",
+  "lib/core/di/humor_services_factory.dart":
+    "mock humor, behind resolveUseMockHumor",
+  "lib/core/di/music_services_factory.dart":
+    "mock music, behind mockDataSourceAllowed",
+  "lib/core/di/relationship_services_factory.dart":
+    "mock relationship data, behind mockDataSourceAllowed",
+  "lib/core/di/social_services_factory.dart":
+    "createGraphSocialServices: the in-memory factory tests call; bootstrap never does",
+};
+
+// print/debugPrint that is allowed without a debug guard right above it.
+const UNGUARDED_LOG_SITES = {
+  "lib/core/di/humor_services_factory.dart":
+    "inside the mock branch, which exists in a debug development build only",
+  "lib/features/authentication/presentation/widgets/emulator_qa_login_panel.dart":
+    "the QA panel renders only behind EmulatorQaLogin.isEnabled",
+};
+
+// Member-facing strings that match the wording filter and are meant to.
+const COPY_ALLOWED_KEYS = {
+  restartDemo: "label of the development demo deck; shown only in mock mode",
+  chatEncryptionNotReady: "a real state: the other member has not published a key yet",
+};
+
+const COPY_FILTER =
+  /\bqa\b|emulator|emülatör|\bmock|debug|sandbox|placeholder|lorem|\btodo\b|\bfixme\b|\bdummy\b|test (user|account|mode)|test kullan|deneme hesab|\bdemo\b|firebase project|\bblaze\b|this build|\bstaging\b|localhost|not ready yet|coming soon|henüz hazır değil|later update|sonraki güncelleme/i;
+
+const BYPASS_NAMES =
+  /\b(forcePremium|forceMatch|forceBoost|fakeSuccess|fakePurchase|skipVerification|skipPayment|skipModeration|bypassVerification|bypassModeration|bypassPayment|testMode|mockMode|debugUnlock|grantPremiumForTest|isTestBuild)\b/;
+
+// A provider's own payload field, not a switch of ours.
+const BYPASS_ALLOWED = {
+  "functions/src/sumsub/sumsubStatus.ts": "Sumsub's webhook payload field; module not exported",
+  "functions/src/sumsub/sumsubWebhook.ts": "Sumsub's webhook payload field; module not exported",
+};
+
+const EMULATOR_ONLY_CALLABLES = [
+  "prepareSmokeTestUsers",
+  "cleanupSmokeTestUsers",
+  "debugPersonalizationRanking",
+  "searchHumorProviderCandidates",
+];
+
+function leakChecks() {
+  const area = "production leak scan";
+  const list = (items) => items.slice(0, 8).join("; ") + (items.length > 8 ? ` … (+${items.length - 8})` : "");
+
+  const productDart = walk("lib", ".dart").filter(
+    (file) => !file.startsWith("lib/core/testing/") && !file.startsWith("lib/l10n/"),
+  );
+  if (productDart.length === 0) {
+    untestable(area, "product code", "lib/ not found");
+    return;
+  }
+  const sources = new Map(productDart.map((file) => [file, read(file) || ""]));
+
+  // 1. Test doubles are not imported by product code.
+  const testImports = [];
+  for (const [file, source] of sources) {
+    if (/^\s*import\s+'[^']*core\/testing\/[^']*';/m.test(source)) testImports.push(file);
+  }
+  check(
+    testImports.length === 0,
+    area,
+    "test doubles stay out of product code",
+    "nothing outside lib/core/testing imports from it",
+    `imports lib/core/testing: ${list(testImports)}`,
+  );
+
+  // 2. Nothing falls back to a stand-in, and stand-ins are built only in the
+  //    guarded factories.
+  const standIn = /\b(?:Fake|Mock|Stub|InMemory)[A-Z]\w*\(/g;
+  const declares = (source, name) =>
+    new RegExp(`\\bclass\\s+${name}\\b`).test(source);
+  const fallbacks = [];
+  const builtElsewhere = [];
+  for (const [file, source] of sources) {
+    const lines = source.split("\n");
+    lines.forEach((line, index) => {
+      if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
+      if (/\?\?\s*(?:const\s+)?(?:Fake|Mock|Stub|InMemory|Demo)[A-Z]\w*\(/.test(line)) {
+        if (!STAND_IN_SITES[file]) fallbacks.push(`${file}:${index + 1}`);
+      }
+      for (const match of line.matchAll(standIn)) {
+        const name = match[0].slice(0, -1);
+        if (declares(source, name)) continue; // its own constructor or factory
+        if (!STAND_IN_SITES[file]) builtElsewhere.push(`${file}:${index + 1} ${name}`);
+      }
+    });
+  }
+  check(
+    fallbacks.length === 0,
+    area,
+    "no fallback to a stand-in",
+    "product code never writes `?? Fake…()` / `?? Mock…()` / `?? InMemory…()`: a missing dependency is an error, not a demo",
+    `falls back to a stand-in: ${list(fallbacks)}`,
+  );
+  check(
+    builtElsewhere.length === 0,
+    area,
+    "stand-ins are built only in guarded factories",
+    `mock and in-memory implementations are constructed only in ${Object.keys(STAND_IN_SITES).length} guarded factories`,
+    `constructed outside a guarded factory: ${list(builtElsewhere)}`,
+  );
+
+  // 3. The demo layer and the development defines are guarded at start-up.
+  const bootstrap = sources.get("lib/bootstrap.dart") || "";
+  const hubBuilds = (bootstrap.match(/DemoSocialHub\(/g) || []).length;
+  check(
+    /demoInfrastructureAllowed\(environment: environment\)/.test(bootstrap) &&
+      hubBuilds === 1 &&
+      /demoAllowed \? DemoSocialHub\(/.test(bootstrap),
+    area,
+    "demo social layer is development-only",
+    "the demo hub is built once, behind demoInfrastructureAllowed",
+    "lib/bootstrap.dart builds DemoSocialHub without the demoInfrastructureAllowed guard",
+  );
+  check(
+    /developmentDefinesOutsideDevelopment\(/.test(bootstrap) &&
+      /flavorEnvironmentMismatch\(/.test(bootstrap),
+    area,
+    "a mis-built app refuses to start",
+    "start-up refuses a flavor/entrypoint mismatch and development-only --dart-defines in a staging or production build",
+    "lib/bootstrap.dart no longer checks the flavor or the development-only defines at start-up",
+  );
+
+  // 4. Logs: nothing prints in a release build.
+  const logs = [];
+  for (const [file, source] of sources) {
+    if (UNGUARDED_LOG_SITES[file]) continue;
+    const lines = source.split("\n");
+    lines.forEach((line, index) => {
+      if (/^\s*(\/\/|\*)/.test(line)) return;
+      if (!/(^|[^\w.])(print|debugPrint)\(/.test(line)) return;
+      if (/void\s+_?debugPrint\(/.test(line)) return;
+      const before = lines.slice(Math.max(0, index - 14), index + 1).join("\n");
+      if (/kDebugMode|kReleaseMode|assert\(|_debugPrint\(/.test(before)) return;
+      logs.push(`${file}:${index + 1}`);
+    });
+  }
+  check(
+    logs.length === 0,
+    area,
+    "no logging in release builds",
+    "every print/debugPrint in lib/ sits behind kDebugMode, kReleaseMode or an assert",
+    `prints without a debug guard: ${list(logs)}`,
+  );
+
+  // 5. Emulator addresses live in one place.
+  const hosts = [];
+  for (const [file, source] of sources) {
+    if (file === "lib/core/config/app_config.dart") continue;
+    if (/10\.0\.2\.2|127\.0\.0\.1|\blocalhost\b/.test(source)) hosts.push(file);
+  }
+  check(
+    hosts.length === 0,
+    area,
+    "emulator addresses",
+    "only lib/core/config/app_config.dart knows an emulator host, and it uses one in development only",
+    `emulator or loopback address in: ${list(hosts)}`,
+  );
+
+  // 6. No bypass switch by name, client or server.
+  const functionsTs = walk("functions/src", ".ts");
+  const functionSources = new Map(functionsTs.map((file) => [file, read(file) || ""]));
+  const bypasses = [];
+  for (const [file, source] of [...sources, ...functionSources]) {
+    if (BYPASS_ALLOWED[file]) continue;
+    const match = BYPASS_NAMES.exec(source);
+    if (match) bypasses.push(`${file} (${match[1]})`);
+  }
+  check(
+    bypasses.length === 0,
+    area,
+    "no bypass switches",
+    "no forcePremium / skipVerification / testMode-style switch in the app or the backend",
+    `bypass-style names: ${list(bypasses)}`,
+  );
+
+  // 7. Backend: the emulator switch is the server's own, compared strictly.
+  if (functionsTs.length === 0) {
+    untestable(area, "backend emulator switch", "functions/src not found");
+  } else {
+    const loose = [];
+    const debugLogs = [];
+    for (const [file, source] of functionSources) {
+      for (const match of source.matchAll(/process\.env\.FUNCTIONS_EMULATOR(?!\s*(?:===|!==)\s*"true")/g)) {
+        loose.push(`${file}:${source.slice(0, match.index).split("\n").length}`);
+      }
+      if (/console\.(log|debug|info)\(|_DEBUG\]/.test(source)) debugLogs.push(file);
+    }
+    check(
+      loose.length === 0,
+      area,
+      "backend emulator switch",
+      'every emulator-only branch compares process.env.FUNCTIONS_EMULATOR with "true" — a value only the emulator process has, never anything a client sends',
+      `FUNCTIONS_EMULATOR read without a strict comparison: ${list(loose)}`,
+    );
+    check(
+      debugLogs.length === 0,
+      area,
+      "backend debug logging",
+      "no console.log or *_DEBUG log line in functions/src",
+      `debug logging in: ${list(debugLogs)}`,
+    );
+
+    const index = functionSources.get("functions/src/index.ts") || "";
+    const gate = /if \(process\.env\.FUNCTIONS_EMULATOR === "true"\) \{\s*Object\.assign\(exports, require\("\.\/emulatorOnly\.js"\)\);\s*\}/;
+    const named = EMULATOR_ONLY_CALLABLES.filter((name) => new RegExp(`\\b${name}\\b`).test(index));
+    check(
+      named.length === 0 && gate.test(index) && !/from "\.\/emulatorOnly\.js"/.test(index),
+      area,
+      "emulator-only callables are not deployed",
+      `${EMULATOR_ONLY_CALLABLES.length} QA callables are exported to the emulator only (functions/src/emulatorOnly.ts)`,
+      named.length > 0
+        ? `functions/src/index.ts exports to every deploy: ${named.join(", ")}`
+        : "functions/src/index.ts no longer gates emulatorOnly.js on FUNCTIONS_EMULATOR",
+    );
+  }
+
+  // 8. Member-facing copy.
+  const copy = [];
+  for (const file of ["lib/l10n/app_en.arb", "lib/l10n/app_tr.arb"]) {
+    let strings;
+    try {
+      strings = JSON.parse(read(file) || "null");
+    } catch (_) {
+      strings = null;
+    }
+    if (!strings) {
+      copy.push(`${file} unreadable`);
+      continue;
+    }
+    for (const [key, value] of Object.entries(strings)) {
+      if (key.startsWith("@") || typeof value !== "string") continue;
+      if (COPY_ALLOWED_KEYS[key]) continue;
+      if (COPY_FILTER.test(value)) copy.push(`${file.slice(-9)} ${key}`);
+    }
+  }
+  check(
+    copy.length === 0,
+    area,
+    "member-facing copy",
+    "no QA, emulator, mock, debug, sandbox, placeholder or build wording in the app's strings",
+    `developer wording in: ${list(copy)}`,
+  );
+
+  // 9. Public pages.
+  const pages = walk("hosting/public", ".html");
+  const pageFindings = [];
+  for (const file of pages) {
+    const source = read(file) || "";
+    if (/<!--/.test(source)) pageFindings.push(`${file} (HTML comment)`);
+    if (/\bdraft\b|\btodo\b|\bfixme\b|lorem ipsum|taslak/i.test(source)) pageFindings.push(`${file} (draft wording)`);
+  }
+  if (pages.length === 0) {
+    untestable(area, "public pages", "hosting/public not found");
+  } else {
+    check(
+      pageFindings.length === 0,
+      area,
+      "public pages",
+      "no comment or draft wording in the published pages (view-source shows what the page shows)",
+      list(pageFindings),
+    );
+  }
+
+  // 10. Demo assets are not in a store build.
+  const pubspec = read("pubspec.yaml") || "";
+  check(
+    /- path: assets\/images\/portraits\/\n\s+flavors:\n\s+- development\n/.test(pubspec) &&
+      !/^\s*- assets\/images\/portraits\/\s*$/m.test(pubspec),
+    area,
+    "demo portraits",
+    "the demo portraits are a development-flavor asset",
+    "pubspec.yaml bundles assets/images/portraits/ into every flavor",
+  );
+}
+
 // ---------------------------------------------------- Cloud Billing state --
 
 function cloudBilling(projectId) {
@@ -753,6 +1066,7 @@ billingChecks();
 legalChecks();
 humorChecks();
 secretChecks();
+leakChecks();
 if (productionProject) cloudBilling(productionProject);
 
 const counts = { PASS: 0, FAIL: 0, BLOCKED: 0, "NOT TESTABLE": 0 };

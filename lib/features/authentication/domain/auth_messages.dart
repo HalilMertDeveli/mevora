@@ -43,7 +43,7 @@ abstract final class AuthMessages {
   static const String smsFailed =
       'SMS gönderilemedi. Lütfen tekrar dene.';
   static const String appVerification =
-      'Uygulama doğrulaması tamamlanamadı. İnternet bağlantını kontrol et, gerçek bir cihazda dene ve birkaç saniye sonra yeniden dene.';
+      'Cihaz doğrulaması tamamlanamadı. İnternet bağlantını kontrol et, birkaç saniye bekle ve yeni bir kod iste.';
   static const String invalidOtp = 'Doğrulama kodu hatalı.';
   static const String expiredOtp =
       'Doğrulama kodunun süresi doldu. Yeni kod isteyin.';
@@ -68,9 +68,9 @@ abstract final class AuthMessages {
   static const String linkingBlocked =
       'Hesaplar yalnızca sen onayladığında bağlanır. E-posta eşleşmesi yeterli değildir.';
   static const String notConfigured =
-      'Telefon ile giriş henüz Firebase’de etkin değil.';
+      'Telefonla giriş şu anda kullanılamıyor. Lütfen başka bir giriş yöntemi kullan.';
   static const String billingNotEnabled =
-      'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.';
+      'Şu anda doğrulama kodu gönderemiyoruz. Lütfen daha sonra tekrar dene veya başka bir giriş yöntemi kullan.';
   static const String invalidEmail = 'Geçerli bir e-posta adresi gir.';
   static const String weakPassword =
       'En az 8 karakterlik daha güçlü bir şifre seç.';

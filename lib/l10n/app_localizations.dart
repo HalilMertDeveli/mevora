@@ -896,12 +896,6 @@ abstract class AppLocalizations {
   /// **'We could not find that.'**
   String get notFound;
 
-  /// No description provided for @comingSoon.
-  ///
-  /// In en, this message translates to:
-  /// **'This part of Mevora is not ready yet.'**
-  String get comingSoon;
-
   /// No description provided for @notAllowed.
   ///
   /// In en, this message translates to:
@@ -1313,7 +1307,7 @@ abstract class AppLocalizations {
   /// No description provided for @authAppVerification.
   ///
   /// In en, this message translates to:
-  /// **'App verification failed. Check your connection, try on a physical device, then request a new code.'**
+  /// **'We couldn\'t verify this device. Check your connection, wait a few seconds and request a new code.'**
   String get authAppVerification;
 
   /// No description provided for @authInvalidOtp.
@@ -1333,6 +1327,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your session expired. Please enter your number again.'**
   String get authSessionExpired;
+
+  /// No description provided for @authSessionUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm your session. Please sign in again.'**
+  String get authSessionUnverified;
 
   /// No description provided for @authTooManyAttempts.
   ///
@@ -1397,13 +1397,13 @@ abstract class AppLocalizations {
   /// No description provided for @authNotConfigured.
   ///
   /// In en, this message translates to:
-  /// **'Phone sign-in is not enabled for this Firebase project yet.'**
+  /// **'Phone sign-in isn\'t available right now. Please use another way to sign in.'**
   String get authNotConfigured;
 
   /// No description provided for @authBillingNotEnabled.
   ///
   /// In en, this message translates to:
-  /// **'Firebase billing (Blaze) is required to send SMS verification codes.'**
+  /// **'We can\'t send verification codes right now. Please try again later or use another way to sign in.'**
   String get authBillingNotEnabled;
 
   /// No description provided for @authInvalidEmail.
@@ -2251,12 +2251,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your preferences'**
   String get discoveryFiltersTitle;
-
-  /// No description provided for @discoveryFiltersHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Filters are saved locally. Server-side filtering arrives in a later update.'**
-  String get discoveryFiltersHint;
 
   /// No description provided for @applyFilters.
   ///
@@ -4496,12 +4490,6 @@ abstract class AppLocalizations {
   /// **'You can start talking now. Here\'s what you have in common.'**
   String get matchCelebrationInsight;
 
-  /// No description provided for @demoProfileBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Sample'**
-  String get demoProfileBadge;
-
   /// No description provided for @sharedHobbiesCount.
   ///
   /// In en, this message translates to:
@@ -4649,7 +4637,7 @@ abstract class AppLocalizations {
   /// No description provided for @musicNotConfigured.
   ///
   /// In en, this message translates to:
-  /// **'Spotify isn\'t configured in this build yet.'**
+  /// **'Spotify isn\'t available right now. Please try again later.'**
   String get musicNotConfigured;
 
   /// No description provided for @musicConnectError.

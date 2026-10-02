@@ -18,11 +18,13 @@ void main() {
   test('billing-not-enabled is localized for EN and TR', () {
     expect(
       L10nErrors.auth(en, AuthErrorKind.billingNotEnabled),
-      'Firebase billing (Blaze) is required to send SMS verification codes.',
+      "We can't send verification codes right now. Please try again later "
+      'or use another way to sign in.',
     );
     expect(
       L10nErrors.auth(tr, AuthErrorKind.billingNotEnabled),
-      'SMS gönderimi için Firebase faturalandırması (Blaze) gerekli.',
+      'Şu anda doğrulama kodu gönderemiyoruz. Lütfen daha sonra tekrar dene '
+      'veya başka bir giriş yöntemi kullan.',
     );
   });
 

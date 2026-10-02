@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/errors/failure.dart';
+import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/di/verification_scope.dart';
 import 'package:mevora/core/di/app_operations_scope.dart';
@@ -280,12 +282,14 @@ class _SettingsPageState extends State<SettingsPage> {
       return;
     }
     setState(() => _logoutInFlight = false);
-    final message = result.failureOrNull?.message;
+    // By kind, never the failure's own text: that is written for logs, in
+    // one language, and is not copy.
+    final failure = result.failureOrNull;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          (message != null && message.trim().isNotEmpty)
-              ? message
+          failure is AuthFailure
+              ? L10nErrors.auth(l10n, failure.kind)
               : l10n.authGeneric,
         ),
       ),

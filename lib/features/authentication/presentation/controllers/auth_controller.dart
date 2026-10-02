@@ -54,7 +54,9 @@ class AuthController extends ChangeNotifier {
   final Duration _deletedAccountSettleDelay;
   late final PhoneAuthController phoneAuth;
 
-  static const String _sessionUnverifiedMessage =
+  /// Set as [errorMessage] when a restored session could not be confirmed.
+  /// The login page shows `authSessionUnverified` for it.
+  static const String sessionUnverifiedMessage =
       'Oturum doğrulanamadı. Lütfen tekrar giriş yapın.';
 
   StreamSubscription<AuthSnapshot>? _subscription;
@@ -155,7 +157,7 @@ class AuthController extends ChangeNotifier {
             }
             // Do not leave Authenticating forever (login buttons stay disabled).
             user = null;
-            errorMessage = _sessionUnverifiedMessage;
+            errorMessage = sessionUnverifiedMessage;
             status = AuthenticationError(errorMessage!);
             notifyListeners();
             unawaited(_authRepository.signOut());
@@ -243,7 +245,7 @@ class AuthController extends ChangeNotifier {
         return false;
       case RestoredSessionCheck.unverified:
         user = null;
-        errorMessage = _sessionUnverifiedMessage;
+        errorMessage = sessionUnverifiedMessage;
         status = AuthenticationError(errorMessage!);
         notifyListeners();
         return false;

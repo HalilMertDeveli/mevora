@@ -932,6 +932,7 @@
   "settingsAgeRangeInvalid": "Maksimum yaş, minimum yaştan büyük olmalı.",
   "settingsDistanceInvalid": "Mesafe 1 ile 500 km arasında olmalı.",
   "settingsGooglePasswordMessage": "Hesabın Google ile giriş kullanıyor. Şifre değişiklikleri Google üzerinden yapılır.",
+  "settingsNoPasswordMessage": "Bu hesabın şifresi yok. Telefon numaranla ya da bağlı bir hesapla giriş yapıyorsun.",
   "settingsBirthDateLocked": "Doğum günü onboarding sonrası değiştirilemez. Yaş yalnızca doğum gününden hesaplanır.",
   "settingsSaveProfile": "Profili kaydet",
   "settingsUnblock": "Engeli kaldır",

@@ -2382,6 +2382,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your account uses Google Sign-In. Password changes are managed by Google.';
 
   @override
+  String get settingsNoPasswordMessage =>
+      'This account has no password. You sign in with your phone number or a linked account.';
+
+  @override
   String get settingsBirthDateLocked =>
       'Birthday cannot be changed after onboarding. Age is calculated from your birthday.';
 

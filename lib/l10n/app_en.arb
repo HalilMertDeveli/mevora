@@ -1156,6 +1156,7 @@
   "settingsAgeRangeInvalid": "Maximum age must be greater than minimum age.",
   "settingsDistanceInvalid": "Distance must be between 1 and 500 km.",
   "settingsGooglePasswordMessage": "Your account uses Google Sign-In. Password changes are managed by Google.",
+  "settingsNoPasswordMessage": "This account has no password. You sign in with your phone number or a linked account.",
   "settingsBirthDateLocked": "Birthday cannot be changed after onboarding. Age is calculated from your birthday.",
   "settingsSaveProfile": "Save profile",
   "settingsUnblock": "Unblock",

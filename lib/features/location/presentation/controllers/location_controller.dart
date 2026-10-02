@@ -116,7 +116,20 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
         return;
       }
 
-      final flags = flagsResult.valueOrNull ?? LocationFlags(uid: uid);
+      final readFlags = flagsResult.valueOrNull;
+      if (readFlags == null) {
+        // A failed read is not "never asked". Treating it as empty flags put
+        // the location gate in front of a member who had already answered —
+        // offline, with nothing cached — and its "Skip for now" then stored
+        // locationEnabled: false over the choice that could not be read. As
+        // with a hang (below), the gate stays closed; it is decided again on
+        // the next start.
+        onboardingNeeded = false;
+        isResolved = true;
+        notifyListeners();
+        return;
+      }
+      final flags = readFlags;
       final stored = storedResult.valueOrNull;
       onboardingNeeded = LocationOnboardingGate.shouldShow(
         locationOnboardingCompleted: flags.locationOnboardingCompleted,

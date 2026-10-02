@@ -5,10 +5,41 @@ export const MIN_ONBOARDING_AGE = 18;
 export const MIN_PROFILE_PHOTOS = 3;
 export const MAX_PROFILE_PHOTOS = 6;
 
+const DAY_MS = 86_400_000;
+
+/**
+ * The calendar day a stored date of birth stands for, as that day's midnight
+ * in UTC.
+ *
+ * The app stores midnight of the day the member picked on the member's own
+ * clock: 11 April picked in Istanbul is 10 April 21:00 UTC. Read with UTC
+ * fields as it stands, that is the day before for everyone east of UTC. A
+ * local midnight is never more than twelve hours from the UTC midnight of the
+ * same day on any clock from UTC-12 to UTC+12, so the nearest UTC midnight is
+ * the day that was picked. A date already stored as UTC midnight is its own
+ * nearest one, and comes back unchanged.
+ *
+ * At exactly twelve hours the later day is taken: that instant is UTC+12
+ * (Auckland in winter, Fiji), not the uninhabited UTC-12. Beyond UTC+12 —
+ * UTC+12:45 to UTC+14 — the day before is the nearer one and is what comes
+ * back, as it did before this rule; see docs/PROFILE_BIRTH_DATE_PRIVACY.md.
+ */
+export function birthCalendarDate(birthDate: Date): Date {
+  const millis = birthDate.getTime();
+  const intoDay = ((millis % DAY_MS) + DAY_MS) % DAY_MS;
+  const dayStart = millis - intoDay;
+  return new Date(intoDay * 2 >= DAY_MS ? dayStart + DAY_MS : dayStart);
+}
+
+/**
+ * Whole years from the day the member picked to `today`, both read as
+ * calendar days in UTC — the server's day, whatever zone the process is in.
+ */
 export function ageFromBirthDate(birthDate: Date, today: Date = new Date()): number {
-  let years = today.getFullYear() - birthDate.getFullYear();
-  const monthDelta = today.getMonth() - birthDate.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+  const born = birthCalendarDate(birthDate);
+  let years = today.getUTCFullYear() - born.getUTCFullYear();
+  const monthDelta = today.getUTCMonth() - born.getUTCMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getUTCDate() < born.getUTCDate())) {
     years -= 1;
   }
   return years;

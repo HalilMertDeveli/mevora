@@ -11,11 +11,7 @@ const {
   MIN_ONBOARDING_AGE,
 } = require("../lib/profileSafety.js");
 const {passesDiscoveryProfileFilters} = require("../lib/discoveryMatching.js");
-
-function birthYearsAgo(years) {
-  const today = new Date();
-  return new Date(today.getFullYear() - years, today.getMonth(), today.getDate());
-}
+const {bornYearsAgo: birthYearsAgo, picked, utc} = require("./helpers/birthDates.cjs");
 
 function adultProfile(overrides = {}) {
   const photos = Array.from({length: 3}, (_, index) => ({
@@ -40,6 +36,32 @@ describe("profile safety age gate", () => {
     assert.equal(isAdultProfile({birthDate: Timestamp.fromDate(birthYearsAgo(18))}), true);
     assert.equal(isAdultProfile({birthDate: Timestamp.fromDate(birthYearsAgo(19))}), true);
     assert.equal(MIN_ONBOARDING_AGE, 18);
+  });
+
+  it("an Istanbul member is 17 until the day they picked, though it is stored on the UTC day before", () => {
+    // Born 2 October 2008 in Istanbul: stored as 1 October 2008 21:00 UTC.
+    const born = picked(2008, 10, 2);
+    assert.equal(born.toISOString(), "2008-10-01T21:00:00.000Z");
+    assert.equal(ageFromBirthDate(born, utc(2026, 10, 1)), 17);
+    assert.equal(ageFromBirthDate(born, utc(2026, 10, 1, 23, 59)), 17);
+    assert.equal(ageFromBirthDate(born, utc(2026, 10, 2)), 18);
+  });
+
+  it("a member west of UTC turns 18 on the same server day", () => {
+    // Born 2 October 2008 in Los Angeles: stored as 2 October 2008 07:00 UTC.
+    const born = picked(2008, 10, 2, -7);
+    assert.equal(ageFromBirthDate(born, utc(2026, 10, 1, 23, 59)), 17);
+    assert.equal(ageFromBirthDate(born, utc(2026, 10, 2)), 18);
+  });
+
+  it("the gate on the real clock: 18 tomorrow in Istanbul is not adult today", () => {
+    const tomorrow = Timestamp.fromDate(birthYearsAgo(18, 1, 3));
+    const today = Timestamp.fromDate(birthYearsAgo(18, 0, 3));
+    assert.equal(isAdultProfile({birthDate: tomorrow}), false);
+    assert.equal(isAdultProfile({birthDate: today}), true);
+    // The path for a profile whose date has not been moved to the account yet.
+    assert.equal(resolveProfileAge({birthDate: tomorrow, age: 30}), 17);
+    assert.equal(resolveProfileAge({birthDate: today}), 18);
   });
 
   it("derives age from birthDate instead of spoofed age field", () => {

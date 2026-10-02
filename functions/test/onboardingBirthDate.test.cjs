@@ -4,6 +4,7 @@ const {Timestamp} = require("firebase-admin/firestore");
 const {createFakeFirestore} = require("./helpers/fakeFirestore.cjs");
 const {installFirebaseAdminStubs, callAs} = require("./helpers/adminStubs.cjs");
 const {publishedPath} = require("./helpers/faceAnchorHarness.cjs");
+const {bornYearsAgo} = require("./helpers/birthDates.cjs");
 
 // The callable reads getFirestore() once, at module load.
 const db = createFakeFirestore();
@@ -30,11 +31,6 @@ after(() => {
     else process.env[key] = value;
   }
 });
-
-function bornYearsAgo(years, daysAfter = 0) {
-  const today = new Date();
-  return new Date(today.getFullYear() - years, today.getMonth(), today.getDate() + daysAfter);
-}
 
 const ts = (date) => Timestamp.fromDate(date);
 
@@ -116,6 +112,34 @@ describe("completeOnboarding — the date of birth is private account data", () 
   it("accepts a member who turns 18 today", async () => {
     db.reset(seedMember({account: {birthDate: ts(bornYearsAgo(18))}}));
     assert.equal((await callAs(completeOnboarding, UID)).age, 18);
+  });
+
+  it("refuses an Istanbul member the day before they turn 18", async () => {
+    // Midnight of tomorrow in Istanbul is 21:00 UTC today: the stored instant
+    // already falls on the server's today, the birthday does not.
+    db.reset(seedMember({account: {birthDate: ts(bornYearsAgo(18, 1, 3))}}));
+    await rejects(callAs(completeOnboarding, UID), "underage");
+    assert.notEqual(db.read(`profiles/${UID}`).profileCompleted, true);
+    assert.equal("ageRolloverAt" in db.read(`users/${UID}`), false);
+  });
+
+  it("accepts an Istanbul member on the day they turn 18", async () => {
+    db.reset(seedMember({account: {birthDate: ts(bornYearsAgo(18, 0, 3))}}));
+    assert.equal((await callAs(completeOnboarding, UID)).age, 18);
+  });
+
+  it("schedules an Istanbul member's roll-over for the day they picked", async () => {
+    const born = bornYearsAgo(29, -40, 3);
+    const pickedDay = new Date(born.getTime() + 3 * 3_600_000);
+    db.reset(seedMember({account: {birthDate: ts(born)}}));
+    await callAs(completeOnboarding, UID);
+    const marker = db.read(`users/${UID}`).ageRolloverAt.toDate();
+    // Midnight UTC of that day's next anniversary. Date.UTC puts a 29 February
+    // on 1 March in a common year, as the rule does.
+    assert.equal(
+      marker.getTime(),
+      Date.UTC(marker.getUTCFullYear(), pickedDay.getUTCMonth(), pickedDay.getUTCDate()),
+    );
   });
 
   it("refuses a new member with no date of birth, even with an age on the profile", async () => {

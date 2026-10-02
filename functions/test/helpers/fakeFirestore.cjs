@@ -284,6 +284,14 @@ function createFakeFirestore(seed = {}) {
       },
       delete: async () => writeDelete(ref),
       collection: (sub) => collectionRef(`${path}/${sub}`),
+      // The containing collection, as far as `ref.parent.parent?.id` needs it.
+      get parent() {
+        return {
+          id: parts[parts.length - 2],
+          path: parts.slice(0, -1).join("/"),
+          parent: parts.length > 2 ? docRef(parts.slice(0, -2).join("/")) : null,
+        };
+      },
     };
     return ref;
   }

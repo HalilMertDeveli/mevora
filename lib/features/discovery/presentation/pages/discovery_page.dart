@@ -232,6 +232,25 @@ class _DiscoveryPageState extends State<DiscoveryPage>
   void _onPicks() {
     if (mounted) {
       setState(() {});
+      _retryLocationFlagsWithPicks();
+    }
+  }
+
+  /// Retry, pull to refresh and the reload on resume all go to the Picks
+  /// controller, never to the discovery one. When the location flags could
+  /// not be read at start, a Picks reload is the next attempt to reach the
+  /// server, so the flags are read again with it.
+  void _retryLocationFlagsWithPicks() {
+    final picks = _picks;
+    final controller = _controller;
+    if (picks == null ||
+        controller == null ||
+        !_picksStarted ||
+        !controller.locationFlagsUnresolved) {
+      return;
+    }
+    if (picks.state.phase == PicksPhase.loading || picks.state.isRefreshing) {
+      unawaited(controller.refresh());
     }
   }
 
@@ -240,18 +259,23 @@ class _DiscoveryPageState extends State<DiscoveryPage>
   void _maybeStartPicks() {
     final picks = _picks;
     final controller = _controller;
-    if (picks == null ||
-        controller == null ||
-        _picksStarted ||
-        !_picksEnabled) {
+    if (picks == null || controller == null || !_picksEnabled) {
       return;
     }
-    if (controller.state.phase == LocationPromptPhase.explanation ||
-        controller.state.isLoading) {
+    if (controller.state.phase == LocationPromptPhase.explanation) {
+      // The question can also come up after Picks have started, when the
+      // flags could only be read on a later attempt. Picks then load again
+      // once it is answered.
+      _picksStarted = false;
       return;
     }
-    _picksStarted = true;
+    if (_picksStarted || controller.state.isLoading) {
+      return;
+    }
+    // The first load reports "loading" before this call returns. It is not a
+    // retry, so it must not count as one in _retryLocationFlagsWithPicks.
     unawaited(picks.load());
+    _picksStarted = true;
   }
 
   /// Today's relationship questions, then a fresh look at today's Picks:
@@ -443,6 +467,12 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     }
 
     if (state.phase == LocationPromptPhase.explanation) {
+      if (controller.locationFlagsPending) {
+        // Whether the member was ever asked is not known yet. Offering "Skip
+        // for now" before the flags are read could switch location off for a
+        // member who had already turned it on.
+        return const MevoraLoading.page();
+      }
       return LocationPermissionScreen(
         isBusy: state.isLoading,
         onUseLocation: () => unawaited(controller.useMyLocation()),

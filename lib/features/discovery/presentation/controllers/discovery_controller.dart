@@ -30,6 +30,18 @@ enum LocationPromptPhase {
   ready,
 }
 
+/// What the controller knows about the member's stored location flags.
+enum _LocationFlagsRead {
+  /// The first read has not finished.
+  pending,
+
+  /// The last read succeeded: the phase follows from what the flags say.
+  known,
+
+  /// The last read failed (offline with nothing cached, a refused read).
+  failed,
+}
+
 class DiscoveryFeedState {
   const DiscoveryFeedState({
     this.phase = LocationPromptPhase.explanation,
@@ -260,13 +272,41 @@ class DiscoveryController extends ChangeNotifier {
         .toList();
   }
 
+  _LocationFlagsRead _locationFlagsRead = _LocationFlagsRead.pending;
+  Future<void>? _locationFlagsRetry;
+
+  /// The first read of the location flags is still running. The explanation
+  /// is the state's default phase, so until that read ends it is not yet a
+  /// question for the member: answering it would overwrite a choice that has
+  /// not been read.
+  bool get locationFlagsPending =>
+      _locationFlagsRead == _LocationFlagsRead.pending;
+
+  /// The last read of the location flags failed, so whether the member was
+  /// ever asked is unknown. [refresh] reads them again.
+  bool get locationFlagsUnresolved =>
+      _locationFlagsRead == _LocationFlagsRead.failed;
+
   Future<void> start() async {
     unawaited(refreshBoost());
     final flags = (await _locationRepository.loadLocationFlags(
       uid,
     )).valueOrNull;
-    if (flags?.locationOnboardingCompleted == true) {
-      declinedLocation = flags?.locationEnabled != true;
+    if (flags == null) {
+      // A failed read is not "never asked". Asking now would let "Skip for
+      // now" store locationEnabled: false over a choice that simply could
+      // not be read, and switch location off for a member who had it on. So
+      // nothing is asked and nothing is written: the tab shows its ordinary
+      // content or load error, and the next refresh reads the flags again.
+      _locationFlagsRead = _LocationFlagsRead.failed;
+      state = state.copyWith(phase: LocationPromptPhase.ready);
+      notifyListeners();
+      await _loadDeckIfWanted();
+      return;
+    }
+    _locationFlagsRead = _LocationFlagsRead.known;
+    if (flags.locationOnboardingCompleted) {
+      declinedLocation = !flags.locationEnabled;
       state = state.copyWith(phase: LocationPromptPhase.ready);
       notifyListeners();
       await _loadDeckIfWanted();
@@ -370,6 +410,15 @@ class DiscoveryController extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
+    if (locationFlagsUnresolved) {
+      // The question left open by a failed read is settled here, before
+      // anything about location is captured or stored. start() loads the
+      // deck itself, or shows the explanation if the member was never asked.
+      await (_locationFlagsRetry ??= start().whenComplete(
+        () => _locationFlagsRetry = null,
+      ));
+      return;
+    }
     if (!declinedLocation) {
       final permission = await _locationRepository.checkPermission();
       if (permission == LocationPermissionStatus.granted) {

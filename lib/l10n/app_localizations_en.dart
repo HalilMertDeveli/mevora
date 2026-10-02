@@ -792,11 +792,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authDisabled =>
-      'This account has been disabled. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.';
+      'This account has been disabled. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.';
 
   @override
   String get authBanned =>
-      'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.';
+      'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.';
 
   @override
   String get authOauth => 'We could not complete sign-in. Please try again.';
@@ -3462,7 +3462,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsContactBody =>
-      'For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.';
+      'For legal questions, contact support from Settings or email destek@mevora.com.';
 
   @override
   String get termsEffectiveTitle => 'Effective date';
@@ -3616,7 +3616,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyContactBody =>
-      'Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.';
+      'Privacy questions: destek@mevora.com or create a support request in Settings.';
 
   @override
   String musicMatchTitle(int percent) {

@@ -203,7 +203,7 @@ order — later steps depend on earlier ones. Nothing here can be done by an age
   1. Have the policy texts reviewed (`hosting/public/*.html` and the in-app copies in
      `lib/l10n/app_*.arb`). They are engineering drafts. Supply the **data controller's
      legal identity and address** and decide the **support address** — both are missing
-     today, and every page uses a personal mailbox.
+     today, and every page now uses `destek@mevora.com` (2026-10-02) — make sure that mailbox exists and is read.
   2. Child safety: put a real procedure in place for reporting confirmed child sexual
      abuse material to the competent authority, and name the child-safety contact. The
      public page and the in-app guidelines already *promise* reporting; today no

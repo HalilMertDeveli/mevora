@@ -470,8 +470,8 @@
   "authSmsQuota": "SMS sending limit reached. Please try again later.",
   "authFirebaseUnavailable": "Verification is temporarily unavailable. Please try again later.",
   "authNetwork": "Check your internet connection.",
-  "authDisabled": "This account has been disabled. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.",
-  "authBanned": "This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.",
+  "authDisabled": "This account has been disabled. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.",
+  "authBanned": "This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.",
   "authOauth": "We could not complete sign-in. Please try again.",
   "authUnknown": "Something unexpected happened. Please try again.",
   "authAccountExists": "That sign-in method is already tied to another Mevora account. Accounts are never merged automatically.",
@@ -1586,7 +1586,7 @@
   "termsChangesTitle": "Changes",
   "termsChangesBody": "We may update these Terms. Material changes will be communicated in the app or on our policy pages.",
   "termsContactTitle": "Contact",
-  "termsContactBody": "For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.",
+  "termsContactBody": "For legal questions, contact support from Settings or email destek@mevora.com.",
   "termsEffectiveTitle": "Effective date",
   "termsEffectiveBody": "These Terms are effective as of October 1, 2026.",
   "privacyIntroTitle": "Introduction",
@@ -1630,7 +1630,7 @@
   "privacyChangesTitle": "Policy changes",
   "privacyChangesBody": "We may update this policy. The latest version is always available in the app and on our public policy page.",
   "privacyContactTitle": "Contact",
-  "privacyContactBody": "Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.",
+  "privacyContactBody": "Privacy questions: destek@mevora.com or create a support request in Settings.",
   "musicMatchTitle": "Music match · {percent}%",
   "@musicMatchTitle": {
     "placeholders": {

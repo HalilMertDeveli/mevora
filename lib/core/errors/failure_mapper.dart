@@ -3,6 +3,11 @@ import 'package:mevora/core/errors/failure.dart';
 
 /// Maps infrastructure exceptions to domain failures.
 abstract final class FailureMapper {
+  /// The message of a failure nothing more specific is known about. It is an
+  /// identifier for L10nErrors, not copy: shown as it is, a Turkish screen
+  /// ended with an English sentence.
+  static const String unexpectedMessage = 'An unexpected error occurred.';
+
   static Failure from(Object error) {
     if (error is NetworkException) {
       return NetworkFailure(error.message);
@@ -40,6 +45,6 @@ abstract final class FailureMapper {
     if (error is AppException) {
       return UnexpectedFailure(error.message);
     }
-    return const UnexpectedFailure('An unexpected error occurred.');
+    return const UnexpectedFailure(unexpectedMessage);
   }
 }

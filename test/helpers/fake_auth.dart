@@ -9,6 +9,7 @@ import 'package:mevora/features/authentication/domain/entities/auth_providers.da
 import 'package:mevora/features/authentication/domain/entities/auth_snapshot.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/domain/entities/phone_challenge.dart';
+import 'package:mevora/features/authentication/domain/entities/restored_session_check.dart';
 import 'package:mevora/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:mevora/features/authentication/domain/repositories/user_document_repository.dart';
 
@@ -43,9 +44,29 @@ class FakeAuthRepository implements AuthRepository {
   Duration googleDelay = Duration.zero;
   AuthUser? googleUser;
 
+  /// A session restored from the device whose account document is missing:
+  /// the first snapshot is [AuthProfilePending] for this uid.
+  String? restoredPendingUid;
+
+  /// What [verifyRestoredSession] answers. A closed session also signs out,
+  /// as the real repository does.
+  RestoredSessionCheck restoredSessionCheck =
+      RestoredSessionCheck.accountExists;
+
+  /// Answers for successive checks, used before [restoredSessionCheck].
+  final List<RestoredSessionCheck> restoredSessionChecks = [];
+  final List<String> verifiedSessions = [];
+  final _pending = StreamController<AuthSnapshot>.broadcast();
+
   void emit(AuthUser? value) {
     user = value;
     _controller.add(value);
+  }
+
+  /// The account document of the signed-in [uid] is missing (never created,
+  /// or deleted under the session).
+  void emitPending(String uid) {
+    _pending.add(AuthProfilePending(uid));
   }
 
   AuthSnapshot _snapshotFor(AuthUser? value) {
@@ -62,9 +83,33 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Stream<AuthSnapshot> watchAuth() async* {
-    yield _snapshotFor(user);
-    yield* _controller.stream.map(_snapshotFor);
+  Stream<AuthSnapshot> watchAuth() {
+    final pendingUid = restoredPendingUid;
+    return Stream<AuthSnapshot>.multi((listener) {
+      listener.add(
+        pendingUid != null
+            ? AuthProfilePending(pendingUid)
+            : _snapshotFor(user),
+      );
+      final users = _controller.stream.map(_snapshotFor).listen(listener.add);
+      final pending = _pending.stream.listen(listener.add);
+      listener.onCancel = () async {
+        await users.cancel();
+        await pending.cancel();
+      };
+    });
+  }
+
+  @override
+  Future<RestoredSessionCheck> verifyRestoredSession(String uid) async {
+    verifiedSessions.add(uid);
+    final check = restoredSessionChecks.isNotEmpty
+        ? restoredSessionChecks.removeAt(0)
+        : restoredSessionCheck;
+    if (check == RestoredSessionCheck.sessionClosed) {
+      emit(null);
+    }
+    return check;
   }
 
   @override
@@ -331,6 +376,7 @@ class FakeAuthRepository implements AuthRepository {
 
   void dispose() {
     unawaited(_controller.close());
+    unawaited(_pending.close());
   }
 }
 
@@ -339,9 +385,11 @@ class FakeUserDocumentRepository implements UserDocumentRepository {
 
   bool complete;
   AuthUser? ensured;
+  int ensureCalls = 0;
 
   @override
   Future<void> ensureUserDocument(AuthUser user) async {
+    ensureCalls += 1;
     ensured = user;
   }
 

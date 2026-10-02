@@ -21,8 +21,9 @@ class AccountDeletionService {
 
   final GoogleAuthService googleAuthService;
 
-  /// Runs once the server has confirmed the deletion, before the local
-  /// sign-out: the place to drop what this device still holds for the account.
+  /// Runs once the account is known to be deleted on the server, before the
+  /// local sign-out: the place to drop what this device still holds for the
+  /// account.
   final Future<void> Function(String uid)? onAccountDeleted;
   final FirebaseFunctions _functions;
   final FirebaseAuth _firebaseAuth;
@@ -54,15 +55,8 @@ class AccountDeletionService {
         );
       }
 
-      try {
-        await onAccountDeleted?.call(user.uid);
-      } on Object {
-        // Local cleanup is best-effort; the account is already gone.
-      }
-
       // Only sign out locally once server deletion is confirmed.
-      await googleAuthService.signOut();
-      await _firebaseAuth.signOut();
+      await closeDeletedSession(user.uid);
     } on FirebaseFunctionsException catch (error) {
       if (error.code == 'unauthenticated' ||
           error.code == 'failed-precondition') {
@@ -74,6 +68,30 @@ class AccountDeletionService {
       throw AuthErrorMapper.map(error);
     } on Object catch (error) {
       throw AuthErrorMapper.map(error);
+    }
+  }
+
+  /// Ends this device's session for [uid], an account the server no longer
+  /// has: drops what the device still holds for it, then signs out.
+  ///
+  /// Called once the server confirmed the deletion, and for a restored
+  /// session whose account turns out to be gone. The clean-up before the
+  /// sign-out is best-effort and can never skip it: a device must not stay
+  /// signed in to an account that no longer exists.
+  Future<void> closeDeletedSession(String uid) async {
+    try {
+      await onAccountDeleted?.call(uid);
+    } on Object {
+      // Local cleanup is best-effort; the account is already gone.
+    }
+    try {
+      await googleAuthService.signOut();
+    } on Object {
+      // Google session cleanup is best-effort.
+    }
+    // Another account may have signed in meanwhile; leave it alone.
+    if (_firebaseAuth.currentUser?.uid == uid) {
+      await _firebaseAuth.signOut();
     }
   }
 }

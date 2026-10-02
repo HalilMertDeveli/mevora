@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mevora/core/errors/failure_mapper.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/core/session/session_recovery_controller.dart';
 import 'package:mevora/core/utils/otp_validator.dart';
 import 'package:mevora/features/authentication/data/datasources/user_remote_datasource.dart';
 import 'package:mevora/features/authentication/data/mappers/auth_error_mapper.dart';
@@ -19,6 +20,7 @@ import 'package:mevora/features/authentication/domain/entities/auth_session.dart
 import 'package:mevora/features/authentication/domain/entities/auth_snapshot.dart';
 import 'package:mevora/features/authentication/domain/entities/auth_user.dart';
 import 'package:mevora/features/authentication/domain/entities/phone_challenge.dart';
+import 'package:mevora/features/authentication/domain/entities/restored_session_check.dart';
 import 'package:mevora/features/authentication/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -124,6 +126,43 @@ class AuthRepositoryImpl implements AuthRepository {
         await authSub?.cancel();
       };
     });
+  }
+
+  @override
+  Future<RestoredSessionCheck> verifyRestoredSession(String uid) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null || user.uid != uid) {
+      return RestoredSessionCheck.sessionClosed;
+    }
+    try {
+      // Asks the server about the account itself; a cached ID token cannot
+      // answer this, it stays valid after the account is deleted.
+      await user.reload().timeout(const Duration(seconds: 10));
+      return RestoredSessionCheck.accountExists;
+    } on Object catch (error) {
+      // Same verdict as the resume-time recovery, which may be signing this
+      // session out right now.
+      if (!SessionRecoveryController.isSessionRevoked(error)) {
+        return _firebaseAuth.currentUser?.uid == uid
+            ? RestoredSessionCheck.unverified
+            : RestoredSessionCheck.sessionClosed;
+      }
+      try {
+        if (SessionRecoveryController.isAccountDeleted(error)) {
+          // As after deleting the account from this device: the chat key
+          // goes too, there is nothing left for it to read.
+          await _accountDeletionService.closeDeletedSession(uid);
+          await _afterSessionClosed();
+        } else if (_firebaseAuth.currentUser?.uid == uid) {
+          // Disabled, or its tokens were revoked: the account can come back,
+          // so this is a plain sign-out and the chat key stays.
+          await signOut();
+        }
+      } on Object {
+        // The session is dead either way; nothing may be written for it.
+      }
+      return RestoredSessionCheck.sessionClosed;
+    }
   }
 
   @override
@@ -309,11 +348,7 @@ class AuthRepositoryImpl implements AuthRepository {
       } on Object {
         // Local OTP counters are best-effort.
       }
-      try {
-        await _onAfterSignOut?.call();
-      } on Object {
-        // Firestore cache wipe is best-effort.
-      }
+      await _afterSessionClosed();
     });
   }
 
@@ -321,12 +356,16 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Result<void>> deleteAccount() {
     return _run(() async {
       await _accountDeletionService.deleteAccount();
-      try {
-        await _onAfterSignOut?.call();
-      } on Object {
-        // Firestore/image cache wipe is best-effort after deletion.
-      }
+      await _afterSessionClosed();
     });
+  }
+
+  Future<void> _afterSessionClosed() async {
+    try {
+      await _onAfterSignOut?.call();
+    } on Object {
+      // Firestore/image cache wipe is best-effort.
+    }
   }
 
   @override

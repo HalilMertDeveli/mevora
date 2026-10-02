@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mevora/core/di/social_scope.dart';
 import 'package:mevora/core/di/social_services_factory.dart';
 import 'package:mevora/core/theme/app_theme.dart';
+import 'package:mevora/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:mevora/features/matching/data/memory/in_memory_social_graph.dart';
 import 'package:mevora/features/safety/domain/models/report_reason.dart';
 import 'package:mevora/features/safety/domain/safety_policy.dart';
 import 'package:mevora/features/safety/presentation/pages/report_page.dart';
+import 'package:mevora/features/safety/presentation/widgets/chat_more_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 /// Members must be able to report a child-safety concern from inside the app
@@ -59,8 +62,17 @@ class _RecordingSafetyRepository implements SafetyRepository {
     );
   }
 
+  /// What the next block calls fail with, in order; once empty they succeed.
+  final blockFailures = <Object>[];
+  var blockCalls = 0;
+
   @override
-  Future<void> blockUser({required String userId, String? matchId}) async {}
+  Future<void> blockUser({required String userId, String? matchId}) async {
+    blockCalls += 1;
+    if (blockFailures.isNotEmpty) {
+      throw blockFailures.removeAt(0);
+    }
+  }
 
   @override
   Future<void> unmatch({required String matchId}) async {}
@@ -117,6 +129,48 @@ Future<void> _pumpReportPage(
     ),
   );
   await tester.pump();
+}
+
+/// The report page opened on top of another page, the way the app opens it,
+/// so that leaving it is something a test can see.
+Future<void> _pumpReportPageOverHome(
+  WidgetTester tester, {
+  required SafetyRepository safety,
+}) async {
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const Scaffold(body: Text('home')),
+        routes: [
+          GoRoute(
+            path: 'report',
+            builder: (context, state) =>
+                const ReportPage(userId: 'can', matchId: 'match-1'),
+          ),
+        ],
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+  await tester.pumpWidget(
+    SocialScope(
+      services: _servicesWith(safety),
+      child: MaterialApp.router(
+        theme: AppTheme.light(),
+        locale: const Locale('en'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        routerConfig: router,
+      ),
+    ),
+  );
+  router.go('/report');
+  await tester.pumpAndSettle();
 }
 
 List<String> _reasonLabelsInOrder(WidgetTester tester) {
@@ -269,5 +323,114 @@ void main() {
         expect(graph.reports.single.reason, ReportReason.childSafety);
       },
     );
+  });
+
+  group('blocking after a report', () {
+    testWidgets('a block that fails is said and can be tried again', (
+      tester,
+    ) async {
+      // Found on a real phone: the block call timed out, nothing was shown
+      // and the page sat on the filled form with "Submit report" live again.
+      final safety = _RecordingSafetyRepository()
+        ..blockFailures.add(StateError('no connection'));
+      await _pumpReportPageOverHome(tester, safety: safety);
+
+      await _submit(tester, en);
+      await tester.tap(find.text(en.block));
+      await tester.pumpAndSettle();
+
+      expect(safety.blockCalls, 1);
+      expect(find.text(en.blockFailedMessage), findsOneWidget);
+      expect(find.text('home'), findsNothing);
+
+      await tester.tap(find.text(en.tryAgain));
+      await tester.pumpAndSettle();
+
+      expect(safety.blockCalls, 2);
+      expect(safety.reports, hasLength(1));
+      expect(find.text('home'), findsOneWidget);
+    });
+
+    testWidgets('giving up after a failed block does not report twice', (
+      tester,
+    ) async {
+      final safety = _RecordingSafetyRepository()
+        ..blockFailures.add(StateError('no connection'));
+      await _pumpReportPageOverHome(tester, safety: safety);
+
+      await _submit(tester, en);
+      await tester.tap(find.text(en.block));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(en.cancel));
+      await tester.pumpAndSettle();
+
+      expect(safety.reports, hasLength(1));
+      expect(safety.blockCalls, 1);
+      expect(find.text('home'), findsOneWidget);
+    });
+
+    testWidgets('a block that works leaves the page without a second prompt', (
+      tester,
+    ) async {
+      final safety = _RecordingSafetyRepository();
+      await _pumpReportPageOverHome(tester, safety: safety);
+
+      await _submit(tester, en);
+      await tester.tap(find.text(en.block));
+      await tester.pumpAndSettle();
+
+      expect(safety.blockCalls, 1);
+      expect(find.text(en.blockFailedMessage), findsNothing);
+      expect(find.text('home'), findsOneWidget);
+    });
+  });
+
+  group('blocking from the chat menu', () {
+    testWidgets('a block that fails is said', (tester) async {
+      final safety = _RecordingSafetyRepository()
+        ..blockFailures.add(StateError('no connection'));
+      final services = _servicesWith(safety);
+      final controller = ChatController(
+        matchId: 'match-1',
+        chatRepository: services.chatRepository,
+        matchRepository: services.matchRepository,
+        safetyRepository: safety,
+        presenceRepository: services.presenceRepository,
+        uidSource: services.uidSource,
+      );
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        SocialScope(
+          services: services,
+          child: MaterialApp(
+            theme: AppTheme.light(),
+            locale: const Locale('en'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () =>
+                      showChatMoreSheet(context, controller: controller),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      // The sheet's Block action, then the confirm dialog's Block button.
+      await tester.tap(find.text(en.block));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(en.block));
+      await tester.pumpAndSettle();
+
+      expect(safety.blockCalls, 1);
+      expect(find.text(en.blockFailedMessage), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

@@ -692,6 +692,7 @@
   "reportThanks": "Şikayetin alındı.",
   "offerBlockTitle": "Bu kişiyi de engellemek ister misin?",
   "offerBlockMessage": "Engellemek yeni mesaj, eşleşme ve aramaları durdurur.",
+  "blockFailedMessage": "Bu kişi engellenemedi. Bağlantını kontrol edip tekrar dene.",
   "reportSpam": "Spam",
   "reportHarassment": "Taciz",
   "reportInappropriate": "Uygunsuz içerik",

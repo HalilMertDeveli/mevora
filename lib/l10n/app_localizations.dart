@@ -3236,6 +3236,12 @@ abstract class AppLocalizations {
   /// **'Blocking stops new messages, matches, and calls.'**
   String get offerBlockMessage;
 
+  /// No description provided for @blockFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t block this person. Check your connection and try again.'**
+  String get blockFailedMessage;
+
   /// No description provided for @reportSpam.
   ///
   /// In en, this message translates to:

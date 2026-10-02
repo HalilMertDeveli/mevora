@@ -1801,6 +1801,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Engellemek yeni mesaj, eşleşme ve aramaları durdurur.';
 
   @override
+  String get blockFailedMessage =>
+      'Bu kişi engellenemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
   String get reportSpam => 'Spam';
 
   @override

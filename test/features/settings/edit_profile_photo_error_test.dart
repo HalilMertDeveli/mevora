@@ -93,6 +93,29 @@ class _FailingUploadManager extends _AcceptingPhotoManager {
   }
 }
 
+/// Counts how often the camera is opened; it would fail without permission.
+class _CameraCountingPicker implements ProfilePhotoPicker {
+  var cameraOpened = 0;
+
+  @override
+  Future<Result<PickedProfilePhoto>> pickFromCamera() async {
+    cameraOpened += 1;
+    return const Err(ValidationFailure('camera_access_denied'));
+  }
+
+  @override
+  Future<Result<PickedProfilePhoto>> pickFromGallery() async {
+    return const Err(ValidationFailure(PhotoUploadMessages.noneSelected));
+  }
+
+  @override
+  Future<Result<List<PickedProfilePhoto>>> pickMultipleFromGallery({
+    required int limit,
+  }) async {
+    return const Err(ValidationFailure(PhotoUploadMessages.noneSelected));
+  }
+}
+
 final _en = lookupAppLocalizations(const Locale('en'));
 
 UserProfile _profile() {
@@ -246,6 +269,28 @@ void main() {
 
     expect(find.text(_en.somethingWentWrong), findsNothing);
     expect(find.text(_en.photoNoneSelected), findsNothing);
+  });
+
+  testWidgets('declining the camera permission is not an upload failure', (
+    tester,
+  ) async {
+    // Found on a real phone: "Continue without permission" still opened the
+    // camera, which failed, and the page said "Photo could not be uploaded".
+    // The harness grants photo access only, so the camera is still to ask.
+    final picker = _CameraCountingPicker();
+    await _openEditProfile(tester, picker: picker);
+
+    await tester.tap(find.text(_en.settingsAddPhoto));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(_en.addPhotoCamera));
+    await tester.pumpAndSettle();
+    expect(find.text(_en.permissionCameraDescription), findsOneWidget);
+    await tester.tap(find.text(_en.permissionContinueWithout));
+    await tester.pumpAndSettle();
+
+    expect(picker.cameraOpened, 0);
+    expect(find.text(_en.photoUploadFailed), findsNothing);
+    expect(find.text(_en.somethingWentWrong), findsNothing);
   });
 
   testWidgets('a photo that fails to upload says so above the photos', (

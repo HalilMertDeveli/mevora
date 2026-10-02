@@ -15,6 +15,7 @@ import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/services/permissions/permission_type.dart';
 import 'package:mevora/features/face_anchor/presentation/controllers/face_anchor_controller.dart';
 import 'package:mevora/features/face_anchor/presentation/pages/face_anchor_verify_page.dart';
+import 'package:mevora/features/permissions/domain/permission_flow_outcome.dart';
 import 'package:mevora/features/permissions/presentation/pages/permission_prompt_page.dart';
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
@@ -728,11 +729,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final type = picked == 'camera'
         ? PermissionType.camera
         : PermissionType.photos;
-    await PermissionPromptPage.show(
+    final outcome = await PermissionPromptPage.show(
       context,
       type: type,
       controller: permission,
     );
+    if (!mounted) {
+      return;
+    }
+    // Without the camera permission there is no camera to open. Opening it
+    // anyway failed, and the member who had just said no was told "Photo
+    // could not be uploaded". The gallery needs no permission, so it goes on.
+    if (picked == 'camera' && !outcome.isUsable) {
+      return;
+    }
     final photo = picked == 'camera'
         ? await settings.photoPicker.pickFromCamera()
         : await settings.photoPicker.pickFromGallery();

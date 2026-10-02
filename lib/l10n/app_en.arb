@@ -1707,6 +1707,7 @@
   "profileLanguagesHint": "Select the languages you speak.",
   "profileHobbiesHint": "Pick hobbies that describe you.",
   "profileHeightLabel": "Height",
+  "profileHeightPlaceholder": "Select your height",
   "profileHeightCm": "{cm} cm",
   "@profileHeightCm": {
     "placeholders": {

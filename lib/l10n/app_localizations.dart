@@ -6518,6 +6518,12 @@ abstract class AppLocalizations {
   /// **'Height'**
   String get profileHeightLabel;
 
+  /// No description provided for @profileHeightPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select your height'**
+  String get profileHeightPlaceholder;
+
   /// No description provided for @profileHeightCm.
   ///
   /// In en, this message translates to:

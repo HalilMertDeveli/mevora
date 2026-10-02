@@ -1483,6 +1483,7 @@
   "profileLanguagesHint": "Konuştuğun dilleri seç.",
   "profileHobbiesHint": "Seni anlatan hobileri seç.",
   "profileHeightLabel": "Boy",
+  "profileHeightPlaceholder": "Boyunu seç",
   "profileHeightCm": "{cm} cm",
   "@profileHeightCm": {
     "placeholders": {

@@ -233,6 +233,27 @@ void main() {
       expect(controller.awaitingReturn, isFalse);
     });
 
+    test('a failed start can be tried again', () async {
+      // Found in the final acceptance run: the provider could not be reached,
+      // and the screen kept its progress indicator with no way to retry.
+      repository.sessionResult = const Err(
+        UnexpectedFailure('provider unreachable'),
+      );
+      await controller.startVerification();
+
+      expect(controller.phase, VerificationUiPhase.error);
+      expect(controller.isBusy, isFalse);
+      expect(controller.canStart, isTrue);
+
+      repository.sessionResult = null;
+      await controller.startVerification();
+
+      expect(repository.sessionCalls, 2);
+      expect(controller.errorKey, isNull);
+      expect(controller.awaitingReturn, isTrue);
+      expect(_FakeLauncher.opened, hasLength(1));
+    });
+
     test('a launcher that cannot open the URL surfaces an error', () async {
       _FakeLauncher.reset(openResult: false);
       await controller.startVerification();

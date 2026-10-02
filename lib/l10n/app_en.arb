@@ -912,6 +912,7 @@
   "reportThanks": "Thanks. We received your report.",
   "offerBlockTitle": "Want to block them too?",
   "offerBlockMessage": "Blocking stops new messages, matches, and calls.",
+  "blockFailedMessage": "We couldn't block this person. Check your connection and try again.",
   "reportSpam": "Spam",
   "reportHarassment": "Harassment",
   "reportInappropriate": "Inappropriate content",

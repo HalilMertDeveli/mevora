@@ -1817,6 +1817,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Blocking stops new messages, matches, and calls.';
 
   @override
+  String get blockFailedMessage =>
+      'We couldn\'t block this person. Check your connection and try again.';
+
+  @override
   String get reportSpam => 'Spam';
 
   @override

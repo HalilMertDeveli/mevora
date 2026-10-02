@@ -123,23 +123,48 @@ class _ReportPageState extends State<ReportPage> {
       return;
     }
     setState(() => _sending = false);
-    final block = await MevoraDialog.show(
-      context,
-      title: l10n.offerBlockTitle,
-      message: l10n.offerBlockMessage,
-      confirmLabel: l10n.block,
-    );
-    if (block == true && mounted) {
-      await SocialScope.of(context).safetyRepository.blockUser(
-        userId: widget.userId,
-        matchId: widget.matchId,
+    await _offerBlock(l10n);
+    if (mounted) {
+      context.pop();
+    }
+  }
+
+  /// The report is filed by now, so nothing here may send it again. A block
+  /// that fails is said out loud and offered again: a member who was told
+  /// nothing would leave believing the other person is blocked.
+  Future<void> _offerBlock(AppLocalizations l10n) async {
+    var failed = false;
+    while (mounted) {
+      final block = await MevoraDialog.show(
+        context,
+        title: l10n.offerBlockTitle,
+        message: failed ? l10n.blockFailedMessage : l10n.offerBlockMessage,
+        confirmLabel: failed ? l10n.tryAgain : l10n.block,
       );
+      if (block != true || !mounted) {
+        return;
+      }
+      setState(() => _sending = true);
+      try {
+        await SocialScope.of(context).safetyRepository.blockUser(
+          userId: widget.userId,
+          matchId: widget.matchId,
+        );
+      } on Object {
+        if (!mounted) {
+          return;
+        }
+        setState(() => _sending = false);
+        failed = true;
+        continue;
+      }
+      if (!mounted) {
+        return;
+      }
       await BoostScope.maybeOf(context)?.analytics?.logEvent(
         AnalyticsEvents.userBlocked,
       );
-    }
-    if (mounted) {
-      context.pop();
+      return;
     }
   }
 }

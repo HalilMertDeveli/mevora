@@ -44,15 +44,33 @@ describe("photo moderation provider", () => {
     assert.equal(result.status, "rejected");
   });
 
-  it("uses smoke fast path when enabled", async () => {
-    const result = await moderatePhotoBuffer({
+  it("uses the smoke fast path only inside the emulator process", async () => {
+    const unchecked = {
       contentType: "application/pdf",
       sizeBytes: 10,
       buffer: Buffer.from("bad"),
       smokeFastPath: true,
-    });
-    assert.equal(result.status, "approved");
-    assert.equal(result.reason, "smoke-test-fast-path");
+    };
+    const saved = process.env.FUNCTIONS_EMULATOR;
+    try {
+      process.env.FUNCTIONS_EMULATOR = "true";
+      const result = await moderatePhotoBuffer(unchecked);
+      assert.equal(result.status, "approved");
+      assert.equal(result.reason, "smoke-test-fast-path");
+
+      // A deployed backend ignores the option: the bytes are checked like
+      // anyone's, and these are not an image.
+      for (const live of [undefined, "false", "1"]) {
+        if (live === undefined) delete process.env.FUNCTIONS_EMULATOR;
+        else process.env.FUNCTIONS_EMULATOR = live;
+        const checked = await moderatePhotoBuffer(unchecked);
+        assert.equal(checked.status, "rejected");
+        assert.equal(checked.reason, "unsupported-content-type");
+      }
+    } finally {
+      if (saved === undefined) delete process.env.FUNCTIONS_EMULATOR;
+      else process.env.FUNCTIONS_EMULATOR = saved;
+    }
   });
 });
 

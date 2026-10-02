@@ -35,7 +35,7 @@ import {
   compatibilityEvidence,
   type CompatibilityEvidence,
 } from "./compatibility/compatibilityEngine.js";
-import {passesSmokeDiscoveryIsolation} from "./smoke/smokeTestUsers.js";
+import {passesSmokeDiscoveryIsolation} from "./smoke/smokeIsolation.js";
 
 /**
  * The Discover candidate pool: who may be shown to a viewer at all, and the

@@ -42,7 +42,7 @@ cd D:\Mevora-deploy
 git fetch origin; git checkout --detach origin/main
 cd functions; npm ci; npm run build
 
-# Exports the built index actually defines
+# Exports the built index actually defines (FUNCTIONS_EMULATOR must not be set here)
 $env:FIREBASE_CONFIG = '{"projectId":"mevora-d6ed0","storageBucket":"mevora-d6ed0.firebasestorage.app"}'
 $env:GCLOUD_PROJECT  = "mevora-d6ed0"
 node -e "require('fs').writeFileSync('../.src-exports.txt', Object.keys(require('./lib/index.js')).sort().join('\n'))"
@@ -147,8 +147,39 @@ deploy. Rollback: redeploy the same eight functions from `main` before this
 branch — the old code ignores `humor/core`, and the lifetime profile was never
 rewritten.
 
-Do not deploy while the sequence is a draft unless that is intended:
+While the sequence is a draft (`HUMOR_CORE_RELEASE.released = false`) a deployed
+backend serves no Core content: `getHumorFeed` answers an empty catalogue,
+`getDailyHumorSet` stays locked and a response is refused with `not-in-set`.
+Only the emulator hands out the draft. Deploying these functions is therefore
+safe, but humor stays empty for members until the sequence is released:
 `docs/PUBLISH_BLOCKERS.md`, item 2.
+
+## Emulator-only callables: not deployed, and four functions to delete
+
+Four callables exist for the Functions emulator only and are no longer part of
+a deploy: `prepareSmokeTestUsers`, `cleanupSmokeTestUsers`,
+`searchHumorProviderCandidates` and `debugPersonalizationRanking`.
+`functions/src/index.ts` adds them to its exports only when
+`FUNCTIONS_EMULATOR=true` (`functions/src/emulatorOnly.ts`). A deploy loads the
+index without that variable, so it does not see them, and each of them also
+refuses at call time outside the emulator.
+
+- `SMOKE_TEST_SECRET` is no longer needed for a deploy.
+- Copies deployed earlier may still be live on `mevora-d6ed0`, running the code
+  they were deployed with — the smoke pair there still answers to the secret.
+  A deploy scoped with `--only functions:<names>` leaves them alone; a deploy
+  that reconciles the whole codebase offers to delete them. Deleting them is
+  the owner's decision, and the owner's command:
+
+  ```powershell
+  npx.cmd firebase functions:delete prepareSmokeTestUsers cleanupSmokeTestUsers searchHumorProviderCandidates debugPersonalizationRanking --region europe-west1 --project mevora-d6ed0
+  ```
+
+  Once the smoke pair is gone the `SMOKE_TEST_SECRET` secret has no reader left
+  and can be destroyed as well.
+- The export list in "How to deploy safely" must be produced with
+  `FUNCTIONS_EMULATOR` unset, as a deploy does; with it set the list contains
+  the four names.
 
 ## Launch-readiness changes (2026-10-01): what to deploy, and what must exist first
 
@@ -163,7 +194,7 @@ changed code and need a redeploy on whichever project is production:
 | `deleteUserAccount`, `processAutomationTask`, `automationJobDrain` | Bind `DIDIT_API_KEY` so provider-side erasure can run; delete `boostReach` and the Spotify rate-limit counters | Secret `DIDIT_API_KEY` |
 | `exportMyData` | The export no longer contains coordinates | — |
 | `reportUser` | Accepts the `child_safety` reason | Must be live before an app build that offers the reason |
-| `prepareSmokeTestUsers`, `cleanupSmokeTestUsers` | Random per-run passwords | After the deploy, call `prepareSmokeTestUsers` (or cleanup) once so existing smoke accounts stop accepting the old password |
+| `prepareSmokeTestUsers`, `cleanupSmokeTestUsers` | Emulator-only since the production cleanup: no longer deployed | Nothing. Delete the live copies instead — "Emulator-only callables" above. If an older deploy left the smoke accounts in Auth (`smoke-a@mevora.test`, `smoke-b@mevora.test`), delete those accounts too: the new code can no longer rotate their old password on a live project |
 
 Also: the admin console (Turkish label for the new report reason) and Hosting (the
 rewritten policy pages, `/delete-account`, `/child-safety`) — Hosting only after the

@@ -10,8 +10,11 @@ import {
   uploadPendingPhoto,
   waitForApprovedPhotos,
 } from "./lib/helpers.mjs";
+import {smokeProjectId, smokeTargetProblems} from "./lib/emulatorOnly.mjs";
 
-const PROJECT_ID = process.env.SMOKE_FIREBASE_PROJECT ?? "mevora-production";
+// No default project: the harness runs against the emulator suite only, and
+// main() refuses to start before anything is initialised when it is not.
+const PROJECT_ID = smokeProjectId();
 const EMAIL_A = "smoke-a@mevora.test";
 const EMAIL_B = "smoke-b@mevora.test";
 
@@ -27,11 +30,19 @@ function initAdmin() {
 }
 
 async function main() {
+  const problems = smokeTargetProblems();
+  if (problems.length > 0) {
+    console.error("Smoke harness refused to start: it runs against the Firebase emulator suite only.");
+    for (const problem of problems) {
+      console.error(`  - ${problem}`);
+    }
+    process.exit(2);
+  }
   initAdmin();
   const db = getFirestore();
   const auth = getAuth();
   const reporter = new SmokeReporter({
-    environment: process.env.SMOKE_USE_EMULATOR === "true" ? "emulator" : "production",
+    environment: "emulator",
     firebaseProject: PROJECT_ID,
   });
 

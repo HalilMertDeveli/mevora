@@ -65,6 +65,10 @@ class ChatController extends ChangeNotifier {
   Timer? _typingDebounce;
   Timer? _typingIdle;
   bool _typingSent = false;
+
+  /// Incoming messages already being marked read, so the local snapshot a
+  /// receipt write produces does not send the same receipt again.
+  final Set<String> _acknowledged = {};
   double? uploadProgress;
   bool recording = false;
 
@@ -146,7 +150,14 @@ class ChatController extends ChangeNotifier {
       blocked = false;
     }
     try {
-      await _matches.markOpened(matchId, current);
+      // Opening an already-read thread changes nothing on the match doc;
+      // writing anyway re-fires both participants' inbox listeners.
+      final opened = match;
+      if (opened == null ||
+          opened.unreadFor(current) > 0 ||
+          opened.isNewFor[current] != false) {
+        await _matches.markOpened(matchId, current);
+      }
     } on Object {
       // Demo matches and offline clients still open the thread.
     }
@@ -241,13 +252,26 @@ class ChatController extends ChangeNotifier {
       return;
     }
     final incoming = value
-        .where((message) => message.receiverId == current && !message.isRead)
+        .where(
+          (message) =>
+              message.receiverId == current &&
+              !message.isRead &&
+              !_acknowledged.contains(message.id),
+        )
         .toList(growable: false);
     if (incoming.isEmpty) {
       return;
     }
-    await _chat.markDelivered(matchId, incoming);
-    await _chat.markRead(matchId, incoming);
+    final ids = [for (final message in incoming) message.id];
+    _acknowledged.addAll(ids);
+    // Read implies delivered: one batch sets status 'read', isRead and
+    // readAt, the same end state the delivered-then-read pair produced.
+    try {
+      await _chat.markRead(matchId, incoming);
+    } on Object {
+      // Let the next snapshot retry these.
+      _acknowledged.removeAll(ids);
+    }
   }
 
   /// The server counts every incoming message as unread, including the ones
@@ -355,8 +379,13 @@ class ChatController extends ChangeNotifier {
         matchId: matchId,
         message: sent,
       );
-      _typingSent = false;
-      unawaited(_chat.setTyping(matchId: matchId, isTyping: false));
+      // A pending debounce would flag typing again after the send.
+      _typingDebounce?.cancel();
+      _typingIdle?.cancel();
+      if (_typingSent) {
+        _typingSent = false;
+        unawaited(_chat.setTyping(matchId: matchId, isTyping: false));
+      }
       sending = false;
       notifyListeners();
       return const Success(null);

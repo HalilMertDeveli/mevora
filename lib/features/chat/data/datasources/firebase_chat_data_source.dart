@@ -173,17 +173,11 @@ class FirebaseChatDataSource implements ChatRepository {
       if (mediaUrl != null) 'mediaUrl': mediaUrl,
       if (durationMs != null) 'durationMs': durationMs,
     };
+    // The match preview (lastMessage, lastMessageAt, unread count) is written
+    // by the sendMessageNotification trigger, after the rate limit and block
+    // checks. A client write here duplicated it: one more write per message,
+    // re-read by both participants' inbox listeners.
     await ref.set(payload);
-    final preview = switch (type) {
-      MessageType.image => '📷',
-      MessageType.voice => '🎤',
-      _ => encrypted ? '🔒' : text,
-    };
-    await _firestore.collection(FirestorePaths.matches).doc(matchId).set({
-      'lastMessage': preview,
-      'lastMessageAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
     return ChatMessage(
       id: ref.id,
       senderId: senderId,

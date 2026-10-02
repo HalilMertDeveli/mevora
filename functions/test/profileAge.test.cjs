@@ -2,6 +2,7 @@ const {describe, it} = require("node:test");
 const assert = require("node:assert/strict");
 const {Timestamp} = require("firebase-admin/firestore");
 const {createFakeFirestore} = require("./helpers/fakeFirestore.cjs");
+const {bornYearsAgo} = require("./helpers/birthDates.cjs");
 const {ageFromBirthDate} = require("../lib/profileSafety.js");
 const {
   accountBirthFields,
@@ -25,9 +26,7 @@ describe("age at a given moment", () => {
   });
 
   it("still defaults to now", () => {
-    const today = new Date();
-    const born = new Date(today.getFullYear() - 25, today.getMonth(), today.getDate());
-    assert.equal(ageFromBirthDate(born), 25);
+    assert.equal(ageFromBirthDate(bornYearsAgo(25)), 25);
   });
 });
 

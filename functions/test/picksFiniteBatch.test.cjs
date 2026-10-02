@@ -42,19 +42,18 @@ const VIEWER = "viewer";
 const INTERVAL = PICKS_CONFIG.topUpMinIntervalMs;
 
 /**
- * Noon of the current Picks day (the logical day starts at Istanbul midnight).
+ * The clock these tests serve Picks at: 09:00 in Istanbul on a fixed day (the
+ * logical day starts at Istanbul midnight, 21:00 UTC).
  *
  * These tests step time forward from "now" by up to seven top-up intervals
  * (3.5 h). Measured from the real clock, those steps crossed the daily refresh
  * whenever the suite ran after 20:30 Istanbul time: the batch under test was
  * regenerated and the assertions failed until midnight — every evening, on
- * every pull request. From noon no step reaches the end of the day.
+ * every pull request. From a fixed morning no step reaches the end of the day,
+ * and a test that asks twice gets the same day even if it runs over midnight.
  */
 function testNow() {
-  const offsetMs = PICKS_CONFIG.logicalDayUtcOffsetMinutes * 60_000;
-  const dayMs = 24 * 60 * 60 * 1000;
-  const dayStart = Math.floor((Date.now() + offsetMs) / dayMs) * dayMs - offsetMs;
-  return dayStart + dayMs / 2;
+  return Date.UTC(2026, 9, 1, 6, 0);
 }
 
 const approvedPhotos = [1, 2, 3].map((n) => ({
@@ -77,7 +76,9 @@ function profile(uid, overrides = {}) {
     relationshipGoal: "longTerm",
     interests: ["hiking", "jazz", "cooking", "chess"],
     lifestyle: ["nonsmoker", "earlybird"],
-    lastActiveAt: Timestamp.fromMillis(testNow()),
+    // The real clock on purpose: the pool's activity filter and the activity
+    // score measure this against Date.now(), not against the serve time.
+    lastActiveAt: Timestamp.fromMillis(Date.now()),
     updatedAt: 1000,
     ...overrides,
   };

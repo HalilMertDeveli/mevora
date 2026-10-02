@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
+import 'package:mevora/core/services/location/geo_position.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
@@ -31,6 +32,19 @@ class _UnreadableFlagsLocationRepository extends FakeLocationRepository {
 
   /// When set, a flags read waits for this before answering.
   Completer<void>? gate;
+
+  /// When set, storing a position waits for this before answering — what a
+  /// Firestore write does while the phone is offline.
+  Completer<void>? persistGate;
+
+  @override
+  Future<Result<void>> persistOwnerLocation({
+    required String uid,
+    required GeoPosition position,
+  }) async {
+    await persistGate?.future;
+    return super.persistOwnerLocation(uid: uid, position: position);
+  }
 
   @override
   Future<Result<LocationFlags>> loadLocationFlags(String uid) async {
@@ -65,6 +79,7 @@ void main() {
     DiscoveryController build(
       FakeLocationRepository location, {
       bool skipExplanationIfAlreadyGranted = false,
+      Duration locationFlagsTimeout = const Duration(seconds: 8),
     }) {
       final controller = DiscoveryController(
         uid: 'self',
@@ -79,10 +94,92 @@ void main() {
           ],
         ),
         skipExplanationIfAlreadyGranted: skipExplanationIfAlreadyGranted,
+        locationFlagsTimeout: locationFlagsTimeout,
       );
       addTearDown(controller.dispose);
       return controller;
     }
+
+    test('a flags read that never answers is treated as unread, not waited '
+        'on forever', () async {
+      // Seen on a device: offline with nothing cached, Firestore neither
+      // answered nor failed, and the tab stayed on "Loading" until the
+      // connection came back.
+      final location = _UnreadableFlagsLocationRepository()
+        ..flagsReadable = true
+        ..flags['self'] = _locationOn
+        ..gate = Completer<void>();
+      addTearDown(() => location.gate!.complete());
+      final controller = build(
+        location,
+        locationFlagsTimeout: const Duration(milliseconds: 20),
+      );
+
+      await controller.start().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => fail('start() waited on the flags read'),
+      );
+
+      expect(controller.locationFlagsPending, isFalse);
+      expect(controller.locationFlagsUnresolved, isTrue);
+      expect(controller.state.phase, LocationPromptPhase.ready);
+      expect(location.flagWrites, 0);
+      expect(location.captureCalls, 0);
+    });
+
+    test('a position that cannot be stored does not hold the tab', () async {
+      // The device symptom: a member whose permission is granted but whose
+      // flags are not marked complete has the position captured at start. The
+      // write never came back offline, and neither did start().
+      final location = _UnreadableFlagsLocationRepository()
+        ..flagsReadable = true
+        ..persistGate = Completer<void>();
+      addTearDown(() => location.persistGate!.complete());
+      final controller = build(
+        location,
+        skipExplanationIfAlreadyGranted: true,
+        locationFlagsTimeout: const Duration(milliseconds: 20),
+      );
+
+      final started = controller.start();
+      // While the position is being settled there is no question to answer.
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      expect(controller.locationFlagsPending, isFalse);
+      expect(controller.settlingGrantedLocation, isTrue);
+
+      await started.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => fail('start() waited on the location write'),
+      );
+
+      expect(controller.settlingGrantedLocation, isFalse);
+      expect(controller.state.phase, LocationPromptPhase.ready);
+      expect(controller.state.candidates, isNotEmpty);
+      expect(location.flagWrites, 0);
+    });
+
+    test('a read that timed out is settled by the next refresh', () async {
+      final location = _UnreadableFlagsLocationRepository()
+        ..flagsReadable = true
+        ..flags['self'] = _locationOn
+        ..gate = Completer<void>();
+      final controller = build(
+        location,
+        locationFlagsTimeout: const Duration(milliseconds: 20),
+      );
+      await controller.start();
+      expect(controller.locationFlagsUnresolved, isTrue);
+
+      // The connection is back: the read answers again.
+      location.gate!.complete();
+      location.gate = null;
+      await controller.refresh();
+
+      expect(controller.locationFlagsUnresolved, isFalse);
+      expect(controller.state.phase, LocationPromptPhase.ready);
+      expect(location.flags['self'], _locationOn);
+      expect(location.flagWrites, 0);
+    });
 
     test('a failed flags read is not answered with the location question, '
         'and nothing is saved', () async {

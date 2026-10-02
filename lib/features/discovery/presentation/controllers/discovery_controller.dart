@@ -145,6 +145,7 @@ class DiscoveryController extends ChangeNotifier {
     ViewerProfileLoader? viewerProfileLoader,
     bool skipExplanationIfAlreadyGranted = true,
     this.swipeThreshold = 120,
+    this.locationFlagsTimeout = const Duration(seconds: 8),
     bool loadDeckOnStart = true,
   }) : _deckWanted = loadDeckOnStart,
        _locationRepository = locationRepository,
@@ -196,6 +197,10 @@ class DiscoveryController extends ChangeNotifier {
 
   /// Minimum drag distance (px) before a swipe action fires.
   final double swipeThreshold;
+
+  /// How long the tab waits on a location read or write before it goes on
+  /// without it. The same patience the app-level location gate has.
+  final Duration locationFlagsTimeout;
 
   PurchaseRepository? get purchaseRepository => _purchaseRepository;
   DiscoveryRepository get discoveryRepository => _discoveryRepository;
@@ -287,11 +292,34 @@ class DiscoveryController extends ChangeNotifier {
   bool get locationFlagsUnresolved =>
       _locationFlagsRead == _LocationFlagsRead.failed;
 
+  bool _settlingGrantedLocation = false;
+
+  /// Location is being settled without a question: the permission is already
+  /// granted, so [start] captures the position itself. Until it is done the
+  /// phase is still the default "explanation", and the page must not offer
+  /// that question in the meantime.
+  bool get settlingGrantedLocation => _settlingGrantedLocation;
+
+  /// The stored flags, or null when they could not be read in time.
+  ///
+  /// The read has no deadline of its own: offline, with nothing cached,
+  /// Firestore keeps waiting for the server, and the tab sat on its loading
+  /// state for as long as the phone was offline. An answer that does not come
+  /// is an unread one, handled like a failed read.
+  Future<LocationFlags?> _readLocationFlags() async {
+    try {
+      final result = await _locationRepository
+          .loadLocationFlags(uid)
+          .timeout(locationFlagsTimeout);
+      return result.valueOrNull;
+    } on TimeoutException {
+      return null;
+    }
+  }
+
   Future<void> start() async {
     unawaited(refreshBoost());
-    final flags = (await _locationRepository.loadLocationFlags(
-      uid,
-    )).valueOrNull;
+    final flags = await _readLocationFlags();
     if (flags == null) {
       // A failed read is not "never asked". Asking now would let "Skip for
       // now" store locationEnabled: false over a choice that simply could
@@ -316,7 +344,12 @@ class DiscoveryController extends ChangeNotifier {
     final gpsOn = await _locationRepository.isGpsEnabled();
     if (permission == LocationPermissionStatus.granted && gpsOn) {
       if (_skipExplanationIfAlreadyGranted) {
-        await _captureAndLoad();
+        _settlingGrantedLocation = true;
+        try {
+          await _captureAndLoad();
+        } finally {
+          _settlingGrantedLocation = false;
+        }
         return;
       }
     }
@@ -797,12 +830,20 @@ class DiscoveryController extends ChangeNotifier {
     switch (result) {
       case Success(:final value):
         if (_locationSync.shouldPersist(value)) {
-          final persisted = await _locationRepository.persistOwnerLocation(
-            uid: uid,
-            position: value,
-          );
-          if (persisted.isSuccess) {
-            _locationSync.markPersisted(value);
+          // Storing the position is not what the member is waiting for.
+          // Offline the write neither completes nor fails, and the tab sat on
+          // its loading state for as long as the phone was offline. After
+          // [locationFlagsTimeout] the tab goes on; the position is not
+          // marked as stored, so the next capture sends it again.
+          try {
+            final persisted = await _locationRepository
+                .persistOwnerLocation(uid: uid, position: value)
+                .timeout(locationFlagsTimeout);
+            if (persisted.isSuccess) {
+              _locationSync.markPersisted(value);
+            }
+          } on TimeoutException {
+            // Nothing to undo: see above.
           }
         }
       case Err(:final failure):

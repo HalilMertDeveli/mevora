@@ -153,14 +153,6 @@ class FirebaseBootstrap {
         phoneNumber: useDevTestPair ? testPhone : null,
         smsCode: useDevTestPair ? testSms : null,
       );
-      // ignore: avoid_print
-      print(
-        '[PHONE_AUTH] SETTINGS '
-        'appVerificationDisabled=$appVerificationDisabled '
-        'forceRecaptchaFlow=$forceRecaptcha '
-        'devTestNumber=$useDevTestPair '
-        'project=${config.firebaseProjectId}',
-      );
       logger.info(
         'Live Phone Auth configured '
         '(appVerificationDisabled=$appVerificationDisabled, '
@@ -168,8 +160,6 @@ class FirebaseBootstrap {
         'devTestNumber=$useDevTestPair)',
       );
     } on Object catch (error, stackTrace) {
-      // ignore: avoid_print
-      print('[PHONE_AUTH] SETTINGS_FAILED error=$error');
       logger.warning(
         'Auth phone verification settings were not applied',
         error: error,

@@ -46,6 +46,7 @@ import 'package:mevora/features/location/presentation/controllers/location_contr
 import 'package:mevora/features/notifications/data/fcm_background.dart';
 import 'package:mevora/features/settings/data/datasources/firebase_settings_data_source.dart';
 import 'package:mevora/features/settings/data/repositories/user_settings_repository_impl.dart';
+import 'package:mevora/shared/images/mevora_photo_images.dart';
 import 'package:mevora/shared/widgets/mevora_error_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -71,6 +72,18 @@ Future<void> bootstrap(AppEnvironment environment) async {
   );
   if (flavorMismatch != null) {
     logger.error(flavorMismatch);
+    runApp(const MevoraStartupErrorApp());
+    return;
+  }
+
+  // The same for a build that was handed development-only settings: they
+  // would do nothing here, but they would be in the binary.
+  final leakedDefines = developmentDefinesOutsideDevelopment(
+    environment: environment,
+    passed: developmentDefinesPassed(),
+  );
+  if (leakedDefines != null) {
+    logger.error(leakedDefines);
     runApp(const MevoraStartupErrorApp());
     return;
   }
@@ -116,7 +129,12 @@ Future<void> bootstrap(AppEnvironment environment) async {
     permissions: permissionService,
   );
   final uidSource = FirebaseAuthUidSource();
-  final demoHub = DemoSocialHub(uidSource: uidSource);
+  // Demo matches exist for the development demo deck only. Outside it there
+  // is no hub, and the social repositories are the real ones with nothing in
+  // front of them.
+  final demoAllowed = demoInfrastructureAllowed(environment: environment);
+  MevoraPhotoImages.demoPortraitsAvailable = demoAllowed;
+  final demoHub = demoAllowed ? DemoSocialHub(uidSource: uidSource) : null;
   final discoveryServices = createDiscoveryServices(
     config: config,
     demoHub: demoHub,
@@ -144,6 +162,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
     uidSource: FirebaseAuthUidSource(),
     logger: logger,
     useEmulatorStore: config.useEmulators,
+    environment: environment,
   );
   final verificationServices = createVerificationServices();
   final faceAnchorServices = createFaceAnchorServices();
@@ -153,6 +172,7 @@ Future<void> bootstrap(AppEnvironment environment) async {
     analytics: analytics,
     logger: logger,
     useEmulatorStore: config.useEmulators,
+    environment: environment,
   );
   final streakServices = createStreakServices(
     analytics: analytics,

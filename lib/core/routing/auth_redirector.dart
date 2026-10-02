@@ -37,8 +37,11 @@ abstract final class AuthRedirector {
     bool journeyPending = false,
     AppOperationsGate operationsGate = AppOperationsGate.normal,
   }) {
-    if (allowDesignSystem && location == AppRoutes.designSystem) {
-      return null;
+    if (location == AppRoutes.designSystem) {
+      // A developer's component gallery. It is a route in every build, so it
+      // is closed here rather than by having no link to it: outside
+      // development the path leads back into the app like any stray one.
+      return allowDesignSystem ? null : AppRoutes.splash;
     }
 
     // Route-level guard. Hiding the button is not the defence: with the gate

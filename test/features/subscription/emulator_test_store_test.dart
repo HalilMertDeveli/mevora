@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/bootstrap.dart';
 import 'package:mevora/core/config/app_environment.dart';
+import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/di/subscription_services_factory.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
@@ -178,7 +179,7 @@ void main() {
   });
 
   group('wiring', () {
-    test('the emulator store is used when asked for', () {
+    test('the emulator store is used when asked for, in development', () {
       // The other branch builds the real Play Billing store, which needs a
       // platform channel a unit test does not have; the default being `false`
       // is what keeps it the choice everywhere else.
@@ -188,11 +189,51 @@ void main() {
         repository: const DisabledSubscriptionRepository(),
         backend: RecordingBackend(const <String, dynamic>{}),
         useEmulatorStore: true,
+        environment: AppEnvironment.development,
       );
       addTearDown(on.controller.dispose);
 
       expect(on.billing, isA<EmulatorPremiumBillingRepository>());
       expect(on.billing, isNot(isA<StorePremiumBillingRepository>()));
+    });
+
+    test('the emulator store is refused outside development', () {
+      // Asking for it is not enough: a staging or production build, or a
+      // caller that names no environment, gets the real store whatever the
+      // flag says.
+      expect(
+        emulatorStoreAllowed(
+          requested: true,
+          environment: AppEnvironment.development,
+        ),
+        isTrue,
+      );
+      for (final environment in <AppEnvironment?>[
+        AppEnvironment.production,
+        AppEnvironment.staging,
+        null,
+      ]) {
+        expect(
+          emulatorStoreAllowed(requested: true, environment: environment),
+          isFalse,
+          reason: '$environment',
+        );
+      }
+      expect(
+        emulatorStoreAllowed(
+          requested: false,
+          environment: AppEnvironment.development,
+        ),
+        isFalse,
+      );
+      expect(
+        emulatorStoreAllowed(
+          requested: true,
+          environment: AppEnvironment.development,
+          releaseMode: true,
+        ),
+        isFalse,
+      );
     });
 
     test('Premium switched off offers no store at all, emulator or not', () {

@@ -4,7 +4,7 @@ import 'package:mevora/features/compatibility/presentation/widgets/compatibility
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/core/theme/app_theme.dart';
-import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
+import 'package:mevora/core/testing/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
 import 'package:mevora/features/discovery/presentation/pages/discovery_page.dart';

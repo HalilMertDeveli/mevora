@@ -49,6 +49,13 @@ void main() {
       }
     });
 
+    test('a caller that names no environment gets the backend, not a demo', () {
+      // The default used to be the other way round: no config meant "demo
+      // allowed". What is not known to be development is production.
+      final services = createDiscoveryServices(backend: _UnusedBackend());
+      expect(services.discoveryRepository, isA<DiscoveryRepositoryImpl>());
+    });
+
     test('padding still only fires on an empty live feed', () {
       // Guards the premise of the switch rather than re-testing the repository.
       // If padding stopped being conditional on emptiness, DISCOVERY_NO_DEMO

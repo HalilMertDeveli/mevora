@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/core/testing/fake_location_repository.dart';
-import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
+import 'package:mevora/core/testing/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';

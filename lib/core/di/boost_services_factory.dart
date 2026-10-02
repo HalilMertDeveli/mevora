@@ -1,3 +1,5 @@
+import 'package:mevora/core/config/app_environment.dart';
+import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
@@ -28,10 +30,18 @@ BoostServices createBoostServices({
   /// Swaps the store for a fixed-price test store. Only ever true against
   /// the Firebase Emulator Suite, where no real store product exists.
   bool useEmulatorStore = false,
+
+  /// The build's environment. The test store is honoured in development
+  /// only; without an environment the real store is used.
+  AppEnvironment? environment,
 }) {
+  final emulatorStore = emulatorStoreAllowed(
+    requested: useEmulatorStore,
+    environment: environment,
+  );
   final resolvedStore =
       store ??
-      (useEmulatorStore
+      (emulatorStore
           ? EmulatorStorePurchaseDataSource()
           : InAppStorePurchaseDataSource(
               apple: ApplePurchaseService(logger: logger),

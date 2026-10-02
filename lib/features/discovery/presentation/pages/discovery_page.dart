@@ -19,12 +19,10 @@ import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/relationship_learning_scope.dart';
 import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/core/routing/app_routes.dart';
-import 'package:mevora/core/testing/fake_location_repository.dart';
 import 'package:mevora/features/app_operations/domain/app_operations_config.dart';
 import 'package:mevora/features/app_operations/presentation/widgets/feature_unavailable_view.dart';
 import 'package:mevora/features/boost/presentation/pages/boost_screen.dart';
 import 'package:mevora/features/boost/presentation/widgets/boost_button.dart';
-import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/discovery/presentation/controllers/discovery_controller.dart';
@@ -194,8 +192,9 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       // throws "This widget has been unmounted" once the page is gone, which
       // is what logout and account deletion do mid-load.
       final settingsHub = SettingsScope.maybeOf(context)?.settingsHub;
-      final discoveryRepository =
-          DiscoveryScope.maybeOf(context) ?? InMemoryDiscoveryRepository();
+      // No stand-ins: without its scopes the page has no backend, and an
+      // in-memory deck or a made-up position must never fill that gap.
+      final discoveryRepository = DiscoveryScope.of(context);
       final picksRepository = discoveryRepository is MevoraPicksCapable
           ? (discoveryRepository as MevoraPicksCapable).picksRepository
           : null;
@@ -207,9 +206,7 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       }
       _owned = DiscoveryController(
         uid: uid,
-        locationRepository:
-            LocationScope.maybeOf(context)?.repository ??
-            FakeLocationRepository(),
+        locationRepository: LocationScope.of(context).repository,
         discoveryRepository: discoveryRepository,
         purchaseRepository: BoostScope.maybeOf(context)?.repository,
         // With Picks as the tab, there is no deck to load.

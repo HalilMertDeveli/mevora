@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/features/discovery/data/datasources/mock_discovery_data_source.dart';
-import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
+import 'package:mevora/core/testing/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/data/repositories/mock_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';

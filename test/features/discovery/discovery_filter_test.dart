@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mevora/features/discovery/data/repositories/in_memory_discovery_repository.dart';
+import 'package:mevora/core/testing/in_memory_discovery_repository.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_radius.dart';
 import 'package:mevora/features/discovery/domain/repositories/discovery_repository.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';

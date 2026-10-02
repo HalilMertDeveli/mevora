@@ -12,8 +12,10 @@ class DiscoveryScope extends InheritedWidget {
 
   static DiscoveryRepository of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<DiscoveryScope>();
-    assert(scope != null, 'DiscoveryScope not found');
-    return scope!.repository;
+    if (scope == null) {
+      throw StateError('DiscoveryScope not found in the widget tree');
+    }
+    return scope.repository;
   }
 
   static DiscoveryRepository? maybeOf(BuildContext context) {

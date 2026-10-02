@@ -2,6 +2,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/cache/image_disk_cache.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
+import 'package:mevora/shared/images/mevora_photo_images.dart';
 
 void main() {
   test('accepts only http(s) photo URLs', () {
@@ -18,6 +19,18 @@ void main() {
       MevoraNetworkImages.provider('https://cdn.example/photo.jpg'),
       isA<NetworkImage>(),
     );
+    // No demo deck, no demo portraits: neither spelling resolves to anything.
+    expect(
+      MevoraNetworkImages.provider('assets/images/portraits/mock-08.jpg'),
+      isNull,
+    );
+    expect(MevoraNetworkImages.provider('mock://mock-08/0'), isNull);
+  });
+
+  test('demo portraits resolve only in a build that has the demo deck', () {
+    MevoraPhotoImages.demoPortraitsAvailable = true;
+    addTearDown(() => MevoraPhotoImages.demoPortraitsAvailable = false);
+
     expect(
       MevoraNetworkImages.provider('assets/images/portraits/mock-08.jpg'),
       isA<AssetImage>(),
@@ -26,6 +39,7 @@ void main() {
       MevoraNetworkImages.provider('mock://mock-08/0'),
       isA<AssetImage>(),
     );
+    expect(MevoraNetworkImages.provider('mock://uid/0'), isNull);
   });
 
   group('against the Emulator Suite', () {

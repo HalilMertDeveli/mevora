@@ -1,4 +1,6 @@
 import 'package:mevora/core/analytics/analytics_provider.dart';
+import 'package:mevora/core/config/app_environment.dart';
+import 'package:mevora/core/config/build_guards.dart';
 import 'package:mevora/core/identity/auth_uid_source.dart';
 import 'package:mevora/core/network/backend_callable.dart';
 import 'package:mevora/core/network/firebase_functions_callable.dart';
@@ -50,6 +52,10 @@ SubscriptionServices createSubscriptionServices({
   /// Swaps the store for a fixed-price test store whose purchases the
   /// Functions emulator verifies. Only ever true against the Emulator Suite.
   bool useEmulatorStore = false,
+
+  /// The build's environment. The test store is honoured in development
+  /// only; without an environment the real store is used.
+  AppEnvironment? environment,
 }) {
   final SubscriptionRepository resolved =
       repository ??
@@ -65,7 +71,10 @@ SubscriptionServices createSubscriptionServices({
       billing ??
       (!premiumEnabled
           ? null
-          : useEmulatorStore
+          : emulatorStoreAllowed(
+              requested: useEmulatorStore,
+              environment: environment,
+            )
           ? EmulatorPremiumBillingRepository(
               backend: backend ?? FirebaseFunctionsCallable(),
               logger: logger,

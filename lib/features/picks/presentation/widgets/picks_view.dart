@@ -68,6 +68,39 @@ class _PicksViewState extends State<PicksView> {
     super.dispose();
   }
 
+  /// A card whose portrait cannot keep a real shape in the room it is given
+  /// is not worth squeezing: below this the card gets a screen of its own.
+  static const double _minCardRoom = 400;
+
+  /// The list for [_cardListBudget], kept between scroll frames: the sliver
+  /// constraints change on every one of them, the cards do not.
+  Widget? _cardList;
+  double? _cardListBudget;
+
+  /// How tall a card may be so that its Pass / Like buttons are on screen
+  /// without scrolling. Found on a 720x1600 phone, where the first card's
+  /// buttons started under the tab bar.
+  ///
+  /// [firstScreenRoom] is what the first screen has left under the header.
+  /// Every card gets the same figure, so a card does not change size when the
+  /// one above it is decided and it becomes the first. Null leaves the cards
+  /// at their natural height.
+  double? _cardBudget(
+    BuildContext context, {
+    required double viewport,
+    required double firstScreenRoom,
+  }) {
+    // With enlarged text the reason needs the room more than the buttons
+    // need to be above the fold; the card keeps its natural shape.
+    if (MediaQuery.textScalerOf(context).scale(1) > 1.3) {
+      return null;
+    }
+    final room = firstScreenRoom - AppSpacing.md;
+    // Under the questions card there is no first-screen room worth having;
+    // a card then fits a screen of its own.
+    return room >= _minCardRoom ? room : viewport - AppSpacing.md;
+  }
+
   void _onChange() {
     if (!mounted) {
       return;
@@ -161,6 +194,8 @@ class _PicksViewState extends State<PicksView> {
       );
     }
     final card = _learningCard(batch);
+    // A rebuild means the cards may have changed: lay the list out afresh.
+    _cardList = null;
     return RefreshIndicator(
       key: const ValueKey('picks-loaded'),
       onRefresh: widget.controller.load,
@@ -197,25 +232,22 @@ class _PicksViewState extends State<PicksView> {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenPadding,
               ),
-              sliver: SliverList.builder(
-                itemCount: batch.picks.length,
-                itemBuilder: (context, index) {
-                  final pick = batch.picks[index];
-                  return _PickEntry(
-                    key: ValueKey(pick.uid),
-                    index: index,
-                    departing: state.departingUids.contains(pick.uid),
-                    onShown: () => widget.controller.recordImpression(pick),
-                    child: PickCard(
-                      pick: pick,
-                      busy:
-                          state.pendingUids.contains(pick.uid) ||
-                          state.departingUids.contains(pick.uid),
-                      onOpen: () => widget.onOpenProfile(pick),
-                      onLike: () => unawaited(widget.controller.like(pick)),
-                      onPass: () => unawaited(widget.controller.pass(pick)),
-                    ),
+              // The room under the header is known here, in the same layout
+              // pass: the viewport, less everything laid out above the list.
+              sliver: SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  final budget = _cardBudget(
+                    context,
+                    viewport: constraints.viewportMainAxisExtent,
+                    firstScreenRoom:
+                        constraints.viewportMainAxisExtent -
+                        constraints.precedingScrollExtent,
                   );
+                  if (_cardList == null || budget != _cardListBudget) {
+                    _cardListBudget = budget;
+                    _cardList = _pickList(state, budget);
+                  }
+                  return _cardList!;
                 },
               ),
             ),
@@ -233,6 +265,32 @@ class _PicksViewState extends State<PicksView> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _pickList(MevoraPicksState state, double? cardBudget) {
+    final batch = state.batch;
+    return SliverList.builder(
+      itemCount: batch.picks.length,
+      itemBuilder: (context, index) {
+        final pick = batch.picks[index];
+        return _PickEntry(
+          key: ValueKey(pick.uid),
+          index: index,
+          departing: state.departingUids.contains(pick.uid),
+          onShown: () => widget.controller.recordImpression(pick),
+          child: PickCard(
+            pick: pick,
+            busy:
+                state.pendingUids.contains(pick.uid) ||
+                state.departingUids.contains(pick.uid),
+            maxHeight: cardBudget,
+            onOpen: () => widget.onOpenProfile(pick),
+            onLike: () => unawaited(widget.controller.like(pick)),
+            onPass: () => unawaited(widget.controller.pass(pick)),
+          ),
+        );
+      },
     );
   }
 

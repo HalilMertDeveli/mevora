@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:mevora/core/theme/app_colors.dart';
@@ -28,7 +29,16 @@ class PickCard extends StatelessWidget {
     required this.onLike,
     required this.onPass,
     this.busy = false,
+    this.maxHeight,
   });
+
+  /// The portrait's shape when the card has all the room it wants.
+  static const double photoAspectRatio = 4 / 4.2;
+
+  /// The flattest the portrait is cropped to. Any flatter and the badge, the
+  /// name and the face start to crowd each other; past this the card is
+  /// allowed to outgrow [maxHeight] instead.
+  static const double flattestPhotoAspectRatio = 3 / 2;
 
   final MevoraPick pick;
   final VoidCallback onOpen;
@@ -37,6 +47,12 @@ class PickCard extends StatelessWidget {
 
   /// A decision for this Pick is in flight.
   final bool busy;
+
+  /// The room the list has for the whole card, when it wants the decision on
+  /// screen together with the portrait. Only the portrait gives up height for
+  /// it, and only down to [flattestPhotoAspectRatio]; the reason and the
+  /// Pass / Like buttons keep theirs.
+  final double? maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -68,137 +84,253 @@ class PickCard extends StatelessWidget {
         borderRadius: radius,
         child: Material(
           type: MaterialType.transparency,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Semantics(
-                button: true,
-                label: l10n.picksOpenProfileSemantics(candidate.displayName),
-                child: InkWell(
-                  onTap: onOpen,
-                  child: AspectRatio(
-                    aspectRatio: 4 / 4.2,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (candidate.cardPhoto == null)
-                          const PhotoUnavailablePlaceholder()
-                        else
-                          DiscoveryNetworkImage(url: candidate.cardPhoto!),
-                        IgnorePointer(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: AppDecorations.photoScrim(),
-                            ),
+          child: _PhotoOverDetails(
+            maxHeight: maxHeight,
+            photo: Semantics(
+              button: true,
+              label: l10n.picksOpenProfileSemantics(candidate.displayName),
+              child: InkWell(
+                onTap: onOpen,
+                child: SizedBox.expand(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (candidate.cardPhoto == null)
+                        const PhotoUnavailablePlaceholder()
+                      else
+                        DiscoveryNetworkImage(url: candidate.cardPhoto!),
+                      IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: AppDecorations.photoScrim(),
                           ),
                         ),
-                        Positioned(
-                          top: AppSpacing.md,
-                          left: AppSpacing.md,
-                          right: AppSpacing.md,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Flexible(
-                                child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
-                                  child: PickTypeBadge(
-                                    type: pick.pickType,
-                                    onMedia: true,
-                                  ),
+                      ),
+                      Positioned(
+                        top: AppSpacing.md,
+                        left: AppSpacing.md,
+                        right: AppSpacing.md,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              child: Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: PickTypeBadge(
+                                  type: pick.pickType,
+                                  onMedia: true,
                                 ),
                               ),
-                              if (candidate.isBoosted) ...[
-                                const SizedBox(width: AppSpacing.sm),
-                                const DiscoveryBoostBadge(),
-                              ],
+                            ),
+                            if (candidate.isBoosted) ...[
+                              const SizedBox(width: AppSpacing.sm),
+                              const DiscoveryBoostBadge(),
                             ],
-                          ),
+                          ],
                         ),
-                        Positioned(
-                          left: AppSpacing.s20,
-                          right: AppSpacing.s20,
-                          bottom: AppSpacing.md,
-                          child: _Identity(
-                            name: nameLine,
-                            place: place,
-                            verified: candidate.isVerified,
-                          ),
+                      ),
+                      Positioned(
+                        left: AppSpacing.s20,
+                        right: AppSpacing.s20,
+                        bottom: AppSpacing.md,
+                        child: _Identity(
+                          name: nameLine,
+                          place: place,
+                          verified: candidate.isVerified,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.s20,
-                  AppSpacing.md,
-                  AppSpacing.s20,
-                  AppSpacing.sm,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            PickCopy.headline(l10n, pick),
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          if (supporting != null) ...[
-                            const SizedBox(height: AppSpacing.xs),
+            ),
+            details: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.s20,
+                    AppSpacing.md,
+                    AppSpacing.s20,
+                    AppSpacing.sm,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              supporting,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium,
+                              PickCopy.headline(l10n, pick),
+                              style: theme.textTheme.titleMedium,
                             ),
+                            if (supporting != null) ...[
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                supporting,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ],
+                            if (secondary.isNotEmpty) ...[
+                              const SizedBox(height: AppSpacing.s12),
+                              Wrap(
+                                spacing: AppSpacing.xs + 2,
+                                runSpacing: AppSpacing.xs + 2,
+                                children: [
+                                  for (final label in secondary)
+                                    PickTypeBadge(
+                                      type: label,
+                                      emphasized: false,
+                                    ),
+                                ],
+                              ),
+                            ],
                           ],
-                          if (secondary.isNotEmpty) ...[
-                            const SizedBox(height: AppSpacing.s12),
-                            Wrap(
-                              spacing: AppSpacing.xs + 2,
-                              runSpacing: AppSpacing.xs + 2,
-                              children: [
-                                for (final label in secondary)
-                                  PickTypeBadge(type: label, emphasized: false),
-                              ],
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
-                    ),
-                    // The score is a quiet ring at the edge, as on Discover:
-                    // the reason leads, the number supports it.
-                    if (candidate.compatibilityScore > 0) ...[
-                      const SizedBox(width: AppSpacing.md),
-                      CompatibilityRing(score: candidate.compatibilityScore),
+                      // The score is a quiet ring at the edge, as on Discover:
+                      // the reason leads, the number supports it.
+                      if (candidate.compatibilityScore > 0) ...[
+                        const SizedBox(width: AppSpacing.md),
+                        CompatibilityRing(score: candidate.compatibilityScore),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                  AppSpacing.md,
-                  AppSpacing.md,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                  ),
+                  child: PickDecisionBar(
+                    name: candidate.displayName,
+                    busy: busy,
+                    onLike: onLike,
+                    onPass: onPass,
+                  ),
                 ),
-                child: PickDecisionBar(
-                  name: candidate.displayName,
-                  busy: busy,
-                  onLike: onLike,
-                  onPass: onPass,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+}
+
+/// The card's two parts, portrait above and reason + decision below.
+///
+/// A Column cannot do this: the portrait has to take what the details leave,
+/// but never less than its flattest shape. So the details are laid out first
+/// at their own height, and the portrait is sized from what is left of
+/// [maxHeight] — between [PickCard.flattestPhotoAspectRatio] and
+/// [PickCard.photoAspectRatio]. Without a [maxHeight] the portrait simply
+/// has its full shape, as it always had.
+class _PhotoOverDetails extends MultiChildRenderObjectWidget {
+  _PhotoOverDetails({
+    required this.maxHeight,
+    required Widget photo,
+    required Widget details,
+  }) : super(children: [photo, details]);
+
+  final double? maxHeight;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderPhotoOverDetails(maxHeight: maxHeight);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderPhotoOverDetails renderObject,
+  ) {
+    renderObject.maxHeight = maxHeight;
+  }
+}
+
+class _PhotoOverDetailsParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderPhotoOverDetails extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _PhotoOverDetailsParentData>,
+        RenderBoxContainerDefaultsMixin<
+          RenderBox,
+          _PhotoOverDetailsParentData
+        > {
+  _RenderPhotoOverDetails({double? maxHeight}) : _maxHeight = maxHeight;
+
+  double? _maxHeight;
+  double? get maxHeight => _maxHeight;
+  set maxHeight(double? value) {
+    if (value == _maxHeight) {
+      return;
+    }
+    _maxHeight = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _PhotoOverDetailsParentData) {
+      child.parentData = _PhotoOverDetailsParentData();
+    }
+  }
+
+  double _photoHeight(double width, double detailsHeight) {
+    final natural = width / PickCard.photoAspectRatio;
+    final limit = _maxHeight;
+    if (limit == null || !limit.isFinite) {
+      return natural;
+    }
+    final floor = width / PickCard.flattestPhotoAspectRatio;
+    return (limit - detailsHeight).clamp(floor, natural);
+  }
+
+  Size _layout(BoxConstraints constraints, {required bool dry}) {
+    final photo = firstChild!;
+    final details = childAfter(photo)!;
+    final width = constraints.maxWidth;
+    final detailsConstraints = BoxConstraints.tightFor(width: width);
+    final detailsSize = dry
+        ? details.getDryLayout(detailsConstraints)
+        : (details..layout(detailsConstraints, parentUsesSize: true)).size;
+    final photoHeight = _photoHeight(width, detailsSize.height);
+    if (!dry) {
+      photo.layout(BoxConstraints.tightFor(width: width, height: photoHeight));
+      (photo.parentData! as _PhotoOverDetailsParentData).offset = Offset.zero;
+      (details.parentData! as _PhotoOverDetailsParentData).offset = Offset(
+        0,
+        photoHeight,
+      );
+    }
+    return constraints.constrain(Size(width, photoHeight + detailsSize.height));
+  }
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    return _layout(constraints, dry: true);
+  }
+
+  @override
+  void performLayout() {
+    size = _layout(constraints, dry: false);
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    defaultPaint(context, offset);
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return defaultHitTestChildren(result, position: position);
   }
 }
 

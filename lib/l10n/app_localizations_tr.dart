@@ -2364,6 +2364,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesabın Google ile giriş kullanıyor. Şifre değişiklikleri Google üzerinden yapılır.';
 
   @override
+  String get settingsNoPasswordMessage =>
+      'Bu hesabın şifresi yok. Telefon numaranla ya da bağlı bir hesapla giriş yapıyorsun.';
+
+  @override
   String get settingsBirthDateLocked =>
       'Doğum günü onboarding sonrası değiştirilemez. Yaş yalnızca doğum gününden hesaplanır.';
 

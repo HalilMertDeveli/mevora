@@ -4256,6 +4256,12 @@ abstract class AppLocalizations {
   /// **'Your account uses Google Sign-In. Password changes are managed by Google.'**
   String get settingsGooglePasswordMessage;
 
+  /// No description provided for @settingsNoPasswordMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This account has no password. You sign in with your phone number or a linked account.'**
+  String get settingsNoPasswordMessage;
+
   /// No description provided for @settingsBirthDateLocked.
   ///
   /// In en, this message translates to:

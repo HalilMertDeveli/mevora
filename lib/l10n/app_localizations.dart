@@ -1361,13 +1361,13 @@ abstract class AppLocalizations {
   /// No description provided for @authDisabled.
   ///
   /// In en, this message translates to:
-  /// **'This account has been disabled. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.'**
+  /// **'This account has been disabled. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.'**
   String get authDisabled;
 
   /// No description provided for @authBanned.
   ///
   /// In en, this message translates to:
-  /// **'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.'**
+  /// **'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.'**
   String get authBanned;
 
   /// No description provided for @authOauth.
@@ -6125,7 +6125,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsContactBody.
   ///
   /// In en, this message translates to:
-  /// **'For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.'**
+  /// **'For legal questions, contact support from Settings or email destek@mevora.com.'**
   String get termsContactBody;
 
   /// No description provided for @termsEffectiveTitle.
@@ -6389,7 +6389,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyContactBody.
   ///
   /// In en, this message translates to:
-  /// **'Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.'**
+  /// **'Privacy questions: destek@mevora.com or create a support request in Settings.'**
   String get privacyContactBody;
 
   /// No description provided for @musicMatchTitle.

@@ -75,7 +75,7 @@ Ayrıntı: `docs/HUMOR_LAB.md` → "Humor Core sequence"; adımlar `docs/GOOGLE_
 
 ## 6. Hukuki onay, veri sorumlusu kimliği ve çocuk güvenliği bildirim süreci (AÇIK)
 
-**Durum (2026-10-01):** politika metinleri (web ve uygulama içi) mühendislik taslağı; hukuki incelemeden geçmedi. Veri sorumlusunun kimliği ve adresi hiçbir sayfada yok; iletişim adresi kişisel bir posta kutusu. Topluluk Kuralları ve `/child-safety` sayfası çocuk istismarı içeriğinin yetkililere bildirileceğini söylüyor, ama bunun için işleyen bir süreç yok.
+**Durum (2026-10-01):** politika metinleri (web ve uygulama içi) mühendislik taslağı; hukuki incelemeden geçmedi. Veri sorumlusunun kimliği ve adresi hiçbir sayfada yok; iletişim adresi 2026-10-02'de `destek@mevora.com` olarak değiştirildi (uygulama ve web sayfaları) — bu posta kutusunun açılmış ve okunuyor olması proje sahibinin işi. Topluluk Kuralları ve `/child-safety` sayfası çocuk istismarı içeriğinin yetkililere bildirileceğini söylüyor, ama bunun için işleyen bir süreç yok.
 
 **Etkisi:** Google Play, tanışma uygulamalarından çocuk güvenliği standartları beyanı ve bir iletişim kişisi ister. Süreç yokken beyan vermek yanlış beyan olur.
 

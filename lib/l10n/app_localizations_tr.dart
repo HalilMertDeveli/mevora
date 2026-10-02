@@ -777,11 +777,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authDisabled =>
-      'Bu hesap devre dışı bırakılmış. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine halilmertdeveliii@gmail.com adresinden yaz.';
+      'Bu hesap devre dışı bırakılmış. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine destek@mevora.com adresinden yaz.';
 
   @override
   String get authBanned =>
-      'Bu hesap topluluk kurallarımızı ihlal ettiği için kapatıldı. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine halilmertdeveliii@gmail.com adresinden yaz.';
+      'Bu hesap topluluk kurallarımızı ihlal ettiği için kapatıldı. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine destek@mevora.com adresinden yaz.';
 
   @override
   String get authOauth => 'Giriş tamamlanamadı. Lütfen tekrar dene.';
@@ -3441,7 +3441,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get termsContactBody =>
-      'Hukuki sorular için Ayarlar\'dan destek talebi oluşturun veya halilmertdeveliii@gmail.com adresine yazın.';
+      'Hukuki sorular için Ayarlar\'dan destek talebi oluşturun veya destek@mevora.com adresine yazın.';
 
   @override
   String get termsEffectiveTitle => 'Yürürlük tarihi';
@@ -3595,7 +3595,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacyContactBody =>
-      'Gizlilik soruları: halilmertdeveliii@gmail.com veya Ayarlar\'dan destek talebi oluşturun.';
+      'Gizlilik soruları: destek@mevora.com veya Ayarlar\'dan destek talebi oluşturun.';
 
   @override
   String musicMatchTitle(int percent) {

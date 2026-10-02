@@ -251,8 +251,8 @@
   "authSmsQuota": "SMS gönderim sınırına ulaşıldı. Lütfen daha sonra tekrar dene.",
   "authFirebaseUnavailable": "Doğrulama servisine şu anda ulaşılamıyor. Lütfen daha sonra tekrar dene.",
   "authNetwork": "İnternet bağlantını kontrol et.",
-  "authDisabled": "Bu hesap devre dışı bırakılmış. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine halilmertdeveliii@gmail.com adresinden yaz.",
-  "authBanned": "Bu hesap topluluk kurallarımızı ihlal ettiği için kapatıldı. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine halilmertdeveliii@gmail.com adresinden yaz.",
+  "authDisabled": "Bu hesap devre dışı bırakılmış. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine destek@mevora.com adresinden yaz.",
+  "authBanned": "Bu hesap topluluk kurallarımızı ihlal ettiği için kapatıldı. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine destek@mevora.com adresinden yaz.",
   "authOauth": "Giriş tamamlanamadı. Lütfen tekrar dene.",
   "authUnknown": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
   "authAccountExists": "Bu giriş yöntemi başka bir Mevora hesabına bağlı. Otomatik birleştirme yapılmaz.",
@@ -1361,7 +1361,7 @@
   "termsChangesTitle": "Koşulların değiştirilmesi",
   "termsChangesBody": "Bu Koşulları güncelleyebiliriz. Önemli değişiklikler uygulama veya politika sayfalarında duyurulur.",
   "termsContactTitle": "İletişim",
-  "termsContactBody": "Hukuki sorular için Ayarlar'dan destek talebi oluşturun veya halilmertdeveliii@gmail.com adresine yazın.",
+  "termsContactBody": "Hukuki sorular için Ayarlar'dan destek talebi oluşturun veya destek@mevora.com adresine yazın.",
   "termsEffectiveTitle": "Yürürlük tarihi",
   "termsEffectiveBody": "Bu Koşullar 1 Ekim 2026 tarihinden itibaren geçerlidir.",
   "privacyIntroTitle": "Giriş",
@@ -1405,7 +1405,7 @@
   "privacyChangesTitle": "Politika değişiklikleri",
   "privacyChangesBody": "Bu politikayı güncelleyebiliriz. Güncel sürüm uygulamada ve kamuya açık politika sayfasında yer alır.",
   "privacyContactTitle": "İletişim",
-  "privacyContactBody": "Gizlilik soruları: halilmertdeveliii@gmail.com veya Ayarlar'dan destek talebi oluşturun.",
+  "privacyContactBody": "Gizlilik soruları: destek@mevora.com veya Ayarlar'dan destek talebi oluşturun.",
   "musicMatchTitle": "Müzik uyumu · %{percent}",
   "@musicMatchTitle": {
     "placeholders": {

@@ -1,5 +1,6 @@
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/discovery/data/parsers/discovery_candidate_parser.dart';
 import 'package:mevora/features/discovery/domain/entities/discovery_candidate.dart';
 import 'package:mevora/features/music/data/datasources/music_data_source.dart';
@@ -340,9 +341,18 @@ class FunctionsMusicDataSource implements MusicDataSource {
   /// arrive the same way. Only the score is named differently here.
   DiscoveryCandidate? _parseCandidate(Map<String, dynamic> raw) {
     final musicScore = firestoreInt(raw['musicScore'], 0);
-    return DiscoveryCandidateParser.parse({
+    final candidate = DiscoveryCandidateParser.parse({
       ...raw,
       'musicCompatibilityScore': musicScore == 0 ? null : musicScore,
     });
+    if (candidate == null || candidate.hasCompatibilityScore) {
+      return candidate;
+    }
+    // This callable scores the music overlap only. Left at the parser's
+    // default, the profile opened from a same-taste row says "Calculating..."
+    // about an overall score that nothing is calculating.
+    return candidate.copyWith(
+      compatibilityStatus: CompatibilityDisplayStatus.unavailable,
+    );
   }
 }

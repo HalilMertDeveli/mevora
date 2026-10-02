@@ -15,7 +15,6 @@ abstract final class AppStrings {
       'When there is something to show, it will appear here.';
   static const String networkError = 'Check your connection and try again.';
   static const String notFound = 'We could not find that.';
-  static const String comingSoon = 'This part of Mevora is not ready yet.';
 
   static const String welcomeBack = 'Welcome back';
   static const String loginSubtitle =

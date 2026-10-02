@@ -539,9 +539,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notFound => 'We could not find that.';
 
   @override
-  String get comingSoon => 'This part of Mevora is not ready yet.';
-
-  @override
   String get notAllowed => 'You do not have permission to do that.';
 
   @override
@@ -762,7 +759,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authAppVerification =>
-      'App verification failed. Check your connection, try on a physical device, then request a new code.';
+      'We couldn\'t verify this device. Check your connection, wait a few seconds and request a new code.';
 
   @override
   String get authInvalidOtp => 'The verification code is incorrect.';
@@ -774,6 +771,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authSessionExpired =>
       'Your session expired. Please enter your number again.';
+
+  @override
+  String get authSessionUnverified =>
+      'We couldn\'t confirm your session. Please sign in again.';
 
   @override
   String get authTooManyAttempts =>
@@ -814,11 +815,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authNotConfigured =>
-      'Phone sign-in is not enabled for this Firebase project yet.';
+      'Phone sign-in isn\'t available right now. Please use another way to sign in.';
 
   @override
   String get authBillingNotEnabled =>
-      'Firebase billing (Blaze) is required to send SMS verification codes.';
+      'We can\'t send verification codes right now. Please try again later or use another way to sign in.';
 
   @override
   String get authInvalidEmail => 'Enter a valid email address.';
@@ -1284,10 +1285,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoveryFiltersTitle => 'Your preferences';
-
-  @override
-  String get discoveryFiltersHint =>
-      'Filters are saved locally. Server-side filtering arrives in a later update.';
 
   @override
   String get applyFilters => 'Apply filters';
@@ -2507,9 +2504,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can start talking now. Here\'s what you have in common.';
 
   @override
-  String get demoProfileBadge => 'Sample';
-
-  @override
   String sharedHobbiesCount(int count) {
     return '$count shared interests';
   }
@@ -2597,7 +2591,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicNotConfigured =>
-      'Spotify isn\'t configured in this build yet.';
+      'Spotify isn\'t available right now. Please try again later.';
 
   @override
   String get musicConnectError =>

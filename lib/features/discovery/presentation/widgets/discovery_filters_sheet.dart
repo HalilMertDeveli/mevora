@@ -49,7 +49,6 @@ class _DiscoveryFiltersBodyState extends State<_DiscoveryFiltersBody> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -115,8 +114,6 @@ class _DiscoveryFiltersBodyState extends State<_DiscoveryFiltersBody> {
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        Text(l10n.discoveryFiltersHint, style: theme.textTheme.bodySmall),
-        const SizedBox(height: AppSpacing.md),
         MevoraButton(
           label: l10n.applyFilters,
           onPressed: () {

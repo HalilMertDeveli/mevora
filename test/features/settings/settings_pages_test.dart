@@ -433,7 +433,13 @@ void main() {
 
     expect(auth.status, isA<Authenticated>());
     expect(find.byType(SettingsPage), findsOneWidget);
-    expect(find.text('Could not log out right now.'), findsOneWidget);
+    // The member reads the localized message for the kind of failure; the
+    // failure's own text is for logs and is never shown.
+    expect(
+      find.text('Something unexpected happened. Please try again.'),
+      findsOneWidget,
+    );
+    expect(find.text('Could not log out right now.'), findsNothing);
   });
 
   testWidgets('double-tap logout only opens one confirm dialog', (tester) async {

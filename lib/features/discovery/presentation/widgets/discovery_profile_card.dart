@@ -38,7 +38,7 @@ class DiscoveryProfileCard extends StatelessWidget {
     final theme = Theme.of(context);
     final p = context.palette;
     final l10n = AppLocalizations.of(context);
-    final photo = candidate.photoUrl;
+    final photo = candidate.cardPhoto;
     final distance = candidate.distanceKm != null
         ? L10nFormat.distance(l10n, candidate.distanceKm!)
         : candidate.distanceLabel;

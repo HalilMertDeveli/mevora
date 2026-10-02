@@ -554,7 +554,7 @@ class _SameTasteTile extends StatelessWidget {
           children: [
             MevoraAvatar(
               name: candidate.displayName,
-              image: MevoraNetworkImages.provider(candidate.photoUrl),
+              image: MevoraNetworkImages.provider(candidate.avatarPhoto),
               size: 56,
             ),
             const SizedBox(width: AppSpacing.md),

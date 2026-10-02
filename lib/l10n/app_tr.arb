@@ -273,6 +273,8 @@
   "onboardingTitle": "Seni biraz tanıyalım",
   "onboardingMessage": "Ne kadar iyi tanışırsak, sana gösterdiğimiz kişileri o kadar anlamlı seçebiliriz.",
   "onboardingFirstName": "Adın",
+  "onboardingLastName": "Soyadın",
+  "onboardingLastNamePrivate": "Soyadın diğer üyelere gösterilmez.",
   "onboardingBirthDate": "Doğum tarihin",
   "onboardingGender": "Ben",
   "onboardingInterestedIn": "İlgilendiğim",
@@ -296,6 +298,7 @@
   },
   "onboardingErrorBirthday": "Doğum tarihini ekle.",
   "onboardingErrorFirstName": "Adını ekle.",
+  "onboardingErrorLastName": "Soyadını ekle.",
   "onboardingErrorGender": "Kendini nasıl tanımladığını seç.",
   "onboardingErrorInterestedIn": "Kiminle tanışmak istediğini seç.",
   "onboardingErrorCity": "Şehrini seç.",
@@ -341,6 +344,7 @@
   "onboardingErrorGeneric": "Profilin tamamlanamadı. Lütfen tekrar dene.",
   "onboardingBack": "Geri",
   "onboardingContinue": "Devam et",
+  "onboardingLogoutBody": "Tamamladığın adımlar kaydedildi. Tekrar giriş yaptığında kaldığın yerden devam edersin.",
   "onboardingEducation": "Eğitim",
   "onboardingLifestyle": "Yaşam tarzı",
   "onboardingSmoking": "Sigara",
@@ -349,7 +353,7 @@
   "onboardingPets": "Evcil hayvan",
   "onboardingInterestsHint": "En az 3 tane seç. Ortak ilgi alanları, konuşacak bir şeyiniz olan insanları bulmamıza yardımcı olur.",
   "onboardingBioHint": "Kendinden biraz bahset.",
-  "onboardingPhotosHint": "En az 3 fotoğraf ekle. Sıralamak için sürükle — ilk fotoğraf ana fotoğrafındır.",
+  "onboardingPhotosHint": "En az 3 fotoğraf ekle. En az bir fotoğrafta yüzün net görünmeli. Diğer fotoğraflarında hobilerini, seyahatlerini, evcil hayvanını veya hayatından detayları gösterebilirsin.",
   "onboardingPrimaryPhoto": "Ana fotoğraf",
   "onboardingPhotoNumber": "Fotoğraf {number}",
   "@onboardingPhotoNumber": {
@@ -533,7 +537,8 @@
   "settingsResetLearnedFailed": "Sıfırlanamadı. Tekrar dene.",
   "minAge": "En düşük yaş",
   "maxAge": "En yüksek yaş",
-  "maxDistance": "En fazla mesafe",
+  "maxDistance": "Tercih edilen mesafe (km)",
+  "maxDistanceHint": "Bu mesafenin içindeki kişiler önce gelir. Yeterli kişi yoksa Mevora 100 km'ye kadar bakar.",
   "matchesTitle": "Eşleşmelerin",
   "matchesSubtitle": "Birbirinizi seçtiğiniz kişiler, uyumunuza göre sıralı.",
   "matchesEmptyTitle": "Eşleşmelerin burada görünecek",
@@ -692,6 +697,7 @@
   "reportInappropriate": "Uygunsuz içerik",
   "reportScam": "Dolandırıcılık",
   "reportFakeProfile": "Sahte profil",
+  "reportChildSafety": "Çocuk güvenliği (reşit olmayan birini içeren cinsel içerik veya davranış)",
   "reportUnderage": "Reşit değil",
   "reportOther": "Diğer",
   "hideProfile": "Profili gizle",
@@ -736,6 +742,7 @@
   "boostDuration": "Profilini öne çıkar",
   "boostActivate": "Kalan bakiyeyi kullan",
   "boostBuy": "Boost satın al",
+  "boostOneTimePurchaseNote": "Boost tek seferlik bir satın almadır. Kendiliğinden yenilenmez.",
   "boostPurchasing": "Satın alma işlemi başlatılıyor...",
   "boostVerifying": "Satın alma doğrulanıyor...",
   "boostSuccessTitle": "Boost aktif",
@@ -912,8 +919,11 @@
   "settingsPhotoMaxExceeded": "En fazla 6 fotoğraf ekleyebilirsin.",
   "settingsPhotoPrimaryDeleteBlocked": "Bunu silmeden önce başka bir fotoğrafı birincil yap.",
   "settingsPhotoPrimaryRequired": "Bir birincil fotoğraf seç.",
+  "settingsPhotoStillProcessing": "Bu fotoğraf hâlâ inceleniyor. Biraz sonra tekrar dene.",
   "settingsFirstNameRequired": "Ad gerekli.",
   "settingsFirstNameTooLong": "Ad çok uzun.",
+  "settingsLastNameRequired": "Soyad gerekli.",
+  "settingsLastNameTooLong": "Soyad çok uzun.",
   "settingsBioTooLong": "Hakkında metni çok uzun.",
   "settingsInterestsTooMany": "Daha az ilgi alanı seç.",
   "settingsMinAgeInvalid": "Minimum yaş en az 18 olmalı.",
@@ -1339,7 +1349,7 @@
   "termsDeletionTitle": "Kullanıcı tarafından hesap silme",
   "termsDeletionBody": "Ayarlar → Hesap → Hesabı Sil ile hesabınızı kalıcı olarak silebilirsiniz. Silme geri alınamaz ve yasal saklama sınırları dışında verilerinizi kaldırır.",
   "termsPaidTitle": "Ücretli özellikler / Boost",
-  "termsPaidBody": "Boost ve diğer satın alımlar uygulama mağazası üzerinden işlenir. İadeler mağaza politikalarına tabidir.",
+  "termsPaidBody": "Boost ve Premium uygulama mağazanız üzerinden satın alınır. Boost tek seferlik bir satın alımdır ve yenilenmez. Premium bir aboneliktir: mağaza hesabınızdan iptal edene kadar satın alırken gösterilen fiyatla otomatik olarak yenilenir; iptal ettiğinizde bir sonraki yenileme durur. İadeler, yasa aksini gerektirmedikçe mağaza politikalarına tabidir.",
   "termsThirdPartyTitle": "Üçüncü taraf hizmetler",
   "termsThirdPartyBody": "Mevora; Google, Apple, Spotify, Firebase ve doğrulama sağlayıcıları gibi hizmetlerle entegre olabilir. Bu hizmetlerin koşulları da geçerlidir.",
   "termsAvailabilityTitle": "Hizmetin kullanılabilirliği",
@@ -1351,7 +1361,7 @@
   "termsContactTitle": "İletişim",
   "termsContactBody": "Hukuki sorular için Ayarlar'dan destek talebi oluşturun veya halilmertdeveliii@gmail.com adresine yazın.",
   "termsEffectiveTitle": "Yürürlük tarihi",
-  "termsEffectiveBody": "Bu Koşullar 23 Ağustos 2026 tarihinden itibaren geçerlidir.",
+  "termsEffectiveBody": "Bu Koşullar 1 Ekim 2026 tarihinden itibaren geçerlidir.",
   "privacyIntroTitle": "Giriş",
   "privacyIntroBody": "Bu Gizlilik Politikası, Mevora'yı kullandığınızda kişisel verilerin nasıl toplandığını, kullanıldığını, saklandığını ve silindiğini açıklar.",
   "privacyDataCollectedTitle": "Genel bakış",
@@ -1359,35 +1369,37 @@
   "privacyAuthTitle": "Hesap ve kimlik doğrulama",
   "privacyAuthBody": "Giriş yönteminize göre e-posta, telefon numarası, sağlayıcı kimlikleri (Google, Apple, Spotify) ve Firebase Authentication kullanıcı kimliği işlenebilir.",
   "privacyProfileTitle": "Profil ve fotoğraflar",
-  "privacyProfileBody": "Sağladığınız profil bilgileri ve fotoğraflar Firebase Firestore ve Storage'da profilinizi göstermek ve eşleşmeyi sağlamak için saklanır.",
+  "privacyProfileBody": "Sağladığınız profil bilgileri (ad, doğum tarihi, cinsiyet, kiminle tanışmak istediğiniz, biyografi, tercihler, ilişki yanıtları, mizah puanları ve fotoğraflar) profilinizi göstermek ve eşleşmeyi sağlamak için Firebase Firestore ve Firebase Storage'da saklanır. Diğer üyeler doğum tarihinizi değil yaşınızı görür; soyadınız gizli kalır.",
+  "privacyVerificationTitle": "Fotoğraf ve kimlik doğrulama",
+  "privacyVerificationBody": "Bir profilin gerçek bir kişiye ait olduğunu doğrulamak için sizden bir özçekim isteyebiliriz. Özçekim, doğrulama sağlayıcımız Didit'e gönderilir; Didit görüntünün canlı bir kişiye ait olduğunu ve profil fotoğrafınızla eşleştiğini kontrol eder. Biz özçekimi değil kontrolün sonucunu saklarız; özçekim kontrol bittiğinde silinir. Kimlik doğrulama isteğe bağlıdır: seçerseniz Didit kimlik belgenizi ve özçekiminizi doğrudan işler, Mevora yalnızca sonucu saklar.",
   "privacyLocationTitle": "Konum bilgisi",
-  "privacyLocationBody": "İzninizle yaklaşık konum, yakındaki uyumlu kişileri göstermek için kullanılır. Keşfet sonuçlarında tam koordinatlar diğer kullanıcılara açıklanmaz.",
+  "privacyLocationBody": "İzninizle cihaz konumunuzu, yakınınızdaki uyumlu kişileri göstermek için kullanırız. Koordinatlarınız bu amaçla sunucularımızda saklanır ve diğer üyelere hiçbir zaman gösterilmez; onlar yalnızca şehrinizi ve yaklaşık mesafeyi görür.",
   "privacyMessagingTitle": "Mesajlar ve aramalar",
-  "privacyMessagingBody": "Sohbet mesajları, sesli notlar, görseller, yazıyor göstergesi ve arama meta verileri hizmeti sunmak için saklanır. Her iki taraf anahtar yayınladığında mesajlar uçtan uca şifrelenebilir.",
+  "privacyMessagingBody": "Mesaj metinleri, sesli notlar ve görseller uçtan uca şifrelenir: cihazınızda şifrelenir ve sunucularımızda yalnızca bizim okuyamadığımız şifreli hâli saklanır. Mesajları iletebilmek için kimin kime, ne zaman, hangi türde mesaj gönderdiğini ve okunup okunmadığını, ayrıca arama kayıtlarını saklarız.",
   "privacyMatchingTitle": "Eşleşme bilgileri",
-  "privacyMatchingBody": "Beğeniler, geçmeler, eşleşmeler, uyumluluk sinyalleri ve etkileşim geçmişi keşfet ve eşleşmeler için saklanır.",
+  "privacyMatchingBody": "Beğeniler, geçmeler, eşleşmeler, günlük sorulara verdiğiniz yanıtlar, mizah puanları, uyumluluk sinyalleri ve etkileşim geçmişi keşfet ve eşleşmeler için saklanır.",
   "privacyPreferencesTitle": "Kullanıcı tercihleri",
   "privacyPreferencesBody": "Bildirim tercihleri, gizlilik kontrolleri (çevrimiçi, son görülme, yazıyor), keşfet filtreleri ve dil ayarları tercihlerinize uyulması için saklanır.",
   "privacySpotifyTitle": "Spotify entegrasyonu",
   "privacySpotifyBody": "Spotify bağlarsanız, uyumluluk ve müzik özellikleri için hesap meta verileri ve müzik zevki sinyalleri saklanır. Ayarlardan bağlantıyı kesebilirsiniz.",
   "privacyDeviceTitle": "Cihaz ve teknik bilgiler",
-  "privacyDeviceBody": "Push bildirimleri, tanılama ve güvenlik kayıtları için cihaz belirteçleri Firebase altyapısı üzerinden işlenir.",
+  "privacyDeviceBody": "Push bildirim belirteçlerini ve Firebase Crashlytics ile Google Analytics for Firebase üzerinden, adınıza değil uygulama kurulumuna bağlı çökme raporlarını ve kullanım istatistiklerini işleriz. Mevora reklam göstermez ve reklam kimliğinizi kullanmaz.",
   "privacyWhyTitle": "Neden toplanıyor?",
   "privacyWhyBody": "Kimliğinizi doğrulamak, eşleşmeleri göstermek, mesajları iletmek, güvenliği artırmak, destek sunmak, satın alımları işlemek ve yasal yükümlülüklere uymak için.",
   "privacyStorageTitle": "Nerede saklanıyor?",
   "privacyStorageBody": "Veriler öncelikle Google Firebase'de (Firestore, Storage, Authentication, Cloud Functions) yapılandırıldığı şekilde AB bölgesinde saklanır.",
   "privacyRetentionTitle": "Ne kadar süre saklanıyor?",
-  "privacyRetentionBody": "Hesabınız aktifken veriler saklanır. Hesabı sildiğinizde, yasa veya dolandırıcılık önleme gerektirmedikçe ilişkili veriler silinir veya anonimleştirilir.",
+  "privacyRetentionBody": "Hesabınız aktifken veriler saklanır. Hesabınızı sildiğinizde profiliniz, fotoğraflarınız, mesajlarınız, beğenileriniz, yanıtlarınız ve satın alma kayıtlarınız silinir. Parçası olduğunuz eşleşmeler kapatılır ve artık adınızı ya da fotoğrafınızı göstermez; güvenlik ve moderasyon işlemlerine ait kayıtlar ise üyeleri korumak, dolandırıcılığı önlemek veya yasal yükümlülükleri yerine getirmek için gerektiğinde saklanabilir.",
   "privacySharingTitle": "Kimlerle paylaşılabiliyor?",
-  "privacySharingBody": "Kişisel verileri satmayız. Firebase, uygulama mağazaları, Spotify ve doğrulama sağlayıcılarıyla yalnızca hizmeti sunmak için paylaşırız.",
+  "privacySharingBody": "Kişisel verileri satmayız. Verileri yalnızca Mevora'yı çalıştırmak için gereken hizmet sağlayıcılarla paylaşırız: Google (Firebase barındırma, kimlik doğrulama, bildirimler, çökme raporları ve analiz; satın alımlar için Google Play), bağlarsanız Spotify, fotoğraf ve kimlik doğrulaması için Didit ve cihazınızın mizah içeriğini doğrudan yüklediği GIPHY.",
   "privacyRightsTitle": "Haklarınız",
-  "privacyRightsBody": "Bölgenize göre erişim, düzeltme, silme veya kısıtlama talep edebilirsiniz. Hesap silme Ayarlar'da mevcuttur.",
+  "privacyRightsBody": "Bölgenize göre erişim, düzeltme, silme veya kısıtlama talep edebilirsiniz. Verilerinizin bir kopyasını Ayarlar → Hesap → Verilerimi indir bölümünden indirebilir, hesabınızı Ayarlar'dan silebilirsiniz.",
   "privacyDeletionTitle": "Verilerinizi silme",
   "privacyDeletionBody": "Kalıcı silme için Ayarlar → Hesap → Hesabı Sil'i kullanın. Oluşturduğunuz destek talepleri de hesap silme sırasında kaldırılır.",
   "privacySecurityTitle": "Güvenlik",
-  "privacySecurityBody": "Erişim kontrolleri, aktarım şifrelemesi, isteğe bağlı mesaj şifrelemesi ve Firebase güvenlik kuralları kullanıyoruz. Sorunları destek üzerinden bildirin.",
+  "privacySecurityBody": "Erişim kontrolleri, aktarım şifrelemesi, mesaj içeriğinin uçtan uca şifrelenmesi ve Firebase güvenlik kuralları kullanıyoruz. Hiçbir sistem tamamen güvenli değildir; sorunları destek üzerinden bildirin.",
   "privacyChildrenTitle": "Çocuklar",
-  "privacyChildrenBody": "Mevora 18 yaş altı kullanıcılar içindir. Reşit olmayan hesaplar silinir.",
+  "privacyChildrenBody": "Mevora 18 yaşından küçükler için değildir. 18 yaşından küçük birine ait olduğu anlaşılan hesaplar kapatılır.",
   "privacyChangesTitle": "Politika değişiklikleri",
   "privacyChangesBody": "Bu politikayı güncelleyebiliriz. Güncel sürüm uygulamada ve kamuya açık politika sayfasında yer alır.",
   "privacyContactTitle": "İletişim",
@@ -1551,20 +1563,20 @@
   "cohabitationMaybeLater": "İleride olabilir",
   "cohabitationUnsure": "Emin değilim",
   "cohabitationNo": "İstemiyorum",
-  "languageGerman": "Almanca",
-  "languageFrench": "Fransızca",
-  "languageSpanish": "İspanyolca",
-  "languageItalian": "İtalyanca",
-  "languageRussian": "Rusça",
-  "languageArabic": "Arapça",
-  "languagePersian": "Farsça",
-  "languageKurdish": "Kürtçe",
-  "languageGreek": "Yunanca",
-  "languageDutch": "Hollandaca",
-  "languagePortuguese": "Portekizce",
-  "languageChinese": "Çince",
-  "languageJapanese": "Japonca",
-  "languageKorean": "Korece",
+  "languageGerman": "Almanca 🇩🇪",
+  "languageFrench": "Fransızca 🇫🇷",
+  "languageSpanish": "İspanyolca 🇪🇸",
+  "languageItalian": "İtalyanca 🇮🇹",
+  "languageRussian": "Rusça 🇷🇺",
+  "languageArabic": "Arapça 🌐",
+  "languagePersian": "Farsça 🌐",
+  "languageKurdish": "Kürtçe 🌐",
+  "languageGreek": "Yunanca 🇬🇷",
+  "languageDutch": "Hollandaca 🇳🇱",
+  "languagePortuguese": "Portekizce 🇵🇹",
+  "languageChinese": "Çince 🌐",
+  "languageJapanese": "Japonca 🇯🇵",
+  "languageKorean": "Korece 🇰🇷",
   "hobbyWorkingOut": "Spor yapmak",
   "hobbyRunning": "Koşu",
   "hobbyFitness": "Fitness",
@@ -1645,7 +1657,6 @@
   "humorCompatibilitySharedStyles": "Ortak mizah tarzlarınız",
   "humorCompatibilityNote": "Bu, ikinizin mizah içeriklerine verdiği tepkilerden çıkan hafif bir işaret; ilişkiniz hakkında kesin bir şey söylemez.",
   "humorTopVibes": "Öne çıkan tarzların",
-  "humorSkipContent": "Geç",
   "humorReport": "Şikayet et",
   "humorReportSuccess": "Teşekkürler — bu içeriği inceleyeceğiz.",
   "humorHowFunny": "Ne kadar komik?",
@@ -1743,7 +1754,17 @@
   "musicLimitedData": "Spotify bağlı, ancak henüz fazla dinleme geçmişi yok.",
   "humorCalibrationIntroTitle": "Neye güldüğünü öğrenelim",
   "humorCalibrationIntroBody": "Birkaç kısa içeriğe tepki ver. Verdiğin tepkiler mizah zevkini anlamamıza yardımcı olur; böylece eşleşmelerinle ortak mizahınızı sana gösterebiliriz.",
-  "humorCalibrationIntroMeta": "15 kısa içerik · yaklaşık 1 dakika",
+  "humorCalibrationIntroMeta": "{count} kısa içerik · yaklaşık 1 dakika",
+  "@humorCalibrationIntroMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "humorCalibrationPausedTitle": "Bugünlük bu kadar",
+  "humorCalibrationPausedBody": "Bir içerik oynatılamadı. Kalanı yarın seni bekliyor; mizah profilin o zaman tamamlanacak.",
+  "humorLabCalibratedBody": "Bundan sonra her gün birkaç yeni içerikle devam ediyoruz.",
   "humorCalibrationStart": "Başla",
   "humorCalibrationSkip": "Şimdilik geç",
   "humorCalibrationResume": "Devam et",
@@ -1808,7 +1829,6 @@
       }
     }
   },
-  "humorResultKeepGoing": "Mizah profilini geliştirmeye devam et",
   "humorResultDone": "Devam et",
   "humorResultEvolvesNote": "Yeni içeriklere tepki verdikçe profilin gelişmeye devam eder.",
   "humorResultStrengthHigh": "Güçlü",
@@ -1860,6 +1880,65 @@
   "premiumAlreadyActive": "Zaten Premium üyesin.",
   "premiumRetry": "Tekrar dene",
   "premiumRenewsLabel": "Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.",
+  "premiumPlanBilledMonthly": "Aylık faturalanır",
+  "premiumPlanBilledYearly": "Yıllık faturalanır",
+  "premiumPricePerMonth": "{price} / ay",
+  "@premiumPricePerMonth": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumPricePerYear": "{price} / yıl",
+  "@premiumPricePerYear": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalMonthly": "Aboneliğin, sen iptal edene kadar her ay {price} üzerinden otomatik yenilenir.",
+  "@premiumRenewalMonthly": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalYearly": "Aboneliğin, sen iptal edene kadar her yıl {price} üzerinden otomatik yenilenir.",
+  "@premiumRenewalYearly": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalGeneric": "Aboneliğin, sen iptal edene kadar her fatura döneminde {price} üzerinden otomatik yenilenir.",
+  "@premiumRenewalGeneric": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumCancelHow": "İstediğin zaman {store} > Abonelikler bölümünden iptal edebilirsin. Ödediğin dönemin sonuna kadar Premium açık kalır.",
+  "@premiumCancelHow": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumManageSubscription": "Aboneliği yönet",
+  "premiumManageSubscriptionFailed": "{store} açılamadı. Aboneliğini yönetmek için {store} > Abonelikler bölümüne git.",
+  "@premiumManageSubscriptionFailed": {
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
   "musicFollowedArtistsTitle": "Takip ettiğin sanatçılar",
   "musicTopArtistsTitle": "En çok dinlediğin sanatçılar",
   "musicTopTracksTitle": "En çok dinlediğin parçalar",
@@ -1969,9 +2048,11 @@
   },
   "humorDailyHintStart": "Bugünün mizah turuna başladık.",
   "humorDailyHintMiddle": "Biraz daha tanıyoruz 👀",
-  "humorDailyHintEnd": "Son birkaç video.",
+  "humorDailyHintEnd": "Neredeyse bitti.",
   "humorDailyCompletedTitle": "Bugünlük tamam 🎭",
   "humorDailyCompletedBody": "Mizah profilin biraz daha netleşti.",
+  "humorDailyCompletedTomorrow": "Yarın yeni tur seni bekliyor.",
+  "humorDailySequenceComplete": "Şimdilik tüm içerikleri tamamladın. Yenileri eklendiğinde tur devam edecek.",
   "humorDailyNotReadyTitle": "Bugünün turu hazırlanıyor",
   "humorDailyNotReadyBody": "Biraz sonra yeniden bakabilirsin.",
   "humorDailyLockedBody": "Günlük mizah turu, mizah profilin hazır olduğunda başlar.",
@@ -2047,5 +2128,44 @@
   "moderationAppealAlreadySent": "Bu karara zaten itiraz ettin.",
   "moderationAppealNotAllowed": "Bu karara itiraz edilemez.",
   "moderationAppealInvalid": "Lütfen 10 ile 2.000 karakter arasında yaz.",
-  "moderationAppealFailed": "İtirazın gönderilemedi. Bağlantını kontrol edip tekrar dene."
+  "moderationAppealFailed": "İtirazın gönderilemedi. Bağlantını kontrol edip tekrar dene.",
+  "faceAnchorRequiredNotice": "Devam etmek için yüzünün net göründüğü bir fotoğrafını doğrula.",
+  "faceAnchorVerifyAction": "Fotoğrafını doğrula",
+  "faceAnchorVerifyShort": "Doğrula",
+  "faceAnchorVerified": "Bu fotoğraf doğrulandı",
+  "faceAnchorVerifiedShort": "Doğrulandı",
+  "faceAnchorPending": "Doğrulama bekleniyor",
+  "faceAnchorPhotoInReview": "Fotoğraf inceleniyor",
+  "faceAnchorNotVerified": "Doğrulanamadı",
+  "faceAnchorRetry": "Tekrar dene",
+  "faceAnchorMismatch": "Bu fotoğraf çektiğin selfie ile eşleşmedi.",
+  "faceAnchorLivenessFailed": "Canlılık doğrulaması tamamlanamadı. Aydınlık bir yerde, doğrudan kameraya bakarak tekrar dene.",
+  "faceAnchorPhotoUnclear": "Bu fotoğrafta yüzün tek başına ve net görünmüyor. Yalnızca senin göründüğün bir fotoğraf seç.",
+  "faceAnchorSelfieInvalid": "Selfie kullanılamadı. Kameranla yeni bir selfie çekip tekrar dene.",
+  "faceAnchorTechnicalError": "Doğrulama şu anda tamamlanamadı. Fotoğrafın doğrulanmadı; biraz sonra tekrar dene.",
+  "faceAnchorPrimaryRequiresVerify": "Bu fotoğrafı ana fotoğraf yapmak için önce doğrula.",
+  "faceAnchorLastAnchorDelete": "Son doğrulanmış fotoğrafını silemezsin. Önce başka bir fotoğrafını doğrula.",
+  "faceAnchorExplainBody": "Fotoğrafının gerçekten sana ait olduğundan emin olmak için kısa bir selfie kontrolü yapıyoruz.",
+  "faceAnchorExplainSteps": "Ön kameranla bir selfie çekeceksin. Selfie yalnızca bu kontrol için kullanılır, profilinde görünmez ve kontrol bitince silinir.",
+  "faceAnchorConsent": "Selfiemin bu fotoğrafla karşılaştırılması için işlenmesini kabul ediyorum.",
+  "faceAnchorTakeSelfie": "Selfie çek",
+  "faceAnchorOpening": "Hazırlanıyor…",
+  "faceAnchorCapturing": "Kamera açılıyor…",
+  "faceAnchorUploading": "Selfie gönderiliyor…",
+  "faceAnchorVerifying": "Doğrulanıyor…",
+  "faceAnchorSuccessBody": "Bu fotoğraf artık ana fotoğrafın olabilir.",
+  "faceAnchorDone": "Tamam",
+  "faceAnchorChooseAnother": "Başka fotoğraf seç",
+  "faceAnchorPromptBody": "Profilinin gerçekten sana ait olduğunu göstermek için yüzünün net göründüğü bir fotoğrafını doğrula.",
+  "faceAnchorProfileVerifiedTitle": "Profil fotoğrafın doğrulandı",
+  "faceAnchorPromptTileSubtitle": "Yüzünün göründüğü bir fotoğrafı kısa bir selfie ile doğrula",
+  "faceAnchorErrorUnavailable": "Fotoğraf doğrulama şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.",
+  "faceAnchorErrorPhotoNotApproved": "Bu fotoğraf hâlâ inceleniyor. İnceleme bitince doğrulayabilirsin.",
+  "faceAnchorErrorCooldown": "Biraz bekleyip tekrar dene.",
+  "faceAnchorErrorAttemptLimit": "Bugünlük deneme hakkın doldu. Yarın tekrar deneyebilirsin.",
+  "faceAnchorErrorCamera": "Kamera açılamadı. Kamera iznini kontrol edip tekrar dene.",
+  "faceAnchorErrorUpload": "Selfie gönderilemedi. Bağlantını kontrol edip tekrar dene.",
+  "faceAnchorErrorInProgress": "Bir doğrulama zaten sürüyor. Lütfen sonucu bekle.",
+  "faceAnchorErrorConsent": "Devam etmek için onay vermen gerekiyor.",
+  "faceAnchorErrorGeneric": "Doğrulama başlatılamadı. Lütfen tekrar dene."
 }

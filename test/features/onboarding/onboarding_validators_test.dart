@@ -81,10 +81,17 @@ void main() {
       ],
     );
 
-    expect(OnboardingValidators.validateCompletion(complete).isSuccess, isTrue);
+    expect(
+      OnboardingValidators.validateCompletion(
+        complete,
+        lastName: 'Lovelace',
+      ).isSuccess,
+      isTrue,
+    );
     expect(
       OnboardingValidators.validateCompletion(
         complete.copyWith(bio: 'short'),
+        lastName: 'Lovelace',
       ).isError,
       isTrue,
     );

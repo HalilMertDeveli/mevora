@@ -21,7 +21,7 @@ import 'package:mevora/shared/widgets/mevora_loading.dart';
 import 'package:mevora/shared/widgets/mevora_meter.dart';
 import 'package:mevora/shared/widgets/mevora_selectable_tile.dart';
 
-/// "Mevora seni her gün biraz daha tanısın": today's 10 questions, one per
+/// "Mevora seni her gün biraz daha tanısın": today's questions, one per
 /// screen. Every member sees the same questions in the same order today.
 ///
 /// Opened by the journey (after onboarding and on a new day), from the Picks

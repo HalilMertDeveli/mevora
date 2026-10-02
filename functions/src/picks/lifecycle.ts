@@ -1,5 +1,11 @@
 import {createHash} from "node:crypto";
-import {PICKS_CONFIG, PICKS_SCHEMA_VERSION} from "./config.js";
+import {
+  LEGACY_BATCH_SIZING,
+  PICKS_CONFIG,
+  PICKS_SCHEMA_VERSION,
+  PICKS_SIZING,
+  type PicksSizing,
+} from "./config.js";
 import {isPickType} from "./categories.js";
 import type {ComposedPick, PickReason, PickType} from "./types.js";
 
@@ -17,6 +23,10 @@ import type {ComposedPick, PickReason, PickType} from "./types.js";
  *   active ──batch expires undecided──▶ cooldown for `expiredCooldownMs`
  *
  * Opening a profile is not a transition: the Pick stays active.
+ *
+ * A batch is filled once, when it is generated. The only later additions are
+ * replacements for Picks that became ineligible, one per such Pick, within the
+ * day's ceiling. A short (low-supply) batch stays short until tomorrow.
  *
  * Only ids, codes and numbers are stored — never another member's profile
  * content. Names and photos are read fresh on every request.
@@ -71,6 +81,17 @@ export interface PicksBatch {
   lastScanAtMs: number;
   /** Picks this batch has delivered in total, replacements included. */
   deliveredCount: number;
+  /**
+   * The day's size, fixed when the batch is generated: how many Picks it aims
+   * for and the most it may ever deliver, replacements included. A config
+   * change applies from the next batch, never to one already being shown.
+   */
+  targetCount: number;
+  maxDeliveredCount: number;
+  /** Picks delivered when the batch was generated; the rest are replacements. */
+  initialCount: number;
+  /** Replacement scans in a row that found nobody; sets the backoff. */
+  emptyTopUpStreak: number;
   picks: StoredPick[];
   /** candidateUid → epoch ms until which they may not be picked again. */
   cooldowns: Record<string, number>;
@@ -132,6 +153,11 @@ export function parseBatch(raw: unknown): PicksBatch | null {
     }
   }
   const generatedAtMs = finiteOr(data.generatedAtMs, 0);
+  const sized = Number.isFinite(Number(data.targetCount)) && Number(data.targetCount) > 0;
+  const targetCount = sized ? Number(data.targetCount) : LEGACY_BATCH_SIZING.targetCount;
+  const maxDeliveredCount = sized
+    ? Math.max(targetCount, finiteOr(data.maxDeliveredCount, targetCount))
+    : LEGACY_BATCH_SIZING.maxDeliveredPerBatch;
   return {
     schemaVersion: PICKS_SCHEMA_VERSION,
     generationId: data.generationId,
@@ -139,6 +165,13 @@ export function parseBatch(raw: unknown): PicksBatch | null {
     refreshAtMs: finiteOr(data.refreshAtMs, nextLogicalDayStartMs(generatedAtMs)),
     lastScanAtMs: finiteOr(data.lastScanAtMs, generatedAtMs),
     deliveredCount: finiteOr(data.deliveredCount, picks.length),
+    targetCount,
+    maxDeliveredCount,
+    initialCount: finiteOr(
+      data.initialCount,
+      Math.min(finiteOr(data.deliveredCount, picks.length), targetCount),
+    ),
+    emptyTopUpStreak: Math.max(0, finiteOr(data.emptyTopUpStreak, 0)),
     picks,
     cooldowns,
     candidateUids: candidateUidsOf(picks, cooldowns),
@@ -241,7 +274,9 @@ export function newBatch(input: {
   nowMs: number;
   picks: StoredPick[];
   cooldowns: Record<string, number>;
+  sizing?: PicksSizing;
 }): PicksBatch {
+  const sizing = input.sizing ?? PICKS_SIZING;
   return withIndex({
     schemaVersion: PICKS_SCHEMA_VERSION,
     generationId: input.generationId,
@@ -249,6 +284,10 @@ export function newBatch(input: {
     refreshAtMs: nextLogicalDayStartMs(input.nowMs),
     lastScanAtMs: input.nowMs,
     deliveredCount: input.picks.length,
+    targetCount: sizing.targetCount,
+    maxDeliveredCount: sizing.maxDeliveredPerBatch,
+    initialCount: input.picks.length,
+    emptyTopUpStreak: 0,
     picks: input.picks,
     cooldowns: input.cooldowns,
     candidateUids: [],
@@ -262,12 +301,13 @@ export function appendPicks(batch: PicksBatch, picks: StoredPick[], nowMs: numbe
     picks: [...batch.picks, ...picks],
     deliveredCount: batch.deliveredCount + picks.length,
     lastScanAtMs: nowMs,
+    emptyTopUpStreak: 0,
   });
 }
 
-/** Records a top-up scan that found nobody, so the next one waits its turn. */
+/** Records a top-up scan that found nobody, so the next one waits longer. */
 export function markScanned(batch: PicksBatch, nowMs: number): PicksBatch {
-  return {...batch, lastScanAtMs: nowMs};
+  return {...batch, lastScanAtMs: nowMs, emptyTopUpStreak: batch.emptyTopUpStreak + 1};
 }
 
 /**
@@ -280,23 +320,44 @@ export function slotsUsed(batch: PicksBatch): number {
 }
 
 /**
- * Whether a live batch may look for more people now: it has open slots (a
- * short first batch, or a Pick that stopped being eligible), delivery budget
- * left, and has not scanned recently.
+ * Replacements the batch still owes: one per Pick that became ineligible,
+ * minus those already delivered. Liked, passed and matched Picks owe nothing,
+ * and neither does a batch that was simply short when it was generated.
+ */
+export function replacementsOwed(batch: PicksBatch): number {
+  const ineligible = batch.picks.filter((pick) => pick.state === "ineligible").length;
+  const replaced = Math.max(0, batch.deliveredCount - batch.initialCount);
+  return Math.max(0, ineligible - replaced);
+}
+
+/**
+ * How long after the last scan the next replacement scan may run: the
+ * interval, doubled for every empty scan in a row, up to the cap.
+ */
+export function topUpWaitMs(batch: PicksBatch): number {
+  const doubled = PICKS_CONFIG.topUpMinIntervalMs * 2 ** Math.min(batch.emptyTopUpStreak, 16);
+  return Math.min(doubled, Math.max(PICKS_CONFIG.topUpMinIntervalMs, PICKS_CONFIG.topUpMaxBackoffMs));
+}
+
+/** Whether the scan clock allows a replacement scan now. */
+export function topUpScanDue(batch: PicksBatch, nowMs: number): boolean {
+  return nowMs - batch.lastScanAtMs >= topUpWaitMs(batch);
+}
+
+/**
+ * Whether a live batch may look for replacements now: a Pick became
+ * ineligible and has not been replaced, the day's ceiling has room, and the
+ * scan clock (with its backoff) allows it.
  */
 export function needsTopUp(batch: PicksBatch, nowMs: number): boolean {
-  return (
-    slotsUsed(batch) < PICKS_CONFIG.targetCount &&
-    batch.deliveredCount < PICKS_CONFIG.maxDeliveredPerBatch &&
-    nowMs - batch.lastScanAtMs >= PICKS_CONFIG.topUpMinIntervalMs
-  );
+  return topUpSlots(batch) > 0 && topUpScanDue(batch, nowMs);
 }
 
 /** How many replacements a top-up may add. */
 export function topUpSlots(batch: PicksBatch): number {
-  const byTarget = PICKS_CONFIG.targetCount - slotsUsed(batch);
-  const byBudget = PICKS_CONFIG.maxDeliveredPerBatch - batch.deliveredCount;
-  return Math.max(0, Math.min(byTarget, byBudget));
+  const byTarget = batch.targetCount - slotsUsed(batch);
+  const byBudget = batch.maxDeliveredCount - batch.deliveredCount;
+  return Math.max(0, Math.min(replacementsOwed(batch), byTarget, byBudget));
 }
 
 /**

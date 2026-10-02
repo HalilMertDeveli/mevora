@@ -1,15 +1,22 @@
+/// Why a member reports someone. The report page lists the reasons in this
+/// order, so the two that concern a minor come first; the order is display
+/// only (the server receives [ReportReasonX.firestoreValue]).
 enum ReportReason {
+  /// Sexual content or behaviour involving a minor (CSAE). The in-app
+  /// child-safety report Google Play requires of dating apps.
+  childSafety,
+  underage,
   spam,
   harassment,
   inappropriateContent,
   scam,
   fakeProfile,
-  underage,
   other,
 }
 
 extension ReportReasonX on ReportReason {
   String get firestoreValue => switch (this) {
+    ReportReason.childSafety => 'child_safety',
     ReportReason.spam => 'spam',
     ReportReason.harassment => 'harassment',
     ReportReason.inappropriateContent => 'inappropriate_content',
@@ -20,6 +27,7 @@ extension ReportReasonX on ReportReason {
   };
 
   String get label => switch (this) {
+    ReportReason.childSafety => 'Child Safety',
     ReportReason.spam => 'Spam',
     ReportReason.harassment => 'Harassment',
     ReportReason.inappropriateContent => 'Inappropriate Content',

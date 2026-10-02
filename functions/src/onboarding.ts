@@ -2,11 +2,19 @@ import {getApps, initializeApp} from "firebase-admin/app";
 import {FieldValue, getFirestore, type DocumentData} from "firebase-admin/firestore";
 import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
+import {isFaceAnchorEnforced} from "./faceAnchor/faceAnchorConfig.js";
+import {computePhotoInvariants, dedupePhotos} from "./moderation/photoInvariants.js";
+import {isPublishedStoragePath} from "./moderation/photoModerationLedger.js";
+import {commitPhotoInvariants, loadPhotoState} from "./moderation/photoModerationService.js";
+import type {PhotoRecord} from "./moderation/types.js";
+import {requireOnboardingNames} from "./personName.js";
+import {accountBirthFields, memberBirthDate} from "./profileAge.js";
 import {markLearningRequired} from "./relationshipLearning/store.js";
 import {
+  ageFromBirthDate,
   countApprovedPhotos,
   isAccountEligible,
-  isAdultProfile,
+  isFaceAnchorRequiredFor,
   MAX_PROFILE_PHOTOS,
   MIN_ONBOARDING_AGE,
   MIN_PROFILE_PHOTOS,
@@ -40,8 +48,7 @@ function requireString(value: unknown, field: string): string {
   return text;
 }
 
-function validateOnboardingProfile(data: DocumentData): void {
-  requireString(data.displayName, "displayName");
+function validateOnboardingProfile(data: DocumentData, age: number | null): void {
   requireString(data.gender, "gender");
   requireString(data.interestedIn, "interestedIn");
   requireString(data.city, "city");
@@ -79,12 +86,14 @@ function validateOnboardingProfile(data: DocumentData): void {
     requireString(value, field);
   }
 
-  if (!isAdultProfile(data)) {
+  if (age === null || age < MIN_ONBOARDING_AGE) {
     throw new HttpsError("failed-precondition", "underage");
   }
 
-  const approvedCount = countApprovedPhotos(data.photos);
-  const pendingCount = ((data.photos as Array<Record<string, unknown>>) ?? []).filter(
+  // Counted per photo id: the same id written three times is one photo.
+  const distinct = dedupePhotos((data.photos as PhotoRecord[] | undefined) ?? []);
+  const approvedCount = countApprovedPhotos(distinct);
+  const pendingCount = distinct.filter(
     (photo) => String(photo.moderationStatus ?? "pending") === "pending",
   ).length;
   const totalUsable = approvedCount + pendingCount;
@@ -111,46 +120,87 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
   }
 
   const data = profileSnap.data() ?? {};
-  validateOnboardingProfile(data);
-
-  const age = resolveProfileAge(data);
-  if (age === null || age < MIN_ONBOARDING_AGE) {
+  // First name from the public profile, surname from the private account.
+  requireOnboardingNames(data, accountSnap.data());
+  // The date of birth is private account data: users/{uid} is owner-only,
+  // profiles/{uid} is not. The age below is the only thing derived from it
+  // that reaches the profile, and it is written here, never by the client —
+  // an `age` already on the profile counts only for a member who completed
+  // before the date moved, whose profile the server itself last wrote.
+  const birthDate = memberBirthDate(accountSnap.data(), data);
+  const age = birthDate
+    ? ageFromBirthDate(birthDate.toDate())
+    : data.profileCompleted === true
+      ? resolveProfileAge(data)
+      : null;
+  validateOnboardingProfile(data, age);
+  if (age === null) {
     throw new HttpsError("failed-precondition", "underage");
   }
 
-  const photos = ((data.photos as Array<Record<string, unknown>>) ?? []);
-  const approvedCount = countApprovedPhotos(photos);
-  // Usable count already validated above. Do not block onboarding on async
-  // photo moderation — users must be able to finish signup. Discovery still
-  // projects only approved photos via publicProfileProjection.
-  const photosReadyForDiscovery = approvedCount >= MIN_PROFILE_PHOTOS;
-  const hasRejected = photos.some(
-    (photo) => String(photo.moderationStatus ?? "") === "rejected",
-  );
-  const profileModerationStatus = hasRejected
-    ? "rejected"
-    : photosReadyForDiscovery
-      ? "approved"
-      : "pending";
+  // Face Anchor. A member who finished onboarding before the rule applied to
+  // them is not put under it by calling this again — they are prompted in the
+  // app instead and come under it with their first verified photo. Read from
+  // profiles/{uid}: its completion flags are server-written, unlike the copy
+  // on users/{uid}.
+  const anchorRequired = isFaceAnchorRequiredFor(data, isFaceAnchorEnforced());
 
   const now = FieldValue.serverTimestamp();
-  await db.doc(`profiles/${uid}`).set(
-    {
+  await db.runTransaction(async (tx) => {
+    const photoState = await loadPhotoState(tx, db, uid);
+    if (!photoState.exists) {
+      throw new HttpsError("failed-precondition", "profile-missing");
+    }
+    // Moderation status and the anchor come from the ledger, not from what the
+    // client wrote into photos[].
+    const invariants = computePhotoInvariants(photoState.photos, photoState.ledger);
+    if (anchorRequired && invariants.faceAnchorPhotoIds.length === 0) {
+      throw new HttpsError("failed-precondition", "face-anchor-required");
+    }
+    const approvedCount = countApprovedPhotos(invariants.photos);
+    // Usable count already validated above. Do not block onboarding on async
+    // photo moderation — users must be able to finish signup. Discovery still
+    // projects only approved photos via publicProfileProjection.
+    const photosReadyForDiscovery = approvedCount >= MIN_PROFILE_PHOTOS;
+    const hasRejected = invariants.photos.some(
+      (photo) => String(photo.moderationStatus ?? "") === "rejected",
+    );
+    const profileModerationStatus = hasRejected
+      ? "rejected"
+      : photosReadyForDiscovery
+        ? "approved"
+        : "pending";
+    const completion = {
       uid,
       age,
-      photos,
       profileCompleted: true,
       onboardingCompleted: true,
       isProfileComplete: true,
-  // Allow app entry immediately. Discover requires approved photos
-  // (usableDiscoveryPhotos == approvedPhotos); pending stay owner-private.
-  isDiscoverable: true,
+      // Allow app entry immediately. Discover requires approved photos
+      // (usableDiscoveryPhotos == approvedPhotos); pending stay owner-private.
+      isDiscoverable: true,
       profileModerationStatus,
       onboardingStep: "complete",
-      updatedAt: now,
-    },
-    {merge: true},
-  );
+      ...(anchorRequired ? {faceAnchorRequired: true} : {}),
+      // A date an older app build left on the profile moves to the account
+      // below, in this same transaction.
+      ...("birthDate" in data ? {birthDate: FieldValue.delete()} : {}),
+    };
+    // photos[] is no longer written back from here: the array read above the
+    // transaction could be stale and would undo the reconciling trigger. A
+    // profile still holding pre-ledger photos is left to that trigger, which
+    // can check Storage before adopting them.
+    const hasLegacyPhotos = invariants.unrecordedPhotos.some((photo) =>
+      isPublishedStoragePath(uid, photo.storagePath));
+    if (hasLegacyPhotos) {
+      tx.update(db.doc(`profiles/${uid}`), {...completion, updatedAt: now});
+    } else {
+      commitPhotoInvariants(tx, db, uid, photoState, {profilePatch: completion});
+    }
+    if (birthDate) {
+      tx.set(db.doc(`users/${uid}`), accountBirthFields(birthDate, new Date()), {merge: true});
+    }
+  });
   await db.doc(`users/${uid}`).set(
     {
       uid,

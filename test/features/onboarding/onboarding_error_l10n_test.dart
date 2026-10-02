@@ -15,7 +15,10 @@ void main() {
   final en = lookupAppLocalizations(const Locale('en'));
 
   String shown(AppLocalizations l10n, UserProfile profile) {
-    final result = OnboardingValidators.validateBasicInfo(profile);
+    final result = OnboardingValidators.validateBasicInfo(
+      profile,
+      lastName: 'Lovelace',
+    );
     final failure = result.failureOrNull! as ValidationFailure;
     return OnboardingErrorL10n.message(l10n, failure.message);
   }

@@ -5,6 +5,9 @@ import 'package:mevora/core/constants/app_spacings.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
+import 'package:mevora/features/face_anchor/domain/entities/face_anchor_state.dart';
+import 'package:mevora/features/face_anchor/presentation/face_anchor_l10n.dart';
+import 'package:mevora/features/face_anchor/presentation/widgets/face_anchor_badge.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 import 'package:mevora/l10n/app_localizations.dart';
@@ -24,7 +27,16 @@ class PhotoGridEditor extends StatelessWidget {
     required this.onDelete,
     required this.onReorder,
     required this.onSetPrimary,
+    this.faceAnchorStatusOf,
+    this.onVerify,
   });
+
+  /// How each photo stands with Face Anchor verification. Null where
+  /// verification is not wired in; the rows then show no verification state.
+  final FaceAnchorPhotoStatus Function(ProfilePhoto photo)? faceAnchorStatusOf;
+
+  /// Opens verification for a photo.
+  final ValueChanged<ProfilePhoto>? onVerify;
 
   final List<ProfilePhoto> photos;
   final VoidCallback onAdd;
@@ -59,9 +71,15 @@ class PhotoGridEditor extends StatelessWidget {
               child: _PhotoRow(
                 photo: photo,
                 index: index,
+                faceAnchor:
+                    faceAnchorStatusOf?.call(photo) ??
+                    (photo.isFaceAnchor
+                        ? FaceAnchorPhotoStatus.verified
+                        : FaceAnchorPhotoStatus.none),
                 label: photo.isPrimary
                     ? l10n.onboardingPrimaryPhoto
                     : l10n.onboardingPhotoNumber(index + 1),
+                onVerify: _canVerify(photo) ? () => onVerify!(photo) : null,
                 onMenu: () => unawaited(_openMenu(context, photo)),
               ),
             );
@@ -73,11 +91,25 @@ class PhotoGridEditor extends StatelessWidget {
     );
   }
 
+  bool _canVerify(ProfilePhoto photo) {
+    final status = faceAnchorStatusOf?.call(photo);
+    return onVerify != null &&
+        (status == FaceAnchorPhotoStatus.canVerify ||
+            status == FaceAnchorPhotoStatus.notVerified);
+  }
+
   Future<void> _openMenu(BuildContext context, ProfilePhoto photo) async {
     final l10n = AppLocalizations.of(context);
+    final canVerify = _canVerify(photo);
     final choice = await MevoraBottomSheet.showActions<String>(
       context,
       actions: [
+        if (canVerify)
+          MevoraSheetAction(
+            value: 'verify',
+            label: l10n.faceAnchorVerifyAction,
+            icon: MevoraIcons.faceAnchorVerify,
+          ),
         if (!photo.isPrimary)
           MevoraSheetAction(
             value: 'primary',
@@ -93,6 +125,8 @@ class PhotoGridEditor extends StatelessWidget {
       ],
     );
     switch (choice) {
+      case 'verify':
+        onVerify?.call(photo);
       case 'primary':
         onSetPrimary(photo.id);
       case 'delete':
@@ -105,13 +139,19 @@ class _PhotoRow extends StatelessWidget {
   const _PhotoRow({
     required this.photo,
     required this.index,
+    required this.faceAnchor,
     required this.label,
+    required this.onVerify,
     required this.onMenu,
   });
 
   final ProfilePhoto photo;
   final int index;
+  final FaceAnchorPhotoStatus faceAnchor;
   final String label;
+
+  /// Non-null when this photo can be verified now.
+  final VoidCallback? onVerify;
   final VoidCallback onMenu;
 
   @override
@@ -120,6 +160,9 @@ class _PhotoRow extends StatelessWidget {
     final p = context.palette;
     final l10n = AppLocalizations.of(context);
     final provider = MevoraNetworkImages.provider(photo.downloadUrl);
+    final statusLine = faceAnchor == FaceAnchorPhotoStatus.verified
+        ? null
+        : FaceAnchorL10n.photoStatus(l10n, faceAnchor);
     final placeholder = ColoredBox(
       color: p.surfaceMuted,
       child: Icon(MevoraIcons.photo, color: p.textTertiary),
@@ -162,17 +205,42 @@ class _PhotoRow extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: photo.isPrimary
-                    ? MevoraPill(
-                        label: label,
-                        icon: MevoraIcons.star,
-                        tone: MevoraTone.accent,
-                      )
-                    : Text(label, style: theme.textTheme.bodyLarge),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (photo.isPrimary)
+                    MevoraPill(
+                      label: label,
+                      icon: MevoraIcons.star,
+                      tone: MevoraTone.accent,
+                    )
+                  else
+                    Text(label, style: theme.textTheme.bodyLarge),
+                  if (faceAnchor == FaceAnchorPhotoStatus.verified) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    const FaceAnchorBadge(),
+                  ] else if (statusLine != null) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      statusLine,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: p.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
+            if (onVerify != null)
+              TextButton(
+                onPressed: onVerify,
+                child: Text(
+                  faceAnchor == FaceAnchorPhotoStatus.notVerified
+                      ? l10n.faceAnchorRetry
+                      : l10n.faceAnchorVerifyShort,
+                ),
+              ),
             MevoraIconButton(
               icon: MevoraIcons.more,
               tooltip: l10n.more,

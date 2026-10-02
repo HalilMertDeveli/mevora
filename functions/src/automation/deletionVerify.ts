@@ -3,6 +3,7 @@ import {getFirestore, type Firestore} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {logger} from "firebase-functions";
 import {safeLogMeta} from "../security/logHygiene.js";
+import {uidRateLimitPaths} from "../callableRateLimit.js";
 
 export type DeletionVerifyResult = {
   uid: string;
@@ -35,14 +36,22 @@ const REMNANT_DOC_PATHS = (uid: string): string[] => [
   // can re-create these after the sweep, so they are checked, not assumed.
   `users/${uid}/humor/summary`,
   `users/${uid}/humor/calibration`,
+  // Their Humor Core progress: every rating of the canonical sequence.
+  `users/${uid}/humor/core`,
   // Their own Mevora Picks batch: who they were shown, and why.
   `users/${uid}/mevoraPicks/current`,
   // Daily streak: engagement history. The check-in refuses to write once the
   // account document is gone, but a call in flight is checked, not assumed.
   `users/${uid}/dailyStreak/current`,
+  // Face Anchor attempt state. A verification finishing as the account goes
+  // only ever updates this document, but it is checked, not assumed.
+  `users/${uid}/faceAnchor/state`,
   // The admin console's name-search row; the profile trigger could recreate
   // it if a profile write raced the deletion, so it is checked.
   `adminUserLookup/${uid}`,
+  // Spotify OAuth rate-limit counters keyed by the uid. A sign-in or link
+  // call in flight re-creates one, so they are checked, not assumed.
+  ...uidRateLimitPaths(uid),
 ];
 
 /** Storage prefixes `deleteUserAccount` clears. */
@@ -50,6 +59,7 @@ const REMNANT_STORAGE_PREFIXES = (uid: string): string[] => [
   `users/${uid}/`,
   `profiles/${uid}/`,
   `moderation/quarantine/${uid}/`,
+  `face-anchor/pending/${uid}/`,
 ];
 
 /**
@@ -114,6 +124,19 @@ export async function verifyAccountDeletion(
   }
   if (!humorQueuePointer.empty) {
     issues.push("humor_queue_reporter_remnant");
+  }
+
+  // Boost sessions and their per-viewer reach rows. A Discover page already
+  // in flight writes both in one batch after the sweep, so they are checked.
+  const [boosts, boostReach] = await Promise.all([
+    db.collection(`users/${uid}/boosts`).limit(1).get(),
+    db.collection(`users/${uid}/boostReach`).limit(1).get(),
+  ]);
+  if (!boosts.empty) {
+    issues.push("boosts_remnant");
+  }
+  if (!boostReach.empty) {
+    issues.push("boost_reach_remnant");
   }
 
   // Appeals are the member's own words; they go with the account.

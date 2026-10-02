@@ -1490,6 +1490,18 @@ abstract class AppLocalizations {
   /// **'First name'**
   String get onboardingFirstName;
 
+  /// No description provided for @onboardingLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get onboardingLastName;
+
+  /// No description provided for @onboardingLastNamePrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Other members never see your last name.'**
+  String get onboardingLastNamePrivate;
+
   /// No description provided for @onboardingBirthDate.
   ///
   /// In en, this message translates to:
@@ -1567,6 +1579,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add your first name.'**
   String get onboardingErrorFirstName;
+
+  /// No description provided for @onboardingErrorLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your last name.'**
+  String get onboardingErrorLastName;
 
   /// No description provided for @onboardingErrorGender.
   ///
@@ -1670,6 +1688,12 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get onboardingContinue;
 
+  /// No description provided for @onboardingLogoutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The steps you\'ve finished are saved. Sign in again to pick up where you left off.'**
+  String get onboardingLogoutBody;
+
   /// No description provided for @onboardingEducation.
   ///
   /// In en, this message translates to:
@@ -1721,7 +1745,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingPhotosHint.
   ///
   /// In en, this message translates to:
-  /// **'Add at least 3 photos. Drag to reorder — your first photo is your main one.'**
+  /// **'Add at least 3 photos. Your face should be clearly visible in at least one. In the others you can show your hobbies, your travels, your pet or moments from your life.'**
   String get onboardingPhotosHint;
 
   /// No description provided for @onboardingPrimaryPhoto.
@@ -2597,8 +2621,14 @@ abstract class AppLocalizations {
   /// No description provided for @maxDistance.
   ///
   /// In en, this message translates to:
-  /// **'Maximum distance'**
+  /// **'Preferred distance (km)'**
   String get maxDistance;
+
+  /// No description provided for @maxDistanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'People inside this distance come first. When there are not enough, Mevora looks further, up to 100 km.'**
+  String get maxDistanceHint;
 
   /// No description provided for @matchesTitle.
   ///
@@ -3236,6 +3266,12 @@ abstract class AppLocalizations {
   /// **'Fake profile'**
   String get reportFakeProfile;
 
+  /// No description provided for @reportChildSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Child safety concern (sexual content or behaviour involving a minor)'**
+  String get reportChildSafety;
+
   /// No description provided for @reportUnderage.
   ///
   /// In en, this message translates to:
@@ -3457,6 +3493,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Buy Boost'**
   String get boostBuy;
+
+  /// Purchase disclosure under the Boost packs: not a subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Boost is a one-time purchase. It does not renew.'**
+  String get boostOneTimePurchaseNote;
 
   /// No description provided for @boostPurchasing.
   ///
@@ -4136,6 +4178,12 @@ abstract class AppLocalizations {
   /// **'Choose a primary photo.'**
   String get settingsPhotoPrimaryRequired;
 
+  /// No description provided for @settingsPhotoStillProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is still being checked. Try again in a moment.'**
+  String get settingsPhotoStillProcessing;
+
   /// No description provided for @settingsFirstNameRequired.
   ///
   /// In en, this message translates to:
@@ -4147,6 +4195,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'First name is too long.'**
   String get settingsFirstNameTooLong;
+
+  /// No description provided for @settingsLastNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name is required.'**
+  String get settingsLastNameRequired;
+
+  /// No description provided for @settingsLastNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name is too long.'**
+  String get settingsLastNameTooLong;
 
   /// No description provided for @settingsBioTooLong.
   ///
@@ -4619,7 +4679,7 @@ abstract class AppLocalizations {
   /// No description provided for @likesYouLockedCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} people like you'**
+  /// **'{count, plural, =1{1 person likes you} other{{count} people like you}}'**
   String likesYouLockedCount(int count);
 
   /// No description provided for @likesYouLockedMessage.
@@ -5993,7 +6053,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsPaidBody.
   ///
   /// In en, this message translates to:
-  /// **'Boost and other purchases are processed through your app store. Refunds follow the store\'s policies unless required otherwise by law.'**
+  /// **'Boost and Premium are bought through your app store. Boost is a one-time purchase and does not renew. Premium is a subscription: it renews automatically at the price shown when you buy it until you cancel in your store account, and cancelling stops the next renewal. Refunds follow the store\'s policies unless required otherwise by law.'**
   String get termsPaidBody;
 
   /// No description provided for @termsThirdPartyTitle.
@@ -6065,7 +6125,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsEffectiveBody.
   ///
   /// In en, this message translates to:
-  /// **'These Terms are effective as of August 23, 2026.'**
+  /// **'These Terms are effective as of October 1, 2026.'**
   String get termsEffectiveBody;
 
   /// No description provided for @privacyIntroTitle.
@@ -6113,8 +6173,20 @@ abstract class AppLocalizations {
   /// No description provided for @privacyProfileBody.
   ///
   /// In en, this message translates to:
-  /// **'Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.'**
+  /// **'Profile details you provide (first name, date of birth, gender, who you want to meet, bio, preferences, relationship answers, humor ratings and photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching. Other members see your age, not your date of birth, and your surname stays private.'**
   String get privacyProfileBody;
+
+  /// No description provided for @privacyVerificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo and identity verification'**
+  String get privacyVerificationTitle;
+
+  /// No description provided for @privacyVerificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm that a profile belongs to a real person, we may ask you for a selfie. It is sent to our verification provider, Didit, which checks that it shows a live person and that it matches your profile photo. We keep the result of that check, not the selfie, which is deleted when the check ends. Identity verification is optional: if you choose it, Didit processes your identity document and selfie directly and Mevora stores only the outcome.'**
+  String get privacyVerificationBody;
 
   /// No description provided for @privacyLocationTitle.
   ///
@@ -6125,7 +6197,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyLocationBody.
   ///
   /// In en, this message translates to:
-  /// **'With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.'**
+  /// **'With your permission, we use your device location to show compatible people near you. Your coordinates are stored on our servers for that purpose and are never shown to other members, who see only your city and an approximate distance.'**
   String get privacyLocationBody;
 
   /// No description provided for @privacyMessagingTitle.
@@ -6137,7 +6209,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyMessagingBody.
   ///
   /// In en, this message translates to:
-  /// **'Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.'**
+  /// **'Message text, voice notes and images are end-to-end encrypted: they are encrypted on your device and our servers store only the encrypted form, which we cannot read. To deliver them we do store who sent a message to whom, when, its type and whether it was read, as well as call records.'**
   String get privacyMessagingBody;
 
   /// No description provided for @privacyMatchingTitle.
@@ -6149,7 +6221,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyMatchingBody.
   ///
   /// In en, this message translates to:
-  /// **'Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.'**
+  /// **'Likes, passes, matches, your answers to daily questions, humor ratings, compatibility signals and interaction history are stored to operate discovery and matches.'**
   String get privacyMatchingBody;
 
   /// No description provided for @privacyPreferencesTitle.
@@ -6185,7 +6257,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyDeviceBody.
   ///
   /// In en, this message translates to:
-  /// **'We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.'**
+  /// **'We process push notification tokens and, through Firebase Crashlytics and Google Analytics for Firebase, crash reports and usage statistics tied to an app installation, not to your name. Mevora shows no ads and does not use your advertising ID.'**
   String get privacyDeviceBody;
 
   /// No description provided for @privacyWhyTitle.
@@ -6221,7 +6293,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyRetentionBody.
   ///
   /// In en, this message translates to:
-  /// **'We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.'**
+  /// **'We keep data while your account is active. When you delete your account, your profile, photos, messages, likes, answers and purchase records are deleted. Matches you were part of are closed and no longer show your name or photo, and records of safety and moderation actions may be kept where needed to protect members, prevent fraud or meet legal obligations.'**
   String get privacyRetentionBody;
 
   /// No description provided for @privacySharingTitle.
@@ -6233,7 +6305,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacySharingBody.
   ///
   /// In en, this message translates to:
-  /// **'We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.'**
+  /// **'We do not sell personal data. We share data only with the service providers needed to operate Mevora: Google (Firebase hosting, authentication, notifications, crash reporting and analytics, and Google Play for purchases), Spotify if you connect it, Didit for photo and identity verification, and GIPHY, from which your device loads humor content directly.'**
   String get privacySharingBody;
 
   /// No description provided for @privacyRightsTitle.
@@ -6245,7 +6317,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyRightsBody.
   ///
   /// In en, this message translates to:
-  /// **'Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.'**
+  /// **'Depending on your region, you may request access, correction, deletion, or restriction of your data. You can download a copy of your data in Settings → Account → Download my data, and delete your account in Settings.'**
   String get privacyRightsBody;
 
   /// No description provided for @privacyDeletionTitle.
@@ -6269,7 +6341,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacySecurityBody.
   ///
   /// In en, this message translates to:
-  /// **'We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.'**
+  /// **'We use access controls, encryption in transit, end-to-end encryption of message content, and Firebase security rules. No system is perfectly secure; report issues to support.'**
   String get privacySecurityBody;
 
   /// No description provided for @privacyChildrenTitle.
@@ -6281,7 +6353,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyChildrenBody.
   ///
   /// In en, this message translates to:
-  /// **'Mevora is not for users under 18. We delete accounts identified as underage.'**
+  /// **'Mevora is not for anyone under 18. Accounts found to belong to someone under 18 are closed.'**
   String get privacyChildrenBody;
 
   /// No description provided for @privacyChangesTitle.
@@ -6803,85 +6875,85 @@ abstract class AppLocalizations {
   /// No description provided for @languageGerman.
   ///
   /// In en, this message translates to:
-  /// **'German'**
+  /// **'German 🇩🇪'**
   String get languageGerman;
 
   /// No description provided for @languageFrench.
   ///
   /// In en, this message translates to:
-  /// **'French'**
+  /// **'French 🇫🇷'**
   String get languageFrench;
 
   /// No description provided for @languageSpanish.
   ///
   /// In en, this message translates to:
-  /// **'Spanish'**
+  /// **'Spanish 🇪🇸'**
   String get languageSpanish;
 
   /// No description provided for @languageItalian.
   ///
   /// In en, this message translates to:
-  /// **'Italian'**
+  /// **'Italian 🇮🇹'**
   String get languageItalian;
 
   /// No description provided for @languageRussian.
   ///
   /// In en, this message translates to:
-  /// **'Russian'**
+  /// **'Russian 🇷🇺'**
   String get languageRussian;
 
   /// No description provided for @languageArabic.
   ///
   /// In en, this message translates to:
-  /// **'Arabic'**
+  /// **'Arabic 🌐'**
   String get languageArabic;
 
   /// No description provided for @languagePersian.
   ///
   /// In en, this message translates to:
-  /// **'Persian'**
+  /// **'Persian 🌐'**
   String get languagePersian;
 
   /// No description provided for @languageKurdish.
   ///
   /// In en, this message translates to:
-  /// **'Kurdish'**
+  /// **'Kurdish 🌐'**
   String get languageKurdish;
 
   /// No description provided for @languageGreek.
   ///
   /// In en, this message translates to:
-  /// **'Greek'**
+  /// **'Greek 🇬🇷'**
   String get languageGreek;
 
   /// No description provided for @languageDutch.
   ///
   /// In en, this message translates to:
-  /// **'Dutch'**
+  /// **'Dutch 🇳🇱'**
   String get languageDutch;
 
   /// No description provided for @languagePortuguese.
   ///
   /// In en, this message translates to:
-  /// **'Portuguese'**
+  /// **'Portuguese 🇵🇹'**
   String get languagePortuguese;
 
   /// No description provided for @languageChinese.
   ///
   /// In en, this message translates to:
-  /// **'Chinese'**
+  /// **'Chinese 🌐'**
   String get languageChinese;
 
   /// No description provided for @languageJapanese.
   ///
   /// In en, this message translates to:
-  /// **'Japanese'**
+  /// **'Japanese 🇯🇵'**
   String get languageJapanese;
 
   /// No description provided for @languageKorean.
   ///
   /// In en, this message translates to:
-  /// **'Korean'**
+  /// **'Korean 🇰🇷'**
   String get languageKorean;
 
   /// No description provided for @hobbyWorkingOut.
@@ -7280,12 +7352,6 @@ abstract class AppLocalizations {
   /// **'Top vibes'**
   String get humorTopVibes;
 
-  /// No description provided for @humorSkipContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get humorSkipContent;
-
   /// No description provided for @humorReport.
   ///
   /// In en, this message translates to:
@@ -7625,8 +7691,26 @@ abstract class AppLocalizations {
   /// No description provided for @humorCalibrationIntroMeta.
   ///
   /// In en, this message translates to:
-  /// **'15 short pieces · about a minute'**
-  String get humorCalibrationIntroMeta;
+  /// **'{count} short pieces · about a minute'**
+  String humorCalibrationIntroMeta(int count);
+
+  /// No description provided for @humorCalibrationPausedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s it for today'**
+  String get humorCalibrationPausedTitle;
+
+  /// No description provided for @humorCalibrationPausedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'One piece would not play. The rest will be waiting tomorrow, and your humor profile will be completed then.'**
+  String get humorCalibrationPausedBody;
+
+  /// No description provided for @humorLabCalibratedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'From here on we continue with a few new pieces each day.'**
+  String get humorLabCalibratedBody;
 
   /// No description provided for @humorCalibrationStart.
   ///
@@ -7747,12 +7831,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{weakest} does not do much for you.'**
   String humorResultContrast(String weakest);
-
-  /// No description provided for @humorResultKeepGoing.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep shaping your humor profile'**
-  String get humorResultKeepGoing;
 
   /// No description provided for @humorResultDone.
   ///
@@ -7933,6 +8011,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Renews automatically. Cancel anytime in the store.'**
   String get premiumRenewsLabel;
+
+  /// Billing period shown on a monthly Premium plan, next to the store price.
+  ///
+  /// In en, this message translates to:
+  /// **'Billed monthly'**
+  String get premiumPlanBilledMonthly;
+
+  /// Billing period shown on a yearly Premium plan, next to the store price.
+  ///
+  /// In en, this message translates to:
+  /// **'Billed yearly'**
+  String get premiumPlanBilledYearly;
+
+  /// Store price with its billing period. The price is the store's own formatted string.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} / month'**
+  String premiumPricePerMonth(String price);
+
+  /// Store price with its billing period. The price is the store's own formatted string.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} / year'**
+  String premiumPricePerYear(String price);
+
+  /// Auto-renewal disclosure for the selected monthly plan, shown by the Subscribe button.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically every month at {price} until you cancel.'**
+  String premiumRenewalMonthly(String price);
+
+  /// Auto-renewal disclosure for the selected yearly plan, shown by the Subscribe button.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically every year at {price} until you cancel.'**
+  String premiumRenewalYearly(String price);
+
+  /// Auto-renewal disclosure when the store did not say how long the billing period is.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription renews automatically at {price} each billing period until you cancel.'**
+  String premiumRenewalGeneric(String price);
+
+  /// How to cancel. store is the store's brand name: Google Play or App Store.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel anytime in {store} > Subscriptions. You keep Premium until the end of the period you paid for.'**
+  String premiumCancelHow(String store);
+
+  /// Button for Premium members. Opens the store's own subscription page.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription'**
+  String get premiumManageSubscription;
+
+  /// Shown when the store's subscription page could not be opened.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t open {store}. To manage your subscription, go to {store} > Subscriptions.'**
+  String premiumManageSubscriptionFailed(String store);
 
   /// No description provided for @musicFollowedArtistsTitle.
   ///
@@ -8387,7 +8525,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorDailyHintEnd.
   ///
   /// In en, this message translates to:
-  /// **'Just a few more videos.'**
+  /// **'Almost done.'**
   String get humorDailyHintEnd;
 
   /// No description provided for @humorDailyCompletedTitle.
@@ -8401,6 +8539,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your humor profile just got a little clearer.'**
   String get humorDailyCompletedBody;
+
+  /// No description provided for @humorDailyCompletedTomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'A new round will be waiting tomorrow.'**
+  String get humorDailyCompletedTomorrow;
+
+  /// No description provided for @humorDailySequenceComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'You have been through everything for now. The round continues when new pieces are added.'**
+  String get humorDailySequenceComplete;
 
   /// No description provided for @humorDailyNotReadyTitle.
   ///
@@ -8857,6 +9007,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t send your appeal. Check your connection and try again.'**
   String get moderationAppealFailed;
+
+  /// No description provided for @faceAnchorRequiredNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'To continue, verify one photo where your face is clearly visible.'**
+  String get faceAnchorRequiredNotice;
+
+  /// No description provided for @faceAnchorVerifyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your photo'**
+  String get faceAnchorVerifyAction;
+
+  /// No description provided for @faceAnchorVerifyShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get faceAnchorVerifyShort;
+
+  /// No description provided for @faceAnchorVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is verified'**
+  String get faceAnchorVerified;
+
+  /// No description provided for @faceAnchorVerifiedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get faceAnchorVerifiedShort;
+
+  /// No description provided for @faceAnchorPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification pending'**
+  String get faceAnchorPending;
+
+  /// No description provided for @faceAnchorPhotoInReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo in review'**
+  String get faceAnchorPhotoInReview;
+
+  /// No description provided for @faceAnchorNotVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not verified'**
+  String get faceAnchorNotVerified;
+
+  /// No description provided for @faceAnchorRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get faceAnchorRetry;
+
+  /// No description provided for @faceAnchorMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo did not match the selfie you took.'**
+  String get faceAnchorMismatch;
+
+  /// No description provided for @faceAnchorLivenessFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The liveness check could not be completed. Try again in good light, looking straight at the camera.'**
+  String get faceAnchorLivenessFailed;
+
+  /// No description provided for @faceAnchorPhotoUnclear.
+  ///
+  /// In en, this message translates to:
+  /// **'Your face is not clearly visible on its own in this photo. Choose one that shows only you.'**
+  String get faceAnchorPhotoUnclear;
+
+  /// No description provided for @faceAnchorSelfieInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That selfie could not be used. Take a new one with your camera and try again.'**
+  String get faceAnchorSelfieInvalid;
+
+  /// No description provided for @faceAnchorTechnicalError.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification could not be completed right now. Your photo was not verified; try again shortly.'**
+  String get faceAnchorTechnicalError;
+
+  /// No description provided for @faceAnchorPrimaryRequiresVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify this photo before making it your main photo.'**
+  String get faceAnchorPrimaryRequiresVerify;
+
+  /// No description provided for @faceAnchorLastAnchorDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t remove your last verified photo. Verify another photo first.'**
+  String get faceAnchorLastAnchorDelete;
+
+  /// No description provided for @faceAnchorExplainBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We run a short selfie check to make sure your photo is really you.'**
+  String get faceAnchorExplainBody;
+
+  /// No description provided for @faceAnchorExplainSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll take a selfie with your front camera. It is used only for this check, never appears on your profile and is deleted when the check ends.'**
+  String get faceAnchorExplainSteps;
+
+  /// No description provided for @faceAnchorConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to my selfie being processed to compare it with this photo.'**
+  String get faceAnchorConsent;
+
+  /// No description provided for @faceAnchorTakeSelfie.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a selfie'**
+  String get faceAnchorTakeSelfie;
+
+  /// No description provided for @faceAnchorOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting ready…'**
+  String get faceAnchorOpening;
+
+  /// No description provided for @faceAnchorCapturing.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the camera…'**
+  String get faceAnchorCapturing;
+
+  /// No description provided for @faceAnchorUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending your selfie…'**
+  String get faceAnchorUploading;
+
+  /// No description provided for @faceAnchorVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying…'**
+  String get faceAnchorVerifying;
+
+  /// No description provided for @faceAnchorSuccessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo can now be your main photo.'**
+  String get faceAnchorSuccessBody;
+
+  /// No description provided for @faceAnchorDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get faceAnchorDone;
+
+  /// No description provided for @faceAnchorChooseAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another photo'**
+  String get faceAnchorChooseAnother;
+
+  /// No description provided for @faceAnchorPromptBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify one photo where your face is clearly visible to show your profile is really you.'**
+  String get faceAnchorPromptBody;
+
+  /// No description provided for @faceAnchorProfileVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile photo is verified'**
+  String get faceAnchorProfileVerifiedTitle;
+
+  /// No description provided for @faceAnchorPromptTileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify a photo of your face with a short selfie'**
+  String get faceAnchorPromptTileSubtitle;
+
+  /// No description provided for @faceAnchorErrorUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo verification isn\'t available right now. Please try again later.'**
+  String get faceAnchorErrorUnavailable;
+
+  /// No description provided for @faceAnchorErrorPhotoNotApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is still in review. You can verify it once the review is finished.'**
+  String get faceAnchorErrorPhotoNotApproved;
+
+  /// No description provided for @faceAnchorErrorCooldown.
+  ///
+  /// In en, this message translates to:
+  /// **'Wait a moment and try again.'**
+  String get faceAnchorErrorCooldown;
+
+  /// No description provided for @faceAnchorErrorAttemptLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve used today\'s attempts. You can try again tomorrow.'**
+  String get faceAnchorErrorAttemptLimit;
+
+  /// No description provided for @faceAnchorErrorCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera couldn\'t be opened. Check the camera permission and try again.'**
+  String get faceAnchorErrorCamera;
+
+  /// No description provided for @faceAnchorErrorUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Your selfie couldn\'t be sent. Check your connection and try again.'**
+  String get faceAnchorErrorUpload;
+
+  /// No description provided for @faceAnchorErrorInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'A verification is already running. Please wait for the result.'**
+  String get faceAnchorErrorInProgress;
+
+  /// No description provided for @faceAnchorErrorConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to agree before continuing.'**
+  String get faceAnchorErrorConsent;
+
+  /// No description provided for @faceAnchorErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification couldn\'t be started. Please try again.'**
+  String get faceAnchorErrorGeneric;
 }
 
 class _AppLocalizationsDelegate

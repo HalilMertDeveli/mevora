@@ -20,11 +20,12 @@ import {
 import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
 import {enforceMessageRateLimit} from "./messageRateLimit.js";
 import {attributePickMatch, recordPickDecision} from "./picks/service.js";
+import {assertDecisionOffered, offeredDecisionSource} from "./picks/decisionScope.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
 import {SIGNAL_STRENGTHS} from "./personalization/config.js";
 import {recordLearningEventSafely} from "./personalization/store.js";
 import {assertCallerAccountEligible} from "./accountGuard.js";
-import {reportPriority} from "./admin/reports/reportPriority.js";
+import {REPORT_REASONS, reportPriority} from "./admin/reports/reportPriority.js";
 import {intakeUserReport} from "./admin/reports/reportIntake.js";
 import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
 
@@ -52,15 +53,6 @@ const livekitCallable = {
   secrets: [livekitApiKey, livekitApiSecret, livekitUrl],
 };
 
-const REPORT_REASONS = new Set([
-  "spam",
-  "harassment",
-  "inappropriate_content",
-  "scam",
-  "fake_profile",
-  "underage",
-  "other",
-]);
 const MAX_REPORTS_PER_DAY = 20;
 const MAX_REPORT_DESCRIPTION = 2000;
 
@@ -231,6 +223,7 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
     targetPrefsSnap,
     targetAccountSnap,
     activeMatches,
+    offeredBy,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -239,6 +232,7 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
     db.doc(`userPreferences/${targetUserId}`).get(),
     db.doc(`users/${targetUserId}`).get(),
     loadActiveMatchPartnerIds(db, uid),
+    offeredDecisionSource({db, viewerUid: uid, candidateUid: targetUserId}),
   ]);
   if (!isAccountEligible(callerAccount.data())) {
     throw new HttpsError("permission-denied", "account-suspended");
@@ -246,6 +240,9 @@ export const recordSwipe = onCall(socialCallable, async (request) => {
   if (activeMatches.has(targetUserId)) {
     throw new HttpsError("failed-precondition", "already-matched");
   }
+  // Same scope as recordDiscoveryDecision: only someone Picks or Likes You
+  // showed, checked before eligibility so a refusal reveals nothing.
+  assertDecisionOffered(offeredBy);
   const callerPrefs = callerPrefsSnap.data() ?? {};
   const minAge = Number(callerPrefs.minAge ?? 18);
   const maxAge = Number(callerPrefs.maxAge ?? 99);

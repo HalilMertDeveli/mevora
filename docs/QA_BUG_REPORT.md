@@ -1,5 +1,7 @@
 # Mevora QA Bug Report
 
+> **Superseded (2026-10-01).** Snapshot from 2026-08-23; the P1 items are fixed. Kept for history. Current launch state: `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`.
+
 Audit date: 2026-08-23  
 **Status: Confirmed bugs documented — NOT fixed during audit.**
 

@@ -29,6 +29,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
     BoostProductConfig config = const BoostProductConfig(),
     PurchaseVerificationService? verification,
     DateTime Function()? clock,
+    Duration restoreWindow = const Duration(seconds: 2),
   }) : _store = store,
        _remote = remote,
        _uidSource = uidSource,
@@ -38,7 +39,20 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
        _cache = MemoryCache<String, _CachedBoost>(
          ttl: const Duration(minutes: 2),
        ),
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now,
+       _restoreWindow = restoreWindow {
+    // Every launch with an account, and every sign-in: the two moments a
+    // purchase from an earlier session can first be confirmed for someone.
+    String? recoveredFor;
+    _uidSubscription = uidSource.watchUid().listen((uid) {
+      if (uid == null || uid == recoveredFor) {
+        recoveredFor = uid;
+        return;
+      }
+      recoveredFor = uid;
+      unawaited(recoverUnfinishedPurchases());
+    });
+  }
 
   final StorePurchaseDataSource _store;
   final PurchaseRemoteDataSource _remote;
@@ -47,6 +61,12 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
   final PurchaseVerificationService _verification;
   final MemoryCache<String, _CachedBoost> _cache;
   final DateTime Function() _clock;
+
+  /// How long a restore waits for the store to redeliver its purchases.
+  final Duration _restoreWindow;
+
+  StreamSubscription<String?>? _uidSubscription;
+  bool _recovering = false;
 
   @override
   Future<Result<BoostProduct>> getBoostProduct() async {
@@ -113,6 +133,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
                 event.status == StorePurchaseStatus.cancelled ||
                 event.status == StorePurchaseStatus.error,
           )
+          .where((event) => _concernsPurchaseOf(product, event))
           .first;
       await _store.buy(product);
       final event = await pending.timeout(const Duration(minutes: 5));
@@ -146,6 +167,21 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
     } finally {
       _purchaseInFlight = false;
     }
+  }
+
+  /// The store stream is one stream for the whole app: Premium subscriptions
+  /// report on it too. An event that names another product is not this
+  /// purchase — taking it would verify, and then consume, the wrong thing.
+  ///
+  /// A failed or cancelled sheet often names no product at all (Play reports
+  /// it that way), and can only be the sheet that is open.
+  bool _concernsPurchaseOf(BoostProduct product, StorePurchaseEvent event) {
+    final productId = event.transaction?.productId ?? '';
+    if (productId.isEmpty) {
+      return event.status == StorePurchaseStatus.cancelled ||
+          event.status == StorePurchaseStatus.error;
+    }
+    return productId == product.productId;
   }
 
   @override
@@ -284,6 +320,7 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
         );
       }
       final restored = <String>{};
+      final redeeming = <Future<void>>[];
       final sub = _store.purchaseEvents.listen((event) {
         final transaction = event.transaction;
         if (transaction == null) {
@@ -293,19 +330,76 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
             event.status != StorePurchaseStatus.restored) {
           return;
         }
+        // A restore redelivers everything the store account owns, Premium
+        // subscriptions included. Those are not Boost purchases.
+        if (!_config.isAllowedProductId(transaction.productId)) {
+          return;
+        }
         if (!restored.add(transaction.transactionId)) {
           return;
         }
-        unawaited(_redeemUnfinished(userId, transaction));
+        redeeming.add(_redeemUnfinished(userId, transaction));
       });
       await _store.restore();
-      await Future<void>.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(_restoreWindow);
       await sub.cancel();
+      // Wait for the server's answers, so the Boost read below — and the
+      // reload that follows a restore — sees what was just granted.
+      await Future.wait(redeeming);
       _cache.invalidate(_cacheKeyFor(userId));
       return getActiveBoost(userId);
     } on Object catch (error) {
       return Err(FailureMapper.from(error));
     }
+  }
+
+  /// Submits Boost purchases the store still holds from an earlier session:
+  /// paid for, but the app was gone before the server confirmed them.
+  ///
+  /// Play keeps such a purchase until it is consumed and does not hand it back
+  /// by itself, so without this it would wait for the member to think of
+  /// "Restore purchases". The server grants a purchase once however often it
+  /// is submitted, and only a confirmed one is completed. Runs when an account
+  /// is available; safe to call at any time.
+  ///
+  /// Asks the store directly rather than through [restorePurchases], which
+  /// would replay every purchase — Premium's too — on the shared stream, and
+  /// on iOS would raise the App Store sign-in prompt.
+  Future<void> recoverUnfinishedPurchases() async {
+    final userId = _uidSource.currentUid;
+    if (userId == null || _recovering || _purchaseInFlight) {
+      // A purchase on screen is verified and completed by its own flow.
+      return;
+    }
+    _recovering = true;
+    try {
+      final submitted = <String>{};
+      for (final transaction in await _store.outstandingPurchases()) {
+        // Play holds Premium subscriptions too; those are not Boost's.
+        if (!_config.isAllowedProductId(transaction.productId)) {
+          continue;
+        }
+        if (!submitted.add(
+          transaction.purchaseToken ?? transaction.transactionId,
+        )) {
+          continue;
+        }
+        if (_uidSource.currentUid != userId) {
+          // Signed out while the store was answering.
+          return;
+        }
+        await _redeemUnfinished(userId, transaction);
+      }
+    } on Object {
+      // The store could not answer. The purchase is still there next time.
+    } finally {
+      _recovering = false;
+    }
+  }
+
+  Future<void> dispose() async {
+    await _uidSubscription?.cancel();
+    _uidSubscription = null;
   }
 
   Future<void> _redeemUnfinished(
@@ -320,10 +414,11 @@ class PurchaseRepositoryImpl implements PurchaseRepository {
         userId: userId,
         transaction: transaction,
       );
-      await _store.complete(transaction);
+      // The grant stands whether or not the store step below succeeds.
       if (credited.boost != null) {
         _cache.set(_cacheKeyFor(userId), _CachedBoost(credited.boost));
       }
+      await _store.complete(transaction);
     } on Object {
       return;
     }

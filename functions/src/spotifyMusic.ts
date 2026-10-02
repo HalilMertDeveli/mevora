@@ -17,7 +17,8 @@ import {
   type MusicTaste,
   type NamedMusicItem,
 } from "./musicCompatibility.js";
-import {isActiveForDiscovery, loadLastActiveAt} from "./discoveryActivity.js";
+import {isActiveForDiscovery} from "./discoveryActivity.js";
+import {isAccountEligible, isProfileDiscoverable, publicProfileProjection} from "./profileSafety.js";
 import {isUserPremium} from "./premium.js";
 import {spotifyClientId, spotifyClientSecret} from "./spotifyConfig.js";
 import {
@@ -1176,14 +1177,22 @@ export const getSameTasteProfiles = onCall(
       }
       otherUids.push(otherUid);
     }
-    const lastActiveByUid = await loadLastActiveAt(db, otherUids);
+    // One read per candidate account answers both questions asked of it:
+    // recently active, and in good standing.
+    const accountByUid = new Map<string, DocumentData | undefined>();
+    const accountRefs = [...new Set(otherUids)].map((id) => db.doc(`users/${id}`));
+    for (const snap of accountRefs.length ? await db.getAll(...accountRefs) : []) {
+      accountByUid.set(snap.id, snap.data());
+    }
     const scored: Array<Record<string, unknown>> = [];
     for (const doc of musicSnap.docs) {
       const otherUid = doc.ref.parent.parent?.id;
       if (!otherUid || otherUid === uid || blocked.has(otherUid) || passed.has(otherUid)) {
         continue;
       }
-      if (!isActiveForDiscovery(lastActiveByUid.get(otherUid))) continue;
+      const otherAccount = accountByUid.get(otherUid);
+      if (!isAccountEligible(otherAccount)) continue;
+      if (!isActiveForDiscovery(otherAccount?.lastActiveAt)) continue;
       const otherTaste = tasteFromSummary(doc.data());
       if (!otherTaste || isTasteEmpty(otherTaste)) continue;
       const music = scoreMusicCompatibility(viewerTaste, otherTaste);
@@ -1193,9 +1202,10 @@ export const getSameTasteProfiles = onCall(
         ...catalogFromSummary(doc.data()),
       ]);
       const otherProfile = await db.doc(`profiles/${otherUid}`).get();
-      if (!otherProfile.exists) continue;
-      const data = otherProfile.data() ?? {};
-      if (data.isDiscoverable === false) continue;
+      // The same line Discover and Picks hold: a complete, discoverable
+      // profile that moderation is not holding back.
+      const data = otherProfile.data();
+      if (!data || !isProfileDiscoverable(data)) continue;
       const otherPrefs = (await db.doc(`userPreferences/${otherUid}`).get()).data() ?? {};
       if (!interestedInAllows(prefs.interestedIn, data.gender)) continue;
       if (!interestedInAllows(otherPrefs.interestedIn, viewerGender)) continue;
@@ -1212,16 +1222,9 @@ export const getSameTasteProfiles = onCall(
         sharedRecentTrackCount: enriched.sharedRecentTracks.length,
         musicInsights: enriched.insights,
         musicBreakdown: enriched.breakdown,
-        profile: {
-          uid: otherUid,
-          displayName: data.displayName ?? "",
-          age: data.age ?? null,
-          gender: data.gender ?? null,
-          bio: data.bio ?? null,
-          photos: data.photos ?? [],
-          interests: data.interests ?? [],
-          city: data.city ?? null,
-        },
+        // Approved photos only — a pending or rejected one never leaves
+        // the owner's own view.
+        profile: publicProfileProjection({...data, uid: otherUid}),
       });
     }
     scored.sort((a, b) => Number(b.musicScore) - Number(a.musicScore));
@@ -1286,18 +1289,42 @@ export async function musicScoreForPair(
   candidateUid: string,
 ): Promise<(ReturnType<typeof enrichMusicCompatibility>) | null> {
   const [viewer, candidate] = await Promise.all([
-    db.doc(`users/${viewerUid}/music/summary`).get(),
-    db.doc(`users/${candidateUid}/music/summary`).get(),
+    db.doc(musicSummaryPath(viewerUid)).get(),
+    db.doc(musicSummaryPath(candidateUid)).get(),
   ]);
-  const viewerTaste = tasteFromSummary(viewer.data());
-  const candidateTaste = tasteFromSummary(candidate.data());
+  return musicScoreFromSummaries(viewer.data(), candidate.data());
+}
+
+export function musicSummaryPath(uid: string): string {
+  return `users/${uid}/music/summary`;
+}
+
+/**
+ * Whether a music summary carries usable taste. Without it on the viewer's
+ * side every pair score is null, so a pool scan need not read any candidate's.
+ */
+export function hasMusicTaste(summary: DocumentData | undefined): boolean {
+  const taste = tasteFromSummary(summary);
+  return taste !== null && !isTasteEmpty(taste);
+}
+
+/**
+ * The pair score from two summaries the caller already holds — for scans that
+ * load the viewer's summary once and candidates' in bulk. No reads.
+ */
+export function musicScoreFromSummaries(
+  viewerSummary: DocumentData | undefined,
+  candidateSummary: DocumentData | undefined,
+): (ReturnType<typeof enrichMusicCompatibility>) | null {
+  const viewerTaste = tasteFromSummary(viewerSummary);
+  const candidateTaste = tasteFromSummary(candidateSummary);
   if (!viewerTaste || !candidateTaste || isTasteEmpty(viewerTaste) || isTasteEmpty(candidateTaste)) {
     return null;
   }
   const scored = scoreMusicCompatibility(viewerTaste, candidateTaste);
   return enrichMusicCompatibility(scored, [
-    ...catalogFromSummary(viewer.data()),
-    ...catalogFromSummary(candidate.data()),
+    ...catalogFromSummary(viewerSummary),
+    ...catalogFromSummary(candidateSummary),
   ]);
 }
 

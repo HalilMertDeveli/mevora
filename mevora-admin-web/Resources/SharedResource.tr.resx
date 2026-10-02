@@ -149,6 +149,7 @@
   <data name="Escalated." xml:space="preserve"><value>Yükseltildi.</value></data>
   <data name="Event" xml:space="preserve"><value>Olay</value></data>
   <data name="Expires" xml:space="preserve"><value>Bitiş</value></data>
+  <data name="Face Anchor" xml:space="preserve"><value>Yüz doğrulaması</value></data>
   <data name="File an appeal on a member's behalf" xml:space="preserve"><value>Üye adına itiraz aç</value></data>
   <data name="File appeal" xml:space="preserve"><value>İtiraz aç</value></data>
   <data name="Filed" xml:space="preserve"><value>Gönderim</value></data>
@@ -167,6 +168,29 @@
   <data name="Hand this ticket to Trust &amp; Safety?" xml:space="preserve"><value>Bu talep Güven ve Güvenlik ekibine devredilsin mi?</value></data>
   <data name="High-priority cases" xml:space="preserve"><value>Yüksek öncelikli vakalar</value></data>
   <data name="Humor" xml:space="preserve"><value>Mizah</value></data>
+  <data name="Humor Core sequence" xml:space="preserve"><value>Mizah Core sırası</value></data>
+  <data name="The one order every member rates humor content in: the first {0} at calibration, then {1} a day. Read-only — the order changes only through a reviewed code change." xml:space="preserve"><value>Her üyenin mizah içeriklerini puanladığı tek sıra: kalibrasyonda ilk {0}, sonra günde {1}. Salt okunur — sıra yalnızca incelenmiş bir kod değişikliğiyle değişir.</value></data>
+  <data name="Humor pages" xml:space="preserve"><value>Mizah sayfaları</value></data>
+  <data name="Moderation queue" xml:space="preserve"><value>Moderasyon kuyruğu</value></data>
+  <data name="Core sequence" xml:space="preserve"><value>Core sırası</value></data>
+  <data name="Released" xml:space="preserve"><value>Yayında</value></data>
+  <data name="Draft — not released yet" xml:space="preserve"><value>Taslak — henüz yayınlanmadı</value></data>
+  <data name="Every entry can be shown to members" xml:space="preserve"><value>Tüm içerikler üyelere gösterilebilir</value></data>
+  <data name="Some entries cannot be shown to members" xml:space="preserve"><value>Bazı içerikler üyelere gösterilemiyor</value></data>
+  <data name="{0} entries, {1} can be shown" xml:space="preserve"><value>{0} içerik, {1} tanesi gösterilebilir</value></data>
+  <data name="Position" xml:space="preserve"><value>Sıra</value></data>
+  <data name="Core status" xml:space="preserve"><value>Core durumu</value></data>
+  <data name="Measures" xml:space="preserve"><value>Ölçtüğü</value></data>
+  <data name="Ratings" xml:space="preserve"><value>Puanlama</value></data>
+  <data name="Calibration" xml:space="preserve"><value>Kalibrasyon</value></data>
+  <data name="Daily" xml:space="preserve"><value>Günlük</value></data>
+  <data name="Replaces {0}" xml:space="preserve"><value>{0} yerine geçer</value></data>
+  <data name="Shown to members" xml:space="preserve"><value>Üyelere gösteriliyor</value></data>
+  <data name="Not shown to members" xml:space="preserve"><value>Üyelere gösterilmiyor</value></data>
+  <data name="Content state: {0}" xml:space="preserve"><value>İçerik durumu: {0}</value></data>
+  <data name="Content document missing" xml:space="preserve"><value>İçerik belgesi yok</value></data>
+  <data name="code:retired" xml:space="preserve"><value>Emekli</value></data>
+  <data name="code:curated" xml:space="preserve"><value>Kürasyonlu</value></data>
   <data name="Humor Lab moderation" xml:space="preserve"><value>Mizah Laboratuvarı moderasyonu</value></data>
   <data name="Humor item preview" xml:space="preserve"><value>Mizah içeriği önizlemesi</value></data>
   <data name="Humor needing review" xml:space="preserve"><value>İnceleme bekleyen mizah</value></data>
@@ -221,6 +245,7 @@
   <data name="None yet." xml:space="preserve"><value>Henüz yok.</value></data>
   <data name="None." xml:space="preserve"><value>Yok.</value></data>
   <data name="Not found" xml:space="preserve"><value>Bulunamadı</value></data>
+  <data name="Not on the member's profile. A decision is recorded, but the photo is not added back." xml:space="preserve"><value>Üyenin profilinde değil. Karar kaydedilir, ancak fotoğraf profile geri eklenmez.</value></data>
   <data name="Not permitted" xml:space="preserve"><value>İzin yok</value></data>
   <data name="Note" xml:space="preserve"><value>Not</value></data>
   <data name="Note (required)" xml:space="preserve"><value>Not (zorunlu)</value></data>
@@ -255,6 +280,8 @@
   <data name="Phone (exact)" xml:space="preserve"><value>Telefon (tam eşleşme)</value></data>
   <data name="Photo" xml:space="preserve"><value>Fotoğraf</value></data>
   <data name="Photo approved and published." xml:space="preserve"><value>Fotoğraf onaylandı ve yayımlandı.</value></data>
+  <data name="Photo approved. It is not on the member's profile and was not added back." xml:space="preserve"><value>Fotoğraf onaylandı. Üyenin profilinde olmadığı için geri eklenmedi.</value></data>
+  <data name="Photo approved. The member had removed it, so the kept copy was deleted." xml:space="preserve"><value>Fotoğraf onaylandı. Üye fotoğrafı kaldırmış olduğu için saklanan kopya silindi.</value></data>
   <data name="Photo escalated to senior review." xml:space="preserve"><value>Fotoğraf kıdemli incelemeye yükseltildi.</value></data>
   <data name="Photo moderation" xml:space="preserve"><value>Fotoğraf moderasyonu</value></data>
   <data name="Photo queue" xml:space="preserve"><value>Fotoğraf kuyruğu</value></data>
@@ -296,6 +323,7 @@
   <data name="Relationship goal" xml:space="preserve"><value>İlişki hedefi</value></data>
   <data name="Release" xml:space="preserve"><value>Bırak</value></data>
   <data name="Remove the verified badge and require a new identity verification?" xml:space="preserve"><value>Doğrulanmış rozeti kaldırılsın ve yeni kimlik doğrulaması istensin mi?</value></data>
+  <data name="Removed by the member. Approving deletes the kept copy; the photo is not put back." xml:space="preserve"><value>Üye tarafından kaldırıldı. Onaylamak saklanan kopyayı siler; fotoğraf profile geri eklenmez.</value></data>
   <data name="Removes the verified badge until the member completes a new session with the identity provider. The console can never mark anyone verified." xml:space="preserve"><value>Üye kimlik sağlayıcıda yeni bir oturumu tamamlayana kadar doğrulanmış rozetini kaldırır. Konsol hiç kimseyi doğrulanmış olarak işaretleyemez.</value></data>
   <data name="Reply sent to the member's ticket." xml:space="preserve"><value>Yanıt üyenin talebine gönderildi.</value></data>
   <data name="Reply to the member" xml:space="preserve"><value>Üyeye yanıt</value></data>
@@ -443,6 +471,7 @@
   <data name="Verification in review" xml:space="preserve"><value>İncelemedeki doğrulamalar</value></data>
   <data name="Verification status" xml:space="preserve"><value>Doğrulama durumu</value></data>
   <data name="Verified" xml:space="preserve"><value>Doğrulanmış</value></data>
+  <data name="Verified as the member. Rejecting it removes their verified photo." xml:space="preserve"><value>Üyenin kendisi olarak doğrulandı. Reddedilirse üyenin doğrulanmış fotoğrafı kalkar.</value></data>
   <data name="Verified at" xml:space="preserve"><value>Doğrulanma</value></data>
   <data name="Verify" xml:space="preserve"><value>Doğrula</value></data>
   <data name="View attachment {0}" xml:space="preserve"><value>Eki görüntüle ({0})</value></data>
@@ -784,6 +813,7 @@
   <data name="code:PHOTO_APPROVED" xml:space="preserve"><value>Fotoğraf onaylandı</value></data>
   <data name="code:PHOTO_REJECTED" xml:space="preserve"><value>Fotoğraf reddedildi</value></data>
   <data name="code:PHOTO_REMOVED" xml:space="preserve"><value>Fotoğraf kaldırıldı</value></data>
+  <data name="code:child_safety" xml:space="preserve"><value>Çocuk güvenliği</value></data>
   <data name="code:underage" xml:space="preserve"><value>Reşit olmayan</value></data>
   <data name="code:harassment" xml:space="preserve"><value>Taciz</value></data>
   <data name="code:scam" xml:space="preserve"><value>Dolandırıcılık</value></data>

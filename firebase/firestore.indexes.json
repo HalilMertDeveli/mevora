@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "boosts",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "matches",
       "queryScope": "COLLECTION",
       "fields": [
@@ -480,9 +488,25 @@
         { "fieldPath": "accountStatus", "order": "ASCENDING" },
         { "fieldPath": "suspendedUntil", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "boosts",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "expiresAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
+    {
+      "collectionGroup": "photoModeration",
+      "fieldPath": "unreferencedSince",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
+      ]
+    },
     {
       "collectionGroup": "mevoraPicks",
       "fieldPath": "candidateUids",

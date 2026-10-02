@@ -5,14 +5,18 @@ import {logger} from "firebase-functions";
 import {ApplePurchaseVerifier} from "./applePurchaseVerifier.js";
 import {BoostActivationService} from "./boostActivationService.js";
 import {ensureDefaultCatalog, isDurationPack, resolveBoostPack} from "./catalog.js";
+import {expireDueBoosts} from "./expiry.js";
 import {BoostCreditService} from "./creditService.js";
 import {GooglePurchaseVerifier} from "./googlePurchaseVerifier.js";
-import {PurchaseVerificationService} from "./purchaseVerificationService.js";
+import {PurchaseVerificationService, purchaseLedgerId} from "./purchaseVerificationService.js";
 import {LEGACY_DURATION_MS, walletDocPath} from "./config.js";
+import {sha256} from "./hash.js";
+import type {Firestore} from "firebase-admin/firestore";
 import type {ActiveBoostSnapshot, PurchaseLedger, VerifyBoostRequest} from "./types.js";
 import {FcmTypes, sendUserPush} from "../notifications.js";
 import {assertCallerAccountEligible} from "../accountGuard.js";
 import {assertAppFeatureAvailable} from "../appOperations/appOperationsGate.js";
+import {googlePlaySecrets} from "../googlePlayConfig.js";
 
 const enforceAppCheck = process.env.FUNCTIONS_EMULATOR !== "true";
 const callableOptions = {
@@ -113,44 +117,67 @@ async function loadActiveBoostPayload(uid: string) {
   return created.exists ? boostPayload(created.data() ?? {}, live.boostId) : null;
 }
 
-export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
+export const verifyBoostPurchase = onCall({...callableOptions, secrets: googlePlaySecrets}, async (request) => {
   const uid = requireUid(request);
   const payload = parseRequest(request.data);
   const db = getFirestore();
+  return grantBoostPurchase({db, uid, payload, verification});
+});
+
+/**
+ * Verifies a store purchase and grants it: once per purchase, to one account.
+ *
+ * The ledger entry is the proof of a grant. It is created in the same
+ * transaction as the grant, under an id the client cannot choose, so a purchase
+ * that comes back — a retry, a redelivery, a replay — finds it and is answered
+ * from it instead of being granted again. Play consumes the purchase only
+ * after that commit.
+ */
+export async function grantBoostPurchase(params: {
+  db: Firestore;
+  uid: string;
+  payload: VerifyBoostRequest;
+  verification: PurchaseVerificationService;
+}) {
+  const {db, uid, payload, verification: verifier} = params;
   await ensureDefaultCatalog(db);
   const pack = await resolveBoostPack(db, payload.productId);
-  const purchaseIdGuess = `${payload.platform}_${payload.transactionId}`;
-  const existingSnap = await db.doc(`purchases/${purchaseIdGuess}`).get();
-  const existing = existingSnap.exists
-    ? ({
-        purchaseId: existingSnap.id,
-        userId: String(existingSnap.data()?.userId ?? ""),
-        productId: String(existingSnap.data()?.productId ?? ""),
-        platform: payload.platform,
-        transactionId: String(existingSnap.data()?.transactionId ?? ""),
-        status: existingSnap.data()?.status === "verified" ? "verified" : "pending",
-      } satisfies PurchaseLedger)
-    : null;
+  const existing = await findPurchaseLedger(db, uid, payload);
 
-  const decision = await verification.verify({uid, request: payload, existing, pack});
+  const decision = await verifier.verify({uid, request: payload, existing, pack});
   if (decision.outcome === "invalidUid") {
     throw new HttpsError("unauthenticated", "Sign in required.");
+  }
+  if (decision.outcome === "duplicateOtherUser") {
+    logger.warn("boost_purchase_owned_by_other_account", {userId: uid, purchaseId: decision.purchaseId});
+    throw purchaseAlreadyRedeemed();
   }
   if (
     decision.outcome === "invalidProduct" ||
     decision.outcome === "invalidTransaction" ||
-    decision.outcome === "storeInvalid" ||
-    decision.outcome === "duplicateOtherUser"
+    decision.outcome === "storeInvalid"
   ) {
     throw new HttpsError("invalid-argument", "verification-failed", {reason: "verification-failed"});
   }
   if (decision.outcome === "storeUnavailable") {
     throw new HttpsError("unavailable", "store-unavailable", {reason: "store-unavailable"});
   }
+  if (decision.outcome === "voided") {
+    logger.info("boost_purchase_voided_resubmitted", {userId: uid, purchaseId: decision.purchaseId});
+    throw purchaseVoided();
+  }
 
   const walletRef = db.doc(walletDocPath(uid));
   if (decision.outcome === "alreadyProcessed") {
     const purchase = await db.doc(`purchases/${decision.purchaseId}`).get();
+    if (purchase.exists && !purchase.data()?.consumedAt) {
+      // The grant landed earlier but Play never confirmed the consume. Finish
+      // it, for the product on the ledger rather than the one in this request.
+      await consumeGrantedPurchase(db, verifier, decision.purchaseId, {
+        ...payload,
+        productId: String(purchase.data()?.productId ?? payload.productId),
+      });
+    }
     const wallet = await walletRef.get();
     logger.info("boost_purchase_idempotent", {userId: uid, purchaseId: decision.purchaseId});
     return {
@@ -172,13 +199,23 @@ export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
     const again = await tx.get(purchaseRef);
     const walletSnap = await tx.get(walletRef);
     const currentBalance = Number(walletSnap.data()?.balance ?? 0);
+    if (again.exists && String(again.data()?.userId ?? "") !== uid) {
+      // Another account recorded this purchase between the lookup and here.
+      return {otherAccount: true as const};
+    }
     if (again.exists && again.data()?.status === "verified") {
       return {
         alreadyProcessed: true as const,
+        consumed: Boolean(again.data()?.consumedAt),
         balance: currentBalance,
         boostCount: Number(again.data()?.boostCount ?? pack?.boostCount ?? 0),
         boostId: null as string | null,
       };
+    }
+    if (again.exists && again.data()?.status === "voided") {
+      // Voided between the lookup and here. Writing a grant over it would
+      // undo the void.
+      return {voided: true as const};
     }
 
     const activeSnap = await tx.get(db.collection(`users/${uid}/boosts`).where("status", "==", "active"));
@@ -189,7 +226,7 @@ export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
       }
     }
 
-    tx.set(purchaseRef, {
+    const ledgerEntry = {
       purchaseId,
       userId: uid,
       productId: payload.productId,
@@ -203,9 +240,10 @@ export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
       purchasedAt: Timestamp.fromDate(store.purchasedAt ?? now),
       verifiedAt: FieldValue.serverTimestamp(),
       createdAt: FieldValue.serverTimestamp(),
-    });
+    };
 
     if (!durationPack) {
+      tx.set(purchaseRef, ledgerEntry);
       const plan = credit.credit({
         boostCount: pack!.boostCount,
         currentBalance,
@@ -232,12 +270,25 @@ export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
       durationMs: pack!.durationMs,
       requireBalance: false,
     });
-    if (!("shouldActivate" in grant) || !grant.shouldActivate) {
+    const boostRef = grant.shouldActivate
+      ? grant.extendBoostId
+        ? db.doc(`users/${uid}/boosts/${grant.extendBoostId}`)
+        : db.collection(`users/${uid}/boosts`).doc()
+      : null;
+    // Which Boost this purchase paid for, and where its time ends. A voided
+    // purchase takes back what is still ahead of that point, and nothing else.
+    tx.set(
+      purchaseRef,
+      grant.shouldActivate && boostRef
+        ? {...ledgerEntry, boostId: boostRef.id, boostExpiresAt: Timestamp.fromDate(grant.expiresAt)}
+        : ledgerEntry,
+    );
+    if (!grant.shouldActivate || !boostRef) {
       return {invalidPack: true as const};
     }
-    let boostId = grant.extendBoostId ?? "";
+    const boostId = boostRef.id;
     if (grant.extendBoostId) {
-      tx.update(db.doc(`users/${uid}/boosts/${grant.extendBoostId}`), {
+      tx.update(boostRef, {
         productId: payload.productId,
         purchaseId,
         status: "active",
@@ -245,8 +296,6 @@ export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
         updatedAt: FieldValue.serverTimestamp(),
       });
     } else {
-      const boostRef = db.collection(`users/${uid}/boosts`).doc();
-      boostId = boostRef.id;
       tx.set(boostRef, {
         boostId,
         userId: uid,
@@ -268,8 +317,21 @@ export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
     };
   });
 
+  if ("otherAccount" in result) {
+    logger.warn("boost_purchase_owned_by_other_account", {userId: uid, purchaseId});
+    throw purchaseAlreadyRedeemed();
+  }
   if ("invalidPack" in result) {
     throw new HttpsError("invalid-argument", "verification-failed", {reason: "verification-failed"});
+  }
+  if ("voided" in result) {
+    throw purchaseVoided();
+  }
+
+  // The grant is on the ledger — written just now, or by a call that raced this
+  // one. Only from here on may Play consume the purchase.
+  if (!("alreadyProcessed" in result) || !result.consumed) {
+    await consumeGrantedPurchase(db, verifier, purchaseId, payload);
   }
 
   if ("alreadyProcessed" in result) {
@@ -341,7 +403,86 @@ export const verifyBoostPurchase = onCall(callableOptions, async (request) => {
     wallet: walletPayload(result.balance),
     boost,
   };
-});
+}
+
+/** How many pre-token-key entries to read for one token; replays under the old key could leave several. */
+const LEGACY_LEDGER_SCAN = 10;
+
+/**
+ * The ledger entry that already records this purchase, if any.
+ *
+ * Entries written before the token became the key sit under the transaction id
+ * the client sent, but they carry the token hash, so they are found by that
+ * field and still block a second grant.
+ */
+async function findPurchaseLedger(
+  db: Firestore,
+  uid: string,
+  payload: VerifyBoostRequest,
+): Promise<PurchaseLedger | null> {
+  const purchaseId = purchaseLedgerId(payload);
+  if (!purchaseId) {
+    return null;
+  }
+  const toLedger = (id: string, data: DocumentData): PurchaseLedger => ({
+    purchaseId: id,
+    userId: String(data.userId ?? ""),
+    productId: String(data.productId ?? ""),
+    platform: payload.platform,
+    transactionId: String(data.transactionId ?? ""),
+    status: data.status === "verified" || data.status === "voided" ? data.status : "pending",
+  });
+  const direct = await db.doc(`purchases/${purchaseId}`).get();
+  if (direct.exists) {
+    return toLedger(direct.id, direct.data() ?? {});
+  }
+  if (payload.platform !== "android" || !payload.purchaseToken) {
+    return null;
+  }
+  const legacy = await db
+    .collection("purchases")
+    .where("purchaseTokenHashOrReference", "==", sha256(payload.purchaseToken))
+    .limit(LEGACY_LEDGER_SCAN)
+    .get();
+  // The caller's own entry answers a retry; anyone else's rejects the request.
+  const entry = legacy.docs.find((doc) => doc.data().userId === uid) ?? legacy.docs[0];
+  return entry ? toLedger(entry.id, entry.data()) : null;
+}
+
+/**
+ * Consumes a purchase whose grant is on the ledger, and records that Play
+ * confirmed it. A failure changes nothing for the member: the grant stands,
+ * the entry keeps the token from being granted again, and the next
+ * verification of the same token retries the consume.
+ */
+async function consumeGrantedPurchase(
+  db: Firestore,
+  verifier: PurchaseVerificationService,
+  purchaseId: string,
+  payload: VerifyBoostRequest,
+): Promise<void> {
+  try {
+    if (await verifier.consume(payload)) {
+      await db.doc(`purchases/${purchaseId}`).update({consumedAt: FieldValue.serverTimestamp()});
+    }
+  } catch (error) {
+    logger.warn("boost_purchase_consume_not_recorded", {purchaseId, error: String(error)});
+  }
+}
+
+/** A purchase that is already another account's. Says nothing about whose. */
+function purchaseAlreadyRedeemed(): HttpsError {
+  return new HttpsError("already-exists", "already-processed", {reason: "already-processed"});
+}
+
+/**
+ * A purchase Play has since voided. The client treats any `invalid-argument`
+ * as a failed verification and leaves the purchase alone, which is right: there
+ * is nothing left to grant.
+ */
+function purchaseVoided(): HttpsError {
+  return new HttpsError("invalid-argument", "purchase-voided", {reason: "purchase-voided"});
+}
 
 export const activateBoost = onCall(callableOptions, async (request) => {
   const uid = requireUid(request);
@@ -444,32 +585,15 @@ export const activateBoost = onCall(callableOptions, async (request) => {
 export const expireBoost = onSchedule(
   {schedule: "every 15 minutes", region: "europe-west1"},
   async () => {
-    const db = getFirestore();
-    const now = Timestamp.now();
-    const snap = await db.collectionGroup("boosts").where("status", "==", "active").get();
-    const expiredDocs: Array<{uid: string; boostId: string}> = [];
-    const batch = db.batch();
-    for (const doc of snap.docs) {
-      const expires = doc.data().expiresAt as Timestamp | undefined;
-      if (expires && expires.toMillis() <= now.toMillis()) {
-        batch.update(doc.ref, {status: "expired"});
-        expiredDocs.push({uid: String(doc.data().userId ?? ""), boostId: doc.id});
-        logger.info("boost_expired", {userId: doc.data().userId, boostId: doc.id});
-      }
-    }
-    if (expiredDocs.length) {
-      await batch.commit();
-      for (const item of expiredDocs) {
-        if (!item.uid) {
-          continue;
-        }
-        await sendUserPush({
+    await expireDueBoosts(getFirestore(), {
+      now: Timestamp.now(),
+      notify: (item) =>
+        sendUserPush({
           uid: item.uid,
           type: FcmTypes.boostExpired,
           data: {boostId: item.boostId},
           prefKey: "notificationsEnabled",
-        });
-      }
-    }
+        }),
+    });
   },
 );

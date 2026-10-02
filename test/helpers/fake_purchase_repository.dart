@@ -58,6 +58,13 @@ class FakePurchaseRepository implements PurchaseRepository {
   PurchaseFailure? purchaseFailure;
   PurchaseFailure? verifyFailure;
   PurchaseFailure? activateFailure;
+
+  /// When true the backend answers that this purchase was already granted to
+  /// this member — still a confirmation, not a failure.
+  bool alreadyProcessed = false;
+
+  /// Store and backend steps in the order they ran.
+  final List<String> steps = <String>[];
   bool purchaseCalled = false;
   bool verifyCalled = false;
   bool activateCalled = false;
@@ -124,6 +131,7 @@ class FakePurchaseRepository implements PurchaseRepository {
   @override
   Future<Result<StoreTransaction>> purchaseBoost(BoostProduct product) async {
     purchaseCalled = true;
+    steps.add('purchase');
     final failure = purchaseFailure;
     if (failure != null) {
       return Err(failure);
@@ -144,6 +152,7 @@ class FakePurchaseRepository implements PurchaseRepository {
     required StoreTransaction transaction,
   }) async {
     verifyCalled = true;
+    steps.add('verify');
     final failure = verifyFailure;
     if (failure != null) {
       return Err(failure);
@@ -187,6 +196,7 @@ class FakePurchaseRepository implements PurchaseRepository {
         productId: transaction.productId,
         boostCount: 0,
         balance: wallet.balance,
+        alreadyProcessed: alreadyProcessed,
         boost: boost,
       ),
     );
@@ -271,6 +281,7 @@ class FakePurchaseRepository implements PurchaseRepository {
     StoreTransaction transaction,
   ) async {
     lastCompleted = transaction;
+    steps.add('complete');
     return const Success(null);
   }
 

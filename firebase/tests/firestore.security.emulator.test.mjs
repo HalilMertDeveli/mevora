@@ -110,6 +110,73 @@ describe("profiles — owner vs unrelated reader", () => {
     await deny(who.userA.db().doc(`profiles/${UID.A}`).update({isVerified: true}));
     await deny(who.userA.db().doc(`profiles/${UID.A}`).update({isAdmin: true}));
   });
+
+  it("a surname can never be written to the public card", async () => {
+    const own = who.userA.db().doc(`profiles/${UID.A}`);
+    for (const key of ["lastName", "firstName", "surname", "familyName"]) {
+      await deny(own.update({[key]: "Develi"}));
+    }
+    // The first name itself stays editable, so the denials above are about
+    // the key, not the document.
+    await allow(own.update({displayName: "Halil"}));
+
+    // Same on create: the stub is accepted, the stub plus a surname is not.
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.C}`).delete());
+    const fresh = who.userC.db().doc(`profiles/${UID.C}`);
+    await deny(fresh.set({uid: UID.C, displayName: "Ada", lastName: "Lovelace"}));
+    await allow(fresh.set({uid: UID.C, displayName: "Ada"}));
+  });
+
+  it("a date of birth can never be written to the public card", async () => {
+    const own = who.userA.db().doc(`profiles/${UID.A}`);
+    await deny(own.update({birthDate: new Date("1996-04-01")}));
+    await deny(own.set({birthDate: new Date("1996-04-01"), bio: "hi"}, {merge: true}));
+    await deny(own.update({birthDate: "1996-04-01"}));
+    await deny(own.update({dateOfBirth: new Date("1996-04-01")}));
+
+    // Same on create.
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.C}`).delete());
+    const fresh = who.userC.db().doc(`profiles/${UID.C}`);
+    await deny(fresh.set({uid: UID.C, displayName: "Ada", birthDate: new Date("1996-04-01")}));
+    await allow(fresh.set({uid: UID.C, displayName: "Ada"}));
+  });
+
+  it("the age on the public card is the server's: the owner cannot set or move it", async () => {
+    const own = who.userA.db().doc(`profiles/${UID.A}`);
+    // Not yet set by the server: the owner cannot claim one.
+    await deny(own.update({age: 30}));
+
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.A}`).update({age: 30}));
+    await deny(own.update({age: 24}));
+    await deny(own.update({age: 31, bio: "hi"}));
+    const {deleteField} = await import("firebase/firestore");
+    await deny(own.update({age: deleteField()}));
+
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.C}`).delete());
+    await deny(who.userC.db().doc(`profiles/${UID.C}`).set({uid: UID.C, displayName: "Ada", age: 30}));
+  });
+
+  it("an app build from before the change can still save the rest of a profile", async () => {
+    // It re-sends the values it loaded: no date of birth, the stored age.
+    await seed(env, (ctx) => ctx.firestore().doc(`profiles/${UID.A}`).update({age: 30}));
+    await allow(
+      who.userA.db().doc(`profiles/${UID.A}`).set(
+        {birthDate: null, age: 30, bio: "Books and long walks.", updatedAt: new Date()},
+        {merge: true},
+      ),
+    );
+  });
+
+  it("a date of birth still on a card from before the change cannot be altered there", async () => {
+    const legacy = new Date("1996-04-01T00:00:00Z");
+    await seed(env, (ctx) =>
+      ctx.firestore().doc(`profiles/${UID.A}`).update({birthDate: legacy, age: 30}));
+    const own = who.userA.db().doc(`profiles/${UID.A}`);
+    // An old build re-sending what it loaded is harmless.
+    await allow(own.set({birthDate: legacy, age: 30, bio: "hi"}, {merge: true}));
+    await deny(own.update({birthDate: new Date("1990-04-01T00:00:00Z")}));
+    await deny(own.update({birthDate: null}));
+  });
 });
 
 describe("users/{uid} — private account isolation", () => {
@@ -117,6 +184,73 @@ describe("users/{uid} — private account isolation", () => {
     await allow(who.userA.db().doc(`users/${UID.A}`).get());
     await deny(who.userC.db().doc(`users/${UID.A}`).get());
     await deny(who.anon.db().doc(`users/${UID.A}`).get());
+  });
+
+  it("the owner keeps a private surname that no other member can read", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    await allow(own.update({lastName: "Öztürk-Şahin"}));
+    const saved = await own.get();
+    assert.equal(saved.get("lastName"), "Öztürk-Şahin");
+
+    await deny(who.userB.db().doc(`users/${UID.A}`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}`).update({lastName: "Hijacked"}));
+
+    // The public card another member reads has no surname on it.
+    const card = await who.userC.db().doc(`profiles/${UID.A}`).get();
+    assert.equal("lastName" in card.data(), false);
+    assert.equal(JSON.stringify(card.data()).includes("Öztürk"), false);
+  });
+
+  it("a surname must be a non-empty string within the cap", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    await deny(own.update({lastName: ""}));
+    await deny(own.update({lastName: 7}));
+    await deny(own.update({lastName: ["Develi"]}));
+    await deny(own.update({lastName: "a".repeat(51)}));
+    await allow(own.update({lastName: "a".repeat(50)}));
+  });
+
+  it("the owner keeps a private date of birth that no other member can read", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    const birthDate = new Date("1996-04-01T00:00:00Z");
+    await allow(own.update({birthDate, updatedAt: new Date()}));
+    const saved = await own.get();
+    assert.equal(saved.get("birthDate").toMillis(), birthDate.getTime());
+
+    await deny(who.userB.db().doc(`users/${UID.A}`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}`).get());
+    await deny(who.userC.db().doc(`users/${UID.A}`).update({birthDate}));
+
+    // The public card another member reads carries no date of birth.
+    const card = await who.userC.db().doc(`profiles/${UID.A}`).get();
+    assert.equal("birthDate" in card.data(), false);
+  });
+
+  it("a date of birth is set once, as a past timestamp", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    await deny(own.update({birthDate: "1996-04-01"}));
+    await deny(own.update({birthDate: 828316800000}));
+    await deny(own.update({birthDate: null}));
+    await deny(own.update({birthDate: new Date(Date.now() + 86400000)}));
+
+    const birthDate = new Date("1996-04-01T00:00:00Z");
+    await allow(own.update({birthDate}));
+    // Re-sending the same value is a no-op; anything else is refused.
+    await allow(own.update({birthDate, lastName: "Lovelace"}));
+    await deny(own.update({birthDate: new Date("1990-04-01T00:00:00Z")}));
+    const {deleteField} = await import("firebase/firestore");
+    await deny(own.update({birthDate: deleteField()}));
+    // The rest of the account stays editable afterwards.
+    await allow(own.update({lastName: "Byron", updatedAt: new Date()}));
+  });
+
+  it("the age roll-over marker is server-written only", async () => {
+    const own = who.userA.db().doc(`users/${UID.A}`);
+    await deny(own.update({ageRolloverAt: new Date()}));
+    await deny(own.update({birthDate: new Date("1996-04-01T00:00:00Z"), ageRolloverAt: new Date()}));
   });
 
   it("moderation and billing state is locked against the owner", async () => {
@@ -561,8 +695,6 @@ describe("legitimate client flows still work", () => {
         {
           uid: UID.A,
           displayName: "Ada",
-          birthDate: new Date("1996-04-01"),
-          age: 30,
           gender: "female",
           interestedIn: ["male"],
           bio: "Books and long walks.",
@@ -985,6 +1117,29 @@ describe("messages — participant authorization and E2EE enforcement", () => {
     await deny(
       who.userA.db().doc(`matches/${MATCH_AB}/messages/p5`).set(
         encryptedMessage({senderId: UID.A, receiverId: UID.C}),
+      ),
+    );
+  });
+
+  it("an image message with a non-empty envelope is accepted, an empty ciphertext is not", async () => {
+    const image = {
+      type: "image",
+      imageStoragePath: `users/${UID.A}/chat/${MATCH_AB}/photo.jpg.enc`,
+      mediaKeyCiphertext: "a2V5",
+    };
+    await allow(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/img1`).set(
+        encryptedMessage({senderId: UID.A, receiverId: UID.B, overrides: image}),
+      ),
+    );
+    // What the app sent before the fix: AES-GCM of an empty caption.
+    await deny(
+      who.userA.db().doc(`matches/${MATCH_AB}/messages/img2`).set(
+        encryptedMessage({
+          senderId: UID.A,
+          receiverId: UID.B,
+          overrides: {...image, ciphertext: ""},
+        }),
       ),
     );
   });
@@ -1620,6 +1775,33 @@ describe("humor calibration state", () => {
     );
   });
 
+  it("Humor Core progress is the owner's to read and the server's to write", async () => {
+    // `users/{uid}/humor/core` decides which canonical items a member gets
+    // and when. A client that could write it could put itself past the
+    // calibration, pull tomorrow's items into today, or mark items answered.
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`users/${UID.A}/humor/core`).set({
+        schemaVersion: 1,
+        answers: {hc_tr_img_001: {rating: "funny", dayId: "2026-10-01", answeredAtMs: 1, source: "core"}},
+        waived: {},
+        mediaFailures: {},
+        initialCompletedAtMs: null,
+        today: {dayId: "2026-10-01", setId: "onboarding-2026-10-01-x", contentIds: ["hc_tr_img_001"], kind: "onboarding", completedAtMs: null},
+        completedDays: 0,
+      });
+    });
+    const own = who.userA.db().doc(`users/${UID.A}/humor/core`);
+    await allow(own.get());
+    await deny(own.set({initialCompletedAtMs: 1, answers: {}, today: {}}));
+    await deny(own.update({initialCompletedAtMs: 1}));
+    await deny(own.update({"today.contentIds": ["hc_tr_img_099"]}));
+    await deny(own.update({"today.dayId": "2026-10-02"}));
+    await deny(own.delete());
+    await deny(who.userB.db().doc(`users/${UID.A}/humor/core`).get());
+    await deny(who.anon.db().doc(`users/${UID.A}/humor/core`).get());
+    await deny(who.userB.db().doc(`users/${UID.B}/humor/core`).set({initialCompletedAtMs: 1}));
+  });
+
   it("clients cannot promote content into an anchor pool", async () => {
     await deny(
       who.userA.db().doc("humorContent/hc_tr_img_001").set(
@@ -1912,6 +2094,157 @@ describe("Spotify music — public card vs private taste", () => {
     await deny(
       who.userC.db().doc(`users/${UID.A}/music/summary`).set({spotifyConnected: true}),
     );
+  });
+});
+
+describe("Face Anchor — the verdict and everything around it are server-owned", () => {
+  const STATE_A = `users/${UID.A}/faceAnchor/state`;
+  const LEDGER_A = `users/${UID.A}/photoModeration/p1`;
+  const verified = {status: "verified", provider: "didit", attemptId: "a1", storagePath: `users/${UID.A}/profile/photos/p1.jpg`};
+
+  beforeEach(async () => {
+    await seed(env, async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(STATE_A).set({
+        attemptId: "a1",
+        photoId: "p1",
+        status: "failed",
+        reason: "face_mismatch",
+        attemptCount: 3,
+        expiresAtMs: Date.now() + 60000,
+      });
+      await db.doc(LEDGER_A).set({status: "approved", storagePath: verified.storagePath});
+      await db.doc(`profiles/${UID.A}`).set(
+        {faceAnchorRequired: true, faceAnchorPhotoIds: [], photos: [{id: "p1", order: 0, isPrimary: true}]},
+        {merge: true},
+      );
+      await db.doc("devControl/faceAnchor").set({outcome: "liveness_failed"});
+      await db.doc("faceAnchorUsage/2026-10-01").set({count: 12});
+    });
+  });
+
+  it("the owner reads their own attempt state", async () => {
+    await allow(who.userA.db().doc(STATE_A).get());
+  });
+
+  it("no other member can read an attempt state or the ledger", async () => {
+    for (const actor of [who.userB, who.userC, who.anon]) {
+      await deny(actor.db().doc(STATE_A).get());
+      await deny(actor.db().doc(LEDGER_A).get());
+      await deny(actor.db().collection(`users/${UID.A}/faceAnchor`).get());
+    }
+  });
+
+  it("nobody can read attempt states across members", async () => {
+    await deny(who.userA.db().collectionGroup("faceAnchor").get());
+  });
+
+  it("the owner cannot mark their own attempt verified", async () => {
+    const db = who.userA.db();
+    await deny(db.doc(STATE_A).update({status: "verified", reason: null}));
+    await deny(db.doc(STATE_A).set({status: "verified", attemptId: "a1", photoId: "p1"}));
+    await deny(db.doc(STATE_A).set({status: "verified"}, {merge: true}));
+  });
+
+  it("the owner cannot edit any part of the attempt: budget, expiry, photo, reason", async () => {
+    const db = who.userA.db();
+    for (const patch of [
+      {attemptCount: 0},
+      {refundCount: 0},
+      {windowStartedAtMs: 0},
+      {lastAttemptAtMs: 0},
+      {expiresAtMs: Date.now() + 86400000},
+      {status: "awaiting_selfie"},
+      {photoId: "p2"},
+      {attemptId: "a2"},
+      {reason: null},
+      {consentVersion: 1},
+    ]) {
+      await deny(db.doc(STATE_A).update(patch));
+    }
+    await deny(db.doc(STATE_A).delete());
+  });
+
+  it("a member cannot create an attempt state for themselves or anyone else", async () => {
+    await deny(who.userB.db().doc(`users/${UID.B}/faceAnchor/state`).set({status: "awaiting_selfie", attemptId: "x"}));
+    await deny(who.userC.db().doc(STATE_A).set({status: "verified"}));
+    await deny(who.userA.db().doc(`users/${UID.A}/faceAnchor/other`).set({status: "verified"}));
+  });
+
+  it("the owner cannot write a verdict onto the ledger", async () => {
+    const db = who.userA.db();
+    await deny(db.doc(LEDGER_A).update({faceAnchor: verified}));
+    await deny(db.doc(LEDGER_A).set({status: "approved", faceAnchor: verified}));
+    await deny(db.doc(`users/${UID.A}/photoModeration/p2`).set({status: "approved", faceAnchor: verified}));
+    await deny(who.userC.db().doc(LEDGER_A).update({faceAnchor: verified}));
+  });
+
+  it("the owner cannot grant themselves an anchor on the profile", async () => {
+    const db = who.userA.db();
+    await deny(db.doc(`profiles/${UID.A}`).update({faceAnchorPhotoIds: ["p1"]}));
+    await deny(db.doc(`profiles/${UID.A}`).update({bio: "hello", faceAnchorPhotoIds: ["p1"]}));
+    await deny(db.doc(`profiles/${UID.A}`).set({faceAnchorPhotoIds: ["p1"]}, {merge: true}));
+  });
+
+  it("the owner cannot take themselves out from under the rule", async () => {
+    const db = who.userA.db();
+    const {deleteField} = await import("firebase/firestore");
+    await deny(db.doc(`profiles/${UID.A}`).update({faceAnchorRequired: false}));
+    await deny(db.doc(`profiles/${UID.A}`).update({faceAnchorRequired: deleteField()}));
+    await deny(db.doc(`profiles/${UID.A}`).update({faceAnchorPhotoIds: deleteField()}));
+    // Replacing the whole document would drop both fields.
+    await deny(db.doc(`profiles/${UID.A}`).set(baseProfile(UID.A)));
+    await deny(db.doc(`profiles/${UID.A}`).delete());
+  });
+
+  it("a new profile cannot be created already carrying the fields", async () => {
+    await seed(env, async (ctx) => {
+      await ctx.firestore().doc(`profiles/${UID.B}`).delete();
+    });
+    const db = who.userB.db();
+    await deny(db.doc(`profiles/${UID.B}`).set(baseProfile(UID.B, {faceAnchorPhotoIds: ["p1"]})));
+    await deny(db.doc(`profiles/${UID.B}`).set(baseProfile(UID.B, {faceAnchorRequired: false})));
+    await allow(db.doc(`profiles/${UID.B}`).set(baseProfile(UID.B)));
+  });
+
+  it("the projection flag in photos[] is writable but is not the authority", async () => {
+    // Rules cannot see inside array elements, so this write is allowed; the
+    // reconciling trigger removes the flag (functions/test/
+    // faceAnchorInvariants.test.cjs) and nothing that decides eligibility
+    // reads it (faceAnchorGate.test.cjs).
+    await allow(who.userA.db().doc(`profiles/${UID.A}`).update({
+      photos: [{id: "p1", order: 0, isPrimary: true, faceAnchorVerified: true}],
+    }));
+  });
+
+  it("ordinary profile editing still works for a member under the rule", async () => {
+    const db = who.userA.db();
+    await allow(db.doc(`profiles/${UID.A}`).update({bio: "new bio"}));
+    await allow(db.doc(`profiles/${UID.A}`).update({
+      photos: [{id: "p1", order: 0, isPrimary: true}, {id: "p2", order: 1, isPrimary: false}],
+    }));
+  });
+
+  it("the public profile exposes nothing about how verification went", async () => {
+    const snap = await who.userB.db().doc(`profiles/${UID.A}`).get();
+    const keys = Object.keys(snap.data());
+    for (const key of keys) {
+      assert.equal(/score|selfie|liveness|provider|attempt|reason/i.test(key), false, key);
+    }
+    assert.deepEqual(keys.filter((key) => /faceAnchor/.test(key)).sort(), ["faceAnchorPhotoIds", "faceAnchorRequired"]);
+  });
+
+  it("the emulator's outcome switch is unreachable from any client", async () => {
+    for (const actor of [who.userA, who.userC, who.anon]) {
+      await deny(actor.db().doc("devControl/faceAnchor").get());
+      await deny(actor.db().doc("devControl/faceAnchor").set({outcome: "success"}));
+      await deny(actor.db().doc("devControl/faceAnchor").delete());
+    }
+  });
+
+  it("the global usage counter is unreachable from any client", async () => {
+    await deny(who.userA.db().doc("faceAnchorUsage/2026-10-01").get());
+    await deny(who.userA.db().doc("faceAnchorUsage/2026-10-01").set({count: 0}));
   });
 });
 

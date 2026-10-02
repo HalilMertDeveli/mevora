@@ -26,16 +26,26 @@ abstract final class DiscoveryCandidateParser {
     raw.remove('longitude');
     raw.remove('geohash');
 
+    // `photos` holds full-size URLs for the profile gallery; the primary
+    // photo's smaller server variants ride alongside for cards and avatars.
+    // A 320px thumbnail must never reach a full-screen surface.
     final photosRaw = profile['photos'];
     final photoUrls = <String>[];
+    String? cardPhotoUrl;
+    String? thumbPhotoUrl;
     if (photosRaw is List) {
       for (final item in photosRaw) {
         if (item is String) {
           photoUrls.add(item);
         } else if (item is Map) {
-          final url =
-              item['thumbUrl'] as String? ?? item['downloadUrl'] as String?;
+          final card = _nonEmpty(item['cardUrl']);
+          final thumb = _nonEmpty(item['thumbUrl']);
+          final url = _nonEmpty(item['downloadUrl']) ?? card ?? thumb;
           if (url != null) {
+            if (photoUrls.isEmpty) {
+              cardPhotoUrl = card;
+              thumbPhotoUrl = thumb;
+            }
             photoUrls.add(url);
           }
         }
@@ -58,6 +68,8 @@ abstract final class DiscoveryCandidateParser {
       displayName: (profile['displayName'] as String?) ?? '',
       age: firestoreInt(profile['age'], 0),
       photos: photoUrls,
+      cardPhotoUrl: cardPhotoUrl,
+      thumbPhotoUrl: thumbPhotoUrl,
       distanceLabel: raw['distanceLabel'] as String?,
       distanceKm: firestoreDouble(raw['distanceKm']),
       compatibilityScore: compatibilityScore,
@@ -192,4 +204,7 @@ abstract final class DiscoveryCandidateParser {
     }
     return out;
   }
+
+  static String? _nonEmpty(Object? value) =>
+      value is String && value.isNotEmpty ? value : null;
 }

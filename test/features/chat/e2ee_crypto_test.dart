@@ -139,4 +139,32 @@ void main() {
     );
     expect(published, expected);
   });
+
+  test('a media envelope never encrypts to an empty ciphertext', () async {
+    final pair = await E2eeCrypto.generateKeyPair();
+    final peer = await E2eeCrypto.generateKeyPair();
+    final session = await E2eeCrypto.deriveSessionKey(
+      privateKeyBytes: await pair.extractPrivateKeyBytes(),
+      peerPublicKeyBase64: await E2eeCrypto.publicKeyToBase64(
+        await peer.extractPublicKey(),
+      ),
+      matchId: 'match_1',
+    );
+
+    // Firestore rules reject a message whose ciphertext is empty, and that is
+    // what an empty caption encrypts to.
+    final empty = await E2eeCrypto.encryptText(
+      sessionKey: session,
+      plaintext: '',
+      senderKeyVersion: 1,
+    );
+    expect(empty.ciphertextBase64, isEmpty);
+
+    final media = await E2eeCrypto.encryptText(
+      sessionKey: session,
+      plaintext: E2eeConstants.mediaEnvelopePlaintext,
+      senderKeyVersion: 1,
+    );
+    expect(media.ciphertextBase64, isNotEmpty);
+  });
 }

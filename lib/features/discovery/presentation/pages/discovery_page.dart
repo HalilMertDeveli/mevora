@@ -110,11 +110,24 @@ class _DiscoveryPageState extends State<DiscoveryPage>
     if (controller == null) {
       return;
     }
+    // Back from the system settings: the permission or the location service
+    // may have been switched on there.
+    final phase = controller.state.phase;
+    final recheckLocation =
+        phase == LocationPromptPhase.permanentlyDenied ||
+        phase == LocationPromptPhase.gpsDisabled;
+    if (recheckLocation) {
+      unawaited(controller.start());
+    }
     if (_showingPicks) {
       // Revalidates the batch: anyone blocked, matched or gone since drops out.
       if (_picksStarted) {
         unawaited(_picks!.load());
       }
+      return;
+    }
+    if (recheckLocation) {
+      // start() loads the deck itself.
       return;
     }
     // Soft refresh after long idle — keep deck if already loaded.
@@ -395,32 +408,37 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         breakdown: breakdown,
       );
       final me = AuthScope.maybeOf(context)?.user;
-      return MevoraMatchCelebration(
-        leftName: me?.displayName ?? l10n.you,
-        leftImage: MevoraNetworkImages.provider(me?.photoUrl),
-        rightName: match.displayName,
-        rightImage: MevoraNetworkImages.provider(match.photoUrl),
-        compatibilitySection: WhyYouMatchPanel(
-          breakdown: breakdown,
-          reasons: reasons,
+      return MatchedProfileAnswersAvailability(
+        uid: match.uid,
+        builder: (context, hasAnswers) => MevoraMatchCelebration(
+          leftName: me?.displayName ?? l10n.you,
+          leftImage: MevoraNetworkImages.provider(me?.photoUrl),
+          rightName: match.displayName,
+          rightImage: MevoraNetworkImages.provider(match.cardPhoto),
+          compatibilitySection: WhyYouMatchPanel(
+            breakdown: breakdown,
+            reasons: reasons,
+          ),
+          onSendMessage: () {
+            final matchId = controller.state.matchedMatchId;
+            controller.clearMatch();
+            if (matchId != null && matchId.isNotEmpty) {
+              unawaited(context.push(AppRoutes.chatPath(matchId)));
+            } else {
+              context.go(AppRoutes.matches);
+            }
+          },
+          onViewAnswers: hasAnswers
+              ? () {
+                  final otherUid = match.uid;
+                  controller.clearMatch();
+                  unawaited(
+                    showMatchedProfileAnswersSheet(context, otherUid: otherUid),
+                  );
+                }
+              : null,
+          onKeepExploring: controller.clearMatch,
         ),
-        onSendMessage: () {
-          final matchId = controller.state.matchedMatchId;
-          controller.clearMatch();
-          if (matchId != null && matchId.isNotEmpty) {
-            unawaited(context.push(AppRoutes.chatPath(matchId)));
-          } else {
-            context.go(AppRoutes.matches);
-          }
-        },
-        onViewAnswers: () {
-          final otherUid = match.uid;
-          controller.clearMatch();
-          unawaited(
-            showMatchedProfileAnswersSheet(context, otherUid: otherUid),
-          );
-        },
-        onKeepExploring: controller.clearMatch,
       );
     }
 
@@ -439,6 +457,10 @@ class _DiscoveryPageState extends State<DiscoveryPage>
         message: l10n.locationSettingsMessage,
         actionLabel: l10n.openSettings,
         onAction: () => unawaited(controller.openSettings()),
+        // Location is optional: refusing it must not lock the member out of
+        // the people already chosen for them.
+        secondaryActionLabel: l10n.continueWithoutLocation,
+        onSecondaryAction: () => unawaited(controller.skipLocation()),
       );
     }
 
@@ -627,28 +649,35 @@ class _DiscoveryPageState extends State<DiscoveryPage>
       candidate: match,
       breakdown: breakdown,
     );
-    return MevoraMatchCelebration(
-      leftName: l10n.you,
-      rightName: match.displayName,
-      rightImage: MevoraNetworkImages.provider(match.photoUrl),
-      compatibilitySection: WhyYouMatchPanel(
-        breakdown: breakdown,
-        reasons: reasons,
+    return MatchedProfileAnswersAvailability(
+      uid: match.uid,
+      builder: (context, hasAnswers) => MevoraMatchCelebration(
+        leftName: l10n.you,
+        rightName: match.displayName,
+        rightImage: MevoraNetworkImages.provider(match.cardPhoto),
+        compatibilitySection: WhyYouMatchPanel(
+          breakdown: breakdown,
+          reasons: reasons,
+        ),
+        onSendMessage: () {
+          final matchId = picks.state.matchedMatchId;
+          picks.clearMatch();
+          if (matchId != null && matchId.isNotEmpty) {
+            unawaited(context.push(AppRoutes.chatPath(matchId)));
+          } else {
+            context.go(AppRoutes.matches);
+          }
+        },
+        onViewAnswers: hasAnswers
+            ? () {
+                picks.clearMatch();
+                unawaited(
+                  showMatchedProfileAnswersSheet(context, otherUid: match.uid),
+                );
+              }
+            : null,
+        onKeepExploring: picks.clearMatch,
       ),
-      onSendMessage: () {
-        final matchId = picks.state.matchedMatchId;
-        picks.clearMatch();
-        if (matchId != null && matchId.isNotEmpty) {
-          unawaited(context.push(AppRoutes.chatPath(matchId)));
-        } else {
-          context.go(AppRoutes.matches);
-        }
-      },
-      onViewAnswers: () {
-        picks.clearMatch();
-        unawaited(showMatchedProfileAnswersSheet(context, otherUid: match.uid));
-      },
-      onKeepExploring: picks.clearMatch,
     );
   }
 

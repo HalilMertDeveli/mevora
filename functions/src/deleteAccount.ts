@@ -6,9 +6,11 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {logger} from "firebase-functions";
 import {requestSumsubApplicantDeletion} from "./sumsub/sumsubApplicantLifecycle.js";
 import {requestIdentityProviderErasure} from "./identity/identityErasure.js";
+import {diditApiKey} from "./identity/didit/diditConfig.js";
 import {safeLogMeta} from "./security/logHygiene.js";
 import {scrubDeletedMemberFromPicks} from "./picks/service.js";
 import {purgeTrustSafetyUserData} from "./admin/accountDeletion.js";
+import {uidRateLimitPaths} from "./callableRateLimit.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -132,7 +134,10 @@ export function spotifyIndexDeletionPaths(input: {
   ];
 }
 export const deleteUserAccount = onCall(
-  {enforceAppCheck, region: "europe-west1"},
+  // The Didit key is what lets requestIdentityProviderErasure reach the
+  // provider. Unbound, the secret is never mounted and every erasure reports
+  // `not_configured`, however correctly the key is set on the project.
+  {enforceAppCheck, region: "europe-west1", secrets: [diditApiKey]},
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
@@ -163,6 +168,8 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/blockedUsers`),
       deleteCollectionDocs(`users/${uid}/passedUsers`),
       deleteCollectionDocs(`users/${uid}/boosts`),
+      // One row per member who saw this profile while it was boosted.
+      deleteCollectionDocs(`users/${uid}/boostReach`),
       deleteCollectionDocs(`users/${uid}/boostWallet`),
       deleteCollectionDocs(`users/${uid}/matchScoreHistory`),
       deleteCollectionDocs(`users/${uid}/matchFeedback`),
@@ -186,6 +193,9 @@ export const deleteUserAccount = onCall(
       deleteCollectionDocs(`users/${uid}/relationshipDaily`),
       deleteCollectionDocs(`users/${uid}/verification`),
       deleteCollectionDocs(`users/${uid}/photoModeration`),
+      // The Face Anchor attempt state. The verdicts themselves live on the
+      // photoModeration entries above.
+      deleteCollectionDocs(`users/${uid}/faceAnchor`),
       deleteCollectionDocs(`users/${uid}/rateLimits`),
       deleteCollectionDocs(`users/${uid}/mevoraPicks`),
       deleteCollectionDocs(`users/${uid}/dailyStreak`),
@@ -266,6 +276,8 @@ export const deleteUserAccount = onCall(
     await deletePrefix(`profiles/${uid}/`);
     // Photos a moderator rejected, held server-side for the appeal window.
     await deletePrefix(`moderation/quarantine/${uid}/`);
+    // A verification selfie that was uploaded and never submitted.
+    await deletePrefix(`face-anchor/pending/${uid}/`);
 
     for (const path of spotifyIndexDeletionPaths({
       spotifyId,
@@ -281,10 +293,13 @@ export const deleteUserAccount = onCall(
       db.doc(`users/${uid}/music/summary`),
       db.doc(`users/${uid}/humor/summary`),
       db.doc(`users/${uid}/humor/calibration`),
+      db.doc(`users/${uid}/humor/core`),
       db.doc(`users/${uid}/relationshipMatch/summary`),
       db.doc(`users/${uid}/verification/sumsub`),
       db.doc(`users/${uid}/verification/identity`),
       db.doc(`spotifySecrets/${uid}`),
+      // Spotify OAuth rate-limit counters, keyed by this uid.
+      ...uidRateLimitPaths(uid).map((path) => db.doc(path)),
       db.doc(`profiles/${uid}`),
       db.doc(`userPreferences/${uid}`),
       db.doc(`userSettings/${uid}`),

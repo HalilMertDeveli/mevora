@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mevora/core/localization/l10n_format.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mevora/core/theme/mevora_icons.dart';
@@ -8,14 +9,22 @@ import 'package:mevora/core/config/app_scope.dart';
 import 'package:mevora/core/config/auth_scope.dart';
 import 'package:mevora/core/constants/app_durations.dart';
 import 'package:mevora/core/constants/app_spacings.dart';
+import 'package:mevora/core/di/face_anchor_scope.dart';
+import 'package:mevora/core/di/location_scope.dart';
 import 'package:mevora/core/di/onboarding_scope.dart';
 import 'package:mevora/core/routing/app_routes.dart';
+import 'package:mevora/features/authentication/presentation/auth_error_text.dart';
+import 'package:mevora/features/face_anchor/presentation/controllers/face_anchor_controller.dart';
+import 'package:mevora/features/face_anchor/presentation/pages/face_anchor_verify_page.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
+import 'package:mevora/features/face_anchor/domain/entities/face_anchor_state.dart';
 import 'package:mevora/features/onboarding/presentation/controllers/onboarding_controller.dart';
+import 'package:mevora/features/onboarding/presentation/widgets/onboarding_account_menu.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_photo_grid.dart';
 import 'package:mevora/features/onboarding/presentation/widgets/onboarding_step_scaffold.dart';
 import 'package:mevora/core/di/music_scope.dart';
 import 'package:mevora/features/music/presentation/widgets/onboarding_music_step.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_height_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_language_picker.dart';
 import 'package:mevora/features/profile/presentation/widgets/profile_education_picker.dart';
@@ -28,6 +37,8 @@ import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/core/theme/app_colors.dart';
 import 'package:mevora/shared/art/mevora_motion.dart';
 import 'package:mevora/shared/widgets/turkish_province_picker.dart';
+import 'package:mevora/shared/widgets/mevora_dialog.dart';
+import 'package:mevora/shared/widgets/mevora_button.dart';
 import 'package:mevora/shared/widgets/mevora_loading.dart';
 import 'package:mevora/shared/widgets/mevora_text_field.dart';
 import 'package:mevora/core/di/relationship_learning_scope.dart';
@@ -42,13 +53,23 @@ class OnboardingPage extends StatefulWidget {
 
 class _OnboardingPageState extends State<OnboardingPage> {
   late final OnboardingController _controller;
+
+  /// Null where Face Anchor is not wired in; the photo step then works as it
+  /// did before, and the server alone decides whether the profile completes.
+  FaceAnchorController? _faceAnchor;
   final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _cityController = TextEditingController();
   final _bioController = TextEditingController();
   final _birthDateLabelController = TextEditingController();
   DateTime? _birthDate;
   bool _listenerAttached = false;
   String? _initializedUid;
+
+  /// Set while the member is signing out or deleting the account. The steps
+  /// give way to a loader, so nothing more is saved to an account that is
+  /// on its way out.
+  _AccountExit? _accountExit;
 
   @override
   void didChangeDependencies() {
@@ -62,8 +83,45 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final uid = user?.id;
     if (uid != null && uid != _initializedUid) {
       _initializedUid = uid;
-      unawaited(_controller.initialize(user!));
+      unawaited(
+        _controller.initialize(
+          user!,
+          cityHint: LocationScope.maybeOf(context)?.controller.selectedCity,
+        ),
+      );
     }
+    if (uid != null) {
+      final services = FaceAnchorScope.maybeOf(context);
+      if (_faceAnchor == null && services != null) {
+        _faceAnchor = services.createController()
+          ..addListener(_syncFaceAnchor);
+      }
+      _faceAnchor?.bind(uid);
+    }
+  }
+
+  /// The server says whether this member needs a verified photo; the photo
+  /// step asks for one only then.
+  void _syncFaceAnchor() {
+    final faceAnchor = _faceAnchor;
+    if (!mounted || faceAnchor == null) {
+      return;
+    }
+    _controller.setFaceAnchorRequired(faceAnchor.requirements.required);
+    setState(() {});
+  }
+
+  Future<void> _verifyPhoto(OnboardingPhotoDraft draft) async {
+    final faceAnchor = _faceAnchor;
+    final photo = draft.remote;
+    if (faceAnchor == null || photo == null) {
+      return;
+    }
+    await FaceAnchorVerifyPage.show(
+      context,
+      photo: photo,
+      controller: faceAnchor,
+    );
   }
 
   @override
@@ -81,6 +139,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
     if (_firstNameController.text != profile.displayName) {
       _firstNameController.text = profile.displayName;
+    }
+    if (_lastNameController.text != _controller.lastName) {
+      _lastNameController.text = _controller.lastName;
     }
     if (_cityController.text != (profile.city ?? '')) {
       _cityController.text = profile.city ?? '';
@@ -102,7 +163,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
     if (_listenerAttached) {
       _controller.removeListener(_syncFields);
     }
+    _faceAnchor
+      ?..removeListener(_syncFaceAnchor)
+      ..dispose();
     _firstNameController.dispose();
+    _lastNameController.dispose();
     _cityController.dispose();
     _bioController.dispose();
     _birthDateLabelController.dispose();
@@ -114,11 +179,33 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        if (_controller.isLoading || _controller.profile == null) {
+        final l10n = AppLocalizations.of(context);
+        final accountExit = _accountExit;
+        if (accountExit != null) {
           return Scaffold(
             body: SafeArea(
               child: MevoraLoading.page(
-                message: AppLocalizations.of(context).onboardingTitle,
+                message: accountExit == _AccountExit.deleting
+                    ? l10n.deleteAccount
+                    : l10n.logOut,
+              ),
+            ),
+          );
+        }
+        if (_controller.isLoading || _controller.profile == null) {
+          return Scaffold(
+            body: SafeArea(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  MevoraLoading.page(message: l10n.onboardingTitle),
+                  // A draft that never loads must not corner the member.
+                  PositionedDirectional(
+                    top: AppSpacing.screenPadding,
+                    end: AppSpacing.screenPadding,
+                    child: _accountMenu(),
+                  ),
+                ],
               ),
             ),
           );
@@ -174,6 +261,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: l10n.musicTitle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.canGoBack ? _controller.goBack : null,
       onContinue: () => unawaited(_continue()),
       showContinue: false,
@@ -192,6 +280,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: l10n.onboardingTitle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.canGoBack ? _controller.goBack : null,
       onContinue: () => unawaited(_continue()),
       child: ListView(
@@ -201,9 +290,30 @@ class _OnboardingPageState extends State<OnboardingPage> {
             controller: _firstNameController,
             label: l10n.onboardingFirstName,
             textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.givenName],
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(
+                PersonNameValidator.maxFirstNameLength,
+              ),
+            ],
             onChanged: (value) => _controller.updateDraft(
               (current) => current.copyWith(displayName: value),
             ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          MevoraTextField(
+            controller: _lastNameController,
+            label: l10n.onboardingLastName,
+            helperText: l10n.onboardingLastNamePrivate,
+            textCapitalization: TextCapitalization.words,
+            autofillHints: const [AutofillHints.familyName],
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(
+                PersonNameValidator.maxLastNameLength,
+              ),
+            ],
+            onChanged: _controller.updateLastName,
           ),
           const SizedBox(height: AppSpacing.md),
           MevoraTextField(
@@ -295,6 +405,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: l10n.onboardingInterests,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
       scrollable: true,
@@ -315,6 +426,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       title: l10n.onboardingEducation,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
       scrollable: true,
@@ -336,6 +448,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       subtitle: l10n.onboardingWhyRelationshipGoal,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
       scrollable: true,
@@ -357,6 +470,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       subtitle: l10n.onboardingWhyLifestyle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
       scrollable: true,
@@ -379,6 +493,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       subtitle: l10n.onboardingAboutYouSubtitle,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
       scrollable: true,
@@ -399,6 +514,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       subtitle: l10n.onboardingWhyBio,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
       child: ListView(
@@ -420,12 +536,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _photosStep(AppLocalizations l10n) {
+    final faceAnchor = _faceAnchor;
     return OnboardingStepScaffold(
       step: OnboardingStep.photos,
       title: l10n.onboardingPhotos,
       isSaving: _controller.isSaving,
       canContinue: _controller.canContinuePhotos,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.goBack,
       onContinue: () => unawaited(_continue()),
       child: ListView(
@@ -439,6 +557,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
             onRetry: (id) => unawaited(_controller.retryPhotoUpload(id)),
             onRemove: _controller.removePhoto,
             onReorder: _controller.reorderPhotos,
+            needsFaceAnchor: _controller.needsFaceAnchor,
+            faceAnchorStatusOf: faceAnchor == null
+                ? null
+                : (draft) => draft.remote == null
+                      ? FaceAnchorPhotoStatus.none
+                      : faceAnchor.statusFor(draft.remote!),
+            onVerify: faceAnchor == null
+                ? null
+                : (draft) => unawaited(_verifyPhoto(draft)),
           ),
         ],
       ),
@@ -452,6 +579,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       continueLabel: l10n.onboardingStartDiscovering,
       isSaving: _controller.isSaving,
       errorMessage: _controller.errorMessage,
+      trailing: _accountMenu(),
       onBack: _controller.goBack,
       onContinue: () => unawaited(_finish()),
       child: ListView(
@@ -467,6 +595,74 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _accountMenu() {
+    return OnboardingAccountMenu(
+      enabled: !_controller.isSaving,
+      onSignOut: () => unawaited(_confirmSignOut()),
+      onDeleteAccount: () => unawaited(_confirmDeleteAccount()),
+    );
+  }
+
+  Future<void> _confirmSignOut() async {
+    if (_accountExit != null || AuthScope.of(context).isBusy) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await MevoraDialog.show(
+      context,
+      title: l10n.settingsLogoutTitle,
+      message: l10n.onboardingLogoutBody,
+      confirmLabel: l10n.logOut,
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    await _leaveAccount(_AccountExit.signingOut);
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    if (_accountExit != null || AuthScope.of(context).isBusy) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await MevoraDialog.show(
+      context,
+      title: l10n.deleteAccountTitle,
+      message: l10n.deleteAccountBody,
+      confirmLabel: l10n.deleteConfirm,
+      confirmVariant: MevoraButtonVariant.destructive,
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    await _leaveAccount(_AccountExit.deleting);
+  }
+
+  /// Both ways out end on the sign-in screen; a failure brings the step back.
+  Future<void> _leaveAccount(_AccountExit exit) async {
+    final auth = AuthScope.of(context);
+    setState(() => _accountExit = exit);
+    final result = exit == _AccountExit.deleting
+        ? await auth.deleteAccount()
+        : await auth.signOut();
+    if (!mounted) {
+      return;
+    }
+    if (result.isSuccess) {
+      context.go(AppRoutes.login);
+      return;
+    }
+    setState(() => _accountExit = null);
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          localizeAuthError(l10n, auth) ?? l10n.somethingWentWrong,
+        ),
       ),
     );
   }
@@ -533,3 +729,5 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 }
+
+enum _AccountExit { signingOut, deleting }

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.RegularExpressions;
 using Mevora.Admin.Web.Configuration;
 using Mevora.Admin.Web.Services;
 
@@ -200,6 +201,49 @@ public sealed class FormSafetyTests
             ["idempotencyKey"] = "web-0123456789abcdef",
         }));
         Assert.False(factory.Api.Called("adminReviewPhoto"));
+    }
+
+    [Fact]
+    public async Task Photo_queue_says_when_a_photo_is_no_longer_on_the_profile()
+    {
+        using var factory = new AdminWebFactory();
+        factory.Api.Responses["adminListPhotoReviews"] = _ => AdminWebFactory.Json("""
+            {"items":[
+              {"uid":"u1","imageId":"img1","status":"manual_review","onProfile":false,"removedByMember":true},
+              {"uid":"u2","imageId":"img2","status":"manual_review","onProfile":false,"removedByMember":false},
+              {"uid":"u3","imageId":"img3","status":"manual_review","onProfile":true,"removedByMember":false},
+              {"uid":"u4","imageId":"img4","status":"manual_review"}
+            ],"nextCursor":null}
+            """);
+        var html = await factory.Client(AdminWebFactory.Moderator).GetStringAsync("/Photos");
+        Assert.Single(Regex.Matches(html, "Removed by the member\\."));
+        // Only the photo the backend says is off the profile; a backend that
+        // does not send the field yet says nothing.
+        Assert.Single(Regex.Matches(html, "A decision is recorded, but the photo is not added back\\."));
+    }
+
+    [Theory]
+    [InlineData("removed_by_member", "so the kept copy was deleted")]
+    [InlineData("not_on_profile", "was not added back")]
+    [InlineData("on_profile", "Photo approved and published.")]
+    public async Task Photo_approval_confirms_what_happened_to_the_photo(string placement, string expected)
+    {
+        using var factory = new AdminWebFactory();
+        factory.Api.Responses["adminReviewPhoto"] = _ => AdminWebFactory.Json(
+            $$"""{"decision":"approve","status":"approved","replayed":false,"placement":"{{placement}}"}""");
+        var client = factory.Client(AdminWebFactory.Moderator);
+        var token = await AdminWebFactory.AntiforgeryToken(client, "/Photos?filter=manual_review");
+        var response = await client.PostAsync("/Photos?handler=Decide", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token,
+            ["uid"] = "u1",
+            ["imageId"] = "img1",
+            ["decision"] = "approve",
+            ["filter"] = "manual_review",
+            ["idempotencyKey"] = "web-0123456789abcdef",
+        }));
+        var html = await client.GetStringAsync(response.Headers.Location!.OriginalString);
+        Assert.Contains(expected, html, StringComparison.Ordinal);
     }
 }
 

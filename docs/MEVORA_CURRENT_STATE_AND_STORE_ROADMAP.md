@@ -1,5 +1,7 @@
 # Mevora — Mevcut Durum, Güvenlik, Backend ve Play Store Yol Haritası
 
+> **Geçersiz (2026-10-01).** 2026-08-26 tarihli durum özeti: yönetim paneli, Sumsub ve dal adları artık geçerli değil. Güncel yayın rehberi: `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`.
+
 **Tarih:** 2026-08-26  
 **Dal:** `docs/readme-complete` (dokümantasyon) · özellik kodu çoğunlukla `backup/wip-before-device-sync-20260824` / `qa/*` hatlarında  
 **Amaç:** Uygulamanın şu anki durumunu, kullanıcı güvenliğini, backend yolunu, Google Play hazırlığını, support sitesi kararını ve admin yönetim modelini tek belgede açıkça anlatmak.

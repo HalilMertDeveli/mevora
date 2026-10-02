@@ -32,4 +32,11 @@ abstract class StorePurchaseDataSource {
   Future<void> complete(StoreTransaction transaction);
 
   Future<void> restore();
+
+  /// Purchases the store still holds: paid for, and not completed yet.
+  ///
+  /// Asked of the store directly. Nothing is emitted on [purchaseEvents], which
+  /// every product the app sells listens to, and nothing is asked of a store
+  /// that hands unfinished purchases back by itself — the list is empty there.
+  Future<List<StoreTransaction>> outstandingPurchases();
 }

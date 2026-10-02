@@ -633,6 +633,44 @@ describe("the public card describes general taste, not a recent week", () => {
     assert.ok(!JSON.stringify(built.taste).includes("a1"));
   });
 
+  it("never names an artist the member left out of the card", () => {
+    const partial = buildPublicMusicProfile({
+      enabled: true,
+      artistIds: ["a2"],
+      trackIds: ["t2"],
+      summary: {...summary(), generalTaste: general},
+    });
+    assert.deepEqual(partial.artists.map((a) => a.name), ["The Weeknd"]);
+    assert.deepEqual(partial.taste.signatureArtists, ["The Weeknd"]);
+    assert.ok(!JSON.stringify(partial).includes("Arctic Monkeys"));
+    // The taste itself is still described.
+    assert.equal(partial.taste.dominantGenre, "alternative");
+    assert.deepEqual(partial.genres, general.genres);
+  });
+
+  it("names no artist at all on a card that shows only songs", () => {
+    const songsOnly = buildPublicMusicProfile({
+      enabled: true,
+      artistIds: [],
+      trackIds: ["t1"],
+      summary: {...summary(), generalTaste: general},
+    });
+    assert.deepEqual(songsOnly.taste.signatureArtists, []);
+    assert.equal(songsOnly.taste.dominantGenre, "alternative");
+  });
+
+  it("a re-sync drops a name published before the member narrowed the card", () => {
+    const stored = {
+      enabled: true,
+      artists: [{id: "a2", name: "The Weeknd"}],
+      tracks: [],
+      genres: general.genres,
+      taste: {dominantGenre: "alternative", signatureArtists: ["Arctic Monkeys", "The Weeknd"]},
+    };
+    const reconciled = reconcilePublicMusicProfile(stored, {...summary(), generalTaste: general});
+    assert.deepEqual(reconciled.taste.signatureArtists, ["The Weeknd"]);
+  });
+
   it("falls back to the selection's genres when no sync has run yet", () => {
     const legacy = buildPublicMusicProfile({
       enabled: true,

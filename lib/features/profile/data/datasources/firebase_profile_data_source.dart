@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:mevora/core/constants/firestore_paths.dart';
 import 'package:mevora/core/data/firestore_codec.dart';
 import 'package:mevora/core/network/backend_callable.dart';
@@ -6,6 +7,7 @@ import 'package:mevora/core/paging/page.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_step.dart';
 import 'package:mevora/features/profile/domain/entities/profile_lifestyle.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 
 class FirebaseProfileDataSource {
   FirebaseProfileDataSource({
@@ -19,6 +21,9 @@ class FirebaseProfileDataSource {
 
   CollectionReference<Map<String, dynamic>> get _profiles =>
       _firestore.collection(FirestorePaths.profiles);
+
+  CollectionReference<Map<String, dynamic>> get _accounts =>
+      _firestore.collection(FirestorePaths.users);
 
   CollectionReference<Map<String, dynamic>> get _preferences =>
       _firestore.collection(FirestorePaths.userPreferences);
@@ -41,7 +46,52 @@ class FirebaseProfileDataSource {
   }
 
   Future<void> save(UserProfile profile) {
-    return _profiles.doc(profile.uid).set(_profileToMap(profile), SetOptions(merge: true));
+    return _profiles.doc(profile.uid).set(publicProfileMap(profile), SetOptions(merge: true));
+  }
+
+  /// The owner's private surname. It lives on `users/{uid}`, which only its
+  /// owner can read; `profiles/{uid}` is readable by every member and never
+  /// carries it.
+  Future<String?> fetchLastName(String uid) async {
+    final snap = await _accounts.doc(uid).get();
+    return lastNameFrom(snap.data());
+  }
+
+  Future<void> saveLastName(String uid, String lastName) {
+    return _accounts.doc(uid).update({
+      'lastName': PersonNameValidator.normalize(lastName),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// The owner's private date of birth. Like the surname it lives on
+  /// `users/{uid}`: other members see the age the server derives from it on
+  /// `profiles/{uid}`, never the date.
+  Future<DateTime?> fetchBirthDate(String uid) async {
+    final snap = await _accounts.doc(uid).get();
+    return birthDateFrom(snap.data());
+  }
+
+  /// Set once: the rules refuse a different date afterwards.
+  Future<void> saveBirthDate(String uid, DateTime birthDate) {
+    return _accounts.doc(uid).update({
+      'birthDate': Timestamp.fromDate(birthDate),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  static DateTime? birthDateFrom(Map<String, dynamic>? account) {
+    final value = account?['birthDate'];
+    return value is Timestamp ? value.toDate() : null;
+  }
+
+  static String? lastNameFrom(Map<String, dynamic>? account) {
+    final value = account?['lastName'];
+    if (value is! String) {
+      return null;
+    }
+    final lastName = PersonNameValidator.normalize(value);
+    return lastName.isEmpty ? null : lastName;
   }
 
   Future<UserPreferences> fetchPreferences(String uid) async {
@@ -93,6 +143,8 @@ class FirebaseProfileDataSource {
   }
 
   UserProfile _profileFrom(String uid, Map<String, dynamic> data) {
+    // Only a profile written before the date moved to the account still has
+    // one here; the owner's is read with [fetchBirthDate].
     final birthDate = firestoreDate(data['birthDate']);
     return UserProfile(
       uid: uid,
@@ -131,14 +183,14 @@ class FirebaseProfileDataSource {
     );
   }
 
-  Map<String, dynamic> _profileToMap(UserProfile profile) {
+  /// Everything this client writes to the member-readable `profiles/{uid}`.
+  /// `displayName` is the first name only; the surname is saved separately
+  /// through [saveLastName] and must never be added here. Neither must the
+  /// date of birth ([saveBirthDate]) — nor the age, which the server writes.
+  static Map<String, dynamic> publicProfileMap(UserProfile profile) {
     return {
       'uid': profile.uid,
       'displayName': profile.displayName,
-      'birthDate': profile.birthDate == null
-          ? null
-          : Timestamp.fromDate(profile.birthDate!),
-      'age': profile.age ?? _ageFrom(profile.birthDate),
       'gender': profile.gender,
       'interestedIn': profile.interestedIn,
       'bio': profile.bio,
@@ -149,9 +201,13 @@ class FirebaseProfileDataSource {
             'storagePath': photo.storagePath,
             'downloadUrl': photo.downloadUrl,
             'thumbUrl': photo.thumbUrl,
+            'cardUrl': photo.cardUrl,
             'moderationStatus': photo.moderationStatus,
             'order': photo.order,
             'isPrimary': photo.isPrimary,
+            // Round-tripped like cardUrl, and only when true: the server
+            // rewrites it from its own ledger on every profile write.
+            if (photo.isFaceAnchorVerified) 'faceAnchorVerified': true,
           },
       ],
       'interests': profile.interests,
@@ -171,7 +227,11 @@ class FirebaseProfileDataSource {
     };
   }
 
-  List<ProfilePhoto> _photosFrom(Object? value) {
+  /// Exposed for tests: how a stored `photos` array becomes [ProfilePhoto]s.
+  @visibleForTesting
+  static List<ProfilePhoto> photosFromStored(Object? value) => _photosFrom(value);
+
+  static List<ProfilePhoto> _photosFrom(Object? value) {
     if (value is! List) {
       return const [];
     }
@@ -183,10 +243,15 @@ class FirebaseProfileDataSource {
             storagePath: ((value[i] as Map)['storagePath'] as String?) ?? '',
             downloadUrl: (value[i] as Map)['downloadUrl'] as String?,
             thumbUrl: (value[i] as Map)['thumbUrl'] as String?,
+            cardUrl: (value[i] as Map)['cardUrl'] as String?,
             moderationStatus:
                 ((value[i] as Map)['moderationStatus'] as String?) ?? 'pending',
             order: firestoreInt((value[i] as Map)['order'], i),
             isPrimary: (value[i] as Map)['isPrimary'] as bool? ?? i == 0,
+            // Absent on every photo written before Face Anchor existed, and
+            // absent means not verified. Only the exact boolean counts.
+            isFaceAnchorVerified:
+                (value[i] as Map)['faceAnchorVerified'] == true,
           )
         else if (value[i] is String)
           ProfilePhoto(

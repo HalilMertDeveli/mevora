@@ -5,7 +5,10 @@ export * from "./notifications";
 export * from "./incomingLikes";
 export * from "./premium";
 export {completeOnboarding} from "./onboarding";
+export {profileAgeRollover} from "./profileAgeRollover.js";
 export {enforceProfilePhotoModeration} from "./moderation/profileModerationGuard.js";
+export {deleteProfilePhoto} from "./moderation/deleteProfilePhotoFunction.js";
+export {profilePhotoOrphanSweep} from "./moderation/photoOrphanSweepFunction.js";
 export {prepareSmokeTestUsers, cleanupSmokeTestUsers} from "./smoke/smokeTestUsers.js";
 export {spotifyCompleteAuth} from "./spotifyAuth";
 export {
@@ -26,6 +29,7 @@ export {
   updateQuestionAnswerVisibility,
 } from "./relationshipMatch";
 export {verifyBoostPurchase, activateBoost, expireBoost} from "./boost/verifyBoostPurchase.js";
+export {reconcileVoidedBoostPurchases} from "./boost/voidedPurchaseSweep.js";
 export {verifyPremiumPurchase} from "./subscription/verifyPremiumPurchase.js";
 export {onPlaySubscriptionNotification} from "./subscription/googleRtdnFunction.js";
 export {getMevoraPicks} from "./picks/index.js";
@@ -35,6 +39,14 @@ export {
   getIdentityVerificationState,
 } from "./identity/createIdentityVerificationSession.js";
 export {identityVerificationWebhook} from "./identity/identityVerificationWebhook.js";
+// Face Anchor: is this profile photo the live account owner? Separate from
+// identity verification above, which answers who the account owner is.
+export {
+  getFaceAnchorRequirements,
+  startFaceAnchorVerification,
+  submitFaceAnchorVerification,
+  faceAnchorSelfieSweep,
+} from "./faceAnchor/functions.js";
 export {
   getHumorFeed,
   submitHumorFeedback,
@@ -48,8 +60,6 @@ export {
   syncHumorFromProvider,
   getDailyHumorSet,
   submitDailyHumorResponse,
-  publishDailyHumorSet,
-  repairDailyHumorSlot,
   searchHumorProviderCandidates,
 } from "./humor/index.js";
 export {

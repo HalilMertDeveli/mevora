@@ -13,6 +13,7 @@ import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
 import 'package:mevora/features/chat/e2ee/services/e2ee_chat_service.dart';
 import 'package:mevora/features/profile/data/datasources/firebase_storage_data_source.dart';
+import 'package:mevora/features/matching/data/unreadable_match.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/compatibility/domain/entities/compatibility_snapshot.dart';
@@ -132,9 +133,7 @@ class FirebaseMatchRepository implements MatchRepository, LikeRepository, Discov
         .doc(FirestorePaths.match(matchId))
         .snapshots()
         .map((snap) => snap.exists ? _matchFrom(snap) : null)
-        .handleError((Object error, StackTrace stackTrace) {
-          // Missing/denied match reads must not crash profile photo UI.
-        });
+        .unreadableAsNull();
   }
 
   @override

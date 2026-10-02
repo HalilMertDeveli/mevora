@@ -250,10 +250,61 @@ class InAppStorePurchaseDataSource implements StorePurchaseDataSource {
     await _google.restoreUnconsumed();
   }
 
+  @override
+  Future<List<StoreTransaction>> outstandingPurchases() async {
+    if (_platform != PurchasePlatform.android) {
+      // StoreKit redelivers unfinished transactions by itself. Asking for them
+      // means restorePurchases, which raises the App Store sign-in prompt.
+      return const [];
+    }
+    if (!await isStoreAvailable()) {
+      return const [];
+    }
+    final purchases = await _google.unconsumedPurchases();
+    final transactions = <StoreTransaction>[];
+    for (final details in purchases) {
+      // A pending payment has bought nothing yet.
+      if (details.status != PurchaseStatus.purchased) {
+        continue;
+      }
+      final transaction = _track(details);
+      if (transaction != null) {
+        transactions.add(transaction);
+      }
+    }
+    return transactions;
+  }
+
+  /// Remembers the store's own record of a purchase, so [complete] can finish
+  /// it later, and describes it for the rest of the app. Null when the store
+  /// gave it no identity at all.
+  StoreTransaction? _track(PurchaseDetails details) {
+    final transactionId = details.purchaseID ?? details.verificationData.source;
+    if (transactionId.isEmpty) {
+      return null;
+    }
+    _open[transactionId] = details;
+    return StoreTransaction(
+      platform: _platform,
+      productId: details.productID,
+      transactionId: transactionId,
+      purchaseToken: _platform == PurchasePlatform.android
+          ? details.verificationData.serverVerificationData
+          : null,
+      signedTransaction: _platform == PurchasePlatform.ios
+          ? details.verificationData.serverVerificationData
+          : null,
+      receiptData: _platform == PurchasePlatform.ios
+          ? details.verificationData.serverVerificationData
+          : null,
+      localVerificationData: details.verificationData.localVerificationData,
+    );
+  }
+
   void _onPurchases(List<PurchaseDetails> purchases) {
     for (final details in purchases) {
-      final transactionId = details.purchaseID ?? details.verificationData.source;
-      if (transactionId.isEmpty) {
+      final transaction = _track(details);
+      if (transaction == null) {
         _events.add(
           const StorePurchaseEvent(
             status: StorePurchaseStatus.error,
@@ -262,22 +313,6 @@ class InAppStorePurchaseDataSource implements StorePurchaseDataSource {
         );
         continue;
       }
-      _open[transactionId] = details;
-      final transaction = StoreTransaction(
-        platform: _platform,
-        productId: details.productID,
-        transactionId: transactionId,
-        purchaseToken: _platform == PurchasePlatform.android
-            ? details.verificationData.serverVerificationData
-            : null,
-        signedTransaction: _platform == PurchasePlatform.ios
-            ? details.verificationData.serverVerificationData
-            : null,
-        receiptData: _platform == PurchasePlatform.ios
-            ? details.verificationData.serverVerificationData
-            : null,
-        localVerificationData: details.verificationData.localVerificationData,
-      );
       switch (details.status) {
         case PurchaseStatus.pending:
           _events.add(

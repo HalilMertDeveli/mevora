@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/failure_messages.dart';
+import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/core/services/location/location_accuracy_kind.dart';
 import 'package:mevora/core/services/location/location_permission_status.dart';
 import 'package:mevora/features/location/data/location_analytics.dart';
@@ -228,6 +229,41 @@ class LocationController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> continueWithCity(String city) async {
     selectedCity = city.trim();
     await skip();
+  }
+
+  /// Turns location on from Settings, for a member who skipped it at the
+  /// start or wants their place refreshed now: captures where they are and
+  /// stores it, which also marks location as enabled. The caller has already
+  /// made sure the permission is granted.
+  Future<Result<void>> turnOnFromSettings() async {
+    final uid = _uid;
+    if (uid == null) {
+      return const Err(
+        LocationFailure(
+          'Location is currently unavailable.',
+          kind: LocationErrorKind.error,
+        ),
+      );
+    }
+    final captured = await _getCurrentLocation();
+    final position = captured.valueOrNull;
+    if (position == null) {
+      await _analytics.error(kind: _kindName(captured.failureOrNull));
+      return Err(
+        captured.failureOrNull ??
+            const LocationFailure(
+              'Location is currently unavailable.',
+              kind: LocationErrorKind.unavailable,
+            ),
+      );
+    }
+    final saved = await _saveUserLocation(uid: uid, position: position);
+    if (saved.isError) {
+      await _analytics.error(kind: _kindName(saved.failureOrNull));
+      return saved;
+    }
+    await _analytics.acquired();
+    return const Success(null);
   }
 
   Future<void> openAppSettings() async {

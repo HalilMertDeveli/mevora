@@ -26,16 +26,19 @@ enum HumorDailyHint {
   middle,
   end;
 
-  /// The opening items get the welcome, the last three "a few more", and
-  /// everything between "getting to know you".
+  /// The opening of the tour gets the welcome, its close "almost there", and
+  /// everything between "getting to know you". Opening and close are each a
+  /// third of the tour (at most three items), so every size the server sends
+  /// has a middle: five items read start, middle ×3, end.
   static HumorDailyHint of(int position, int total) {
     if (position <= 1) {
       return HumorDailyHint.start;
     }
-    if (position > total - 3) {
+    final edge = (total ~/ 3).clamp(1, 3);
+    if (position > total - edge) {
       return HumorDailyHint.end;
     }
-    if (position <= 3) {
+    if (position <= edge) {
       return HumorDailyHint.start;
     }
     return HumorDailyHint.middle;
@@ -51,6 +54,9 @@ enum HumorDailyHint {
 /// "Bugünün Mizah Turu": today's items, one at a time, in the server's order,
 /// resuming wherever the user left off. No category is ever shown while
 /// rating, and there is no user skip — only "Next" on media that failed.
+///
+/// How many items a day has is the server's to say. When they are done the
+/// tour is done: nothing here offers tomorrow's items today.
 class HumorDailyPage extends StatefulWidget {
   const HumorDailyPage({super.key, this.controller});
 
@@ -231,6 +237,8 @@ class _HumorDailyPageState extends State<HumorDailyPage> {
         title: l10n.humorDailyTitle,
         message: set.startsTomorrow
             ? l10n.humorDailyStartsTomorrow
+            : set.sequenceComplete
+            ? l10n.humorDailySequenceComplete
             : l10n.humorDailyLockedBody,
       );
     }
@@ -238,7 +246,8 @@ class _HumorDailyPageState extends State<HumorDailyPage> {
       return MevoraEmptyState(
         art: MevoraArt.success,
         title: l10n.humorDailyCompletedTitle,
-        message: l10n.humorDailyCompletedBody,
+        message:
+            '${l10n.humorDailyCompletedBody} ${l10n.humorDailyCompletedTomorrow}',
         actionLabel: l10n.close,
         onAction: _close,
       );

@@ -11,11 +11,7 @@ const {
   MIN_ONBOARDING_AGE,
 } = require("../lib/profileSafety.js");
 const {passesDiscoveryProfileFilters} = require("../lib/discoveryMatching.js");
-
-function birthYearsAgo(years) {
-  const today = new Date();
-  return new Date(today.getFullYear() - years, today.getMonth(), today.getDate());
-}
+const {bornYearsAgo: birthYearsAgo} = require("./helpers/birthDates.cjs");
 
 function adultProfile(overrides = {}) {
   const photos = Array.from({length: 3}, (_, index) => ({
@@ -167,5 +163,102 @@ describe("discoverability and public projection", () => {
       ],
     });
     assert.equal(projection.photos.length, 1);
+  });
+});
+
+describe("onboarding names", () => {
+  const {
+    MAX_FIRST_NAME_LENGTH,
+    MAX_LAST_NAME_LENGTH,
+    personNameIssue,
+    requireOnboardingNames,
+  } = require("../lib/personName.js");
+
+  function refusal(profile, account) {
+    try {
+      requireOnboardingNames(profile, account);
+      return null;
+    } catch (error) {
+      return `${error.code}:${error.message}`;
+    }
+  }
+
+  it("a new account without a surname cannot finish onboarding", () => {
+    const profile = {displayName: "Halil"};
+    for (const account of [undefined, {}, {lastName: ""}, {lastName: "   "}, {lastName: 7}]) {
+      assert.equal(refusal(profile, account), "failed-precondition:last-name-required");
+    }
+    // A surname on the public profile does not count: it must be on the account.
+    assert.equal(
+      refusal({displayName: "Halil", lastName: "Develi"}, {}),
+      "failed-precondition:last-name-required",
+    );
+  });
+
+  it("a new account without a first name cannot finish onboarding", () => {
+    for (const displayName of [undefined, null, "", "   ", 42]) {
+      assert.equal(
+        refusal({displayName}, {lastName: "Develi"}),
+        "failed-precondition:first-name-required",
+      );
+    }
+  });
+
+  it("accepts Turkish and international names, trimmed", () => {
+    const names = [
+      "Çağrı", "Gökçe", "İpek", "Işıl", "Öykü", "Şule", "Ümit",
+      "José", "Zoë", "O'Brien", "Jean-Luc", "Ayşe Nur", "de la Cruz",
+      "Öztürk-Şahin", "Нина", "محمد", "美咲",
+    ];
+    for (const name of names) {
+      assert.equal(refusal({displayName: name}, {lastName: name}), null, name);
+      assert.equal(refusal({displayName: `  ${name} `}, {lastName: ` ${name}  `}), null, name);
+    }
+  });
+
+  it("applies the same length caps as the app", () => {
+    assert.equal(MAX_FIRST_NAME_LENGTH, 40);
+    assert.equal(MAX_LAST_NAME_LENGTH, 50);
+    assert.equal(personNameIssue("a".repeat(40), MAX_FIRST_NAME_LENGTH), null);
+    assert.equal(personNameIssue("a".repeat(41), MAX_FIRST_NAME_LENGTH), "too-long");
+    assert.equal(
+      refusal({displayName: "a".repeat(41)}, {lastName: "Develi"}),
+      "failed-precondition:first-name-too-long",
+    );
+    assert.equal(
+      refusal({displayName: "Halil"}, {lastName: "a".repeat(51)}),
+      "failed-precondition:last-name-too-long",
+    );
+  });
+
+  it("a name with no letter in it counts as missing", () => {
+    for (const value of ["-", "'", "123", "...", "🙂"]) {
+      assert.equal(personNameIssue(value, MAX_LAST_NAME_LENGTH), "required", value);
+    }
+  });
+
+  it("a refusal names the field, never the name", () => {
+    const longSurname = `Develi${"x".repeat(60)}`;
+    const message = refusal({displayName: "Halil"}, {lastName: longSurname});
+    assert.equal(message.includes("Develi"), false);
+    assert.equal(message.includes("Halil"), false);
+  });
+
+  it("the public projection never carries a surname", () => {
+    const projection = publicProfileProjection({
+      ...adultProfile(),
+      uid: "u1",
+      displayName: "Halil",
+      // Hostile or mistaken extra fields on the profile document.
+      lastName: "Develi",
+      firstName: "Halil",
+      surname: "Develi",
+      familyName: "Develi",
+    });
+    assert.equal(projection.displayName, "Halil");
+    for (const key of ["lastName", "firstName", "surname", "familyName"]) {
+      assert.equal(key in projection, false, key);
+    }
+    assert.equal(JSON.stringify(projection).includes("Develi"), false);
   });
 });

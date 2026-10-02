@@ -2,6 +2,7 @@ import {type DocumentData, type Firestore} from "firebase-admin/firestore";
 import {interestedInAllows} from "./musicCompatibility.js";
 import {
   countUsableDiscoveryPhotos,
+  faceAnchorSatisfied,
   isAccountEligible,
   isAdultProfile,
   isProfileDiscoverable,
@@ -60,6 +61,9 @@ export function discoveryProfileRejectReason(options: {
     ) {
       return `profile_moderation_${moderationStatus}`;
     }
+    if (isAdultProfile(data) && !faceAnchorSatisfied(data)) {
+      return "face_anchor_missing";
+    }
     return "underage_or_undiscoverable";
   }
   if (!isAccountEligible(options.candidateAccount)) {
@@ -74,6 +78,46 @@ export function discoveryProfileRejectReason(options: {
   }
   if (countUsableDiscoveryPhotos(data?.photos) < MIN_PROFILE_PHOTOS) {
     return "photos_insufficient";
+  }
+  return null;
+}
+
+/**
+ * The gates a candidate's profile document decides on its own, from the
+ * viewer's side: discoverable, complete and not held by moderation, adult,
+ * inside the viewer's age range, enough usable photos, and of a gender the
+ * viewer wants. Whoever fails one is rejected whatever their account, their
+ * own preferences or their location say — so a scan reads none of those for
+ * them. Same reason labels as the full chain.
+ */
+export function profileOnlyRejectReason(options: {
+  viewerPrefs: DocumentData;
+  viewerProfile: DocumentData;
+  candidateProfile: DocumentData | undefined;
+  minAge: number;
+  maxAge: number;
+}): string | null {
+  const data = options.candidateProfile;
+  if (!isProfileDiscoverable(data)) {
+    return discoveryProfileRejectReason({
+      candidateProfile: data,
+      candidateAccount: undefined,
+      minAge: options.minAge,
+      maxAge: options.maxAge,
+    }) ?? "underage_or_undiscoverable";
+  }
+  if (!isAdultProfile(data)) {
+    return "underage";
+  }
+  const age = resolveProfileAge(data);
+  if (age === null || age < 18 || age < options.minAge || age > options.maxAge) {
+    return "age_filter";
+  }
+  if (countUsableDiscoveryPhotos(data?.photos) < MIN_PROFILE_PHOTOS) {
+    return "photos_insufficient";
+  }
+  if (!interestedInAllows(datingPreference(options.viewerPrefs, options.viewerProfile), data?.gender)) {
+    return "gender_preference";
   }
   return null;
 }

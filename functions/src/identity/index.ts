@@ -44,6 +44,7 @@ export {
 } from "./identityVerificationProvider.js";
 export {
   DEFAULT_DIDIT_BASE_URL,
+  canDiditGrantVerification,
   diditSecrets,
   isDiditConfigured,
   isDiditWebhookConfigured,

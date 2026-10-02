@@ -111,14 +111,26 @@ service cloud.firestore {
         || request.resource.data.get(key, false) == false;
     }
 
+    // profiles/{uid} is readable by every member, so it never carries a date
+    // of birth: that lives on the owner's private users/{uid} (see
+    // accountBirthDateValid), and the age shown on the card is written by the
+    // server from it. A client can therefore neither add nor move either
+    // value here. An absent field and a null one compare equal on purpose:
+    // app builds from before the change re-send the values they loaded, and
+    // that must not lock them out of every other profile edit. A date still on
+    // a card from before the backfill stays exactly as it is until the server
+    // moves it.
     function birthDateUnchanged() {
-      return !('birthDate' in resource.data)
-        || request.resource.data.birthDate == resource.data.birthDate;
+      return request.resource.data.get('birthDate', null) == resource.data.get('birthDate', null);
     }
 
     function ageUnchanged() {
-      return !('age' in resource.data)
-        || request.resource.data.age == resource.data.age;
+      return request.resource.data.get('age', null) == resource.data.get('age', null);
+    }
+
+    function birthDataAbsent() {
+      return request.resource.data.get('birthDate', null) == null
+        && request.resource.data.get('age', null) == null;
     }
 
     function profileLifecycleClientSafe() {
@@ -126,6 +138,7 @@ service cloud.firestore {
         && request.resource.data.get('profileCompleted', false) == false
         && request.resource.data.get('onboardingCompleted', false) == false
         && request.resource.data.get('isProfileComplete', false) == false
+        && birthDataAbsent()
         && !request.resource.data.keys().hasAny([
           'profileModerationStatus',
           'moderationStatus',
@@ -138,7 +151,11 @@ service cloud.firestore {
           'premium',
           'entitlement',
           'boostStatus',
-          'matchCount'
+          'matchCount',
+          // Face Anchor: which photos the server verified as the member, and
+          // whether this profile is held to the rule. Server-written only.
+          'faceAnchorRequired',
+          'faceAnchorPhotoIds'
         ]);
     }
 
@@ -163,7 +180,11 @@ service cloud.firestore {
           'premium',
           'entitlement',
           'boostStatus',
-          'matchCount'
+          'matchCount',
+          // Face Anchor: which photos the server verified as the member, and
+          // whether this profile is held to the rule. Server-written only.
+          'faceAnchorRequired',
+          'faceAnchorPhotoIds'
         ]);
     }
 
@@ -177,8 +198,10 @@ service cloud.firestore {
     // derived from the only client writers that exist:
     //
     //   users/{uid}      _newAccount / _accountUpdates
-    //                    (firebase_user_data_source.dart) and the location
-    //                    merge in firebase_location_data_source.dart
+    //                    (firebase_user_data_source.dart), the location
+    //                    merge in firebase_location_data_source.dart and the
+    //                    private surname and date of birth (saveLastName /
+    //                    saveBirthDate in firebase_profile_data_source.dart)
     //   profiles/{uid}   _newProfileStub, the displayName-only update
     //                    (firebase_user_data_source.dart) and _profileToMap
     //                    (firebase_profile_data_source.dart)
@@ -221,6 +244,8 @@ service cloud.firestore {
         'uid',
         'id',
         'displayName',
+        'lastName',
+        'birthDate',
         'email',
         'phoneNumber',
         'photoUrl',
@@ -231,6 +256,29 @@ service cloud.firestore {
         'lastActiveAt',
         'isActive'
       ]);
+    }
+
+    // The member's surname is private account data. It is accepted here and
+    // nowhere else: profiles/{uid} is readable by every member, and its
+    // allowlists below name no surname key, so a client cannot publish one.
+    function lastNameValid() {
+      return !('lastName' in request.resource.data)
+        || (request.resource.data.lastName is string
+          && request.resource.data.lastName.size() > 0
+          && request.resource.data.lastName.size() <= 50);
+    }
+
+    // The member's date of birth is private account data, like the surname:
+    // it is accepted here and nowhere else. It is set once, as a past
+    // timestamp, and can then be neither changed nor removed — the age other
+    // members see is derived from it by the server (completeOnboarding and
+    // the daily roll-over), which also owns the `ageRolloverAt` marker.
+    function accountBirthDateValid() {
+      return ('birthDate' in resource.data)
+        ? request.resource.data.get('birthDate', null) == resource.data.birthDate
+        : (!('birthDate' in request.resource.data)
+          || (request.resource.data.birthDate is timestamp
+            && request.resource.data.birthDate < request.time));
     }
 
     // photos stays client-writable on purpose: Firestore rules cannot validate
@@ -407,6 +455,8 @@ service cloud.firestore {
 
       allow update: if isOwner(userId)
         && userUpdateKeysAllowed()
+        && lastNameValid()
+        && accountBirthDateValid()
         && (request.resource.data.id == userId || request.resource.data.uid == userId)
         && lastActiveAtUnchangedOrServerNow()
         && request.resource.data.get('isBanned', resource.data.get('isBanned', false))
@@ -644,6 +694,17 @@ service cloud.firestore {
       // array against it on every profile write. Owner may read it to display
       // moderation progress; no client may ever write it.
       match /photoModeration/{imageId} {
+        allow read: if isOwner(userId);
+        allow create, update, delete: if false;
+      }
+
+      // Face Anchor verification attempt: its progress and the member's
+      // attempt budget. The owner reads it to show "verifying / verified /
+      // try again" and to resume after a restart. Written only by the
+      // verification callables — a client can never move an attempt along,
+      // let alone mark one verified. It holds no selfie, score or provider
+      // data; the verdict itself is on the photoModeration entry above.
+      match /faceAnchor/{docId} {
         allow read: if isOwner(userId);
         allow create, update, delete: if false;
       }
@@ -1029,6 +1090,18 @@ service cloud.firestore {
 
     // Emulator-only test clock for the daily humor day. Never client-accessible.
     match /devClock/{docId} {
+      allow read, write: if false;
+    }
+
+    // Emulator-only switches for server-side test doubles (the Face Anchor
+    // fake provider's next outcome). Admin SDK only: if a client could write
+    // here it could choose its own verification result.
+    match /devControl/{docId} {
+      allow read, write: if false;
+    }
+
+    // Daily count of billed face verifications, for the global spend cap.
+    match /faceAnchorUsage/{dayId} {
       allow read, write: if false;
     }
 

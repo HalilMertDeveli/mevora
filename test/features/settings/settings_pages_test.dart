@@ -32,6 +32,7 @@ import 'package:mevora/features/settings/presentation/pages/settings_page.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/shared/widgets/mevora_button.dart';
 import '../../helpers/fake_auth.dart';
+import '../../helpers/fake_profile_photo_remover.dart';
 import '../../helpers/fake_settings_hub_repository.dart';
 
 class _SilentLogger implements AppLogger {
@@ -114,6 +115,7 @@ SettingsServices _services() {
     photoManager: ProfilePhotoManager(
       settingsHub: hub,
       storage: _FakeStorage(),
+      photoRemover: FakeProfilePhotoRemover(),
     ),
     reauthService: _FakeReauth(),
     photoPicker: const StubProfilePhotoPicker(),

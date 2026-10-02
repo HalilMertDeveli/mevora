@@ -12,7 +12,9 @@ import 'package:mevora/features/onboarding/domain/services/profile_photo_picker.
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/onboarding/domain/onboarding_messages.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
+import 'package:mevora/features/profile/domain/repositories/profile_photo_remover.dart';
 import 'package:mevora/features/profile/domain/repositories/storage_repository.dart';
+import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 
 class OnboardingPhotoDraft {
   const OnboardingPhotoDraft({
@@ -61,25 +63,43 @@ class OnboardingController extends ChangeNotifier {
     required OnboardingRepository repository,
     required StorageRepository storage,
     required ProfilePhotoPicker photoPicker,
+    ProfilePhotoRemover? photoRemover,
   }) : _repository = repository,
        _storage = storage,
-       _photoPicker = photoPicker;
+       _photoPicker = photoPicker,
+       _photoRemover = photoRemover;
 
   final OnboardingRepository _repository;
   final StorageRepository _storage;
   final ProfilePhotoPicker _photoPicker;
+  final ProfilePhotoRemover? _photoRemover;
 
   UserProfile? profile;
+
+  /// The member's private surname. Held beside the draft rather than on it:
+  /// [UserProfile] is the public projection and never carries a surname.
+  String lastName = '';
   OnboardingStep step = OnboardingStep.basicInfo;
   List<OnboardingPhotoDraft> photoDrafts = const [];
   bool isLoading = true;
   bool isSaving = false;
   String? errorMessage;
 
+  /// Whether the server requires this member to have a verified Face Anchor.
+  /// Set by the page from what the server answered; false until then.
+  bool faceAnchorRequired = false;
+
   String? _uid;
   var _disposed = false;
+  StreamSubscription<UserProfile?>? _serverProfile;
 
   bool get canGoBack => step.previous != null;
+
+  bool get hasFaceAnchor =>
+      photoDrafts.any((draft) => draft.remote?.isFaceAnchor ?? false);
+
+  /// Enough photos, but none verified as the member yet.
+  bool get needsFaceAnchor => faceAnchorRequired && !hasFaceAnchor;
 
   bool get hasMinPhotos =>
       photoDrafts.where((draft) => draft.hasImage).length >=
@@ -90,14 +110,29 @@ class OnboardingController extends ChangeNotifier {
   bool get canContinuePhotos =>
       hasMinPhotos &&
       !isUploadingPhotos &&
+      !needsFaceAnchor &&
       photoDrafts.every((draft) => !draft.hasImage || draft.remote != null);
 
-  Future<void> initialize(AuthUser user) async {
+  void setFaceAnchorRequired(bool value) {
+    if (faceAnchorRequired == value) {
+      return;
+    }
+    faceAnchorRequired = value;
+    _notify();
+  }
+
+  /// [cityHint] is the city the member already chose at the location step
+  /// ("Choose a city instead"). It fills a draft that has no city yet, so
+  /// they are not asked for it a second time; a city already in the draft
+  /// wins.
+  Future<void> initialize(AuthUser user, {String? cityHint}) async {
     _uid = user.id;
     isLoading = true;
     errorMessage = null;
     _notify();
+    final savedLastName = _loadLastName(user.id);
     final existing = await _repository.loadDraft(user.id);
+    lastName = await savedLastName;
     final draft = (existing ??
             UserProfile(
               uid: user.id,
@@ -105,14 +140,110 @@ class OnboardingController extends ChangeNotifier {
             ))
         .copyWith(
           displayName: _prefillName(existing?.displayName, user.displayName),
+          city: _prefillCity(existing?.city, cityHint),
         );
     profile = draft;
-    step = draft.onboardingStep == OnboardingStep.complete
+    // A draft started before the surname was collected resumes on the step
+    // that asks for it, instead of failing at the very end.
+    step = draft.onboardingStep == OnboardingStep.complete || lastName.isEmpty
         ? OnboardingStep.basicInfo
         : draft.onboardingStep;
-    photoDrafts = _draftsFromProfile(draft);
+    photoDrafts = _normalizedDrafts(_draftsFromProfile(draft));
     isLoading = false;
     _notify();
+    _watchServerPhotos(user.id);
+  }
+
+  /// Follows the member's profile document for what only the server knows
+  /// about each photo: whether moderation approved it and whether it was
+  /// verified as the member. Uploads and moderation finish while the member
+  /// is still on the photo step, so this is how the step finds out.
+  void _watchServerPhotos(String uid) {
+    unawaited(_serverProfile?.cancel());
+    _serverProfile = _repository.watchDraft(uid).listen(
+      (server) {
+        if (server != null) {
+          _applyServerPhotos(server.photos);
+        }
+      },
+      onError: (Object _) {},
+    );
+  }
+
+  /// Overlays server-owned fields onto the drafts, by photo id. The drafts
+  /// stay the member's list: nothing is added or removed here, and a photo
+  /// still uploading is left alone.
+  void _applyServerPhotos(List<ProfilePhoto> serverPhotos) {
+    if (_disposed || serverPhotos.isEmpty) {
+      return;
+    }
+    final byId = {for (final photo in serverPhotos) photo.id: photo};
+    var changed = false;
+    final next = <OnboardingPhotoDraft>[];
+    for (final draft in photoDrafts) {
+      final remote = draft.remote;
+      final server = byId[draft.id];
+      if (remote == null || server == null) {
+        next.add(draft);
+        continue;
+      }
+      final published = server.isPublic;
+      final merged = remote.copyWith(
+        moderationStatus: server.moderationStatus,
+        isFaceAnchorVerified: server.isFaceAnchorVerified,
+        isPrimary: server.isFaceAnchor ? server.isPrimary : remote.isPrimary,
+        // Once approved, the photo lives at its published location.
+        storagePath: published && server.storagePath.isNotEmpty
+            ? server.storagePath
+            : null,
+        downloadUrl: published ? server.downloadUrl : null,
+        thumbUrl: server.thumbUrl,
+        cardUrl: server.cardUrl,
+      );
+      if (merged.moderationStatus != remote.moderationStatus ||
+          merged.isFaceAnchorVerified != remote.isFaceAnchorVerified ||
+          merged.isPrimary != remote.isPrimary ||
+          merged.storagePath != remote.storagePath ||
+          merged.downloadUrl != remote.downloadUrl ||
+          merged.thumbUrl != remote.thumbUrl ||
+          merged.cardUrl != remote.cardUrl) {
+        changed = true;
+      }
+      next.add(draft.copyWith(remote: merged));
+    }
+    if (!changed) {
+      return;
+    }
+    photoDrafts = _normalizedDrafts(next);
+    _syncPhotosToProfile();
+    _notify();
+  }
+
+  /// With a verified Face Anchor among the drafts, the first one is the
+  /// primary photo and must be an anchor: the one the server marks primary,
+  /// otherwise the first anchor in the list.
+  List<OnboardingPhotoDraft> _normalizedDrafts(List<OnboardingPhotoDraft> drafts) {
+    bool isAnchor(OnboardingPhotoDraft draft) =>
+        draft.remote?.isFaceAnchor ?? false;
+    if (drafts.isEmpty || !drafts.any(isAnchor) || isAnchor(drafts.first)) {
+      return drafts;
+    }
+    final primary =
+        drafts
+            .where((draft) => isAnchor(draft) && draft.remote!.isPrimary)
+            .firstOrNull ??
+        drafts.firstWhere(isAnchor);
+    return [primary, ...drafts.where((draft) => draft.id != primary.id)];
+  }
+
+  /// The hint, when the draft has no city of its own. Null leaves the draft
+  /// as it is.
+  static String? _prefillCity(String? saved, String? hint) {
+    if ((saved ?? '').trim().isNotEmpty) {
+      return null;
+    }
+    final city = hint?.trim() ?? '';
+    return city.isEmpty ? null : city;
   }
 
   void updateDraft(UserProfile Function(UserProfile current) transform) {
@@ -122,6 +253,19 @@ class OnboardingController extends ChangeNotifier {
     }
     profile = transform(current);
     _notify();
+  }
+
+  void updateLastName(String value) {
+    lastName = value;
+    _notify();
+  }
+
+  Future<String> _loadLastName(String uid) async {
+    try {
+      return await _repository.loadLastName(uid) ?? '';
+    } on Object {
+      return '';
+    }
   }
 
   Future<Result<void>> continueStep() async {
@@ -138,8 +282,11 @@ class OnboardingController extends ChangeNotifier {
     try {
       if (step == OnboardingStep.photos) {
         if (!canContinuePhotos) {
-          _fail(PhotoUploadMessages.minRequired);
-          return const Err(ValidationFailure(PhotoUploadMessages.minRequired));
+          final reason = hasMinPhotos && needsFaceAnchor
+              ? OnboardingMessages.faceAnchorRequired
+              : PhotoUploadMessages.minRequired;
+          _fail(reason);
+          return Err(ValidationFailure(reason));
         }
         final upload = await _ensurePhotosUploaded(uid);
         if (upload.isError) {
@@ -152,7 +299,12 @@ class OnboardingController extends ChangeNotifier {
         _fail(PhotoUploadMessages.failed);
         return const Err(ValidationFailure('Profile is not ready yet'));
       }
-      final result = await _repository.saveStep(profile: current, step: step);
+      final result = await _repository.saveStep(
+        profile: current,
+        step: step,
+        lastName: lastName,
+        requireFaceAnchor: faceAnchorRequired,
+      );
       switch (result) {
         case Success(:final value):
           profile = value;
@@ -192,7 +344,11 @@ class OnboardingController extends ChangeNotifier {
         return upload;
       }
       final withPhotos = profile!.copyWith(photos: _photosFromDrafts());
-      final result = await _repository.complete(withPhotos);
+      final result = await _repository.complete(
+        withPhotos,
+        lastName: lastName,
+        requireFaceAnchor: faceAnchorRequired,
+      );
       switch (result) {
         case Success(:final value):
           profile = value;
@@ -316,15 +472,36 @@ class OnboardingController extends ChangeNotifier {
     }
   }
 
+  /// Removes a photo, unless it is the member's only verified Face Anchor:
+  /// that one stays until another photo has been verified.
   void removePhoto(String id) {
-    photoDrafts = [
+    final target = photoDrafts.where((draft) => draft.id == id).firstOrNull;
+    final isAnchor = target?.remote?.isFaceAnchor ?? false;
+    final otherAnchors = photoDrafts.any(
+      (draft) => draft.id != id && (draft.remote?.isFaceAnchor ?? false),
+    );
+    if (isAnchor && !otherAnchors) {
+      errorMessage = PhotoPolicy.lastFaceAnchor;
+      _notify();
+      return;
+    }
+    photoDrafts = _normalizedDrafts([
       for (final draft in photoDrafts)
         if (draft.id != id) draft,
-    ];
+    ]);
+    errorMessage = null;
     _syncPhotosToProfile();
     _notify();
+    // An uploaded photo is stored on the server; the list saved with the next
+    // step would only stop mentioning it. Best effort: the draft is the
+    // member's list either way.
+    if (target?.remote != null) {
+      unawaited(_photoRemover?.remove(id));
+    }
   }
 
+  /// Moves a photo. Once a photo is verified, the first position is the
+  /// primary photo, so only a verified photo can be moved into it.
   void reorderPhotos(int oldIndex, int newIndex) {
     if (oldIndex == newIndex) {
       return;
@@ -335,7 +512,13 @@ class OnboardingController extends ChangeNotifier {
     }
     final item = drafts.removeAt(oldIndex);
     drafts.insert(newIndex, item);
+    if (hasFaceAnchor && !(drafts.first.remote?.isFaceAnchor ?? false)) {
+      errorMessage = PhotoPolicy.primaryRequiresFaceAnchor;
+      _notify();
+      return;
+    }
     photoDrafts = drafts;
+    errorMessage = null;
     _syncPhotosToProfile();
     _notify();
   }
@@ -524,6 +707,7 @@ class OnboardingController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    unawaited(_serverProfile?.cancel());
     super.dispose();
   }
 }

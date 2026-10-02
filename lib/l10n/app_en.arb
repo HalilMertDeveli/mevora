@@ -492,6 +492,8 @@
   "onboardingTitle": "Let's get to know you",
   "onboardingMessage": "The better we know you, the more carefully we can choose who to show you.",
   "onboardingFirstName": "First name",
+  "onboardingLastName": "Last name",
+  "onboardingLastNamePrivate": "Other members never see your last name.",
   "onboardingBirthDate": "Birthday",
   "onboardingGender": "I am",
   "onboardingInterestedIn": "Interested in",
@@ -515,6 +517,7 @@
   },
   "onboardingErrorBirthday": "Add your birthday.",
   "onboardingErrorFirstName": "Add your first name.",
+  "onboardingErrorLastName": "Add your last name.",
   "onboardingErrorGender": "Choose how you identify.",
   "onboardingErrorInterestedIn": "Choose who you'd like to meet.",
   "onboardingErrorCity": "Choose your city.",
@@ -560,6 +563,7 @@
   "onboardingErrorGeneric": "We couldn't finish setting up your profile. Please try again.",
   "onboardingBack": "Back",
   "onboardingContinue": "Continue",
+  "onboardingLogoutBody": "The steps you've finished are saved. Sign in again to pick up where you left off.",
   "onboardingEducation": "Education",
   "onboardingLifestyle": "Lifestyle",
   "onboardingSmoking": "Smoking",
@@ -568,7 +572,7 @@
   "onboardingPets": "Pets",
   "onboardingInterestsHint": "Pick at least 3. Shared interests help us find people you'll have something to talk about with.",
   "onboardingBioHint": "Share a little about yourself.",
-  "onboardingPhotosHint": "Add at least 3 photos. Drag to reorder — your first photo is your main one.",
+  "onboardingPhotosHint": "Add at least 3 photos. Your face should be clearly visible in at least one. In the others you can show your hobbies, your travels, your pet or moments from your life.",
   "onboardingPrimaryPhoto": "Main photo",
   "onboardingPhotoNumber": "Photo {number}",
   "@onboardingPhotoNumber": {
@@ -753,7 +757,8 @@
   "settingsResetLearnedFailed": "Couldn't reset. Try again.",
   "minAge": "Minimum age",
   "maxAge": "Maximum age",
-  "maxDistance": "Maximum distance",
+  "maxDistance": "Preferred distance (km)",
+  "maxDistanceHint": "People inside this distance come first. When there are not enough, Mevora looks further, up to 100 km.",
   "matchesTitle": "Your matches",
   "matchesSubtitle": "People who chose you back, best match first.",
   "matchesEmptyTitle": "Your matches will show up here",
@@ -912,6 +917,7 @@
   "reportInappropriate": "Inappropriate content",
   "reportScam": "Scam",
   "reportFakeProfile": "Fake profile",
+  "reportChildSafety": "Child safety concern (sexual content or behaviour involving a minor)",
   "reportUnderage": "Underage",
   "reportOther": "Other",
   "hideProfile": "Hide profile",
@@ -956,6 +962,10 @@
   "boostDuration": "Boost your profile",
   "boostActivate": "Use leftover Boost",
   "boostBuy": "Buy Boost",
+  "boostOneTimePurchaseNote": "Boost is a one-time purchase. It does not renew.",
+  "@boostOneTimePurchaseNote": {
+    "description": "Purchase disclosure under the Boost packs: not a subscription."
+  },
   "boostPurchasing": "Starting purchase...",
   "boostVerifying": "Confirming your purchase...",
   "boostSuccessTitle": "Boost is on",
@@ -1133,8 +1143,11 @@
   "settingsPhotoMaxExceeded": "You can add up to 6 photos.",
   "settingsPhotoPrimaryDeleteBlocked": "Set another photo as primary before deleting this one.",
   "settingsPhotoPrimaryRequired": "Choose a primary photo.",
+  "settingsPhotoStillProcessing": "This photo is still being checked. Try again in a moment.",
   "settingsFirstNameRequired": "First name is required.",
   "settingsFirstNameTooLong": "First name is too long.",
+  "settingsLastNameRequired": "Last name is required.",
+  "settingsLastNameTooLong": "Last name is too long.",
   "settingsBioTooLong": "Bio is too long.",
   "settingsInterestsTooMany": "Choose fewer interests.",
   "settingsMinAgeInvalid": "Minimum age must be at least 18.",
@@ -1251,7 +1264,7 @@
   },
   "likesYouSeeWhy": "Why this person?",
   "likesYouLockedTitle": "See who's already interested",
-  "likesYouLockedCount": "{count} people like you",
+  "likesYouLockedCount": "{count, plural, =1{1 person likes you} other{{count} people like you}}",
   "@likesYouLockedCount": {
     "placeholders": {
       "count": {
@@ -1560,7 +1573,7 @@
   "termsDeletionTitle": "Account deletion",
   "termsDeletionBody": "You may delete your account in Settings → Account → Delete Account. Deletion is permanent and removes your profile and associated app data subject to legal retention limits.",
   "termsPaidTitle": "Paid features",
-  "termsPaidBody": "Boost and other purchases are processed through your app store. Refunds follow the store's policies unless required otherwise by law.",
+  "termsPaidBody": "Boost and Premium are bought through your app store. Boost is a one-time purchase and does not renew. Premium is a subscription: it renews automatically at the price shown when you buy it until you cancel in your store account, and cancelling stops the next renewal. Refunds follow the store's policies unless required otherwise by law.",
   "termsThirdPartyTitle": "Third-party services",
   "termsThirdPartyBody": "Mevora may integrate with services such as Google Sign-In, Apple Sign-In, Spotify, Firebase, and identity verification providers. Their terms also apply.",
   "termsAvailabilityTitle": "Service availability",
@@ -1572,7 +1585,7 @@
   "termsContactTitle": "Contact",
   "termsContactBody": "For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.",
   "termsEffectiveTitle": "Effective date",
-  "termsEffectiveBody": "These Terms are effective as of August 23, 2026.",
+  "termsEffectiveBody": "These Terms are effective as of October 1, 2026.",
   "privacyIntroTitle": "Introduction",
   "privacyIntroBody": "This Privacy Policy explains how Mevora collects, uses, stores, and deletes personal data when you use our app.",
   "privacyDataCollectedTitle": "Overview",
@@ -1580,35 +1593,37 @@
   "privacyAuthTitle": "Account and authentication data",
   "privacyAuthBody": "Depending on how you sign in, we may process email, phone number, authentication provider identifiers (Google, Apple, Spotify), and Firebase Authentication user ID.",
   "privacyProfileTitle": "Profile data and photos",
-  "privacyProfileBody": "Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.",
+  "privacyProfileBody": "Profile details you provide (first name, date of birth, gender, who you want to meet, bio, preferences, relationship answers, humor ratings and photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching. Other members see your age, not your date of birth, and your surname stays private.",
+  "privacyVerificationTitle": "Photo and identity verification",
+  "privacyVerificationBody": "To confirm that a profile belongs to a real person, we may ask you for a selfie. It is sent to our verification provider, Didit, which checks that it shows a live person and that it matches your profile photo. We keep the result of that check, not the selfie, which is deleted when the check ends. Identity verification is optional: if you choose it, Didit processes your identity document and selfie directly and Mevora stores only the outcome.",
   "privacyLocationTitle": "Location data",
-  "privacyLocationBody": "With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.",
+  "privacyLocationBody": "With your permission, we use your device location to show compatible people near you. Your coordinates are stored on our servers for that purpose and are never shown to other members, who see only your city and an approximate distance.",
   "privacyMessagingTitle": "Messages and calls",
-  "privacyMessagingBody": "Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.",
+  "privacyMessagingBody": "Message text, voice notes and images are end-to-end encrypted: they are encrypted on your device and our servers store only the encrypted form, which we cannot read. To deliver them we do store who sent a message to whom, when, its type and whether it was read, as well as call records.",
   "privacyMatchingTitle": "Matching and interactions",
-  "privacyMatchingBody": "Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.",
+  "privacyMatchingBody": "Likes, passes, matches, your answers to daily questions, humor ratings, compatibility signals and interaction history are stored to operate discovery and matches.",
   "privacyPreferencesTitle": "Settings and preferences",
   "privacyPreferencesBody": "Notification preferences, privacy controls (online status, last seen, typing), discovery filters, and language settings are stored to honor your choices.",
   "privacySpotifyTitle": "Spotify data",
   "privacySpotifyBody": "If you connect Spotify, we store linked account metadata and music taste signals used for compatibility and music features. You can disconnect Spotify in settings.",
   "privacyDeviceTitle": "Device and technical data",
-  "privacyDeviceBody": "We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.",
+  "privacyDeviceBody": "We process push notification tokens and, through Firebase Crashlytics and Google Analytics for Firebase, crash reports and usage statistics tied to an app installation, not to your name. Mevora shows no ads and does not use your advertising ID.",
   "privacyWhyTitle": "Why we use data",
   "privacyWhyBody": "To authenticate you, show matches, deliver messages, improve safety, provide support, process optional purchases, and comply with law.",
   "privacyStorageTitle": "Where data is stored",
   "privacyStorageBody": "Data is primarily stored in Google Firebase (Firestore, Storage, Authentication, Cloud Functions) in the EU region where configured.",
   "privacyRetentionTitle": "Retention",
-  "privacyRetentionBody": "We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.",
+  "privacyRetentionBody": "We keep data while your account is active. When you delete your account, your profile, photos, messages, likes, answers and purchase records are deleted. Matches you were part of are closed and no longer show your name or photo, and records of safety and moderation actions may be kept where needed to protect members, prevent fraud or meet legal obligations.",
   "privacySharingTitle": "Sharing",
-  "privacySharingBody": "We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.",
+  "privacySharingBody": "We do not sell personal data. We share data only with the service providers needed to operate Mevora: Google (Firebase hosting, authentication, notifications, crash reporting and analytics, and Google Play for purchases), Spotify if you connect it, Didit for photo and identity verification, and GIPHY, from which your device loads humor content directly.",
   "privacyRightsTitle": "Your rights",
-  "privacyRightsBody": "Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.",
+  "privacyRightsBody": "Depending on your region, you may request access, correction, deletion, or restriction of your data. You can download a copy of your data in Settings → Account → Download my data, and delete your account in Settings.",
   "privacyDeletionTitle": "Deleting your data",
   "privacyDeletionBody": "Use Settings → Account → Delete Account for permanent deletion. Support tickets you created are also removed as part of account deletion.",
   "privacySecurityTitle": "Security",
-  "privacySecurityBody": "We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.",
+  "privacySecurityBody": "We use access controls, encryption in transit, end-to-end encryption of message content, and Firebase security rules. No system is perfectly secure; report issues to support.",
   "privacyChildrenTitle": "Children",
-  "privacyChildrenBody": "Mevora is not for users under 18. We delete accounts identified as underage.",
+  "privacyChildrenBody": "Mevora is not for anyone under 18. Accounts found to belong to someone under 18 are closed.",
   "privacyChangesTitle": "Policy changes",
   "privacyChangesBody": "We may update this policy. The latest version is always available in the app and on our public policy page.",
   "privacyContactTitle": "Contact",
@@ -1772,20 +1787,20 @@
   "cohabitationMaybeLater": "Maybe later",
   "cohabitationUnsure": "Not sure",
   "cohabitationNo": "No",
-  "languageGerman": "German",
-  "languageFrench": "French",
-  "languageSpanish": "Spanish",
-  "languageItalian": "Italian",
-  "languageRussian": "Russian",
-  "languageArabic": "Arabic",
-  "languagePersian": "Persian",
-  "languageKurdish": "Kurdish",
-  "languageGreek": "Greek",
-  "languageDutch": "Dutch",
-  "languagePortuguese": "Portuguese",
-  "languageChinese": "Chinese",
-  "languageJapanese": "Japanese",
-  "languageKorean": "Korean",
+  "languageGerman": "German 🇩🇪",
+  "languageFrench": "French 🇫🇷",
+  "languageSpanish": "Spanish 🇪🇸",
+  "languageItalian": "Italian 🇮🇹",
+  "languageRussian": "Russian 🇷🇺",
+  "languageArabic": "Arabic 🌐",
+  "languagePersian": "Persian 🌐",
+  "languageKurdish": "Kurdish 🌐",
+  "languageGreek": "Greek 🇬🇷",
+  "languageDutch": "Dutch 🇳🇱",
+  "languagePortuguese": "Portuguese 🇵🇹",
+  "languageChinese": "Chinese 🌐",
+  "languageJapanese": "Japanese 🇯🇵",
+  "languageKorean": "Korean 🇰🇷",
   "hobbyWorkingOut": "Working out",
   "hobbyRunning": "Running",
   "hobbyFitness": "Fitness",
@@ -1866,7 +1881,6 @@
   "humorCompatibilitySharedStyles": "Humor styles you share",
   "humorCompatibilityNote": "A light signal from how you each reacted to humor content — not a verdict on the two of you.",
   "humorTopVibes": "Top vibes",
-  "humorSkipContent": "Skip",
   "humorReport": "Report",
   "humorReportSuccess": "Thanks — we'll review this content.",
   "humorHowFunny": "How funny is this?",
@@ -1964,7 +1978,17 @@
   "musicLimitedData": "Spotify is connected, but there isn't much listening history yet.",
   "humorCalibrationIntroTitle": "Let's learn what makes you laugh",
   "humorCalibrationIntroBody": "React to a few short pieces. Your reactions help us understand your sense of humor, so we can show you the humor you share with your matches.",
-  "humorCalibrationIntroMeta": "15 short pieces · about a minute",
+  "humorCalibrationIntroMeta": "{count} short pieces · about a minute",
+  "@humorCalibrationIntroMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "humorCalibrationPausedTitle": "That's it for today",
+  "humorCalibrationPausedBody": "One piece would not play. The rest will be waiting tomorrow, and your humor profile will be completed then.",
+  "humorLabCalibratedBody": "From here on we continue with a few new pieces each day.",
   "humorCalibrationStart": "Start",
   "humorCalibrationSkip": "Skip for now",
   "humorCalibrationResume": "Continue",
@@ -2029,7 +2053,6 @@
       }
     }
   },
-  "humorResultKeepGoing": "Keep shaping your humor profile",
   "humorResultDone": "Continue",
   "humorResultEvolvesNote": "Your profile keeps evolving as you react to new content.",
   "humorResultStrengthHigh": "Strong",
@@ -2092,6 +2115,81 @@
   "premiumRenewsLabel": "Renews automatically. Cancel anytime in the store.",
   "@premiumRenewsLabel": {
     "description": "Auto-renew disclosure required by both stores."
+  },
+  "premiumPlanBilledMonthly": "Billed monthly",
+  "@premiumPlanBilledMonthly": {
+    "description": "Billing period shown on a monthly Premium plan, next to the store price."
+  },
+  "premiumPlanBilledYearly": "Billed yearly",
+  "@premiumPlanBilledYearly": {
+    "description": "Billing period shown on a yearly Premium plan, next to the store price."
+  },
+  "premiumPricePerMonth": "{price} / month",
+  "@premiumPricePerMonth": {
+    "description": "Store price with its billing period. The price is the store's own formatted string.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumPricePerYear": "{price} / year",
+  "@premiumPricePerYear": {
+    "description": "Store price with its billing period. The price is the store's own formatted string.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalMonthly": "Your subscription renews automatically every month at {price} until you cancel.",
+  "@premiumRenewalMonthly": {
+    "description": "Auto-renewal disclosure for the selected monthly plan, shown by the Subscribe button.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalYearly": "Your subscription renews automatically every year at {price} until you cancel.",
+  "@premiumRenewalYearly": {
+    "description": "Auto-renewal disclosure for the selected yearly plan, shown by the Subscribe button.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumRenewalGeneric": "Your subscription renews automatically at {price} each billing period until you cancel.",
+  "@premiumRenewalGeneric": {
+    "description": "Auto-renewal disclosure when the store did not say how long the billing period is.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumCancelHow": "Cancel anytime in {store} > Subscriptions. You keep Premium until the end of the period you paid for.",
+  "@premiumCancelHow": {
+    "description": "How to cancel. store is the store's brand name: Google Play or App Store.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumManageSubscription": "Manage subscription",
+  "@premiumManageSubscription": {
+    "description": "Button for Premium members. Opens the store's own subscription page."
+  },
+  "premiumManageSubscriptionFailed": "We couldn't open {store}. To manage your subscription, go to {store} > Subscriptions.",
+  "@premiumManageSubscriptionFailed": {
+    "description": "Shown when the store's subscription page could not be opened.",
+    "placeholders": {
+      "store": {
+        "type": "String"
+      }
+    }
   },
   "musicFollowedArtistsTitle": "Artists you follow",
   "musicTopArtistsTitle": "Your top artists",
@@ -2246,9 +2344,11 @@
   },
   "humorDailyHintStart": "Today's humor round has begun.",
   "humorDailyHintMiddle": "Getting to know you a little more 👀",
-  "humorDailyHintEnd": "Just a few more videos.",
+  "humorDailyHintEnd": "Almost done.",
   "humorDailyCompletedTitle": "All done for today 🎭",
   "humorDailyCompletedBody": "Your humor profile just got a little clearer.",
+  "humorDailyCompletedTomorrow": "A new round will be waiting tomorrow.",
+  "humorDailySequenceComplete": "You have been through everything for now. The round continues when new pieces are added.",
   "humorDailyNotReadyTitle": "Today's round is being prepared",
   "humorDailyNotReadyBody": "Check back a little later.",
   "humorDailyLockedBody": "The daily humor round begins once your humor profile is ready.",
@@ -2352,5 +2452,44 @@
   "moderationAppealAlreadySent": "You have already appealed this decision.",
   "moderationAppealNotAllowed": "This decision can't be appealed.",
   "moderationAppealInvalid": "Please write between 10 and 2,000 characters.",
-  "moderationAppealFailed": "We couldn't send your appeal. Check your connection and try again."
+  "moderationAppealFailed": "We couldn't send your appeal. Check your connection and try again.",
+  "faceAnchorRequiredNotice": "To continue, verify one photo where your face is clearly visible.",
+  "faceAnchorVerifyAction": "Verify your photo",
+  "faceAnchorVerifyShort": "Verify",
+  "faceAnchorVerified": "This photo is verified",
+  "faceAnchorVerifiedShort": "Verified",
+  "faceAnchorPending": "Verification pending",
+  "faceAnchorPhotoInReview": "Photo in review",
+  "faceAnchorNotVerified": "Not verified",
+  "faceAnchorRetry": "Try again",
+  "faceAnchorMismatch": "This photo did not match the selfie you took.",
+  "faceAnchorLivenessFailed": "The liveness check could not be completed. Try again in good light, looking straight at the camera.",
+  "faceAnchorPhotoUnclear": "Your face is not clearly visible on its own in this photo. Choose one that shows only you.",
+  "faceAnchorSelfieInvalid": "That selfie could not be used. Take a new one with your camera and try again.",
+  "faceAnchorTechnicalError": "Verification could not be completed right now. Your photo was not verified; try again shortly.",
+  "faceAnchorPrimaryRequiresVerify": "Verify this photo before making it your main photo.",
+  "faceAnchorLastAnchorDelete": "You can't remove your last verified photo. Verify another photo first.",
+  "faceAnchorExplainBody": "We run a short selfie check to make sure your photo is really you.",
+  "faceAnchorExplainSteps": "You'll take a selfie with your front camera. It is used only for this check, never appears on your profile and is deleted when the check ends.",
+  "faceAnchorConsent": "I agree to my selfie being processed to compare it with this photo.",
+  "faceAnchorTakeSelfie": "Take a selfie",
+  "faceAnchorOpening": "Getting ready…",
+  "faceAnchorCapturing": "Opening the camera…",
+  "faceAnchorUploading": "Sending your selfie…",
+  "faceAnchorVerifying": "Verifying…",
+  "faceAnchorSuccessBody": "This photo can now be your main photo.",
+  "faceAnchorDone": "Done",
+  "faceAnchorChooseAnother": "Choose another photo",
+  "faceAnchorPromptBody": "Verify one photo where your face is clearly visible to show your profile is really you.",
+  "faceAnchorProfileVerifiedTitle": "Your profile photo is verified",
+  "faceAnchorPromptTileSubtitle": "Verify a photo of your face with a short selfie",
+  "faceAnchorErrorUnavailable": "Photo verification isn't available right now. Please try again later.",
+  "faceAnchorErrorPhotoNotApproved": "This photo is still in review. You can verify it once the review is finished.",
+  "faceAnchorErrorCooldown": "Wait a moment and try again.",
+  "faceAnchorErrorAttemptLimit": "You've used today's attempts. You can try again tomorrow.",
+  "faceAnchorErrorCamera": "The camera couldn't be opened. Check the camera permission and try again.",
+  "faceAnchorErrorUpload": "Your selfie couldn't be sent. Check your connection and try again.",
+  "faceAnchorErrorInProgress": "A verification is already running. Please wait for the result.",
+  "faceAnchorErrorConsent": "You need to agree before continuing.",
+  "faceAnchorErrorGeneric": "Verification couldn't be started. Please try again."
 }

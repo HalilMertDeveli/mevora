@@ -28,6 +28,7 @@ void main() {
     final useCase = CompleteOnboarding(repo);
     final result = await useCase.call(
       const UserProfile(uid: 'u1', displayName: 'Ada'),
+      lastName: 'Lovelace',
     );
     expect(result.isError, isTrue);
   });
@@ -71,6 +72,15 @@ void main() {
         ProfilePhoto(id: '3', storagePath: 'c'),
       ],
     );
-    expect(const ValidateProfileCompletion().call(complete).isSuccess, isTrue);
+    expect(
+      const ValidateProfileCompletion()
+          .call(complete, lastName: 'Lovelace')
+          .isSuccess,
+      isTrue,
+    );
+    expect(
+      const ValidateProfileCompletion().call(complete, lastName: null).isError,
+      isTrue,
+    );
   });
 }

@@ -6,7 +6,6 @@ import 'package:mevora/core/errors/failure.dart';
 import 'package:mevora/core/errors/result.dart';
 import 'package:mevora/features/humor/data/datasources/mock_humor_data_source.dart';
 import 'package:mevora/features/humor/data/repositories/humor_repository_impl.dart';
-import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_compatibility.dart';
 import 'package:mevora/features/humor/domain/entities/humor_content.dart';
@@ -121,11 +120,15 @@ HumorController _build(
   );
 }
 
-/// Rate [count] catalog items directly on the backend, as another session.
+/// How many items the initial calibration has on the mock server.
+const _total = MockHumorDataSource.onboardingCount;
+
+/// Rate the first [count] items of the sequence directly on the backend, as
+/// another session earlier today.
 Future<void> _preRate(MockHumorDataSource source, int count) async {
-  for (final item in MockHumorDataSource.seedCatalog.take(count)) {
+  for (final contentId in source.sequenceIds.take(count)) {
     await source.submitFeedback(
-      contentId: item.contentId,
+      contentId: contentId,
       rating: HumorRating.funny,
     );
   }
@@ -209,7 +212,7 @@ void main() {
       expect(controller.state.canAct, isFalse);
       final secondTap = controller.rate(HumorRating.veryFunny);
       final swipe = controller.rateSwipeUp();
-      final skip = controller.skip();
+      final skip = controller.skipUnplayable(first);
       gate.complete();
       await Future.wait([firstTap, secondTap, swipe, skip]);
 
@@ -253,32 +256,41 @@ void main() {
     expect(source.feedbackCalls, 2);
   });
 
-  test('skip moves on without counting and is not served again', () async {
+  test('there is no "not interested": the only skip is media that would not '
+      'play', () async {
     final source = MockHumorDataSource();
     final controller = _build(source);
     await controller.load();
     final skipped = controller.state.current!.contentId;
 
-    await controller.skip();
+    await controller.skipUnplayable(skipped);
 
     expect(controller.state.currentIndex, 1);
     expect(source.skipCalls, 1);
-    expect(source.passedContentIds, contains(skipped));
+    expect(source.skipReasons, [HumorSkipReason.mediaFailed]);
+    expect(source.deferredContentIds, contains(skipped));
+    expect(source.ratingOf(skipped), isNull);
     expect(source.profile.interactionCount, 0);
     expect(controller.state.calibration.completedCount, 0);
 
+    // Done for today — and nothing else is put in its place.
     await controller.load();
     expect(
       controller.state.items.map((item) => item.contentId),
-      isNot(contains(skipped)),
+      source.sequenceIds.sublist(1, _total),
     );
+
+    // It is the same measurement for everyone, so it comes back tomorrow.
+    source.closeDay('2099-01-02');
+    await controller.load();
+    expect(controller.state.current?.contentId, skipped);
   });
 
-  test('rating skipped content later counts as its first rating', () async {
+  test('rating passed content later counts as its first rating', () async {
     final source = MockHumorDataSource();
     final controller = _build(source);
     await controller.load();
-    await controller.skip();
+    await controller.skipUnplayable(controller.state.current!.contentId);
 
     controller.goBack();
     expect(controller.state.currentIndex, 0);
@@ -329,54 +341,37 @@ void main() {
     expect(controller.state.actionFailureId, 1);
   });
 
-  test('stage-bounded calibration pages keep going to 15', () async {
+  test('the whole calibration arrives at once and runs to its end', () async {
     final source = MockHumorDataSource();
     final controller = _build(source);
     await controller.load();
 
-    // The first page holds the anchors only: the adaptive items are chosen
-    // after the anchors are rated.
-    expect(
-      controller.state.items,
-      hasLength(HumorCalibration.anchorInteractions),
-    );
+    // Nothing is chosen from the answers: every item is known up front.
+    expect(controller.state.items, hasLength(_total));
     expect(controller.state.nextCursor, isNull);
-    for (final item in controller.state.items) {
-      expect(item.calibrationStage, HumorCalibrationStage.anchor);
-    }
+    final served = controller.state.items.map((item) => item.contentId);
+    expect(served, source.sequenceIds.take(_total));
 
-    for (var i = 0; i < HumorCalibration.totalInteractions; i += 1) {
-      expect(
-        controller.state.current,
-        isNotNull,
-        reason: 'a short calibration page is not the end of the feed ($i)',
-      );
+    for (var i = 0; i < _total; i += 1) {
+      expect(controller.state.current?.contentId, source.sequenceIds[i]);
       expect(controller.state.reachedEnd, isFalse);
       await controller.rate(HumorRating.funny);
     }
 
     expect(controller.state.calibration.complete, isTrue);
-    expect(controller.state.calibration.completedCount, 15);
-    expect(controller.state.items, hasLength(15));
-    expect(
-      controller.state.items[6].calibrationStage,
-      HumorCalibrationStage.adaptive,
-    );
-    expect(
-      controller.state.items[12].calibrationStage,
-      HumorCalibrationStage.exploration,
-    );
+    expect(controller.state.calibration.completedCount, _total);
+    expect(controller.state.items, hasLength(_total));
     expect(
       source.feedCalls,
-      3,
-      reason: 'one page per stage, and no page fetched as calibration ends',
+      1,
+      reason: 'one page, and no page fetched as calibration ends',
     );
-    expect(source.feedbackCalls, 15);
+    expect(source.feedbackCalls, _total);
   });
 
   test('only the rating that finishes calibration sets the hand-off', () async {
     final source = MockHumorDataSource();
-    await _preRate(source, HumorCalibration.totalInteractions - 1);
+    await _preRate(source, _total - 1);
     final controller = _build(source);
     await controller.load();
     expect(controller.state.calibrationJustCompleted, isFalse);
@@ -388,40 +383,40 @@ void main() {
     controller.consumeCalibrationCompleted();
     expect(controller.state.calibrationJustCompleted, isFalse);
 
-    // Continuing afterwards is ordinary learning.
+    // There is nothing to continue with: the next items are tomorrow's.
     await controller.loadMore();
-    expect(controller.state.current, isNotNull);
-    await controller.rate(HumorRating.veryFunny);
+    expect(controller.state.current, isNull);
     expect(controller.state.calibrationJustCompleted, isFalse);
   });
 
   test(
     'opening the Lab as a calibrated user never counts as finishing',
     () async {
-      final source = MockHumorDataSource();
-      await _preRate(source, HumorCalibration.totalInteractions);
+      final source = MockHumorDataSource()..completeCalibration();
       final controller = _build(source);
 
       await controller.load();
 
       expect(controller.state.calibration.complete, isTrue);
       expect(controller.state.calibrationJustCompleted, isFalse);
-      expect(controller.state.current, isNotNull);
+      // The feed is closed: the daily tour is where new items are.
+      expect(controller.state.items, isEmpty);
+      expect(controller.state.catalogExhausted, isTrue);
+      expect(controller.state.catalogEmpty, isFalse);
     },
   );
 
-  test('the end of the feed is reported, and the last card cannot be rated '
+  test('the end is reported, and the last card cannot be rated '
       'again', () async {
     final source = MockHumorDataSource();
-    await _preRate(source, HumorCalibration.totalInteractions);
+    await _preRate(source, _total - 2);
     final controller = _build(source);
     await controller.load();
-    final left = controller.state.items.length;
-    expect(left, greaterThan(0));
+    expect(controller.state.items, hasLength(2));
 
-    for (var i = 0; i < left; i += 1) {
-      await controller.rate(HumorRating.funny);
-    }
+    await controller.rate(HumorRating.funny);
+    await controller.rate(HumorRating.funny);
+    await controller.loadMore();
 
     expect(controller.state.current, isNull);
     expect(controller.state.atTail, isTrue);
@@ -463,9 +458,10 @@ void main() {
 
   test('only one feed request is in flight at a time', () async {
     final source = MockHumorDataSource();
-    await _preRate(source, HumorCalibration.totalInteractions);
+    await _preRate(source, _total - 1);
     final controller = _build(source);
     await controller.load();
+    await controller.rate(HumorRating.funny);
     final before = source.feedCalls;
 
     await Future.wait([controller.loadMore(), controller.loadMore()]);
@@ -490,8 +486,7 @@ void main() {
   group('calibration analytics', () {
     test('loading logs no calibration event', () async {
       final analytics = _RecordingAnalytics();
-      final source = MockHumorDataSource();
-      await _preRate(source, HumorCalibration.totalInteractions);
+      final source = MockHumorDataSource()..completeCalibration();
 
       await _build(source, analytics: analytics).load();
       await _build(MockHumorDataSource(), analytics: analytics).load();
@@ -502,14 +497,14 @@ void main() {
     test('progress per counted rating, completion exactly once', () async {
       final analytics = _RecordingAnalytics();
       final source = MockHumorDataSource();
-      await _preRate(source, HumorCalibration.totalInteractions - 2);
+      await _preRate(source, _total - 2);
       final controller = _build(source, analytics: analytics);
       await controller.load();
 
-      await controller.rate(HumorRating.funny); // 14 of 15
+      await controller.rate(HumorRating.funny); // one left
       controller.goBack();
       await controller.rate(HumorRating.notFunny); // re-rate: not counted
-      await controller.rate(HumorRating.funny); // 15 of 15
+      await controller.rate(HumorRating.funny); // the last one
 
       expect(analytics.calibrationEvents.toList(), [
         AnalyticsEvents.humorCalibrationProgress,

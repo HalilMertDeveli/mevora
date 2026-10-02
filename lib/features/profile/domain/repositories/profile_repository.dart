@@ -8,6 +8,18 @@ abstract class ProfileRepository {
 
   Future<void> saveMine(UserProfile profile);
 
+  /// The signed-in member's private surname. It is stored on their account,
+  /// not on the public profile, so it only ever resolves for [uid]'s owner.
+  Future<String?> loadMyLastName(String uid);
+
+  Future<void> saveMyLastName(String uid, String lastName);
+
+  /// The signed-in member's private date of birth, stored beside the surname
+  /// on their account. Other members only ever see the age derived from it.
+  Future<DateTime?> loadMyBirthDate(String uid);
+
+  Future<void> saveMyBirthDate(String uid, DateTime birthDate);
+
   Future<UserPreferences> loadPreferences(String uid);
 
   Future<void> savePreferences(UserPreferences preferences);

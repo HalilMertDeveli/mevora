@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 
 import 'package:mevora/core/services/permissions/permission_service.dart';
@@ -8,11 +9,22 @@ import 'package:mevora/core/services/permissions/permission_type.dart';
 ///
 /// Location is while-in-use only (`Permission.locationWhenInUse`).
 /// Photos prefer limited/selected access on platforms that support it.
+///
+/// On Android there is no photo permission to ask for: every gallery flow goes
+/// through the system photo picker (`image_picker`), which hands the app only
+/// the images the member picked. The manifest therefore declares neither
+/// READ_MEDIA_IMAGES nor READ_MEDIA_VISUAL_USER_SELECTED (Google Play's Photo
+/// and Video Permissions policy), and asking `permission_handler` for
+/// `Permission.photos` would report "denied" for a permission that is not
+/// needed. [PermissionType.photos] is reported as granted there instead.
 class PermissionHandlerPermissionService implements PermissionService {
   const PermissionHandlerPermissionService();
 
   @override
   Future<PermissionStatus> check(PermissionType type) async {
+    if (needsNoRuntimePermission(type)) {
+      return PermissionStatus.granted;
+    }
     try {
       return mapHandlerStatus(await _platform(type).status);
     } on Object {
@@ -22,6 +34,9 @@ class PermissionHandlerPermissionService implements PermissionService {
 
   @override
   Future<PermissionStatus> request(PermissionType type) async {
+    if (needsNoRuntimePermission(type)) {
+      return PermissionStatus.granted;
+    }
     try {
       final permission = _platform(type);
       final current = mapHandlerStatus(await permission.status);
@@ -56,6 +71,13 @@ class PermissionHandlerPermissionService implements PermissionService {
       entries[type] = await check(type);
     }
     return entries;
+  }
+
+  /// True when the platform serves [type] without any runtime permission.
+  @visibleForTesting
+  static bool needsNoRuntimePermission(PermissionType type) {
+    return type == PermissionType.photos &&
+        defaultTargetPlatform == TargetPlatform.android;
   }
 
   ph.Permission _platform(PermissionType type) {

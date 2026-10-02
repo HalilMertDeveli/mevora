@@ -2,6 +2,7 @@ import 'package:mevora/core/localization/l10n_errors.dart';
 import 'package:mevora/features/onboarding/domain/entities/onboarding_config.dart';
 import 'package:mevora/features/onboarding/domain/onboarding_messages.dart';
 import 'package:mevora/features/profile/domain/photo_upload_messages.dart';
+import 'package:mevora/features/settings/domain/validators/photo_policy.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 
 /// Turns an onboarding failure into the member's language. Anything it does
@@ -14,6 +15,15 @@ abstract final class OnboardingErrorL10n {
     if (raw == OnboardingMessages.underage) return l10n.onboardingMustBeAdult;
     if (raw == OnboardingMessages.firstNameRequired) {
       return l10n.onboardingErrorFirstName;
+    }
+    if (raw == OnboardingMessages.firstNameTooLong) {
+      return l10n.settingsFirstNameTooLong;
+    }
+    if (raw == OnboardingMessages.lastNameRequired) {
+      return l10n.onboardingErrorLastName;
+    }
+    if (raw == OnboardingMessages.lastNameTooLong) {
+      return l10n.settingsLastNameTooLong;
     }
     if (raw == OnboardingMessages.genderRequired) {
       return l10n.onboardingErrorGender;
@@ -51,6 +61,16 @@ abstract final class OnboardingErrorL10n {
     if (raw == PhotoUploadMessages.minRequired ||
         raw == OnboardingMessages.serverPhotosRequired) {
       return l10n.photoMinRequired;
+    }
+    if (raw == OnboardingMessages.faceAnchorRequired) {
+      return l10n.faceAnchorRequiredNotice;
+    }
+    if (raw == OnboardingMessages.primaryNotFaceAnchor ||
+        raw == PhotoPolicy.primaryRequiresFaceAnchor) {
+      return l10n.faceAnchorPrimaryRequiresVerify;
+    }
+    if (raw == PhotoPolicy.lastFaceAnchor) {
+      return l10n.faceAnchorLastAnchorDelete;
     }
     if (raw == PhotoUploadMessages.noneSelected) return l10n.photoNoneSelected;
     if (raw == PhotoUploadMessages.needSignIn) return l10n.photoNeedSignIn;

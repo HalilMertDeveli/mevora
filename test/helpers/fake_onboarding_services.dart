@@ -12,10 +12,19 @@ import 'fake_profile_repository.dart';
 
 class FakeOnboardingRepository implements OnboardingRepository {
   UserProfile? saved;
+  String? savedLastName;
 
   @override
-  Future<Result<UserProfile>> complete(UserProfile profile) async {
-    final validation = OnboardingValidators.validateCompletion(profile);
+  Future<Result<UserProfile>> complete(
+    UserProfile profile, {
+    required String? lastName,
+    bool requireFaceAnchor = false,
+  }) async {
+    final validation = OnboardingValidators.validateCompletion(
+      profile,
+      lastName: lastName,
+      requireFaceAnchor: requireFaceAnchor,
+    );
     if (validation.isError) {
       return Err((validation as Err<void>).failure);
     }
@@ -32,10 +41,18 @@ class FakeOnboardingRepository implements OnboardingRepository {
   Future<UserProfile?> loadDraft(String uid) async => saved;
 
   @override
+  Future<String?> loadLastName(String uid) async => savedLastName;
+
+  @override
   Future<Result<UserProfile>> saveStep({
     required UserProfile profile,
     required OnboardingStep step,
+    required String? lastName,
+    bool requireFaceAnchor = false,
   }) async {
+    if (step == OnboardingStep.basicInfo) {
+      savedLastName = lastName?.trim();
+    }
     saved = profile;
     return Success(profile);
   }

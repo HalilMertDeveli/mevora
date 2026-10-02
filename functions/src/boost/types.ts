@@ -25,7 +25,8 @@ export interface PurchaseLedger {
   productId: string;
   platform: StorePlatform;
   transactionId: string;
-  status: "pending" | "verified" | "failed";
+  /** `voided`: Play took the purchase back. The entry stays and still blocks the token. */
+  status: "pending" | "verified" | "failed" | "voided";
 }
 
 export interface ActiveBoostSnapshot {

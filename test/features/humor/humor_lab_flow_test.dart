@@ -14,7 +14,6 @@ import 'package:mevora/core/routing/app_routes.dart';
 import 'package:mevora/core/services/app_logger.dart';
 import 'package:mevora/features/humor/data/datasources/mock_humor_data_source.dart';
 import 'package:mevora/features/humor/data/repositories/humor_repository_impl.dart';
-import 'package:mevora/features/humor/domain/entities/humor_calibration.dart';
 import 'package:mevora/features/humor/domain/entities/humor_category.dart';
 import 'package:mevora/features/humor/domain/entities/humor_rating.dart';
 import 'package:mevora/features/humor/domain/entities/user_humor_profile.dart';
@@ -31,6 +30,10 @@ import '../../helpers/fake_network_images.dart';
 import '../../helpers/l10n_harness.dart';
 
 const _discoveryMarker = 'discovery-screen';
+const _dailyMarker = 'daily-screen';
+
+/// How many items the initial calibration has on the mock server.
+const _total = MockHumorDataSource.onboardingCount;
 
 GoRouter _router(String initialLocation) {
   return GoRouter(
@@ -51,6 +54,10 @@ GoRouter _router(String initialLocation) {
       GoRoute(
         path: AppRoutes.humorResult,
         builder: (_, _) => const HumorCalibrationResultPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.humorDaily,
+        builder: (_, _) => const Scaffold(body: Text(_dailyMarker)),
       ),
     ],
   );
@@ -84,11 +91,12 @@ Widget _plainApp(Widget home, {MockHumorDataSource? source}) {
   );
 }
 
-/// Rate [count] catalog items directly on the backend, as another session.
+/// Rate the first [count] items of the sequence directly on the backend, as
+/// another session earlier today.
 Future<void> _preRate(MockHumorDataSource source, int count) async {
-  for (final item in MockHumorDataSource.seedCatalog.take(count)) {
+  for (final contentId in source.sequenceIds.take(count)) {
     await source.submitFeedback(
-      contentId: item.contentId,
+      contentId: contentId,
       rating: HumorRating.funny,
     );
   }
@@ -124,12 +132,10 @@ void main() {
   final l10n = l10nTr();
 
   group('navigation', () {
-    testWidgets('a calibrated user opening the Lab stays and keeps learning', (
-      tester,
-    ) async {
+    testWidgets('a calibrated user opening the Lab finds no feed, and is '
+        'pointed at the daily tour', (tester) async {
       await withFakeNetworkImages(() async {
-        final source = MockHumorDataSource();
-        await _preRate(source, HumorCalibration.totalInteractions);
+        final source = MockHumorDataSource()..completeCalibration();
         final router = _router(AppRoutes.discovery);
         await tester.pumpWidget(_routerApp(router, source));
         await _settle(tester);
@@ -139,14 +145,17 @@ void main() {
 
         expect(find.byType(HumorLabPage), findsOneWidget);
         expect(find.byType(HumorCalibrationResultPage), findsNothing);
-        expect(find.text(l10n.humorLabTitle), findsWidgets);
+        // Nothing to rate here: the next items come with the daily tour.
+        expect(find.byType(HumorRatingBar), findsNothing);
+        expect(find.text(l10n.humorLabCalibratedBody), findsOneWidget);
+        expect(source.profile.interactionCount, _total);
 
-        await tester.tap(_ratingChip(l10n.humorRatingFunny));
+        await tester.tap(find.text(l10n.humorDailyTitle));
         await _settle(tester);
 
-        expect(source.profile.interactionCount, 16);
-        expect(find.byType(HumorLabPage), findsOneWidget);
-        expect(find.byType(HumorCalibrationResultPage), findsNothing);
+        expect(find.text(_dailyMarker), findsOneWidget);
+        expect(find.byType(HumorLabPage), findsNothing);
+        expect(source.profile.interactionCount, _total);
       });
     });
 
@@ -175,7 +184,10 @@ void main() {
         expect(find.byType(HumorCalibrationIntroPage), findsOneWidget);
         // Back on the invitation, which now knows about the progress made.
         expect(find.text(l10n.humorCalibrationResume), findsOneWidget);
-        expect(find.text(l10n.humorCalibrationProgress(1, 15)), findsOneWidget);
+        expect(
+          find.text(l10n.humorCalibrationProgress(1, _total)),
+          findsOneWidget,
+        );
 
         // Skipping from a pushed invitation goes back where it came from.
         await tester.tap(find.text(l10n.humorCalibrationSkip).last);
@@ -201,19 +213,19 @@ void main() {
       });
     });
 
-    testWidgets('the fifteenth rating hands off to the result screen', (
+    testWidgets('the last rating hands off to the result screen', (
       tester,
     ) async {
       await withFakeNetworkImages(() async {
         final source = MockHumorDataSource();
-        await _preRate(source, HumorCalibration.totalInteractions - 1);
+        await _preRate(source, _total - 1);
         final router = _router(AppRoutes.discovery);
         await tester.pumpWidget(_routerApp(router, source));
         await _settle(tester);
         unawaited(router.push<void>(AppRoutes.humorLab));
         await _settle(tester);
         expect(
-          find.text(l10n.humorCalibrationProgress(14, 15)),
+          find.text(l10n.humorCalibrationProgress(_total - 1, _total)),
           findsOneWidget,
         );
 
@@ -255,6 +267,10 @@ void main() {
             path: AppRoutes.humorLab,
             builder: (_, _) => const Scaffold(body: Text('lab')),
           ),
+          GoRoute(
+            path: AppRoutes.humorResult,
+            builder: (_, _) => const Scaffold(body: Text('profile')),
+          ),
         ],
       );
     }
@@ -268,7 +284,7 @@ void main() {
       await _settle(tester);
 
       expect(
-        find.text(l10n.humorProfileEntryInProgress(4, 15)),
+        find.text(l10n.humorProfileEntryInProgress(4, _total)),
         findsOneWidget,
       );
       await tester.tap(find.text(l10n.humorLabDiscoverCta));
@@ -276,17 +292,18 @@ void main() {
       expect(find.text('intro'), findsOneWidget);
     });
 
-    testWidgets('goes straight to the Lab once calibration is done', (
-      tester,
-    ) async {
-      final source = MockHumorDataSource();
-      await _preRate(source, HumorCalibration.totalInteractions);
+    testWidgets('opens the humor profile once calibration is done — never '
+        'an open-ended feed', (tester) async {
+      final source = MockHumorDataSource()..completeCalibration();
       await tester.pumpWidget(entryApp(entryRouter(), source));
       await _settle(tester);
 
-      await tester.tap(find.text(l10n.humorLabDiscoverCta));
+      expect(find.text(l10n.humorLabDiscoverCta), findsNothing);
+      expect(find.text(l10n.humorProfileEntryComplete), findsOneWidget);
+      await tester.tap(find.text(l10n.humorProfileTitle));
       await _settle(tester);
-      expect(find.text('lab'), findsOneWidget);
+      expect(find.text('profile'), findsOneWidget);
+      expect(find.text('lab'), findsNothing);
     });
   });
 
@@ -309,7 +326,10 @@ void main() {
 
         expect(find.byType(SnackBar), findsOneWidget);
         expect(controller.state.currentIndex, 0);
-        expect(find.text(l10n.humorCalibrationProgress(0, 15)), findsOneWidget);
+        expect(
+          find.text(l10n.humorCalibrationProgress(0, _total)),
+          findsOneWidget,
+        );
 
         source.failFeedback = false;
         await tester.tap(find.byType(SnackBarAction));
@@ -317,13 +337,15 @@ void main() {
 
         expect(controller.state.currentIndex, 1);
         expect(source.profile.interactionCount, 1);
-        expect(find.text(l10n.humorCalibrationProgress(1, 15)), findsOneWidget);
+        expect(
+          find.text(l10n.humorCalibrationProgress(1, _total)),
+          findsOneWidget,
+        );
       });
     });
 
-    testWidgets('skip moves on without counting; there is no save button', (
-      tester,
-    ) async {
+    testWidgets('there is no skip and no save button: every item is a '
+        'measurement', (tester) async {
       await withFakeNetworkImages(() async {
         final source = MockHumorDataSource();
         final controller = HumorController(
@@ -334,24 +356,21 @@ void main() {
         );
         await _settle(tester);
 
+        expect(find.byType(HumorRatingBar), findsOneWidget);
         expect(find.byIcon(Icons.bookmark_border_rounded), findsNothing);
-
-        await tester.tap(find.text(l10n.humorSkipContent));
-        await _settle(tester);
-
-        expect(controller.state.currentIndex, 1);
-        expect(source.skipCalls, 1);
-        expect(source.profile.interactionCount, 0);
-        expect(find.text(l10n.humorCalibrationProgress(0, 15)), findsOneWidget);
+        expect(find.byIcon(MevoraIcons.skip), findsNothing);
+        for (final label in ['Geç', 'Skip']) {
+          expect(find.text(label), findsNothing);
+        }
+        expect(source.skipCalls, 0);
       });
     });
 
-    testWidgets('the end of the feed is shown instead of a rated card', (
-      tester,
-    ) async {
+    testWidgets('finishing shows the end instead of a rated card, with '
+        'nothing more to rate', (tester) async {
       await withFakeNetworkImages(() async {
         final source = MockHumorDataSource();
-        await _preRate(source, MockHumorDataSource.seedCatalog.length - 1);
+        await _preRate(source, _total - 1);
         final controller = HumorController(
           repository: HumorRepositoryImpl(dataSource: source),
         );
@@ -365,24 +384,24 @@ void main() {
         await _settle(tester);
 
         expect(controller.state.reachedEnd, isTrue);
-        expect(find.text(l10n.humorFeedAllCaughtUp), findsOneWidget);
+        expect(find.text(l10n.humorLabCalibratedBody), findsOneWidget);
         expect(_ratingControlsVisible(tester), isFalse);
-        expect(find.text(l10n.humorTryAgain), findsOneWidget);
+        // No retry, no "more": the next items are tomorrow's.
+        expect(find.text(l10n.humorTryAgain), findsNothing);
+        expect(source.profile.interactionCount, _total);
       });
     });
 
-    testWidgets('rating through a longer feed lands on the end page', (
+    testWidgets('rating through several items lands on the end page', (
       tester,
     ) async {
       // Regression: hiding the rating controls used to grow the pager while
       // it was still animating to the end slot, so it stopped short and left
       // an already-rated card on screen with no controls and no explanation.
       await withFakeNetworkImages(() async {
+        const remaining = 5;
         final source = MockHumorDataSource();
-        await _preRate(source, HumorCalibration.totalInteractions);
-        final remaining =
-            MockHumorDataSource.seedCatalog.length -
-            HumorCalibration.totalInteractions;
+        await _preRate(source, _total - remaining);
         final controller = HumorController(
           repository: HumorRepositoryImpl(dataSource: source),
         );
@@ -398,8 +417,38 @@ void main() {
         }
 
         expect(controller.state.reachedEnd, isTrue);
-        expect(find.text(l10n.humorFeedAllCaughtUp), findsOneWidget);
+        expect(find.text(l10n.humorLabCalibratedBody), findsOneWidget);
         expect(_ratingControlsVisible(tester), isFalse);
+      });
+    });
+
+    testWidgets('a calibration paused by media that would not play says it '
+        'continues tomorrow', (tester) async {
+      await withFakeNetworkImages(() async {
+        final source = MockHumorDataSource(
+          seed: MockHumorDataSource.seedCatalog.take(2).toList(),
+        );
+        final controller = HumorController(
+          repository: HumorRepositoryImpl(dataSource: source),
+        );
+        await tester.pumpWidget(
+          _plainApp(HumorLabPage(controller: controller), source: source),
+        );
+        await _settle(tester);
+
+        await controller.skipUnplayable(controller.state.current!.contentId);
+        await _settle(tester);
+        await tester.tap(_ratingChip(l10n.humorRatingFunny));
+        await _settle(tester);
+
+        expect(controller.state.continuesTomorrow, isTrue);
+        expect(find.text(l10n.humorCalibrationPausedTitle), findsOneWidget);
+        expect(find.text(l10n.humorCalibrationPausedBody), findsOneWidget);
+        // Not "all done", and not something to retry.
+        expect(find.text(l10n.humorLabCalibratedBody), findsNothing);
+        expect(find.text(l10n.humorFeedAllCaughtUp), findsNothing);
+        expect(find.text(l10n.humorTryAgain), findsNothing);
+        expect(source.profile.interactionCount, 1);
       });
     });
   });

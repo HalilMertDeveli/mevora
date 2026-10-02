@@ -48,6 +48,18 @@ else
                         <dt>@L["Checks"]</dt><dd>@L["{0} attempt(s)", p.S("processingAttempts", "0")] @(p.Str("processingError") is { } err ? $"· {err}" : "")</dd>
                         <dt>@L["Waiting"]</dt><dd>@L.Age(p, "updatedAt")</dd>
                         <dt>@L["Open reports"]</dt><dd>@p.S("openReportCount", "?")</dd>
+                        @if (p.Str("faceAnchor") == "verified")
+                        {
+                            <dt>@L["Face Anchor"]</dt><dd>@L["Verified as the member. Rejecting it removes their verified photo."]</dd>
+                        }
+                        @if (p.Bool("removedByMember"))
+                        {
+                            <dt>@L["Profile"]</dt><dd>@L["Removed by the member. Approving deletes the kept copy; the photo is not put back."]</dd>
+                        }
+                        else if (p.Str("onProfile") == "false")
+                        {
+                            <dt>@L["Profile"]</dt><dd>@L["Not on the member's profile. A decision is recorded, but the photo is not added back."]</dd>
+                        }
                     </dl>
                     @if (p.Str("lock") == "another_reviewer")
                     {

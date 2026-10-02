@@ -4,6 +4,7 @@ import 'package:mevora/core/di/demo_social_hub.dart';
 import 'package:mevora/features/chat/domain/models/chat_message.dart';
 import 'package:mevora/features/chat/domain/repositories/chat_repository.dart';
 import 'package:mevora/features/matching/data/memory/graph_repositories.dart';
+import 'package:mevora/features/matching/data/unreadable_match.dart';
 import 'package:mevora/features/matching/domain/models/match.dart';
 import 'package:mevora/features/matching/domain/models/match_list_item.dart';
 import 'package:mevora/features/matching/domain/repositories/match_repository.dart';
@@ -94,7 +95,7 @@ class OverlayMatchRepository implements MatchRepository {
       yield* hub.matches.watchMatch(matchId);
       return;
     }
-    yield* remote.watchMatch(matchId).handleError((Object error, StackTrace stackTrace) {});
+    yield* remote.watchMatch(matchId).unreadableAsNull();
   }
 
   @override

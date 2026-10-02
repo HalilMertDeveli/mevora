@@ -7,15 +7,21 @@ class ProfilePhoto {
     required this.storagePath,
     this.downloadUrl,
     this.thumbUrl,
+    this.cardUrl,
     this.moderationStatus = 'pending',
     this.order = 0,
     this.isPrimary = false,
+    this.isFaceAnchorVerified = false,
   });
 
   final String id;
   final String storagePath;
   final String? downloadUrl;
   final String? thumbUrl;
+
+  /// Server-rendered card-size variant. Written only by moderation; the client
+  /// round-trips it so reordering photos does not strip it.
+  final String? cardUrl;
 
   /// `pending` | `approved` | `rejected`. Clients cannot mark approved.
   final String moderationStatus;
@@ -26,25 +32,40 @@ class ProfilePhoto {
   /// Primary photo shown on cards. Exactly one photo should be primary.
   final bool isPrimary;
 
+  /// Whether the server matched this photo to the live account owner.
+  ///
+  /// Display only. The server decides it, writes it and re-imposes it on every
+  /// profile write; the client round-trips the value so reordering photos does
+  /// not strip it, and setting it here verifies nothing.
+  final bool isFaceAnchorVerified;
+
   bool get isPublic => moderationStatus == 'approved';
+
+  /// A verified photo that is also approved: the only kind that may be the
+  /// primary photo.
+  bool get isFaceAnchor => isFaceAnchorVerified && isPublic;
 
   ProfilePhoto copyWith({
     String? id,
     String? storagePath,
     String? downloadUrl,
     String? thumbUrl,
+    String? cardUrl,
     String? moderationStatus,
     int? order,
     bool? isPrimary,
+    bool? isFaceAnchorVerified,
   }) {
     return ProfilePhoto(
       id: id ?? this.id,
       storagePath: storagePath ?? this.storagePath,
       downloadUrl: downloadUrl ?? this.downloadUrl,
       thumbUrl: thumbUrl ?? this.thumbUrl,
+      cardUrl: cardUrl ?? this.cardUrl,
       moderationStatus: moderationStatus ?? this.moderationStatus,
       order: order ?? this.order,
       isPrimary: isPrimary ?? this.isPrimary,
+      isFaceAnchorVerified: isFaceAnchorVerified ?? this.isFaceAnchorVerified,
     );
   }
 }
@@ -83,6 +104,9 @@ class UserProfile {
 
   final String uid;
   final String displayName;
+
+  /// Private to its owner: other members' profiles never carry it, only
+  /// [age]. Set on the owner's own draft from their account document.
   final DateTime? birthDate;
   final int? age;
   final String? gender;

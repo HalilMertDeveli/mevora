@@ -80,25 +80,7 @@ class PresenceLifecycleController with WidgetsBindingObserver {
     _startHeartbeat();
     try {
       await _presence.setOnline(uid);
-      // #region agent log
-      // ignore: avoid_print
-      print(
-        '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"post-fix",'
-        '"hypothesisId":"H6","location":"presence_lifecycle_controller.dart",'
-        '"message":"presence_set_online_ok","data":{"uidLen":${uid.length}},'
-        '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
-      );
-      // #endregion
-    } on Object catch (error) {
-      // #region agent log
-      // ignore: avoid_print
-      print(
-        '[PHOTO_DEBUG] {"sessionId":"80971b","runId":"post-fix",'
-        '"hypothesisId":"H6","location":"presence_lifecycle_controller.dart",'
-        '"message":"presence_set_online_error","data":{"error":"$error"},'
-        '"timestamp":${DateTime.now().millisecondsSinceEpoch}}',
-      );
-      // #endregion
+    } on Object {
       // Chat must keep working when presence writes fail.
     }
   }

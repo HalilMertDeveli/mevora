@@ -5,7 +5,7 @@ import {loadActiveMatchPartnerIds} from "./discoveryMatching.js";
 import {shapeIncomingLikesResponse, type IncomingLikeItem} from "./incomingLikesShape.js";
 import {buildCompatibilitySnapshotFromProfiles} from "./compatibility/compatibilitySnapshot.js";
 import {isUserPremium} from "./premium.js";
-import {usableDiscoveryPhotos} from "./profileSafety.js";
+import {faceAnchorSatisfied, usableDiscoveryPhotos} from "./profileSafety.js";
 import {assertCallerAccountEligible} from "./accountGuard.js";
 
 if (getApps().length === 0) {
@@ -118,6 +118,10 @@ export const getIncomingLikes = onCall(callableOptions, async (request) => {
     }
     const data = profileSnap.data() ?? {};
     if (data.isDiscoverable === false) {
+      continue;
+    }
+    // A liker whose Face Anchor dropped is not shown anywhere else either.
+    if (!faceAnchorSatisfied(data)) {
       continue;
     }
     const item: IncomingLikeItem = {

@@ -66,14 +66,16 @@ class DiscoveryNetworkImage extends StatelessWidget {
         ),
       );
     }
-    if (!MevoraNetworkImages.isHttpUrl(url)) {
+    final provider = MevoraNetworkImages.provider(url);
+    if (provider == null) {
       return const PhotoUnavailablePlaceholder();
     }
     return SizedBox.expand(
-      child: Image.network(
-        url,
+      // Storage photos resolve to the disk-cached provider, so a card seen
+      // before an app restart is not downloaded again.
+      child: Image(
+        image: ResizeImage.resizeIfNeeded(cacheWidth, null, provider),
         fit: fit,
-        cacheWidth: cacheWidth,
         filterQuality: FilterQuality.medium,
         gaplessPlayback: true,
         frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {

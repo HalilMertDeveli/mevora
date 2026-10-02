@@ -851,6 +851,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingFirstName => 'Adın';
 
   @override
+  String get onboardingLastName => 'Soyadın';
+
+  @override
+  String get onboardingLastNamePrivate => 'Soyadın diğer üyelere gösterilmez.';
+
+  @override
   String get onboardingBirthDate => 'Doğum tarihin';
 
   @override
@@ -891,6 +897,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingErrorFirstName => 'Adını ekle.';
+
+  @override
+  String get onboardingErrorLastName => 'Soyadını ekle.';
 
   @override
   String get onboardingErrorGender => 'Kendini nasıl tanımladığını seç.';
@@ -957,6 +966,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingContinue => 'Devam et';
 
   @override
+  String get onboardingLogoutBody =>
+      'Tamamladığın adımlar kaydedildi. Tekrar giriş yaptığında kaldığın yerden devam edersin.';
+
+  @override
   String get onboardingEducation => 'Eğitim';
 
   @override
@@ -983,7 +996,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get onboardingPhotosHint =>
-      'En az 3 fotoğraf ekle. Sıralamak için sürükle — ilk fotoğraf ana fotoğrafındır.';
+      'En az 3 fotoğraf ekle. En az bir fotoğrafta yüzün net görünmeli. Diğer fotoğraflarında hobilerini, seyahatlerini, evcil hayvanını veya hayatından detayları gösterebilirsin.';
 
   @override
   String get onboardingPrimaryPhoto => 'Ana fotoğraf';
@@ -1451,7 +1464,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get maxAge => 'En yüksek yaş';
 
   @override
-  String get maxDistance => 'En fazla mesafe';
+  String get maxDistance => 'Tercih edilen mesafe (km)';
+
+  @override
+  String get maxDistanceHint =>
+      'Bu mesafenin içindeki kişiler önce gelir. Yeterli kişi yoksa Mevora 100 km\'ye kadar bakar.';
 
   @override
   String get matchesTitle => 'Eşleşmelerin';
@@ -1799,6 +1816,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportFakeProfile => 'Sahte profil';
 
   @override
+  String get reportChildSafety =>
+      'Çocuk güvenliği (reşit olmayan birini içeren cinsel içerik veya davranış)';
+
+  @override
   String get reportUnderage => 'Reşit değil';
 
   @override
@@ -1917,6 +1938,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get boostBuy => 'Boost satın al';
+
+  @override
+  String get boostOneTimePurchaseNote =>
+      'Boost tek seferlik bir satın almadır. Kendiliğinden yenilenmez.';
 
   @override
   String get boostPurchasing => 'Satın alma işlemi başlatılıyor...';
@@ -2296,10 +2321,20 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsPhotoPrimaryRequired => 'Bir birincil fotoğraf seç.';
 
   @override
+  String get settingsPhotoStillProcessing =>
+      'Bu fotoğraf hâlâ inceleniyor. Biraz sonra tekrar dene.';
+
+  @override
   String get settingsFirstNameRequired => 'Ad gerekli.';
 
   @override
   String get settingsFirstNameTooLong => 'Ad çok uzun.';
+
+  @override
+  String get settingsLastNameRequired => 'Soyad gerekli.';
+
+  @override
+  String get settingsLastNameTooLong => 'Soyad çok uzun.';
 
   @override
   String get settingsBioTooLong => 'Hakkında metni çok uzun.';
@@ -3363,7 +3398,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get termsPaidBody =>
-      'Boost ve diğer satın alımlar uygulama mağazası üzerinden işlenir. İadeler mağaza politikalarına tabidir.';
+      'Boost ve Premium uygulama mağazanız üzerinden satın alınır. Boost tek seferlik bir satın alımdır ve yenilenmez. Premium bir aboneliktir: mağaza hesabınızdan iptal edene kadar satın alırken gösterilen fiyatla otomatik olarak yenilenir; iptal ettiğinizde bir sonraki yenileme durur. İadeler, yasa aksini gerektirmedikçe mağaza politikalarına tabidir.';
 
   @override
   String get termsThirdPartyTitle => 'Üçüncü taraf hizmetler';
@@ -3405,7 +3440,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get termsEffectiveBody =>
-      'Bu Koşullar 23 Ağustos 2026 tarihinden itibaren geçerlidir.';
+      'Bu Koşullar 1 Ekim 2026 tarihinden itibaren geçerlidir.';
 
   @override
   String get privacyIntroTitle => 'Giriş';
@@ -3433,28 +3468,35 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacyProfileBody =>
-      'Sağladığınız profil bilgileri ve fotoğraflar Firebase Firestore ve Storage\'da profilinizi göstermek ve eşleşmeyi sağlamak için saklanır.';
+      'Sağladığınız profil bilgileri (ad, doğum tarihi, cinsiyet, kiminle tanışmak istediğiniz, biyografi, tercihler, ilişki yanıtları, mizah puanları ve fotoğraflar) profilinizi göstermek ve eşleşmeyi sağlamak için Firebase Firestore ve Firebase Storage\'da saklanır. Diğer üyeler doğum tarihinizi değil yaşınızı görür; soyadınız gizli kalır.';
+
+  @override
+  String get privacyVerificationTitle => 'Fotoğraf ve kimlik doğrulama';
+
+  @override
+  String get privacyVerificationBody =>
+      'Bir profilin gerçek bir kişiye ait olduğunu doğrulamak için sizden bir özçekim isteyebiliriz. Özçekim, doğrulama sağlayıcımız Didit\'e gönderilir; Didit görüntünün canlı bir kişiye ait olduğunu ve profil fotoğrafınızla eşleştiğini kontrol eder. Biz özçekimi değil kontrolün sonucunu saklarız; özçekim kontrol bittiğinde silinir. Kimlik doğrulama isteğe bağlıdır: seçerseniz Didit kimlik belgenizi ve özçekiminizi doğrudan işler, Mevora yalnızca sonucu saklar.';
 
   @override
   String get privacyLocationTitle => 'Konum bilgisi';
 
   @override
   String get privacyLocationBody =>
-      'İzninizle yaklaşık konum, yakındaki uyumlu kişileri göstermek için kullanılır. Keşfet sonuçlarında tam koordinatlar diğer kullanıcılara açıklanmaz.';
+      'İzninizle cihaz konumunuzu, yakınınızdaki uyumlu kişileri göstermek için kullanırız. Koordinatlarınız bu amaçla sunucularımızda saklanır ve diğer üyelere hiçbir zaman gösterilmez; onlar yalnızca şehrinizi ve yaklaşık mesafeyi görür.';
 
   @override
   String get privacyMessagingTitle => 'Mesajlar ve aramalar';
 
   @override
   String get privacyMessagingBody =>
-      'Sohbet mesajları, sesli notlar, görseller, yazıyor göstergesi ve arama meta verileri hizmeti sunmak için saklanır. Her iki taraf anahtar yayınladığında mesajlar uçtan uca şifrelenebilir.';
+      'Mesaj metinleri, sesli notlar ve görseller uçtan uca şifrelenir: cihazınızda şifrelenir ve sunucularımızda yalnızca bizim okuyamadığımız şifreli hâli saklanır. Mesajları iletebilmek için kimin kime, ne zaman, hangi türde mesaj gönderdiğini ve okunup okunmadığını, ayrıca arama kayıtlarını saklarız.';
 
   @override
   String get privacyMatchingTitle => 'Eşleşme bilgileri';
 
   @override
   String get privacyMatchingBody =>
-      'Beğeniler, geçmeler, eşleşmeler, uyumluluk sinyalleri ve etkileşim geçmişi keşfet ve eşleşmeler için saklanır.';
+      'Beğeniler, geçmeler, eşleşmeler, günlük sorulara verdiğiniz yanıtlar, mizah puanları, uyumluluk sinyalleri ve etkileşim geçmişi keşfet ve eşleşmeler için saklanır.';
 
   @override
   String get privacyPreferencesTitle => 'Kullanıcı tercihleri';
@@ -3475,7 +3517,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacyDeviceBody =>
-      'Push bildirimleri, tanılama ve güvenlik kayıtları için cihaz belirteçleri Firebase altyapısı üzerinden işlenir.';
+      'Push bildirim belirteçlerini ve Firebase Crashlytics ile Google Analytics for Firebase üzerinden, adınıza değil uygulama kurulumuna bağlı çökme raporlarını ve kullanım istatistiklerini işleriz. Mevora reklam göstermez ve reklam kimliğinizi kullanmaz.';
 
   @override
   String get privacyWhyTitle => 'Neden toplanıyor?';
@@ -3496,21 +3538,21 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacyRetentionBody =>
-      'Hesabınız aktifken veriler saklanır. Hesabı sildiğinizde, yasa veya dolandırıcılık önleme gerektirmedikçe ilişkili veriler silinir veya anonimleştirilir.';
+      'Hesabınız aktifken veriler saklanır. Hesabınızı sildiğinizde profiliniz, fotoğraflarınız, mesajlarınız, beğenileriniz, yanıtlarınız ve satın alma kayıtlarınız silinir. Parçası olduğunuz eşleşmeler kapatılır ve artık adınızı ya da fotoğrafınızı göstermez; güvenlik ve moderasyon işlemlerine ait kayıtlar ise üyeleri korumak, dolandırıcılığı önlemek veya yasal yükümlülükleri yerine getirmek için gerektiğinde saklanabilir.';
 
   @override
   String get privacySharingTitle => 'Kimlerle paylaşılabiliyor?';
 
   @override
   String get privacySharingBody =>
-      'Kişisel verileri satmayız. Firebase, uygulama mağazaları, Spotify ve doğrulama sağlayıcılarıyla yalnızca hizmeti sunmak için paylaşırız.';
+      'Kişisel verileri satmayız. Verileri yalnızca Mevora\'yı çalıştırmak için gereken hizmet sağlayıcılarla paylaşırız: Google (Firebase barındırma, kimlik doğrulama, bildirimler, çökme raporları ve analiz; satın alımlar için Google Play), bağlarsanız Spotify, fotoğraf ve kimlik doğrulaması için Didit ve cihazınızın mizah içeriğini doğrudan yüklediği GIPHY.';
 
   @override
   String get privacyRightsTitle => 'Haklarınız';
 
   @override
   String get privacyRightsBody =>
-      'Bölgenize göre erişim, düzeltme, silme veya kısıtlama talep edebilirsiniz. Hesap silme Ayarlar\'da mevcuttur.';
+      'Bölgenize göre erişim, düzeltme, silme veya kısıtlama talep edebilirsiniz. Verilerinizin bir kopyasını Ayarlar → Hesap → Verilerimi indir bölümünden indirebilir, hesabınızı Ayarlar\'dan silebilirsiniz.';
 
   @override
   String get privacyDeletionTitle => 'Verilerinizi silme';
@@ -3524,14 +3566,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacySecurityBody =>
-      'Erişim kontrolleri, aktarım şifrelemesi, isteğe bağlı mesaj şifrelemesi ve Firebase güvenlik kuralları kullanıyoruz. Sorunları destek üzerinden bildirin.';
+      'Erişim kontrolleri, aktarım şifrelemesi, mesaj içeriğinin uçtan uca şifrelenmesi ve Firebase güvenlik kuralları kullanıyoruz. Hiçbir sistem tamamen güvenli değildir; sorunları destek üzerinden bildirin.';
 
   @override
   String get privacyChildrenTitle => 'Çocuklar';
 
   @override
   String get privacyChildrenBody =>
-      'Mevora 18 yaş altı kullanıcılar içindir. Reşit olmayan hesaplar silinir.';
+      'Mevora 18 yaşından küçükler için değildir. 18 yaşından küçük birine ait olduğu anlaşılan hesaplar kapatılır.';
 
   @override
   String get privacyChangesTitle => 'Politika değişiklikleri';
@@ -3821,46 +3863,46 @@ class AppLocalizationsTr extends AppLocalizations {
   String get cohabitationNo => 'İstemiyorum';
 
   @override
-  String get languageGerman => 'Almanca';
+  String get languageGerman => 'Almanca 🇩🇪';
 
   @override
-  String get languageFrench => 'Fransızca';
+  String get languageFrench => 'Fransızca 🇫🇷';
 
   @override
-  String get languageSpanish => 'İspanyolca';
+  String get languageSpanish => 'İspanyolca 🇪🇸';
 
   @override
-  String get languageItalian => 'İtalyanca';
+  String get languageItalian => 'İtalyanca 🇮🇹';
 
   @override
-  String get languageRussian => 'Rusça';
+  String get languageRussian => 'Rusça 🇷🇺';
 
   @override
-  String get languageArabic => 'Arapça';
+  String get languageArabic => 'Arapça 🌐';
 
   @override
-  String get languagePersian => 'Farsça';
+  String get languagePersian => 'Farsça 🌐';
 
   @override
-  String get languageKurdish => 'Kürtçe';
+  String get languageKurdish => 'Kürtçe 🌐';
 
   @override
-  String get languageGreek => 'Yunanca';
+  String get languageGreek => 'Yunanca 🇬🇷';
 
   @override
-  String get languageDutch => 'Hollandaca';
+  String get languageDutch => 'Hollandaca 🇳🇱';
 
   @override
-  String get languagePortuguese => 'Portekizce';
+  String get languagePortuguese => 'Portekizce 🇵🇹';
 
   @override
-  String get languageChinese => 'Çince';
+  String get languageChinese => 'Çince 🌐';
 
   @override
-  String get languageJapanese => 'Japonca';
+  String get languageJapanese => 'Japonca 🇯🇵';
 
   @override
-  String get languageKorean => 'Korece';
+  String get languageKorean => 'Korece 🇰🇷';
 
   @override
   String get hobbyWorkingOut => 'Spor yapmak';
@@ -4084,9 +4126,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorTopVibes => 'Öne çıkan tarzların';
 
   @override
-  String get humorSkipContent => 'Geç';
-
-  @override
   String get humorReport => 'Şikayet et';
 
   @override
@@ -4297,7 +4336,20 @@ class AppLocalizationsTr extends AppLocalizations {
       'Birkaç kısa içeriğe tepki ver. Verdiğin tepkiler mizah zevkini anlamamıza yardımcı olur; böylece eşleşmelerinle ortak mizahınızı sana gösterebiliriz.';
 
   @override
-  String get humorCalibrationIntroMeta => '15 kısa içerik · yaklaşık 1 dakika';
+  String humorCalibrationIntroMeta(int count) {
+    return '$count kısa içerik · yaklaşık 1 dakika';
+  }
+
+  @override
+  String get humorCalibrationPausedTitle => 'Bugünlük bu kadar';
+
+  @override
+  String get humorCalibrationPausedBody =>
+      'Bir içerik oynatılamadı. Kalanı yarın seni bekliyor; mizah profilin o zaman tamamlanacak.';
+
+  @override
+  String get humorLabCalibratedBody =>
+      'Bundan sonra her gün birkaç yeni içerikle devam ediyoruz.';
 
   @override
   String get humorCalibrationStart => 'Başla';
@@ -4371,9 +4423,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String humorResultContrast(String weakest) {
     return '$weakest ise pek işlemiyor.';
   }
-
-  @override
-  String get humorResultKeepGoing => 'Mizah profilini geliştirmeye devam et';
 
   @override
   String get humorResultDone => 'Devam et';
@@ -4474,6 +4523,50 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get premiumRenewsLabel =>
       'Otomatik yenilenir. İstediğin zaman mağazadan iptal edebilirsin.';
+
+  @override
+  String get premiumPlanBilledMonthly => 'Aylık faturalanır';
+
+  @override
+  String get premiumPlanBilledYearly => 'Yıllık faturalanır';
+
+  @override
+  String premiumPricePerMonth(String price) {
+    return '$price / ay';
+  }
+
+  @override
+  String premiumPricePerYear(String price) {
+    return '$price / yıl';
+  }
+
+  @override
+  String premiumRenewalMonthly(String price) {
+    return 'Aboneliğin, sen iptal edene kadar her ay $price üzerinden otomatik yenilenir.';
+  }
+
+  @override
+  String premiumRenewalYearly(String price) {
+    return 'Aboneliğin, sen iptal edene kadar her yıl $price üzerinden otomatik yenilenir.';
+  }
+
+  @override
+  String premiumRenewalGeneric(String price) {
+    return 'Aboneliğin, sen iptal edene kadar her fatura döneminde $price üzerinden otomatik yenilenir.';
+  }
+
+  @override
+  String premiumCancelHow(String store) {
+    return 'İstediğin zaman $store > Abonelikler bölümünden iptal edebilirsin. Ödediğin dönemin sonuna kadar Premium açık kalır.';
+  }
+
+  @override
+  String get premiumManageSubscription => 'Aboneliği yönet';
+
+  @override
+  String premiumManageSubscriptionFailed(String store) {
+    return '$store açılamadı. Aboneliğini yönetmek için $store > Abonelikler bölümüne git.';
+  }
 
   @override
   String get musicFollowedArtistsTitle => 'Takip ettiğin sanatçılar';
@@ -4772,13 +4865,20 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorDailyHintMiddle => 'Biraz daha tanıyoruz 👀';
 
   @override
-  String get humorDailyHintEnd => 'Son birkaç video.';
+  String get humorDailyHintEnd => 'Neredeyse bitti.';
 
   @override
   String get humorDailyCompletedTitle => 'Bugünlük tamam 🎭';
 
   @override
   String get humorDailyCompletedBody => 'Mizah profilin biraz daha netleşti.';
+
+  @override
+  String get humorDailyCompletedTomorrow => 'Yarın yeni tur seni bekliyor.';
+
+  @override
+  String get humorDailySequenceComplete =>
+      'Şimdilik tüm içerikleri tamamladın. Yenileri eklendiğinde tur devam edecek.';
 
   @override
   String get humorDailyNotReadyTitle => 'Bugünün turu hazırlanıyor';
@@ -5036,4 +5136,142 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get moderationAppealFailed =>
       'İtirazın gönderilemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get faceAnchorRequiredNotice =>
+      'Devam etmek için yüzünün net göründüğü bir fotoğrafını doğrula.';
+
+  @override
+  String get faceAnchorVerifyAction => 'Fotoğrafını doğrula';
+
+  @override
+  String get faceAnchorVerifyShort => 'Doğrula';
+
+  @override
+  String get faceAnchorVerified => 'Bu fotoğraf doğrulandı';
+
+  @override
+  String get faceAnchorVerifiedShort => 'Doğrulandı';
+
+  @override
+  String get faceAnchorPending => 'Doğrulama bekleniyor';
+
+  @override
+  String get faceAnchorPhotoInReview => 'Fotoğraf inceleniyor';
+
+  @override
+  String get faceAnchorNotVerified => 'Doğrulanamadı';
+
+  @override
+  String get faceAnchorRetry => 'Tekrar dene';
+
+  @override
+  String get faceAnchorMismatch => 'Bu fotoğraf çektiğin selfie ile eşleşmedi.';
+
+  @override
+  String get faceAnchorLivenessFailed =>
+      'Canlılık doğrulaması tamamlanamadı. Aydınlık bir yerde, doğrudan kameraya bakarak tekrar dene.';
+
+  @override
+  String get faceAnchorPhotoUnclear =>
+      'Bu fotoğrafta yüzün tek başına ve net görünmüyor. Yalnızca senin göründüğün bir fotoğraf seç.';
+
+  @override
+  String get faceAnchorSelfieInvalid =>
+      'Selfie kullanılamadı. Kameranla yeni bir selfie çekip tekrar dene.';
+
+  @override
+  String get faceAnchorTechnicalError =>
+      'Doğrulama şu anda tamamlanamadı. Fotoğrafın doğrulanmadı; biraz sonra tekrar dene.';
+
+  @override
+  String get faceAnchorPrimaryRequiresVerify =>
+      'Bu fotoğrafı ana fotoğraf yapmak için önce doğrula.';
+
+  @override
+  String get faceAnchorLastAnchorDelete =>
+      'Son doğrulanmış fotoğrafını silemezsin. Önce başka bir fotoğrafını doğrula.';
+
+  @override
+  String get faceAnchorExplainBody =>
+      'Fotoğrafının gerçekten sana ait olduğundan emin olmak için kısa bir selfie kontrolü yapıyoruz.';
+
+  @override
+  String get faceAnchorExplainSteps =>
+      'Ön kameranla bir selfie çekeceksin. Selfie yalnızca bu kontrol için kullanılır, profilinde görünmez ve kontrol bitince silinir.';
+
+  @override
+  String get faceAnchorConsent =>
+      'Selfiemin bu fotoğrafla karşılaştırılması için işlenmesini kabul ediyorum.';
+
+  @override
+  String get faceAnchorTakeSelfie => 'Selfie çek';
+
+  @override
+  String get faceAnchorOpening => 'Hazırlanıyor…';
+
+  @override
+  String get faceAnchorCapturing => 'Kamera açılıyor…';
+
+  @override
+  String get faceAnchorUploading => 'Selfie gönderiliyor…';
+
+  @override
+  String get faceAnchorVerifying => 'Doğrulanıyor…';
+
+  @override
+  String get faceAnchorSuccessBody =>
+      'Bu fotoğraf artık ana fotoğrafın olabilir.';
+
+  @override
+  String get faceAnchorDone => 'Tamam';
+
+  @override
+  String get faceAnchorChooseAnother => 'Başka fotoğraf seç';
+
+  @override
+  String get faceAnchorPromptBody =>
+      'Profilinin gerçekten sana ait olduğunu göstermek için yüzünün net göründüğü bir fotoğrafını doğrula.';
+
+  @override
+  String get faceAnchorProfileVerifiedTitle => 'Profil fotoğrafın doğrulandı';
+
+  @override
+  String get faceAnchorPromptTileSubtitle =>
+      'Yüzünün göründüğü bir fotoğrafı kısa bir selfie ile doğrula';
+
+  @override
+  String get faceAnchorErrorUnavailable =>
+      'Fotoğraf doğrulama şu anda kullanılamıyor. Lütfen daha sonra tekrar dene.';
+
+  @override
+  String get faceAnchorErrorPhotoNotApproved =>
+      'Bu fotoğraf hâlâ inceleniyor. İnceleme bitince doğrulayabilirsin.';
+
+  @override
+  String get faceAnchorErrorCooldown => 'Biraz bekleyip tekrar dene.';
+
+  @override
+  String get faceAnchorErrorAttemptLimit =>
+      'Bugünlük deneme hakkın doldu. Yarın tekrar deneyebilirsin.';
+
+  @override
+  String get faceAnchorErrorCamera =>
+      'Kamera açılamadı. Kamera iznini kontrol edip tekrar dene.';
+
+  @override
+  String get faceAnchorErrorUpload =>
+      'Selfie gönderilemedi. Bağlantını kontrol edip tekrar dene.';
+
+  @override
+  String get faceAnchorErrorInProgress =>
+      'Bir doğrulama zaten sürüyor. Lütfen sonucu bekle.';
+
+  @override
+  String get faceAnchorErrorConsent =>
+      'Devam etmek için onay vermen gerekiyor.';
+
+  @override
+  String get faceAnchorErrorGeneric =>
+      'Doğrulama başlatılamadı. Lütfen tekrar dene.';
 }

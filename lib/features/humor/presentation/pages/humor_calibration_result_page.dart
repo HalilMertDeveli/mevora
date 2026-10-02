@@ -202,10 +202,12 @@ class _HumorCalibrationResultPageState
             const SizedBox(height: AppSpacing.xl),
             MevoraButton(label: l10n.humorResultDone, onPressed: _done),
             const SizedBox(height: AppSpacing.sm),
+            // The profile keeps learning through the daily tour — five items
+            // a day, starting the day after the calibration.
             MevoraButton(
-              label: l10n.humorResultKeepGoing,
+              label: l10n.humorDailyTitle,
               variant: MevoraButtonVariant.ghost,
-              onPressed: () => context.push(AppRoutes.humorLab),
+              onPressed: () => context.push(AppRoutes.humorDaily),
             ),
           ],
         ),

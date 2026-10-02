@@ -15,6 +15,7 @@ export interface PhotoRecord {
   storagePath?: string;
   downloadUrl?: string | null;
   thumbUrl?: string | null;
+  cardUrl?: string | null;
   moderationStatus?: string;
   moderationReason?: string | null;
   moderatedAt?: unknown;
@@ -24,6 +25,8 @@ export interface PhotoRecord {
   processingError?: string | null;
   order?: number;
   isPrimary?: boolean;
+  /** Server-owned projection of the ledger's Face Anchor verdict; absent unless true. */
+  faceAnchorVerified?: boolean;
 }
 
 export const MAX_PROCESSING_ATTEMPTS = 3;

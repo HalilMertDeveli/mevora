@@ -62,28 +62,7 @@ export async function loadActiveBoostSessions(
   const sessions = new Map<string, BoostSession>();
   try {
     const snap = await db.collectionGroup("boosts").where("status", "==", "active").get();
-    for (const doc of snap.docs) {
-      const data = doc.data();
-      const expires = data.expiresAt as Timestamp | undefined;
-      const expiresAt = expires && typeof expires.toDate === "function" ? expires.toDate() : null;
-      const started = data.startedAt as Timestamp | undefined;
-      const userId = typeof data.userId === "string" ? data.userId : "";
-      if (!userId || !expiresAt || expiresAt.getTime() <= now.getTime()) {
-        continue;
-      }
-      // Stacking extends one boost rather than opening a second, so the
-      // latest-ending period is this user's live session.
-      const existing = sessions.get(userId);
-      if (existing && existing.expiresAt.getTime() >= expiresAt.getTime()) {
-        continue;
-      }
-      sessions.set(userId, {
-        boostId: doc.id,
-        userId,
-        startedAt: started && typeof started.toDate === "function" ? started.toDate() : null,
-        expiresAt,
-      });
-    }
+    collectLiveSessions(snap.docs, now, sessions);
     return sessions;
   } catch (error) {
     // Missing collection-group index on boosts.status must not empty Discover.
@@ -91,6 +70,71 @@ export async function loadActiveBoostSessions(
       message: error instanceof Error ? error.message : String(error),
     });
     return new Map();
+  }
+}
+
+/** Adds each member's live session (the latest-ending active one) to `sessions`. */
+function collectLiveSessions(
+  docs: Array<{id: string; data: () => Record<string, unknown>}>,
+  now: Date,
+  sessions: Map<string, BoostSession>,
+): void {
+  for (const doc of docs) {
+    const data = doc.data();
+    const expires = data.expiresAt as Timestamp | undefined;
+    const expiresAt = expires && typeof expires.toDate === "function" ? expires.toDate() : null;
+    const started = data.startedAt as Timestamp | undefined;
+    const userId = typeof data.userId === "string" ? data.userId : "";
+    if (!userId || !expiresAt || expiresAt.getTime() <= now.getTime()) {
+      continue;
+    }
+    // Stacking extends one boost rather than opening a second, so the
+    // latest-ending period is this user's live session.
+    const existing = sessions.get(userId);
+    if (existing && existing.expiresAt.getTime() >= expiresAt.getTime()) {
+      continue;
+    }
+    sessions.set(userId, {
+      boostId: doc.id,
+      userId,
+      startedAt: started && typeof started.toDate === "function" ? started.toDate() : null,
+      expiresAt,
+    });
+  }
+}
+
+/**
+ * The live Boost sessions of these members only — for a pool scan, which
+ * needs to know about the page it is looking at, not every Boost in the
+ * system. One collection-group query per 30 members, billed per active Boost
+ * found (at least one read per query).
+ *
+ * Needs the collection-group index (status, userId) declared in
+ * firestore.indexes.json. Until it is deployed the query is refused; this
+ * then falls back to the global list, filtered — correct, just not cheaper.
+ */
+export async function loadActiveBoostSessionsFor(
+  db: Firestore,
+  uids: readonly string[],
+  now = new Date(),
+): Promise<Map<string, BoostSession>> {
+  const unique = [...new Set(uids.filter(Boolean))];
+  const sessions = new Map<string, BoostSession>();
+  if (unique.length === 0) return sessions;
+  try {
+    const chunks: string[][] = [];
+    for (let i = 0; i < unique.length; i += 30) chunks.push(unique.slice(i, i + 30));
+    const snaps = await Promise.all(chunks.map((chunk) =>
+      db.collectionGroup("boosts").where("status", "==", "active").where("userId", "in", chunk).get()));
+    for (const snap of snaps) collectLiveSessions(snap.docs, now, sessions);
+    return sessions;
+  } catch (error) {
+    logger.warn("boost_lookup_fallback", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    const wanted = new Set(unique);
+    const all = await loadActiveBoostSessions(db, now);
+    return new Map([...all].filter(([uid]) => wanted.has(uid)));
   }
 }
 

@@ -1,6 +1,7 @@
 import {randomBytes} from "node:crypto";
 import type {DocumentData, DocumentReference, Firestore} from "firebase-admin/firestore";
 import {logger} from "firebase-functions";
+import {HttpsError} from "firebase-functions/v2/https";
 import {coarseDistanceLabel} from "../geo/coarseDistance.js";
 import {discoveryProfileProjection} from "../profileSafety.js";
 import {DISCOVERY_MAX_RADIUS_KM} from "../discoveryFallback.js";
@@ -11,12 +12,13 @@ import {
   revalidatePoolCandidates,
   scanDiscoveryPool,
   type DiscoveryViewerContext,
+  type RevalidatedCandidate,
 } from "../discoveryPool.js";
 import type {CompatibilityEvidence} from "../compatibility/compatibilityEngine.js";
 import {loadUserHumorProfile} from "../humor/feed.js";
 import {humorScoreForPair, isHumorCalibrationReady} from "../humor/compatibility.js";
 import type {UserHumorProfileDoc} from "../humor/types.js";
-import {PICK_QUALITY, PICKS_CONFIG} from "./config.js";
+import {PICK_QUALITY, PICKS_CONFIG, PICKS_SIZING, picksSizing, type PicksSizing} from "./config.js";
 import {composePicks, evaluatePool} from "./selection.js";
 import {loadPersonalizationContext} from "../personalization/store.js";
 import {
@@ -34,6 +36,7 @@ import {
   newBatch,
   parseBatch,
   scrubCandidate,
+  topUpScanDue,
   topUpSlots,
   type PickCardSnapshot,
   type PickDecision,
@@ -189,6 +192,17 @@ function cardSnapshot(
 // Selection against the live pool.
 // ---------------------------------------------------------------------------
 
+/**
+ * The radius Picks look inside first for one viewer: the distance they chose in
+ * their match preferences (`userPreferences.maxDistance`, in km), never past the
+ * Discover hard ceiling. A viewer who has not chosen one gets the default.
+ */
+export function preferredRadiusKmFor(prefs: DocumentData | undefined): number {
+  const chosen = Number(prefs?.maxDistance);
+  if (!Number.isFinite(chosen) || chosen < 1) return PICKS_CONFIG.preferredRadiusKm;
+  return Math.min(chosen, DISCOVERY_MAX_RADIUS_KM);
+}
+
 async function selectFromPool(input: {
   db: Firestore;
   viewer: DiscoveryViewerContext;
@@ -198,13 +212,19 @@ async function selectFromPool(input: {
   firstRank: number;
   /** The batch's generation id: keeps exploration stable within a batch. */
   batchKey: string;
+  /** Collects the live Boost sessions the scan found, for impression measurement. */
+  boostSessions: Map<string, BoostSession>;
+  /** Scan bounds for this selection. */
+  sizing: Pick<PicksSizing, "scanPageSize" | "scanMaxPages" | "scanShortlistSize">;
 }): Promise<{
   composed: ReturnType<typeof composePicks>;
   cards: Map<string, PickCardSnapshot>;
   scanned: number;
+  /** What the scan read about every candidate it accepted (see DiscoveryPoolScan.accepted). */
+  accepted: Map<string, RevalidatedCandidate>;
 }> {
   const {db} = input;
-  if (input.slots <= 0) return {composed: [], cards: new Map(), scanned: 0};
+  if (input.slots <= 0) return {composed: [], cards: new Map(), scanned: 0, accepted: new Map()};
   // Batch members and cooling-down people are excluded up front, so they cost
   // no per-candidate scoring reads.
   const viewer: DiscoveryViewerContext = {
@@ -213,13 +233,13 @@ async function selectFromPool(input: {
   };
   const scan = await scanDiscoveryPool(db, viewer, {
     cursor: "",
-    radiusKm: PICKS_CONFIG.preferredRadiusKm,
+    radiusKm: preferredRadiusKmFor(viewer.prefs),
     gateKm: DISCOVERY_MAX_RADIUS_KM,
-    pageSize: PICKS_CONFIG.scanPageSize,
-    maxPages: PICKS_CONFIG.scanMaxPages,
+    pageSize: input.sizing.scanPageSize,
+    maxPages: input.sizing.scanMaxPages,
     shouldStop: (pool) =>
       pool.nearby.length + pool.extended.length + pool.far.length + pool.no_location.length >=
-      PICKS_CONFIG.scanShortlistSize,
+      input.sizing.scanShortlistSize,
   });
   const items = [
     ...scan.buckets.nearby,
@@ -238,6 +258,8 @@ async function selectFromPool(input: {
         humorByUid.set(String(item.uid), await humorFor(db, viewerHumor, String(item.uid)));
       }),
   );
+  // Boosted: whoever the viewer already knew about, plus what the scan looked up.
+  const boosted = new Set([...viewer.boosted, ...scan.boostSessions.keys()]);
   const signals = items.map((item) =>
     signalsFromPoolItem({
       item,
@@ -246,7 +268,7 @@ async function selectFromPool(input: {
       humor: humorByUid.get(String(item.uid)) ?? null,
       viewerProfile: viewer.viewerProfile,
       viewerHasLocation: scan.hasViewerLocation,
-      boosted: viewer.boosted,
+      boosted,
     }),
   );
   // The viewer's learned preferences: loaded once per selection, never per
@@ -268,7 +290,8 @@ async function selectFromPool(input: {
     const item = itemsByUid.get(pick.candidateUid);
     if (item) cards.set(pick.candidateUid, cardSnapshot(item, humorByUid.get(pick.candidateUid) ?? null));
   }
-  return {composed, cards, scanned: items.length};
+  for (const [boostedUid, session] of scan.boostSessions) input.boostSessions.set(boostedUid, session);
+  return {composed, cards, scanned: items.length, accepted: scan.accepted};
 }
 
 function newGenerationId(): string {
@@ -280,17 +303,24 @@ function newGenerationId(): string {
 // ---------------------------------------------------------------------------
 
 export type PicksStatus = "ready" | "lowSupply" | "empty";
+
+/**
+ * What one open did, for cost measurement: generated the day's batch, waited
+ * for another open's generation, reopened a live batch (with or without a
+ * replacement scan), or answered empty before looking at Picks at all.
+ */
+export type PicksCostPath = "generation" | "waited" | "reopen" | "topUp" | "empty";
 export type PicksEmptyReason = "allDecided" | "noCandidates" | "learningRequired" | null;
 
-function outcomeFor(
-  viewer: DiscoveryViewerContext,
-  uid: string,
-  rejectReason: string | null,
-): PickState {
-  if (viewer.matchedUids.has(uid)) return "matched";
-  if (viewer.likedUids.has(uid)) return "liked";
-  if (viewer.passedUids.has(uid)) return "passed";
-  return rejectReason ? "ineligible" : "active";
+/**
+ * A Pick's state after revalidation. A decision wins over ineligibility: a
+ * liked Pick whose account has since gone spent its slot, it does not open one.
+ * No check result at all means the profile could not be read: not servable.
+ */
+function outcomeFor(check: RevalidatedCandidate | undefined): PickState {
+  if (!check) return "ineligible";
+  if (check.decision) return check.decision;
+  return check.rejectReason ? "ineligible" : "active";
 }
 
 function sharedInterestsWith(viewerProfile: DocumentData, interests: unknown): string[] {
@@ -357,99 +387,84 @@ function pickPayload(input: {
  */
 export async function servePicks(input: {
   db: Firestore;
+  /**
+   * The viewer. Basics are enough (loadDiscoveryViewerBasics): every check
+   * about a specific person — decisions, blocks either way, a live Boost — is
+   * looked up for that person. A viewer with its history preloaded works too.
+   */
   viewer: DiscoveryViewerContext;
-  boostSessions: Map<string, BoostSession>;
+  /** Live Boost sessions, when the viewer was loaded with them. */
+  boostSessions?: Map<string, BoostSession>;
   nowMs?: number;
+  /** The size of a batch generated by this call. Tests vary it; production uses PICKS_SIZING. */
+  sizing?: PicksSizing;
+  /** Receives what this open did (see PicksCostPath). */
+  trace?: {path: PicksCostPath};
 }): Promise<Record<string, unknown>> {
-  const {db, viewer} = input;
+  const {db} = input;
+  const trace = input.trace ?? {path: "reopen"};
+  trace.path = "reopen";
   const nowMs = input.nowMs ?? Date.now();
+  const sizing = input.sizing ?? PICKS_SIZING;
+  const viewer = input.viewer;
+  // Sessions behind the boosted people a scan in this request placed.
+  const boostSessions = new Map(input.boostSessions ?? []);
   const ref = db.doc(picksDocPath(viewer.uid));
   const stored = parseBatch((await ref.get()).data());
   let batch: PicksBatch;
   let delivered: StoredPick[] = [];
+  // Candidates this request has already checked against the full rule chain
+  // (the pool scan that just picked them): not read a second time.
+  let known = new Map<string, RevalidatedCandidate>();
 
   if (!isBatchLive(stored, nowMs)) {
-    // Generate: the old batch's undecided Picks cool down, then the pool is
-    // scanned with everyone in the old batch and every cooldown excluded.
-    const cooldowns = cooldownsAfterExpiry(stored, nowMs);
-    const exclude = new Set([...excludedFromSelection(stored, nowMs), ...Object.keys(cooldowns)]);
-    const generationId = newGenerationId();
-    const {composed, cards} = await selectFromPool({
-      db,
-      viewer,
-      exclude,
-      slots: PICKS_CONFIG.targetCount,
-      existing: [],
-      firstRank: 0,
-      batchKey: generationId,
-    });
-    delivered = buildStoredPicks(generationId, composed, cards, nowMs);
-    const fresh = newBatch({generationId, nowMs, picks: delivered, cooldowns});
-    // Two concurrent opens must not both generate: the first write wins and
-    // the other request serves what it wrote.
-    batch = await db.runTransaction(async (tx) => {
-      const current = parseBatch((await tx.get(ref)).data());
-      if (
-        current &&
-        isBatchLive(current, nowMs) &&
-        current.generationId !== stored?.generationId
-      ) {
-        delivered = [];
-        return current;
-      }
-      tx.set(ref, fresh);
-      return fresh;
-    });
+    ({batch, delivered, known} = await generateOnce({db, ref, viewer, nowMs, sizing, boostSessions, trace}));
   } else {
     batch = stored as PicksBatch;
   }
 
   // Revalidate everything still active against the canonical rule chain.
+  // Reopening today's batch does not read the member's whole history: the
+  // decisions about these few people and the blocks either way are looked up
+  // pair by pair, so a block hides the Pick on the very next open.
   const active = activePicks(batch);
-  const checks = await revalidatePoolCandidates(
-    db,
-    viewer,
-    active.map((pick) => pick.candidateUid),
-    DISCOVERY_MAX_RADIUS_KM,
-  );
+  const toCheck = active.map((pick) => pick.candidateUid).filter((uid) => !known.has(uid));
+  const checks = await revalidatePoolCandidates(db, viewer, toCheck, DISCOVERY_MAX_RADIUS_KM);
+  for (const [uid, check] of known) checks.set(uid, check);
   const outcomes = new Map<string, PickState>();
   for (const pick of active) {
-    const check = checks.get(pick.candidateUid);
-    outcomes.set(
-      pick.candidateUid,
-      // No check result at all means the profile could not be read: not servable.
-      outcomeFor(viewer, pick.candidateUid, check ? check.rejectReason : "missing"),
-    );
+    outcomes.set(pick.candidateUid, outcomeFor(checks.get(pick.candidateUid)));
   }
   const revalidated = applyRevalidation(batch, outcomes, nowMs);
   let changed = revalidated.changed;
   batch = revalidated.batch;
 
-  // Fill open slots (a short first batch, or a Pick that stopped being
-  // eligible). Liked, passed and matched Picks keep their slot: today's set
-  // stays finite however fast the member decides.
-  if (delivered.length === 0 && needsTopUp(batch, nowMs)) {
-    const {composed, cards} = await selectFromPool({
+  // Replace Picks that stopped being eligible, one for one, within the day's
+  // ceiling. Liked, passed and matched Picks keep their slot, and a short
+  // batch stays short: today's set is finite however fast the member decides.
+  // The scan slot is claimed first, so two opens never pay for the same scan.
+  if (delivered.length === 0 && needsTopUp(batch, nowMs) && (await claimTopUpScan(db, ref, batch, nowMs))) {
+    trace.path = "topUp";
+    const {composed, cards, accepted} = await selectFromPool({
       db,
       viewer,
+      boostSessions,
       exclude: excludedFromSelection(batch, nowMs),
       slots: topUpSlots(batch),
       existing: activePicks(batch),
       firstRank: batch.picks.reduce((max, pick) => Math.max(max, pick.rank + 1), 0),
       batchKey: batch.generationId,
+      // Scan bounds follow the size the batch was generated with.
+      sizing: picksSizing(batch.targetCount),
     });
     const replacements = buildStoredPicks(batch.generationId, composed, cards, nowMs);
     batch = replacements.length > 0 ? appendPicks(batch, replacements, nowMs) : markScanned(batch, nowMs);
     delivered = replacements;
     changed = true;
-    if (replacements.length > 0) {
-      const replacementChecks = await revalidatePoolCandidates(
-        db,
-        viewer,
-        replacements.map((pick) => pick.candidateUid),
-        DISCOVERY_MAX_RADIUS_KM,
-      );
-      for (const [uid, check] of replacementChecks) checks.set(uid, check);
+    // The scan that chose them just checked them.
+    for (const pick of replacements) {
+      const check = accepted.get(pick.candidateUid);
+      if (check) checks.set(pick.candidateUid, check);
     }
   }
 
@@ -471,7 +486,8 @@ export async function servePicks(input: {
       db,
       viewerUid: viewer.uid,
       shownUids: delivered.filter((pick) => pick.isBoosted).map((pick) => pick.candidateUid),
-      sessions: input.boostSessions,
+      // Anything delivered came from a scan, which looked up its Boosts.
+      sessions: boostSessions,
     });
   }
 
@@ -490,7 +506,7 @@ export async function servePicks(input: {
       viewer,
     });
   });
-  const lowSupply = batch.deliveredCount < PICKS_CONFIG.targetCount;
+  const lowSupply = batch.deliveredCount < batch.targetCount;
   const status: PicksStatus = picks.length === 0 ? "empty" : lowSupply ? "lowSupply" : "ready";
   const decidedAny = batch.picks.some((pick) =>
     pick.state === "liked" || pick.state === "passed" || pick.state === "matched");
@@ -501,6 +517,8 @@ export async function servePicks(input: {
     visible: picks.length,
     delivered: delivered.length,
     deliveredInBatch: batch.deliveredCount,
+    targetCount: batch.targetCount,
+    maxDeliveredCount: batch.maxDeliveredCount,
     viewerHasLocation: hasLocation(viewer.origin),
   });
   return {
@@ -510,9 +528,156 @@ export async function servePicks(input: {
     generatedAtMs: batch.generatedAtMs,
     dayKey: logicalDayKey(batch.generatedAtMs),
     refreshAtMs: batch.refreshAtMs,
-    targetCount: PICKS_CONFIG.targetCount,
+    targetCount: batch.targetCount,
     picks,
   };
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+type GenerationClaim =
+  | {kind: "live"; batch: PicksBatch}
+  | {kind: "wait"}
+  | {kind: "acquired"; previous: PicksBatch | null};
+
+/**
+ * Takes the day's generation lease on the member's batch document, unless a
+ * live batch already exists (someone generated it meanwhile) or another open
+ * holds an unexpired lease. The lease is a field beside the batch; writing
+ * the fresh batch replaces the document and so releases it.
+ */
+async function claimGeneration(
+  db: Firestore,
+  ref: DocumentReference,
+  token: string,
+  nowMs: number,
+): Promise<GenerationClaim> {
+  return db.runTransaction(async (tx) => {
+    const raw = (await tx.get(ref)).data();
+    const current = parseBatch(raw);
+    if (current && isBatchLive(current, nowMs)) return {kind: "live", batch: current};
+    const lease = (raw?.generationLease ?? null) as {token?: unknown; untilMs?: unknown} | null;
+    const leaseUntil = Number(lease?.untilMs);
+    if (lease && lease.token !== token && Number.isFinite(leaseUntil) && leaseUntil > nowMs) {
+      return {kind: "wait"};
+    }
+    tx.set(ref, {generationLease: {token, untilMs: nowMs + PICKS_CONFIG.generationLeaseMs}}, {merge: true});
+    return {kind: "acquired", previous: current};
+  });
+}
+
+/** Drops this open's lease after a failed generation, so the next open need not wait it out. */
+async function releaseGeneration(db: Firestore, ref: DocumentReference, token: string): Promise<void> {
+  try {
+    await db.runTransaction(async (tx) => {
+      const raw = (await tx.get(ref)).data();
+      const lease = raw?.generationLease as {token?: unknown} | undefined;
+      if (lease?.token !== token) return;
+      const rest = {...raw};
+      delete rest.generationLease;
+      tx.set(ref, rest);
+    });
+  } catch (error) {
+    // The lease expires on its own; releasing it early is only a courtesy.
+    logger.warn("picks_generation_release_failed", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * Generates today's batch at most once per member, however many opens race
+ * for it. The winner scans the pool and writes the batch; every other open
+ * waits for that batch and serves it. If the winner dies, its lease lapses
+ * after `generationLeaseMs` and the next open takes over.
+ */
+async function generateOnce(input: {
+  db: Firestore;
+  ref: DocumentReference;
+  viewer: DiscoveryViewerContext;
+  nowMs: number;
+  sizing: PicksSizing;
+  boostSessions: Map<string, BoostSession>;
+  trace: {path: PicksCostPath};
+}): Promise<{batch: PicksBatch; delivered: StoredPick[]; known: Map<string, RevalidatedCandidate>}> {
+  const {db, ref, viewer, nowMs, sizing} = input;
+  const token = newGenerationId();
+  const startedAt = Date.now();
+  let previous: PicksBatch | null = null;
+  for (;;) {
+    const elapsed = Date.now() - startedAt;
+    const claim = await claimGeneration(db, ref, token, nowMs + elapsed);
+    if (claim.kind === "live") {
+      input.trace.path = "waited";
+      return {batch: claim.batch, delivered: [], known: new Map()};
+    }
+    if (claim.kind === "acquired") {
+      previous = claim.previous;
+      input.trace.path = "generation";
+      break;
+    }
+    if (elapsed > 2 * PICKS_CONFIG.generationLeaseMs) {
+      // A lease is renewed by nobody, so this only happens if the clock or
+      // the store misbehaves. Fail this open rather than spin.
+      throw new HttpsError("unavailable", "picks-generation-busy");
+    }
+    await sleep(PICKS_CONFIG.generationWaitPollMs);
+  }
+  try {
+    // The old batch's undecided Picks cool down, then the pool is scanned
+    // with everyone in the old batch and every cooldown excluded.
+    const cooldowns = cooldownsAfterExpiry(previous, nowMs);
+    const exclude = new Set([...excludedFromSelection(previous, nowMs), ...Object.keys(cooldowns)]);
+    const generationId = newGenerationId();
+    const {composed, cards, accepted} = await selectFromPool({
+      db,
+      viewer,
+      boostSessions: input.boostSessions,
+      exclude,
+      slots: sizing.targetCount,
+      existing: [],
+      firstRank: 0,
+      batchKey: generationId,
+      sizing,
+    });
+    const picks = buildStoredPicks(generationId, composed, cards, nowMs);
+    const fresh = newBatch({generationId, nowMs, picks, cooldowns, sizing});
+    return await db.runTransaction(async (tx) => {
+      const current = parseBatch((await tx.get(ref)).data());
+      // Our lease lapsed and another open wrote today's batch first: serve theirs.
+      if (current && isBatchLive(current, nowMs)) return {batch: current, delivered: [], known: new Map()};
+      tx.set(ref, fresh);
+      const known = new Map<string, RevalidatedCandidate>();
+      for (const pick of picks) {
+        const check = accepted.get(pick.candidateUid);
+        if (check) known.set(pick.candidateUid, check);
+      }
+      return {batch: fresh, delivered: picks, known};
+    });
+  } catch (error) {
+    await releaseGeneration(db, ref, token);
+    throw error;
+  }
+}
+
+/**
+ * Claims the replacement scan for this open by moving the scan clock, so a
+ * concurrent open of the same batch sees it as just scanned and skips its own
+ * scan. False when another open claimed it first or the batch moved on.
+ */
+async function claimTopUpScan(
+  db: Firestore,
+  ref: DocumentReference,
+  batch: PicksBatch,
+  nowMs: number,
+): Promise<boolean> {
+  return db.runTransaction(async (tx) => {
+    const current = parseBatch((await tx.get(ref)).data());
+    if (!current || current.generationId !== batch.generationId) return false;
+    if (!topUpScanDue(current, nowMs)) return false;
+    tx.update(ref, {lastScanAtMs: nowMs});
+    return true;
+  });
 }
 
 /**

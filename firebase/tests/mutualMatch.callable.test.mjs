@@ -22,8 +22,14 @@ import {initializeTestEnvironment} from "@firebase/rules-unit-testing";
 import {doc, getDoc, setDoc, Timestamp} from "firebase/firestore";
 
 const PROJECT_ID = "mevora-dev";
-const AUTH_HOST = "127.0.0.1:9099";
-const FUNCTIONS_HOST = "127.0.0.1:5001";
+// Hosts come from the emulator suite's environment when it sets them, so the
+// test can run on a private port block instead of always hitting the defaults
+// (which is whatever suite happens to be listening there).
+const AUTH_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? "127.0.0.1:9099";
+const FUNCTIONS_HOST = process.env.MEVORA_FUNCTIONS_EMULATOR_HOST ?? "127.0.0.1:5001";
+const [FIRESTORE_HOST, FIRESTORE_PORT] = (
+  process.env.FIRESTORE_EMULATOR_HOST ?? "127.0.0.1:8080"
+).split(":");
 const REGION = "europe-west1";
 
 // Same coordinates so the pair lands in the nearby tier, as the QA seed does.
@@ -97,6 +103,17 @@ async function callAs(key, name, data) {
   return {status: res.status, body: json};
 }
 
+// The date of birth is private account data (users/{uid}); the public profile
+// carries only the age the server derives from it.
+function ageOn(birthDate, today = new Date()) {
+  let years = today.getFullYear() - birthDate.getFullYear();
+  const monthDelta = today.getMonth() - birthDate.getMonth();
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+    years -= 1;
+  }
+  return years;
+}
+
 function photoRecords(uid) {
   return [0, 1, 2].map((i) => ({
     id: `mm_photo_${i + 1}`,
@@ -134,6 +151,7 @@ async function seed(db, key) {
   await setDoc(doc(db, `users/${uid}`), {
     uid,
     email: person.email,
+    birthDate: Timestamp.fromDate(person.birthDate),
     isSmokeTestUser: true,
     accountStatus: "active",
     isBanned: false,
@@ -150,7 +168,7 @@ async function seed(db, key) {
     name: person.displayName,
     bio: "Mutual match acceptance fixture.",
     gender: person.gender,
-    birthDate: Timestamp.fromDate(person.birthDate),
+    age: ageOn(person.birthDate),
     city: CITY,
     photos,
     isDiscoverable: true,
@@ -178,6 +196,41 @@ async function seed(db, key) {
   });
 }
 
+/**
+ * A like is accepted only for someone the member was shown, so each liker
+ * gets a Picks batch holding the people it likes here — the shape
+ * getMevoraPicks stores, reduced to what the decision scope reads.
+ */
+async function seedPicks(db, viewerKey, candidateKeys) {
+  const nowMs = Date.now();
+  const picks = candidateKeys.map((key, rank) => ({
+    candidateUid: uids[key],
+    pickId: `mm_pick_${key}`,
+    rank,
+    pickType: "bestOverall",
+    labels: ["bestOverall"],
+    reasons: [],
+    overallScore: 80,
+    isBoosted: false,
+    selectionStrategy: "exploit",
+    state: "active",
+    deliveredAtMs: nowMs,
+    decidedAtMs: null,
+    card: {},
+  }));
+  await setDoc(doc(db, `users/${uids[viewerKey]}/mevoraPicks/current`), {
+    schemaVersion: 1,
+    generationId: `mm_gen_${stamp}_${viewerKey}`,
+    generatedAtMs: nowMs,
+    refreshAtMs: nowMs + 86_400_000,
+    lastScanAtMs: nowMs,
+    deliveredCount: picks.length,
+    picks,
+    cooldowns: {},
+    candidateUids: picks.map((pick) => pick.candidateUid).sort(),
+  });
+}
+
 /** Runs `fn` against a Firestore client with rules disabled. */
 async function priv(fn) {
   let out;
@@ -190,7 +243,7 @@ async function priv(fn) {
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: PROJECT_ID,
-    firestore: {host: "127.0.0.1", port: 8080},
+    firestore: {host: FIRESTORE_HOST, port: Number(FIRESTORE_PORT)},
   });
 
   for (const key of Object.keys(people)) {
@@ -207,6 +260,10 @@ before(async () => {
     for (const key of Object.keys(people)) {
       await seed(db, key);
     }
+    // A and B were each other's Pick; C was shown A (and never B).
+    await seedPicks(db, "a", ["b"]);
+    await seedPicks(db, "b", ["a"]);
+    await seedPicks(db, "c", ["a"]);
   });
 });
 
@@ -309,5 +366,32 @@ describe("two-device mutual match (recordDiscoveryDecision)", () => {
       getDoc(doc(db, `likes/${uids.c}_${uids.a}`)),
     );
     assert.equal(like.exists(), false, "a refused like must not be stored");
+  });
+
+  it("refuses a like on someone the member was never shown", async () => {
+    // C and B would pass every gate (he wants women, she wants men), but B
+    // was never one of C's Picks and never liked him: a hand-made call.
+    const res = await callAs("c", "recordDiscoveryDecision", {
+      candidateUid: uids.b,
+      action: "like",
+    });
+
+    assert.notEqual(res.status, 200, JSON.stringify(res.body));
+    assert.match(JSON.stringify(res.body), /candidate-not-offered/);
+
+    const like = await priv((db) =>
+      getDoc(doc(db, `likes/${uids.c}_${uids.b}`)),
+    );
+    assert.equal(like.exists(), false, "a refused like must not be stored");
+  });
+
+  it("moves each side's Pick to matched", async () => {
+    for (const [viewer, candidate] of [["a", "b"], ["b", "a"]]) {
+      const batch = await priv((db) =>
+        getDoc(doc(db, `users/${uids[viewer]}/mevoraPicks/current`)),
+      );
+      const pick = batch.data().picks.find((p) => p.candidateUid === uids[candidate]);
+      assert.equal(pick.state, "matched", `${viewer}'s Pick of ${candidate}`);
+    }
   });
 });

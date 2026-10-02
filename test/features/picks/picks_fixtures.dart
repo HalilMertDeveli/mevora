@@ -75,7 +75,7 @@ MevoraPicksBatch batchOf(
     'learning': ?learning,
     'generationId': 'gen1',
     'refreshAtMs': 1_900_000_000_000,
-    'targetCount': 6,
+    'targetCount': 10,
     'picks': picks,
   });
 }

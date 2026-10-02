@@ -1,12 +1,22 @@
 import {createHash} from "node:crypto";
 import {FieldValue, Timestamp, type Firestore, type Query} from "firebase-admin/firestore";
 import type {Bucket} from "@google-cloud/storage";
+import {logger} from "firebase-functions";
+import {deletePhotoObjects, queueHeldPhotoDeletion} from "../../moderation/deleteProfilePhoto.js";
 import {
+  isLedgerFaceAnchor,
   isPublishedStoragePath,
+  isRemovedByMember,
+  ledgerEntryFromData,
   ledgerRef,
   readLedger,
 } from "../../moderation/photoModerationLedger.js";
-import {publishApprovedPhoto, setPhotoModerationStatus} from "../../moderation/photoModerationService.js";
+import {
+  loadPhotoState,
+  publishApprovedPhoto,
+  setPhotoModerationStatus,
+} from "../../moderation/photoModerationService.js";
+import {deletePhotoVariants} from "../../moderation/photoVariants.js";
 import {ACTION_COLLECTION, buildActionRecord, type ActionType} from "../actions/actionTypes.js";
 import {appendAuditEvent, recordAuditEvent} from "../audit/auditService.js";
 import type {AdminActor} from "../auth/adminAuthorization.js";
@@ -30,6 +40,17 @@ import {loadUserCards} from "../users/userCards.js";
  * publishApprovedPhoto (server-only photos/ prefix). Rejecting moves the
  * object into a server-only quarantine prefix (kept for the appeal window,
  * then removed by retention) instead of leaving it readable.
+ *
+ * A decision never adds a photo to a profile. The queue is built from the
+ * ledger, and an entry can outlive its photo: the member may have removed a
+ * photo that was rejected or held for review, and moderation keeps the record
+ * and the image (deleteProfilePhoto). So a decision updates the photo if it is
+ * still in profiles/{uid}.photos and is otherwise only recorded — ledger,
+ * action, audit. Where the entry says the member removed the photo
+ * (`removedByMemberAt`), approving it finishes that deletion instead: the
+ * image was kept for this decision and nothing else. Rejecting quarantines it
+ * as for any other photo. Without that mark (an older client rewrote the
+ * array) nothing is deleted, because absence alone does not prove a removal.
  */
 
 export const PHOTO_QUEUE_FILTERS = ["manual_review", "pending_too_long", "retries_exhausted", "reported"] as const;
@@ -40,6 +61,15 @@ export const QUARANTINE_PREFIX = "moderation/quarantine";
 export const MAX_PREVIEW_BYTES = 5 * 1024 * 1024;
 const REVIEW_LOCK_MS = 2 * 60 * 1000;
 const EXTENSION = /\.(jpg|jpeg|png|webp)$/i;
+
+/**
+ * Where a decision left the photo, for the reviewer and the action record.
+ * `on_profile` — written onto the photo in the member's array.
+ * `not_on_profile` — recorded only; the photo was not in the array.
+ * `removed_by_member` — recorded only; the member had removed the photo. An
+ *   approval deleted what was kept of it.
+ */
+export type PhotoPlacement = "on_profile" | "not_on_profile" | "removed_by_member";
 
 /** Ledger status the admin console may act on, per decision. */
 const REVIEWABLE = new Set(["manual_review", "pending", "processing"]);
@@ -121,6 +151,14 @@ export async function listPhotoReviews(
         lastProcessingAttempt: iso(photo?.lastProcessingAttempt),
         processingError: typeof photo?.processingError === "string" ? photo.processingError.slice(0, 200) : null,
         isPrimary: photo?.isPrimary === true,
+        // So a reviewer can see, before deciding, that the photo is no longer
+        // on the profile and that a decision will not put it back.
+        onProfile: photo !== undefined,
+        removedByMember: isRemovedByMember(ledgerEntryFromData(data)),
+        // So a reviewer can see that removing this photo takes away the
+        // member's verified anchor. The verdict only — nothing about how it
+        // was reached is stored to show.
+        faceAnchor: isLedgerFaceAnchor(ledgerEntryFromData(data)) ? "verified" : "none",
         user: cards.get(uid) ?? null,
         openReportCount: reportsByUid.get(uid) ?? null,
         lock: data.reviewLock && toMillis(data.reviewLock.at) !== null &&
@@ -317,17 +355,20 @@ export async function reviewPhoto(
     return {
       replay: false as const,
       status,
+      removedByMember: ledgerSnap.exists && isRemovedByMember(ledgerEntryFromData(ledgerSnap.data() ?? {})),
       storagePath: ledgerSnap.get("storagePath") as string | undefined,
       downloadUrl: ledgerSnap.get("downloadUrl") as string | undefined,
     };
   });
 
   if (claim.replay) {
+    const recorded = (claim.action.newState ?? {}) as Record<string, unknown>;
     return {
       decision: input.decision,
       actionId,
       replayed: true,
-      status: String((claim.action.newState as Record<string, unknown> | undefined)?.status ?? ""),
+      status: String(recorded.status ?? ""),
+      placement: recorded.placement ?? null,
     };
   }
 
@@ -335,12 +376,35 @@ export async function reviewPhoto(
   let actionType: ActionType;
   let newStatus: "approved" | "rejected";
   let quarantinedTo: string | null = null;
+  let onProfile = false;
+  // Approving a photo the member removed: nothing is published and nothing is
+  // written to the profile. What is left of the photo is deleted instead.
+  const finishRemoval = input.decision === "approve" && claim.removedByMember;
   try {
-    if (input.decision === "approve") {
+    if (finishRemoval) {
+      actionType = "PHOTO_APPROVED";
+      newStatus = "approved";
+      // Objects before the entry: while one is left the entry keeps the photo
+      // in the queue, and deciding again retries. The entry itself goes in
+      // the transaction that records the decision, below.
+      const failures = await deletePhotoObjects(deps.bucket(), input.uid, input.imageId, claim.storagePath);
+      if (failures > 0) {
+        logger.error("Member-removed photo still has stored objects after approval", {
+          uid: input.uid,
+          imageId: input.imageId,
+          failures,
+        });
+        throw new AdminError("internal_error", "photo_cleanup_incomplete");
+      }
+    } else if (input.decision === "approve") {
       actionType = "PHOTO_APPROVED";
       newStatus = "approved";
       let storagePath = isPublishedStoragePath(input.uid, claim.storagePath) ? claim.storagePath : undefined;
       let downloadUrl = storagePath ? claim.downloadUrl : undefined;
+      // Left undefined when the photo is already published (e.g. a reported
+      // photo re-approved): the ledger keeps the variants it already has.
+      let thumbUrl: string | null | undefined;
+      let cardUrl: string | null | undefined;
       if (!storagePath || !downloadUrl) {
         const bucket = deps.bucket();
         const pending = await findPendingObject(bucket, input.uid, input.imageId);
@@ -358,16 +422,20 @@ export async function reviewPhoto(
         });
         storagePath = published.destPath;
         downloadUrl = published.downloadUrl;
+        thumbUrl = published.thumbUrl;
+        cardUrl = published.cardUrl;
       }
-      await setPhotoModerationStatus(db, input.uid, input.imageId, {
+      ({onProfile} = await setPhotoModerationStatus(db, input.uid, input.imageId, {
         moderationStatus: "approved",
         moderationReason: "admin-approved",
         moderatedBy: "admin_review",
         moderatedAt: FieldValue.serverTimestamp(),
         storagePath,
         downloadUrl,
+        thumbUrl,
+        cardUrl,
         processingError: null,
-      });
+      }, {whenAbsent: "skip"}));
     } else {
       const wasPublished = claim.status === "approved" || isPublishedStoragePath(input.uid, claim.storagePath);
       actionType = wasPublished ? "PHOTO_REMOVED" : "PHOTO_REJECTED";
@@ -376,23 +444,32 @@ export async function reviewPhoto(
       if (located && located.source !== "quarantine") {
         quarantinedTo = await quarantine(deps, input.uid, input.imageId, located.path);
       }
-      await setPhotoModerationStatus(db, input.uid, input.imageId, {
+      // The display variants are copies of the same image; the quarantined
+      // original is the evidence, so they are simply removed.
+      await deletePhotoVariants(deps.bucket(), input.uid, input.imageId);
+      ({onProfile} = await setPhotoModerationStatus(db, input.uid, input.imageId, {
         moderationStatus: "rejected",
         moderationReason: input.reasonCode,
         moderatedBy: "admin_review",
         moderatedAt: FieldValue.serverTimestamp(),
         // The published copy is gone; nothing may keep pointing at it.
         downloadUrl: null,
-      });
+        thumbUrl: null,
+        cardUrl: null,
+      }, {whenAbsent: "skip"}));
     }
   } catch (error) {
     await releaseLock();
     throw error;
   }
+  const placement: PhotoPlacement = claim.removedByMember
+    ? "removed_by_member"
+    : onProfile ? "on_profile" : "not_on_profile";
 
   // 2. Record the decision alongside its audit trail and case link.
   await db.runTransaction(async (tx) => {
     const linkedCase = await readLinkableCase(tx, db, input.caseId);
+    const photoState = finishRemoval ? await loadPhotoState(tx, db, input.uid) : null;
     tx.create(actionRef, {
       ...buildActionRecord({
         actionId,
@@ -407,11 +484,16 @@ export async function reviewPhoto(
         idempotencyKey: input.idempotencyKey,
         effectiveAtMs: nowMs,
         previousState: {status: claim.status},
-        newState: {status: newStatus},
+        newState: {status: newStatus, placement},
         subject: {imageId: input.imageId, ledgerPath: ref.path, quarantinePath: quarantinedTo},
       }),
     });
-    tx.set(ref, {reviewLock: FieldValue.delete(), decisionActionId: actionId}, {merge: true});
+    if (photoState) {
+      // The decision and the end of the record it was kept for, together.
+      queueHeldPhotoDeletion(tx, db, input.uid, photoState, input.imageId);
+    } else {
+      tx.set(ref, {reviewLock: FieldValue.delete(), decisionActionId: actionId}, {merge: true});
+    }
     if (linkedCase) {
       linkActionToCase(tx, db, linkedCase, {actionId, actionType, actor}, nowMs);
     }
@@ -428,6 +510,7 @@ export async function reviewPhoto(
         userId: input.uid,
         imageId: input.imageId,
         previousStatus: claim.status,
+        placement,
         reasonCode: input.reasonCode,
         internalNote: input.internalNote ?? "",
       },
@@ -435,5 +518,5 @@ export async function reviewPhoto(
   });
 
   await settleProfileModerationStatus(db, input.uid);
-  return {decision: input.decision, actionId, replayed: false, status: newStatus};
+  return {decision: input.decision, actionId, replayed: false, status: newStatus, placement};
 }

@@ -112,6 +112,11 @@ export function mergeEntitlement(
     revision: input.revision ?? base.revision ?? 0,
     eventAt: pick(input.eventAt, base.eventAt, null),
     isPremium: false,
+    purchaseTokenKey: pick(
+      input.purchaseTokenKey,
+      base.purchaseTokenKey ?? null,
+      null,
+    ),
   };
   merged.isPremium = evaluatePremiumAccess(merged, now).isPremium;
   return merged;
@@ -142,6 +147,7 @@ function materialFingerprint(state: CanonicalSubscription): string {
     state.revision,
     dateKey(state.eventAt),
     state.isPremium,
+    state.purchaseTokenKey ?? null,
   ]);
 }
 
@@ -167,6 +173,37 @@ function isStrictlyNewer(
     return incomingAt > existingAt;
   }
   return false;
+}
+
+/**
+ * True when `input` comes from a purchase token other than the one the stored
+ * entitlement rests on, and would take away access that token still grants.
+ *
+ * The document is per user, so a user's older token reports into the same
+ * place as their current one. After an upgrade Google expires the replaced
+ * token; without this, that expiry — a newer event, so ordering lets it
+ * through — would overwrite the live subscription with `expired`.
+ *
+ * Deliberately narrow. A foreign token that *grants* is applied (a new
+ * purchase takes the entitlement over), the successor in an upgrade chain is
+ * never foreign, and once the stored state has stopped granting on its own
+ * there is nothing left to protect.
+ */
+function isLapseFromSupersededToken(
+  existing: CanonicalSubscription,
+  input: EntitlementWriteInput,
+  next: CanonicalSubscription,
+  now: Date,
+): boolean {
+  const restsOn = existing.purchaseTokenKey ?? null;
+  const incoming = input.purchaseTokenKey ?? null;
+  if (!restsOn || !incoming || restsOn === incoming) {
+    return false;
+  }
+  if (input.supersedesTokenKey === restsOn) {
+    return false;
+  }
+  return !next.isPremium && evaluatePremiumAccess(existing, now).isPremium;
 }
 
 /**
@@ -204,6 +241,10 @@ export function decideWrite(
     !isStrictlyNewer(existing, input)
   ) {
     return {outcome: "terminal_state", applied: false, state: existing};
+  }
+
+  if (isLapseFromSupersededToken(existing, input, next, now)) {
+    return {outcome: "superseded_token", applied: false, state: existing};
   }
 
   if (materialFingerprint(existing) === materialFingerprint(next)) {

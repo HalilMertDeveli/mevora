@@ -362,8 +362,14 @@ describe("18-20. security boundaries", () => {
       path.join(__dirname, "..", "src", "backend.ts"),
       "utf8",
     );
-    // The page measured is the server's own response, never a client-supplied list.
-    assert.ok(backend.includes("shownUids: filled.items.map("));
+    const picks = fs.readFileSync(
+      path.join(__dirname, "..", "src", "picks", "service.ts"),
+      "utf8",
+    );
+    // What is measured is what the server itself placed in a Picks batch,
+    // never a client-supplied list. (The paged Discover deck is retired.)
+    assert.ok(picks.includes("shownUids: delivered.filter("));
+    assert.equal(picks.includes("request.data"), false);
     assert.equal(backend.includes("request.data?.shownUids"), false);
     assert.equal(backend.includes("request.data?.impressions"), false);
   });

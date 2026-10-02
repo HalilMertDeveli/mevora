@@ -11,6 +11,7 @@ import 'package:mevora/features/onboarding/domain/repositories/onboarding_reposi
 import 'package:mevora/features/onboarding/domain/validators/onboarding_validators.dart';
 import 'package:mevora/features/profile/domain/entities/user_profile.dart';
 import 'package:mevora/features/profile/domain/repositories/profile_repository.dart';
+import 'package:mevora/features/profile/domain/validators/person_name_validator.dart';
 
 class OnboardingRepositoryImpl implements OnboardingRepository {
   OnboardingRepositoryImpl({
@@ -23,8 +24,29 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   final BackendCallable _backend;
   static const _onboardingCallableName = 'completeOnboarding';
 
+  /// The draft, with the member's private date of birth put back on it: the
+  /// public profile it is loaded from does not carry one.
   @override
-  Future<UserProfile?> loadDraft(String uid) => _profiles.getById(uid);
+  Future<UserProfile?> loadDraft(String uid) async {
+    final savedBirthDate = _loadBirthDate(uid);
+    final draft = await _profiles.getById(uid);
+    final birthDate = await savedBirthDate;
+    if (draft == null || birthDate == null) {
+      return draft;
+    }
+    return draft.copyWith(birthDate: birthDate);
+  }
+
+  Future<DateTime?> _loadBirthDate(String uid) async {
+    try {
+      return await _profiles.loadMyBirthDate(uid);
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  Future<String?> loadLastName(String uid) => _profiles.loadMyLastName(uid);
 
   @override
   Stream<UserProfile?> watchDraft(String uid) => _profiles.watchById(uid);
@@ -33,16 +55,33 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   Future<Result<UserProfile>> saveStep({
     required UserProfile profile,
     required OnboardingStep step,
+    required String? lastName,
+    bool requireFaceAnchor = false,
   }) async {
-    final validation = OnboardingValidators.validateStep(step, profile);
+    final validation = OnboardingValidators.validateStep(
+      step,
+      profile,
+      lastName: lastName,
+      requireFaceAnchor: requireFaceAnchor,
+    );
     if (validation.isError) {
       return Err((validation as Err<void>).failure);
     }
     final nextStep = step.next ?? step;
     final draft = _withLifestyleTags(
-      profile.copyWith(onboardingStep: nextStep),
+      profile.copyWith(
+        displayName: PersonNameValidator.normalize(profile.displayName),
+        onboardingStep: nextStep,
+      ),
     );
     try {
+      // The surname and the date of birth go to the private account
+      // document, on the step that collects them. The public profile below
+      // never carries either.
+      if (step == OnboardingStep.basicInfo) {
+        await _profiles.saveMyLastName(profile.uid, lastName!);
+        await _profiles.saveMyBirthDate(profile.uid, profile.birthDate!);
+      }
       await _profiles.saveMine(_clientSafeDraft(draft));
       return Success(draft);
     } on Object {
@@ -53,13 +92,22 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
   }
 
   @override
-  Future<Result<UserProfile>> complete(UserProfile profile) async {
-    final validation = OnboardingValidators.validateCompletion(profile);
+  Future<Result<UserProfile>> complete(
+    UserProfile profile, {
+    required String? lastName,
+    bool requireFaceAnchor = false,
+  }) async {
+    final validation = OnboardingValidators.validateCompletion(
+      profile,
+      lastName: lastName,
+      requireFaceAnchor: requireFaceAnchor,
+    );
     if (validation.isError) {
       return Err((validation as Err<void>).failure);
     }
     final draft = _withLifestyleTags(
       profile.copyWith(
+        displayName: PersonNameValidator.normalize(profile.displayName),
         onboardingStep: OnboardingStep.complete,
       ),
     );
@@ -117,7 +165,12 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
       if (status == 'approved' ||
           status == 'rejected' ||
           status == 'manual_review') {
-        return photo.copyWith(moderationStatus: status);
+        // The verified flag travels with the status it depends on. Both are
+        // re-imposed by the server either way.
+        return photo.copyWith(
+          moderationStatus: status,
+          isFaceAnchorVerified: server.isFaceAnchorVerified,
+        );
       }
       return photo;
     }).toList(growable: false);
@@ -131,6 +184,9 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
         if (details.contains('photos-required')) {
           return OnboardingMessages.serverPhotosRequired;
         }
+        if (details.contains('face-anchor-required')) {
+          return OnboardingMessages.faceAnchorRequired;
+        }
         if (details.contains('photos-not-approved')) {
           return OnboardingMessages.serverPhotosInReview;
         }
@@ -139,6 +195,18 @@ class OnboardingRepositoryImpl implements OnboardingRepository {
         }
         if (details.contains('underage')) {
           return OnboardingMessages.underage;
+        }
+        if (details.contains('first-name-required')) {
+          return OnboardingMessages.firstNameRequired;
+        }
+        if (details.contains('first-name-too-long')) {
+          return OnboardingMessages.firstNameTooLong;
+        }
+        if (details.contains('last-name-required')) {
+          return OnboardingMessages.lastNameRequired;
+        }
+        if (details.contains('last-name-too-long')) {
+          return OnboardingMessages.lastNameTooLong;
         }
         if (details.contains('smoking-required') ||
             details.contains('drinking-required') ||

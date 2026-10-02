@@ -19,6 +19,22 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<void> saveMine(UserProfile profile) => _dataSource.save(profile);
 
   @override
+  Future<String?> loadMyLastName(String uid) => _dataSource.fetchLastName(uid);
+
+  @override
+  Future<void> saveMyLastName(String uid, String lastName) {
+    return _dataSource.saveLastName(uid, lastName);
+  }
+
+  @override
+  Future<DateTime?> loadMyBirthDate(String uid) => _dataSource.fetchBirthDate(uid);
+
+  @override
+  Future<void> saveMyBirthDate(String uid, DateTime birthDate) {
+    return _dataSource.saveBirthDate(uid, birthDate);
+  }
+
+  @override
   Future<UserPreferences> loadPreferences(String uid) {
     return _dataSource.fetchPreferences(uid);
   }

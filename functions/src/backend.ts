@@ -23,22 +23,12 @@ import {
   passesDiscoveryProfileFilters,
   passesGenderPreferences,
 } from "./discoveryMatching.js";
-import {sortByBoostVisibility} from "./boost/ranking.js";
-import {attributeBoostEvent, recordBoostImpressions} from "./boost/measurement.js";
-import {
-  fillFromDistanceTiers,
-  resolveDiscoveryRadiusKm,
-  type DiscoveryDistanceTier,
-} from "./discoveryFallback.js";
+import {attributeBoostEvent} from "./boost/measurement.js";
 import {userLanguage} from "./language.js";
 import {ensureMatchScore, preservedMatchScoreFields} from "./matchScore.js";
-import {
-  haversineKm,
-  isBlocked as isBlockedPair,
-  loadDiscoveryViewerContext,
-  scanDiscoveryPool,
-} from "./discoveryPool.js";
+import {haversineKm, isBlocked as isBlockedPair} from "./discoveryPool.js";
 import {attributePickMatch, recordPickDecision} from "./picks/service.js";
+import {assertDecisionOffered, offeredDecisionSource} from "./picks/decisionScope.js";
 import {dailyStreakDocPath, streakExportView} from "./streak/service.js";
 import {processPendingProfilePhoto, retryStaleProcessingPhotos} from "./moderation/photoModerationService.js";
 import {buildMatchCompatibilityFields} from "./compatibility/compatibilitySnapshot.js";
@@ -48,6 +38,7 @@ import {
 } from "./automation/cleanup.js";
 import {FcmTypes, sendUserPush} from "./notifications.js";
 import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
+import {withoutExactLocation} from "./privacy/exportLocation.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -89,99 +80,23 @@ function parsePendingPhotoPath(name: string): {uid: string; imageId: string} | n
   return {uid, imageId};
 }
 
+/**
+ * Retired: the open-ended Discover deck.
+ *
+ * Mevora is not an endless profile feed. People arrive as the finite daily
+ * Mevora Picks batch (`getMevoraPicks`), and deciding quickly never buys more
+ * of them. This callable paged the whole pool by cursor with no daily cap, so
+ * even with no screen left that calls it, a hand-made request (or an old
+ * build) could page through everyone — a way around the daily limit.
+ *
+ * It stays exported so such a caller gets a clear refusal instead of a 404,
+ * and maintenance mode still answers first. The pool scan itself lives on in
+ * discoveryPool.ts, where Picks uses it.
+ */
 export const getDiscoveryCandidates = onCall(callableOptions, async (request) => {
-  const uid = requireUid(request);
+  requireUid(request);
   await assertAppFeatureAvailable(db, null);
-  const callerAccount = await db.doc(`users/${uid}`).get();
-  if (!isAccountEligible(callerAccount.data())) {
-    throw new HttpsError("permission-denied", "account-suspended");
-  }
-  const allowedRadii = new Set([5, 10, 25, 50, 100]);
-  const requested = Number(request.data?.radiusKm ?? 25);
-  const radiusKm = allowedRadii.has(requested) ? requested : 25;
-  // The hard distance gate for this request. radiusKm is the progressive
-  // step — the client walks it up the ladder when a deck comes back empty —
-  // and this is the one place the absolute product ceiling is asserted, so
-  // widening allowedRadii later cannot silently widen the gate past it.
-  const gateKm = resolveDiscoveryRadiusKm(radiusKm);
-  const limit = Math.min(Math.max(Number(request.data?.limit ?? 10), 1), 20);
-  const cursor = String(request.data?.cursor ?? "");
-  // Client may ask for soft distance expansion when a preferred radius is empty.
-  const expandDistance = request.data?.expandDistance === true;
-  const {viewer, boostSessions} = await loadDiscoveryViewerContext(db, uid, callerAccount.data());
-  const boosted = viewer.boosted;
-  if (viewer.prefs.discoveryEnabled === false) {
-    return {items: [], nextCursor: null, fallbackLevel: "empty"};
-  }
-  const includeDebug = request.data?.includeDebug === true;
-
-  // Scan multiple profile pages when nearby is sparse so far/no-location
-  // candidates can still fill the deck without a full collection download.
-  const scan = await scanDiscoveryPool(db, viewer, {
-    cursor,
-    radiusKm,
-    gateKm,
-    pageSize: 40,
-    maxPages: expandDistance ? 4 : 3,
-    // Enough nearby — stop scanning. Otherwise keep scanning for fallback tiers.
-    shouldStop: (pool) => {
-      const nearbyCount = pool.nearby.length;
-      const totalEligible =
-        nearbyCount + pool.extended.length + pool.far.length + pool.no_location.length;
-      return nearbyCount >= limit || totalEligible >= limit * 2;
-    },
-  });
-  const {buckets, rejectionReasons, lastUid, scannedFullPage, hasViewerLocation} = scan;
-
-  // Rank each tier with the existing boost/compat ranking (no engine rewrite).
-  for (const key of Object.keys(buckets) as DiscoveryDistanceTier[]) {
-    buckets[key] = sortByBoostVisibility(buckets[key], boosted, radiusKm);
-  }
-
-  const filled = fillFromDistanceTiers(buckets, limit);
-  logger.info("discovery_fallback", {
-    viewerHasLocation: hasViewerLocation,
-    radiusKm,
-    gateKm,
-    expandDistance,
-    nearby: buckets.nearby.length,
-    extended: buckets.extended.length,
-    far: buckets.far.length,
-    noLocation: buckets.no_location.length,
-    returned: filled.items.length,
-    fallbackLevel: filled.fallbackLevel,
-    rejectionReasons,
-  });
-
-  // An impression is a profile that reached this response page. Being
-  // considered as a ranking candidate is not an impression.
-  await recordBoostImpressions({
-    db,
-    viewerUid: uid,
-    shownUids: filled.items.map((item) => String((item as {uid?: unknown}).uid ?? "")),
-    sessions: boostSessions,
-  });
-
-  const nextCursor = scannedFullPage ? lastUid : null;
-  return {
-    items: filled.items,
-    nextCursor,
-    fallbackLevel: filled.fallbackLevel,
-    ...(includeDebug
-      ? {
-          debug: {
-            rejectionReasons,
-            viewerHasLocation: hasViewerLocation,
-            radiusKm,
-            gateKm,
-            nearby: buckets.nearby.length,
-            extended: buckets.extended.length,
-            far: buckets.far.length,
-            noLocation: buckets.no_location.length,
-          },
-        }
-      : {}),
-  };
+  throw new HttpsError("failed-precondition", "discovery-deck-retired");
 });
 
 export const getDiscoveryFeed = getDiscoveryCandidates;
@@ -194,7 +109,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   if (!candidateUid || candidateUid === uid) {
     throw new HttpsError("invalid-argument", "Invalid candidate.");
   }
-  const [callerAccount, callerProfileSnap, callerPrefsSnap, candidateProfile, candidatePrefsSnap, candidateAccountSnap, activeMatches] =
+  const [callerAccount, callerProfileSnap, callerPrefsSnap, candidateProfile, candidatePrefsSnap, candidateAccountSnap, activeMatches, offeredBy] =
     await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -203,6 +118,7 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
     db.doc(`userPreferences/${candidateUid}`).get(),
     db.doc(`users/${candidateUid}`).get(),
     loadActiveMatchPartnerIds(db, uid),
+    offeredDecisionSource({db, viewerUid: uid, candidateUid}),
   ]);
   if (!isAccountEligible(callerAccount.data())) {
     throw new HttpsError("permission-denied", "account-suspended");
@@ -210,6 +126,9 @@ export const recordDiscoveryDecision = onCall(callableOptions, async (request) =
   if (activeMatches.has(candidateUid)) {
     throw new HttpsError("failed-precondition", "already-matched");
   }
+  // Only someone Picks or Likes You actually showed — checked before any
+  // eligibility gate, so a refusal says nothing about a stranger.
+  assertDecisionOffered(offeredBy);
   const callerPrefs = callerPrefsSnap.data() ?? {};
   const minAge = Number(callerPrefs.minAge ?? 18);
   const maxAge = Number(callerPrefs.maxAge ?? 99);
@@ -414,6 +333,8 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     dailyStreak,
     relationshipLearning,
     relationshipDaily,
+    photoLedger,
+    faceAnchorState,
   ] = await Promise.all([
     db.doc(`users/${uid}`).get(),
     db.doc(`profiles/${uid}`).get(),
@@ -438,6 +359,8 @@ export const exportMyData = onCall(callableOptions, async (request) => {
     db.doc(dailyStreakDocPath(uid)).get(),
     db.doc(`users/${uid}/relationshipLearning/state`).get(),
     db.collection(`users/${uid}/relationshipDaily`).limit(400).get(),
+    db.collection(`users/${uid}/photoModeration`).limit(50).get(),
+    db.doc(`users/${uid}/faceAnchor/state`).get(),
   ]);
 
   // Never include exact GPS, Spotify secrets, private keys, or message ciphertext bodies.
@@ -445,7 +368,11 @@ export const exportMyData = onCall(callableOptions, async (request) => {
   const verificationData = verification.data();
   const musicData = music.data();
 
-  return {
+  // The account document mirrors the member's position (`location.latitude` /
+  // `location.longitude`, written by the app), and the sections below copy
+  // whole documents. The finished export is filtered rather than each field,
+  // so no section can carry a coordinate or geohash out. City and country stay.
+  return withoutExactLocation({
     exportedAt: new Date().toISOString(),
     uid,
     schemaVersion: 2,
@@ -501,6 +428,26 @@ export const exportMyData = onCall(callableOptions, async (request) => {
         // extracted identity fields were never stored here to export.
       }
       : null,
+    // Face Anchor: which profile photos were verified as the member, when the
+    // member agreed to the selfie check, and how the last attempt ended.
+    // There is nothing else to export: the verification selfie is deleted when
+    // the check finishes and no score, face template or provider response is
+    // ever stored.
+    faceAnchor: {
+      verifiedPhotos: photoLedger.docs
+        .filter((d) => d.get("faceAnchor.status") === "verified")
+        .map((d) => ({photoId: d.id, verifiedAt: d.get("faceAnchor.verifiedAt") ?? null})),
+      lastAttempt: faceAnchorState.exists
+        ? {
+          status: faceAnchorState.get("status") ?? null,
+          reason: faceAnchorState.get("reason") ?? null,
+          photoId: faceAnchorState.get("photoId") ?? null,
+          consentVersion: faceAnchorState.get("consentVersion") ?? null,
+          consentAt: faceAnchorState.get("consentAt") ?? null,
+          updatedAt: faceAnchorState.get("updatedAt") ?? null,
+        }
+        : null,
+    },
     questionAnswers: questionAnswers.docs.map((d) => ({id: d.id, ...d.data()})),
     matchIds: matches.docs.map((d) => d.id),
     likesSent: likesFrom.docs.map((d) => ({
@@ -540,7 +487,7 @@ export const exportMyData = onCall(callableOptions, async (request) => {
       updatedAt: d.data().updatedAt ?? d.data().createdAt ?? null,
       // FCM token omitted.
     })),
-  };
+  });
 });
 
 function sanitizeAccountExport(data: DocumentData | undefined): Record<string, unknown> | null {

@@ -31,13 +31,13 @@ This document describes the Firebase-centric data layer for Mevora. It is the so
 
 ### `users/{uid}` — account only (private)
 
-`uid`, `email`, `phoneNumber`, `phoneVerified`, `authProviders`, `createdAt`, `updatedAt`, `lastLoginAt`, `accountStatus`.
+`uid`, `email`, `phoneNumber`, `phoneVerified`, `authProviders`, `createdAt`, `updatedAt`, `lastLoginAt`, `accountStatus`, `lastName`, `birthDate`, `ageRolloverAt` (server-written).
 
-Other users cannot read this document. It is not a dating profile.
+Other users cannot read this document. It is not a dating profile. The surname and the exact date of birth live here for that reason (`docs/PROFILE_BIRTH_DATE_PRIVACY.md`).
 
 ### `profiles/{uid}` — public dating projection
 
-`displayName`, `birthDate` / `age`, `gender`, `bio`, `photos`, `interests`, `relationshipGoal`, `occupation`, `education`, `languages`, `city`, `profileCompleted`, `onboardingCompleted`, `isDiscoverable`, timestamps.
+`displayName`, `age` (server-written; never a date of birth), `gender`, `bio`, `photos`, `interests`, `relationshipGoal`, `occupation`, `education`, `languages`, `city`, `profileCompleted`, `onboardingCompleted`, `isDiscoverable`, timestamps.
 
 Never store password, phone, private email, GPS, FCM tokens, or auth providers here.
 

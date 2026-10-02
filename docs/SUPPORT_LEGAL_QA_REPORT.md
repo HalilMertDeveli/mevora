@@ -1,5 +1,7 @@
 # SUPPORT & LEGAL QA REPORT
 
+> **Superseded (2026-10-01).** Snapshot from 2026-08-23. The public policy pages were rewritten and `/delete-account` and `/child-safety` were added since. Current launch state: `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md`.
+
 **Date:** 2026-08-23  
 **Scope:** Support center, FAQ, tickets, legal docs, account deletion, report/block, Firebase rules, localization
 

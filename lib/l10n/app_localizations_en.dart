@@ -868,6 +868,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingFirstName => 'First name';
 
   @override
+  String get onboardingLastName => 'Last name';
+
+  @override
+  String get onboardingLastNamePrivate =>
+      'Other members never see your last name.';
+
+  @override
   String get onboardingBirthDate => 'Birthday';
 
   @override
@@ -907,6 +914,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingErrorFirstName => 'Add your first name.';
+
+  @override
+  String get onboardingErrorLastName => 'Add your last name.';
 
   @override
   String get onboardingErrorGender => 'Choose how you identify.';
@@ -974,6 +984,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingContinue => 'Continue';
 
   @override
+  String get onboardingLogoutBody =>
+      'The steps you\'ve finished are saved. Sign in again to pick up where you left off.';
+
+  @override
   String get onboardingEducation => 'Education';
 
   @override
@@ -1000,7 +1014,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingPhotosHint =>
-      'Add at least 3 photos. Drag to reorder — your first photo is your main one.';
+      'Add at least 3 photos. Your face should be clearly visible in at least one. In the others you can show your hobbies, your travels, your pet or moments from your life.';
 
   @override
   String get onboardingPrimaryPhoto => 'Main photo';
@@ -1468,7 +1482,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maxAge => 'Maximum age';
 
   @override
-  String get maxDistance => 'Maximum distance';
+  String get maxDistance => 'Preferred distance (km)';
+
+  @override
+  String get maxDistanceHint =>
+      'People inside this distance come first. When there are not enough, Mevora looks further, up to 100 km.';
 
   @override
   String get matchesTitle => 'Your matches';
@@ -1814,6 +1832,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportFakeProfile => 'Fake profile';
 
   @override
+  String get reportChildSafety =>
+      'Child safety concern (sexual content or behaviour involving a minor)';
+
+  @override
   String get reportUnderage => 'Underage';
 
   @override
@@ -1932,6 +1954,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get boostBuy => 'Buy Boost';
+
+  @override
+  String get boostOneTimePurchaseNote =>
+      'Boost is a one-time purchase. It does not renew.';
 
   @override
   String get boostPurchasing => 'Starting purchase...';
@@ -2312,10 +2338,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPhotoPrimaryRequired => 'Choose a primary photo.';
 
   @override
+  String get settingsPhotoStillProcessing =>
+      'This photo is still being checked. Try again in a moment.';
+
+  @override
   String get settingsFirstNameRequired => 'First name is required.';
 
   @override
   String get settingsFirstNameTooLong => 'First name is too long.';
+
+  @override
+  String get settingsLastNameRequired => 'Last name is required.';
+
+  @override
+  String get settingsLastNameTooLong => 'Last name is too long.';
 
   @override
   String get settingsBioTooLong => 'Bio is too long.';
@@ -2580,7 +2616,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String likesYouLockedCount(int count) {
-    return '$count people like you';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people like you',
+      one: '1 person likes you',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -3375,7 +3417,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsPaidBody =>
-      'Boost and other purchases are processed through your app store. Refunds follow the store\'s policies unless required otherwise by law.';
+      'Boost and Premium are bought through your app store. Boost is a one-time purchase and does not renew. Premium is a subscription: it renews automatically at the price shown when you buy it until you cancel in your store account, and cancelling stops the next renewal. Refunds follow the store\'s policies unless required otherwise by law.';
 
   @override
   String get termsThirdPartyTitle => 'Third-party services';
@@ -3417,7 +3459,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsEffectiveBody =>
-      'These Terms are effective as of August 23, 2026.';
+      'These Terms are effective as of October 1, 2026.';
 
   @override
   String get privacyIntroTitle => 'Introduction';
@@ -3445,28 +3487,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyProfileBody =>
-      'Profile details you provide (name, bio, preferences, relationship answers, photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching.';
+      'Profile details you provide (first name, date of birth, gender, who you want to meet, bio, preferences, relationship answers, humor ratings and photos) are stored in Firebase Firestore and Firebase Storage to display your profile and power matching. Other members see your age, not your date of birth, and your surname stays private.';
+
+  @override
+  String get privacyVerificationTitle => 'Photo and identity verification';
+
+  @override
+  String get privacyVerificationBody =>
+      'To confirm that a profile belongs to a real person, we may ask you for a selfie. It is sent to our verification provider, Didit, which checks that it shows a live person and that it matches your profile photo. We keep the result of that check, not the selfie, which is deleted when the check ends. Identity verification is optional: if you choose it, Didit processes your identity document and selfie directly and Mevora stores only the outcome.';
 
   @override
   String get privacyLocationTitle => 'Location data';
 
   @override
   String get privacyLocationBody =>
-      'With your permission, we use approximate location to show nearby compatible people. Precise coordinates are not exposed to other users in discovery results.';
+      'With your permission, we use your device location to show compatible people near you. Your coordinates are stored on our servers for that purpose and are never shown to other members, who see only your city and an approximate distance.';
 
   @override
   String get privacyMessagingTitle => 'Messages and calls';
 
   @override
   String get privacyMessagingBody =>
-      'Chat messages, voice notes, images, typing indicators, and call metadata are stored to deliver the service. Messages may be end-to-end encrypted when both users have published encryption keys.';
+      'Message text, voice notes and images are end-to-end encrypted: they are encrypted on your device and our servers store only the encrypted form, which we cannot read. To deliver them we do store who sent a message to whom, when, its type and whether it was read, as well as call records.';
 
   @override
   String get privacyMatchingTitle => 'Matching and interactions';
 
   @override
   String get privacyMatchingBody =>
-      'Likes, passes, matches, compatibility signals, and interaction history are stored to operate discovery and matches.';
+      'Likes, passes, matches, your answers to daily questions, humor ratings, compatibility signals and interaction history are stored to operate discovery and matches.';
 
   @override
   String get privacyPreferencesTitle => 'Settings and preferences';
@@ -3487,7 +3536,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyDeviceBody =>
-      'We process device tokens for push notifications, app diagnostics, and security logs through Firebase and related infrastructure.';
+      'We process push notification tokens and, through Firebase Crashlytics and Google Analytics for Firebase, crash reports and usage statistics tied to an app installation, not to your name. Mevora shows no ads and does not use your advertising ID.';
 
   @override
   String get privacyWhyTitle => 'Why we use data';
@@ -3508,21 +3557,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyRetentionBody =>
-      'We keep data while your account is active. When you delete your account, we delete or anonymize associated data except where law or fraud prevention requires limited retention.';
+      'We keep data while your account is active. When you delete your account, your profile, photos, messages, likes, answers and purchase records are deleted. Matches you were part of are closed and no longer show your name or photo, and records of safety and moderation actions may be kept where needed to protect members, prevent fraud or meet legal obligations.';
 
   @override
   String get privacySharingTitle => 'Sharing';
 
   @override
   String get privacySharingBody =>
-      'We do not sell personal data. We share data with service providers (Firebase, app stores, Spotify, verification vendors) only as needed to operate Mevora.';
+      'We do not sell personal data. We share data only with the service providers needed to operate Mevora: Google (Firebase hosting, authentication, notifications, crash reporting and analytics, and Google Play for purchases), Spotify if you connect it, Didit for photo and identity verification, and GIPHY, from which your device loads humor content directly.';
 
   @override
   String get privacyRightsTitle => 'Your rights';
 
   @override
   String get privacyRightsBody =>
-      'Depending on your region, you may request access, correction, deletion, or restriction of your data. Account deletion is available in Settings.';
+      'Depending on your region, you may request access, correction, deletion, or restriction of your data. You can download a copy of your data in Settings → Account → Download my data, and delete your account in Settings.';
 
   @override
   String get privacyDeletionTitle => 'Deleting your data';
@@ -3536,14 +3585,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacySecurityBody =>
-      'We use access controls, encryption in transit, optional message encryption, and Firebase security rules. No system is perfectly secure; report issues to support.';
+      'We use access controls, encryption in transit, end-to-end encryption of message content, and Firebase security rules. No system is perfectly secure; report issues to support.';
 
   @override
   String get privacyChildrenTitle => 'Children';
 
   @override
   String get privacyChildrenBody =>
-      'Mevora is not for users under 18. We delete accounts identified as underage.';
+      'Mevora is not for anyone under 18. Accounts found to belong to someone under 18 are closed.';
 
   @override
   String get privacyChangesTitle => 'Policy changes';
@@ -3831,46 +3880,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cohabitationNo => 'No';
 
   @override
-  String get languageGerman => 'German';
+  String get languageGerman => 'German 🇩🇪';
 
   @override
-  String get languageFrench => 'French';
+  String get languageFrench => 'French 🇫🇷';
 
   @override
-  String get languageSpanish => 'Spanish';
+  String get languageSpanish => 'Spanish 🇪🇸';
 
   @override
-  String get languageItalian => 'Italian';
+  String get languageItalian => 'Italian 🇮🇹';
 
   @override
-  String get languageRussian => 'Russian';
+  String get languageRussian => 'Russian 🇷🇺';
 
   @override
-  String get languageArabic => 'Arabic';
+  String get languageArabic => 'Arabic 🌐';
 
   @override
-  String get languagePersian => 'Persian';
+  String get languagePersian => 'Persian 🌐';
 
   @override
-  String get languageKurdish => 'Kurdish';
+  String get languageKurdish => 'Kurdish 🌐';
 
   @override
-  String get languageGreek => 'Greek';
+  String get languageGreek => 'Greek 🇬🇷';
 
   @override
-  String get languageDutch => 'Dutch';
+  String get languageDutch => 'Dutch 🇳🇱';
 
   @override
-  String get languagePortuguese => 'Portuguese';
+  String get languagePortuguese => 'Portuguese 🇵🇹';
 
   @override
-  String get languageChinese => 'Chinese';
+  String get languageChinese => 'Chinese 🌐';
 
   @override
-  String get languageJapanese => 'Japanese';
+  String get languageJapanese => 'Japanese 🇯🇵';
 
   @override
-  String get languageKorean => 'Korean';
+  String get languageKorean => 'Korean 🇰🇷';
 
   @override
   String get hobbyWorkingOut => 'Working out';
@@ -4093,9 +4142,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorTopVibes => 'Top vibes';
 
   @override
-  String get humorSkipContent => 'Skip';
-
-  @override
   String get humorReport => 'Report';
 
   @override
@@ -4309,7 +4355,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'React to a few short pieces. Your reactions help us understand your sense of humor, so we can show you the humor you share with your matches.';
 
   @override
-  String get humorCalibrationIntroMeta => '15 short pieces · about a minute';
+  String humorCalibrationIntroMeta(int count) {
+    return '$count short pieces · about a minute';
+  }
+
+  @override
+  String get humorCalibrationPausedTitle => 'That\'s it for today';
+
+  @override
+  String get humorCalibrationPausedBody =>
+      'One piece would not play. The rest will be waiting tomorrow, and your humor profile will be completed then.';
+
+  @override
+  String get humorLabCalibratedBody =>
+      'From here on we continue with a few new pieces each day.';
 
   @override
   String get humorCalibrationStart => 'Start';
@@ -4384,9 +4443,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String humorResultContrast(String weakest) {
     return '$weakest does not do much for you.';
   }
-
-  @override
-  String get humorResultKeepGoing => 'Keep shaping your humor profile';
 
   @override
   String get humorResultDone => 'Continue';
@@ -4488,6 +4544,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get premiumRenewsLabel =>
       'Renews automatically. Cancel anytime in the store.';
+
+  @override
+  String get premiumPlanBilledMonthly => 'Billed monthly';
+
+  @override
+  String get premiumPlanBilledYearly => 'Billed yearly';
+
+  @override
+  String premiumPricePerMonth(String price) {
+    return '$price / month';
+  }
+
+  @override
+  String premiumPricePerYear(String price) {
+    return '$price / year';
+  }
+
+  @override
+  String premiumRenewalMonthly(String price) {
+    return 'Your subscription renews automatically every month at $price until you cancel.';
+  }
+
+  @override
+  String premiumRenewalYearly(String price) {
+    return 'Your subscription renews automatically every year at $price until you cancel.';
+  }
+
+  @override
+  String premiumRenewalGeneric(String price) {
+    return 'Your subscription renews automatically at $price each billing period until you cancel.';
+  }
+
+  @override
+  String premiumCancelHow(String store) {
+    return 'Cancel anytime in $store > Subscriptions. You keep Premium until the end of the period you paid for.';
+  }
+
+  @override
+  String get premiumManageSubscription => 'Manage subscription';
+
+  @override
+  String premiumManageSubscriptionFailed(String store) {
+    return 'We couldn\'t open $store. To manage your subscription, go to $store > Subscriptions.';
+  }
 
   @override
   String get musicFollowedArtistsTitle => 'Artists you follow';
@@ -4787,7 +4887,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorDailyHintMiddle => 'Getting to know you a little more 👀';
 
   @override
-  String get humorDailyHintEnd => 'Just a few more videos.';
+  String get humorDailyHintEnd => 'Almost done.';
 
   @override
   String get humorDailyCompletedTitle => 'All done for today 🎭';
@@ -4795,6 +4895,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get humorDailyCompletedBody =>
       'Your humor profile just got a little clearer.';
+
+  @override
+  String get humorDailyCompletedTomorrow =>
+      'A new round will be waiting tomorrow.';
+
+  @override
+  String get humorDailySequenceComplete =>
+      'You have been through everything for now. The round continues when new pieces are added.';
 
   @override
   String get humorDailyNotReadyTitle => 'Today\'s round is being prepared';
@@ -5053,4 +5161,141 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get moderationAppealFailed =>
       'We couldn\'t send your appeal. Check your connection and try again.';
+
+  @override
+  String get faceAnchorRequiredNotice =>
+      'To continue, verify one photo where your face is clearly visible.';
+
+  @override
+  String get faceAnchorVerifyAction => 'Verify your photo';
+
+  @override
+  String get faceAnchorVerifyShort => 'Verify';
+
+  @override
+  String get faceAnchorVerified => 'This photo is verified';
+
+  @override
+  String get faceAnchorVerifiedShort => 'Verified';
+
+  @override
+  String get faceAnchorPending => 'Verification pending';
+
+  @override
+  String get faceAnchorPhotoInReview => 'Photo in review';
+
+  @override
+  String get faceAnchorNotVerified => 'Not verified';
+
+  @override
+  String get faceAnchorRetry => 'Try again';
+
+  @override
+  String get faceAnchorMismatch =>
+      'This photo did not match the selfie you took.';
+
+  @override
+  String get faceAnchorLivenessFailed =>
+      'The liveness check could not be completed. Try again in good light, looking straight at the camera.';
+
+  @override
+  String get faceAnchorPhotoUnclear =>
+      'Your face is not clearly visible on its own in this photo. Choose one that shows only you.';
+
+  @override
+  String get faceAnchorSelfieInvalid =>
+      'That selfie could not be used. Take a new one with your camera and try again.';
+
+  @override
+  String get faceAnchorTechnicalError =>
+      'Verification could not be completed right now. Your photo was not verified; try again shortly.';
+
+  @override
+  String get faceAnchorPrimaryRequiresVerify =>
+      'Verify this photo before making it your main photo.';
+
+  @override
+  String get faceAnchorLastAnchorDelete =>
+      'You can\'t remove your last verified photo. Verify another photo first.';
+
+  @override
+  String get faceAnchorExplainBody =>
+      'We run a short selfie check to make sure your photo is really you.';
+
+  @override
+  String get faceAnchorExplainSteps =>
+      'You\'ll take a selfie with your front camera. It is used only for this check, never appears on your profile and is deleted when the check ends.';
+
+  @override
+  String get faceAnchorConsent =>
+      'I agree to my selfie being processed to compare it with this photo.';
+
+  @override
+  String get faceAnchorTakeSelfie => 'Take a selfie';
+
+  @override
+  String get faceAnchorOpening => 'Getting ready…';
+
+  @override
+  String get faceAnchorCapturing => 'Opening the camera…';
+
+  @override
+  String get faceAnchorUploading => 'Sending your selfie…';
+
+  @override
+  String get faceAnchorVerifying => 'Verifying…';
+
+  @override
+  String get faceAnchorSuccessBody => 'This photo can now be your main photo.';
+
+  @override
+  String get faceAnchorDone => 'Done';
+
+  @override
+  String get faceAnchorChooseAnother => 'Choose another photo';
+
+  @override
+  String get faceAnchorPromptBody =>
+      'Verify one photo where your face is clearly visible to show your profile is really you.';
+
+  @override
+  String get faceAnchorProfileVerifiedTitle => 'Your profile photo is verified';
+
+  @override
+  String get faceAnchorPromptTileSubtitle =>
+      'Verify a photo of your face with a short selfie';
+
+  @override
+  String get faceAnchorErrorUnavailable =>
+      'Photo verification isn\'t available right now. Please try again later.';
+
+  @override
+  String get faceAnchorErrorPhotoNotApproved =>
+      'This photo is still in review. You can verify it once the review is finished.';
+
+  @override
+  String get faceAnchorErrorCooldown => 'Wait a moment and try again.';
+
+  @override
+  String get faceAnchorErrorAttemptLimit =>
+      'You\'ve used today\'s attempts. You can try again tomorrow.';
+
+  @override
+  String get faceAnchorErrorCamera =>
+      'The camera couldn\'t be opened. Check the camera permission and try again.';
+
+  @override
+  String get faceAnchorErrorUpload =>
+      'Your selfie couldn\'t be sent. Check your connection and try again.';
+
+  @override
+  String get faceAnchorErrorInProgress =>
+      'A verification is already running. Please wait for the result.';
+
+  @override
+  String get faceAnchorErrorConsent => 'You need to agree before continuing.';
+
+  @override
+  String get faceAnchorErrorGeneric =>
+      'Verification couldn\'t be started. Please try again.';
 }

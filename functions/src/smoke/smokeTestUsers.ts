@@ -1,4 +1,6 @@
+import {createHash, randomBytes, timingSafeEqual} from "node:crypto";
 import {getApps, initializeApp} from "firebase-admin/app";
+import {getAuth} from "firebase-admin/auth";
 import {FieldValue, getFirestore} from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
@@ -25,16 +27,53 @@ export function isSmokeTestUser(data: Record<string, unknown> | undefined): bool
   return data?.isSmokeTestUser === true;
 }
 
+function sha256(value: string): Buffer {
+  return createHash("sha256").update(value, "utf8").digest();
+}
+
+/**
+ * Whether `provided` is the configured smoke secret.
+ *
+ * Both sides are hashed first, so timingSafeEqual always sees two buffers of
+ * the same length and the time taken says nothing about how much of the
+ * secret a guess got right, or how long the secret is. An empty value on
+ * either side never matches: an unset secret must not be satisfiable by
+ * sending nothing.
+ */
+export function smokeSecretMatches(provided: unknown, expected: string): boolean {
+  if (typeof provided !== "string" || provided.length === 0 || expected.length === 0) {
+    return false;
+  }
+  return timingSafeEqual(sha256(provided), sha256(expected));
+}
+
 function requireSmokeSecret(provided: unknown): void {
   const expected = smokeTestSecret.value();
-  if (!expected || String(provided ?? "") !== expected) {
+  if (!expected) {
+    // No default and no fallback: without a configured secret the smoke
+    // surface is closed to everyone, whatever they send.
+    logger.warn("Smoke callable refused: SMOKE_TEST_SECRET is not configured");
+    throw new HttpsError("failed-precondition", "smoke-secret-not-configured");
+  }
+  if (!smokeSecretMatches(provided, expected)) {
     throw new HttpsError("permission-denied", "smoke-secret-invalid");
   }
 }
 
+/**
+ * A fresh password for one smoke user: 32 bytes from the system CSPRNG.
+ *
+ * It is not derived from anything in this repository, from the user or from
+ * the smoke secret, so reading the source gives no way to sign in. The fixed
+ * suffix carries no secrecy; it only keeps the value valid if the project
+ * turns on a character-class password policy.
+ */
+function generateSmokePassword(): string {
+  return `${randomBytes(32).toString("base64url")}aA1!`;
+}
+
 async function deleteAuthUserIfExists(uid: string): Promise<void> {
   try {
-    const {getAuth} = await import("firebase-admin/auth");
     await getAuth().deleteUser(uid);
   } catch (error) {
     logger.info("Smoke cleanup auth user missing", {uid, error});
@@ -58,9 +97,17 @@ async function deleteSmokeUserData(uid: string): Promise<void> {
   }
 }
 
+/**
+ * Creates (or resets) the two smoke users and hands their credentials to the
+ * caller who presented the smoke secret.
+ *
+ * Every call issues new passwords, for existing users too, and ends their
+ * open sessions: a password from an earlier run, or the template an earlier
+ * deploy used, stops working the moment this runs. The passwords exist only
+ * in Firebase Auth and in this response; they are never stored or logged.
+ */
 export const prepareSmokeTestUsers = onCall(callableOptions, async (request) => {
   requireSmokeSecret(request.data?.secret);
-  const {getAuth} = await import("firebase-admin/auth");
   const auth = getAuth();
 
   const pair = [
@@ -69,16 +116,22 @@ export const prepareSmokeTestUsers = onCall(callableOptions, async (request) => 
   ] as const;
 
   const result: Record<string, string> = {};
+  const passwords: Record<string, string> = {};
   for (const item of pair) {
+    const password = generateSmokePassword();
     let user = await auth.getUserByEmail(item.email).catch(() => null);
-    if (!user) {
+    if (user) {
+      await auth.updateUser(user.uid, {emailVerified: true, password});
+      await auth.revokeRefreshTokens(user.uid);
+    } else {
       user = await auth.createUser({
         email: item.email,
         emailVerified: true,
-        password: `Smoke!${item.label}9Mevora`,
+        password,
         displayName: `Smoke User ${item.label}`,
       });
     }
+    passwords[item.label] = password;
     await deleteSmokeUserData(user.uid);
     await db.doc(`users/${user.uid}`).set(
       {
@@ -106,12 +159,15 @@ export const prepareSmokeTestUsers = onCall(callableOptions, async (request) => 
       a: SMOKE_USER_A_EMAIL,
       b: SMOKE_USER_B_EMAIL,
     },
+    passwords: {
+      a: passwords.A,
+      b: passwords.B,
+    },
   };
 });
 
 export const cleanupSmokeTestUsers = onCall(callableOptions, async (request) => {
   requireSmokeSecret(request.data?.secret);
-  const {getAuth} = await import("firebase-admin/auth");
   const auth = getAuth();
   const emails = [SMOKE_USER_A_EMAIL, SMOKE_USER_B_EMAIL];
   const deleted: string[] = [];

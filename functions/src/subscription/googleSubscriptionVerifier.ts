@@ -13,7 +13,10 @@ import {logger} from "firebase-functions";
 import type {GoogleSubscriptionPurchase} from "./googleSubscriptionMapper.js";
 
 export type GoogleVerifyFailure =
-  /** No service account configured — cannot verify, so cannot grant. */
+  /**
+   * No service account configured, or Google does not accept the one that
+   * is — cannot verify, so cannot grant. Says nothing about the purchase.
+   */
   | "unavailable"
   /** Google rejected the token, or it is not a subscription we know. */
   | "invalid"
@@ -47,6 +50,14 @@ export interface GoogleSubscriptionApi {
 }
 
 export class PlayDeveloperApi implements GoogleSubscriptionApi {
+  /** Both seams exist for tests; a deployment uses the defaults. */
+  constructor(
+    private readonly deps: {
+      accessToken?: () => Promise<string | null>;
+      fetchImpl?: typeof fetch;
+    } = {},
+  ) {}
+
   async fetchSubscription(input: {
     packageName: string;
     purchaseToken: string;
@@ -55,7 +66,7 @@ export class PlayDeveloperApi implements GoogleSubscriptionApi {
       return {ok: false, error: "invalid"};
     }
 
-    const access = await playAccessToken();
+    const access = await (this.deps.accessToken ?? playAccessToken)();
     if (!access) {
       // Fail closed. There is deliberately no emulator shortcut that fabricates
       // a purchase here: the Boost verifier has one, but Boost is a consumable
@@ -73,19 +84,27 @@ export class PlayDeveloperApi implements GoogleSubscriptionApi {
 
     let response: Response;
     try {
-      response = await fetch(url, {headers: {Authorization: `Bearer ${access}`}});
+      response = await (this.deps.fetchImpl ?? fetch)(url, {
+        headers: {Authorization: `Bearer ${access}`},
+      });
     } catch (error) {
       logger.warn("premium: Google Play request failed", {error});
       return {ok: false, error: "transient"};
     }
 
     if (!response.ok) {
-      // 5xx and 429 are Google's problem and must not revoke a live
-      // entitlement; 4xx means the token really is not valid for us.
-      const transient = response.status >= 500 || response.status === 429;
       logger.warn("premium: Google Play rejected a subscription lookup", {
         status: response.status,
       });
+      // 401 and 403 are about Mevora's credential — a service account that is
+      // not linked in Play Console, or lacks the permission — not about the
+      // token. Calling that `invalid` would declare a genuine purchase bad.
+      if (response.status === 401 || response.status === 403) {
+        return {ok: false, error: "unavailable"};
+      }
+      // 5xx and 429 are Google's problem and must not revoke a live
+      // entitlement; any other 4xx means the token really is not valid for us.
+      const transient = response.status >= 500 || response.status === 429;
       return {ok: false, error: transient ? "transient" : "invalid"};
     }
 

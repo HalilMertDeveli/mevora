@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/painting.dart';
+import 'package:mevora/core/cache/image_disk_cache.dart';
 import 'package:mevora/core/services/app_logger.dart';
 
 /// Best-effort wipe of the local Firestore cache after logout / deletion.
@@ -16,6 +17,8 @@ class FirestoreSessionCache {
     } on Object {
       // Image cache clear is best-effort.
     }
+    // Photos seen by this account stay on this device otherwise.
+    await ImageDiskCache.instance.clear();
     try {
       await FirebaseFirestore.instance.clearPersistence();
     } on Object catch (error, stackTrace) {

@@ -67,6 +67,15 @@ void main() {
       expect(repository.saves, isEmpty);
     });
 
+    test('a day with nothing left to ask is done, not an error', () async {
+      final repository = FakeRelationshipLearningRepository(count: 0);
+      final c = controllerFor(repository);
+      await c.load();
+      expect(c.phase, LearningFlowPhase.done);
+      expect(c.loadError, isNull);
+      expect(c.total, 0);
+    });
+
     test('the next day brings a fresh set', () async {
       final repository = FakeRelationshipLearningRepository(answered: 10)
         ..newDay('2026-09-30');

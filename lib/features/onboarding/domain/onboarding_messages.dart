@@ -9,6 +9,9 @@ abstract final class OnboardingMessages {
   static const birthdayRequired = 'Birthday is required';
   static const underage = 'You must be 18 or older to use Mevora.';
   static const firstNameRequired = 'First name is required';
+  static const firstNameTooLong = 'First name is too long';
+  static const lastNameRequired = 'Last name is required';
+  static const lastNameTooLong = 'Last name is too long';
   static const genderRequired = 'Gender is required';
   static const interestedInRequired = 'Interested in is required';
   static const cityRequired = 'City is required';
@@ -26,6 +29,13 @@ abstract final class OnboardingMessages {
       'Bio must be ${OnboardingConfig.maxBioLength} characters or fewer';
   static final photosTooMany =
       'You can add up to ${OnboardingConfig.maxPhotos} photos';
+
+  /// No photo has been verified as the member yet. Returned by the validators
+  /// and by the completeOnboarding callable (`face-anchor-required`).
+  static const faceAnchorRequired =
+      'Verify a photo that clearly shows your face to continue.';
+  static const primaryNotFaceAnchor =
+      'Your main photo must be a verified photo.';
 
   // Completion failures reported by the completeOnboarding callable.
   static const serverPhotosRequired =

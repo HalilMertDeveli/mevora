@@ -32,6 +32,7 @@ const {
   scrubDeletedMemberFromPicks,
   servePicks,
   picksDocPath,
+  preferredRadiusKmFor,
 } = require("../lib/picks/service.js");
 const {loadDiscoveryViewerContext} = require("../lib/discoveryPool.js");
 const {getMevoraPicks} = require("../lib/picks/index.js");
@@ -186,12 +187,13 @@ function strong(uid, overall, extra = {}) {
 }
 
 describe("Pick set composition", () => {
-  it("6+ strong candidates → the target set of 6", () => {
-    const pool = Array.from({length: 9}, (_, i) => strong(`u${i}`, 90 - i));
-    const picks = composePicks(evaluatePool(pool), {targetCount: PICKS_CONFIG.targetCount});
-    assert.equal(picks.length, 6);
-    assert.deepEqual(picks.map((p) => p.rank), [0, 1, 2, 3, 4, 5]);
-    assert.equal(new Set(picks.map((p) => p.candidateUid)).size, 6);
+  it("more strong candidates than the target → exactly the target set", () => {
+    const target = PICKS_CONFIG.targetCount;
+    const pool = Array.from({length: target + 3}, (_, i) => strong(`u${i}`, 95 - i));
+    const picks = composePicks(evaluatePool(pool), {targetCount: target});
+    assert.equal(picks.length, target);
+    assert.deepEqual(picks.map((p) => p.rank), Array.from({length: target}, (_, i) => i));
+    assert.equal(new Set(picks.map((p) => p.candidateUid)).size, target);
   });
 
   it("3 strong candidates → 3 Picks; quality is never lowered to reach 6", () => {
@@ -307,6 +309,11 @@ describe("Pick set composition", () => {
 
 const DAY_MS = 86_400_000;
 
+/** Uids for a batch filled exactly to the configured target. */
+function fullBatchUids() {
+  return Array.from({length: PICKS_CONFIG.targetCount}, (_, i) => String.fromCharCode(97 + i));
+}
+
 function storedBatch(nowMs, uids = ["a", "b", "c"]) {
   const composed = uids.map((uid, rank) => ({
     candidateUid: uid,
@@ -390,7 +397,7 @@ describe("Pick lifecycle", () => {
   });
 
   it("tops up only with room, budget and after the scan interval", () => {
-    const full = storedBatch(now, ["a", "b", "c", "d", "e", "f"]);
+    const full = storedBatch(now, fullBatchUids());
     assert.equal(lifecycle.needsTopUp(full, now + PICKS_CONFIG.topUpMinIntervalMs), false);
     // A Pick that stopped being eligible frees its slot...
     const blocked = lifecycle.applyRevalidation(full, new Map([["a", "ineligible"]]), now).batch;
@@ -401,12 +408,40 @@ describe("Pick lifecycle", () => {
     assert.equal(lifecycle.needsTopUp(exhausted, now + PICKS_CONFIG.topUpMinIntervalMs), false);
   });
 
+  it("a short batch owes no replacements; each ineligible Pick owes exactly one", () => {
+    const short = storedBatch(now, ["a", "b", "c"]);
+    assert.equal(lifecycle.replacementsOwed(short), 0);
+    assert.equal(lifecycle.needsTopUp(short, now + 10 * PICKS_CONFIG.topUpMinIntervalMs), false);
+    const lost = lifecycle.applyRevalidation(short, new Map([["a", "ineligible"]]), now).batch;
+    assert.equal(lifecycle.replacementsOwed(lost), 1);
+    assert.equal(lifecycle.topUpSlots(lost), 1);
+    const replaced = lifecycle.appendPicks(lost, lifecycle.buildStoredPicks("gen1", [{
+      candidateUid: "z", rank: 9, pickType: "bestOverall", labels: ["bestOverall"], reasons: [],
+      overallScore: 80, isBoosted: false, selectionStrategy: "exploit",
+    }], new Map(), now), now);
+    assert.equal(lifecycle.replacementsOwed(replaced), 0);
+  });
+
+  it("empty replacement scans back off, and a successful one resets the clock", () => {
+    const interval = PICKS_CONFIG.topUpMinIntervalMs;
+    let batch = storedBatch(now, fullBatchUids());
+    assert.equal(lifecycle.topUpWaitMs(batch), interval);
+    batch = lifecycle.markScanned(batch, now);
+    assert.equal(lifecycle.topUpWaitMs(batch), 2 * interval);
+    batch = lifecycle.markScanned(lifecycle.markScanned(lifecycle.markScanned(batch, now), now), now);
+    assert.equal(lifecycle.topUpWaitMs(batch), PICKS_CONFIG.topUpMaxBackoffMs);
+    batch = lifecycle.markScanned(batch, now);
+    assert.equal(lifecycle.topUpWaitMs(batch), PICKS_CONFIG.topUpMaxBackoffMs, "capped");
+    batch = lifecycle.appendPicks(batch, [], now);
+    assert.equal(lifecycle.topUpWaitMs(batch), interval);
+  });
+
   it("never refills a slot spent on a like, a pass or a match", () => {
-    let batch = storedBatch(now, ["a", "b", "c", "d", "e", "f"]);
+    let batch = storedBatch(now, fullBatchUids());
     batch = lifecycle.applyDecision(batch, "a", "passed", now).batch;
     batch = lifecycle.applyDecision(batch, "b", "liked", now).batch;
     batch = lifecycle.applyDecision(batch, "c", "matched", now).batch;
-    assert.equal(lifecycle.slotsUsed(batch), 6);
+    assert.equal(lifecycle.slotsUsed(batch), PICKS_CONFIG.targetCount);
     assert.equal(lifecycle.needsTopUp(batch, now + PICKS_CONFIG.topUpMinIntervalMs), false);
     assert.equal(lifecycle.topUpSlots(batch), 0);
   });
@@ -515,6 +550,8 @@ function profile(uid, overrides = {}) {
     relationshipGoal: "longTerm",
     interests: ["hiking", "jazz", "cooking", "chess"],
     lifestyle: ["nonsmoker", "earlybird"],
+    // The real clock on purpose: the pool's activity filter and the activity
+    // score measure this against Date.now(), not against the serve time.
     lastActiveAt: Timestamp.fromMillis(Date.now()),
     updatedAt: 1000,
     ...overrides,
@@ -533,108 +570,114 @@ function seedWorld(candidates) {
   db.reset(seed);
 }
 
+/**
+ * The clock the service tests run at: 09:00 in Istanbul on a fixed day.
+ *
+ * Picks are dealt per Istanbul day, and these tests reopen them a top-up
+ * interval later. Measured from the real clock, that step crossed midnight
+ * whenever the suite ran between 23:30 and 00:00 Istanbul time: the next
+ * day's batch was dealt and the assertions failed. From a fixed morning every
+ * same-day step stays inside the day, whenever the suite runs.
+ */
+const NOW = Date.UTC(2026, 9, 1, 6, 0);
+
 async function serve(nowMs) {
   const {viewer, boostSessions} = await loadDiscoveryViewerContext(db, VIEWER, {uid: VIEWER});
   return servePicks({db, viewer, boostSessions, nowMs});
 }
 
 describe("Mevora Picks service", () => {
+  const TARGET = PICKS_CONFIG.targetCount;
+
   beforeEach(() => {
-    seedWorld([
-      ["c1", {}],
-      ["c2", {}],
-      ["c3", {}],
-      ["c4", {}],
-      ["c5", {}],
-      ["c6", {}],
-      ["c7", {}],
-      ["c8", {}],
-    ]);
+    // Two strong candidates more than one day's target.
+    seedWorld(Array.from({length: TARGET + 2}, (_, i) => [`c${i + 1}`, {}]));
   });
 
-  it("serves a curated batch of 6 with real reasons, and the same batch on reopen", async () => {
-    const first = await serve(Date.now());
+  it("serves a curated batch of the daily target with real reasons, and the same batch on reopen", async () => {
+    const first = await serve(NOW);
     assert.equal(first.status, "ready");
-    assert.equal(first.picks.length, 6);
+    assert.equal(first.targetCount, TARGET);
+    assert.equal(first.picks.length, TARGET);
     for (const item of first.picks) {
       assert.ok(item.pick.pickType, "every Pick has a type");
       assert.ok(item.pick.reasons.length > 0, "every Pick has a reason");
       assert.equal(item.uid === VIEWER, false);
       assert.equal("latitude" in item, false);
     }
-    const again = await serve(Date.now());
+    const again = await serve(NOW);
     assert.equal(again.generationId, first.generationId);
     assert.deepEqual(again.picks.map((p) => p.uid), first.picks.map((p) => p.uid));
-    assert.deepEqual(db.read("pickFunnelDaily/" + new Date().toISOString().slice(0, 10)).delivered, 6);
+    assert.deepEqual(db.read("pickFunnelDaily/" + new Date(NOW).toISOString().slice(0, 10)).delivered, TARGET);
   });
 
   it("like and pass remove Picks; a passed person never comes back", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const [liked, passed] = first.picks.map((p) => p.uid);
     await db.doc(`likes/${VIEWER}_${liked}`).set({fromUserId: VIEWER, toUserId: liked, action: "like"});
-    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: liked, decision: "liked"});
+    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: liked, decision: "liked", nowMs: NOW});
     await db.doc(`users/${VIEWER}/passedUsers/${passed}`).set({toUserId: passed});
-    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: passed, decision: "passed"});
-    const after = await serve(Date.now());
+    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: passed, decision: "passed", nowMs: NOW});
+    const after = await serve(NOW);
     const uids = after.picks.map((p) => p.uid);
     assert.equal(uids.includes(liked), false);
     assert.equal(uids.includes(passed), false);
     // Even a brand-new batch a day later does not bring them back.
-    const nextDay = await serve(Date.now() + DAY_MS + 1);
+    const nextDay = await serve(NOW + DAY_MS + 1);
     assert.notEqual(nextDay.generationId, first.generationId);
     assert.equal(nextDay.picks.some((p) => p.uid === liked || p.uid === passed), false);
   });
 
   it("deciding does not buy more people: today's set stays finite", async () => {
-    const first = await serve(Date.now());
-    assert.equal(first.picks.length, 6);
-    assert.equal(first.dayKey, lifecycle.logicalDayKey(Date.now()));
+    const first = await serve(NOW);
+    assert.equal(first.picks.length, TARGET);
+    assert.equal(first.dayKey, lifecycle.logicalDayKey(NOW));
     for (const item of first.picks.slice(0, 3)) {
       await db.doc(`users/${VIEWER}/passedUsers/${item.uid}`).set({toUserId: item.uid});
-      await recordPickDecision({db, viewerUid: VIEWER, candidateUid: item.uid, decision: "passed"});
+      await recordPickDecision({db, viewerUid: VIEWER, candidateUid: item.uid, decision: "passed", nowMs: NOW});
     }
     // Well past the top-up interval, and two unused candidates remain in the pool.
-    const later = await serve(Date.now() + PICKS_CONFIG.topUpMinIntervalMs + 1);
+    const later = await serve(NOW + PICKS_CONFIG.topUpMinIntervalMs + 1);
     assert.equal(later.generationId, first.generationId);
-    assert.equal(later.picks.length, 3);
+    assert.equal(later.picks.length, TARGET - 3);
     assert.deepEqual(later.picks.map((p) => p.uid), first.picks.slice(3).map((p) => p.uid));
   });
 
   it("a Pick that stops being eligible is replaced from the same day's pool", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const blocked = first.picks[0].uid;
     await db.doc(`blocks/${VIEWER}_${blocked}`).set({blockerId: VIEWER, blockedUserId: blocked});
-    const later = await serve(Date.now() + PICKS_CONFIG.topUpMinIntervalMs + 1);
+    const later = await serve(NOW + PICKS_CONFIG.topUpMinIntervalMs + 1);
     assert.equal(later.generationId, first.generationId);
     assert.equal(later.picks.some((p) => p.uid === blocked), false);
-    assert.equal(later.picks.length, 6);
+    assert.equal(later.picks.length, TARGET);
   });
 
   it("a blocked or deleted member disappears on the next request", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const [blocked, deleted] = first.picks.map((p) => p.uid);
     await db.doc(`blocks/${VIEWER}_${blocked}`).set({blockerId: VIEWER, blockedUserId: blocked});
     await db.doc(`profiles/${deleted}`).delete();
-    const after = await serve(Date.now());
+    const after = await serve(NOW);
     const uids = after.picks.map((p) => p.uid);
     assert.equal(uids.includes(blocked), false);
     assert.equal(uids.includes(deleted), false);
   });
 
   it("a matched member does not reappear, and the match carries its Pick attribution", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const partner = first.picks[0].uid;
     const matchId = [VIEWER, partner].sort().join("_");
     await db.doc(`matches/${matchId}`).set({userIds: [VIEWER, partner].sort(), isActive: true});
-    await attributePickMatch({db, matchRef: db.doc(`matches/${matchId}`), uidA: VIEWER, uidB: partner});
+    await attributePickMatch({db, matchRef: db.doc(`matches/${matchId}`), uidA: VIEWER, uidB: partner, nowMs: NOW});
     const match = db.read(`matches/${matchId}`);
     assert.equal(match.introducedByPick[VIEWER].pickType, first.picks[0].pick.pickType);
     assert.equal(match.introducedByPick[VIEWER].generationId, first.generationId);
     const stored = lifecycle.parseBatch(db.read(picksDocPath(VIEWER)));
     assert.equal(stored.picks.find((p) => p.candidateUid === partner).state, "matched");
-    const after = await serve(Date.now());
+    const after = await serve(NOW);
     assert.equal(after.picks.some((p) => p.uid === partner), false);
-    const day = db.read("pickFunnelDaily/" + new Date().toISOString().slice(0, 10));
+    const day = db.read("pickFunnelDaily/" + new Date(NOW).toISOString().slice(0, 10));
     assert.equal(day.mutualMatch, 1);
   });
 
@@ -647,14 +690,14 @@ describe("Mevora Picks service", () => {
       ["w1", {relationshipGoal: "casual", interests: ["x9"], lifestyle: ["smoker"]}],
       ["w2", {relationshipGoal: "casual", interests: ["x8"], lifestyle: ["nightowl"]}],
     ]);
-    const result = await serve(Date.now());
+    const result = await serve(NOW);
     assert.deepEqual(result.picks.map((p) => p.uid).sort(), ["s1", "s2", "s3"]);
     assert.equal(result.status, "lowSupply");
   });
 
   it("0 candidates → an intentional empty state", async () => {
     seedWorld([]);
-    const result = await serve(Date.now());
+    const result = await serve(NOW);
     assert.equal(result.status, "empty");
     assert.equal(result.emptyReason, "noCandidates");
     assert.deepEqual(result.picks, []);
@@ -662,29 +705,29 @@ describe("Mevora Picks service", () => {
 
   it("once every Pick is decided, the empty state says so", async () => {
     seedWorld([["only", {}]]);
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     assert.equal(first.picks.length, 1);
     await db.doc(`users/${VIEWER}/passedUsers/only`).set({toUserId: "only"});
-    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: "only", decision: "passed"});
-    const after = await serve(Date.now());
+    await recordPickDecision({db, viewerUid: VIEWER, candidateUid: "only", decision: "passed", nowMs: NOW});
+    const after = await serve(NOW);
     assert.equal(after.status, "empty");
     assert.equal(after.emptyReason, "allDecided");
   });
 
   it("undecided Picks rest after their batch expires instead of recycling", async () => {
     seedWorld([["a1", {}], ["a2", {}]]);
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     assert.equal(first.picks.length, 2);
-    const nextDay = await serve(Date.now() + DAY_MS + 1);
+    const nextDay = await serve(NOW + DAY_MS + 1);
     assert.equal(nextDay.picks.length, 0);
     const later = await serve(
-      Date.now() + DAY_MS * 2 + PICKS_CONFIG.expiredCooldownMs + 2,
+      NOW + DAY_MS * 2 + PICKS_CONFIG.expiredCooldownMs + 2,
     );
     assert.equal(later.picks.length, 2);
   });
 
   it("account deletion scrubs the member from other people's Picks", async () => {
-    const first = await serve(Date.now());
+    const first = await serve(NOW);
     const gone = first.picks[0].uid;
     const scrubbed = await scrubDeletedMemberFromPicks(db, gone);
     assert.equal(scrubbed, 1);
@@ -706,4 +749,87 @@ describe("Mevora Picks service", () => {
     assert.deepEqual(result.picks, []);
   });
 
+});
+
+describe("Picks look inside the viewer's chosen distance first", () => {
+  const TARGET = PICKS_CONFIG.targetCount;
+  const here = {latitude: 41.0, longitude: 29.0};
+  const close = {latitude: 41.03, longitude: 29.0}; // about 3 km
+  const further = {latitude: 41.3, longitude: 29.0}; // about 33 km
+  const closeUids = Array.from({length: TARGET}, (_, i) => `close${i}`);
+  const furtherUids = Array.from({length: TARGET}, (_, i) => `further${i}`);
+
+  /** [closeCount] people nearby, and a full day of stronger matches further out. */
+  async function seedDistances(closeCount, prefs) {
+    seedWorld([
+      ...furtherUids.map((uid) => [uid, {}]),
+      // Still above the floor, but a weaker match than the people further out.
+      ...closeUids.slice(0, closeCount).map((uid) => [uid, {interests: ["hiking", "jazz", "cooking"]}]),
+    ]);
+    await db.doc(`userLocation/${VIEWER}`).set(here);
+    if (prefs) await db.doc(`userPreferences/${VIEWER}`).set(prefs);
+    for (const uid of furtherUids) await db.doc(`userLocation/${uid}`).set(further);
+    for (const uid of closeUids.slice(0, closeCount)) await db.doc(`userLocation/${uid}`).set(close);
+  }
+
+  it("reads the distance from the match preferences, inside the product's limits", () => {
+    assert.equal(preferredRadiusKmFor(undefined), PICKS_CONFIG.preferredRadiusKm);
+    assert.equal(preferredRadiusKmFor({}), PICKS_CONFIG.preferredRadiusKm);
+    assert.equal(preferredRadiusKmFor({maxDistance: 20}), 20);
+    assert.equal(preferredRadiusKmFor({maxDistance: 1}), 1);
+    // Never past the hard ceiling Discover excludes at.
+    assert.equal(preferredRadiusKmFor({maxDistance: 500}), 100);
+    for (const junk of [0, -5, "far", null, Number.NaN]) {
+      assert.equal(preferredRadiusKmFor({maxDistance: junk}), PICKS_CONFIG.preferredRadiusKm);
+    }
+  });
+
+  it("with no distance chosen, everyone inside the default radius competes on the match alone", async () => {
+    await seedDistances(TARGET, null);
+    const result = await serve(Date.now());
+    // Both groups are inside 50 km, so the stronger matches take most of the day.
+    const further = result.picks.filter((p) => p.uid.startsWith("further")).length;
+    assert.equal(result.picks.length, TARGET);
+    assert.ok(further > TARGET / 2, `${further} of ${TARGET} Picks came from further out`);
+  });
+
+  it("a shorter distance puts the people inside it first, ahead of stronger matches further out", async () => {
+    await seedDistances(TARGET, {maxDistance: 10});
+    const result = await serve(Date.now());
+    assert.deepEqual(result.picks.map((p) => p.uid).sort(), [...closeUids].sort());
+  });
+
+  it("reaches beyond the chosen distance only for the places it could not fill", async () => {
+    await seedDistances(3, {maxDistance: 10});
+    const result = await serve(Date.now());
+    const uids = result.picks.map((p) => p.uid);
+    assert.equal(uids.length, TARGET);
+    for (const uid of closeUids.slice(0, 3)) assert.ok(uids.includes(uid), `${uid} is inside the chosen distance`);
+    assert.equal(uids.filter((uid) => uid.startsWith("further")).length, TARGET - 3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Product boundary: Picks is the only way people are put in front of a member.
+// ---------------------------------------------------------------------------
+
+describe("No open-ended feed beside Picks", () => {
+  it("the retired Discover deck refuses every request, cursor or not", async () => {
+    // backend.ts also registers a Storage trigger, which needs a bucket at load.
+    process.env.FIREBASE_CONFIG ??= JSON.stringify({
+      projectId: "demo-picks-boundary",
+      storageBucket: "demo-picks-boundary.appspot.com",
+    });
+    const {getDiscoveryCandidates, getDiscoveryFeed} = require("../lib/backend.js");
+    seedWorld([["c1", {}], ["c2", {}], ["c3", {}]]);
+    for (const callable of [getDiscoveryCandidates, getDiscoveryFeed]) {
+      for (const data of [{}, {cursor: "c1", limit: 20, radiusKm: 100, expandDistance: true}]) {
+        await assert.rejects(
+          () => callAs(callable, VIEWER, data),
+          (error) => error.code === "failed-precondition" && error.message === "discovery-deck-retired",
+        );
+      }
+    }
+    await assert.rejects(() => callAs(getDiscoveryCandidates, null), (error) => error.code === "unauthenticated");
+  });
 });

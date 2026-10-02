@@ -134,7 +134,7 @@ production. The pages exist in `hosting/public/` and must be deployed first.
 | Terms of Service (for the listing / reviewer notes) | `<site>/terms` |
 | Community Guidelines | `<site>/guidelines` |
 | Website / support | `<site>/help` |
-| Support email | the address the owner chooses — the pages and the app currently use a personal mailbox |
+| Support email | `destek@mevora.com` (owner decision 2026-10-02) — the web pages and the app use it; the mailbox must exist and be read before launch |
 
 ## Category, audience, declarations
 

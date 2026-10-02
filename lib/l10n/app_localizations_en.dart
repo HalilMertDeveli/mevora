@@ -792,11 +792,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authDisabled =>
-      'This account has been disabled. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.';
+      'This account has been disabled. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.';
 
   @override
   String get authBanned =>
-      'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.';
+      'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.';
 
   @override
   String get authOauth => 'We could not complete sign-in. Please try again.';
@@ -1430,6 +1430,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageEnglish => 'English 🇬🇧';
 
   @override
+  String get spokenLanguageTurkish => 'Turkish 🇹🇷';
+
+  @override
+  String get spokenLanguageEnglish => 'English 🇬🇧';
+
+  @override
   String get theme => 'Theme';
 
   @override
@@ -1587,6 +1593,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get previewPhoto => 'Send this photo?';
+
+  @override
+  String get previewPhotoBody => 'Your photo is sent end-to-end encrypted.';
 
   @override
   String get messageDeleted => 'Message deleted';
@@ -3186,7 +3195,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get faqDeleteAccountA =>
-      'Go to Settings → Account → Delete Account. Confirm the dialog to permanently delete your Mevora account and associated data. This cannot be undone.';
+      'Go to Settings → Account → Delete Account. Confirm the dialog to permanently delete your Mevora account and associated data. This cannot be undone. Logging out alone does not delete your data.';
 
   @override
   String get faqChangePhotoQ => 'How do I change my profile photo?';
@@ -3194,13 +3203,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get faqChangePhotoA =>
       'Open Settings → Edit Profile. You can add, remove, or replace photos from your gallery or camera. Photos may be reviewed before they appear to others.';
-
-  @override
-  String get faqCloseAccountQ => 'How do I close my account?';
-
-  @override
-  String get faqCloseAccountA =>
-      'Closing your account is the same as deleting it. Use Settings → Account → Delete Account. Logging out alone does not delete your data.';
 
   @override
   String get faqHowMatchQ => 'How does matching work?';
@@ -3460,7 +3462,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsContactBody =>
-      'For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.';
+      'For legal questions, contact support from Settings or email destek@mevora.com.';
 
   @override
   String get termsEffectiveTitle => 'Effective date';
@@ -3614,7 +3616,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privacyContactBody =>
-      'Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.';
+      'Privacy questions: destek@mevora.com or create a support request in Settings.';
 
   @override
   String musicMatchTitle(int percent) {
@@ -4036,7 +4038,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get humorLabTitle => 'Humor Lab';
 
   @override
-  String get humorLabSubtitle => 'Keep showing us what makes you laugh.';
+  String get humorLabSubtitle => 'Show us what makes you laugh.';
 
   @override
   String get humorLabDiscoverCta => 'Open Humor Lab';

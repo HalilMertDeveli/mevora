@@ -1361,13 +1361,13 @@ abstract class AppLocalizations {
   /// No description provided for @authDisabled.
   ///
   /// In en, this message translates to:
-  /// **'This account has been disabled. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.'**
+  /// **'This account has been disabled. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.'**
   String get authDisabled;
 
   /// No description provided for @authBanned.
   ///
   /// In en, this message translates to:
-  /// **'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at halilmertdeveliii@gmail.com to appeal.'**
+  /// **'This account has been closed for breaking our community guidelines. If you think this is a mistake, contact Mevora support at destek@mevora.com to appeal.'**
   String get authBanned;
 
   /// No description provided for @authOauth.
@@ -2522,6 +2522,18 @@ abstract class AppLocalizations {
   /// **'English 🇬🇧'**
   String get languageEnglish;
 
+  /// No description provided for @spokenLanguageTurkish.
+  ///
+  /// In en, this message translates to:
+  /// **'Turkish 🇹🇷'**
+  String get spokenLanguageTurkish;
+
+  /// No description provided for @spokenLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English 🇬🇧'**
+  String get spokenLanguageEnglish;
+
   /// No description provided for @theme.
   ///
   /// In en, this message translates to:
@@ -2821,6 +2833,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Send this photo?'**
   String get previewPhoto;
+
+  /// No description provided for @previewPhotoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your photo is sent end-to-end encrypted.'**
+  String get previewPhotoBody;
 
   /// No description provided for @messageDeleted.
   ///
@@ -5657,7 +5675,7 @@ abstract class AppLocalizations {
   /// No description provided for @faqDeleteAccountA.
   ///
   /// In en, this message translates to:
-  /// **'Go to Settings → Account → Delete Account. Confirm the dialog to permanently delete your Mevora account and associated data. This cannot be undone.'**
+  /// **'Go to Settings → Account → Delete Account. Confirm the dialog to permanently delete your Mevora account and associated data. This cannot be undone. Logging out alone does not delete your data.'**
   String get faqDeleteAccountA;
 
   /// No description provided for @faqChangePhotoQ.
@@ -5671,18 +5689,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open Settings → Edit Profile. You can add, remove, or replace photos from your gallery or camera. Photos may be reviewed before they appear to others.'**
   String get faqChangePhotoA;
-
-  /// No description provided for @faqCloseAccountQ.
-  ///
-  /// In en, this message translates to:
-  /// **'How do I close my account?'**
-  String get faqCloseAccountQ;
-
-  /// No description provided for @faqCloseAccountA.
-  ///
-  /// In en, this message translates to:
-  /// **'Closing your account is the same as deleting it. Use Settings → Account → Delete Account. Logging out alone does not delete your data.'**
-  String get faqCloseAccountA;
 
   /// No description provided for @faqHowMatchQ.
   ///
@@ -6125,7 +6131,7 @@ abstract class AppLocalizations {
   /// No description provided for @termsContactBody.
   ///
   /// In en, this message translates to:
-  /// **'For legal questions, contact support from Settings or email halilmertdeveliii@gmail.com.'**
+  /// **'For legal questions, contact support from Settings or email destek@mevora.com.'**
   String get termsContactBody;
 
   /// No description provided for @termsEffectiveTitle.
@@ -6389,7 +6395,7 @@ abstract class AppLocalizations {
   /// No description provided for @privacyContactBody.
   ///
   /// In en, this message translates to:
-  /// **'Privacy questions: halilmertdeveliii@gmail.com or create a support request in Settings.'**
+  /// **'Privacy questions: destek@mevora.com or create a support request in Settings.'**
   String get privacyContactBody;
 
   /// No description provided for @musicMatchTitle.
@@ -7169,7 +7175,7 @@ abstract class AppLocalizations {
   /// No description provided for @humorLabSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Keep showing us what makes you laugh.'**
+  /// **'Show us what makes you laugh.'**
   String get humorLabSubtitle;
 
   /// No description provided for @humorLabDiscoverCta.

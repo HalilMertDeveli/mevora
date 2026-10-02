@@ -163,7 +163,17 @@ a photo removes its verdict. See `docs/FACE_ANCHOR.md`.
 
 ## Report hook
 
-`reportUser` marks the reported profile for `manual_review`.
+Every report is stored and opens (or joins) a moderation case. Whether it also
+puts the reported member's photos in `manual_review` before staff have looked —
+which removes the member from everyone's Picks — is decided by
+`functions/src/admin/reports/reportAutoHold.ts`:
+
+- a critical reason (`child_safety`, `underage`) holds on the first report;
+- any other reason holds only once three different members have an open report
+  against the same member within thirty days.
+
+One member can therefore not hide another by reporting them. Reports that staff
+have closed stop counting.
 
 ## Future AI provider
 

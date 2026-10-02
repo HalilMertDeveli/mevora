@@ -21,11 +21,14 @@ Future<void> showChatMoreSheet(
     context,
     title: l10n.more,
     actions: [
-      MevoraSheetAction(
-        value: _ChatAction.unmatch,
-        label: l10n.unmatch,
-        icon: MevoraIcons.unmatch,
-      ),
+      // Nothing to unmatch once the match has ended; blocking and reporting
+      // the person stay possible for as long as the conversation is on screen.
+      if (controller.match?.isActive ?? false)
+        MevoraSheetAction(
+          value: _ChatAction.unmatch,
+          label: l10n.unmatch,
+          icon: MevoraIcons.unmatch,
+        ),
       MevoraSheetAction(
         value: _ChatAction.block,
         label: l10n.block,

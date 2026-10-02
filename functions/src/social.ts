@@ -27,6 +27,7 @@ import {recordLearningEventSafely} from "./personalization/store.js";
 import {assertCallerAccountEligible} from "./accountGuard.js";
 import {REPORT_REASONS, reportPriority} from "./admin/reports/reportPriority.js";
 import {intakeUserReport} from "./admin/reports/reportIntake.js";
+import {decideAutoHold} from "./admin/reports/reportAutoHold.js";
 import {assertAppFeatureAvailable} from "./appOperations/appOperationsGate.js";
 
 if (getApps().length === 0) {
@@ -423,7 +424,13 @@ export const reportUser = onCall(socialCallable, async (request) => {
     createdAt: FieldValue.serverTimestamp(),
     status: "open",
   });
-  await markProfilePhotosForManualReview(db, userId, `report:${reason}`);
+  // The report is in the queue whatever happens next. Whether it also takes
+  // the member's photos out of circulation before staff have looked is a
+  // separate decision: see reportAutoHold.ts.
+  const autoHold = await decideAutoHold(db, {reporterId: uid, reportedUserId: userId, reason});
+  if (autoHold.hold) {
+    await markProfilePhotosForManualReview(db, userId, `report:${reason}`);
+  }
   await intakeUserReport(db, {reportId: reportRef.id, reporterId: uid, reportedUserId: userId, reason});
   return {ok: true};
 });

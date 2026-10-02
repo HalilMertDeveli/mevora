@@ -777,11 +777,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authDisabled =>
-      'Bu hesap devre dışı bırakılmış. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine halilmertdeveliii@gmail.com adresinden yaz.';
+      'Bu hesap devre dışı bırakılmış. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine destek@mevora.com adresinden yaz.';
 
   @override
   String get authBanned =>
-      'Bu hesap topluluk kurallarımızı ihlal ettiği için kapatıldı. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine halilmertdeveliii@gmail.com adresinden yaz.';
+      'Bu hesap topluluk kurallarımızı ihlal ettiği için kapatıldı. Bir hata olduğunu düşünüyorsan itiraz etmek için Mevora destek ekibine destek@mevora.com adresinden yaz.';
 
   @override
   String get authOauth => 'Giriş tamamlanamadı. Lütfen tekrar dene.';
@@ -1023,7 +1023,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get onboardingGenderWoman => 'Kadın';
 
   @override
-  String get onboardingGenderNonBinary => 'Non-binary';
+  String get onboardingGenderNonBinary => 'İkili olmayan';
 
   @override
   String get onboardingInterestedMen => 'Erkekler';
@@ -1292,7 +1292,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get genderMan => 'Erkek';
 
   @override
-  String get genderNonBinary => 'Non-binary';
+  String get genderNonBinary => 'İkili olmayan';
 
   @override
   String get relationshipGoalLongTerm => 'Uzun vadeli';
@@ -1409,6 +1409,12 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get languageEnglish => 'English 🇬🇧';
+
+  @override
+  String get spokenLanguageTurkish => 'Türkçe 🇹🇷';
+
+  @override
+  String get spokenLanguageEnglish => 'İngilizce 🇬🇧';
 
   @override
   String get theme => 'Tema';
@@ -1572,6 +1578,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get previewPhoto => 'Bu fotoğraf gönderilsin mi?';
+
+  @override
+  String get previewPhotoBody =>
+      'Fotoğrafın uçtan uca şifreli olarak gönderilir.';
 
   @override
   String get messageDeleted => 'Mesaj silindi';
@@ -2369,7 +2379,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsBirthDateLocked =>
-      'Doğum günü onboarding sonrası değiştirilemez. Yaş yalnızca doğum gününden hesaplanır.';
+      'Doğum günü, kayıt tamamlandıktan sonra değiştirilemez. Yaş yalnızca doğum gününden hesaplanır.';
 
   @override
   String get settingsSaveProfile => 'Profili kaydet';
@@ -3166,7 +3176,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get faqDeleteAccountA =>
-      'Ayarlar → Hesap → Hesabı Sil yolunu izle. Onayladığında Mevora hesabın ve ilişkili verilerin kalıcı olarak silinir. Bu işlem geri alınamaz.';
+      'Ayarlar → Hesap → Hesabı Sil yolunu izle. Onayladığında Mevora hesabın ve ilişkili verilerin kalıcı olarak silinir. Bu işlem geri alınamaz. Yalnızca çıkış yapmak verilerini silmez.';
 
   @override
   String get faqChangePhotoQ => 'Profil fotoğrafımı nasıl değiştiririm?';
@@ -3174,13 +3184,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get faqChangePhotoA =>
       'Ayarlar → Profili Düzenle\'ye git. Galeriden veya kameradan fotoğraf ekleyebilir, kaldırabilir ya da değiştirebilirsin. Fotoğraflar başkalarına gösterilmeden önce incelenebilir.';
-
-  @override
-  String get faqCloseAccountQ => 'Hesabımı nasıl kapatırım?';
-
-  @override
-  String get faqCloseAccountA =>
-      'Hesabı kapatmak, silmekle aynıdır. Ayarlar → Hesap → Hesabı Sil\'i kullan. Yalnızca çıkış yapmak verilerini silmez.';
 
   @override
   String get faqHowMatchQ => 'Eşleşme nasıl oluşuyor?';
@@ -3441,7 +3444,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get termsContactBody =>
-      'Hukuki sorular için Ayarlar\'dan destek talebi oluşturun veya halilmertdeveliii@gmail.com adresine yazın.';
+      'Hukuki sorular için Ayarlar\'dan destek talebi oluşturun veya destek@mevora.com adresine yazın.';
 
   @override
   String get termsEffectiveTitle => 'Yürürlük tarihi';
@@ -3595,7 +3598,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get privacyContactBody =>
-      'Gizlilik soruları: halilmertdeveliii@gmail.com veya Ayarlar\'dan destek talebi oluşturun.';
+      'Gizlilik soruları: destek@mevora.com veya Ayarlar\'dan destek talebi oluşturun.';
 
   @override
   String musicMatchTitle(int percent) {
@@ -4020,7 +4023,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get humorLabTitle => 'Mizah Labı';
 
   @override
-  String get humorLabSubtitle => 'Neye güldüğünü öğrenmeye devam edelim.';
+  String get humorLabSubtitle => 'Neye güldüğünü öğrenelim.';
 
   @override
   String get humorLabDiscoverCta => 'Mizah Labı\'nı aç';

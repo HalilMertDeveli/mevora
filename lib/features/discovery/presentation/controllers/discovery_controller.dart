@@ -30,6 +30,18 @@ enum LocationPromptPhase {
   ready,
 }
 
+/// What the controller knows about the member's stored location flags.
+enum _LocationFlagsRead {
+  /// The first read has not finished.
+  pending,
+
+  /// The last read succeeded: the phase follows from what the flags say.
+  known,
+
+  /// The last read failed (offline with nothing cached, a refused read).
+  failed,
+}
+
 class DiscoveryFeedState {
   const DiscoveryFeedState({
     this.phase = LocationPromptPhase.explanation,
@@ -133,6 +145,7 @@ class DiscoveryController extends ChangeNotifier {
     ViewerProfileLoader? viewerProfileLoader,
     bool skipExplanationIfAlreadyGranted = true,
     this.swipeThreshold = 120,
+    this.locationFlagsTimeout = const Duration(seconds: 8),
     bool loadDeckOnStart = true,
   }) : _deckWanted = loadDeckOnStart,
        _locationRepository = locationRepository,
@@ -184,6 +197,10 @@ class DiscoveryController extends ChangeNotifier {
 
   /// Minimum drag distance (px) before a swipe action fires.
   final double swipeThreshold;
+
+  /// How long the tab waits on a location read or write before it goes on
+  /// without it. The same patience the app-level location gate has.
+  final Duration locationFlagsTimeout;
 
   PurchaseRepository? get purchaseRepository => _purchaseRepository;
   DiscoveryRepository get discoveryRepository => _discoveryRepository;
@@ -260,13 +277,64 @@ class DiscoveryController extends ChangeNotifier {
         .toList();
   }
 
+  _LocationFlagsRead _locationFlagsRead = _LocationFlagsRead.pending;
+  Future<void>? _locationFlagsRetry;
+
+  /// The first read of the location flags is still running. The explanation
+  /// is the state's default phase, so until that read ends it is not yet a
+  /// question for the member: answering it would overwrite a choice that has
+  /// not been read.
+  bool get locationFlagsPending =>
+      _locationFlagsRead == _LocationFlagsRead.pending;
+
+  /// The last read of the location flags failed, so whether the member was
+  /// ever asked is unknown. [refresh] reads them again.
+  bool get locationFlagsUnresolved =>
+      _locationFlagsRead == _LocationFlagsRead.failed;
+
+  bool _settlingGrantedLocation = false;
+
+  /// Location is being settled without a question: the permission is already
+  /// granted, so [start] captures the position itself. Until it is done the
+  /// phase is still the default "explanation", and the page must not offer
+  /// that question in the meantime.
+  bool get settlingGrantedLocation => _settlingGrantedLocation;
+
+  /// The stored flags, or null when they could not be read in time.
+  ///
+  /// The read has no deadline of its own: offline, with nothing cached,
+  /// Firestore keeps waiting for the server, and the tab sat on its loading
+  /// state for as long as the phone was offline. An answer that does not come
+  /// is an unread one, handled like a failed read.
+  Future<LocationFlags?> _readLocationFlags() async {
+    try {
+      final result = await _locationRepository
+          .loadLocationFlags(uid)
+          .timeout(locationFlagsTimeout);
+      return result.valueOrNull;
+    } on TimeoutException {
+      return null;
+    }
+  }
+
   Future<void> start() async {
     unawaited(refreshBoost());
-    final flags = (await _locationRepository.loadLocationFlags(
-      uid,
-    )).valueOrNull;
-    if (flags?.locationOnboardingCompleted == true) {
-      declinedLocation = flags?.locationEnabled != true;
+    final flags = await _readLocationFlags();
+    if (flags == null) {
+      // A failed read is not "never asked". Asking now would let "Skip for
+      // now" store locationEnabled: false over a choice that simply could
+      // not be read, and switch location off for a member who had it on. So
+      // nothing is asked and nothing is written: the tab shows its ordinary
+      // content or load error, and the next refresh reads the flags again.
+      _locationFlagsRead = _LocationFlagsRead.failed;
+      state = state.copyWith(phase: LocationPromptPhase.ready);
+      notifyListeners();
+      await _loadDeckIfWanted();
+      return;
+    }
+    _locationFlagsRead = _LocationFlagsRead.known;
+    if (flags.locationOnboardingCompleted) {
+      declinedLocation = !flags.locationEnabled;
       state = state.copyWith(phase: LocationPromptPhase.ready);
       notifyListeners();
       await _loadDeckIfWanted();
@@ -276,7 +344,12 @@ class DiscoveryController extends ChangeNotifier {
     final gpsOn = await _locationRepository.isGpsEnabled();
     if (permission == LocationPermissionStatus.granted && gpsOn) {
       if (_skipExplanationIfAlreadyGranted) {
-        await _captureAndLoad();
+        _settlingGrantedLocation = true;
+        try {
+          await _captureAndLoad();
+        } finally {
+          _settlingGrantedLocation = false;
+        }
         return;
       }
     }
@@ -370,6 +443,15 @@ class DiscoveryController extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
+    if (locationFlagsUnresolved) {
+      // The question left open by a failed read is settled here, before
+      // anything about location is captured or stored. start() loads the
+      // deck itself, or shows the explanation if the member was never asked.
+      await (_locationFlagsRetry ??= start().whenComplete(
+        () => _locationFlagsRetry = null,
+      ));
+      return;
+    }
     if (!declinedLocation) {
       final permission = await _locationRepository.checkPermission();
       if (permission == LocationPermissionStatus.granted) {
@@ -748,12 +830,20 @@ class DiscoveryController extends ChangeNotifier {
     switch (result) {
       case Success(:final value):
         if (_locationSync.shouldPersist(value)) {
-          final persisted = await _locationRepository.persistOwnerLocation(
-            uid: uid,
-            position: value,
-          );
-          if (persisted.isSuccess) {
-            _locationSync.markPersisted(value);
+          // Storing the position is not what the member is waiting for.
+          // Offline the write neither completes nor fails, and the tab sat on
+          // its loading state for as long as the phone was offline. After
+          // [locationFlagsTimeout] the tab goes on; the position is not
+          // marked as stored, so the next capture sends it again.
+          try {
+            final persisted = await _locationRepository
+                .persistOwnerLocation(uid: uid, position: value)
+                .timeout(locationFlagsTimeout);
+            if (persisted.isSuccess) {
+              _locationSync.markPersisted(value);
+            }
+          } on TimeoutException {
+            // Nothing to undo: see above.
           }
         }
       case Err(:final failure):

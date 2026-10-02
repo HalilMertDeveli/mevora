@@ -17,6 +17,7 @@ abstract final class MevoraDialog {
     bool barrierDismissible = true,
     MevoraButtonVariant confirmVariant = MevoraButtonVariant.primary,
     MevoraArt? art,
+    Widget? preview,
   }) {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
     final resolvedConfirm = confirmLabel ?? l10n?.confirm ?? 'Confirm';
@@ -56,6 +57,12 @@ abstract final class MevoraDialog {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // What is being confirmed, when words alone would ask the
+                  // member to agree to something they cannot see.
+                  if (preview != null) ...[
+                    preview,
+                    const SizedBox(height: AppSpacing.md),
+                  ],
                   Text(
                     message,
                     style: theme.textTheme.bodyMedium,

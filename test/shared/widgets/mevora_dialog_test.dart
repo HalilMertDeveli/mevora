@@ -38,4 +38,48 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Leave Mevora?'), findsNothing);
   });
+
+  testWidgets('dialog shows a preview above its message', (tester) async {
+    await tester.pumpWidget(
+      wrapWithApp(
+        Builder(
+          builder: (context) {
+            return MevoraButton(
+              label: 'Open dialog',
+              onPressed: () {
+                unawaited(
+                  MevoraDialog.show(
+                    context,
+                    title: 'Send this photo?',
+                    message: 'Your photo is sent end-to-end encrypted.',
+                    confirmLabel: 'Send',
+                    preview: const SizedBox(
+                      key: Key('preview'),
+                      width: 120,
+                      height: 90,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open dialog'));
+    await tester.pumpAndSettle();
+
+    final preview = find.byKey(const Key('preview'));
+    expect(preview, findsOneWidget);
+    expect(
+      tester.getBottomLeft(preview).dy,
+      lessThanOrEqualTo(
+        tester.getTopLeft(find.text('Your photo is sent end-to-end encrypted.')).dy,
+      ),
+    );
+    await tester.tap(find.text('Send'));
+    await tester.pumpAndSettle();
+    expect(preview, findsNothing);
+  });
 }

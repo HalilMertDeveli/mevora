@@ -90,7 +90,6 @@ class SupportContent {
     return [
       FaqEntry(categoryId: 'account', question: l10n.faqDeleteAccountQ, answer: l10n.faqDeleteAccountA),
       FaqEntry(categoryId: 'account', question: l10n.faqChangePhotoQ, answer: l10n.faqChangePhotoA),
-      FaqEntry(categoryId: 'account', question: l10n.faqCloseAccountQ, answer: l10n.faqCloseAccountA),
       FaqEntry(categoryId: 'matches', question: l10n.faqHowMatchQ, answer: l10n.faqHowMatchA),
       FaqEntry(categoryId: 'matches', question: l10n.faqMatchPercentQ, answer: l10n.faqMatchPercentA),
       FaqEntry(categoryId: 'messaging', question: l10n.faqCantMessageQ, answer: l10n.faqCantMessageA),

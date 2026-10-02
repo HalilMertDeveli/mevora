@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/features/compatibility/domain/entities/compatibility_display_status.dart';
 import 'package:mevora/features/music/data/datasources/functions_music_data_source.dart';
 import 'package:mevora/features/music/domain/entities/same_taste_match.dart';
 
@@ -76,6 +77,38 @@ void main() {
       expect(candidate.avatarPhoto, 'https://s/thumb-0');
     },
   );
+
+  test('no overall score is being calculated for a same-taste member', () async {
+    // The callable sends the music overlap, not an overall compatibility
+    // score. The profile opened from the row used to show "Calculating..."
+    // for as long as it stayed open.
+    final matches = await sameTaste([
+      entry(photos: [projectedPhoto(0)]),
+    ]);
+
+    final candidate = matches.single.candidate;
+    expect(candidate.hasCompatibilityScore, isFalse);
+    expect(
+      candidate.compatibilityStatus,
+      CompatibilityDisplayStatus.unavailable,
+    );
+    // The music overlap itself is untouched.
+    expect(candidate.musicCompatibilityScore, 82);
+    expect(matches.single.musicScore, 82);
+  });
+
+  test('an overall score the callable does send is kept', () async {
+    final matches = await sameTaste([
+      {
+        ...entry(photos: [projectedPhoto(0)]),
+        'compatibilityScore': 71,
+      },
+    ]);
+
+    final candidate = matches.single.candidate;
+    expect(candidate.compatibilityStatus, CompatibilityDisplayStatus.ready);
+    expect(candidate.compatibilityScore, 71);
+  });
 
   test('a photo without variants falls back to the original', () async {
     final matches = await sameTaste([

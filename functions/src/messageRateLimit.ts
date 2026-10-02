@@ -1,19 +1,14 @@
 import {Timestamp, getFirestore, type DocumentReference} from "firebase-admin/firestore";
 import {logger} from "firebase-functions";
+import {messageRateDecision, parseMessageRateState} from "./messageRateLimitPolicy.js";
 
 const db = getFirestore();
 
-const WINDOW_MS = 60_000;
-const MAX_MESSAGES_PER_MATCH = 20;
-const MAX_MESSAGES_GLOBAL = 60;
-
-function isWithinWindow(createdAt: unknown, nowMs: number): boolean {
-  if (!(createdAt instanceof Timestamp)) {
-    return false;
-  }
-  return createdAt.toMillis() >= nowMs - WINDOW_MS;
-}
-
+/**
+ * One transaction on the sender's counter document decides both limits.
+ * The per-match limit used to read the match's last 40 messages on every
+ * send; the counter already holds what that read reconstructed.
+ */
 export async function enforceMessageRateLimit(options: {
   matchId: string;
   messageId: string;
@@ -25,59 +20,52 @@ export async function enforceMessageRateLimit(options: {
     return true;
   }
   const nowMs = Date.now();
-  const recentInMatch = await db
-    .collection(`matches/${options.matchId}/messages`)
-    .orderBy("createdAt", "desc")
-    .limit(40)
-    .get();
-  const senderInMatch = recentInMatch.docs.filter(
-    (doc) =>
-      doc.id !== options.messageId &&
-      doc.get("senderId") === options.senderId &&
-      isWithinWindow(doc.get("createdAt"), nowMs),
-  );
-  if (senderInMatch.length >= MAX_MESSAGES_PER_MATCH) {
-    await options.messageRef.delete();
-    logger.warn("Message rate limit exceeded (match)", {
-      senderId: options.senderId,
-      matchId: options.matchId,
-    });
-    return false;
-  }
-
   const rateRef = db.doc(`users/${options.senderId}/rateLimits/messages`);
+  let rejected = null as "match" | "global" | null;
   try {
     await db.runTransaction(async (tx) => {
+      rejected = null;
       const snap = await tx.get(rateRef);
-      const data = snap.data() ?? {};
-      const previousWindow = data.windowStart instanceof Timestamp
+      const data = snap.data();
+      const windowStart = data?.windowStart instanceof Timestamp
         ? data.windowStart.toMillis()
         : 0;
-      let count = Number(data.count ?? 0);
-      let windowStart = previousWindow;
-      if (nowMs - previousWindow > WINDOW_MS) {
-        windowStart = nowMs;
-        count = 0;
+      const decision = messageRateDecision(parseMessageRateState(data, windowStart), {
+        matchId: options.matchId,
+        messageId: options.messageId,
+        nowMs,
+      });
+      if (decision.action === "reject") {
+        rejected = decision.reason;
+        return;
       }
-      if (count >= MAX_MESSAGES_GLOBAL) {
-        throw new Error("global-rate-limit");
+      if (decision.action === "duplicate") {
+        return;
       }
-      tx.set(
-        rateRef,
-        {
-          windowStart: Timestamp.fromMillis(windowStart),
-          count: count + 1,
-          updatedAt: Timestamp.fromMillis(nowMs),
-        },
-        {merge: true},
-      );
+      // A full replace, not a merge: a merge would keep per-match counts
+      // from the previous window.
+      tx.set(rateRef, {
+        windowStart: Timestamp.fromMillis(decision.state.windowStartMs),
+        count: decision.state.count,
+        perMatch: decision.state.perMatch,
+        messageIds: decision.state.messageIds,
+        updatedAt: Timestamp.fromMillis(nowMs),
+      });
     });
   } catch (error) {
     await options.messageRef.delete();
-    logger.warn("Message rate limit exceeded (global)", {
+    logger.warn("Message rate limit check failed", {
       senderId: options.senderId,
       matchId: options.matchId,
       error,
+    });
+    return false;
+  }
+  if (rejected) {
+    await options.messageRef.delete();
+    logger.warn(`Message rate limit exceeded (${rejected})`, {
+      senderId: options.senderId,
+      matchId: options.matchId,
     });
     return false;
   }

@@ -1,4 +1,32 @@
-const {initializeApp, applicationDefault} = require('firebase-admin/app');
+/**
+ * Emulator-only dev backfill: gives every profile visible questionAnswers for
+ * the profile Q&A UI ("Onu biraz daha tanı"). Same job as
+ * seed_profile_question_answers.mjs — keep the two in sync.
+ *
+ * - If users/{uid}/relationshipAnswers exist → copy into questionAnswers
+ * - Else → write a small demo set from the relationship catalog ids
+ *
+ * It writes to every profile it finds and invents answers for members who gave
+ * none, so it must never reach a real project: it refuses to run unless
+ * FIRESTORE_EMULATOR_HOST is a loopback address, and it loads no cloud
+ * credential.
+ *
+ * Usage (PowerShell, from the repo root, emulators already up):
+ *   $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"
+ *   node tool/seed_profile_question_answers.cjs
+ */
+// Checked before firebase-admin is loaded, so a refusal makes no network call.
+const LOOPBACK_HOST = /^(?:127(?:\.\d{1,3}){3}|localhost|\[::1\]):\d{1,5}$/i;
+const firestoreHost = process.env.FIRESTORE_EMULATOR_HOST;
+if (!firestoreHost || !LOOPBACK_HOST.test(firestoreHost)) {
+  console.error(
+    'REFUSING TO RUN: FIRESTORE_EMULATOR_HOST must be set to a loopback emulator ' +
+      'address (e.g. 127.0.0.1:8080). This script only ever seeds the Emulator Suite.',
+  );
+  process.exit(2);
+}
+
+const {initializeApp} = require('firebase-admin/app');
 const {getFirestore, FieldValue} = require('firebase-admin/firestore');
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'mevora-d6ed0';
@@ -11,7 +39,7 @@ const DEMO_ANSWERS = [
   {questionId: 'rq_015', answerId: 'b'},
 ];
 
-initializeApp({credential: applicationDefault(), projectId: PROJECT_ID});
+initializeApp({projectId: PROJECT_ID});
 const db = getFirestore();
 
 async function seedUser(uid) {
@@ -55,7 +83,7 @@ async function seedUser(uid) {
 (async () => {
   const profiles = await db.collection('profiles').get();
   const uids = profiles.docs.map((d) => d.id);
-  console.log(`Project ${PROJECT_ID}: ${uids.length} profiles`);
+  console.log(`Emulator ${firestoreHost}, project ${PROJECT_ID}: ${uids.length} profiles`);
   let total = 0;
   for (const uid of uids) {
     const result = await seedUser(uid);

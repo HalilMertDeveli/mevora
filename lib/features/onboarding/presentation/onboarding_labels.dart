@@ -133,8 +133,11 @@ abstract final class OnboardingLabels {
 
   static String language(AppLocalizations l10n, String id) {
     return switch (id) {
-      'turkish' => l10n.languageTurkish,
-      'english' => l10n.languageEnglish,
+      // Not languageTurkish / languageEnglish: those name the app's own
+      // language switch, where each language is written in itself. A language
+      // someone speaks is named in the language the app is showing.
+      'turkish' => l10n.spokenLanguageTurkish,
+      'english' => l10n.spokenLanguageEnglish,
       'german' => l10n.languageGerman,
       'french' => l10n.languageFrench,
       'spanish' => l10n.languageSpanish,

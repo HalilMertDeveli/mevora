@@ -29,6 +29,7 @@ import 'package:mevora/features/profile/presentation/widgets/profile_question_an
 import 'package:mevora/features/safety/presentation/widgets/chat_more_sheet.dart';
 import 'package:mevora/l10n/app_localizations.dart';
 import 'package:mevora/core/theme/app_colors.dart';
+import 'package:mevora/core/theme/app_radii.dart';
 import 'package:mevora/shared/art/mevora_spot.dart';
 import 'package:mevora/shared/images/mevora_network_images.dart';
 import 'package:mevora/shared/widgets/mevora_avatar.dart';
@@ -440,8 +441,21 @@ class _ChatPageState extends State<ChatPage> {
       final preview = await MevoraDialog.show(
         context,
         title: AppLocalizations.of(context).previewPhoto,
-        message: AppLocalizations.of(context).send,
+        message: AppLocalizations.of(context).previewPhotoBody,
         confirmLabel: AppLocalizations.of(context).send,
+        // The question is "send this photo?" — so show the photo.
+        preview: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 260),
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.contain,
+              gaplessPlayback: true,
+              semanticLabel: AppLocalizations.of(context).previewPhoto,
+            ),
+          ),
+        ),
       );
       if (preview != true || !mounted) {
         return;

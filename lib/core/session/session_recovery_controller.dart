@@ -181,6 +181,20 @@ class SessionRecoveryController with WidgetsBindingObserver {
     return revokedBackendCodes.any(message.contains);
   }
 
+  /// Whether a revoked session ([isSessionRevoked]) is known to be revoked
+  /// because the account itself was deleted.
+  ///
+  /// Narrower on purpose: a disabled account or a revoked refresh token still
+  /// has an account behind it, which can come back, so whatever is kept on
+  /// the device for that member (the chat key) must survive those.
+  static bool isAccountDeleted(Object error) {
+    if (error is! FirebaseAuthException) {
+      return false;
+    }
+    return error.code == 'user-not-found' ||
+        (error.message ?? '').contains('USER_NOT_FOUND');
+  }
+
   void dispose() {
     detach();
     unawaited(_refreshController.close());

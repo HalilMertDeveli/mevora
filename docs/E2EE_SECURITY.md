@@ -55,10 +55,13 @@ The key is stored per member and **stays on the device after sign-out**. Signing
 out used to delete it, and the next sign-in then generated and published a new
 key pair — after which neither side could decrypt any earlier message. Keeping
 it per member also keeps accounts that share a device apart without deleting
-anything. The key is removed when the account is deleted from this device, and
-with the app's data on uninstall. A key written by an older build (one
-un-namespaced entry) is adopted on first start only when its public half is the
-identity that member has published; otherwise it is discarded.
+anything. The key is removed when the account is deleted from this device, when
+the app finds a session whose account document is missing and Firebase Auth
+reports the account as deleted (`user-not-found` — a disabled account or a
+revoked token is a plain sign-out and keeps the key), and with the app's data
+on uninstall. A key written by an older build (one un-namespaced entry) is
+adopted on first start only when its public half is the identity that member
+has published; otherwise it is discarded.
 
 ## 6. Key rotation (v1)
 

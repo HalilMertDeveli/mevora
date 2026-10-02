@@ -56,4 +56,41 @@ void main() {
       );
     });
   });
+
+  group('isAccountDeleted', () {
+    bool deleted(String code, [String? message]) =>
+        SessionRecoveryController.isAccountDeleted(
+          FirebaseAuthException(code: code, message: message),
+        );
+
+    test('only a missing account counts as deleted', () {
+      expect(deleted('user-not-found'), isTrue);
+      expect(
+        deleted(
+          'unknown',
+          'An internal error has occurred. [ USER_NOT_FOUND ]',
+        ),
+        isTrue,
+      );
+    });
+
+    test('a revoked session with an account behind it is not deleted', () {
+      // These accounts can come back; what the device keeps for them stays.
+      expect(deleted('user-disabled'), isFalse);
+      expect(deleted('user-token-expired'), isFalse);
+      expect(deleted('invalid-user-token'), isFalse);
+      expect(
+        deleted(
+          'unknown',
+          'An internal error has occurred. [ INVALID_REFRESH_TOKEN ]',
+        ),
+        isFalse,
+      );
+      expect(deleted('network-request-failed'), isFalse);
+      expect(
+        SessionRecoveryController.isAccountDeleted(Exception('USER_NOT_FOUND')),
+        isFalse,
+      );
+    });
+  });
 }

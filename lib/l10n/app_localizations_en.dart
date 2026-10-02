@@ -3696,6 +3696,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileHeightLabel => 'Height';
 
   @override
+  String get profileHeightPlaceholder => 'Select your height';
+
+  @override
   String profileHeightCm(int cm) {
     return '$cm cm';
   }

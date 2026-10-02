@@ -6,6 +6,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/errors/app_exception.dart';
+import 'package:mevora/core/network/functions_error_code.dart';
 import 'package:mevora/features/authentication/data/mappers/auth_error_mapper.dart';
 import 'package:mevora/features/authentication/data/pkce.dart';
 import 'package:mevora/features/authentication/data/services/spotify_pending_store.dart';
@@ -456,9 +457,9 @@ class SpotifyAuthService {
     String name,
     Map<String, dynamic> data,
   ) async {
-    final response = await _functions
-        .httpsCallable(name)
-        .call<Map<String, dynamic>>(data);
+    final response = await withCanonicalFunctionsErrors(
+      () => _functions.httpsCallable(name).call<Map<String, dynamic>>(data),
+    );
     return response.data;
   }
 

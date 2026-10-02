@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mevora/core/config/app_config.dart';
 import 'package:mevora/core/errors/app_exception.dart';
+import 'package:mevora/core/network/functions_error_code.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mevora/features/authentication/data/mappers/auth_error_mapper.dart';
 import 'package:mevora/features/authentication/data/services/google_auth_service.dart';
@@ -38,8 +39,8 @@ class AccountDeletionService {
     }
     try {
       final callable = _functions.httpsCallable('deleteUserAccount');
-      final response = await callable.call<Map<String, dynamic>>(
-        <String, dynamic>{},
+      final response = await withCanonicalFunctionsErrors(
+        () => callable.call<Map<String, dynamic>>(<String, dynamic>{}),
       );
       final payload = response.data;
 

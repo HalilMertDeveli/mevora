@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mevora/core/network/backend_callable.dart';
+import 'package:mevora/core/network/functions_error_code.dart';
 
 class FirebaseFunctionsCallable implements BackendCallable {
   FirebaseFunctionsCallable({
@@ -38,7 +39,9 @@ class FirebaseFunctionsCallable implements BackendCallable {
       options: HttpsCallableOptions(timeout: callTimeout),
     );
     try {
-      final result = await callable.call<dynamic>(data ?? <String, dynamic>{});
+      final result = await withCanonicalFunctionsErrors(
+        () => callable.call<dynamic>(data ?? <String, dynamic>{}),
+      );
       return callablePayload(result.data);
     } on FirebaseFunctionsException catch (error) {
       if (error.code == 'unauthenticated') {
@@ -46,8 +49,8 @@ class FirebaseFunctionsCallable implements BackendCallable {
           _auth.currentUser?.getIdToken(true),
           deadline: refreshDeadline,
         );
-        final retry = await callable.call<dynamic>(
-          data ?? <String, dynamic>{},
+        final retry = await withCanonicalFunctionsErrors(
+          () => callable.call<dynamic>(data ?? <String, dynamic>{}),
         );
         return callablePayload(retry.data);
       }

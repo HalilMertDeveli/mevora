@@ -5,7 +5,7 @@ import {
   type Firestore,
   type QueryDocumentSnapshot,
 } from "firebase-admin/firestore";
-import {ageFromBirthDate} from "./profileSafety.js";
+import {ageFromBirthDate, birthCalendarDate} from "./profileSafety.js";
 
 /**
  * A member's date of birth and the age other members see.
@@ -22,7 +22,9 @@ import {ageFromBirthDate} from "./profileSafety.js";
  * `ageRolloverAt` is what lets the daily roll-over find the members whose
  * birthday has come with one indexed query, instead of reading every account.
  * Because it is a moment rather than a calendar day, a run that was missed is
- * caught up by the next one.
+ * caught up by the next one. A marker that comes due before the birthday it
+ * stands for — one written by an earlier version of the rule — is replaced by
+ * the right one and the age is left alone, so no marker needs recomputing.
  */
 
 /**
@@ -45,14 +47,16 @@ export function memberBirthDate(
 
 /**
  * The first moment after `now` at which ageFromBirthDate returns a higher
- * number: the start of the next birthday. Built from the same calendar fields
- * the age rule reads, so the two cannot disagree — a 29 February birthday
- * lands on 1 March in a common year here because it does there.
+ * number: midnight UTC at the start of the next birthday. Built from the same
+ * calendar day the age rule reads (birthCalendarDate), so the two cannot
+ * disagree — a 29 February birthday lands on 1 March in a common year here
+ * because it does there.
  */
 export function nextAgeChangeAt(birthDate: Date, now: Date): Date {
-  const birthdayIn = (year: number) => new Date(year, birthDate.getMonth(), birthDate.getDate());
-  const thisYear = birthdayIn(now.getFullYear());
-  return thisYear.getTime() > now.getTime() ? thisYear : birthdayIn(now.getFullYear() + 1);
+  const born = birthCalendarDate(birthDate);
+  const birthdayIn = (year: number) => new Date(Date.UTC(year, born.getUTCMonth(), born.getUTCDate()));
+  const thisYear = birthdayIn(now.getUTCFullYear());
+  return thisYear.getTime() > now.getTime() ? thisYear : birthdayIn(now.getUTCFullYear() + 1);
 }
 
 /** What users/{uid} holds about the member's birth: the date and the server's marker. */

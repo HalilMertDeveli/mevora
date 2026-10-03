@@ -43,6 +43,10 @@ that was not made for it.
   the uploader's credit: `hc_gif_<giphyId>`, `sourceTrust: "curated"`. These
   are the items of the Humor Core sequence. (The text-joke cards an earlier
   seed wrote are retired — deactivated, never deleted.)
+  A curated entry can also be a **KLIPY clip** — a short video with sound:
+  `hc_klipy_<klipyId>` in `CURATED_KLIPY_CATALOG`, written as `type: "video"`.
+  `CURATED_CATALOG` is the two lists together. See
+  [KLIPY clips](#klipy-clips-short-videos-are-a-second-candidate-source).
 - **Provider (GIPHY)**: the item's own animated image (a Clip: its own MP4),
   its own still frame as poster, and its own title as caption (cleaned of "GIF", "GIF by …", "by <user>"). An empty,
   generic or uploader-only title becomes `textBody: null` — never invented text.
@@ -284,6 +288,99 @@ The scheduler takes the sequence as a parameter, so a later curator tool can
 append entries from uploaded MP4s or other licensed sources without changing
 the scheduling rules.
 
+### KLIPY clips (short videos) are a second candidate source
+
+**Status (2026-10-03): development and `preview` only.** KLIPY's integration
+requirements ask for prior written approval of exactly what Mevora does here
+(see "Terms" below). The request was sent to developers@klipy.com on
+2026-10-03 and is unanswered. Until it is granted, no KLIPY clip may reach a
+member: `HUMOR_CORE_RELEASE` stays `released: false`, nothing is deployed,
+and there is no production key. `docs/PUBLISH_BLOCKERS.md` item 9.
+
+How Humor Lab works is unchanged: one canonical curated sequence, fifteen
+first, five a day, the same ratings and learning. Only what a curated entry
+can *be* is wider — a GIPHY GIF or a KLIPY clip.
+
+**What KLIPY sends** (docs.klipy.com → Clips → Search, checked against a live
+search on 2026-10-03):
+
+| | |
+|---|---|
+| Endpoint | `GET https://api.klipy.com/api/v1/{app_key}/clips/search` with `q`, `page`, `per_page` (8–50), `customer_id`, `locale`, `content_filter` |
+| Key | In the URL **path** — a request URL is never logged, thrown or returned |
+| Item | `id`, `url` (its klipy.com page), `title`, `slug`, `file.{mp4,gif,webp}`, `file_meta.*.{width,height,size}`, `tags`, `type`, `blur_preview` |
+| Media | One MP4 per clip: H.264 + AAC (**with sound**), 624–1280 wide, at most 720 high; 43 KB–1.3 MB seen, 1–5 s long. `moov` sits at the end of the file |
+| Host | `static.klipy.com` (KLIPY also documents `static1` and `static2`); URLs are unsigned and carry no expiry, but KLIPY promises no permanence |
+| Not sent | Duration, uploader, a still image, a per-item rating |
+| Ids | 16-digit numbers, some above 2^53 — read as text (`parseKlipyJson`), kept as strings |
+| Filter | `content_filter`: off / low / medium / high. KLIPY notes the clips library is not fully rated |
+| Locale | A country code; search follows the query's language. Turkish queries mostly return nothing — the library is largely English |
+| Test key | 100 requests an hour |
+
+**What the adapter does with it** (`klipySource.ts`):
+
+- Every request uses `content_filter=high` and one fixed, non-personal
+  `customer_id` (`mevora-curator`). No member id ever goes to KLIPY.
+- The MP4 is accepted only on a KLIPY media host, with a known size of at most
+  1.5 MB (`MAX_KLIPY_MP4_BYTES`: about four times the largest clip in the
+  first recorded search, room for roughly ten seconds) and at most 1280×720.
+  There is no smaller rendition to prefer.
+- The poster is the clip's own animated WebP (else GIF) preview, or `null`.
+  `null` is fine: the player shows its loading state until the video starts.
+- `durationMs` is `null` from the API. The curator's review page measures it
+  from the file when a clip is picked; the catalogue stores that, or `null`.
+- The credit is `{provider: "klipy", displayName: null, username: null}` —
+  the card shows just "KLIPY".
+- Media allowlist (`contentValidation.ts`): `static.klipy.com`,
+  `static1.klipy.com`, `static2.klipy.com`. Not `klipy.com`.
+- KLIPY is **not** part of `syncHumorFromProvider`. Nothing is downloaded,
+  re-hosted or transcoded; the app loads each clip from KLIPY's own URL.
+
+**The key.** `KLIPY_API_KEY` lives in `functions/.secret.local` (gitignored).
+The secret is declared inside the Functions emulator only
+(`humorApiConfig.ts`): a deploy asks for every secret a loaded module
+declares, so declaring it unconditionally would make the next deploy prompt
+for a KLIPY production key.
+
+**Curating clips.** The emulator-only callable `searchHumorProviderCandidates`
+takes `provider: "giphy" | "klipy"` (default `giphy`). With an emulator that
+serves this code and has the key:
+
+```powershell
+node tool/humorCuratorSearch.cjs --provider klipy `
+  --out .tmp/humor-curation/klipy/candidates.json `
+  --review .tmp/humor-curation/klipy --dimensions sarcasm,absurd --per-query 15
+```
+
+One query is one KLIPY request; the tool refuses a plan above
+`--max-requests` (default 40). `review.html` plays each clip on demand (muted,
+with controls), has a checkbox per clip, and **Seçimi dışa aktar** downloads
+`klipy-selection.json` with each picked clip's URLs, size and measured
+duration. A person then adds the picked clips to `CURATED_KLIPY_CATALOG` with
+a category and a humor vector, appends their ids to `HUMOR_CORE_SEQUENCE`
+after the existing entries, and runs `node tool/lockHumorCoreSequence.cjs`
+(append mode).
+
+A KLIPY media URL does not contain the clip's id, so validation
+(`curatedKlipyEntryProblems`) cannot prove "this file is that clip" the way it
+does for GIPHY. It checks what it can: MP4 and poster on a KLIPY media host
+and in the same directory, KLIPY's credit with no uploader.
+
+**Terms** (docs.klipy.com → Integration Requirements). Without prior written
+approval KLIPY does not allow: API requests from a partner's server (the
+curator search runs in the Functions emulator); removing, reordering or
+filtering search results (a hand-picked set is that); blending KLIPY media
+with another provider's in one set (the Core sequence mixes it with GIPHY);
+storing or re-hosting media (Mevora does neither). Required attribution is
+"Search KLIPY" as the placeholder of a search field, which Mevora does not
+have; "Powered by KLIPY" is optional.
+
+**Before any release:** KLIPY's written approval; the admin console's media
+origins (`static*.klipy.com`); the privacy policy and the Play data-safety
+form naming KLIPY as a party the app loads media from; a KLIPY production
+key; the owner's final choice of clips and their order; playback proven on
+real phones (see [Flutter media](#flutter-media)).
+
 ### Members from before the Core sequence
 
 Nothing of theirs is rewritten or deleted. The first time a member touches
@@ -352,11 +449,21 @@ node tool/humorDailyDev.cjs today qa_user_a@mevora.test  # today's entries, with
 node tool/humorDailyDev.cjs clock next --all             # one product day forward
 node tool/humorDailyDev.cjs clock clear --all            # back to the real day
 node tool/humorDailyDev.cjs reset qa_user_a@mevora.test --yes   # that member starts at V1 again
+node tool/humorDailyDev.cjs jump qa_user_a@mevora.test --yes    # today's set starts at the first KLIPY clip
+node tool/humorDailyDev.cjs jump qa_user_a@mevora.test V31 --yes  # …or at any position
 ```
 
 `--all` moves the relationship-questions clock too, so both features agree on
 the day. `reset` deletes only that member's `humor`, `humorInteractions` and
 `humorDaily` documents.
+
+`jump` is a QA shortcut to a late entry: instead of rating 36 GIFs over
+several product days, it writes that one member's `users/{uid}/humor/core`
+document so that every still-open earlier entry is **waived** (never rated —
+no rating is invented and the humor profile is untouched), the initial
+calibration counts as finished, and today is free again. The clock, the
+catalogue and other members are not touched. It is a state no real member can
+reach; `reset` undoes it.
 
 ## Feature flag
 

@@ -676,6 +676,118 @@ export const CURATED_GIPHY_CATALOG: readonly CuratedGiphyEntry[] = [
   }),
 ];
 
+// --------------------------------------------------------------------------
+// Curated KLIPY catalogue (short video clips)
+// --------------------------------------------------------------------------
+
+/**
+ * One exact KLIPY clip — a short video with sound — that a Mevora curator
+ * watched and annotated. The same rules as a curated GIPHY entry: the vector
+ * is authored for this clip, the media and the poster are its own files, and
+ * no text is written over it.
+ *
+ * What KLIPY does not send is not made up:
+ * - it names no uploader, so the credit is the provider alone;
+ * - it sends no duration, so `durationMs` is the value the curator's review
+ *   page measured from the file when the clip was picked, or null;
+ * - it has no still image, so the poster is the clip's own animated preview
+ *   (WebP, else GIF), or null — the player then shows its loading state.
+ *
+ * A KLIPY media URL does not contain the clip's id. `downloadUrl` and
+ * `thumbUrl` are therefore recorded exactly as the review page exported them,
+ * and validation checks what can be checked: both on a KLIPY media host and
+ * both in the same directory (KLIPY keeps one clip's files together).
+ *
+ * KLIPY clips never fill an anchor slot: they are appended to the Core
+ * sequence after the GIF entries.
+ */
+export type CuratedKlipyEntry = {
+  /** Always `curatedKlipyContentId(klipyId)`. */
+  contentId: string;
+  klipyId: string;
+  calibrationEligible: boolean;
+  category: HumorCategory;
+  humorTags?: string[];
+  humorVector: Partial<HumorVector>;
+  language: "tr" | "en";
+  caption: string | null;
+  media: {
+    /** The clip's MP4. */
+    downloadUrl: string;
+    /** The clip's own animated preview, or null. */
+    thumbUrl: string | null;
+    aspectRatio: number | null;
+    /** Measured at pick time, or null. */
+    durationMs: number | null;
+  };
+  attribution: HumorAttribution;
+  sourceTrust: "curated";
+};
+
+/** A reviewed KLIPY clip as the curator recorded it. */
+type CuratedKlipyClip = {
+  klipyId: string;
+  category: HumorCategory;
+  humorVector: Partial<HumorVector>;
+  language: "tr" | "en";
+  downloadUrl: string;
+  thumbUrl: string | null;
+  /** Width / height of the MP4. */
+  aspectRatio: number;
+  durationMs: number | null;
+  /** The clip's klipy.com page. */
+  sourceUrl: string;
+};
+
+/** Like `gif`: calibration content with no caption — the joke is in the clip. */
+function klipyClip(clip: CuratedKlipyClip): CuratedKlipyEntry {
+  return {
+    contentId: curatedKlipyContentId(clip.klipyId),
+    klipyId: clip.klipyId,
+    calibrationEligible: true,
+    category: clip.category,
+    humorVector: clip.humorVector,
+    language: clip.language,
+    caption: null,
+    media: {
+      downloadUrl: clip.downloadUrl,
+      thumbUrl: clip.thumbUrl,
+      aspectRatio: clip.aspectRatio,
+      durationMs: clip.durationMs,
+    },
+    attribution: {
+      provider: "klipy",
+      displayName: null,
+      username: null,
+      sourceUrl: clip.sourceUrl,
+      verified: false,
+    },
+    sourceTrust: "curated",
+  };
+}
+
+/**
+ * The curated KLIPY clips. Only clips the owner picked in the curator's
+ * review page belong here (tool/humorCuratorSearch.cjs --provider klipy).
+ */
+export const CURATED_KLIPY_CATALOG: readonly CuratedKlipyEntry[] = [];
+
+// Referenced until the first clip is added, so the builder is never unused.
+void klipyClip;
+
+/** A curated catalogue entry of either provider. */
+export type CuratedCatalogEntry = CuratedGiphyEntry | CuratedKlipyEntry;
+
+export function isCuratedKlipyEntry(entry: CuratedCatalogEntry): entry is CuratedKlipyEntry {
+  return typeof (entry as CuratedKlipyEntry)?.klipyId === "string";
+}
+
+/** The whole curated catalogue: the GIPHY GIFs first, then the KLIPY clips. */
+export const CURATED_CATALOG: readonly CuratedCatalogEntry[] = [
+  ...CURATED_GIPHY_CATALOG,
+  ...CURATED_KLIPY_CATALOG,
+];
+
 /**
  * Which catalogue calibration runs on. The text-joke catalogue is retired:
  * the seeders write the curated GIPHY items and retire the text documents.
@@ -718,18 +830,57 @@ export function curatedGiphyUpsertInput(entry: CuratedGiphyEntry): UpsertHumorCo
   };
 }
 
+/** The upsert a curated KLIPY clip is written with: a video card. */
+export function curatedKlipyUpsertInput(entry: CuratedKlipyEntry): UpsertHumorContentInput {
+  return {
+    contentId: entry.contentId,
+    type: "video",
+    language: entry.language,
+    category: entry.category,
+    humorTags: entry.humorTags ?? [],
+    humorVector: entry.humorVector,
+    media: {
+      downloadUrl: entry.media.downloadUrl,
+      thumbUrl: entry.media.thumbUrl,
+      durationMs: entry.media.durationMs,
+      aspectRatio: entry.media.aspectRatio,
+      textBody: entry.caption,
+    },
+    safetyStatus: "approved",
+    active: true,
+    sourceType: "licensed_api",
+    provider: "klipy",
+    licenseRef: entry.attribution.sourceUrl,
+    calibration: entry.calibrationEligible
+      ? {eligible: true, slot: null, version: HUMOR_CALIBRATION_VERSION}
+      : {eligible: false},
+    sourceTrust: "curated",
+    curatedCatalogEntry: true,
+    attribution: entry.attribution,
+    sourceId: entry.klipyId,
+    sourceUrl: entry.attribution.sourceUrl,
+  };
+}
+
+/** The upsert of a curated entry of either provider. */
+export function curatedUpsertInput(entry: CuratedCatalogEntry): UpsertHumorContentInput {
+  return isCuratedKlipyEntry(entry) ? curatedKlipyUpsertInput(entry) : curatedGiphyUpsertInput(entry);
+}
+
 /** A catalogue item exactly as the seeders write it, with explicit curation. */
 export type CalibrationSeedEntry = Omit<UpsertHumorContentInput, "calibration"> & {
   calibration: {eligible: boolean; slot: string | null; version: number};
 };
 
 /** The active calibration catalogue as upserts, anchors first. */
-export const CALIBRATION_SEED: readonly CalibrationSeedEntry[] = CURATED_GIPHY_CATALOG.map(
+export const CALIBRATION_SEED: readonly CalibrationSeedEntry[] = CURATED_CATALOG.map(
   (entry) => ({
-    ...curatedGiphyUpsertInput(entry),
+    ...curatedUpsertInput(entry),
     calibration: {
       eligible: entry.calibrationEligible,
-      slot: entry.calibrationEligible ? entry.slot ?? null : null,
+      // Only a GIPHY entry can fill an anchor slot.
+      slot:
+        entry.calibrationEligible && !isCuratedKlipyEntry(entry) ? entry.slot ?? null : null,
       version: HUMOR_CALIBRATION_VERSION,
     },
   }),

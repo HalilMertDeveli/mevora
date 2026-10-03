@@ -13,6 +13,20 @@
  *   reset <member> --yes     make that member new to humor again: deletes ONLY
  *                            their users/{uid}/humor, humorInteractions and
  *                            humorDaily documents
+ *   jump <member> [V<n>] --yes
+ *                            QA shortcut to a late entry: put every still-open
+ *                            entry before V<n> behind that member, so today's
+ *                            daily set starts at V<n>. Without V<n> it jumps to
+ *                            the first KLIPY clip (the video entries after the
+ *                            GIFs) — about a minute instead of rating 36 GIFs
+ *                            over several product days.
+ *
+ * What `jump` writes, and only this: the member's own users/{uid}/humor/core
+ * document. Each skipped entry is recorded there as WAIVED (never as rated, so
+ * no rating is invented and the humor profile is not touched), the initial
+ * calibration is marked finished, and today is freed so the daily set is
+ * computed again. The clock, the catalogue and every other member are left
+ * alone. It is a test state no real member can reach; use `reset` to undo it.
  *
  * <member> is a uid, or an email when FIREBASE_AUTH_EMULATOR_HOST is set.
  * Add --all to a clock command to move the relationship-questions clock
@@ -33,6 +47,7 @@
  *   node tool/humorDailyDev.cjs status qa_user_a@mevora.test
  *   node tool/humorDailyDev.cjs clock next --all
  *   node tool/humorDailyDev.cjs clock clear --all
+ *   node tool/humorDailyDev.cjs jump qa_user_a@mevora.test --yes
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -50,7 +65,8 @@ if (!firestoreHost || !LOOPBACK_HOST.test(firestoreHost)) {
 
 const usage =
   "usage: node tool/humorDailyDev.cjs status [member] | today <member> | " +
-  "clock <YYYY-MM-DD|+n|next|clear> [--all] | reset <member> --yes   [--project <id>]";
+  "clock <YYYY-MM-DD|+n|next|clear> [--all] | reset <member> --yes | " +
+  "jump <member> [V<n>] --yes   [--project <id>]";
 
 const argv = process.argv.slice(2);
 function takeFlag(name) {
@@ -69,8 +85,12 @@ const projectOption = takeOption("--project");
 const projectId = projectOption ?? (process.env.QA_PROJECT_ID || "mevora-d6ed0");
 const all = takeFlag("--all");
 const confirmed = takeFlag("--yes");
-const [command, arg] = argv;
-if (!/^[a-z0-9][a-z0-9-]{2,62}$/.test(projectId) || !command || argv.length > 2) {
+const [command, arg, target] = argv;
+if (
+  !/^[a-z0-9][a-z0-9-]{2,62}$/.test(projectId) ||
+  !command ||
+  argv.length > (command === "jump" ? 3 : 2)
+) {
   console.error(usage);
   process.exit(2);
 }
@@ -94,6 +114,7 @@ const {HUMOR_CORE, HUMOR_CORE_RELEASE, HUMOR_CORE_SEQUENCE, humorCorePosition} =
   "humor/coreSequence.js",
 );
 const core = compiled("humor/coreService.js");
+const {CURATED_KLIPY_ID_PREFIX} = compiled("humor/calibrationSeed.js");
 
 /** The relationship-questions clock; written here only with --all. */
 const LEARNING_DEV_CLOCK_DOC = "devClock/relationshipLearning";
@@ -255,11 +276,66 @@ async function reset(member) {
   console.log(`deleted ${total} humor document(s) of ${uid}; they start at V1 again`);
 }
 
+/** 0-based index of the entry `jump` goes to: V<n>, or the first KLIPY clip. */
+function jumpIndex(raw) {
+  if (raw === undefined) {
+    const index = HUMOR_CORE_SEQUENCE.findIndex((entry) => entry.id.startsWith(CURATED_KLIPY_ID_PREFIX));
+    if (index < 0) {
+      console.error("there is no KLIPY clip in the sequence; name a position, e.g. V31");
+      process.exit(2);
+    }
+    return index;
+  }
+  const match = /^V?(\d{1,4})$/i.exec(raw);
+  const position = match ? Number(match[1]) : 0;
+  if (position < 1 || position > HUMOR_CORE_SEQUENCE.length) {
+    console.error(`not a position of the sequence (V1 … V${HUMOR_CORE_SEQUENCE.length}): ${raw}`);
+    process.exit(2);
+  }
+  return position - 1;
+}
+
+async function jump(member, raw) {
+  const index = jumpIndex(raw);
+  const uid = await resolveMember(member);
+  // Creates the member's Core state exactly as their first humor call would.
+  const before = await snapshotFor(uid);
+  const {state, dayId} = before;
+  const skipped = HUMOR_CORE_SEQUENCE.slice(0, index).filter(
+    (entry) => entry.active && !state.answers[entry.id] && !state.waived[entry.id],
+  );
+  const to = `V${index + 1} ${HUMOR_CORE_SEQUENCE[index].id}`;
+  console.log(`member ${uid}: ${skipped.length} open entr${skipped.length === 1 ? "y" : "ies"} before ${to}`);
+  if (!confirmed) {
+    console.log(
+      `nothing written — pass --yes to waive them in users/${uid}/humor/core and start today's set at ${to}`,
+    );
+    return;
+  }
+  const nowMs = Date.now();
+  const waived = {};
+  for (const entry of skipped) {
+    waived[entry.id] = {reason: "media_failed", dayId, atMs: nowMs, by: "tool/humorDailyDev.cjs jump"};
+  }
+  await db.doc(core.userHumorCorePath(uid)).set(
+    {
+      waived,
+      initialCompletedAtMs: state.initialCompletedAtMs ?? nowMs,
+      // Free today, so the set is computed again from the new position.
+      today: {dayId: null, setId: null, contentIds: null, kind: null, completedAtMs: null},
+    },
+    {merge: true},
+  );
+  console.log(`waived ${skipped.length}; today's set now starts at ${to}`);
+  printSet(await snapshotFor(uid));
+}
+
 const run = {
   status: () => status(arg),
   today: () => today(arg),
   clock: () => clock(arg),
   reset: () => reset(arg),
+  jump: () => jump(arg, target),
 }[command];
 if (!run) {
   console.error(usage);

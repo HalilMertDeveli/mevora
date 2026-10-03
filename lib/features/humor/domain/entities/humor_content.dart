@@ -149,7 +149,7 @@ class HumorContentAttribution {
     this.verified = false,
   });
 
-  /// Provider key, e.g. `giphy`.
+  /// Provider key, e.g. `giphy` or `klipy`.
   final String provider;
   final String? displayName;
   final String? username;
@@ -161,6 +161,8 @@ class HumorContentAttribution {
     switch (provider.toLowerCase()) {
       case 'giphy':
         return 'GIPHY';
+      case 'klipy':
+        return 'KLIPY';
       case 'tenor':
         return 'Tenor';
       default:
@@ -178,7 +180,8 @@ class HumorContentAttribution {
     return name != null && name.isNotEmpty ? name : null;
   }
 
-  /// e.g. `GIPHY · @username`, or just `GIPHY` without a known creator.
+  /// e.g. `GIPHY · @username`, or just the provider (`GIPHY`, `KLIPY`) without a
+  /// known creator. KLIPY names no uploader, so its credit is always `KLIPY`.
   String get label {
     final creator = creatorLabel;
     return creator == null ? providerLabel : '$providerLabel · $creator';

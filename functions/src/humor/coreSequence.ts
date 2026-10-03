@@ -24,7 +24,8 @@
  *   `active: false`, so old ratings still mean what they meant. It is skipped
  *   for everyone who has not rated it and is never backfilled, so a retired
  *   V9 makes the initial calibration fourteen items, not a different fifteen.
- * - **Curated only.** Every entry must be a curated catalogue item. Provider
+ * - **Curated only.** Every entry must be a curated catalogue item — a GIPHY
+ *   GIF (`hc_gif_*`) or a KLIPY clip (`hc_klipy_*`, a short video). Provider
  *   sync writes `ext_giphy_*` documents that can never be listed here, so
  *   nothing a provider returns reaches a member without a person choosing it.
  *
@@ -32,8 +33,8 @@
  * build, run `node tool/lockHumorCoreSequence.cjs`, commit the lock.
  */
 import {
-  CURATED_GIPHY_CATALOG,
-  type CuratedGiphyEntry,
+  CURATED_CATALOG,
+  type CuratedCatalogEntry,
 } from "./calibrationSeed.js";
 
 /** Product rules, not tuning: the first run and the daily ration. */
@@ -126,7 +127,7 @@ export function humorCorePosition(
 
 /** What a sequence entry must resolve to: a curated catalogue item. */
 export type HumorCoreCatalogItem = Pick<
-  CuratedGiphyEntry,
+  CuratedCatalogEntry,
   "contentId" | "category" | "humorVector" | "sourceTrust" | "calibrationEligible"
 >;
 
@@ -140,7 +141,7 @@ const CORE_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
  */
 export function humorCoreSequenceProblems(
   sequence: readonly HumorCoreEntry[] = HUMOR_CORE_SEQUENCE,
-  catalog: readonly HumorCoreCatalogItem[] = CURATED_GIPHY_CATALOG,
+  catalog: readonly HumorCoreCatalogItem[] = CURATED_CATALOG,
 ): string[] {
   const problems: string[] = [];
   const known = new Map(catalog.map((item) => [item.contentId, item]));

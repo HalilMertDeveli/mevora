@@ -3,14 +3,21 @@ import {isAnchorSlotId} from "./calibration.js";
 import {isHumorCategory} from "./categories.js";
 import {
   ACTIVE_CALIBRATION_CATALOG,
-  CURATED_GIPHY_CATALOG,
+  CURATED_CATALOG,
   CURATED_GIPHY_ID_PREFIX,
+  CURATED_KLIPY_ID_PREFIX,
   GIPHY_ID_PATTERN,
+  KLIPY_ID_PATTERN,
   RETIRED_TEXT_JOKE_CONTENT_IDS,
   curatedGiphyContentId,
   curatedGiphyUpsertInput,
+  curatedKlipyContentId,
+  curatedUpsertInput,
+  isCuratedKlipyEntry,
   type CalibrationCatalogKind,
+  type CuratedCatalogEntry,
   type CuratedGiphyEntry,
+  type CuratedKlipyEntry,
 } from "./calibrationSeed.js";
 import {
   CALIBRATION_ELIGIBLE_FIELD,
@@ -20,7 +27,7 @@ import {
   upsertHumorContentDoc,
   type UpsertHumorContentInput,
 } from "./contentRepository.js";
-import {mediaUrlProblem} from "./contentValidation.js";
+import {KLIPY_MEDIA_HOSTS, mediaUrlProblem} from "./contentValidation.js";
 import {MAX_CAPTION_LENGTH} from "./giphySource.js";
 
 /**
@@ -109,6 +116,115 @@ export function curatedGiphyEntryProblems(entry: CuratedGiphyEntry): string[] {
   return problems;
 }
 
+/** Longest clip a curated video entry may claim (KLIPY clips run 1–6 s). */
+export const MAX_CURATED_VIDEO_DURATION_MS = 60_000;
+
+/** The URL when it is https on one of KLIPY's media hosts, else null. */
+function klipyMediaLocation(raw: unknown): URL | null {
+  if (typeof raw !== "string" || mediaUrlProblem(raw) !== null) return null;
+  const url = new URL(raw.trim());
+  return KLIPY_MEDIA_HOSTS.includes(url.hostname.toLowerCase()) ? url : null;
+}
+
+function directoryOf(url: URL): string {
+  return `${url.hostname.toLowerCase()}${url.pathname.slice(0, url.pathname.lastIndexOf("/") + 1)}`;
+}
+
+/**
+ * Why a KLIPY clip entry cannot be seeded; empty when it is well-formed.
+ *
+ * The provider-aware twin of {@link curatedGiphyEntryProblems}: media and
+ * poster must be on KLIPY's own media hosts (a GIPHY or Storage URL is wrong
+ * here even though the general allowlist accepts it), the media must be an
+ * MP4, the poster an image kept next to it, and the credit must be KLIPY's —
+ * with no uploader, because KLIPY names none.
+ */
+export function curatedKlipyEntryProblems(entry: CuratedKlipyEntry): string[] {
+  const problems: string[] = [];
+  const id = entry?.klipyId;
+  if (!isNonEmptyString(id) || !KLIPY_ID_PATTERN.test(id)) {
+    problems.push("klipyId");
+    return problems;
+  }
+  if (entry.contentId !== curatedKlipyContentId(id)) problems.push("contentId");
+  // Anchor slots belong to the GIF catalogue.
+  if ((entry as {slot?: unknown}).slot !== undefined) problems.push("slot");
+  if (typeof entry.calibrationEligible !== "boolean") problems.push("calibrationEligible");
+  if (!isHumorCategory(entry.category)) problems.push("category");
+  const weights = Object.entries(entry.humorVector ?? {});
+  if (
+    weights.length === 0 ||
+    weights.some(([dim, w]) => !isHumorCategory(dim) || typeof w !== "number" || w < 0 || w > 1)
+  ) {
+    problems.push("humorVector");
+  }
+  if (entry.language !== "tr" && entry.language !== "en") problems.push("language");
+  if (entry.caption !== null) {
+    if (!isNonEmptyString(entry.caption) || entry.caption.length > MAX_CAPTION_LENGTH) {
+      problems.push("caption");
+    }
+  }
+
+  const video = klipyMediaLocation(entry.media?.downloadUrl);
+  if (!video || !video.pathname.toLowerCase().endsWith(".mp4")) {
+    problems.push("media.downloadUrl");
+  }
+  const thumb = entry.media?.thumbUrl;
+  if (thumb !== null) {
+    const poster = klipyMediaLocation(thumb);
+    if (!poster || !/\.(?:webp|gif|jpe?g|png)$/i.test(poster.pathname)) {
+      problems.push("media.thumbUrl");
+    } else if (video && directoryOf(poster) !== directoryOf(video)) {
+      // The poster must be this clip's own preview, never another clip's.
+      problems.push("media.thumbUrl-not-this-item");
+    }
+  }
+  const aspect = entry.media?.aspectRatio;
+  if (aspect !== null && (typeof aspect !== "number" || !(aspect > 0) || aspect > 10)) {
+    problems.push("media.aspectRatio");
+  }
+  const duration = entry.media?.durationMs;
+  if (
+    duration !== null &&
+    (typeof duration !== "number" ||
+      !Number.isInteger(duration) ||
+      duration <= 0 ||
+      duration > MAX_CURATED_VIDEO_DURATION_MS)
+  ) {
+    problems.push("media.durationMs");
+  }
+
+  const attribution = entry.attribution;
+  if (
+    !attribution ||
+    attribution.provider !== "klipy" ||
+    attribution.displayName !== null ||
+    attribution.username !== null ||
+    attribution.verified !== false
+  ) {
+    problems.push("attribution");
+  } else if (attribution.sourceUrl !== null) {
+    try {
+      const page = new URL(attribution.sourceUrl);
+      const host = page.hostname.toLowerCase();
+      if (page.protocol !== "https:" || !(host === "klipy.com" || host === "www.klipy.com")) {
+        problems.push("attribution.sourceUrl");
+      }
+    } catch {
+      problems.push("attribution.sourceUrl");
+    }
+  }
+  if (entry.sourceTrust !== "curated") problems.push("sourceTrust");
+  return problems;
+}
+
+/** Why a curated entry of either provider cannot be seeded; empty when well-formed. */
+export function curatedEntryProblems(entry: CuratedCatalogEntry): string[] {
+  return entry && isCuratedKlipyEntry(entry)
+    ? curatedKlipyEntryProblems(entry)
+    : curatedGiphyEntryProblems(entry as CuratedGiphyEntry);
+}
+
 export type CalibrationCatalogPlan = {
   kind: CalibrationCatalogKind;
   items: UpsertHumorContentInput[];
@@ -118,16 +234,21 @@ export type CalibrationCatalogPlan = {
 
 export function calibrationCatalogPlan(
   kind: CalibrationCatalogKind = ACTIVE_CALIBRATION_CATALOG,
-  catalog: readonly CuratedGiphyEntry[] = CURATED_GIPHY_CATALOG,
+  catalog: readonly CuratedCatalogEntry[] = CURATED_CATALOG,
 ): CalibrationCatalogPlan {
-  const invalid = catalog
-    .map((entry) => ({entry, problems: curatedGiphyEntryProblems(entry)}))
-    .filter((e) => e.problems.length > 0);
-  if (invalid.length > 0) {
-    throw new Error(
-      "curated-giphy-catalog-invalid: " +
-        invalid.map((e) => `${e.entry?.contentId ?? "?"} (${e.problems.join(", ")})`).join("; "),
-    );
+  const checked = catalog.map((entry) => ({
+    entry,
+    klipy: entry ? isCuratedKlipyEntry(entry) : false,
+    problems: curatedEntryProblems(entry),
+  }));
+  for (const [klipy, code] of [[false, "curated-giphy-catalog-invalid"], [true, "curated-klipy-catalog-invalid"]] as const) {
+    const invalid = checked.filter((e) => e.klipy === klipy && e.problems.length > 0);
+    if (invalid.length > 0) {
+      throw new Error(
+        `${code}: ` +
+          invalid.map((e) => `${e.entry?.contentId ?? "?"} (${e.problems.join(", ")})`).join("; "),
+      );
+    }
   }
   const ids = catalog.map((e) => e.contentId);
   if (new Set(ids).size !== ids.length) {
@@ -135,14 +256,17 @@ export function calibrationCatalogPlan(
   }
   return {
     kind,
-    items: catalog.map(curatedGiphyUpsertInput),
+    items: catalog.map(curatedUpsertInput),
     retire: [
       ...TEXT_JOKE_CONTENT_IDS.map((contentId) => ({contentId, reason: "text-joke-catalog-retired"})),
       // The same clip must not also circulate as an ordinary synced item.
-      ...catalog.map((e) => ({
-        contentId: providerSyncContentId(e.giphyId),
-        reason: "superseded-by-curated",
-      })),
+      // (KLIPY is never synced, so only GIPHY entries have such a twin.)
+      ...catalog
+        .filter((e): e is CuratedGiphyEntry => !isCuratedKlipyEntry(e))
+        .map((e) => ({
+          contentId: providerSyncContentId(e.giphyId),
+          reason: "superseded-by-curated",
+        })),
     ],
   };
 }
@@ -185,7 +309,7 @@ async function retireContent(db: Firestore, contentId: string, reason: string): 
 
 export async function seedCalibrationCatalog(
   db: Firestore,
-  options: {kind?: CalibrationCatalogKind; catalog?: readonly CuratedGiphyEntry[]} = {},
+  options: {kind?: CalibrationCatalogKind; catalog?: readonly CuratedCatalogEntry[]} = {},
 ): Promise<CalibrationCatalogSeedResult> {
   const plan = calibrationCatalogPlan(options.kind, options.catalog);
   const collection = db.collection(HUMOR_CONTENT_COLLECTION);
@@ -221,10 +345,12 @@ export async function seedCalibrationCatalog(
   for (const {contentId, reason} of plan.retire) {
     if (!keep.has(contentId)) retire.set(contentId, reason);
   }
-  // Curated GIPHY docs that left the catalogue.
+  // Curated GIPHY and KLIPY docs that left the catalogue.
   const curated = await collection.where("sourceTrust", "==", "curated").get();
   for (const doc of curated.docs) {
-    if (doc.id.startsWith(CURATED_GIPHY_ID_PREFIX) && !keep.has(doc.id) && !retire.has(doc.id)) {
+    const ours =
+      doc.id.startsWith(CURATED_GIPHY_ID_PREFIX) || doc.id.startsWith(CURATED_KLIPY_ID_PREFIX);
+    if (ours && !keep.has(doc.id) && !retire.has(doc.id)) {
       retire.set(doc.id, "removed-from-curated-catalog");
     }
   }

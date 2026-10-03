@@ -92,3 +92,11 @@ Ayrıntı: `docs/HUMOR_LAB.md` → "Humor Core sequence"; adımlar `docs/GOOGLE_
 **Durum (2026-10-01):** App Check (Play Integrity), gerçek SMS, gerçek satın alma, RTDN, canlı Didit ve üretim FCM teslimi hiç denenmedi; bunlar yalnızca Play üzerinden kurulan bir sürümle denenebilir.
 
 **Yapılacak:** `docs/GOOGLE_PLAY_PRODUCTION_LAUNCH.md` §7 kontrol listesi, ardından ayrı *Final Production Acceptance* çalışması. Geçmeden `preview` → `main` birleştirilmez ve mağazaya gönderilmez.
+
+## 9. KLIPY klipleri: yazılı onay gelmeden üyelere açılmaz (AÇIK)
+
+**Durum (2026-10-03):** Mizah Laboratuvarı'na KLIPY kısa video klipleri ikinci içerik kaynağı olarak eklendi; yalnızca emülatörde ve `preview` dalında çalışıyor. KLIPY'nin entegrasyon kuralları (docs.klipy.com → "Integration Requirements") bizim kullanımımız için önceden yazılı onay istiyor: aramanın sunucudan yapılması, elle seçilmiş sabit bir set ve KLIPY içeriğinin GIPHY içeriğiyle aynı dizide gösterilmesi. Onay talebi **2026-10-03** tarihinde developers@klipy.com adresine gönderildi; yanıt bekleniyor.
+
+**Etkisi:** onay gelmeden KLIPY içeriği üyelere gösterilirse KLIPY'nin kullanım şartları ihlal edilmiş olur; KLIPY anahtarı kapatabilir ve içerik bir anda oynamaz hale gelir.
+
+**Yapılacak (yalnızca proje sahibi):** yazılı onay gelene kadar `HUMOR_CORE_RELEASE` `released: false` kalır, KLIPY içeren hiçbir şey deploy edilmez ve üretim anahtarı istenmez. Onay gelince: gizlilik politikasına ve Play veri güvenliği formuna KLIPY'yi ekle, yönetim panelinin medya kaynaklarına `static.klipy.com` adreslerini ekle, üretim anahtarını al, son klip listesini ve sırasını belirle. Ayrıntı: `docs/HUMOR_LAB.md` → "KLIPY clips".

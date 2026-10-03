@@ -28,7 +28,8 @@ function compiled(relative) {
   return require(full);
 }
 
-const {CURATED_GIPHY_CATALOG} = compiled("humor/calibrationSeed.js");
+// GIPHY GIFs and KLIPY clips: every curated entry the sequence may name.
+const {CURATED_CATALOG} = compiled("humor/calibrationSeed.js");
 const {HUMOR_CORE_RELEASE, HUMOR_CORE_SEQUENCE, humorCoreSequenceProblems} = compiled(
   "humor/coreSequence.js",
 );
@@ -57,7 +58,7 @@ if (problems.length > 0) {
   refuse(`the sequence is malformed:\n  ${problems.join("\n  ")}`);
 }
 
-const catalog = new Map(CURATED_GIPHY_CATALOG.map((item) => [item.contentId, item]));
+const catalog = new Map(CURATED_CATALOG.map((item) => [item.contentId, item]));
 function entryFor(id) {
   const item = catalog.get(id);
   if (!item) refuse(`${id} is in HUMOR_CORE_SEQUENCE but not in the curated catalogue`);

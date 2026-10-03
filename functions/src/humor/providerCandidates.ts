@@ -1,5 +1,6 @@
 import {
   curatedGiphyContentId,
+  curatedKlipyContentId,
   giphyStableStillUrl,
   giphyStableWebpUrl,
   GIPHY_ID_PATTERN,
@@ -14,6 +15,15 @@ import {
   type GiphyGif,
   type GiphyHumorSource,
 } from "./giphySource.js";
+import {
+  KLIPY_CONTENT_FILTER,
+  klipyIdOf,
+  mapKlipyClip,
+  pickKlipyPoster,
+  pickKlipyVideo,
+  type KlipyClip,
+  type KlipyHumorSource,
+} from "./klipySource.js";
 import {assessProviderRelevance, providerSourceTrust} from "./providerRelevance.js";
 import type {HumorSourceTrust} from "./types.js";
 
@@ -36,6 +46,24 @@ export const MAX_CANDIDATES_PER_QUERY = 50;
 export const DEFAULT_CANDIDATES_PER_QUERY = 25;
 export const MAX_CANDIDATE_OFFSET = 4999;
 export const CANDIDATE_RATINGS = ["g", "pg", "pg-13"] as const;
+
+/** Where the curator searches. GIPHY is the default, as it always was. */
+export const CANDIDATE_PROVIDERS = ["giphy", "klipy"] as const;
+export type CandidateProvider = (typeof CANDIDATE_PROVIDERS)[number];
+
+/** Reads `provider` from a callable payload; absent means GIPHY. */
+export function parseCandidateProvider(
+  raw: unknown,
+): {ok: true; value: CandidateProvider} | {ok: false; field: "provider"} {
+  const provider =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>).provider
+      : undefined;
+  if (provider === undefined || provider === null) return {ok: true, value: "giphy"};
+  return (CANDIDATE_PROVIDERS as readonly unknown[]).includes(provider)
+    ? {ok: true, value: provider as CandidateProvider}
+    : {ok: false, field: "provider"};
+}
 
 export type ProviderCandidateSearchInput = {
   queries: string[];
@@ -335,5 +363,165 @@ export async function searchProviderCandidates(
       unique: candidates.length,
       relevant: candidates.filter((c) => c.relevance.ok).length,
     },
+  };
+}
+
+// --------------------------------------------------------------------------
+// KLIPY clips (short videos)
+// --------------------------------------------------------------------------
+
+/**
+ * One KLIPY clip as a curator needs it: its own title, its page, the MP4 that
+ * would be served and the preview that would be its poster. KLIPY names no
+ * uploader and sends no duration, so neither appears here; the review page
+ * measures the duration from the file when a clip is picked.
+ */
+export type KlipyClipCandidate = {
+  provider: "klipy";
+  klipyId: string;
+  /** The id this clip would get in the curated catalogue. */
+  proposedContentId: string;
+  /** Every query in this search that returned it, in order. */
+  queries: string[];
+  /** Position in the first query that returned it (offset included). */
+  rank: number;
+  /** KLIPY's title, cleaned exactly as the catalogue would store it; or null. */
+  title: string | null;
+  rawTitle: string | null;
+  /** The clip's klipy.com page. */
+  sourceUrl: string | null;
+  media: {
+    mp4: CandidateRendition;
+    /** The clip's own animated preview (WebP, else GIF), or null. */
+    poster: CandidateRendition | null;
+    width: number | null;
+    height: number | null;
+    aspectRatio: number | null;
+  };
+};
+
+export type KlipyCandidateSearchResult = {
+  provider: "klipy";
+  lang: "tr" | "en";
+  perQuery: number;
+  offset: number;
+  /** The content filter every request was sent with. */
+  contentFilter: string;
+  dimension: HumorCategory | null;
+  queries: ProviderQueryReport[];
+  candidates: KlipyClipCandidate[];
+  /** Results the adapter would not serve (ads, oversized, no MP4), by reason. */
+  rejected: Record<string, number>;
+  counts: {received: number; unique: number};
+};
+
+export function candidateFromKlipyClip(
+  clip: KlipyClip,
+  ctx: {query: string; rank: number; lang: "tr" | "en"},
+): {ok: true; candidate: KlipyClipCandidate} | {ok: false; reason: string} {
+  const outcome = mapKlipyClip(clip, {language: ctx.lang, query: ctx.query});
+  if (!outcome.ok) {
+    return {ok: false, reason: outcome.reason};
+  }
+  const klipyId = klipyIdOf(clip);
+  const video = pickKlipyVideo(clip);
+  if (!klipyId || !video.ok) {
+    return {ok: false, reason: "missing-media"};
+  }
+  const poster = pickKlipyPoster(clip);
+  const {item} = outcome;
+  return {
+    ok: true,
+    candidate: {
+      provider: "klipy",
+      klipyId,
+      proposedContentId: curatedKlipyContentId(klipyId),
+      queries: [ctx.query],
+      rank: ctx.rank,
+      title: item.title ?? null,
+      rawTitle: item.rawTitle ?? null,
+      sourceUrl: item.sourceUrl ?? null,
+      media: {
+        mp4: {...video.rendition},
+        poster: poster ? {...poster} : null,
+        width: video.rendition.width,
+        height: video.rendition.height,
+        aspectRatio: item.media.aspectRatio ?? null,
+      },
+    },
+  };
+}
+
+type KlipyCandidateSource = Pick<KlipyHumorSource, "searchClipsRaw">;
+
+/**
+ * Runs every query against KLIPY clips and merges the results by clip id,
+ * keeping first-seen order. Read-only: the only side effect is one provider
+ * request per query. `rating` does not apply — KLIPY has one content filter,
+ * and every request uses its strictest level.
+ */
+export async function searchKlipyClipCandidates(
+  source: KlipyCandidateSource,
+  input: ProviderCandidateSearchInput,
+): Promise<KlipyCandidateSearchResult> {
+  const byId = new Map<string, KlipyClipCandidate>();
+  const reports: ProviderQueryReport[] = [];
+  const rejected: Record<string, number> = {};
+  let received = 0;
+  // KLIPY pages by number; an offset is the page that starts at it.
+  const page = Math.floor(input.offset / input.perQuery) + 1;
+  const firstRank = (page - 1) * input.perQuery;
+
+  for (const query of input.queries) {
+    try {
+      const result = await source.searchClipsRaw({
+        query,
+        language: input.lang,
+        limit: input.perQuery,
+        page,
+      });
+      received += result.clips.length;
+      reports.push({query, received: result.clips.length, total: null, error: null});
+      result.clips.forEach((clip, index) => {
+        const mapped = candidateFromKlipyClip(clip, {
+          query,
+          rank: firstRank + index,
+          lang: input.lang,
+        });
+        if (!mapped.ok) {
+          rejected[mapped.reason] = (rejected[mapped.reason] ?? 0) + 1;
+          return;
+        }
+        const existing = byId.get(mapped.candidate.klipyId);
+        if (existing) {
+          if (!existing.queries.includes(query)) existing.queries.push(query);
+        } else {
+          byId.set(mapped.candidate.klipyId, mapped.candidate);
+        }
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "klipy-error";
+      reports.push({
+        query,
+        received: 0,
+        total: null,
+        // Status-shaped messages only; anything else is reduced to a code.
+        error: /^klipy-[a-z0-9-]+$/.test(message) ? message : "klipy-error",
+      });
+    }
+  }
+
+  const candidates = [...byId.values()];
+  return {
+    provider: "klipy",
+    lang: input.lang,
+    perQuery: input.perQuery,
+    offset: input.offset,
+    contentFilter: KLIPY_CONTENT_FILTER,
+    dimension: input.dimension,
+    queries: reports,
+    candidates,
+    rejected,
+    counts: {received, unique: candidates.length},
   };
 }

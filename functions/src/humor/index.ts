@@ -5,7 +5,7 @@ import {HttpsError, onCall, type CallableRequest} from "firebase-functions/v2/ht
 import {logger} from "firebase-functions";
 import {HUMOR_CALIBRATION_VERSION, isAnchorSlotId} from "./calibration.js";
 import {isHumorCategory} from "./categories.js";
-import {giphyApiKey} from "./humorApiConfig.js";
+import {giphyApiKey, klipyApiKey} from "./humorApiConfig.js";
 import {
   humorScoreForPair,
   isHumorCalibrationReady,
@@ -355,26 +355,44 @@ export const seedInternalHumorContent = onCall(callableOptions, async (request) 
  * Admin-only, EMULATOR-ONLY curator tool: search GIPHY and return candidate
  * items (own title, credit, rating, renditions with sizes, still, relevance
  * verdict) for a human to pick the curated catalogue from. Writes nothing.
+ * `provider: "klipy"` searches KLIPY clips (short videos) instead; without it
+ * the search is GIPHY, as before.
  *
  * Inert when deployed: it refuses before reading auth or input unless it runs
- * inside the Functions emulator. The emulator is also where the GIPHY key
- * lives for development (functions/.secret.local); the key never leaves this
- * process — results carry media URLs only, errors a status code only.
+ * inside the Functions emulator. The emulator is also where the provider keys
+ * live for development (functions/.secret.local); a key never leaves this
+ * process — results carry media URLs only, errors a status code only. The
+ * KLIPY secret exists in the emulator alone (see humorApiConfig.ts).
  */
 export const searchHumorProviderCandidates = onCall(
-  {...callableOptions, secrets: [giphyApiKey]},
+  {...callableOptions, secrets: [giphyApiKey].concat(klipyApiKey ?? [])},
   async (request) => {
     if (process.env.FUNCTIONS_EMULATOR !== "true") {
       throw new HttpsError("failed-precondition", "emulator-only");
     }
     const uid = requireUid(request);
     await requireAdmin(uid);
-    const {parseProviderCandidateSearchInput, searchProviderCandidates} = await import(
-      "./providerCandidates.js"
-    );
+    const {
+      parseCandidateProvider,
+      parseProviderCandidateSearchInput,
+      searchKlipyClipCandidates,
+      searchProviderCandidates,
+    } = await import("./providerCandidates.js");
+    const provider = parseCandidateProvider(request.data);
+    if (!provider.ok) {
+      throw new HttpsError("invalid-argument", provider.field);
+    }
     const parsed = parseProviderCandidateSearchInput(request.data);
     if (!parsed.ok) {
       throw new HttpsError("invalid-argument", parsed.field);
+    }
+    if (provider.value === "klipy") {
+      const {KlipyHumorSource} = await import("./klipySource.js");
+      const klipy = KlipyHumorSource.tryCreate();
+      if (!klipy) {
+        return {ok: false, configured: false};
+      }
+      return {ok: true, configured: true, ...(await searchKlipyClipCandidates(klipy, parsed.value))};
     }
     const {GiphyHumorSource} = await import("./giphySource.js");
     const source = GiphyHumorSource.tryCreate({rating: parsed.value.rating});

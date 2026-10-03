@@ -58,6 +58,16 @@ export function curatedGiphyContentId(giphyId: string): string {
   return `${CURATED_GIPHY_ID_PREFIX}${giphyId}`;
 }
 
+/** Content-id namespace of curated KLIPY clips (short videos). */
+export const CURATED_KLIPY_ID_PREFIX = "hc_klipy_";
+
+/** KLIPY ids are long decimal numbers; kept as strings (they exceed 2^53). */
+export const KLIPY_ID_PATTERN = /^[0-9]{6,24}$/;
+
+export function curatedKlipyContentId(klipyId: string): string {
+  return `${CURATED_KLIPY_ID_PREFIX}${klipyId}`;
+}
+
 /** Stable, shard-independent animated WebP of a GIPHY item. */
 export function giphyStableWebpUrl(giphyId: string): string {
   return `https://media.giphy.com/media/${giphyId}/giphy.webp`;

@@ -16,7 +16,7 @@
  */
 // Creates and removes the two smoke accounts; hands back their passwords.
 export {prepareSmokeTestUsers, cleanupSmokeTestUsers} from "./smoke/smokeTestUsers.js";
-// Curator tool: searches GIPHY for catalogue candidates. Writes nothing.
+// Curator tool: searches GIPHY or KLIPY for catalogue candidates. Writes nothing.
 export {searchHumorProviderCandidates} from "./humor/index.js";
 // Shows how the personalization ranker scores a viewer's candidates.
 export {debugPersonalizationRanking} from "./personalization/functions.js";

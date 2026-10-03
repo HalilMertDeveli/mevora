@@ -1,5 +1,12 @@
 import type {HumorSourceItem} from "./sourceAdapter.js";
 
+/** KLIPY's media delivery hosts (docs.klipy.com, "Network Requirements"). */
+export const KLIPY_MEDIA_HOSTS: readonly string[] = [
+  "static.klipy.com",
+  "static1.klipy.com",
+  "static2.klipy.com",
+];
+
 export interface ContentValidationResult {
   ok: boolean;
   reason?: string;
@@ -23,10 +30,15 @@ export interface ContentValidationResult {
  * `commondatastorage.googleapis.com` is gone too: its sample bucket answers
  * 403, and that host fronts every public Cloud Storage bucket, so allowing
  * it allowed anyone's bucket.
+ *
+ * KLIPY: only the media hosts it serves files from — `static.klipy.com`
+ * (observed) and `static1` / `static2` (its documented delivery hosts).
+ * Deliberately not `klipy.com`: that would also allow its API and web hosts.
  */
 const ALLOWED_MEDIA_HOSTS = [
   "giphy.com",
   "firebasestorage.googleapis.com",
+  ...KLIPY_MEDIA_HOSTS,
 ];
 
 function isAllowedMediaHost(host: string): boolean {
